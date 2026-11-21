@@ -238,6 +238,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 		return self::stepText(sequence: $sequence, position: $position)
 			+ self::routing(position: $position)
 			+ self::anchorFields(sequence: $sequence)
+			+ self::formOf(position: $position)
 			+ [
 				'templateSnapshot' => $position->snapshot,
 				'sequenceUuid' => $sequence->getUuid(),
@@ -246,6 +247,30 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 				'nodeId' => $sequence->getNodeId(),
 			];
 	}//end positionTaskData()
+
+	/**
+	 * The form a position task presents, when its position declares one.
+	 *
+	 * The compiled position already carries the form in record shape
+	 * ({@see ApprovalPositionForm}); the task gets it under `metadata.form`,
+	 * where `TaskService::import()` refuses one that cannot be rendered and
+	 * the completion path reads it. Copied, not referenced: an open task keeps
+	 * the form it was opened with when the chain changes later.
+	 *
+	 * @param ChainPosition $position The position as frozen onto its task.
+	 *
+	 * @return array<string, mixed> `['metadata' => ['form' => ...]]`, or nothing.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	private static function formOf(ChainPosition $position): array {
+		$form = ($position->snapshot['form'] ?? null);
+		if (is_array($form) === false || $form === []) {
+			return [];
+		}
+
+		return ['metadata' => ['form' => $form]];
+	}//end formOf()
 
 	/**
 	 * A position task's title and description.
@@ -320,7 +345,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return array<string, mixed> The position, with `approvingOutcomes` when declared.
 	 *
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	private function positionSnapshot(array $position, array $template): array {
 		$approving = TaskState::approvingSet(declared: ($template['approvingOutcomes'] ?? null));
@@ -360,7 +385,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function onTaskTerminal(Task $task): void {
 		$sequence = $this->runningSequenceOf(task: $task);
@@ -499,7 +524,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	private function advance(TaskSequence $sequence, Task $completed): void {
 		$next = $this->nextPosition(sequence: $sequence, completed: $completed);
 		if ($next !== null) {
-			$this->enableNext(sequence: $sequence, completed: $completed, next: $next);
+			$this->enableNext(sequence: $sequence, advance: new PositionAdvance(completed: $completed, next: $next));
 
 			return;
 		}
@@ -530,18 +555,14 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 * Enable the next position and move the cursor onto it.
 	 *
 	 * @param TaskSequence $sequence The running sequence.
-	 * @param Task $completed The position that just completed approvingly.
-	 * @param Task $next The position to enable.
+	 * @param PositionAdvance $advance The completed position and the next one.
 	 *
 	 * @return void
 	 */
-	private function enableNext(TaskSequence $sequence, Task $completed, Task $next): void {
-		$this->services->tasks->enable(
-			uuid: (string)$next->getUuid(),
-			source: self::ACTOR_PREFIX . (string)$sequence->getUuid(),
-			reason: sprintf('Position %d approved; position %d is now enabled.', (int)$completed->getSequencePosition(), (int)$next->getSequencePosition())
-		);
-		$sequence->setPositionCursor((int)$next->getSequencePosition());
+	private function enableNext(TaskSequence $sequence, PositionAdvance $advance): void {
+		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
+		$this->services->tasks->enable(uuid: (string)$advance->next->getUuid(), trigger: new TaskTrigger(source: $source, reason: $advance->reason()));
+		$sequence->setPositionCursor((int)$advance->next->getSequencePosition());
 		$this->services->sequences->update($sequence);
 	}//end enableNext()
 
@@ -577,7 +598,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	private function closeUndecided(TaskSequence $sequence, Task $task): void {
 		$this->close(closure: new SequenceClosure(
@@ -601,7 +622,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 	 *
 	 * @return array<int, string> The declared set, or the default set when none is usable.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	private function approvingOutcomes(TaskSequence $sequence): array {
 		return TaskState::approvingSetOrDefault(declared: (($sequence->getTemplateSnapshot() ?? [])['approvingOutcomes'] ?? null));
@@ -650,8 +671,7 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 		try {
 			$this->services->tasks->terminateAsMoot(
 				uuid: (string)$sibling->getUuid(),
-				reason: $closure->reason,
-				source: self::ACTOR_PREFIX . (string)$sequence->getUuid()
+				trigger: new TaskTrigger(source: self::ACTOR_PREFIX . (string)$sequence->getUuid(), reason: $closure->reason)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->error(

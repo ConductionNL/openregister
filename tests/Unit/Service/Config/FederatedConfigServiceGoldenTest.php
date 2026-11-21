@@ -44,6 +44,11 @@ use Psr\Log\LoggerInterface;
  * fixtures/federated-config-service-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Config\FederatedConfigService
+ * @uses \OCA\OpenRegister\Service\Config\BrokeredPublishTarget
+ * @uses \OCA\OpenRegister\Service\Config\BundleFetchRequest
+ * @uses \OCA\OpenRegister\Service\Config\ConfigPublishRequest
+ * @uses \OCA\OpenRegister\Service\Config\ConfigPublishTarget
+ * @uses \OCA\OpenRegister\Service\Config\FederatedConfigTransport
  */
 class FederatedConfigServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/federated-config-service-golden.json';

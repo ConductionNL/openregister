@@ -27,14 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 
 /**
  * Answers the authorization and schema-resolution questions the trash surface
@@ -50,17 +49,15 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	/**
 	 * Wire the RBAC and schema collaborators.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param IUserSession $userSession The user session.
-	 * @param IGroupManager $groupManager The group manager for admin checks.
+	 * @param SchemaMapperInterface    $schemaMapper      The schema mapper.
+	 * @param CallerContext            $caller            The calling principal and the group manager for admin checks.
 	 * @param PermissionCheckInterface $permissionHandler Handler for per-schema RBAC checks.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly PermissionCheckInterface $permissionHandler,
 	) {
 	}//end __construct()
@@ -73,12 +70,12 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		return (bool)$this->groupManager->isAdmin($user->getUID());
+		return (bool)$this->caller->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -102,7 +99,7 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function userMayActOnDeletedObject(ObjectEntity $object, string $action): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -148,14 +145,14 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * the same line the readable audit trail draws: an entry whose object is
 	 * gone stays on the admin surface (openregister#4078).
 	 *
-	 * @param AuditTrail $record The destruction record.
+	 * @param AuditRecordInterface $record The destruction record.
 	 *
 	 * @return bool True when the caller may read it.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function userMayReadDestructionRecord(AuditTrail $record): bool {
-		$user = $this->userSession->getUser();
+	public function userMayReadDestructionRecord(AuditRecordInterface $record): bool {
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -175,9 +172,9 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * A record the caller may not read is left out rather than refused, so the
 	 * answer does not reveal that it exists.
 	 *
-	 * @param array<int, AuditTrail> $records The destruction records of one object.
+	 * @param array<int, AuditRecordInterface> $records The destruction records of one object.
 	 *
-	 * @return array<int, AuditTrail> The readable ones.
+	 * @return array<int, AuditRecordInterface> The readable ones.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
@@ -185,7 +182,7 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 		return array_values(
 			array_filter(
 				$records,
-				fn (AuditTrail $record): bool => $this->userMayReadDestructionRecord(record: $record)
+				fn (AuditRecordInterface $record): bool => $this->userMayReadDestructionRecord(record: $record)
 			)
 		);
 	}//end readableDestructionRecords()

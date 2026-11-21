@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -84,7 +84,7 @@ class ObjectsControllerJsonLdTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			null,
 			null,
@@ -150,7 +150,7 @@ class ObjectsControllerJsonLdTest extends TestCase {
 		$schema->setSlug('persoon');
 		$schema->setProperties(['title' => ['type' => 'string']]);
 
-		// resolveRegisterSchemaIds() reuses the entities already resolved by
+		// resolveRegisterSchemaRef() reuses the entities already resolved by
 		// ObjectService::setRegister()/setSchema().
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);

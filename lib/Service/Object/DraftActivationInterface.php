@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
-use OCP\IUser;
 
 /**
  * The methods of DraftActivation that callers outside the Service component use.
@@ -40,9 +39,8 @@ interface DraftActivationInterface {
 	 * The owner is built here, from the user the caller's session holds, so
 	 * no controller ever writes an owner assertion of its own.
 	 *
-	 * @param DraftAddress         $address The draft's register, schema and uuid.
-	 * @param IUser                $user    The acting user.
-	 * @param array<string, mixed> $changes Last property values, laid over the stored draft before it is judged.
+	 * @param UserDraftActivation $activation The draft's register, schema and uuid, the acting user, and the last
+	 *                                        property values laid over the stored draft before it is judged.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -50,5 +48,5 @@ interface DraftActivationInterface {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activateAsUser(DraftAddress $address, IUser $user, array $changes = []): ObjectEntity;
+	public function activateAsUser(UserDraftActivation $activation): ObjectEntity;
 }//end interface

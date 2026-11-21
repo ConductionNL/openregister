@@ -25,12 +25,14 @@ use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkJob\BulkJobGuards;
+use OCA\OpenRegister\Service\BulkJob\RehearsedJob;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\BulkJob\BulkJobGuards
  * @uses   \OCA\OpenRegister\Exception\BulkJobRefusedException
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\BulkJob\RehearsedJob
  */
 class BulkJobGuardsUndoPlanTest extends TestCase
 {
@@ -49,9 +51,9 @@ class BulkJobGuardsUndoPlanTest extends TestCase
         $huge = ['note' => str_repeat("\xB1", 500)];
         $guards = new BulkJobGuards(64);
 
-        $guards->assertUndoCeiling($this->action([$huge, ['tag' => 'a']]), [new ObjectEntity(), new ObjectEntity()], []);
+        $guards->assertUndoCeiling(new RehearsedJob($this->action([$huge, ['tag' => 'a']]), [new ObjectEntity(), new ObjectEntity()], []));
 
         $this->expectException(BulkJobRefusedException::class);
-        $guards->assertUndoCeiling($this->action([['note' => str_repeat('x', 500)]]), [new ObjectEntity()], []);
+        $guards->assertUndoCeiling(new RehearsedJob($this->action([['note' => str_repeat('x', 500)]]), [new ObjectEntity()], []));
     }//end testAPlanThatCannotBeEncodedDoesNotCountTowardsTheCeiling()
 }//end class

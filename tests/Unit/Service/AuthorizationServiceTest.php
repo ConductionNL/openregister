@@ -85,12 +85,10 @@ class AuthorizationServiceTest extends TestCase {
 		$request->method('getHeader')->willReturnCallback(fn (string $name) => (strtolower($name) === 'authorization') ? 'Bearer sometoken' : '');
 
 		$this->service = new AuthorizationService(
-			userManager: $this->userManager,
-			userSession: $this->userSession,
+			directory: new \OCA\OpenRegister\Service\UserDirectory(session: $this->userSession, users: $this->userManager, groups: $this->createMock(\OCP\IGroupManager::class)),
 			consumerMapper: $this->consumerMapper,
 			cacheFactory: $cacheFactory,
-			groupManager: $this->createMock(\OCP\IGroupManager::class),
-			request: $request,
+			request: $request
 		);
 	}
 

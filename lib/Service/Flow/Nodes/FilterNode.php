@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -30,8 +30,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -40,7 +44,9 @@ use UnexpectedValueException;
 /**
  * Drops items that do not match.
  */
-class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
@@ -82,11 +88,33 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['condition'];
 	}//end configKeys()
+
+	/**
+	 * The condition each item is kept by.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'condition',
+				'label' => $this->l10n->t('Keep items where'),
+				'type' => 'textarea',
+				'help' => $this->l10n->t(
+					'A flow expression (JSONLogic), checked for each item; items for which it is '
+						. 'false are dropped. A fixed value is refused: it would keep everything or nothing.'
+				),
+				'required' => true,
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a filter with no condition, or one that cannot be evaluated.
@@ -100,7 +128,7 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 *
 	 * @throws UnexpectedValueException When the condition is missing or malformed.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$condition = ($config['condition'] ?? null);
@@ -165,38 +193,85 @@ class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface
 	 * new position, so provenance survives the drop: item 3 of the output can
 	 * still be traced to item 7 of the input.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items that matched.
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$condition = ($config['condition'] ?? null);
-		$count = count($items);
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+		$documents = $this->documentsFor(items: $items, context: $context);
+		$verdicts = $this->verdicts(condition: ($config['condition'] ?? null), documents: $documents);
 
+		return $this->kept(items: $items, verdicts: $verdicts);
+	}//end execute()
+
+	/**
+	 * The expression document of each item, keyed by its input index.
+	 *
+	 * @param array $items   The input items.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array<int|string, array> One data document per item.
+	 */
+	private function documentsFor(array $items, array $context): array {
+		$count = count($items);
+		$documents = [];
+		foreach ($items as $index => $item) {
+			$documents[$index] = FlowExpression::documentFor(
+				item: $item,
+				options: new FlowExpressionDataOptions(
+					itemIndex: $index,
+					itemCount: $count,
+					context: $context
+				)
+			);
+		}
+
+		return $documents;
+	}//end documentsFor()
+
+	/**
+	 * Whether the condition holds for each document, keyed as the documents are.
+	 *
+	 * @param mixed $condition The JSONLogic condition.
+	 * @param array $documents The data documents, keyed by input index.
+	 *
+	 * @return array<int|string, bool> The verdict per input index.
+	 */
+	private function verdicts(mixed $condition, array $documents): array {
+		$verdicts = [];
+		foreach ($documents as $index => $data) {
+			$verdicts[$index] = FlowExpression::isTrue(logic: $condition, data: $data);
+		}
+
+		return $verdicts;
+	}//end verdicts()
+
+	/**
+	 * The items whose verdict holds, re-paired to their original input index.
+	 *
+	 * @param array $items    The input items.
+	 * @param array $verdicts The verdict per input index.
+	 *
+	 * @return array The items that matched.
+	 */
+	private function kept(array $items, array $verdicts): array {
 		$kept = [];
 		foreach ($items as $index => $item) {
-			$data = FlowExpression::dataFor(
-				item: $item,
-				itemIndex: $index,
-				itemCount: $count,
-				context: $context
-			);
-
-			if (FlowExpression::isTrue(logic: $condition, data: $data) === false) {
+			if ($verdicts[$index] === false) {
 				continue;
 			}
 
 			$kept[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
 		return $kept;
-	}//end execute()
+	}//end kept()
 
 	/**
 	 * What kind of step this is. Reshapes the item stream by dropping items.

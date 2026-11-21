@@ -34,7 +34,9 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use RuntimeException;
 use ReflectionMethod;
 
 /**
@@ -51,6 +53,9 @@ class ObjectServiceFolderRevalidationTest extends TestCase
     /** @var MagicMapper&MockObject */
     private MagicMapper $mapper;
 
+    /** @var LoggerInterface&MockObject */
+    private LoggerInterface $logger;
+
     private ObjectService $service;
 
     private Register $register;
@@ -63,6 +68,7 @@ class ObjectServiceFolderRevalidationTest extends TestCase
 
         $this->files    = $this->createMock(FileService::class);
         $this->mapper   = $this->createMock(MagicMapper::class);
+        $this->logger   = $this->createMock(originalClassName: LoggerInterface::class);
         $this->register = new Register();
         $this->schema   = new Schema();
 
@@ -71,6 +77,7 @@ class ObjectServiceFolderRevalidationTest extends TestCase
         foreach ([
             'fileService'     => $this->files,
             'objectMapper'    => $this->mapper,
+            'logger'          => $this->logger,
             'currentRegister' => $this->register,
             'currentSchema'   => $this->schema,
         ] as $name => $value) {
@@ -165,10 +172,40 @@ class ObjectServiceFolderRevalidationTest extends TestCase
         $this->assertNull($this->ensure());
     }
 
-    public function testAnotherLookupErrorLeavesTheSaveToCreateIt(): void
+    /**
+     * A failed lookup is a refusal, never a pass.
+     *
+     * @return void
+     */
+    public function testALookupErrorRefusesTheSave(): void
     {
-        $this->mapper->method('find')->willThrowException(new Exception('down'));
+        $cause = new Exception('down');
+        $this->mapper->method('find')->willThrowException($cause);
+        $this->files->expects($this->never())->method('assertObjectFolderAccessible');
+        $this->logger->expects($this->once())->method('warning');
 
-        $this->assertNull($this->ensure());
+        try {
+            $this->ensure();
+            $this->fail(message: 'The save went ahead without the folder binding check.');
+        } catch (FolderAccessDeniedException $e) {
+            $this->assertSame(expected: $cause, actual: $e->getPrevious());
+        }
+    }
+
+    /**
+     * An error inside the folder check is a refusal, never a pass.
+     *
+     * @return void
+     */
+    public function testAnErrorInsideTheFolderCheckRefusesTheSave(): void
+    {
+        $this->stored(folder: '42');
+        $this->files->method('assertObjectFolderAccessible')
+            ->willThrowException(new RuntimeException('storage unavailable'));
+        $this->logger->expects($this->once())->method('warning');
+
+        $this->expectException(exception: FolderAccessDeniedException::class);
+
+        $this->ensure();
     }
 }

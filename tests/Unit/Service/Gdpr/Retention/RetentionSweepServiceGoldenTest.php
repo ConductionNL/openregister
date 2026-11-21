@@ -109,8 +109,8 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 		$dsr = $this->createMock(DataSubjectRequestService::class);
 		$dsr->method('erase')->willReturnCallback(
 			function (...$args) {
-				$this->calls[] = 'erase:' . $args[0] . ':' . $args[2];
-				if ($args[0] === 'boom@example.org') {
+				$this->calls[] = 'erase:' . $args[0]->subjectId . ':' . $args[0]->eraseMode;
+				if ($args[0]->subjectId === 'boom@example.org') {
 					throw new RuntimeException('scrub broke');
 				}
 
@@ -148,7 +148,7 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 			}
 		);
 
-		return new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $logger, new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class)));
+		return new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $logger, new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class))));
 
 	}//end build()
 

@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
@@ -76,7 +78,7 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$this->root = $this->createMock(IRootFolder::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->provider = new FilesObjectSourceProvider(rootFolder: $this->root, userSession: $this->session, logger: $this->logger);
+		$this->provider = new FilesObjectSourceProvider(rootFolder: $this->root, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $this->session, logger: $this->logger));
 	}//end setUp()
 
 	/**
@@ -99,8 +101,8 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$this->session->method('getUser')->willReturn(null);
 		$this->root->expects($this->never())->method('getUserFolder');
 
-		$this->assertNull($this->provider->find(register: new Register(), schema: new Schema(), id: '5'));
-		$this->assertSame([], $this->provider->findAll(register: new Register(), schema: new Schema()));
+		$this->assertNull($this->provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '5'));
+		$this->assertSame([], $this->provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 	}//end testWithoutAUserNothingIsRead()
 
 	/**
@@ -114,7 +116,7 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$folder->expects($this->never())->method('getById');
 		$this->root->method('getUserFolder')->with('noor')->willReturn($folder);
 
-		$this->assertNull($this->provider->find(register: new Register(), schema: new Schema(), id: 'abc'));
+		$this->assertNull($this->provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'abc'));
 	}//end testANonNumericIdIsNotLookedUp()
 
 	/**
@@ -129,8 +131,8 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 			->method('warning')
 			->with('[ObjectSource:files-source] could not resolve user folder: no home');
 
-		$this->assertNull($this->provider->find(register: new Register(), schema: new Schema(), id: '5'));
-		$this->assertSame([], $this->provider->findAll(register: new Register(), schema: new Schema()));
+		$this->assertNull($this->provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '5'));
+		$this->assertSame([], $this->provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 	}//end testAnUnresolvableUserFolderReadsEmpty()
 
 	/**
@@ -149,8 +151,8 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$this->root->method('getUserFolder')->willReturn($folder);
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:files-source] could not read file: storage offline');
 
-		$this->assertNull($this->provider->find(register: new Register(), schema: new Schema(), id: '5'));
-		$this->assertNull($this->provider->find(register: new Register(), schema: new Schema(), id: '6'));
+		$this->assertNull($this->provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '5'));
+		$this->assertNull($this->provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '6'));
 	}//end testAnUnreadableOrNonFileIdReadsAbsent()
 
 	/**
@@ -176,7 +178,7 @@ class FilesObjectSourceProviderFailureTest extends TestCase {
 		$this->root->method('getUserFolder')->willReturn($home);
 		$this->logger->expects($this->once())->method('warning')->with('[ObjectSource:files-source] could not list folder: denied');
 
-		$objects = $this->provider->findAll(register: new Register(), schema: new Schema());
+		$objects = $this->provider->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())));
 
 		$this->assertCount(1, $objects);
 		$this->assertSame('/a.txt', $objects[0]->getObject()['path']);

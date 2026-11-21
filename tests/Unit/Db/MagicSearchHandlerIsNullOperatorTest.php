@@ -55,6 +55,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks `isnull` support on both the QueryBuilder path and the raw-SQL UNION
@@ -162,7 +165,7 @@ class MagicSearchHandlerIsNullOperatorTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $filters, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 
 		return $this->captured;
 	}//end invokeApplyObject()
@@ -181,7 +184,7 @@ class MagicSearchHandlerIsNullOperatorTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $query, $schema, $this->makeConnection(), true);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $this->makeConnection(), isPostgres: true));
 	}//end invokeUnionObject()
 
 	/**

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\ContextChat\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,18 +34,36 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final readonly class ContentProviderSources {
 	/**
-	 * Bundle the services.
+	 * Schema lookup.
 	 *
-	 * @param SchemaMapperInterface   $schemaMapper   Schema lookup.
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param MagicMapperInterface    $magicMapper    Magic-table reads.
+	 * @var SchemaMapperInterface
+	 */
+	public SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Magic-table reads.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public MagicMapperInterface $magicMapper;
+
+	/**
+	 * Take the lookups from the schema catalog.
+	 *
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
-	public function __construct(
-		public SchemaMapperInterface $schemaMapper,
-		public RegisterMapperInterface $registerMapper,
-		public MagicMapperInterface $magicMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->schemaMapper = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
+		$this->magicMapper = $catalog->tables();
 	}//end __construct()
 }//end class

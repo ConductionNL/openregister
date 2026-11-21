@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Notifications\Db\ObjectPresence;
 
 /**
@@ -35,20 +36,18 @@ interface PresenceServiceInterface {
 	 *
 	 * @var int
 	 */
-	public const BEAT_SECONDS = 30;
+	public const BEAT_SECONDS = ObjectPresenceInterface::BEAT_SECONDS;
 
 	/**
 	 * Say that a reader is still looking at an object.
 	 *
-	 * @param string                 $userId     The reader.
-	 * @param string                 $objectUuid The object.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceBeat $beat The reader, the object and the moment.
 	 *
 	 * @return array{arrived: bool, presence: ObjectPresence|null} Whether this was an ARRIVAL.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function heartbeat(string $userId, string $objectUuid, ?DateTimeInterface $now = null): array;
+	public function heartbeat(PresenceBeat $beat): array;
 
 	/**
 	 * Say that a reader has closed the object.
@@ -65,13 +64,11 @@ interface PresenceServiceInterface {
 	/**
 	 * Who is present on an object right now.
 	 *
-	 * @param string                 $objectUuid The object.
-	 * @param string                 $exceptUser A reader to leave out, usually the caller.
-	 * @param DateTimeInterface|null $now        The clock, for tests.
+	 * @param PresenceLookup $lookup The object, a reader to leave out, and the clock for tests.
 	 *
 	 * @return array<int, array<string, mixed>> The readers, oldest arrival first.
 	 *
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
-	public function present(string $objectUuid, string $exceptUser = '', ?DateTimeInterface $now = null): array;
+	public function present(PresenceLookup $lookup): array;
 }//end interface

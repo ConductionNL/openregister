@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Export;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Db\SubjectExport;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -84,7 +84,35 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	}//end __construct()
 
 	/**
-	 * Ask for a subject's own export. Queues the assembly, writes nothing else.
+	 * Ask for a subject's own export. Records a pending export for the current
+	 * actor, queues its assembly and audits it; writes nothing else.
+	 *
+	 * @param SubjectExportRequest $request The subject, type filter and request id.
+	 *
+	 * @return SubjectExport The recorded request.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function requestFor(SubjectExportRequest $request): SubjectExport {
+		$export = $this->queue->mapper->createFromArray(
+			[
+				'subject' => trim($request->subject),
+				'subjectType' => $request->type,
+				'requestId' => $request->requestId,
+				'status' => SubjectExport::STATUS_PENDING,
+				'requestedBy' => $this->actor(),
+			]
+		);
+
+		$this->queue->jobList->add(ComplianceJobHandlesInterface::SUBJECT_EXPORT, ['uuid' => $export->getUuid()]);
+
+		$this->audit(export: $export, event: 'requested');
+
+		return $export;
+	}//end requestFor()
+
+	/**
+	 * Ask for a subject's own export by its parts; see requestFor().
 	 *
 	 * @param string      $subject   The data subject.
 	 * @param string|null $type      Optional PII type filter.
@@ -95,21 +123,7 @@ class SubjectExportService implements SubjectExportServiceInterface, SubjectExpo
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
-		$export = $this->queue->mapper->createFromArray(
-			[
-				'subject' => trim($subject),
-				'subjectType' => $type,
-				'requestId' => $requestId,
-				'status' => SubjectExport::STATUS_PENDING,
-				'requestedBy' => $this->actor(),
-			]
-		);
-
-		$this->queue->jobList->add(JobHandles::SUBJECT_EXPORT, ['uuid' => $export->getUuid()]);
-
-		$this->audit(export: $export, event: 'requested');
-
-		return $export;
+		return $this->requestFor(request: new SubjectExportRequest(subject: $subject, type: $type, requestId: $requestId));
 	}//end request()
 
 	/**

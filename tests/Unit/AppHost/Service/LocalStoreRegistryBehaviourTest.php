@@ -26,11 +26,13 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unusable object service, non-array search answers, failed writes.
@@ -63,7 +65,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'results' => []],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testAReadWithoutAnObjectServiceIsUnreachable()
 
@@ -80,7 +82,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'results' => []],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testANonArraySearchAnswerReadsAsEmpty()
 
@@ -97,7 +99,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'results' => [['slug' => 'a']]],
-			$registry->read('store', 'item', [], 10)
+			$registry->read(new RegisterSchemaRef(register: 'store', schema: 'item'), ['_limit' => 10])
 		);
 	}//end testAnArraySearchAnswerIsReturned()
 
@@ -112,7 +114,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAWriteWhoseLookupFailsAnswersTheLookupOutcome()
 
@@ -134,7 +136,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAWriteWhoseServiceVanishesIsUnreachable()
 
@@ -148,7 +150,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 		$objects->method('searchObjectsBySlug')->willReturn([['slug' => 'demo', 'id' => 'uuid-1']]);
 		$objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'demo'], [], 'store', 'item', 'uuid-1')
+			->with(['slug' => 'demo'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'store' && $options->target->schema == 'item' && $options->uuid == 'uuid-1'))
 			->willThrowException(new RuntimeException('disk full'));
 
 		$logger = $this->createMock(LoggerInterface::class);
@@ -160,7 +162,7 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'slug' => ''],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testAFailedSaveIsUnreachable()
 
@@ -174,13 +176,13 @@ class LocalStoreRegistryBehaviourTest extends TestCase {
 		$objects->method('searchObjectsBySlug')->willReturn([]);
 		$objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'demo'], [], 'store', 'item', null);
+			->with(['slug' => 'demo'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'store' && $options->target->schema == 'item' && $options->uuid === null));
 
 		$registry = new LocalStoreRegistry($this->container($objects, $objects), $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(
 			['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => 'demo'],
-			$registry->write('store', 'item', ['slug' => 'demo'])
+			$registry->write(new RegisterSchemaRef(register: 'store', schema: 'item'), ['slug' => 'demo'])
 		);
 	}//end testASucceedingSaveIsOk()
 }//end class

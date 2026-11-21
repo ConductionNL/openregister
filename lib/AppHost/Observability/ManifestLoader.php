@@ -143,6 +143,7 @@ class ManifestLoader {
 			return null;
 		}
 
-		return BundledManifestFile::decode(appPath: $appPath, appId: $appId, logger: $this->logger, tag: 'AppHost\\ManifestLoader');
+		$lookup = new ManifestLookup(appId: $appId, appPath: $appPath, tag: 'AppHost\\ManifestLoader');
+		return BundledManifestFile::decodeFor(lookup: $lookup, logger: $this->logger);
 	}//end loadBundledManifest()
 }//end class

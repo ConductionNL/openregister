@@ -46,7 +46,6 @@ final class CredentialOauth2ControllerFactory {
 		?\OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface $instanceHost = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\CredentialOauth2Mappers(

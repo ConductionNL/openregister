@@ -31,7 +31,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use DOMDocument;
 use DOMElement;
 
 /**
@@ -139,24 +138,21 @@ class DocumentBodyParser {
 	/**
 	 * Parse a document part into its title and sections.
 	 *
-	 * @param DOMDocument $document The parsed document part.
-	 * @param DOMDocument|null $styles The parsed styles part, or null.
-	 * @param DOMDocument|null $numbering The parsed numbering part, or null.
-	 * @param Relationships $relationships The document part's relationships.
+	 * @param DocumentPart $part The document part, its styles and numbering parts, and its relationships.
 	 *
 	 * @return array{title: string, sections: list<DocumentSection>, truncated: bool}|null Null when the part has no body.
 	 *
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
 	 */
-	public function parse(DOMDocument $document, ?DOMDocument $styles, ?DOMDocument $numbering, array $relationships): ?array {
-		$body = $document->getElementsByTagNameNS('*', 'body')->item(0);
+	public function parsePart(DocumentPart $part): ?array {
+		$body = $part->document->getElementsByTagNameNS('*', 'body')->item(0);
 		if (($body instanceof DOMElement) === false) {
 			return null;
 		}
 
-		$this->styles = new DocumentStyleMap(styles: $styles, numbering: $numbering);
-		$this->relationships = $relationships;
+		$this->styles = new DocumentStyleMap(styles: $part->styles, numbering: $part->numbering);
+		$this->relationships = $part->relationships;
 		$this->title = '';
 		$this->titleTaken = false;
 		$this->sections = [];
@@ -169,7 +165,7 @@ class DocumentBodyParser {
 		$this->closeSection();
 
 		return ['title' => $this->title, 'sections' => $this->sections, 'truncated' => $this->truncated];
-	}//end parse()
+	}//end parsePart()
 
 	/**
 	 * Walk the block-level children of a container: body, content control, custom XML or text box.
@@ -296,11 +292,10 @@ class DocumentBodyParser {
 			return;
 		}
 
-		$images = [];
-		$rows = $this->contentReader->tableRows(table: $table, relationships: $this->relationships, depth: ($depth + 1), images: $images);
+		$read = $this->contentReader->table(table: $table, relationships: $this->relationships, depth: ($depth + 1));
 
-		$this->appendBlock(block: ['type' => 'table', 'rows' => $rows]);
-		foreach ($images as $image) {
+		$this->appendBlock(block: ['type' => 'table', 'rows' => $read->rows]);
+		foreach ($read->images as $image) {
 			$this->appendBlock(block: $image);
 		}
 	}//end table()

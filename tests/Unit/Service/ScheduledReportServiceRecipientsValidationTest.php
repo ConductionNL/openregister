@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -66,7 +68,7 @@ class ScheduledReportServiceRecipientsValidationTest extends TestCase {
 		$this->mapper->method('insert')->willReturnArgument(0);
 
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $registerMapper, $schemaMapper),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),
@@ -212,12 +214,7 @@ class ScheduledReportServiceRecipientsValidationTest extends TestCase {
 		$this->mapper->method('find')->with(9)->willReturn($existing);
 		$this->mapper->method('update')->willReturnArgument(0);
 
-		$updated = $this->service->update(
-			id: 9,
-			data: ['name' => 'Renamed'],
-			callerUid: 'alice',
-			callerIsAdmin: false
-		);
+		$updated = $this->service->applyUpdate(update: new ScheduledReportUpdate(id: 9, data: ['name' => 'Renamed'], caller: new ReportCaller(uid: 'alice', isAdmin: false)));
 
 		self::assertSame('Renamed', $updated->getName());
 		self::assertSame(['a@example.com'], $updated->getRecipientsArray());

@@ -15,7 +15,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -69,9 +71,7 @@ class FileTextExtractionJobTest extends TestCase {
 		$this->config = $this->createMock(IAppConfig::class);
 
 		$this->job = new FileTextExtractionJob(
-			$this->timeFactory,
-			$this->config,
-			$this->logger,
+			new ConfiguredJobRuntime($this->timeFactory, $this->config, $this->logger),
 			$this->textExtractor
 		);
 	}
@@ -122,7 +122,7 @@ class FileTextExtractionJobTest extends TestCase {
 		$this->textExtractor
 			->expects($this->once())
 			->method('extractFile')
-			->with(fileId: $fileId, forceReExtract: false);
+			->with($fileId, new FileExtractionOptions());
 
 		// Expect success logging.
 		$this->logger
@@ -214,7 +214,7 @@ class FileTextExtractionJobTest extends TestCase {
 		$this->textExtractor
 			->expects($this->once())
 			->method('extractFile')
-			->with(fileId: $fileId, forceReExtract: false)
+			->with($fileId, new FileExtractionOptions())
 			->willThrowException(new \Exception($exceptionMessage));
 
 		// Expect error logging.

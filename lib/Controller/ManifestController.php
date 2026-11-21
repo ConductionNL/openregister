@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ManifestControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -80,18 +81,16 @@ class ManifestController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name ('openregister').
 	 * @param IRequest $request The HTTP request.
 	 * @param ManifestControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ManifestControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->manifestService = $services->manifestService;
 		$this->appManager = $services->appManager;
 		$this->logger = $services->logger;
@@ -170,7 +169,7 @@ class ManifestController extends Controller {
 		$enriched = $this->manifestService->getEnrichedManifest(manifest: $manifest);
 
 		$response = new JSONResponse($enriched);
-		$response->setETag(md5(json_encode($enriched)));
+		$response->setETag(hash(algo: 'xxh128', data: json_encode($enriched)));
 		$response->addHeader('Cache-Control', 'private, no-cache');
 		return $response;
 	}//end enrichedResponse()

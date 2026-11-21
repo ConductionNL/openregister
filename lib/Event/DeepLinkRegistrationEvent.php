@@ -25,8 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Event dispatched during OpenRegister boot to allow consuming apps
@@ -39,12 +39,12 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Constructor for DeepLinkRegistrationEvent.
 	 *
-	 * @param DeepLinkRegistryServiceInterface $registry The deep link registry service
+	 * @param DeepLinkCollectorInterface $registry The deep link registry service
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DeepLinkRegistryServiceInterface $registry,
+		private readonly DeepLinkCollectorInterface $registry,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -52,11 +52,11 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Get the deep link registry service to register URL patterns.
 	 *
-	 * @return DeepLinkRegistryServiceInterface The registry service
+	 * @return DeepLinkCollectorInterface The registry service
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-9
 	 */
-	public function getRegistry(): DeepLinkRegistryServiceInterface {
+	public function getRegistry(): DeepLinkCollectorInterface {
 		return $this->registry;
 	}//end getRegistry()
 
@@ -70,6 +70,7 @@ class DeepLinkRegistrationEvent extends Event {
 	 * @param string $icon Optional icon identifier
 	 * @param string|null $displayName Optional human-readable label for the app's
 	 *                                 unified-search results (defaults to null → app id)
+	 * @param string|null $taskUrlTemplate Optional route of the app's own task view, e.g. "/apps/dossiq/#/tasks/{uuid}"
 	 *
 	 * @return void
 	 *
@@ -83,7 +84,18 @@ class DeepLinkRegistrationEvent extends Event {
 		string $urlTemplate,
 		string $icon = '',
 		?string $displayName = null,
+		?string $taskUrlTemplate = null,
 	): void {
-		$this->registry->register($appId, $registerSlug, $schemaSlug, $urlTemplate, $icon, $displayName);
+		$this->registry->add(
+			registration: new DeepLinkRegistration(
+				appId: $appId,
+				registerSlug: $registerSlug,
+				schemaSlug: $schemaSlug,
+				urlTemplate: $urlTemplate,
+				icon: $icon,
+				displayName: $displayName,
+				taskUrlTemplate: $taskUrlTemplate
+			)
+		);
 	}//end register()
 }//end class

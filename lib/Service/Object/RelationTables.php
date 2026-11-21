@@ -26,9 +26,8 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -49,15 +48,13 @@ final class RelationTables {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registers The register mapper.
-	 * @param SchemaMapperInterface   $schemas   The schema mapper.
-	 * @param LoggerInterface         $logger    The logger.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
+	 * @param LoggerInterface        $logger  The logger.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -100,7 +97,7 @@ final class RelationTables {
 		$key = $registerId.'_'.$schemaId;
 		if (array_key_exists($key, $this->pairs) === false) {
 			try {
-				$this->pairs[$key] = ['register' => $this->registers->find($registerId), 'schema' => $this->schemas->find($schemaId)];
+				$this->pairs[$key] = ['register' => $this->catalog->registers()->find($registerId), 'schema' => $this->catalog->schemas()->find($schemaId)];
 			} catch (\Exception $e) {
 				$this->pairs[$key] = null;
 			}
@@ -190,7 +187,7 @@ final class RelationTables {
 		}
 
 		try {
-			return $this->schemas->find((int)$schemaId, _rbac: false, _multitenancy: false);
+			return $this->catalog->schemas()->find((int)$schemaId, _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[RelationHandler] Could not load a schema to resolve relation labels',
@@ -220,8 +217,8 @@ final class RelationTables {
 		}
 
 		try {
-			$pinned->register = $this->registers->find($lookup->registerId(), _rbac: false, _multitenancy: false);
-			$pinned->schema = $this->schemas->find($lookup->schemaId(), _rbac: false, _multitenancy: false);
+			$pinned->register = $this->catalog->registers()->find($lookup->registerId(), _rbac: false, _multitenancy: false);
+			$pinned->schema = $this->catalog->schemas()->find($lookup->schemaId(), _rbac: false, _multitenancy: false);
 		} catch (\Exception $e) {
 			$pinned->failure = $e;
 		}

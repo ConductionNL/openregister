@@ -60,6 +60,17 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Db\ExportRun
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunContent
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunFile
+ * @uses \OCA\OpenRegister\Service\Export\ExportRunOrigin
+ * @uses \OCA\OpenRegister\Service\ScheduledReportDelivery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExportQuery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExporters
+ * @uses \OCA\OpenRegister\Service\ScheduledReportNotice
+ * @uses \OCA\OpenRegister\Service\ScheduledReportOwnerServices
+ * @uses \OCA\OpenRegister\Service\ScheduledReportStores
  */
 class ScheduledReportServiceRunGoldenTest extends TestCase {
 
@@ -179,7 +190,7 @@ class ScheduledReportServiceRunGoldenTest extends TestCase {
 		}
 
 		$service = new ScheduledReportService(
-			new ScheduledReportStores($mapper, $registers, $this->createMock(SchemaMapper::class)),
+			new ScheduledReportStores($mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($export, null, $recorder),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($users, $this->createMock(IUserSession::class), $this->rootFolderFor($opt), $notifications),

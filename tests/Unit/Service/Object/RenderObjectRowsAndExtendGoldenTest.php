@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -37,6 +38,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 
@@ -219,8 +224,8 @@ class RenderObjectRowsAndExtendGoldenTest extends TestCase {
 		$language->method('shouldReturnAllTranslations')->willReturn($all);
 		$translation = $this->createMock(TranslationHandler::class);
 		$translation->method('resolveTranslationsForRender')->willReturnCallback(
-			static fn (array $objectData, Schema $schema, ?Register $register): array => $objectData + [
-				'translatedWith' => [$schema->getSlug(), $register?->getSlug()],
+			static fn (array $objectData, TranslationScope $scope): array => $objectData + [
+				'translatedWith' => [$scope->schema->getSlug(), $scope->register?->getSlug()],
 			]
 		);
 		$schema = new Schema();

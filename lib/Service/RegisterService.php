@@ -26,9 +26,13 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
 use OCP\IDBConnection;
@@ -106,9 +110,9 @@ class RegisterService implements RegisterServiceInterface {
 	/**
 	 * File service for file operations.
 	 *
-	 * @var FileFolderServiceInterface
+	 * @var EntityFolderInterface
 	 */
-	private readonly FileFolderServiceInterface $fileService;
+	private readonly EntityFolderInterface $fileService;
 
 	/**
 	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
@@ -256,15 +260,28 @@ class RegisterService implements RegisterServiceInterface {
 	 *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
 	 */
 	public function findSerialized(int|string $id, array $_extend = [], bool $_multitenancy = true): array {
-		$register = $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+		return $this->serializeOne(register: $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy), _extend: $_extend);
+	}//end findSerialized()
 
+	/**
+	 * Serialize one register with `_extend` applied, with its per-schema counts when both `schemas` and `@self.stats` are asked.
+	 *
+	 * @param Register      $register The register.
+	 * @param array<string> $_extend  Extension keys to apply.
+	 *
+	 * @return array Serialized register payload.
+	 */
+	private function serializeOne(Register $register, array $_extend): array {
 		$stats = null;
 		if ($this->wantsSchemaStats(_extend: $_extend) === true) {
 			$stats = $this->statsFor(register: $register);
 		}
 
-		return $this->registerSerializer->serialize($register, $_extend, $stats);
-	}//end findSerialized()
+		return $this->registerSerializer->serializeExpanded(
+			$register,
+			RegisterExpansion::fromExtend(extend: $_extend, schemaStats: $stats)
+		);
+	}//end serializeOne()
 
 	/**
 	 * Whether `_extend` asks for both `schemas` and `@self.stats`, the case that needs per-schema counts.
@@ -298,7 +315,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * Companion to {@see findAll()} that returns serialized arrays with
 	 * `_extend` honored. When `schemas` + `@self.stats` are both
 	 * requested, per-register stats are pre-computed and handed to the
-	 * serializer via `serializeMany()`.
+	 * serializer via `serializePage()`.
 	 *
 	 * @param int|null $limit Maximum number of results.
 	 * @param int|null $offset Pagination offset.
@@ -336,7 +353,10 @@ class RegisterService implements RegisterServiceInterface {
 			_multitenancy: $_multitenancy
 		);
 
-		return $this->registerSerializer->serializeMany($registers, $_extend, $this->statsByRegisterId(registers: $registers, _extend: $_extend));
+		return $this->registerSerializer->serializePage(
+			registers: $registers,
+			extension: new RegisterListExtension(extend: $_extend, schemaStatsByRegisterId: $this->statsByRegisterId(registers: $registers, _extend: $_extend))
+		);
 	}//end findAllSerialized()
 
 	/**
@@ -864,7 +884,7 @@ class RegisterService implements RegisterServiceInterface {
 		$this->magicTableNames = [];
 
 		$sql  = 'SELECT table_name FROM information_schema.tables';
-		$sql .= ' WHERE table_name LIKE :pattern';
+		$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindValue('pattern', '%openregister\_table\_%');

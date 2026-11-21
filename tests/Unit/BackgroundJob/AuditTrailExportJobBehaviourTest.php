@@ -21,11 +21,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
@@ -105,15 +108,14 @@ class AuditTrailExportJobBehaviourTest extends TestCase {
 
 		$recorder = $this->createMock(JobRunRecorderInterface::class);
 		$recorder->method('around')->willReturnCallback(
-			function (string $jobClass, callable $work, $context): void {
-				$this->recorded[] = [$jobClass, $context->cause, $context->actor];
+			function (JobRunStart $start, callable $work): void {
+				$this->recorded[] = [$start->jobClass, $start->context->cause, $start->context->actor];
 				$work();
 			}
 		);
 
 		$this->job = new AuditTrailExportJob(
-			$this->createMock(ITimeFactory::class),
-			$recorder,
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $recorder),
 			new AuditExportSource(pageQuery: $this->pageQuery, logService: $this->logService),
 			new AuditExportDelivery(rootFolder: $root, notifications: $notifications)
 		);
@@ -155,7 +157,7 @@ class AuditTrailExportJobBehaviourTest extends TestCase {
 
 	public function testFormatIsLowercasedAndChangesAreIncludedByDefault(): void {
 		$this->pageQuery->expects($this->once())->method('collect')
-			->with([], 'needle', AuditTrailExportJob::JOB_LIMIT)
+			->with(new AuditTrailCriteria([], 'needle'), AuditTrailExportJob::JOB_LIMIT)
 			->willReturn(['results' => [], 'truncated' => false]);
 		$this->logService->expects($this->once())->method('exportRows')
 			->with('json', [], ['includeChanges' => true])

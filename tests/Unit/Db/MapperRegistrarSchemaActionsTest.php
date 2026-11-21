@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -43,7 +44,6 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
@@ -59,6 +59,20 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\MapperWiring
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionBody
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionExecution
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionIdentity
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionOffer
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionPresentation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionRunPolicy
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
  */
 class MapperRegistrarSchemaActionsTest extends TestCase {
 
@@ -105,6 +119,8 @@ class MapperRegistrarSchemaActionsTest extends TestCase {
 			'OCP\IGroupManager' => $groups,
 			ObjectActionValidatorInterface::class => new ObjectActionValidator($macros, $session, $groups),
 		];
+		$dispatcher = new ProcessDeclarationChecksDispatcher(objectActions: $services[ObjectActionValidatorInterface::class]);
+		$services['OCP\EventDispatcher\IEventDispatcher'] = $dispatcher;
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use (&$services) {

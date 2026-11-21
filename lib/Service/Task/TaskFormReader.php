@@ -37,10 +37,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
@@ -59,20 +57,6 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 class TaskFormReader {
-	/**
-	 * Resolves the subject schema.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemas;
-
-	/**
-	 * Reads a transition's declared inputs.
-	 *
-	 * @var TransitionEngine
-	 */
-	private readonly TransitionEngine $engine;
-
 
 	/**
 	 * The Nextcloud app the external kind depends on.
@@ -111,13 +95,11 @@ class TaskFormReader {
 	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
-		TaskFormSources $sources,
+		private readonly TaskFormSources $sources,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,
 		?FormDestinationValidator $validator = null,
 	) {
-		$this->schemas = $sources->schemas;
-		$this->engine  = $sources->engine;
 		$this->validator = ($validator ?? new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()));
 	}//end __construct()
 
@@ -317,7 +299,7 @@ class TaskFormReader {
 			return $form->fields;
 		}
 
-		$declared = $this->engine->declaredInputs(schema: $schema, action: $form->action);
+		$declared = $this->sources->engine->declaredInputs(schema: $schema, action: $form->action);
 		if ($declared === null) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
@@ -369,7 +351,7 @@ class TaskFormReader {
 			// Multitenancy off: a flow's step is authored against a schema by
 			// reference and the performer may sit in another organisation;
 			// what may be WRITTEN is decided on the save path, not here.
-			return $this->schemas->find($reference, _multitenancy: false);
+			return $this->sources->schemas->find($reference, _multitenancy: false);
 		} catch (Throwable) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Schema "%1$s" does not exist.', [$reference])

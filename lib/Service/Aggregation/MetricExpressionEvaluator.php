@@ -186,7 +186,7 @@ class MetricExpressionEvaluator {
 		$op    = $this->takeOperator(first: '+', second: '-');
 
 		while ($op !== null) {
-			$value = $this->combine(op: $op, lhs: $value, rhs: $this->parseTerm());
+			$value = $this->combine(op: $op, lhs: $value);
 			$op    = $this->takeOperator(first: '+', second: '-');
 		}
 
@@ -203,7 +203,7 @@ class MetricExpressionEvaluator {
 		$op    = $this->takeOperator(first: '*', second: '/');
 
 		while ($op !== null) {
-			$value = $this->combine(op: $op, lhs: $value, rhs: $this->parseFactor());
+			$value = $this->combine(op: $op, lhs: $value);
 			$op    = $this->takeOperator(first: '*', second: '/');
 		}
 
@@ -233,37 +233,54 @@ class MetricExpressionEvaluator {
 	}//end takeOperator()
 
 	/**
-	 * Apply one binary operator. A null on either side poisons the result.
+	 * Apply one binary operator to the running value and the operand that follows it.
+	 *
+	 * The right operand is parsed first, so a null left side still consumes its
+	 * tokens. A null on either side poisons the result.
 	 *
 	 * @param string     $op  One of + - * /.
-	 * @param float|null $lhs The left operand.
-	 * @param float|null $rhs The right operand.
+	 * @param float|null $lhs The left operand: the value computed so far.
 	 *
 	 * @return float|null The result, or null when an operand is null or the divisor is zero.
 	 */
-	private function combine(string $op, float|null $lhs, float|null $rhs): float|null {
+	private function combine(string $op, float|null $lhs): float|null {
+		$rhs = $this->rightOperand(op: $op);
 		if ($lhs === null || $rhs === null) {
 			return null;
 		}
 
-		return $this->arithmetic(op: $op, lhs: $lhs, rhs: $rhs);
+		return $this->arithmetic(op: $op, operands: new MetricOperands(lhs: $lhs, rhs: $rhs));
 	}//end combine()
+
+	/**
+	 * Parse the right operand of a binary operator: a term after + or -, a factor after * or /.
+	 *
+	 * @param string $op One of + - * /.
+	 *
+	 * @return float|null The operand, or null when it is undefined.
+	 */
+	private function rightOperand(string $op): ?float {
+		if ($op === '+' || $op === '-') {
+			return $this->parseTerm();
+		}
+
+		return $this->parseFactor();
+	}//end rightOperand()
 
 	/**
 	 * Apply one binary operator to two known operands.
 	 *
-	 * @param string $op  One of + - * /.
-	 * @param float  $lhs The left operand.
-	 * @param float  $rhs The right operand.
+	 * @param string         $op       One of + - * /.
+	 * @param MetricOperands $operands The left and right operand.
 	 *
 	 * @return float|null The result, or null when the divisor is zero.
 	 */
-	private function arithmetic(string $op, float $lhs, float $rhs): ?float {
+	private function arithmetic(string $op, MetricOperands $operands): ?float {
 		return match ($op) {
-			'+' => ($lhs + $rhs),
-			'-' => ($lhs - $rhs),
-			'/' => $this->divide(dividend: $lhs, divisor: $rhs),
-			default => ($lhs * $rhs),
+			'+' => ($operands->lhs + $operands->rhs),
+			'-' => ($operands->lhs - $operands->rhs),
+			'/' => $this->divide(dividend: $operands->lhs, divisor: $operands->rhs),
+			default => ($operands->lhs * $operands->rhs),
 		};
 	}//end arithmetic()
 

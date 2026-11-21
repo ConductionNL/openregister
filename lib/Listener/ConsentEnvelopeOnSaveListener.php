@@ -110,12 +110,12 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
-			$this->evaluate(event: $event, newObject: $event->getObject(), oldObject: null);
+			$this->evaluate(event: $event, newObject: $event->getObject());
 			return;
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$this->evaluate(event: $event, newObject: $event->getNewObject(), oldObject: $event->getOldObject());
+			$this->evaluate(event: $event, newObject: $event->getNewObject());
 		}
 	}//end handle()
 
@@ -124,13 +124,12 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event (refused via `setErrors()`+`stopPropagation()`).
 	 * @param ObjectEntity $newObject The object as the caller submitted it.
-	 * @param ObjectEntity|null $oldObject The previously persisted object, or null on create.
 	 *
 	 * @return void
 	 */
-	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): void {
+	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject): void {
 		try {
-			$context = $this->contextOf(event: $event, newObject: $newObject, oldObject: $oldObject);
+			$context = $this->contextOf(event: $event, newObject: $newObject);
 			if ($context === null) {
 				return;
 			}
@@ -177,11 +176,10 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event that can refuse the save.
 	 * @param ObjectEntity $newObject The object as the caller submitted it.
-	 * @param ObjectEntity|null $oldObject The previously persisted object, or null on create.
 	 *
 	 * @return ConsentSaveContext|null
 	 */
-	private function contextOf(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): ?ConsentSaveContext {
+	private function contextOf(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject): ?ConsentSaveContext {
 		$consentProperties = $this->consentPropertiesOf(object: $newObject);
 		$incomingData = $newObject->getObject();
 		if ($consentProperties === [] || is_array($incomingData) === false) {
@@ -192,9 +190,24 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 			event: $event,
 			properties: $consentProperties,
 			incoming: $incomingData,
-			persisted: self::persistedDataOf(oldObject: $oldObject)
+			persisted: self::persistedDataOf(oldObject: self::oldObjectOf(event: $event))
 		);
 	}//end contextOf()
+
+	/**
+	 * The previously persisted object of an update, or null on a create.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 *
+	 * @return ObjectEntity|null The stored object.
+	 */
+	private static function oldObjectOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?ObjectEntity {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getOldObject();
+		}
+
+		return null;
+	}//end oldObjectOf()
 
 	/**
 	 * The consent properties of the object's schema; empty when it names none or no schema.
@@ -239,19 +252,22 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 *     (also null once the event is stopped — the caller checks `isPropagationStopped()`).
 	 */
 	private function applyConsentProperties(ConsentSaveContext $context): ?array {
-		$data = $context->incoming;
+		$run = new ConsentApplyRun();
+		$run->context = $context;
+		$run->data = $context->incoming;
 		foreach (array_keys($context->properties) as $name) {
-			$result = $this->evaluateProperty(context: $context, name: $name, data: $data);
+			$run->property = $name;
+			$result = $this->evaluateProperty(run: $run);
 			if ($context->event->isPropagationStopped() === true) {
 				return null;
 			}
 
-			if ($result !== ($data[$name] ?? [])) {
-				$data[$name] = $result;
+			if ($result !== ($run->data[$name] ?? [])) {
+				$run->data[$name] = $result;
 			}
 		}
 
-		return self::changedPayload(before: $context->incoming, after: $data);
+		return self::changedPayload(before: $context->incoming, after: $run->data);
 	}//end applyConsentProperties()
 
 	/**
@@ -319,14 +335,16 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 * (acting identity, IP, user agent) and delegates the pure append-only
 	 * check + evidence fill to {@see ConsentEnvelopeEvaluatorInterface}.
 	 *
-	 * @param ConsentSaveContext $context The save: its event, the property's declaration and its persisted value.
-	 * @param string $name The property name (for error messages).
-	 * @param array<string, mixed> $data The incoming object payload so far (for the value and `subjectProperty` resolution).
+	 * @param ConsentApplyRun $run The save, the property being evaluated and the incoming payload so far
+	 *                             (for the value and `subjectProperty` resolution).
 	 *
 	 * @return array<int, array<string, mixed>> The array to persist (unchanged from the caller's array
 	 *     when the event was stopped — the caller must check `isPropagationStopped()`).
 	 */
-	private function evaluateProperty(ConsentSaveContext $context, string $name, array $data): array {
+	private function evaluateProperty(ConsentApplyRun $run): array {
+		$context = $run->context;
+		$name = $run->property;
+		$data = $run->data;
 		$result = $this->evaluator->evaluate(
 			write: new ConsentPropertyWrite(
 				name: $name,
@@ -342,7 +360,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 		);
 
 		if ($result['refused'] === true) {
-			$this->refuse(event: $context->event, name: $name, message: (string)$result['message']);
+			$this->refuse(run: $run, message: (string)$result['message']);
 		}
 
 		return $result['value'];
@@ -380,17 +398,17 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	/**
 	 * Refuse the current write with a structured error.
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event to stop.
-	 * @param string $name The offending property.
+	 * @param ConsentApplyRun $run The save whose event to stop, on its offending property.
 	 * @param string $message The reason.
 	 *
 	 * @return void
 	 */
-	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, string $name, string $message): void {
+	private function refuse(ConsentApplyRun $run, string $message): void {
+		$event = $run->context->event;
 		$event->setErrors([
 			'code' => self::ERROR_CODE,
 			'message' => $message,
-			'property' => $name,
+			'property' => $run->property,
 		]);
 		$event->stopPropagation();
 	}//end refuse()

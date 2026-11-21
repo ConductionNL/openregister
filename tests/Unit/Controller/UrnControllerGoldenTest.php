@@ -43,7 +43,7 @@ class UrnControllerGoldenTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->urnService = $this->createMock(UrnService::class);
-		$this->controller = new UrnController('openregister', $this->createMock(IRequest::class), $this->urnService);
+		$this->controller = new UrnController($this->createMock(IRequest::class), $this->urnService);
 	}
 
 	public function testResolveMissingUrn(): void {

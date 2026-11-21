@@ -216,17 +216,29 @@ class ApiVersion implements ApiVersionInterface, JsonSerializable {
 
 		return new self(
 			id: self::stringOrEmpty(value: ($declaration['id'] ?? null)),
-			lifecycle: new ApiVersionLifecycle(
-				status: self::stringOrEmpty(value: ($declaration['status'] ?? null)),
-				deprecatedOn: self::nullableString(value: ($declaration['deprecatedOn'] ?? null)),
-				sunset: self::nullableString(value: ($declaration['sunset'] ?? null)),
-				successor: self::nullableString(value: ($declaration['successor'] ?? null)),
-			),
+			lifecycle: self::lifecycleOf(declaration: $declaration),
 			pathPrefixes: array_values($prefixes),
 			description: self::stringOrEmpty(value: ($declaration['description'] ?? null)),
 		);
 
 	}//end fromArray()
+
+	/**
+	 * The lifecycle a declaration states: its status, deprecation and sunset dates, and successor.
+	 *
+	 * @param array<string, mixed> $declaration One version declaration.
+	 *
+	 * @return ApiVersionLifecycle The lifecycle.
+	 */
+	private static function lifecycleOf(array $declaration): ApiVersionLifecycle {
+		return new ApiVersionLifecycle(
+			status: self::stringOrEmpty(value: ($declaration['status'] ?? null)),
+			deprecatedOn: self::nullableString(value: ($declaration['deprecatedOn'] ?? null)),
+			sunset: self::nullableString(value: ($declaration['sunset'] ?? null)),
+			successor: self::nullableString(value: ($declaration['successor'] ?? null)),
+		);
+
+	}//end lifecycleOf()
 
 	/**
 	 * The version identifier a consumer names.
@@ -369,21 +381,26 @@ class ApiVersion implements ApiVersionInterface, JsonSerializable {
 			$published['description'] = $this->description;
 		}
 
-		if ($this->deprecatedOn !== null) {
-			$published['deprecatedOn'] = $this->deprecatedOn;
-		}
-
-		if ($this->sunset !== null) {
-			$published['sunset'] = $this->sunset;
-		}
-
-		if ($this->successor !== null) {
-			$published['successor'] = $this->successor;
-		}
-
-		return $published;
+		return $published + $this->publishedLifecycle();
 
 	}//end jsonSerialize()
+
+	/**
+	 * The lifecycle dates and successor the version carries, in published order.
+	 *
+	 * @return array<string, string> deprecatedOn, sunset and successor, each only when set.
+	 */
+	private function publishedLifecycle(): array {
+		return array_filter(
+			[
+				'deprecatedOn' => $this->deprecatedOn,
+				'sunset' => $this->sunset,
+				'successor' => $this->successor,
+			],
+			static fn (?string $value): bool => $value !== null
+		);
+
+	}//end publishedLifecycle()
 
 	/**
 	 * Refuse a declaration whose status is missing the part that makes it usable.
@@ -512,16 +529,10 @@ class ApiVersion implements ApiVersionInterface, JsonSerializable {
 	private static function normalisePrefixes(array $values): array {
 		$normalised = [];
 		foreach ($values as $value) {
-			if (is_string($value) === false) {
-				continue;
+			$prefix = self::normalisedPrefix(value: $value);
+			if ($prefix !== null) {
+				$normalised[] = $prefix;
 			}
-
-			$trimmed = trim($value);
-			if ($trimmed === '') {
-				continue;
-			}
-
-			$normalised[] = ('/' . trim($trimmed, '/'));
 		}
 
 		if ($normalised === []) {
@@ -531,6 +542,27 @@ class ApiVersion implements ApiVersionInterface, JsonSerializable {
 		return array_values(array_unique($normalised));
 
 	}//end normalisePrefixes()
+
+	/**
+	 * One declared path prefix with a single leading slash and no trailing one; null for a non-string or blank.
+	 *
+	 * @param mixed $value The declared prefix.
+	 *
+	 * @return string|null The prefix.
+	 */
+	private static function normalisedPrefix(mixed $value): ?string {
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		$trimmed = trim($value);
+		if ($trimmed === '') {
+			return null;
+		}
+
+		return ('/' . trim($trimmed, '/'));
+
+	}//end normalisedPrefix()
 
 	/**
 	 * Coerce a declaration value to a string.

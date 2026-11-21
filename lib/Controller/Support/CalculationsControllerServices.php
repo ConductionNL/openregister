@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 
@@ -36,18 +36,18 @@ final class CalculationsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OperatorCatalogueInterface                $catalogue      The published operator catalogue.
-	 * @param CalculationTrialServiceInterface $trials         Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapperInterface          $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapperInterface            $schemaMapper   Schema lookup, scoped to the caller.
+	 * @param OperatorCatalogueInterface       $catalogue     The published operator catalogue.
+	 * @param CalculationTrialServiceInterface $trials        Dry-run evaluation of an unsaved declaration.
+	 * @param SchemaCatalogInterface           $schemaCatalog Register and schema lookups, scoped to the caller.
+	 * @param MagicTableRowReaderInterface     $objectMapper  Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
 		public readonly OperatorCatalogueInterface $catalogue,
 		public readonly CalculationTrialServiceInterface $trials,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		public readonly SchemaCatalogInterface $schemaCatalog,
+		public readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 	}//end __construct()
 }//end class

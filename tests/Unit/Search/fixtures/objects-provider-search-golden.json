@@ -30,6 +30,150 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 6,
@@ -132,6 +276,102 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 4,
@@ -219,6 +459,102 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 4,
@@ -298,6 +634,102 @@
                 },
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [
@@ -528,6 +960,102 @@
                 },
                 "_limit": 5,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 102
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 102
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 51
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 51
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 52
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 52
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
             }
         ],
         [
@@ -820,6 +1348,126 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 101
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 101
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 102
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 102
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 101
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 101
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 5,
@@ -908,6 +1556,102 @@
                 },
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [
@@ -1016,6 +1760,54 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 5
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 5
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 5
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 5
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 2,
@@ -1079,6 +1871,54 @@
                 "_content_search": true,
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 3
             }
         ],
         [
@@ -1172,6 +2012,54 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 2,
@@ -1238,6 +2126,38 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 2,
@@ -1299,6 +2219,102 @@
                 },
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [
@@ -1382,6 +2398,102 @@
                 },
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 3
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 3
             }
         ],
         [
@@ -1480,6 +2592,54 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 2,
@@ -1541,6 +2701,102 @@
                 },
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [
@@ -1653,6 +2909,102 @@
                 "_content_search": true,
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [
@@ -1815,6 +3167,102 @@
         [
             "log",
             "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
             "[ObjectsProvider] OpenRegister search completed",
             {
                 "results_count": 4,
@@ -1903,6 +3351,102 @@
                 "_content_search": true,
                 "_limit": 25,
                 "_offset": 0
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema icon not resolved",
+            {
+                "schemaId": 2
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Register name not resolved",
+            {
+                "registerId": 1
+            }
+        ],
+        [
+            "log",
+            "debug",
+            "[ObjectPreviewFormatter] Schema name not resolved",
+            {
+                "schemaId": 2
             }
         ],
         [

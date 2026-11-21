@@ -43,7 +43,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -71,31 +71,23 @@ class FlowExpression {
 	 * `subject` is always present and empty here; a caller whose expressions
 	 * read the object a run is about (a case sentry) fills it in.
 	 *
-	 * @param array $item The current item.
-	 * @param integer $itemIndex Its position in the list.
-	 * @param integer $itemCount How many items the step received.
-	 * @param array $context Run-level metadata.
+	 * @param array                     $item    The current item.
+	 * @param FlowExpressionDataOptions $options Its position, the list size and the run-level metadata.
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
-	public static function dataFor(
-		array $item,
-		int $itemIndex = 0,
-		int $itemCount = 1,
-		array $context = [],
-	): array {
+	public static function documentFor(array $item, FlowExpressionDataOptions $options): array {
 		return [
 			'json' => (array)($item[FlowItems::JSON] ?? []),
 			'binary' => (array)($item[FlowItems::BINARY] ?? []),
-			'itemIndex' => $itemIndex,
-			'itemCount' => $itemCount,
-			'context' => $context,
+			'itemIndex' => $options->itemIndex,
+			'itemCount' => $options->itemCount,
+			'context' => $options->context,
 			'subject' => [],
 		];
-
-	}//end dataFor()
+	}//end documentFor()
 
 	/**
 	 * Evaluate an expression.
@@ -110,7 +102,7 @@ class FlowExpression {
 	 *
 	 * @return mixed The result, or null when it could not be evaluated.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function evaluate(mixed $logic, array $data) {
 		self::registerOperators();
@@ -135,7 +127,7 @@ class FlowExpression {
 	 *
 	 * @return boolean Whether the condition holds.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function isTrue(mixed $logic, array $data): bool {
 		$result = self::evaluate(logic: $logic, data: $data);
@@ -161,7 +153,7 @@ class FlowExpression {
 	 *
 	 * @return boolean True when it evaluates against an empty document.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public static function isValid(mixed $logic): bool {
 		self::registerOperators();
@@ -173,7 +165,7 @@ class FlowExpression {
 		}
 
 		try {
-			JsonLogic::apply($logic, self::dataFor(item: []));
+			JsonLogic::apply($logic, self::documentFor(item: [], options: new FlowExpressionDataOptions()));
 			return true;
 		} catch (Throwable $e) {
 			return false;
@@ -188,7 +180,7 @@ class FlowExpression {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private static function registerOperators(): void {
 		if (self::$operatorsRegistered === true) {

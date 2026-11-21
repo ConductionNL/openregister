@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -25,28 +25,43 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * What a schema-scoped provider needs to resolve its register and schema slugs.
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 final class SchemaScopeLookups {
 	/**
+	 * Register mapper for slug-to-id resolution.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the lookups.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution.
-	 * @param SchemaMapperInterface   $schemaMapper   Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag.
-	 * @param LoggerInterface         $logger         Logger.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
+	 * @param LoggerInterface        $logger  Logger.
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly LoggerInterface $logger,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 	}//end __construct()
 }//end class

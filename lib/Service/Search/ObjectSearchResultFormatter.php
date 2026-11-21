@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -31,8 +31,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterSchemaLabelsInterface;
+use OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration;
 use OCP\IURLGenerator;
 use OCP\Search\SearchResultEntry;
 
@@ -51,45 +52,24 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	private const EXCERPT_CONTEXT = 60;
 
 	/**
-	 * The URL generator service
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * Deep link registry for resolving URLs to consuming apps
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Shared preview-formatting service (schema icon/name resolution).
-	 *
-	 * @var ObjectPreviewFormatter
-	 */
-	private readonly ObjectPreviewFormatter $formatter;
-
-	/**
 	 * Constructor for ObjectSearchResultFormatter.
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
-	 * @param ObjectPreviewFormatter $formatter Shared schema icon/name resolution service
+	 * @param AppDeepLinksInterface $deepLinkRegistry Deep link registry for URL, icon and app label resolution
+	 * @param RegisterSchemaLabelsInterface $formatter Register and schema names and the schema icon
+	 * @param SearchResultDeclarations|null $declarations What each schema declares a result shows;
+	 *     absent keeps the derived title and subline for every schema
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	public function __construct(
-		IURLGenerator $urlGenerator,
-		DeepLinkRegistryService $deepLinkRegistry,
-		ObjectPreviewFormatter $formatter,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly AppDeepLinksInterface $deepLinkRegistry,
+		private readonly RegisterSchemaLabelsInterface $formatter,
+		private readonly ?SearchResultDeclarations $declarations = null,
 	) {
-		$this->urlGenerator = $urlGenerator;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->formatter = $formatter;
 	}//end __construct()
 
 	/**
@@ -104,46 +84,84 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function format(array|ObjectEntity $result, ?string $term): SearchResultEntry {
-		if ($result instanceof ObjectEntity) {
-			$result = $result->jsonSerialize();
-		}
-
-		$hit = new ObjectSearchHit(object: $result);
+		$hit = self::hitOf(result: $result);
 
 		$objectUrl = $this->resolveObjectUrl(hit: $hit);
 
-		// Resolve the per-app label for this (register, schema) pair.
-		$hit = $hit->withAppLabel(
-			$this->deepLinkRegistry->resolveDisplayName(
-				registerId: $hit->registerId(),
-				schemaId: $hit->schemaId()
-			)
-		);
+		$hit = $this->labelled(hit: $hit);
 
 		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(hit: $hit);
 
-		// Create descriptive title and subline.
-		$name = $hit->selfData()['name'] ?? '';
-		$uuid = $hit->uuid();
-
-		$title = 'Unknown Object';
-		if (isset($result['title']) === true && is_string($result['title']) === true) {
-			$title = $result['title'];
-		} elseif (is_string($name) === true && $name !== '') {
-			$title = $name;
-		} elseif ($uuid !== '') {
-			$title = $uuid;
-		}
+		$declared = $this->declarations?->forSchema(schemaId: $hit->schemaId());
+		$card = $this->declarations?->cardFor(schemaId: $hit->schemaId());
 
 		return new SearchResultEntry(
 			$thumbnailUrl,
-			$title,
-			$this->buildSubline(hit: $hit, term: $term),
+			($declared?->title(object: $hit->object()) ?? $card?->title(objectData: $hit->object()) ?? self::titleOf(hit: $hit)),
+			$this->buildSubline(hit: $hit, term: $term, declared: $declared, card: $card),
 			$objectUrl,
 			$icon,
 			$rounded
 		);
 	}//end format()
+
+	/**
+	 * The search hit for one result, normalising an entity to its rendered data.
+	 *
+	 * @param array|ObjectEntity $result The rendered object data, or the entity itself.
+	 *
+	 * @return ObjectSearchHit The hit.
+	 */
+	private static function hitOf(array|ObjectEntity $result): ObjectSearchHit {
+		if ($result instanceof ObjectEntity) {
+			$result = $result->jsonSerialize();
+		}
+
+		return new ObjectSearchHit(object: $result);
+	}//end hitOf()
+
+	/**
+	 * The hit with the per-app label of its (register, schema) pair.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return ObjectSearchHit The labelled hit.
+	 */
+	private function labelled(ObjectSearchHit $hit): ObjectSearchHit {
+		return $hit->withAppLabel(
+			$this->deepLinkRegistry->resolveDisplayName(
+				registerId: $hit->registerId(),
+				schemaId: $hit->schemaId()
+			)
+		);
+	}//end labelled()
+
+	/**
+	 * The hit's title: its string `title`, else its non-empty `@self` name, else its uuid.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return string The title, "Unknown Object" when the hit carries none of them.
+	 */
+	private static function titleOf(ObjectSearchHit $hit): string {
+		$result = $hit->object();
+		$name = $hit->selfData()['name'] ?? '';
+		$uuid = $hit->uuid();
+
+		if (isset($result['title']) === true && is_string($result['title']) === true) {
+			return $result['title'];
+		}
+
+		if (is_string($name) === true && $name !== '') {
+			return $name;
+		}
+
+		if ($uuid !== '') {
+			return $uuid;
+		}
+
+		return 'Unknown Object';
+	}//end titleOf()
 
 	/**
 	 * The hit's link: the owning app's deep link when one is registered and
@@ -153,7 +171,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return string The link.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function resolveObjectUrl(ObjectSearchHit $hit): string {
 		// The object's own scalar properties come first, so a template can
@@ -198,7 +216,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @return array<string,string> Property name to encoded value.
 	 *
-	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	private function ownLinkProperties(array $object): array {
 		$properties = [];
@@ -261,31 +279,29 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 *
 	 * @param ObjectSearchHit $hit  The search hit.
 	 * @param string|null     $term The search term, or null for filter-only.
+	 * @param SearchResultDeclaration|null  $declared What the hit's schema declares, or null.
+	 * @param ReferenceCardDeclaration|null $card     The reference card the hit's schema declares, or null.
 	 *
 	 * @return string The composed subline.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
 	 */
-	private function buildSubline(ObjectSearchHit $hit, ?string $term): string {
-		$appLabel = $hit->appLabel();
-		$registerId = $hit->registerId();
-		$schemaId = $hit->schemaId();
+	private function buildSubline(
+		ObjectSearchHit $hit,
+		?string $term,
+		?SearchResultDeclaration $declared = null,
+		?ReferenceCardDeclaration $card = null
+	): string {
+		$subline = implode(' · ', $this->sublineParts(hit: $hit));
 
-		$owner = 'Open Register';
-		if ($appLabel !== null && $appLabel !== '') {
-			$owner = $appLabel;
+		// A declared subline takes the excerpt's place; the owner, register
+		// and schema in front of it stay, so the result still says whose it is.
+		// The search result's own declaration wins over the card's summary.
+		$declaredSubline = ($declared?->subline(object: $hit->object()) ?? self::cardSummary(card: $card, object: $hit->object()));
+		if ($declaredSubline !== null) {
+			return $subline . ' — ' . $declaredSubline;
 		}
-
-		$parts = [$owner];
-		if ($registerId > 0) {
-			$parts[] = $this->formatter->resolveRegisterName(registerId: $registerId);
-		}
-
-		if ($schemaId > 0) {
-			$parts[] = $this->formatter->resolveSchemaName(schemaId: $schemaId);
-		}
-
-		$subline = implode(' · ', $parts);
 
 		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
 		if ($excerpt !== '') {
@@ -294,6 +310,63 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		return $subline;
 	}//end buildSubline()
+
+	/**
+	 * The card's summary as one line, `Label: value · Label: value`, or null when it shows none.
+	 *
+	 * The same rows the card of a pasted link shows, so the picker and the
+	 * card describe an object the same way.
+	 *
+	 * @param ReferenceCardDeclaration|null $card   The card, or null.
+	 * @param array<string, mixed>          $object The rendered object.
+	 *
+	 * @return string|null The summary.
+	 *
+	 * @spec openspec/changes/platform-reference-provider/specs/schema-scoped-reference-providers/spec.md#requirement-a-schema-declares-what-its-reference-card-shows-req-prp-002
+	 */
+	private static function cardSummary(?ReferenceCardDeclaration $card, array $object): ?string {
+		$rows = ($card?->summaryRows(objectData: $object) ?? []);
+		if ($rows === []) {
+			return null;
+		}
+
+		return implode(' · ', array_map(static fn (array $row): string => $row['label'] . ': ' . $row['value'], $rows));
+	}//end cardSummary()
+
+	/**
+	 * The owner, register and schema names a hit's subline names.
+	 *
+	 * @param ObjectSearchHit $hit The hit.
+	 *
+	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known.
+	 */
+	private function sublineParts(ObjectSearchHit $hit): array {
+		$parts = [self::ownerOf(appLabel: $hit->appLabel())];
+		if ($hit->registerId() > 0) {
+			$parts[] = $this->formatter->resolveRegisterName(registerId: $hit->registerId());
+		}
+
+		if ($hit->schemaId() > 0) {
+			$parts[] = $this->formatter->resolveSchemaName(schemaId: $hit->schemaId());
+		}
+
+		return $parts;
+	}//end sublineParts()
+
+	/**
+	 * The owner a subline names: the hit's app, or Open Register.
+	 *
+	 * @param string|null $appLabel The app label the hit carries.
+	 *
+	 * @return string The owner.
+	 */
+	private static function ownerOf(?string $appLabel): string {
+		if ($appLabel !== null && $appLabel !== '') {
+			return $appLabel;
+		}
+
+		return 'Open Register';
+	}//end ownerOf()
 
 	/**
 	 * Build an excerpt around the first occurrence of the term.
@@ -319,31 +392,55 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 */
 	private function buildExcerpt(array $object, string $term): string {
 		if ($term !== '') {
-			foreach ($object as $key => $value) {
-				// Only the object's OWN properties are excerpt material.
-				// `@self` is metadata, and an `_`-prefixed key is reserved:
-				// it is something the pipeline attached, not something the
-				// schema declares and field-level security rendered. Now that
-				// file text is in scope, that distinction is load-bearing. A
-				// chunk carries the text of a whole FILE, which can hold
-				// values the reader is redacted out of on the object, so an
-				// excerpt drawn from an attached key would leak past a
-				// redaction that the object itself still honours.
-				if ($key === '@self' || str_starts_with((string)$key, '_') === true) {
-					continue;
-				}
-
-				if (is_string($value) === false) {
-					continue;
-				}
-
-				$excerpt = $this->excerptAround(value: $value, term: $term);
-				if ($excerpt !== null) {
-					return $excerpt;
-				}
+			$excerpt = $this->termExcerpt(object: $object, term: $term);
+			if ($excerpt !== null) {
+				return $excerpt;
 			}
 		}
 
+		return self::fallbackExcerpt(object: $object);
+	}//end buildExcerpt()
+
+	/**
+	 * The excerpt around the term in the first of the object's own string values that holds it.
+	 *
+	 * @param array  $object The rendered object data.
+	 * @param string $term   The (non-empty) search term.
+	 *
+	 * @return string|null The excerpt, or null when no own string value holds the term.
+	 */
+	private function termExcerpt(array $object, string $term): ?string {
+		foreach ($object as $key => $value) {
+			// Only the object's OWN properties are excerpt material.
+			// `@self` is metadata, and an `_`-prefixed key is reserved:
+			// it is something the pipeline attached, not something the
+			// schema declares and field-level security rendered. Now that
+			// file text is in scope, that distinction is load-bearing. A
+			// chunk carries the text of a whole FILE, which can hold
+			// values the reader is redacted out of on the object, so an
+			// excerpt drawn from an attached key would leak past a
+			// redaction that the object itself still honours.
+			if ($key === '@self' || str_starts_with((string)$key, '_') === true || is_string($value) === false) {
+				continue;
+			}
+
+			$excerpt = $this->excerptAround(value: $value, term: $term);
+			if ($excerpt !== null) {
+				return $excerpt;
+			}
+		}
+
+		return null;
+	}//end termExcerpt()
+
+	/**
+	 * The excerpt without a term match: the summary, else the description truncated to 100 characters, else ''.
+	 *
+	 * @param array $object The rendered object data.
+	 *
+	 * @return string The excerpt, or an empty string.
+	 */
+	private static function fallbackExcerpt(array $object): string {
 		// Fallback chain: summary → truncated description → empty.
 		if (isset($object['summary']) === true && is_string($object['summary']) === true && $object['summary'] !== '') {
 			return $object['summary'];
@@ -359,7 +456,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 		}
 
 		return '';
-	}//end buildExcerpt()
+	}//end fallbackExcerpt()
 
 	/**
 	 * Cut a ±context window around the first case-insensitive match of the

@@ -20,13 +20,19 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
+use OCA\OpenRegister\Service\Dbal\QueryPreviewException;
+use OCA\OpenRegister\Service\Dbal\QueryPreviewService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -64,7 +70,7 @@ class SourcesController extends Controller {
 	/**
 	 * The source mapper
 	 *
-	 * @var SourceMapperInterface
+	 * @var SourceMapperInterface<Source>
 	 */
 	private readonly SourceMapperInterface $sourceMapper;
 
@@ -92,18 +98,16 @@ class SourcesController extends Controller {
 	/**
 	 * Constructor for the SourcesController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SourcesControllerServices $services The sources controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SourcesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->sourceMapper = $services->mappers->sourceMapper;
 		$this->l10n = $services->platform->l10n;
@@ -174,11 +178,12 @@ class SourcesController extends Controller {
 		// Return all sources that match the filters.
 		// Strip databaseUrl from non-admin responses to prevent credential exposure.
 		$limit = $this->getIntParam(params: $params, key: '_limit');
-		$sources = $this->sourceMapper->findAll(
-			limit: $limit,
+		$query = new ListQuery(
+			limit: ($limit ?? ListQuery::UNBOUNDED),
 			offset: $this->pageOffset(params: $params, limit: $limit),
 			filters: $filters
 		);
+		$sources = $this->sourceMapper->findList(query: $query);
 		return new JSONResponse(
 			data: ['results' => array_map(fn (Source $src) => $this->serializeSource(source: $src), $sources)]
 		);
@@ -235,8 +240,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -262,8 +265,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -288,8 +289,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, Source, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -310,8 +309,6 @@ class SourcesController extends Controller {
 	 * @throws Exception If there is an error deleting the source
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
 	 *
@@ -343,8 +340,6 @@ class SourcesController extends Controller {
 	 * @return JSONResponse The sync execution summary
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
@@ -380,7 +375,7 @@ class SourcesController extends Controller {
 		$executionId = (string)Uuid::v4();
 
 		try {
-			$summary = $this->services->domain->pipeline->run(source: $source, fetcher: $fetcher, executionId: $executionId, since: null);
+			$summary = $this->services->domain->pipeline->run(new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId));
 			$this->recordSync(source: $source, status: (string)($summary['status'] ?? 'success'));
 			return new JSONResponse(data: $summary);
 		} catch (Throwable $e) {
@@ -471,8 +466,6 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
 	 *   which applies the active-organisation filter and 404s on a foreign
@@ -514,6 +507,58 @@ class SourcesController extends Controller {
 	}//end probe()
 
 	/**
+	 * Preview a query for a query-backed schema on a `type: database` source.
+	 *
+	 * Runs the statement guard, then reads at most 50 rows of the query as a
+	 * derived table inside a read-only transaction with a statement timeout.
+	 * Answers `{columns: [{name, type}], rows}`; a refused statement is a 400
+	 * naming the rule, and a database error a 502 with a fixed sentence and
+	 * the error class only, never the database's message.
+	 *
+	 * @param int $id The database source id.
+	 *
+	 * @return JSONResponse The preview, or 400/403/404/422/502/503.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
+	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
+	 *   which applies the active-organisation filter and 404s on a foreign
+	 *   tenant's id. The response never contains the credential value.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function queryPreview(int $id): JSONResponse {
+		$source = $this->databaseSource(id: $id);
+		if ($source instanceof JSONResponse) {
+			return $source;
+		}
+
+		$query = $this->request->getParam('query', '');
+		if (is_string($query) === false) {
+			$query = '';
+		}
+
+		$preview = ($this->services->domain->queryPreview ?? new QueryPreviewService(connectionFactory: $this->services->domain->connectionFactory));
+		try {
+			return new JSONResponse(data: $preview->preview(source: $source, query: $query));
+		} catch (InvalidArgumentException $exception) {
+			return $this->fail(message: $exception->getMessage(), status: 400);
+		} catch (DbalConnectionException $exception) {
+			return $this->fail(message: $this->l10n->t('Could not connect to the database source'), status: 503);
+		} catch (QueryPreviewException $exception) {
+			$this->session->logger->warning(
+				'[SourcesController] query preview refused by the database: ' . $exception->errorClass,
+				['exception' => $exception->getPrevious()]
+			);
+			return new JSONResponse(
+				data: ['error' => $this->l10n->t('The database refused the query.'), 'errorClass' => $exception->errorClass],
+				statusCode: 502
+			);
+		}//end try
+	}//end queryPreview()
+
+	/**
 	 * Introspect a `type: database` source into a virtual register + schemas.
 	 *
 	 * Idempotent: re-running updates the existing register/schemas in place.
@@ -524,8 +569,6 @@ class SourcesController extends Controller {
 	 * @return JSONResponse The introspection summary, or a 502/503 error.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
 	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),

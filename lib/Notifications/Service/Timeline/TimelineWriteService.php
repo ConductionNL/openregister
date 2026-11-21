@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
@@ -56,27 +57,6 @@ class TimelineWriteService {
 	use OptionalPayloadString;
 
 	/**
-	 * Records what the text points at.
-	 *
-	 * @var ReferenceService
-	 */
-	private readonly ReferenceService $references;
-
-	/**
-	 * Notifies and subscribes whoever was named.
-	 *
-	 * @var EntryMentionService
-	 */
-	private readonly EntryMentionService $mentions;
-
-	/**
-	 * Inserts administered canned text.
-	 *
-	 * @var TextBlockService
-	 */
-	private readonly TextBlockService $blocks;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param NoteServiceInterface     $notes   Writes the comment that carries the text.
@@ -89,12 +69,9 @@ class TimelineWriteService {
 	public function __construct(
 		private readonly NoteServiceInterface $notes,
 		private readonly TimelineEntryService $entries,
-		TimelineEntryDerivations $derived,
+		private readonly TimelineEntryDerivations $derived,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->references = $derived->references;
-		$this->mentions = $derived->mentions;
-		$this->blocks = $derived->blocks;
 	}//end __construct()
 
 	/**
@@ -113,9 +90,11 @@ class TimelineWriteService {
 		$message = $this->resolveMessage(object: $object, data: $data);
 
 		$note = $this->notes->createNote(
-			objectUuid: (string)$object->getUuid(),
-			message: $message,
-			visibility: $this->stringOrNull(data: $data, key: 'visibility')
+			draft: new NoteDraft(
+				objectUuid: (string)$object->getUuid(),
+				message: $message,
+				visibility: $this->stringOrNull(data: $data, key: 'visibility')
+			)
 		);
 
 		$noteParts = ['message' => $message, 'commentId' => ($note['id'] ?? null)];
@@ -239,7 +218,7 @@ class TimelineWriteService {
 	public function forgetNote(int $commentId, ?string $entryUuid = null): void {
 		if ($entryUuid !== null) {
 			try {
-				$this->references->forget(entryUuid: $entryUuid);
+				$this->derived->references->forget(entryUuid: $entryUuid);
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					'[TimelineWriteService] References of entry '.$entryUuid.' could not be removed',
@@ -274,7 +253,7 @@ class TimelineWriteService {
 	 */
 	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
-			$this->mentions->apply(
+			$this->derived->mentions->apply(
 				written: $written,
 				register: $this->stringOrNull(data: $data, key: 'register'),
 				schema: $this->stringOrNull(data: $data, key: 'schema')
@@ -293,7 +272,7 @@ class TimelineWriteService {
 	 */
 	private function recordReferences(WrittenEntry $written): void {
 		try {
-			$this->references->record(source: $written->referenceSource());
+			$this->derived->references->record(source: $written->referenceSource());
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[TimelineWriteService] References of entry '.$written->uuid().' could not be recorded',
@@ -328,7 +307,7 @@ class TimelineWriteService {
 			throw new TimelineValidationException(['message' => 'An entry needs a message or a text block']);
 		}
 
-		return $this->blocks->insert(slug: $slug, variables: $this->blockVariables(object: $object, data: $data));
+		return $this->derived->blocks->insert(slug: $slug, variables: $this->blockVariables(object: $object, data: $data));
 	}//end resolveMessage()
 
 	/**

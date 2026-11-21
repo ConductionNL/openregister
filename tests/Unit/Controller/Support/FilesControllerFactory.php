@@ -18,7 +18,6 @@ final class FilesControllerFactory {
 	/**
 	 * The constructor arguments of FilesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param FileService $fileService Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
@@ -38,7 +37,6 @@ final class FilesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\FileService $fileService,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
@@ -56,7 +54,6 @@ final class FilesControllerFactory {
 		?\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard $fileRestrictions = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Files\Controller\Support\FilesControllerServices(
 				store: new \OCA\OpenRegister\Files\Controller\Support\FileStore(

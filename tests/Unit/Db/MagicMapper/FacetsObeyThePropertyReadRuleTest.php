@@ -52,6 +52,10 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class FacetsObeyThePropertyReadRuleTest extends TestCase {
 
@@ -77,10 +81,7 @@ class FacetsObeyThePropertyReadRuleTest extends TestCase {
 			$this->createMock(IDBConnection::class),
 			new NullLogger(),
 			null,
-			null,
-			null,
-			$container,
-			null
+			$container
 		);
 	}//end handlerWhereReadIs()
 

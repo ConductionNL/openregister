@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -28,6 +29,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Vocabulary\ConceptRepository
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 final class ConceptRepositorySchemeGoldenTest extends TestCase {
 
@@ -66,7 +71,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 			}
 		);
 
-		return new ConceptRepository($objects, $registers, $schemas);
+		return new ConceptRepository(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $objects);
 	}//end repository()
 
 	/**
@@ -110,7 +115,10 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 		$this->assertNull($repository->scheme('https://x/none'));
 		$this->assertNull($repository->scheme('https://x/none'));
 		$this->assertNull($repository->scheme('https://x/other'));
-		$this->assertCount(2, $this->queries);
+		// A uri miss falls back to the slug (property-code-list-from-concept-scheme 4.4);
+		// neither reference is uuid-shaped, so no uuid read follows. The repeat is cached.
+		$this->assertCount(4, $this->queries);
+		$this->assertSame(['@self' => ['slug' => 'https://x/none', 'register' => 7, 'schema' => 8], '_limit' => 1], $this->queries[1]);
 	}//end testAMissAnswersNullAndIsCached()
 
 	/**
@@ -138,7 +146,7 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 		$registers->method('find')->willThrowException(new RuntimeException('missing'));
 		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->expects($this->never())->method('searchObjects');
-		$repository = new ConceptRepository($objects, $registers, $this->createMock(SchemaMapperInterface::class));
+		$repository = new ConceptRepository(new SchemaCatalog($registers, $this->createMock(SchemaMapperInterface::class), $this->createMock(MagicMapperInterface::class)), $objects);
 
 		$this->assertNull($repository->scheme('https://x/s'));
 		$this->assertNull($repository->schemeByReference('u-1'));

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
@@ -39,6 +40,14 @@ use Psr\Log\LoggerInterface;
  * A guard refusal that carries no usable code is logged with a null code; queued moves flush through the deferral service.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralOptions
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
  */
 class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 
@@ -68,12 +77,7 @@ class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 		$this->deferral = $this->createMock(ListenerDeferralService::class);
 
 		return new AutoTransitionRunner(
-			new AutoTransitionDecider(
-				$container,
-				$this->createMock(SchemaMapperInterface::class),
-				$this->createMock(AutoTransitionSelector::class),
-				$logger
-			),
+			new AutoTransitionDecider($container, new SchemaReading($this->createMock(SchemaMapperInterface::class), $logger), $this->createMock(AutoTransitionSelector::class)),
 			$container,
 			new AutoTransitionQueue($this->deferral, $logger),
 			$logger
@@ -111,7 +115,7 @@ class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 				}
 			);
 
-			$result = $this->runner($logger, new HookStoppedException('Denied.', $errors))->fire(self::decision(), [], false);
+			$result = $this->runner($logger, new HookStoppedException('Denied.', $errors))->fire(self::decision(), []);
 
 			$this->assertNull($result);
 			$this->assertSame([null], $codes);

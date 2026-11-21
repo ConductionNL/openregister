@@ -26,9 +26,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
 use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
+use OCA\OpenRegister\Service\Rules\RuleAttachment;
 use OCA\OpenRegister\Service\Rules\TransitionDocument;
 use PHPUnit\Framework\TestCase;
 
@@ -101,7 +103,7 @@ class NamedConditionTest extends TestCase {
 		$before = $this->library->libraryFrom(annotation: $this->spoedLibrary());
 		foreach ($rules as $node) {
 			$this->assertTrue(
-				$this->evaluator->holds(node: $node, document: ['prioriteit' => 'hoog'], library: $before)
+				$this->evaluator->holds(node: $node, evaluation: new ConditionEvaluation(document: ['prioriteit' => 'hoog'], library: $before, depth: 0))
 			);
 		}
 
@@ -112,7 +114,7 @@ class NamedConditionTest extends TestCase {
 
 		foreach ($rules as $name => $node) {
 			$this->assertFalse(
-				$this->evaluator->holds(node: $node, document: ['prioriteit' => 'hoog'], library: $after),
+				$this->evaluator->holds(node: $node, evaluation: new ConditionEvaluation(document: ['prioriteit' => 'hoog'], library: $after, depth: 0)),
 				$name . ' must evaluate with the corrected expression, without being rewritten'
 			);
 		}
@@ -193,11 +195,7 @@ class NamedConditionTest extends TestCase {
 	 */
 	public function testAnUnresolvableReferenceRefusesRatherThanPasses(): void {
 		try {
-			$this->evaluator->holds(
-				node: [NamedConditionLibrary::REF => 'weggevallen'],
-				document: [],
-				library: []
-			);
+			$this->evaluator->holds(node: [NamedConditionLibrary::REF => 'weggevallen'], evaluation: new ConditionEvaluation(document: [], library: [], depth: 0));
 			$this->fail('an unresolvable reference must not produce a verdict');
 		} catch (ConditionRefusedException $e) {
 			$this->assertSame('weggevallen', $e->getConditionName(), 'the run log gets the name');
@@ -214,11 +212,7 @@ class NamedConditionTest extends TestCase {
 	public function testAnUnresolvableReferenceInsideANegationAlsoRefuses(): void {
 		$this->expectException(ConditionRefusedException::class);
 
-		$this->evaluator->holds(
-			node: ['not' => [NamedConditionLibrary::REF => 'weggevallen']],
-			document: [],
-			library: []
-		);
+		$this->evaluator->holds(node: ['not' => [NamedConditionLibrary::REF => 'weggevallen']], evaluation: new ConditionEvaluation(document: [], library: [], depth: 0));
 	}//end testAnUnresolvableReferenceInsideANegationAlsoRefuses()
 
 	/**
@@ -230,19 +224,11 @@ class NamedConditionTest extends TestCase {
 		$library = $this->library->libraryFrom(annotation: $this->spoedLibrary());
 
 		$this->assertTrue(
-			$this->evaluator->holds(
-				node: ['and' => [[NamedConditionLibrary::REF => 'spoedeisend'], ['==' => [['var' => 'status'], 'open']]]],
-				document: ['prioriteit' => 'hoog', 'status' => 'open'],
-				library: $library
-			)
+			$this->evaluator->holds(node: ['and' => [[NamedConditionLibrary::REF => 'spoedeisend'], ['==' => [['var' => 'status'], 'open']]]], evaluation: new ConditionEvaluation(document: ['prioriteit' => 'hoog', 'status' => 'open'], library: $library, depth: 0))
 		);
 
 		$this->assertFalse(
-			$this->evaluator->holds(
-				node: ['and' => [[NamedConditionLibrary::REF => 'spoedeisend'], ['==' => [['var' => 'status'], 'open']]]],
-				document: ['prioriteit' => 'laag', 'status' => 'open'],
-				library: $library
-			),
+			$this->evaluator->holds(node: ['and' => [[NamedConditionLibrary::REF => 'spoedeisend'], ['==' => [['var' => 'status'], 'open']]]], evaluation: new ConditionEvaluation(document: ['prioriteit' => 'laag', 'status' => 'open'], library: $library, depth: 0)),
 			'and the composed clause still decides the verdict'
 		);
 	}//end testAReferenceComposesInsideAndAndOr()
@@ -255,11 +241,7 @@ class NamedConditionTest extends TestCase {
 	public function testAReferenceInsideAnUncomposableShapeRefuses(): void {
 		$this->expectException(ConditionRefusedException::class);
 
-		$this->evaluator->holds(
-			node: ['if' => [[NamedConditionLibrary::REF => 'spoedeisend'], true, false]],
-			document: [],
-			library: $this->library->libraryFrom(annotation: $this->spoedLibrary())
-		);
+		$this->evaluator->holds(node: ['if' => [[NamedConditionLibrary::REF => 'spoedeisend'], true, false]], evaluation: new ConditionEvaluation(document: [], library: $this->library->libraryFrom(annotation: $this->spoedLibrary()), depth: 0));
 	}//end testAReferenceInsideAnUncomposableShapeRefuses()
 
 	/**
@@ -377,15 +359,15 @@ class NamedConditionTest extends TestCase {
 			before: ['status' => 'afgehandeld']
 		);
 
-		$this->assertTrue($this->evaluator->holds(node: $movedIn, document: $firstSave, library: []));
+		$this->assertTrue($this->evaluator->holds(node: $movedIn, evaluation: new ConditionEvaluation(document: $firstSave, library: [], depth: 0)));
 		$this->assertFalse(
-			$this->evaluator->holds(node: $movedIn, document: $secondSave, library: []),
+			$this->evaluator->holds(node: $movedIn, evaluation: new ConditionEvaluation(document: $secondSave, library: [], depth: 0)),
 			'"moved into" must fire on the first save only'
 		);
 
-		$this->assertTrue($this->evaluator->holds(node: $isIn, document: $firstSave, library: []));
+		$this->assertTrue($this->evaluator->holds(node: $isIn, evaluation: new ConditionEvaluation(document: $firstSave, library: [], depth: 0)));
 		$this->assertTrue(
-			$this->evaluator->holds(node: $isIn, document: $secondSave, library: []),
+			$this->evaluator->holds(node: $isIn, evaluation: new ConditionEvaluation(document: $secondSave, library: [], depth: 0)),
 			'and "is in" must fire on both, or the two are still the same condition'
 		);
 	}//end testEnteringAStatusIsDistinguishableFromBeingInIt()
@@ -397,10 +379,8 @@ class NamedConditionTest extends TestCase {
 	 */
 	public function testARuleReadingThePriorValueWithoutDeclaringItIsRefused(): void {
 		$refusal = $this->transition->refusalFor(
-			ruleName: 'escalatie',
-			node: ['!=' => [['var' => '$before.status'], 'open']],
-			rule: [],
-			trigger: 'update'
+			attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [], trigger: 'update'),
+			node: ['!=' => [['var' => '$before.status'], 'open']]
 		);
 
 		$this->assertNotNull($refusal, 'an undeclared read makes the declaration decoration');
@@ -414,10 +394,8 @@ class NamedConditionTest extends TestCase {
 	 */
 	public function testARuleNeedingABeforeValueCannotBeAttachedToACreate(): void {
 		$refusal = $this->transition->refusalFor(
-			ruleName: 'escalatie',
-			node: ['!=' => [['var' => '$before.status'], 'open']],
-			rule: [TransitionDocument::REQUIRES_PRIOR => true],
-			trigger: 'create'
+			attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [TransitionDocument::REQUIRES_PRIOR => true], trigger: 'create'),
+			node: ['!=' => [['var' => '$before.status'], 'open']]
 		);
 
 		$this->assertNotNull($refusal, 'it would never match, which is worse than failing');
@@ -432,10 +410,8 @@ class NamedConditionTest extends TestCase {
 	public function testTheSameRuleOnAnUpdateTriggerIsAccepted(): void {
 		$this->assertNull(
 			$this->transition->refusalFor(
-				ruleName: 'escalatie',
-				node: ['!=' => [['var' => '$before.status'], 'open']],
-				rule: [TransitionDocument::REQUIRES_PRIOR => true],
-				trigger: 'update'
+				attachment: new RuleAttachment(ruleName: 'escalatie', declaration: [TransitionDocument::REQUIRES_PRIOR => true], trigger: 'update'),
+				node: ['!=' => [['var' => '$before.status'], 'open']]
 			),
 			'the control: a declared prior read on a trigger that has one is fine'
 		);

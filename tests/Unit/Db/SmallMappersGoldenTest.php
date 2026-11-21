@@ -32,8 +32,12 @@ use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -94,7 +98,7 @@ final class SmallMappersGoldenTest extends TestCase {
 		foreach (self::recordCases() as $name => [$slug, $verdict, $error, $rows]) {
 			$actual['record: ' . $name] = $this->recorded(
 				fn () => $this->summaryState(
-					(new RuleRunSummaryMapper($this->connection()))->record('r:s:k', $slug, $verdict, new DateTime(self::MOMENT), $error)
+					(new RuleRunSummaryMapper($this->connection()))->record(RuleRun::fromRow(['rule_id' => 'r:s:k', 'schema_slug' => $slug]), new RuleEvaluation($verdict, new DateTime(self::MOMENT), $error))
 				),
 				[$rows]
 			);
@@ -105,7 +109,7 @@ final class SmallMappersGoldenTest extends TestCase {
 			foreach (['found' => $found, 'missing' => []] as $rowsName => $rows) {
 				$actual['contact role ' . $name . ', ' . $rowsName] = $this->recorded(
 					function () use ($role): ?int {
-						$link = (new ContactLinkMapper($this->connection()))->findByObjectContactAndRole('o-1', 'c-1', $role);
+						$link = (new ContactLinkMapper($this->connection()))->findByObjectContactAndRole(new PersonLinkRef('o-1', 'c-1', $role));
 						return $link instanceof ContactLink ? $link->getId() : null;
 					},
 					[$rows]
@@ -116,13 +120,13 @@ final class SmallMappersGoldenTest extends TestCase {
 		$paging = ['none' => [null, null], 'limit' => [5, null], 'offset' => [null, 10], 'both' => [0, 0]];
 		foreach ($paging as $name => [$limit, $offset]) {
 			$actual['endpoint logs ' . $name] = $this->recorded(
-				fn () => count((new EndpointLogMapper($this->connection()))->findByEndpoints(['a' => 3, 'b' => 4], $limit, $offset)),
+				fn () => count((new EndpointLogMapper($this->connection()))->findByEndpoints(['a' => 3, 'b' => 4], new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset))),
 				[[]]
 			);
 		}
 
 		$actual['endpoint logs without endpoints'] = $this->recorded(
-			fn () => (new EndpointLogMapper($this->connection()))->findByEndpoints([], 5, 5),
+			fn () => (new EndpointLogMapper($this->connection()))->findByEndpoints([], new ListQuery(limit: 5, offset: 5)),
 			[]
 		);
 

@@ -100,24 +100,30 @@ class TimeProvider extends AbstractIntegrationProvider {
 	private IL10N $l10n;
 
 	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param LeafProviderPlatform           $platform   The DB connection, app manager and localisation.
+	 * @param LeafMarkerScanning             $leaf       The DB connection, app manager, localisation and marker-scan logger.
 	 * @param TimeTrackerLinkMapperInterface $linkMapper Time-tracker-link mapper (Tier-2 link table).
 	 * @param IConfig                        $config     NC config (reads the time-tracker.backend admin override).
-	 * @param LoggerInterface                $logger     Logger for the degraded marker-scan path.
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		LeafProviderPlatform $platform,
+		LeafMarkerScanning $leaf,
 		private TimeTrackerLinkMapperInterface $linkMapper,
 		private IConfig $config,
-		private LoggerInterface $logger,
 	) {
-		$this->db = $platform->db;
-		$this->appManager = $platform->appManager;
-		$this->l10n = $platform->l10n;
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	/**
@@ -280,13 +286,9 @@ class TimeProvider extends AbstractIntegrationProvider {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function scanNotes(string $table, string $marker): array {
-		return $this->findByMarker(
+		return $this->scanMarker(
 			db: $this->db,
-			table: $table,
-			markerColumn: 'note',
-			marker: $marker,
-			extraColumns: ['uuid', 'name'],
-			idColumn: 'id',
+			scan: new MarkerScan(table: $table, markerColumn: 'note', marker: $marker, columns: ['id', 'uuid', 'name']),
 		);
 	}//end scanNotes()
 

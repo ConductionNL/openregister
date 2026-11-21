@@ -25,12 +25,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Service\ExampleSet\FragmentOrdering;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrderPath
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
  */
 class ExampleSetOrderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-order-golden.json';
@@ -40,7 +43,7 @@ class ExampleSetOrderGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->cases() as $name => [$after, $enabled, $expected]) {
 			try {
-				$actual[$name] = $order->order($after, $enabled, $expected);
+				$actual[$name] = $order->order(new FragmentOrdering($after, $enabled, $expected));
 			} catch (Throwable $e) {
 				$actual[$name] = ['threw' => get_class($e).': '.$e->getMessage()];
 			}

@@ -28,6 +28,7 @@ namespace Unit\Service\Operations;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Operations\OperatorAct;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
 use OCP\IConfig;
@@ -117,10 +118,7 @@ final class MaintenanceModeServiceTest extends TestCase {
 	public function testEnterClosesTheInstanceStoresTheMessageAndRecordsTheAct(): void {
 		$service = $this->service();
 		$this->recorder->expects($this->once())->method('recordAct')->with(
-			MaintenanceModeService::ACT_ENTER,
-			'alice',
-			['message' => 'Upgrading'],
-			'Entered maintenance mode.'
+			new OperatorAct(MaintenanceModeService::ACT_ENTER, 'alice', ['message' => 'Upgrading'], 'Entered maintenance mode.')
 		);
 
 		$state = $service->enter('alice', 'Upgrading');
@@ -137,10 +135,7 @@ final class MaintenanceModeServiceTest extends TestCase {
 	public function testEnterWithABlankMessageKeepsThePreviousOne(): void {
 		$service = $this->service(['maintenance_mode_message' => 'Earlier text']);
 		$this->recorder->expects($this->once())->method('recordAct')->with(
-			MaintenanceModeService::ACT_ENTER,
-			'bob',
-			['message' => 'Earlier text'],
-			'Entered maintenance mode.'
+			new OperatorAct(MaintenanceModeService::ACT_ENTER, 'bob', ['message' => 'Earlier text'], 'Entered maintenance mode.')
 		);
 
 		$state = $service->enter('bob', '   ');
@@ -168,10 +163,7 @@ final class MaintenanceModeServiceTest extends TestCase {
 			]
 		);
 		$this->recorder->expects($this->once())->method('recordAct')->with(
-			MaintenanceModeService::ACT_LEAVE,
-			'carol',
-			[],
-			'Left maintenance mode.'
+			new OperatorAct(MaintenanceModeService::ACT_LEAVE, 'carol', [], 'Left maintenance mode.')
 		);
 
 		$state = $service->leave('carol');

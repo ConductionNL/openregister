@@ -60,10 +60,8 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 	 * Creates a CloudEvent-compliant payload from event data.
 	 * This allows external systems to receive standardized event notifications.
 	 *
-	 * @param string $eventType Event type (e.g., 'object.created', 'object.updated')
-	 * @param array $payload Event payload data
-	 * @param string|null $source Event source (defaults to '/apps/openregister')
-	 * @param string|null $subject Event subject (optional)
+	 * @param CloudEventAttributes $attributes The event type, source (defaults to '/apps/openregister') and subject.
+	 * @param array                $payload    Event payload data
 	 *
 	 * @return (array|null|string)[] CloudEvent-formatted payload
 	 *
@@ -74,21 +72,11 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatAsCloudEvent(
-		string $eventType,
-		array $payload,
-		?string $source = null,
-		?string $subject = null,
-	): array {
-		// Use default source if not provided.
-		if ($source === null) {
-			$source = '/apps/openregister';
-		}
-
-		return $this->envelope(
-			attributes: ['type' => $eventType, 'source' => $source, 'datacontenttype' => 'application/json', 'subject' => $subject],
-			data: $payload
-		);
+	public function formatAsCloudEvent(CloudEventAttributes $attributes, array $payload): array {
+		// The source defaults to the app when none is given.
+		$source = ($attributes->source ?? '/apps/openregister');
+		$envelope = ['type' => $attributes->type, 'source' => $source, 'datacontenttype' => 'application/json', 'subject' => $attributes->subject];
+		return $this->envelope(attributes: $envelope, data: $payload);
 	}//end formatAsCloudEvent()
 
 	/**
@@ -98,9 +86,8 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 	 * This is useful for pre-request webhook interception where the request
 	 * itself is the event data.
 	 *
-	 * @param IRequest $request The HTTP request
-	 * @param string $eventType The event type (e.g., 'object.creating', 'object.updating')
-	 * @param array $data Additional event data
+	 * @param IRequest $request   The HTTP request
+	 * @param string   $eventType The event type (e.g., 'object.creating', 'object.updating')
 	 *
 	 * @return ((array|false|mixed|string)[]|null|string)[] CloudEvent-formatted payload
 	 *
@@ -113,32 +100,46 @@ class CloudEventFormatter implements CloudEventFormatterInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function formatRequestAsCloudEvent(
-		IRequest $request,
-		string $eventType,
-		array $data = [],
-	): array {
-		$bodyData = $this->requestBody(request: $request);
-
+	public function formatRequestAsCloudEvent(IRequest $request, string $eventType): array {
 		return $this->envelope(
-			attributes: [
-				'type' => $eventType,
-				'source' => $this->getSource(request: $request),
-				'datacontenttype' => $this->getContentTypeHeader(request: $request),
-				'subject' => $this->getSubject(request: $request),
-			],
-			data: array_merge(
-				[
-					'method' => $request->getMethod(),
-					'path' => $request->getPathInfo(),
-					'queryParams' => $request->getParams(),
-					'headers' => $this->getRequestHeaders(request: $request),
-					'body' => $bodyData,
-				],
-				$data
-			)
+			attributes: $this->requestAttributes(request: $request, eventType: $eventType),
+			data: $this->requestData(request: $request)
 		);
 	}//end formatRequestAsCloudEvent()
+
+	/**
+	 * The CloudEvent attributes of a request: its type, source, content type and subject.
+	 *
+	 * @param IRequest $request   The HTTP request.
+	 * @param string   $eventType The event type.
+	 *
+	 * @return array<string, string|null> The `type`, `source`, `datacontenttype` and `subject`.
+	 */
+	private function requestAttributes(IRequest $request, string $eventType): array {
+		return [
+			'type' => $eventType,
+			'source' => $this->getSource(request: $request),
+			'datacontenttype' => $this->getContentTypeHeader(request: $request),
+			'subject' => $this->getSubject(request: $request),
+		];
+	}//end requestAttributes()
+
+	/**
+	 * The event data a request carries: method, path, query parameters, headers and body.
+	 *
+	 * @param IRequest $request The HTTP request.
+	 *
+	 * @return array<string, mixed> The request data.
+	 */
+	private function requestData(IRequest $request): array {
+		return [
+			'method' => $request->getMethod(),
+			'path' => $request->getPathInfo(),
+			'queryParams' => $request->getParams(),
+			'headers' => $this->getRequestHeaders(request: $request),
+			'body' => $this->requestBody(request: $request),
+		];
+	}//end requestData()
 
 	/**
 	 * The CloudEvents 1.0 envelope around event data.

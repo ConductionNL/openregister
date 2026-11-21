@@ -65,30 +65,38 @@ class NotificationBroadcastReceiptMapper extends QBMapper {
 	 * into an error the user sees or a second row claiming two sightings.
 	 *
 	 * @param string $broadcastUuid The broadcast.
-	 * @param string $userId The reader.
-	 * @param DateTime|null $seenAt The moment, defaulting to now.
+	 * @param string $userId        The reader.
 	 *
 	 * @return NotificationBroadcastReceipt The row, existing or new.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
-	public function acknowledge(
-		string $broadcastUuid,
-		string $userId,
-		?DateTime $seenAt = null,
-	): NotificationBroadcastReceipt {
-		$existing = $this->find(broadcastUuid: $broadcastUuid, userId: $userId);
+	public function acknowledge(string $broadcastUuid, string $userId): NotificationBroadcastReceipt {
+		$receipt = new NotificationBroadcastReceipt();
+		$receipt->setBroadcastUuid($broadcastUuid);
+		$receipt->setUserId($userId);
+		$receipt->setSeenAt(new DateTime());
+
+		return $this->acknowledgeReceipt(receipt: $receipt);
+	}//end acknowledge()
+
+	/**
+	 * Record a sighting as the receipt describes it, unless the reader already has one. Idempotent.
+	 *
+	 * @param NotificationBroadcastReceipt $receipt The broadcast, the reader and the moment.
+	 *
+	 * @return NotificationBroadcastReceipt The row, existing or new.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
+	 */
+	public function acknowledgeReceipt(NotificationBroadcastReceipt $receipt): NotificationBroadcastReceipt {
+		$existing = $this->find(broadcastUuid: (string)$receipt->getBroadcastUuid(), userId: (string)$receipt->getUserId());
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$entity = new NotificationBroadcastReceipt();
-		$entity->setBroadcastUuid($broadcastUuid);
-		$entity->setUserId($userId);
-		$entity->setSeenAt(($seenAt ?? new DateTime()));
-
-		return $this->insertOrReadWinner(entity: $entity);
-	}//end acknowledge()
+		return $this->insertOrReadWinner(entity: $receipt);
+	}//end acknowledgeReceipt()
 
 
 	/**

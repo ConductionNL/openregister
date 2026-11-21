@@ -17,6 +17,7 @@ use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
@@ -27,6 +28,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\FileTransfer;
 
 class FilesControllerFileActionsTest extends TestCase {
 
@@ -60,7 +62,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -106,7 +107,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		// Rebuild the controller with the authenticated user session wired in.
 		// The audit handler is irrelevant on the denied path (never reached).
 		$this->controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -130,7 +130,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$file->method('getName')->willReturn('new-name.pdf');
 
 		$this->request->method('getParams')->willReturn(['name' => 'new-name.pdf']);
-		$this->fileService->method('renameFile')->willReturn($file);
+		$this->fileService->method('renameAttachedFile')->willReturn($file);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'new-name.pdf']);
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -147,7 +147,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'existing.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('A file with name "existing.pdf" already exists for this object'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -163,7 +163,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$this->request->method('getParams')->willReturn(['name' => 'file<>.pdf']);
-		$this->fileService->method('renameFile')
+		$this->fileService->method('renameAttachedFile')
 			->willThrowException(new Exception('File name contains invalid characters'));
 
 		$response = $this->controller->rename('reg', 'sch', 'abc-123', 42);
@@ -219,7 +219,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -250,7 +250,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')->willReturn(
+		$batchHandler->method('runBatch')->willReturn(
 			[
 				'results' => [
 					['fileId' => 42, 'success' => true],
@@ -281,7 +281,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->setupObjectServiceMocks($object);
 
 		$batchHandler = $this->createMock(FileBatchHandler::class);
-		$batchHandler->method('executeBatch')
+		$batchHandler->method('runBatch')
 			->willThrowException(new Exception('Invalid batch action. Allowed: publish, depublish, delete, label'));
 		$this->fileService->method('getBatchHandler')->willReturn($batchHandler);
 
@@ -392,7 +392,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -440,7 +439,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -486,7 +484,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn($authedUser);
 
 		$controller = FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,
@@ -539,8 +536,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 		$this->fileService->expects($this->once())
-			->method('copyFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('copyAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'copied.pdf']);
 
@@ -580,7 +577,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			->method('setRegister')
 			->with($this->logicalOr('reg', 'other-register'));
 
-		$this->fileService->method('copyFile')->willReturn($newFile);
+		$this->fileService->method('copyAttachedFile')->willReturn($newFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'cross.pdf']);
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
@@ -610,8 +607,8 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		// copyFile must NOT be called when target is missing.
-		$this->fileService->expects($this->never())->method('copyFile');
+		// copyAttachedFile must NOT be called when target is missing.
+		$this->fileService->expects($this->never())->method('copyAttachedFile');
 
 		$response = $this->controller->copy('reg', 'sch', 'source-uuid', 42);
 
@@ -642,8 +639,8 @@ class FilesControllerFileActionsTest extends TestCase {
 		// moveFile is the integration point that does copy+delete; assert
 		// it is called exactly once with the expected source/target.
 		$this->fileService->expects($this->once())
-			->method('moveFile')
-			->with($sourceObject, 42, $targetObject)
+			->method('moveAttachedFile')
+			->with(new FileTransfer($sourceObject, 42, $targetObject))
 			->willReturn($movedFile);
 		$this->fileService->method('formatFile')->willReturn(['name' => 'moved.pdf']);
 
@@ -671,7 +668,7 @@ class FilesControllerFileActionsTest extends TestCase {
 			]
 		);
 
-		$this->fileService->method('moveFile')
+		$this->fileService->method('moveAttachedFile')
 			->willThrowException(new Exception('File is locked by user-2'));
 
 		$response = $this->controller->move('reg', 'sch', 'source-uuid', 42);
@@ -757,7 +754,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['labels' => ['x']]);
 
 		// The file mutation must never be reached on the denied path.
-		$this->fileService->expects($this->never())->method('updateFile');
+		$this->fileService->expects($this->never())->method('overwriteFile');
 
 		$response = $this->controller->updateLabels('reg', 'sch', 'abc-123', 42);
 
@@ -785,7 +782,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$object = $this->createObjectMock();
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('hello-world', [], false, 'reg', 'sch', false, false, true, false)
+			->with(...FindCallShape::findArgs('hello-world', [], false, 'reg', 'sch', false, false, true, false))
 			->willReturn($object);
 		$this->fileService->expects($this->once())
 			->method('getFiles')
@@ -823,7 +820,6 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return FilesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->fileService,
 			$this->objectService,

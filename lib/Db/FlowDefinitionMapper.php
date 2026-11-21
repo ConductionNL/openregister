@@ -61,11 +61,7 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 			return null;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('hash', $qb->createNamedParameter($hash)))
-			->setMaxResults(1);
+		$qb = $this->selectByHash(hash: $hash);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -78,6 +74,23 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 	}//end findByHash()
 
 	/**
+	 * The one definition stored under a hash.
+	 *
+	 * @param string $hash The content hash.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function selectByHash(string $hash): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('hash', $qb->createNamedParameter($hash)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end selectByHash()
+
+	/**
 	 * Store a definition under its hash, or return the one already there.
 	 *
 	 * 🔑 THE INSERT CAN LOSE A RACE AND THAT IS FINE. Two workers pinning the
@@ -86,28 +99,23 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 	 * the row the loser then reads back is byte-identical to the one it tried
 	 * to write — so re-reading is a complete recovery, not a compromise.
 	 *
-	 * @param string $hash       The canonical hash.
-	 * @param string $definition The canonical definition JSON.
-	 * @param string|null $flowUuid The originating flow, for provenance.
+	 * @param FlowDefinition $definition The canonical hash, definition JSON and originating flow; its created stamp is set here.
 	 *
 	 * @return FlowDefinition|null The stored definition, or null when it could not be stored.
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	public function store(string $hash, string $definition, ?string $flowUuid = null): ?FlowDefinition {
+	public function store(FlowDefinition $definition): ?FlowDefinition {
+		$hash = $definition->getHash();
 		$existing = $this->findByHash(hash: $hash);
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		$entity = new FlowDefinition();
-		$entity->setHash($hash);
-		$entity->setDefinition($definition);
-		$entity->setFlowUuid($flowUuid);
-		$entity->setCreated(new DateTime());
+		$definition->setCreated(new DateTime());
 
 		try {
-			return $this->insert(entity: $entity);
+			return $this->insert(entity: $definition);
 		} catch (Throwable $e) {
 			// Lost the race, or the write failed. Re-read: on a race this
 			// returns the winner's identical row; on a real failure it

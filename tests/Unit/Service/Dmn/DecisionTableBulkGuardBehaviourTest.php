@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Dmn;
 
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
@@ -54,7 +55,7 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 
 	public function testRowsOfAnotherSchemaAreNotValidated(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(false);
-		$this->listener->expects($this->never())->method('problemsFor');
+		$this->listener->expects($this->never())->method('problemsOf');
 
 		$this->assertSame([], $this->guard()->refusals([['key' => 'a'], ['key' => 'a']], 'reg', 'other'));
 	}
@@ -103,8 +104,9 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 
 	public function testProblemsOfATableRowRefuseItWithoutItsSelfBlock(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
-		$this->listener->expects($this->exactly(2))->method('problemsFor')->willReturnCallback(
-			static function (?string $schema, ?string $register, array $data, string $uuid): ?array {
+		$this->listener->expects($this->exactly(2))->method('problemsOf')->willReturnCallback(
+			static function (ObjectRef $row, array $data): ?array {
+				$uuid = $row->id;
 				if ($uuid === 'u-1') {
 					return ['no rules', 'no inputs'];
 				}
@@ -128,8 +130,9 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 	public function testDataPassedOnHasNoSelfBlockAndTheUuidComesFromSelfIdThenRowId(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
 		$calls = [];
-		$this->listener->method('problemsFor')->willReturnCallback(
-			static function (?string $schema, ?string $register, array $data, string $uuid) use (&$calls): array {
+		$this->listener->method('problemsOf')->willReturnCallback(
+			static function (ObjectRef $row, array $data) use (&$calls): array {
+				$uuid = $row->id;
 				$calls[] = [$data, $uuid];
 				return [];
 			}
@@ -146,7 +149,7 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 
 	public function testTwoRowsClaimingOneKeyRefuseTheSecond(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
-		$this->listener->method('problemsFor')->willReturn([]);
+		$this->listener->method('problemsOf')->willReturn([]);
 
 		$refusals = $this->guard()->refusals(
 			[['id' => 'a', 'key' => 'tarief'], ['id' => 'b', 'key' => ' tarief '], ['id' => 'c', 'key' => 'ander']],
@@ -159,14 +162,14 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 
 	public function testTheSameRowRepeatedWithItsUuidMayKeepItsKey(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
-		$this->listener->method('problemsFor')->willReturn([]);
+		$this->listener->method('problemsOf')->willReturn([]);
 
 		$this->assertSame([], $this->guard()->refusals([['id' => 'a', 'key' => 'k'], ['id' => 'a', 'key' => 'k']], 'r', 's'));
 	}
 
 	public function testTwoNewRowsWithoutUuidClaimingOneKeyClash(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
-		$this->listener->method('problemsFor')->willReturn([]);
+		$this->listener->method('problemsOf')->willReturn([]);
 
 		$refusals = $this->guard()->refusals([['key' => 'k'], ['key' => 'k']], 'r', 's');
 
@@ -175,7 +178,7 @@ class DecisionTableBulkGuardBehaviourTest extends TestCase {
 
 	public function testAClashIsAddedToTheRowsOwnProblems(): void {
 		$this->listener->method('isDecisionTableRef')->willReturn(true);
-		$this->listener->method('problemsFor')->willReturnOnConsecutiveCalls([], ['no rules']);
+		$this->listener->method('problemsOf')->willReturnOnConsecutiveCalls([], ['no rules']);
 
 		$refusals = $this->guard()->refusals([['id' => 'a', 'key' => 'k'], ['id' => 'b', 'key' => 'k']], 'r', 's');
 

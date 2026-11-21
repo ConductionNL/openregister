@@ -1,6 +1,6 @@
 # ADR-012: Functional components defined over the Nextcloud layout, with published contracts in the Kernel
 
-**Status**: accepted (2026-11-09). Target: independence at least 4.5, about 4.75 expected; entanglement at least 5.0.
+**Status**: accepted (2026-11-09). Superseded in part by ADR-014: the SIG component definition. The published-contracts guidance stays as internal guidance.
 
 **Date**: 2026-11-09
 

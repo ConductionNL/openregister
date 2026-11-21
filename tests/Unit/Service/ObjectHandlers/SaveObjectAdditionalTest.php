@@ -28,7 +28,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -62,6 +64,8 @@ use stdClass;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -222,10 +226,8 @@ class SaveObjectAdditionalTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -636,7 +638,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueComplexTemplate(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('John Doe');
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -666,7 +668,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueExceptionReturnsNull(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -1091,63 +1093,6 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertSame('https://example.com/access.png', $entity->getImage());
 	}
 
-	public function testHydrateObjectMetadataWithPublishedDate(): void {
-		// objectPublishedField is deprecated — should not throw.
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['pubDate' => '2024-01-15']);
-
-		$this->mockSchema->testConfiguration = ['objectPublishedField' => 'pubDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2024-01-15');
-
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithInvalidPublishedDate(): void {
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['pubDate' => 'not-a-date']);
-
-		$this->mockSchema->testConfiguration = ['objectPublishedField' => 'pubDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('not-a-date');
-
-		// Should log warning but not throw.
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		// No exception means success.
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithDepublishedDate(): void {
-		// objectDepublishedField is deprecated — should not throw.
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['endDate' => '2025-12-31']);
-
-		$this->mockSchema->testConfiguration = ['objectDepublishedField' => 'endDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2025-12-31');
-
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithInvalidDepublishedDate(): void {
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['endDate' => 'invalid-date']);
-
-		$this->mockSchema->testConfiguration = ['objectDepublishedField' => 'endDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('invalid-date');
-
-		// Should log warning but not throw.
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
 	public function testHydrateObjectMetadataWithNumericImage(): void {
 		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$entity->setObject(['fileId' => 123]);
@@ -1159,7 +1104,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		// Numeric image - logs debug but doesn't set image.
 		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
+
+		$this->assertNull($entity->getImage());
 	}
 
 	// =================================================================
@@ -1251,11 +1197,8 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->expectExceptionMessage('not authorized to modify');
 
 		$this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'Updated', 'secret_field' => 'hacked'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 	}
 
@@ -1285,7 +1228,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$seen = null;
 		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
-			static function (Schema $schema, array $object, array $incomingData, bool $isCreate = false) use (&$seen): array {
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
 				$seen = $object;
 
 				return ['name'];
@@ -1294,11 +1238,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		try {
 			$this->saveObject->saveObject(
-				register: $this->mockRegister,
-				schema: $schema,
 				data: ['name' => 'Updated'],
-				uuid: $uuid,
-				_rbac: true
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 			);
 			$this->fail('the refused property was written');
 		} catch (Exception $e) {
@@ -1348,22 +1289,20 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(2, $uuid);
 		$newObject->setObject(['name' => 'New']);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
@@ -1381,20 +1320,20 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(1, 'generated-uuid');
 		$newObject->setObject(['name' => 'New']);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
-			data: ['name' => 'New']
+			data: ['name' => 'New'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema))
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
@@ -1418,19 +1357,19 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(1, $uuid);
 		$newObject->setObject(['name' => 'New', 'logo' => 42]);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		// File property detected.
-		$this->filePropertyHandler->method('isFileProperty')
-			->willReturnCallback(function ($value, $schema, $propertyName) {
+		$this->filePropertyHandler->method('isFileInSchema')
+			->willReturnCallback(function ($schema, $propertyName) {
 				return $propertyName === 'logo';
 			});
 
 		// File handling modifies data in-place (simulated).
 		$this->filePropertyHandler->method('handleFileProperty')
-			->willReturnCallback(function ($objectEntity, &$object, $propertyName) {
-				$object[$propertyName] = 42;
+			->willReturnCallback(function ($write, $propertyName) {
+				$write->data[$propertyName] = 42;
 			});
 
 		$this->objectEntityMapper->method('update')
@@ -1442,13 +1381,12 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New', 'logo' => 'file-data'],
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
@@ -1528,7 +1466,7 @@ class SaveObjectAdditionalTest extends TestCase {
 			],
 		];
 
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$entity = $this->createEntity(1, 'test-uuid');
@@ -1586,51 +1524,11 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['slug' => 'my-slug'],
-			[],
+			new SelfSubmission(selfData: ['slug' => 'my-slug']),
 		]);
 
 		// The slug is decided after hydration by ObjectSlugHandler (#4037).
 		$this->assertNull($entity->getSlug());
-	}
-
-	public function testSetSelfMetadataWithPublished(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['published' => '2024-01-15T10:00:00+00:00'],
-			[],
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataWithNullPublished(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['published' => null],
-			[],
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataWithDepublished(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['depublished' => '2025-12-31T23:59:59+00:00'],
-			[],
-		]);
-
-		$this->assertTrue(true);
 	}
 
 	// =================================================================

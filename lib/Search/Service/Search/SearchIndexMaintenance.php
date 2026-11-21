@@ -88,48 +88,6 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	];
 
 	/**
-	 * The database connection.
-	 *
-	 * @var IDBConnection
-	 */
-	private readonly IDBConnection $db;
-
-	/**
-	 * Resolves the registers to walk.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Resolves a register and schema to its table.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $magicMapper;
-
-	/**
-	 * Stores the report of the last run.
-	 *
-	 * @var IAppConfig
-	 */
-	private readonly IAppConfig $appConfig;
-
-	/**
-	 * Reads the configured table prefix.
-	 *
-	 * @var IConfig
-	 */
-	private readonly IConfig $config;
-
-	/**
-	 * Reports progress and failure.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param SearchIndexStores $stores    The database connection, register mapper and magic table mapper.
@@ -138,17 +96,11 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 * @param LoggerInterface   $logger    Reports progress and failure.
 	 */
 	public function __construct(
-		SearchIndexStores $stores,
-		IAppConfig $appConfig,
-		IConfig $config,
-		LoggerInterface $logger,
+		private readonly SearchIndexStores $stores,
+		private readonly IAppConfig $appConfig,
+		private readonly IConfig $config,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->db             = $stores->db;
-		$this->registerMapper = $stores->registerMapper;
-		$this->magicMapper    = $stores->magicMapper;
-		$this->appConfig      = $appConfig;
-		$this->config         = $config;
-		$this->logger         = $logger;
 	}//end __construct()
 
 	/**
@@ -159,7 +111,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function supportsConcurrentRebuild(): bool {
-		return stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		return stripos($this->stores->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 	}//end supportsConcurrentRebuild()
 
 	/**
@@ -227,7 +179,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 * @return array<string, string> The query by table.
 	 */
 	private function countSelects(array $tableNames): array {
-		$platform = $this->db->getDatabasePlatform();
+		$platform = $this->stores->db->getDatabasePlatform();
 		$selects  = [];
 		foreach ($tableNames as $index => $table) {
 			$selects[$table] = 'SELECT '.$index.' AS t, COUNT(*) AS n FROM '.$platform->quoteIdentifier($this->prefix().$table);
@@ -266,7 +218,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function rowsByTable(string $sql, array $tableNames): array {
 		$rows = [];
-		foreach ($this->db->executeQuery($sql)->fetchAll() as $row) {
+		foreach ($this->stores->db->executeQuery($sql)->fetchAll() as $row) {
 			$rows[$tableNames[(int) $row['t']]] = (int) $row['n'];
 		}
 
@@ -282,14 +234,26 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function schemaSlugsByTable(?int $registerId): array {
 		$tables = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if (($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId)) {
+		foreach ($this->stores->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			if ($this->isRegisterInScope(register: $register, registerId: $registerId) === true) {
 				$tables += $this->tablesOfRegister(register: $register);
 			}
 		}
 
 		return $tables;
 	}//end schemaSlugsByTable()
+
+	/**
+	 * Whether a findAll row is a register within the requested scope.
+	 *
+	 * @param mixed    $register   A row of the register listing.
+	 * @param int|null $registerId Limit to one register, or null for all of them.
+	 *
+	 * @return bool True when it is a register and in scope.
+	 */
+	private function isRegisterInScope(mixed $register, ?int $registerId): bool {
+		return ($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId);
+	}//end isRegisterInScope()
 
 	/**
 	 * The magic tables of one register, with the slug of the schema each holds.
@@ -300,7 +264,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function tablesOfRegister(Register $register): array {
 		$tables  = [];
-		$schemas = $this->registerMapper->getSchemasByRegisterId(
+		$schemas = $this->stores->registerMapper->getSchemasByRegisterId(
 			registerId: (int)$register->getId(),
 			_rbac: false,
 			_multitenancy: false
@@ -324,7 +288,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function tableOf(Register $register, Schema $schema): array {
 		try {
-			$table = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			$table = $this->stores->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[SearchIndexMaintenance] Could not resolve a magic table',
@@ -356,7 +320,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 			return [];
 		}
 
-		$statement = $this->db->prepare(self::INDEX_DEFINITIONS_SQL);
+		$statement = $this->stores->db->prepare(self::INDEX_DEFINITIONS_SQL);
 		$statement->execute([$this->prefix() . $tableName]);
 		$indexes = [];
 		while (($row = $statement->fetch()) !== false) {
@@ -405,7 +369,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function withIndexNames(array $names, array $prefixed): array {
 		$placeholders = implode(', ', array_fill(0, count($prefixed), '?'));
-		$statement    = $this->db->prepare(
+		$statement    = $this->stores->db->prepare(
 			'SELECT tablename, indexname FROM pg_indexes WHERE tablename IN ('.$placeholders.') ORDER BY tablename, indexname'
 		);
 		$statement->execute(array_values($prefixed));
@@ -427,37 +391,40 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 * answering and an invalid leftover beside it. The leftover is dropped
 	 * here so a second run does not trip over it, and the failure is named.
 	 *
-	 * @param int|null      $registerId Limit to one register, or null for all.
-	 * @param bool          $apply      False reports what it would rebuild and touches nothing.
-	 * @param callable|null $progress   Called with (table, index, position, total) per index.
-	 *
-	 * @phpstan-param callable(string, string, int, int): void|null $progress
-	 *
-	 * @psalm-param callable(string, string, int, int): void|null $progress
+	 * @param int|null             $registerId Limit to one register, or null for all.
+	 * @param SearchIndexPass|null $pass       Whether to apply (false, the default, reports what it would rebuild
+	 *                                         and touches nothing) and the per-index progress callback.
 	 *
 	 * @return array<string, mixed> The report: counts, failures and the platform verdict.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  `$apply` is the dry-run switch every
-	 *                                              maintenance command in this app carries, and
-	 *                                              splitting it into two methods would let a
-	 *                                              caller reach the writing one by accident.
 	 */
-	public function rebuild(?int $registerId = null, bool $apply = false, ?callable $progress = null): array {
-		$startedAt = date('c');
+	public function rebuild(?int $registerId = null, ?SearchIndexPass $pass = null): array {
+		$pass ??= new SearchIndexPass(apply: false, progress: null);
 		if ($this->supportsConcurrentRebuild() === false) {
-			return $this->finish(report: ['startedAt' => $startedAt] + self::REFUSED_REPORT, apply: $apply);
+			return $this->finish(report: ['startedAt' => date('c')] + self::REFUSED_REPORT, apply: $pass->apply);
 		}
 
+		return $this->finish(report: $this->rebuildPass(registerId: $registerId, pass: $pass), apply: $pass->apply);
+	}//end rebuild()
+
+	/**
+	 * Rebuild every index of the tables in scope in one pass and report on it.
+	 *
+	 * @param int|null        $registerId Limit to one register, or null for all.
+	 * @param SearchIndexPass $pass       Whether to write, and who hears of progress.
+	 *
+	 * @return array<string, mixed> The report: counts, failures and the state.
+	 */
+	private function rebuildPass(?int $registerId, SearchIndexPass $pass): array {
+		$startedAt = date('c');
 		$tables   = $this->tablesInScope(registerId: $registerId);
 		$planned  = $this->planFor(tables: $tables);
-		$pass     = new SearchIndexPass(apply: $apply, progress: $progress);
 		$failures = $this->walkPlan(planned: $planned, pass: $pass);
 		$report   = ['startedAt' => $startedAt, 'finishedAt' => date('c'), 'state' => $pass->state(failures: $failures)];
 		$counts   = ['tables' => count($tables), 'indexes' => count($planned), 'rebuilt' => $pass->changed(succeeded: count($planned) - count($failures))];
 
-		return $this->finish(report: $report + $counts + ['failed' => count($failures), 'failures' => $failures], apply: $apply);
+		return $report + $counts + ['failed' => count($failures), 'failures' => $failures];
 	}//end rebuild()
 
 	/**
@@ -508,7 +475,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function reindex(string $tableName, string $indexName): array {
 		try {
-			$this->db->executeStatement('REINDEX INDEX CONCURRENTLY ' . $this->quoteIdentifier(name: $indexName));
+			$this->stores->db->executeStatement('REINDEX INDEX CONCURRENTLY ' . $this->quoteIdentifier(name: $indexName));
 			return [];
 		} catch (Throwable $exception) {
 			$this->dropInvalidLeftover(indexName: $indexName);
@@ -567,7 +534,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 *                                             same reason.
 	 */
 	public function restore(string $path, bool $apply = false): array {
-		return (new SearchIndexSnapshotRestore(maintenance: $this, db: $this->db))->restore(
+		return (new SearchIndexSnapshotRestore(maintenance: $this, db: $this->stores->db))->restore(
 			path: $path,
 			pass: new SearchIndexPass(apply: $apply, progress: null)
 		);
@@ -630,7 +597,7 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	 */
 	private function dropInvalidLeftover(string $indexName): void {
 		try {
-			$this->db->executeStatement('DROP INDEX IF EXISTS ' . $this->quoteIdentifier(name: $indexName . '_ccnew'));
+			$this->stores->db->executeStatement('DROP INDEX IF EXISTS ' . $this->quoteIdentifier(name: $indexName . '_ccnew'));
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[SearchIndexMaintenance] Could not drop the leftover of a failed rebuild',

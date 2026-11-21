@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -46,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Covers the post-write release and what the response says about it.
@@ -93,7 +94,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -178,7 +179,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('unlockObject')
-			->with('uuid-123')
+			->with(new UnlockRequest(identifier: 'uuid-123'))
 			->willReturn(true);
 
 		$body = $this->updateReturningLock($this->liveLockHeldBy(self::CALLER));
@@ -271,7 +272,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 

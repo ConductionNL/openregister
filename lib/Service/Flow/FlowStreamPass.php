@@ -91,20 +91,27 @@ final class FlowStreamPass {
 	public readonly array $context;
 
 	/**
+	 * The stream collaborator.
+	 *
+	 * @var FlowStreamWalk
+	 */
+	public readonly FlowStreamWalk $streams;
+
+	/**
 	 * Constructor.
 	 *
-	 * The flow, store, subject, dispatcher and context are taken from the run
-	 * start as they stand when the pass is made.
+	 * The flow, store, subject, dispatcher, context and stream collaborator
+	 * are taken from the run start as they stand when the pass is made; the
+	 * start must carry its streams.
 	 *
-	 * @param FlowRunStart   $start    The run start the pass walks for.
-	 * @param Workflow       $workflow The Petri net over the run's marking store.
-	 * @param FlowStreamWalk $streams  The stream collaborator.
+	 * @param FlowRunStart $start    The run start the pass walks for.
+	 * @param Workflow     $workflow The Petri net over the run's marking store.
 	 */
 	public function __construct(
 		FlowRunStart $start,
 		public readonly Workflow $workflow,
-		public readonly FlowStreamWalk $streams,
 	) {
+		$this->streams    = $start->streams;
 		$this->flow       = $start->flow;
 		$this->store      = $start->store;
 		$this->subject    = $start->subject;

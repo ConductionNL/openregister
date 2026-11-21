@@ -26,6 +26,18 @@ use OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes;
@@ -107,46 +119,36 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 
 	private function dataShaping(): DataShapingFlowNodes {
 		return new DataShapingFlowNodes(
-			$this->node('setFields', SetFieldsNodeInterface::class),
-			$this->node('actionInputs', ActionInputsNodeInterface::class),
-			$this->node('explode', ExplodeNodeInterface::class),
-			$this->node('filter', FilterNodeInterface::class),
+			new FieldFlowNodes($this->node('setFields', SetFieldsNodeInterface::class), $this->node('actionInputs', ActionInputsNodeInterface::class)),
+			new ItemListFlowNodes($this->node('explode', ExplodeNodeInterface::class), $this->node('filter', FilterNodeInterface::class)),
 		);
 	}
 
 	private function waitAndBranch(): WaitAndBranchFlowNodes {
 		return new WaitAndBranchFlowNodes(
-			$this->node('wait', WaitNodeInterface::class),
-			$this->node('awaitSignal', AwaitSignalNodeInterface::class),
-			$this->node('switch', SwitchNodeInterface::class),
-			$this->node('end', EndNodeInterface::class),
+			new WaitFlowNodes($this->node('wait', WaitNodeInterface::class), $this->node('awaitSignal', AwaitSignalNodeInterface::class)),
+			new BranchFlowNodes($this->node('switch', SwitchNodeInterface::class), $this->node('end', EndNodeInterface::class)),
 		);
 	}
 
 	private function routing(): RoutingFlowNodes {
 		return new RoutingFlowNodes(
-			$this->node('merge', MergeNodeInterface::class),
-			$this->node('loop', LoopNodeInterface::class),
-			$this->node('subFlow', SubFlowNodeInterface::class),
-			$this->node('router', RouterNodeInterface::class),
+			new ItemLoopFlowNodes($this->node('merge', MergeNodeInterface::class), $this->node('loop', LoopNodeInterface::class)),
+			new HandOffFlowNodes($this->node('subFlow', SubFlowNodeInterface::class), $this->node('router', RouterNodeInterface::class)),
 		);
 	}
 
 	private function objects(): ObjectFlowNodes {
 		return new ObjectFlowNodes(
-			$this->node('objectWrite', ObjectWriteNodeInterface::class),
-			$this->node('transition', TransitionNodeInterface::class),
-			$this->node('linkObject', LinkObjectNodeInterface::class),
-			$this->node('objectRead', ObjectReadNodeInterface::class),
+			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class)),
+			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class)),
 		);
 	}
 
 	private function reshaping(): ReshapingFlowNodes {
 		return new ReshapingFlowNodes(
-			$this->node('flowState', FlowStateNodeInterface::class),
-			$this->node('map', MapNodeInterface::class),
-			$this->node('iterate', IterateNodeInterface::class),
-			$this->node('decisionTable', DecisionTableNodeInterface::class),
+			new DataMappingFlowNodes($this->node('flowState', FlowStateNodeInterface::class), $this->node('map', MapNodeInterface::class)),
+			new EvaluationFlowNodes($this->node('iterate', IterateNodeInterface::class), $this->node('decisionTable', DecisionTableNodeInterface::class)),
 		);
 	}
 
@@ -208,7 +210,10 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 	}
 
 	public function testCoreFlattensShapingBranchingRoutingThenObjects(): void {
-		$core = new CoreFlowNodes($this->dataShaping(), $this->waitAndBranch(), $this->routing(), $this->objects());
+		$core = new CoreFlowNodes(
+			new ItemHandlingFlowNodes($this->dataShaping(), $this->waitAndBranch()),
+			new DestinationFlowNodes($this->routing(), $this->objects()),
+		);
 
 		$this->assertSame(
 			$this->pick([

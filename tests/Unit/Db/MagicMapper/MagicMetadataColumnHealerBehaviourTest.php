@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
@@ -36,6 +38,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
  */
 class MagicMetadataColumnHealerBehaviourTest extends TestCase {
 
@@ -113,7 +116,7 @@ class MagicMetadataColumnHealerBehaviourTest extends TestCase {
 			);
 		}
 
-		return new MagicMetadataColumnHealer($this->db, $logger, $this->mapper, $cache);
+		return new MagicMetadataColumnHealer(new MagicTableSql($this->db, $this->createMock(IConfig::class), $logger), $this->mapper, $cache);
 	}//end healer()
 
 	/**

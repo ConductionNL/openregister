@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Service\ExportService;
@@ -108,7 +110,7 @@ class ScheduledReportServiceWriteGoldenTest extends TestCase {
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->mapper->method('update')->willReturnArgument(0);
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $registerMapper, $schemaMapper),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),
@@ -276,26 +278,21 @@ class ScheduledReportServiceWriteGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['alice', 'Old', 1, 2, '{"a":1}', 'excel', 8, 'weekly', 5, 3, null, 'Out/', 'email', '["x@example.org"]', true],
-			$this->fields($this->service->update(4, [], 'alice', false))
+			$this->fields($this->service->applyUpdate(update: new ScheduledReportUpdate(id: 4, data: [], caller: new ReportCaller(uid: 'alice', isAdmin: false))))
 		);
 		$this->assertSame(
 			['alice', 'New', 1, null, '{"b":2}', 'pdf', null, 'monthly', 7, null, 12, 'Out/', 'files', '[]', false],
 			$this->fields(
-				$this->service->update(
-					4,
-					[
+				$this->service->applyUpdate(update: new ScheduledReportUpdate(id: 4, data: [
 						'name' => 'New', 'schemaId' => null, 'filters' => ['b' => 2], 'format' => 'pdf', 'profileId' => '', 'scheduleType' => 'monthly',
 						'scheduleHour' => 7, 'scheduleDayOfWeek' => null, 'scheduleDayOfMonth' => '12', 'deliveryMode' => 'files', 'recipients' => [], 'enabled' => 0,
-					],
-					'bob',
-					true
-				)
+					], caller: new ReportCaller(uid: 'bob', isAdmin: true)))
 			)
 		);
 
 		$this->asked = [];
 		try {
-			$this->service->update(4, ['name' => ''], 'bob', false);
+			$this->service->applyUpdate(update: new ScheduledReportUpdate(id: 4, data: ['name' => ''], caller: new ReportCaller(uid: 'bob', isAdmin: false)));
 			$this->fail('Expected a refusal');
 		} catch (RuntimeException $e) {
 			$this->assertSame([RuntimeException::class, 'You do not have permission to access this scheduled report.'], [get_class($e), $e->getMessage()]);
@@ -303,7 +300,7 @@ class ScheduledReportServiceWriteGoldenTest extends TestCase {
 
 		$this->assertSame([], $this->asked);
 		try {
-			$this->service->update(4, ['scheduleDayOfWeek' => 9], 'alice', false);
+			$this->service->applyUpdate(update: new ScheduledReportUpdate(id: 4, data: ['scheduleDayOfWeek' => 9], caller: new ReportCaller(uid: 'alice', isAdmin: false)));
 			$this->fail('Expected a refusal');
 		} catch (InvalidArgumentException $e) {
 			$this->assertSame('scheduleDayOfWeek (0-6) is required when scheduleType is weekly.', $e->getMessage());

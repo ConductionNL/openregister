@@ -39,8 +39,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -49,15 +52,17 @@ use UnexpectedValueException;
 /**
  * Turns an array field into one item per element.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
-class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string {
 		return 'openregister.explode';
@@ -68,7 +73,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Explode');
@@ -79,7 +84,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t('Turn a list on the item into one item per entry, so later steps act on each.');
@@ -90,7 +95,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('openregister', 'app-dark.svg');
@@ -101,11 +106,42 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['path', 'as', 'keepRecord'];
 	}//end configKeys()
+
+	/**
+	 * The list to split into items, the field each element lands under, and whether the rest of the item comes along.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'path',
+				'label' => $this->l10n->t('List field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field on each item that holds a list, like "findings". Every element becomes an item of its own.'),
+				'required' => true,
+			],
+			[
+				'key' => 'as',
+				'label' => $this->l10n->t('Name each element'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field each new item carries its element under. Defaults to "item".'),
+			],
+			[
+				'key' => 'keepRecord',
+				'label' => $this->l10n->t('Keep the rest of the item'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('On by default: each new item also carries the fields of the item it came from.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject an explode that names no path.
@@ -116,7 +152,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When no path is named.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['path'] ?? '')) === '') {
@@ -139,52 +175,80 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 * path holds a SCALAR is a different matter — that is a mis-authored flow,
 	 * and it fails.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per element, across all input items.
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
-	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          `FlowItems::item()` is the item
-	 *   constructor every node uses; injecting a factory for it would add a
-	 *   dependency to describe a shape.
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		// `validateConfig()` runs only when a flow is SAVED, and a seeded or
 		// imported flow reaches here unvalidated — at which point returning the
 		// items unchanged would make this a silent pass-through that looks
 		// exactly like a list of one.
 		$this->validateConfig(config: $config);
 
-		$path = trim((string)$config['path']);
-		$under = (string)($config['as'] ?? 'item');
-		$keep = (($config['keepRecord'] ?? true) !== false);
+		return $this->explode(items: $items, config: $config);
+	}//end execute()
 
+	/**
+	 * One item per element of the named list, across all input items.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array The exploded items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowItems::item()` is the item
+	 *   constructor every node uses; injecting a factory for it would add a
+	 *   dependency to describe a shape.
+	 *
+	 * @spec openspec/specs/flow-nodes/spec.md
+	 */
+	private function explode(array $items, array $config): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-
-			$base = [];
-			if ($keep === true) {
-				$base = $json;
-			}
-
-			foreach ($this->listAt(json: $json, path: $path) as $entry) {
-				$record = $base;
-				$record[$under] = $entry;
-
-				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
+			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
+				$out[] = FlowItems::item(json: $record, options: new FlowItemOptions(fromItemIndex: $index));
 			}
 		}
 
 		return $out;
-	}//end execute()
+	}//end explode()
+
+	/**
+	 * The records one item explodes into: a copy of it (or nothing) with the element under `as`.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array<int, array> One record per list element, possibly none.
+	 *
+	 * @throws UnexpectedValueException When the path holds a scalar.
+	 *
+	 * @spec openspec/specs/flow-nodes/spec.md
+	 */
+	private function recordsFrom(array $json, array $config): array {
+		$under = (string)($config['as'] ?? 'item');
+		$base = [];
+		if (($config['keepRecord'] ?? true) !== false) {
+			$base = $json;
+		}
+
+		$records = [];
+		foreach ($this->listAt(json: $json, path: trim((string)$config['path'])) as $entry) {
+			$record = $base;
+			$record[$under] = $entry;
+			$records[] = $record;
+		}
+
+		return $records;
+	}//end recordsFrom()
 
 	/**
 	 * The list at the path: empty when the path is absent, refused when it is not a list.
@@ -196,7 +260,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds something other than a list.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function listAt(array $json, string $path): array {
 		$list = $this->valueAt(json: $json, path: $path);
@@ -222,7 +286,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return mixed The value, or null.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function valueAt(array $json, string $path) {
 		$value = $json;

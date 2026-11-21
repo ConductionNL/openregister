@@ -29,6 +29,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 
 /**
  * Pins the decisions, the event sent and every log line for each scenario.
@@ -64,11 +65,13 @@ class OptOutAuthorityAskGoldenTest extends TestCase {
 	 */
 	protected function transcript(array $scenario): array {
 		$this->calls = [];
-		$decisions   = $this->authority(scenario: $scenario)->ask(
-			channel: ($scenario['channel'] ?? 'email'),
-			category: $scenario['category'],
-			addresses: $scenario['addresses'],
-			correlationId: ($scenario['correlationId'] ?? '')
+		$decisions   = $this->authority(scenario: $scenario)->askQuestion(
+			question: new OptOutQuestion(
+				channel: ($scenario['channel'] ?? 'email'),
+				category: $scenario['category'],
+				addresses: $scenario['addresses'],
+				correlationId: ($scenario['correlationId'] ?? '')
+			)
 		);
 
 		return ['decisions' => $decisions, 'calls' => $this->calls];

@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -33,6 +34,18 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
+ * @uses \OCA\OpenRegister\Service\Flow\FieldAssignment
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowFieldPath
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsPlan
  */
 class SetFieldsNodeGoldenTest extends TestCase {
 
@@ -154,7 +167,7 @@ class SetFieldsNodeGoldenTest extends TestCase {
 
 	private function runCase(array $case): mixed {
 		try {
-			return $this->node->execute($case['items'], $case['config'], $case['context']);
+			return $this->node->execute(new FlowNodeCall(items: $case['items'], config: $case['config'], context: $case['context']));
 		} catch (Throwable $e) {
 			// A TypeError names the calling file and line; that is a source
 			// position, not behaviour.

@@ -137,7 +137,7 @@ class ObjectActionStepsFlow {
 	private function stepsRefusals(string $key, array $steps): array {
 		$refusals = [];
 		foreach (array_values($steps) as $index => $step) {
-			$refusal = $this->stepRefusal(key: $key, position: ($index + 1), step: (array)$step);
+			$refusal = $this->stepRefusal(step: new DeclaredStep(key: $key, position: ($index + 1), step: (array)$step));
 			if ($refusal !== null) {
 				$refusals[] = $refusal;
 			}
@@ -165,15 +165,15 @@ class ObjectActionStepsFlow {
 	public function flowFor(Schema $schema, ObjectActionDefinition $definition): string {
 		$document   = $this->builder->lowerSteps(steps: (array)$definition->body, next: $definition->next);
 		$name       = self::NAME_PREFIX . $definition->key . ':' . substr(hash('sha256', (string)json_encode($document)), 0, 16);
-		$schemaSlug = (string)$schema->getSlug();
+		$identity   = new StepsFlowIdentity(name: $name, schemaSlug: (string)$schema->getSlug());
 
-		$stored = $this->flows->findDeclared(name: $name, schemaSlug: $schemaSlug);
+		$stored = $this->flows->findDeclared(name: $identity->name, schemaSlug: $identity->schemaSlug);
 		if ($stored !== null && (string)$stored->getLifecycleStatus() === FlowVersion::STATUS_PUBLISHED) {
 			return (string)$stored->getUuid();
 		}
 
 		try {
-			$stored ??= $this->flows->insert($this->newFlow(name: $name, schemaSlug: $schemaSlug, document: $document));
+			$stored ??= $this->flows->insert($this->newFlow(identity: $identity, document: $document));
 
 			return $this->publish(flow: $stored);
 		} catch (Throwable $e) {
@@ -205,7 +205,7 @@ class ObjectActionStepsFlow {
 	 * @return string The flow's uuid.
 	 */
 	private function publish(Flow $flow): string {
-		$this->versions->publish(flow: $flow, publishedBy: null);
+		$this->versions->publish(flow: $flow);
 
 		return (string)$flow->getUuid();
 	}//end publish()
@@ -213,47 +213,42 @@ class ObjectActionStepsFlow {
 	/**
 	 * The refusal one step earns, or null.
 	 *
-	 * @param string               $key      The action key.
-	 * @param int                  $position The step's position, from 1.
-	 * @param array<string, mixed> $step     The step.
+	 * @param DeclaredStep $step The action key, the step's position and the step.
 	 *
 	 * @return string|null The refusal.
 	 */
-	private function stepRefusal(string $key, int $position, array $step): ?string {
-		$type = trim((string)($step['type'] ?? ''));
+	private function stepRefusal(DeclaredStep $step): ?string {
+		$type = trim((string)($step->step['type'] ?? ''));
 		if ($type === '') {
 			return null;
 		}
 
-		$step['type'] = $type;
 		if ($this->bendsTheLine(type: $type) === true) {
-			return sprintf(self::BENDS_THE_LINE, $key, $position, $type);
+			return sprintf(self::BENDS_THE_LINE, $step->key, $step->position, $type);
 		}
 
-		return $this->nodeRefusal(key: $key, position: $position, step: $step);
+		return $this->nodeRefusal(step: $step, type: $type);
 	}//end stepRefusal()
 
 	/**
 	 * The refusal a step earns from the node it names: unknown, or refusing its config.
 	 *
-	 * @param string               $key      The action key.
-	 * @param int                  $position The step's position, from 1.
-	 * @param array<string, mixed> $step     The step, its `type` trimmed.
+	 * @param DeclaredStep $step The action key, the step's position and the step.
+	 * @param string       $type The step's node type, trimmed.
 	 *
 	 * @return string|null The refusal.
 	 */
-	private function nodeRefusal(string $key, int $position, array $step): ?string {
-		$type = $step['type'];
+	private function nodeRefusal(DeclaredStep $step, string $type): ?string {
 		try {
 			$node = $this->registry->get(type: $type);
 		} catch (Throwable) {
-			return sprintf('Action "%s": step %d names node "%s", which no installed app provides.', $key, $position, $type);
+			return sprintf('Action "%s": step %d names node "%s", which no installed app provides.', $step->key, $step->position, $type);
 		}
 
 		try {
-			$node->validateConfig((array)($step['config'] ?? []));
+			$node->validateConfig((array)($step->step['config'] ?? []));
 		} catch (Throwable $e) {
-			return sprintf('Action "%s": step %d (%s) is misconfigured: %s', $key, $position, $type, $e->getMessage());
+			return sprintf('Action "%s": step %d (%s) is misconfigured: %s', $step->key, $step->position, $type, $e->getMessage());
 		}
 
 		return null;
@@ -275,19 +270,18 @@ class ObjectActionStepsFlow {
 	/**
 	 * A new, inert, system-held flow for a lowered document.
 	 *
-	 * @param string                                                                  $name       The flow name.
-	 * @param string                                                                  $schemaSlug The declaring schema.
-	 * @param array{nodes: list<array<string, mixed>>, edges: list<array<string, string>>} $document   The lowered document.
+	 * @param StepsFlowIdentity                                                            $identity The flow name and the declaring schema.
+	 * @param array{nodes: list<array<string, mixed>>, edges: list<array<string, string>>} $document The lowered document.
 	 *
 	 * @return Flow The unsaved flow.
 	 */
-	private function newFlow(string $name, string $schemaSlug, array $document): Flow {
+	private function newFlow(StepsFlowIdentity $identity, array $document): Flow {
 		$flow = new Flow();
 		$flow->setUuid((string)Uuid::v4());
 		$flow->setApp('openregister');
-		$flow->setName($name);
+		$flow->setName($identity->name);
 		$flow->setDescription('Inline steps of a declared action; run only through that action.');
-		$flow->setTriggerSchema($schemaSlug);
+		$flow->setTriggerSchema($identity->schemaSlug);
 		$flow->setExecutionMode(Flow::MODE_SYNC);
 		$flow->setNodes($document['nodes']);
 		$flow->setEdges($document['edges']);

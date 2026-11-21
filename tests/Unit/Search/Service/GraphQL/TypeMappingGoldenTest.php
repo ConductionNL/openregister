@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the output and input type of every type/format pair.
  *
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\AggregationTypes
  */
 final class TypeMappingGoldenTest extends TestCase {
 

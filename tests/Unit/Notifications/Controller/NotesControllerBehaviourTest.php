@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -40,6 +42,10 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(NotesController::class)]
 #[UsesClass(NotesControllerServices::class)]
 #[UsesClass(ObjectEntity::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ListQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NotePath::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NoteStep::class)]
 class NotesControllerBehaviourTest extends TestCase {
 
 	/**
@@ -70,7 +76,7 @@ class NotesControllerBehaviourTest extends TestCase {
 		$visibility->method('mayManage')->willReturn(true);
 		$visibility->expects($this->once())->method('effectiveFilter')->with($object, $requested)->willReturn('public');
 		$notes = $this->createMock(NoteServiceInterface::class);
-		$notes->expects($this->once())->method('getNotesForObject')->with('uuid-1', 50, 0, 'public')->willReturn([['id' => 1]]);
+		$notes->expects($this->once())->method('listNotes')->with(new ObjectNotesQuery(objectUuid: 'uuid-1', page: new ListQuery(limit: 50, offset: 0), visibility: 'public'))->willReturn([['id' => 1]]);
 
 		$controller = new NotesController(
 			$request,

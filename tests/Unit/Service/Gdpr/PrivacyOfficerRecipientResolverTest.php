@@ -27,10 +27,12 @@ declare(strict_types=1);
 namespace Unit\Service\Gdpr;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\Gdpr\PrivacyOfficerRecipientResolver;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -53,8 +55,11 @@ class PrivacyOfficerRecipientResolverTest extends TestCase {
 
 		$this->resolver = new PrivacyOfficerRecipientResolver(
 			packResolver: $this->packResolver,
-			groupManager: $this->groupManager,
-			logger: $this->createMock(LoggerInterface::class),
+			membership: new GdprCallerMembership(
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->groupManager,
+				logger: $this->createMock(LoggerInterface::class),
+			),
 		);
 
 	}//end setUp()

@@ -59,11 +59,10 @@ interface ObjectGrantResolverInterface {
 	/**
 	 * Whether one object is granted to the caller for one action.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object's UUID.
-	 * @param string $action The action being decided.
+	 * @param GrantLookup $lookup The caller and the object's UUID.
+	 * @param string      $action The action being decided.
 	 *
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
-	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool;
+	public function isGranted(GrantLookup $lookup, string $action = 'read'): bool;
 }//end interface

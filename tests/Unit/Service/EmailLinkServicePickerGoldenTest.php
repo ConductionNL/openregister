@@ -25,6 +25,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Pins the queries, results, exceptions and log lines of the account,
@@ -33,6 +34,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\EmailLinkService
  * @uses   \OCA\OpenRegister\Service\MailboxPage
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class EmailLinkServicePickerGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -105,6 +107,10 @@ class EmailLinkServicePickerGoldenTest extends TestCase {
 			$outcome = [];
 			try {
 				$call = new \ReflectionMethod(EmailLinkService::class, $method);
+				if ($method === 'getMessagesForMailbox') {
+					$args = [(new MailboxPage($args[0], $args[1]))->startingAfter($args[2], $args[3])];
+				}
+
 				$outcome['result'] = $call->invokeArgs($service, $args);
 			} catch (\Exception $e) {
 				$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage() . ' (' . $e->getCode() . ')';

@@ -55,7 +55,6 @@ class AnonymisationBackendControllerTest extends TestCase {
 
 	private function makeController(): AnonymisationBackendController {
 		return AnonymisationBackendControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->userSession,
 			$this->groupManager,

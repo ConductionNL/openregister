@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
@@ -45,6 +46,8 @@ use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices
  */
 class OAuth2TokenRefreshJobTest extends TestCase {
 	/** @var array<int, string> Credential ids the sweep actually asked to refresh. */
@@ -182,9 +185,8 @@ class OAuth2TokenRefreshJobTest extends TestCase {
 		$this->relinkOn = $relinkOn;
 
 		return new OAuth2TokenRefreshJob(
-			$this->createMock(ITimeFactory::class),
-			new OAuth2TokenRefreshServices($objectService, $catalogue, $refresh),
-			$this->createMock(LoggerInterface::class)
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+			new OAuth2TokenRefreshServices($objectService, $catalogue, $refresh)
 		);
 	}
 }

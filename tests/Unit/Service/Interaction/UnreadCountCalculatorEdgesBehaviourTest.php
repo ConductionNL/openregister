@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use DateTime;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\Schema;
@@ -61,7 +62,7 @@ class UnreadCountCalculatorEdgesBehaviourTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn($schema);
 
-		return new UnreadCountCalculator(new SubstantiveChangeEvaluator($schemas, $this->createMock(LoggerInterface::class)), $this->files, $this->logger);
+		return new UnreadCountCalculator(new SubstantiveChangeEvaluator(new SchemaReading($schemas, $this->createMock(LoggerInterface::class))), $this->files, $this->logger);
 	}//end calculator()
 
 	private static function object(mixed $notes): ObjectEntity {

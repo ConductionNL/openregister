@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use Exception;
 use OCA\OpenRegister\BackgroundJob\DestructionListRun;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -28,10 +29,12 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -41,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Behaviour of DestructionListRun::execute().
@@ -208,24 +212,25 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$retention->method('hasActiveLegalHold')->willReturnCallback(
 			fn (ObjectEntity $object): bool => in_array($object->getUuid(), $this->held, true)
 		);
-		$retention->method('generateDestructionCertificate')->willReturnCallback(
-			fn (array $list, int $count, string $at): array => ['certificateFor' => $list['status'], 'count' => $count, 'at' => $at]
+		$retention->method('certify')->willReturnCallback(
+			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
-		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
+		$settingsReader = $this->createMock(ArchivalSettingsInterface::class);
 		$settingsReader->method('getArchivalSettingsOnly')->willReturn($settings);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->audits[] = [$object->getUuid(), $action, $context, ($object->getRetention()['archiefstatus'] ?? null)];
 				return new AuditTrail();
 			}
-		);
+		));
 
 		$delete = $this->createMock(DeleteObject::class);
 		$delete->method('deleteObject')->willReturnCallback(
-			function ($register, $schema, string $uuid, $original, bool $rbac, bool $multitenancy): bool {
+			function (DeletionRequest $request, bool $rbac, bool $multitenancy): bool {
+				[$register, $schema, $uuid, $original] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId];
 				if (in_array($uuid, $this->undeletable, true) === true) {
 					throw new RuntimeException('locked '.$uuid);
 				}
@@ -245,7 +250,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$saver = $this->createMock(SaveObjectWriterInterface::class);
 		$saver->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($certFails): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($certFails): ObjectEntity {
 				if ($certFails === true) {
 					throw new RuntimeException('cert store down');
 				}
@@ -254,7 +259,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 				$saved = new ObjectEntity();
 				$saved->setUuid('cert-uuid');
 				return $saved;
-			}
+			})
 		);
 
 		$notifications = $this->createMock(INotificationManager::class);
@@ -285,7 +290,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$services = [
 			RetentionServiceInterface::class       => $retention,
-			ArchivalSettingsReaderInterface::class => $settingsReader,
+			ArchivalSettingsInterface::class => $settingsReader,
 			MagicMapperInterface::class            => $mapper,
 			AuditTrailMapperInterface::class       => $audit,
 			DeleteObject::class                    => $delete,
@@ -521,6 +526,55 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$this->assertSame(1, $this->updates[1]['destroyedCount']);
 		$this->assertContains('[DestructionExecutionJob] Failed: gone: not found gone', $this->warnings);
 		$this->assertContains('[DestructionExecutionJob] Failed: locked: locked locked', $this->warnings);
+	}
+
+	/**
+	 * With a copy location configured, each object's restorable copy is
+	 * written before it is destroyed, and the audited destruction names it
+	 * (REQ-IPC-004).
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 */
+	public function testTheCopyIsWrittenFirstAndTheDestructionNamesIt(): void {
+		$location = sys_get_temp_dir() . '/or-destruction-copy-' . bin2hex(random_bytes(4));
+		mkdir($location);
+		$this->listObject('approved', [['uuid' => 'a']]);
+		$this->object('a');
+
+		try {
+			$this->makeRun(settings: ['destructionCopyLocation' => $location])->execute('list-1');
+
+			$copy = $location . '/list-1/a.json';
+			$this->assertFileExists($copy);
+			$this->assertSame('a', json_decode((string) file_get_contents($copy), true)['uuid']);
+			$this->assertSame($copy, $this->audits[0][2]['copy']);
+			$this->assertSame([['7', '8', 'a', null, false, false]], $this->deleted);
+		} finally {
+			@unlink($location . '/list-1/a.json');
+			@rmdir($location . '/list-1');
+			@rmdir($location);
+		}
+	}
+
+	/**
+	 * A copy that cannot be written stops that destruction: the object is
+	 * not marked, audited or deleted, the entry counts as an error, and the
+	 * warning names the location (REQ-IPC-004).
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 */
+	public function testNoCopyNoDestruction(): void {
+		$this->listObject('approved', [['uuid' => 'a']]);
+		$object = $this->object('a');
+
+		$this->makeRun(settings: ['destructionCopyLocation' => '/nonexistent/copies'])->execute('list-1');
+
+		$this->assertSame([], $this->deleted);
+		$this->assertSame([], $this->audits);
+		$this->assertSame(['archiefnominatie' => 'vernietigen'], $object->getRetention());
+		$this->assertSame(1, $this->updates[1]['skippedErrors']);
+		$this->assertSame(0, $this->updates[1]['destroyedCount']);
+		$this->assertStringContainsString('"/nonexistent/copies"', implode("\n", $this->warnings));
 	}
 
 	public function testFinalListCarriesEveryCounterAndTheDoneLine(): void {

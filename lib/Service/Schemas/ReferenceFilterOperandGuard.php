@@ -69,7 +69,7 @@ class ReferenceFilterOperandGuard {
 	public function assertProperties(array $properties): void {
 		foreach ($properties as $name => $config) {
 			if (is_array($config) === true) {
-				$this->assertProperty(name: (string)$name, config: $config, properties: $properties);
+				$this->assertProperty(name: (string)$name, properties: $properties);
 			}
 		}
 	}//end assertProperties()
@@ -78,20 +78,20 @@ class ReferenceFilterOperandGuard {
 	 * Refuse the filter of one property when it names a property nobody declares.
 	 *
 	 * @param string               $name       The property name, which is also its path.
-	 * @param array<string, mixed> $config     The property declaration.
-	 * @param array<string, mixed> $properties The `properties` block of the schema being saved.
+	 * @param array<string, mixed> $properties The `properties` block of the schema being saved; holds the declaration under `$name`.
 	 *
 	 * @return void
 	 *
 	 * @throws ReferenceFilterException When an operand is not declared on either schema.
 	 */
-	private function assertProperty(string $name, array $config, array $properties): void {
+	private function assertProperty(string $name, array $properties): void {
+		$config      = $properties[$name];
 		$declaration = ReferenceFilterDeclaration::fromProperty(property: $config, path: $name);
 		if ($declaration === null) {
 			return;
 		}
 
-		$declaration->assertOperandsExist(ownProperties: $properties, farProperties: $this->propertiesOf(config: $config), path: $name);
+		$declaration->assertOperandsExist(ownProperties: $properties, farProperties: $this->propertiesOf(config: $config));
 	}//end assertProperty()
 
 	/**

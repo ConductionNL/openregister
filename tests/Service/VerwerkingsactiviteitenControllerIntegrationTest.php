@@ -405,12 +405,13 @@ class VerwerkingsactiviteitenControllerIntegrationTest extends TestCase {
 		);
 
 		return new VerwerkingsactiviteitenController(
-			'openregister',
 			$request,
-			$this->vrwMapper,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, \OC::$server->get(\OCP\IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)),
-			\OC::$server->get(\OCP\IDBConnection::class),
-			\OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class)
+			new \OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices(
+				$this->vrwMapper,
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, \OC::$server->get(\OCP\IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class)),
+				\OC::$server->get(\OCP\IDBConnection::class),
+				\OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class),
+			)
 		);
 
 	}//end makeControllerWithBody()

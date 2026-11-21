@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -46,7 +47,7 @@ class AuditTrailMapperSlugBackfillSummaryTest extends TestCase {
 
 	public function testALargeRunStaysUnderTheCapAndCarriesTheTotal(): void {
 		// Review finding r2routes-f6: 2,500 changes.
-		$result = $this->mapper->slugBackfillResultSummary('fill', $this->changes(2500), ['assigned' => 2500]);
+		$result = $this->mapper->slugBackfillSummary(new SlugBackfill($this->changes(2500), ['assigned' => 2500]), 'fill');
 
 		$this->assertCount(AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES, $result['changes']);
 		$this->assertSame(2500, $result['changesTotal']);
@@ -57,7 +58,7 @@ class AuditTrailMapperSlugBackfillSummaryTest extends TestCase {
 	}//end testALargeRunStaysUnderTheCapAndCarriesTheTotal()
 
 	public function testASmallRunIsListedInFull(): void {
-		$result = $this->mapper->slugBackfillResultSummary('fill', $this->changes(3), []);
+		$result = $this->mapper->slugBackfillSummary(new SlugBackfill($this->changes(3), []), 'fill');
 
 		$this->assertCount(3, $result['changes']);
 		$this->assertSame(3, $result['changesTotal']);
@@ -66,7 +67,7 @@ class AuditTrailMapperSlugBackfillSummaryTest extends TestCase {
 	}//end testASmallRunIsListedInFull()
 
 	public function testARunOfExactlyTheCapIsNotTruncated(): void {
-		$result = $this->mapper->slugBackfillResultSummary('fill', $this->changes(AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES), []);
+		$result = $this->mapper->slugBackfillSummary(new SlugBackfill($this->changes(AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES), []), 'fill');
 
 		$this->assertFalse($result['truncated']);
 	}//end testARunOfExactlyTheCapIsNotTruncated()

@@ -58,11 +58,7 @@ class UserTaskPerformersBehaviourTest extends TestCase {
 	}//end config()
 
 	private function performers(bool $withPrincipals = true, bool $withEvents = true): UserTaskPerformers {
-		return new UserTaskPerformers(
-			$this->config(),
-			$withPrincipals ? $this->principals : null,
-			$withEvents ? $this->events : null
-		);
+		return new UserTaskPerformers(config: $this->config(), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: $withPrincipals ? $this->principals : null, events: $withEvents ? $this->events : null));
 	}//end performers()
 
 	private function task(): Task {

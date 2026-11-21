@@ -65,10 +65,12 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory|null $clock Tells the moment a decision is recorded; the system clock when null.
+	 * @param ITimeFactory|null                   $clock     Tells the moment a decision is recorded; the system clock when null.
+	 * @param DestructionListConflictRefresh|null $conflicts Recomputes an entry's link conflicts before a destroy; no check when null.
 	 */
 	public function __construct(
 		private readonly ?ITimeFactory $clock = null,
+		private readonly ?DestructionListConflictRefresh $conflicts = null,
 	) {
 	}//end __construct()
 
@@ -161,12 +163,26 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function assignReviewer(array $listData, string $entryUuid, ?string $reviewer, ?DateTimeInterface $assignedAt = null): array {
-		$index = $this->indexOf(listData: $listData, entryUuid: $entryUuid);
+		$assignment = new ReviewerAssignment(entryUuid: $entryUuid, reviewer: $reviewer, assignedAt: ($assignedAt ?? new DateTimeImmutable()));
+		return $this->assign(listData: $listData, assignment: $assignment);
+	}//end assignReviewer()
+
+	/**
+	 * Assign or unassign the reviewer of one undecided entry.
+	 *
+	 * @param array<string, mixed> $listData   The destruction list's own data.
+	 * @param ReviewerAssignment   $assignment The entry, the reviewer (null or blank to unassign) and the moment.
+	 *
+	 * @return array<string, mixed> The list data, with the entry assigned.
+	 *
+	 * @throws InvalidArgumentException When the list has no such entry, or the entry is decided.
+	 */
+	private function assign(array $listData, ReviewerAssignment $assignment): array {
+		$index = $this->indexOf(listData: $listData, entryUuid: $assignment->entryUuid);
 		$entry = $listData['objects'][$index];
-		$this->guardUnanswered(entry: $entry, entryUuid: $entryUuid);
+		$this->guardUnanswered(entry: $entry, entryUuid: $assignment->entryUuid);
 
-		$moment = ($assignedAt ?? new DateTimeImmutable());
-
+		$reviewer = $assignment->reviewer;
 		if ($reviewer === null || trim($reviewer) === '') {
 			unset($entry['reviewer'], $entry['assignedAt']);
 			$listData['objects'][$index] = $entry;
@@ -174,11 +190,11 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 		}
 
 		$entry['reviewer'] = $reviewer;
-		$entry['assignedAt'] = $moment->format('c');
+		$entry['assignedAt'] = $assignment->assignedAt->format('c');
 		$listData['objects'][$index] = $entry;
 
 		return $listData;
-	}//end assignReviewer()
+	}//end assign()
 
 	/**
 	 * Refuse to reassign an entry that has already been answered.
@@ -213,15 +229,82 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 *                                          answer), the new archiefactiedatum a retention requires, and
 	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
+	 * @param array<int, array<string, mixed>> $overriddenConflicts The link conflicts an acknowledged destroy
+	 *                                          overrides; recorded on the decision when not empty.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
-	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array {
+	public function recordAnswer(
+		array $listData,
+		string $entryUuid,
+		ReviewerAnswer $given,
+		?string $transferRef = null,
+		array $overriddenConflicts = []
+	): array {
 		$answer = new ReviewAnswer(answer: $given->answer, reason: $given->reason, newDate: $given->newDate, transferRef: $transferRef);
+		$listData = $this->record(listData: $listData, decided: new DecidedEntry(entryUuid: $entryUuid, given: $given, answer: $answer));
+		if ($overriddenConflicts === [] || $given->answer !== self::ANSWER_DESTROY) {
+			return $listData;
+		}
+
+		$last = (count($listData['decisions']) - 1);
+		$listData['decisions'][$last]['overriddenConflicts'] = array_values($overriddenConflicts);
+
+		return $listData;
+	}//end recordAnswer()
+
+	/**
+	 * Refuse a destroy answer over link conflicts the reviewer did not acknowledge.
+	 *
+	 * Recomputes the entry's conflicts now, because a date may have moved since
+	 * the list was made (design D-4). An entry whose conflicts could not all be
+	 * established (`truncated`) needs the acknowledgement too: a check that
+	 * could not run must not read as "nothing to override".
+	 *
+	 * @param string $entryUuid    The uuid of the record the entry is about.
+	 * @param string $answer       The answer given.
+	 * @param bool   $acknowledged Whether the request carries `acknowledgeConflicts: true`.
+	 *
+	 * @return array<int, array<string, mixed>> The conflicts an acknowledged destroy overrides; empty when none.
+	 *
+	 * @throws LinkConflictsNotAcknowledgedException When the entry has conflicts and they were not acknowledged.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	public function assertConflictsAcknowledged(string $entryUuid, string $answer, bool $acknowledged): array {
+		if ($answer !== self::ANSWER_DESTROY || $this->conflicts === null) {
+			return [];
+		}
+
+		$found = $this->conflicts->forEntry(entryUuid: $entryUuid);
+		if ($found['conflicts'] === [] && $found['truncated'] === false) {
+			return [];
+		}
+
+		if ($acknowledged === false) {
+			throw new LinkConflictsNotAcknowledgedException(conflicts: $found['conflicts'], truncated: $found['truncated']);
+		}
+
+		return $found['conflicts'];
+	}//end assertConflictsAcknowledged()
+
+	/**
+	 * Record one decided entry in the list's one decision history.
+	 *
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param DecidedEntry         $decided  The entry, the answer as the reviewer gave it, and as it is recorded.
+	 *
+	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
+	 *
+	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
+	 */
+	private function record(array $listData, DecidedEntry $decided): array {
+		[$entryUuid, $given, $answer] = [$decided->entryUuid, $decided->given, $decided->answer];
 		$this->guardAnswer(given: $answer);
 
 		$reviewer = (string)$given->reviewer;
@@ -234,7 +317,7 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 		$decision = $this->withAnswerFacts(decision: $decision, given: $answer);
 
 		return $this->appendDecision(listData: $listData, decision: $decision);
-	}//end recordAnswer()
+	}//end record()
 
 	/**
 	 * A reviewer's answer, as the reviewer gave it.
@@ -334,10 +417,11 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array {
-		$list    = ['list' => $listUuid, 'listStatus' => ($listData['status'] ?? null)];
+		$query   = new PendingReviewQuery(listUuid: $listUuid, reviewer: $reviewer, waitingSince: $waitingSince);
+		$list    = ['list' => $query->listUuid, 'listStatus' => ($listData['status'] ?? null)];
 		$pending = [];
-		foreach ($this->openEntries(listData: $listData, reviewer: $reviewer) as $entry) {
-			if ($this->waitedLongEnough(entry: $entry, waitingSince: $waitingSince) === true) {
+		foreach ($this->openEntries(listData: $listData, reviewer: $query->reviewer) as $entry) {
+			if ($this->waitedLongEnough(entry: $entry, waitingSince: $query->waitingSince) === true) {
 				$pending[] = $this->pendingRow(list: $list, entry: $entry);
 			}
 		}

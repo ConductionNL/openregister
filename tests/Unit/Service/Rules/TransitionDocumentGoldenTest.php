@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
+use OCA\OpenRegister\Service\Rules\RuleAttachment;
 use OCA\OpenRegister\Service\Rules\TransitionDocument;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -64,7 +65,7 @@ class TransitionDocumentGoldenTest extends TestCase {
 		$refusals = [];
 		foreach (['declared' => ['requiresPrior' => true], 'undeclared' => [], 'declared truthy' => ['requiresPrior' => 1]] as $label => $rule) {
 			foreach (['create', 'onCreate', 'beforeCreate', 'afterCreate', 'update', 'Create', null] as $trigger) {
-				$refusals[$label . ' ' . json_encode($trigger)] = $transition->refusalFor('r1', $node, $rule, $trigger);
+				$refusals[$label . ' ' . json_encode($trigger)] = $transition->refusalFor(attachment: new RuleAttachment(ruleName: 'r1', declaration: $rule, trigger: $trigger), node: $node);
 			}
 		}
 

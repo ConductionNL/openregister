@@ -31,6 +31,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EntityLookup
  */
 class RelationCascadeReferenceResolutionGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/relation-cascade-reference-golden.json';
@@ -116,6 +118,6 @@ class RelationCascadeReferenceResolutionGoldenTest extends TestCase {
 			return [$register];
 		});
 
-		return new RelationCascadeHandler($this->createMock(MagicMapperInterface::class), $schemas, $registers, new NullLogger());
+		return new RelationCascadeHandler(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $this->createMock(MagicMapperInterface::class)), logger: new NullLogger());
 	}//end handler()
 }//end class

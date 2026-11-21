@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\Service\File\DocumentStore;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -100,6 +101,7 @@ class FileChangeListener implements IEventListener {
 	 * @param AppSettingsInterface $settingsService Settings service
 	 * @param IJobList $jobList Job list for queuing background jobs
 	 * @param LoggerInterface $logger Logger
+	 * @param DocumentStore|null $documentStore The document store root, for the managed-file check
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
@@ -107,6 +109,7 @@ class FileChangeListener implements IEventListener {
 		private readonly AppSettingsInterface $settingsService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
+		private readonly ?DocumentStore $documentStore = null,
 	) {
 	}//end __construct()
 
@@ -224,7 +227,7 @@ class FileChangeListener implements IEventListener {
 	private function isInExtractionScope(string $filePath): bool {
 		// Checked before the settings load so most files (e.g. skeleton files) cost no DB read.
 		$isOpenRegisterFile = strpos($filePath, 'OpenRegister/files') !== false
-			|| strpos($filePath, '/Open Registers/') !== false;
+			|| strpos($filePath, '/' . $this->documentRoot() . '/') !== false;
 
 		$this->loadExtractionSettings();
 		$extractionScope = self::$cachedExtractScope;
@@ -235,6 +238,21 @@ class FileChangeListener implements IEventListener {
 
 		return $extractionScope !== 'objects' || $isOpenRegisterFile === true;
 	}//end isInExtractionScope()
+
+	/**
+	 * The document store root, the default for a listener built without the store.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		if ($this->documentStore === null) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+
+		return $this->documentStore->root();
+	}//end documentRoot()
 
 	/**
 	 * Load the extraction scope and mode once per request.
@@ -270,7 +288,11 @@ class FileChangeListener implements IEventListener {
 		$extractionMode = self::$cachedExtractionMode ?? 'background';
 
 		if (isset(self::QUEUE_MESSAGES[$extractionMode]) === true) {
-			$this->queueExtractionJob(fileId: $fileId, fileName: $fileName, mode: $extractionMode);
+			$this->logger->debug(
+				message: self::QUEUE_MESSAGES[$extractionMode]['start'],
+				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'file_name' => $fileName])
+			);
+			$this->queueExtractionJob(fileId: $fileId, messages: self::QUEUE_MESSAGES[$extractionMode]);
 			return;
 		}
 
@@ -283,26 +305,20 @@ class FileChangeListener implements IEventListener {
 	}//end dispatchByMode()
 
 	/**
-	 * Queue the extraction job for one file, logging the start and the outcome with the mode's messages.
+	 * Queue the extraction job for one file, logging the outcome with the mode's messages.
 	 *
-	 * @param int|null $fileId   The file id
-	 * @param string   $fileName The file name
-	 * @param string   $mode     A key of QUEUE_MESSAGES
+	 * @param int|null              $fileId   The file id
+	 * @param array<string, string> $messages The mode's entry of QUEUE_MESSAGES
 	 *
 	 * @return void
 	 */
-	private function queueExtractionJob(?int $fileId, string $fileName, string $mode): void {
-		$this->logger->debug(
-			message: self::QUEUE_MESSAGES[$mode]['start'],
-			context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'file_name' => $fileName])
-		);
-
+	private function queueExtractionJob(?int $fileId, array $messages): void {
 		try {
-			$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
-			$this->logger->debug(message: self::QUEUE_MESSAGES[$mode]['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
+			$this->jobList->add(job: ProcessesJobHandlesInterface::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
+			$this->logger->debug(message: $messages['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: self::QUEUE_MESSAGES[$mode]['failed'],
+				message: $messages['failed'],
 				context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'error' => $e->getMessage()])
 			);
 		}
@@ -321,7 +337,7 @@ class FileChangeListener implements IEventListener {
 			message: '[FileChangeListener] Unknown extraction mode, defaulting to background',
 			context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'extraction_mode' => $mode])
 		);
-		$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
+		$this->jobList->add(job: ProcessesJobHandlesInterface::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
 	}//end queueForUnknownMode()
 
 	/**

@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -127,9 +129,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		);
 
 		$this->runner = new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: $this->placeholderResolver,
 			db: $this->db,
 			cache: $this->cache,
@@ -255,11 +255,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			]);
 
 		$result = $this->runner->run(
-			registerRef: 'scholiq',
-			schemaRef: 'regulation',
-			name: 'mandatoryEnrolledCount',
-			bypassRbac: true,
-			parentRow: ['slug' => 'adr-2026']
+			ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'mandatoryEnrolledCount'),
+			options: new NamedAggregationOptions(bypassRbac: true, parentRow: ['slug' => 'adr-2026'])
 		);
 
 		$this->assertSame(2, $result['value']);
@@ -313,11 +310,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/@self\.nonExistentField/');
 
 		$this->runner->run(
-			registerRef: 'scholiq',
-			schemaRef: 'regulation',
-			name: 'orphanCount',
-			bypassRbac: true,
-			parentRow: []
+			ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'orphanCount'),
+			options: new NamedAggregationOptions(bypassRbac: true, parentRow: [])
 		);
 
 	}//end testAtSelfMissingFieldIsRefused()
@@ -342,7 +336,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->magicMapper->method('findAllInRegisterSchemaTable')
 			->willReturn([$this->makeEntityStub(['title' => 'Task A'])]);
 
-		$result = $this->runner->run('tasks-reg', 'task', 'totalCount', true);
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'tasks-reg', schema: 'task', name: 'totalCount'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame('count', $result['metric']);
 		$this->assertSame(1, $result['value']);
@@ -371,7 +365,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 				$this->makeEntityStub(['status' => 'closed']),
 			]);
 
-		$result = $this->runner->run('tasks-reg', 'task', 'openCount', true);
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'tasks-reg', schema: 'task', name: 'openCount'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		$this->assertSame(2, $result['value']);
 
@@ -415,7 +409,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 				$this->makeEntityStub(['lifecycleState' => 'cancelled']),
 			]);
 
-		$result = $this->runner->run('scholiq', 'regulation', 'activeEnrolled', true);
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'activeEnrolled'), options: new NamedAggregationOptions(bypassRbac: true));
 
 		// Only 'active' and 'completed' match.
 		$this->assertSame(2, $result['value']);
@@ -451,7 +445,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+		$this->runner->run(ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'enrolCount'), options: new NamedAggregationOptions(bypassRbac: true));
 
 	}//end testCrossSchemaThrowsWhenTargetSchemaNotFound()
 
@@ -479,7 +473,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('No register found that contains schema "orphan-schema"');
 
-		$this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+		$this->runner->run(ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'enrolCount'), options: new NamedAggregationOptions(bypassRbac: true));
 
 	}//end testCrossSchemaThrowsWhenNoRegisterContainsTargetSchema()
 
@@ -513,7 +507,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			->willReturn([$this->makeEntityStub(['regulationSlug' => 'abc'])]);
 
 		// Should not crash; check a value key exists in result.
-		$result = $this->runner->run('scholiq', 'regulation', 'enrolCount', true);
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'enrolCount'), options: new NamedAggregationOptions(bypassRbac: true));
 		$this->assertArrayHasKey('value', $result);
 
 	}//end testMalformedWhereClauseCastToArrayDoesNotCrash()
@@ -553,7 +547,7 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Forbidden');
 
-		$this->runner->run('scholiq', 'regulation', 'enrolCount', bypassRbac: false);
+		$this->runner->run(ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'enrolCount'), options: new NamedAggregationOptions(bypassRbac: false));
 
 	}//end testCrossSchemaRbacGateOnTargetSchema()
 
@@ -622,10 +616,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			]);
 
 		$result = $this->runner->run(
-			registerRef: 'shillinq',
-			schemaRef: 'project',
-			name: 'segmentPnl',
-			bypassRbac: true
+			ref: new NamedAggregationRef(register: 'shillinq', schema: 'project', name: 'segmentPnl'),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 
 		$groups = ($result['groups'] ?? []);
@@ -684,10 +676,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 
 		// No parentRow — exactly what every production caller supplies today.
 		$this->runner->run(
-			registerRef: 'shillinq',
-			schemaRef: 'project',
-			name: 'segmentPnl',
-			bypassRbac: true
+			ref: new NamedAggregationRef(register: 'shillinq', schema: 'project', name: 'segmentPnl'),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 	}//end testCrossSchemaUnresolvableAtSelfThrows()
 
@@ -724,11 +714,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			]);
 
 		$result = $this->runner->run(
-			registerRef: 'shillinq',
-			schemaRef: 'project',
-			name: 'orphanCount',
-			bypassRbac: true,
-			parentRow: ['code' => null]
+			ref: new NamedAggregationRef(register: 'shillinq', schema: 'project', name: 'orphanCount'),
+			options: new NamedAggregationOptions(bypassRbac: true, parentRow: ['code' => null])
 		);
 
 		$this->assertSame(1, $result['value']);
@@ -794,10 +781,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 			]);
 
 		$result = $this->runner->run(
-			registerRef: 'shillinq',
-			schemaRef: 'vat-return',
-			name: 'totalsByReturn',
-			bypassRbac: true
+			ref: new NamedAggregationRef(register: 'shillinq', schema: 'vat-return', name: 'totalsByReturn'),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 
 		$values = ($result['values'] ?? null);
@@ -855,10 +840,8 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->expectExceptionMessageMatches('/later/');
 
 		$this->runner->run(
-			registerRef: 'shillinq',
-			schemaRef: 'vat-return',
-			name: 'badOrder',
-			bypassRbac: true
+			ref: new NamedAggregationRef(register: 'shillinq', schema: 'vat-return', name: 'badOrder'),
+			options: new NamedAggregationOptions(bypassRbac: true)
 		);
 	}//end testDerivedMetricCannotReadALaterAlias()
 

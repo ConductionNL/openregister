@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -35,14 +34,12 @@ final class TransitionSubjects {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface $objectService  Reads and saves the object.
-	 * @param SchemaMapperInterface     $schemaMapper   Resolves the object's schema and its lifecycle.
-	 * @param RegisterMapperInterface   $registerMapper Resolves the object's register.
+	 * @param ObjectOperationsInterface $objectService Reads and saves the object.
+	 * @param SchemaCatalogInterface    $catalog       Resolves the object's schema, its lifecycle and its register.
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()
 }//end class

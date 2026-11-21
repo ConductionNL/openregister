@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
+use OCA\OpenRegister\Service\ObjectAction\RightCheck;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCP\IL10N;
@@ -109,7 +110,7 @@ class ObjectActionGateMatrixTest extends TestCase {
 	private function mayTake(Schema $schema): bool {
 		$definition = ObjectActionDefinition::fromDeclaration(key: 'take', definition: ['selfAssign' => ['field' => 'assignee']]);
 
-		return $this->gate->mayRun(schema: $schema, right: 'update', definition: $definition, object: new ObjectEntity());
+		return $this->gate->mayRun(check: new RightCheck(schema: $schema, right: 'update', object: new ObjectEntity()), definition: $definition);
 	}//end mayTake()
 
 	/**

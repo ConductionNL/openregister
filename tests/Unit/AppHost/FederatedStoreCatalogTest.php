@@ -22,9 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
+use OCA\OpenRegister\Service\Config\ShareableConfigCatalogue;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +39,14 @@ use Psr\Log\LoggerInterface;
  *
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\DeclaredShareableType
+ * @uses \OCA\OpenRegister\Service\Config\ShareableConfigCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class FederatedStoreCatalogTest extends TestCase {
 	/** @var ShareableConfigTypeRegistry&MockObject */
@@ -50,6 +60,9 @@ class FederatedStoreCatalogTest extends TestCase {
 	/**
 	 * Build the collaborators.
 	 *
+	 * The catalogue reaches the registry and the federated engine through the
+	 * Configuration adapter of its port, so these cases pin the whole path.
+	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
@@ -62,8 +75,7 @@ class FederatedStoreCatalogTest extends TestCase {
 			->getMock();
 
 		$this->catalog = new FederatedStoreCatalog(
-			registry: $this->registry,
-			federated: $this->federated,
+			catalogue: new ShareableConfigCatalogue(registry: $this->registry, federated: $this->federated),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -100,6 +112,37 @@ class FederatedStoreCatalogTest extends TestCase {
 		$type->method('getDisplayName')->willReturn($name);
 		return $type;
 	}//end type()
+
+	/**
+	 * Only the declared types an installed app registers are owned, in
+	 * declaration order: a type an optional, disabled app would own is left out.
+	 *
+	 * @return void
+	 */
+	public function testOwnedTypesKeepsOnlyRegisteredTypesInOrder(): void {
+		$registered = [
+			'openregister.configset' => $this->type(id: 'openregister.configset', topic: 'c', name: 'Configuration set'),
+			'openregister.flows'     => $this->type(id: 'openregister.flows', topic: 'f', name: 'Flows'),
+		];
+		$this->registry->expects($this->exactly(3))
+			->method('get')
+			->willReturnCallback(static fn (string $id) => ($registered[$id] ?? null));
+
+		$owned = $this->catalog->ownedTypes(typeIds: ['openregister.flows', 'nldesign.theme', 'openregister.configset']);
+
+		$this->assertSame(['openregister.flows', 'openregister.configset'], $owned);
+	}//end testOwnedTypesKeepsOnlyRegisteredTypesInOrder()
+
+	/**
+	 * With nothing registered, no declared type is owned.
+	 *
+	 * @return void
+	 */
+	public function testOwnedTypesIsEmptyWhenNothingIsRegistered(): void {
+		$this->registry->method('get')->willReturn(null);
+
+		$this->assertSame([], $this->catalog->ownedTypes(typeIds: ['nldesign.theme']));
+	}//end testOwnedTypesIsEmptyWhenNothingIsRegistered()
 
 	/**
 	 * A discovered configuration set becomes one card naming its type.
@@ -164,6 +207,10 @@ class FederatedStoreCatalogTest extends TestCase {
 
 		$this->assertFalse($report['success']);
 		$this->assertSame('refused', $report['components'][0]['status']);
+		$this->assertSame(
+			'This organisation does not trust https://github.com/someone/else as a store source.',
+			$report['components'][0]['message']
+		);
 	}//end testUntrustedSourceIsRefused()
 
 	/**
@@ -271,8 +318,8 @@ class FederatedStoreCatalogTest extends TestCase {
 			['repo' => 'ConductionNL/works-council', 'name' => 'works-council', 'description' => 'Staff advice.'],
 		]);
 
-		$hit = $this->catalog->search(descriptor: $this->descriptor(), query: 'gemeente');
-		$miss = $this->catalog->search(descriptor: $this->descriptor(), query: 'nothing here');
+		$hit = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'gemeente'));
+		$miss = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'nothing here'));
 
 		$this->assertCount(1, $hit['cards']);
 		$this->assertSame('default-gemeente', $hit['cards'][0]['title']);
@@ -290,7 +337,7 @@ class FederatedStoreCatalogTest extends TestCase {
 		);
 		$this->federated->expects($this->never())->method('discover');
 
-		$result = $this->catalog->search(descriptor: $this->descriptor(), query: null, kind: 'openregister.flows');
+		$result = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: null, kind: 'openregister.flows'));
 
 		$this->assertSame([], $result['cards']);
 	}//end testSearchFiltersByType()

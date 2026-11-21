@@ -107,12 +107,23 @@ class DateTimeNormalizer implements DateTimeNormalizerInterface {
 			return DateTimeImmutable::createFromInterface($value);
 		}
 
+		$this->logRejected(value: $value);
+		return null;
+	}//end fromNonString()
+
+	/**
+	 * Log an input that is neither a string nor a DateTime.
+	 *
+	 * @param mixed $value The input.
+	 *
+	 * @return void
+	 */
+	private function logRejected(mixed $value): void {
 		$this->logger->debug(
 			message: '[DateTimeNormalizer] Non-string, non-DateTime input rejected',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'type' => get_debug_type($value)]
 		);
-		return null;
-	}//end fromNonString()
+	}//end logRejected()
 
 	/**
 	 * Parse a trimmed datetime string; '' and unparseable strings are null (the latter logged).
@@ -133,18 +144,30 @@ class DateTimeNormalizer implements DateTimeNormalizerInterface {
 			// "naive database column value" case the callers need it for.
 			return new DateTimeImmutable($value, $assumeTimezone);
 		} catch (Throwable $e) {
-			$this->logger->debug(
-				message: '[DateTimeNormalizer] Unparseable datetime string',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'value' => $value,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUnparseable(value: $value, error: $e);
 			return null;
 		}
 	}//end parseString()
+
+	/**
+	 * Log a datetime string that does not parse.
+	 *
+	 * @param string    $value The string.
+	 * @param Throwable $error Why it does not parse.
+	 *
+	 * @return void
+	 */
+	private function logUnparseable(string $value, Throwable $error): void {
+		$this->logger->debug(
+			message: '[DateTimeNormalizer] Unparseable datetime string',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'value' => $value,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnparseable()
 
 	/**
 	 * Format user-supplied input as a database datetime string.
