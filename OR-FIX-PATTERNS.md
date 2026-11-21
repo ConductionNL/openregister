@@ -306,3 +306,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline red on a PR that ships tests/Unit/Architecture/component-dependency-baseline.json (#8084).
 - Cause: every modularity merge on main changes the module edge set; the committed baseline goes stale on each main merge.
 - Fix: on the merged branch run python3 scripts/component-deps.py --write-baseline, check the test is green, commit the json alone (see #8084 7459edd3).
+
+## Clean auto-merge leaves a duplicate property or import (or-fix-13)
+- Symptom: merge with main reports no conflict in a controller, but php -l fails 'Cannot use ... because the name is already in use' or 'Cannot redeclare ...::$logger'; tests error on load.
+- Cause: main and the PR each added the same dependency (e.g. a logger) through different bundles (main: AuditTrailLog->logger, PR: AuditTrailControllerServices->logger); git merges both property blocks and both assignments.
+- Fix: php -l every PR-touched lib file after the merge; keep main's wiring (required, non-null), drop the PR's duplicate property, import, assignment and bundle param, and the factory arg in tests. HandlesExceptionsTrait reads any $logger property. See #10553.
