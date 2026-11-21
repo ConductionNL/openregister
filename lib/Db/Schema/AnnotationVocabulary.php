@@ -19,10 +19,6 @@
 namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
-use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
-use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -283,7 +279,7 @@ final class AnnotationVocabulary {
 		// stopped at the root while its author read a 201. Measured on a live
 		// instance 2026-09-19 — POST with the annotation returned 201 and the
 		// configuration column was empty.
-		AccessDeclarationValidators::HIERARCHY_ANNOTATION,
+		Schema::HIERARCHY_ANNOTATION,
 		// Whether this schema's objects may invite an external
 		// (non-Nextcloud-user) participant into a linked Talk room by email,
 		// via TalkLinkService::invite() — default OFF.
@@ -298,20 +294,20 @@ final class AnnotationVocabulary {
 		// ClassificationDeclarationValidator. Absent from this list
 		// setConfiguration() would drop it and every classified object would
 		// read as unclassified, the same silent no-op every entry above records.
-		ClassificationScale::ANNOTATION,
+		Schema::CLASSIFICATION_ANNOTATION,
 		// A per-object confidentiality tier, legal ground and timed release
 		// (confidentiality-classification-primitive). Read by
 		// ConfidentialityRule; a faulty block is logged at error level and
 		// fails closed. Absent from this list setConfiguration() would drop it
 		// and every confidential object would read as unclassified.
-		ConfidentialityAnnotationValidator::ANNOTATION,
+		Schema::CONFIDENTIALITY_ANNOTATION,
 		// Whether emergency self-granted access is offered, which verbs it
 		// grants, for how long and who is told (REQ-GSR-004). Read by
 		// BreakGlassDeclaration, refused at save by
 		// AccessDeclarationChecks::checkBreakGlass(). Absent from this list
 		// setConfiguration() would drop it and every take would be refused as
 		// undeclared while its author read a 200.
-		BreakGlassDeclaration::ANNOTATION,
+		Schema::BREAK_GLASS_ANNOTATION,
 	];
 
 

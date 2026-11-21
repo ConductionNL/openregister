@@ -57,6 +57,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphDiff
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class FlowVersionPublishWatchedFieldsTest extends TestCase {
 

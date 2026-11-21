@@ -63,7 +63,7 @@ final class BreakGlassDeclaration {
 	 *
 	 * @var string
 	 */
-	public const ANNOTATION = 'x-openregister-break-glass';
+	public const ANNOTATION = Schema::BREAK_GLASS_ANNOTATION;
 
 	/**
 	 * Verbs an emergency grant may never carry.

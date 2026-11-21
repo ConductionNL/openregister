@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaRefusal;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -59,14 +60,14 @@ class ObjectQuotaListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE = 'object-quota-exceeded';
+	public const ERROR_CODE = ObjectQuotaRefusal::ERROR_CODE;
 
 	/**
 	 * The error code of a create refused because the quota could not be checked.
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE_UNCHECKED = 'object-quota-unchecked';
+	public const ERROR_CODE_UNCHECKED = ObjectQuotaRefusal::ERROR_CODE_UNCHECKED;
 
 	/**
 	 * Constructor.
@@ -242,7 +243,7 @@ class ObjectQuotaListener implements IEventListener {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
 	 */
 	public static function exceededMessage(int $count, int $limit, string $schema): string {
-		return sprintf('This organisation already holds %d of at most %d objects of schema "%s".', $count, $limit, $schema);
+		return (new ObjectQuotaRefusal(schema: $schema, held: $count, limit: $limit))->message();
 	}//end exceededMessage()
 
 	/**
@@ -255,9 +256,6 @@ class ObjectQuotaListener implements IEventListener {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
 	 */
 	public static function uncheckedMessage(string $schema): string {
-		return sprintf(
-			'Schema "%s" limits how many objects one organisation holds, and that limit could not be checked just now, so nothing was created. Try again.',
-			$schema
-		);
+		return (new ObjectQuotaRefusal(schema: $schema))->message();
 	}//end uncheckedMessage()
 }//end class

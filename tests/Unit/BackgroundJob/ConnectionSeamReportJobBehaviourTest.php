@@ -27,11 +27,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
+use OCA\OpenRegister\Service\Translation\TranslationBindingDescription;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -62,6 +64,7 @@ class ConnectionSeamReportJobBehaviourTest extends TestCase {
 		$this->sent = [];
 
 		$container = $this->createMock(ContainerInterface::class);
+		$services[TranslationBindingInterface::class] = new TranslationBindingDescription($container);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($services): object {
 				$service = $services[$id];
