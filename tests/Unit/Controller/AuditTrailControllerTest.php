@@ -759,7 +759,8 @@ class AuditTrailControllerTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setId(2);
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'], null), 2, 0))
+			// REQ-HSA-011: the list reads record history unless asked for the administrative changes.
+			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1', 'category' => 'domain'], null), 2, 0))
 			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
 		$this->logService->expects($this->never())->method('countAllLogs');
 

@@ -57,6 +57,12 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		auditTrailFilters: {},
 		auditTrailSearch: '',
 
+		// REQ-HSA-011: which trail the page reads. `domain` (record history) is
+		// the server's default; `administrative` reads the schema, register,
+		// organisation and settings changes. Kept apart from the sidebar
+		// filters, which the sidebar replaces wholesale.
+		auditTrailCategory: 'domain',
+
 		// Sort: `{ field: 'ASC' | 'DESC' }`, empty for the server default
 		// (newest first). Kept here so paging keeps the order a header chose.
 		auditTrailSort: {},
@@ -116,6 +122,33 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
+		 * Choose the trail the list reads: `domain` or `administrative`; any
+		 * other value reads as `domain`.
+		 *
+		 * @param {string} category - The category
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md
+		 */
+		setAuditTrailCategory(category) {
+			this.auditTrailCategory = category === 'administrative' ? 'administrative' : 'domain'
+		},
+
+		/**
+		 * The filters a list request sends: the sidebar's, plus the category
+		 * when it is not the server's default.
+		 *
+		 * @return {object} The filters
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md
+		 */
+		listFilters() {
+			if (this.auditTrailCategory !== 'administrative') {
+				return this.auditTrailFilters
+			}
+			return { ...this.auditTrailFilters, category: 'administrative' }
+		},
+
+		/**
 		 * Set audit trail search
 		 *
 		 * @param {string} search - The search term
@@ -148,7 +181,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		async fetchAuditTrails(options = {}) {
 			const query = listPageQuery(options, {
 				search: this.auditTrailSearch,
-				filters: this.auditTrailFilters,
+				filters: this.listFilters(),
 				sort: this.auditTrailSort,
 			})
 			return storeRequest(this, {
@@ -236,7 +269,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		sharedListRequest() {
 			const { limit, page } = this.auditTrailPagination
 			const key = JSON.stringify([
-				this.auditTrailFilters,
+				this.listFilters(),
 				this.auditTrailSearch,
 				this.auditTrailSort,
 				limit,

@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -31,7 +35,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
- * Hands the six schema and register events to EntityEditAuditor.
+ * Hands the schema, register and organisation events to EntityEditAuditor.
  *
  * Listening at the mapper's events covers every door that changes a schema or
  * register: controllers, updateFromArray, tool providers, imports and repair
@@ -70,7 +74,47 @@ class EntityEditAuditListener implements IEventListener {
 			$event instanceof RegisterCreatedEvent => $this->auditor->recordCreated(entity: $event->getRegister()),
 			$event instanceof RegisterUpdatedEvent => $this->auditor->recordUpdated(old: $event->getOldRegister(), new: $event->getNewRegister()),
 			$event instanceof RegisterDeletedEvent => $this->auditor->recordDeleted(entity: $event->getRegister()),
+			$event instanceof OrganisationCreatedEvent,
+			$event instanceof OrganisationDeletedEvent => $this->recordOrganisation(event: $event),
+			$event instanceof OrganisationUpdatedEvent => $this->recordOrganisationUpdate(event: $event),
 			default => 0,
 		};
 	}//end handle()
+
+	/**
+	 * Record a created or deleted organisation; the events carry the Core interface, the trail reads the entity.
+	 *
+	 * @param OrganisationCreatedEvent|OrganisationDeletedEvent $event The event.
+	 *
+	 * @return int The rows written.
+	 */
+	private function recordOrganisation(OrganisationCreatedEvent|OrganisationDeletedEvent $event): int {
+		$organisation = $event->getOrganisation();
+		if ($organisation instanceof Organisation === false) {
+			return 0;
+		}
+
+		if ($event instanceof OrganisationCreatedEvent) {
+			return $this->auditor->recordCreated(entity: $organisation);
+		}
+
+		return $this->auditor->recordDeleted(entity: $organisation);
+	}//end recordOrganisation()
+
+	/**
+	 * Record an updated organisation.
+	 *
+	 * @param OrganisationUpdatedEvent $event The event.
+	 *
+	 * @return int The rows written.
+	 */
+	private function recordOrganisationUpdate(OrganisationUpdatedEvent $event): int {
+		$old = $event->getOldOrganisation();
+		$new = $event->getNewOrganisation();
+		if ($old instanceof Organisation === false || $new instanceof Organisation === false) {
+			return 0;
+		}
+
+		return $this->auditor->recordUpdated(old: $old, new: $new);
+	}//end recordOrganisationUpdate()
 }//end class
