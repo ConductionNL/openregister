@@ -39,6 +39,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 class ContextsControllerTest extends TestCase {
 	private IRequest&MockObject $request;
@@ -252,7 +253,7 @@ class ContextsControllerTest extends TestCase {
 			fn ($id): Schema => ((int) $id === 2 ? $hidden : $published)
 		);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema): bool => $schema->getId() === 1
+			fn (PermissionAsk $ask): bool => $ask->schema->getId() === 1
 		);
 		$this->request->method('getHeader')->willReturn('');
 

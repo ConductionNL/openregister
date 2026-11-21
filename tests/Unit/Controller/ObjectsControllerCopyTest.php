@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -225,7 +226,7 @@ class ObjectsControllerCopyTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action): bool => in_array($action, $rights, true)
+			static fn (PermissionAsk $ask): bool => in_array($ask->action, $rights, true)
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($permissions);

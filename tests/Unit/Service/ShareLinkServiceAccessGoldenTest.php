@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\ShareDraft;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IUser;
@@ -249,7 +250,7 @@ class ShareLinkServiceAccessGoldenTest extends TestCase {
 			}
 		);
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($mayUpdate, $object): bool {
 				// Recorded, not asserted: the service swallows a Throwable here.
 				$this->asks[] = $args[1].':'.$args[3].':'.var_export($args[5] === $object, true);
@@ -259,7 +260,7 @@ class ShareLinkServiceAccessGoldenTest extends TestCase {
 
 				return $mayUpdate;
 			}
-		);
+		));
 		$guard = $this->createMock(FileRestrictionGuard::class);
 		$guard->method('readableNodes')->willReturnCallback(
 			static fn (array $nodes): array => array_values(array_filter($nodes, static fn (Node $node): bool => (int)$node->getId() !== 13))

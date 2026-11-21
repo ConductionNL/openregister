@@ -27,6 +27,7 @@ use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -101,13 +102,13 @@ class TagsControllerUpdateRightTest extends TestCase {
 	 * @return void
 	 */
 	private function updateRight(bool $mayUpdate): void {
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null) use ($mayUpdate): bool {
 				$this->assertSame('update', $action, 'Tagging must ask for the update right.');
 				$this->assertSame($this->object, $object, 'The update right is decided on the object being tagged.');
 				return $mayUpdate;
 			}
-		);
+		));
 	}//end updateRight()
 
 	/**

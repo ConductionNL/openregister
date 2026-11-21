@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -160,9 +161,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$this->stageUser();
 
 		$verdict = $this->handler->hasPermission(
-			schema: $this->schemaWith(['read' => ['finance']]),
-			action: 'read',
-			userId: 'alice'
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+				->askedBy(userId: 'alice', objectOwner: null)
 		);
 
 		$this->assertFalse($verdict, 'precondition: alice must NOT hold this right');
@@ -184,9 +184,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$this->stageUser(['finance']);
 
 		$verdict = $this->handler->hasPermission(
-			schema: $this->schemaWith(['read' => ['finance']]),
-			action: 'read',
-			userId: 'alice'
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+				->askedBy(userId: 'alice', objectOwner: null)
 		);
 
 		$this->assertTrue($verdict, 'precondition: alice must hold this right');
@@ -209,9 +208,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$this->stageUser(['staff']);
 
 		$this->handler->hasPermission(
-			schema: $this->schemaWith(['sendMail' => ['staff']]),
-			action: 'sendMail',
-			userId: 'alice'
+			ask: (new PermissionAsk(schema: $this->schemaWith(['sendMail' => ['staff']]), action: 'sendMail'))
+				->askedBy(userId: 'alice', objectOwner: null)
 		);
 
 		$events = $this->actionEvents();
@@ -234,10 +232,9 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$object->setObject([]);
 
 		$this->handler->hasPermission(
-			schema: $this->schemaWith(['read' => ['finance']]),
-			action: 'read',
-			userId: 'alice',
-			object: $object
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+				->askedBy(userId: 'alice', objectOwner: null)
+				->about(object: $object, register: null)
 		);
 
 		$events = $this->actionEvents();
@@ -257,9 +254,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$this->stageUser();
 
 		$this->handler->hasPermission(
-			schema: $this->schemaWith(['read' => ['finance']]),
-			action: 'read',
-			userId: 'alice'
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+				->askedBy(userId: 'alice', objectOwner: null)
 		);
 
 		$events = $this->actionEvents();
@@ -298,9 +294,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasPermission(
-				schema: $this->schemaWith(['read' => ['finance']]),
-				action: 'read',
-				userId: 'alice'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+					->askedBy(userId: 'alice', objectOwner: null)
 			),
 			'A crashing audit listener revoked an access the rules had granted.'
 		);
@@ -321,7 +316,7 @@ class PermissionHandlerActionEventTest extends TestCase {
 
 		$schema = $this->schemaWith(['read' => ['finance']]);
 		for ($i = 0; $i < 3; $i++) {
-			$this->handler->hasPermission(schema: $schema, action: 'read', userId: 'alice');
+			$this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'alice', objectOwner: null));
 		}
 
 		$this->assertCount(
@@ -342,9 +337,8 @@ class PermissionHandlerActionEventTest extends TestCase {
 		$this->stageUser();
 
 		$this->handler->hasPermission(
-			schema: $this->schemaWith(['read' => ['finance']]),
-			action: 'read',
-			userId: 'alice',
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['finance']]), action: 'read'))
+				->askedBy(userId: 'alice', objectOwner: null),
 			_rbac: false
 		);
 

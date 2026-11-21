@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -342,9 +343,9 @@ class DeletedControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (...$args): bool => ($args[3] ?? null) === 'bob'
-		);
+		));
 
 		$slim = new ObjectEntity();
 		$slim->setUuid('uuid-1');

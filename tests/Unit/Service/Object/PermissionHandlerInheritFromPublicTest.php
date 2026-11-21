@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -449,7 +450,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockNoUser();
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertTrue(condition: $result);
 
@@ -471,7 +472,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockNoUser();
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertTrue(condition: $result);
 
@@ -493,7 +494,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockUser(uid: 'alice', groups: ['users']);
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertTrue(condition: $result);
 
@@ -515,7 +516,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockUser(uid: 'alice', groups: ['users']);
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertFalse(condition: $result);
 
@@ -538,7 +539,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockUser(uid: 'admin-user', groups: ['admin']);
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertTrue(
 			condition: $result,
@@ -563,9 +564,8 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		$this->mockUser(uid: 'carol', groups: ['users']);
 
 		$result = $this->handler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			objectOwner: 'carol'
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: 'carol')
 		);
 
 		$this->assertTrue(
@@ -594,7 +594,7 @@ class PermissionHandlerInheritFromPublicTest extends TestCase {
 		);
 		$this->mockUser(uid: 'bob', groups: ['editors']);
 
-		$result = $this->handler->hasPermission(schema: $schema, action: 'read');
+		$result = $this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 
 		$this->assertTrue(condition: $result);
 

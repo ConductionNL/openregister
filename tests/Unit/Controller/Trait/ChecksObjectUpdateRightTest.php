@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -116,7 +117,7 @@ class ChecksObjectUpdateRightTest extends TestCase {
 		$this->objects->method('getCurrentSchemaEntity')->willReturn($schema);
 		$this->permissions->expects($this->exactly(2))
 			->method('hasPermission')
-			->with($schema, 'update', null, 'jan', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'update', null, 'jan', true, $object))
 			->willReturnOnConsecutiveCalls(true, false);
 
 		$this->assertTrue($this->mayUpdate($object));

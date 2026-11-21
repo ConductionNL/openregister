@@ -2793,10 +2793,9 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			return $this->runtime->container->get(PermissionHandlerInterface::class)->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: $owner,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: $owner)
+					->about(object: $object, register: null)
 			);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'inverse read check failed for '.(string) $object->getUuid(), error: $e);
@@ -3681,10 +3680,9 @@ class RenderObject implements RenderObjectInterface {
 
 		$can = $this->runtime->container->get(RunnableActionsInterface::class)->canRun(object: $entity, schema: $schema);
 		$can['update'] = $permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			objectOwner: $owner,
-			object: $entity
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: null, objectOwner: $owner)
+				->about(object: $entity, register: null)
 		);
 		$can['manage'] = $this->mayManage(entity: $entity, owner: $owner);
 		$entity->setCan($can);

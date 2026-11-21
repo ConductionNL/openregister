@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -71,7 +72,7 @@ final class ExportRightServiceTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('resolveAuthorization')->willReturn($authorization);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($holds): bool {
 				// PHPUnit invokes the callback with the declared parameters in
 				// order, so the verb is the second one whether the caller used
@@ -81,7 +82,7 @@ final class ExportRightServiceTest extends TestCase {
 
 				return (bool)($holds[$action] ?? false);
 			}
-		);
+		));
 
 		return new ExportRightService($permissions, $session, $groups, new NullLogger());
 	}//end service()

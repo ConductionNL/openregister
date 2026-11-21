@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * The watcher service when its inputs are empty or its storage fails: every
@@ -210,7 +211,17 @@ class WatcherServiceDegradedTest extends TestCase {
 		$object = $this->object();
 		$this->schemas->method('find')->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', null, 'owner', true, $object, null)
+			->with(
+				$this->callback(
+					static fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === 'update'
+						&& $ask->userId === null
+						&& $ask->objectOwner === 'owner'
+						&& $ask->object === $object
+						&& $ask->register === null
+				),
+				true
+			)
 			->willReturn(true);
 
 		$this->assertTrue($this->service()->maySeeWatchers($object));

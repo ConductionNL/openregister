@@ -32,6 +32,7 @@ use OCP\Capabilities\ICapability;
 use OCP\Capabilities\IInitialStateExcludedCapability;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * OCS capability listing the scopes the unified search provider accepts for this user.
@@ -170,7 +171,8 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 */
 	private function mayRead(array $row, string $userId): bool {
 		try {
-			return $this->permissions->hasPermission(schema: $row['schema'], action: 'read', userId: $userId);
+			return $this->permissions->hasPermission(ask: (new PermissionAsk(schema: $row['schema'], action: 'read'))
+				->askedBy(userId: $userId, objectOwner: null));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SearchScopesCapability] Read check failed for schema {schema}; its scopes are not offered: {error}',

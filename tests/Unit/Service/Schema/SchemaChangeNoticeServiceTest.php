@@ -45,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService
@@ -191,7 +192,7 @@ final class SchemaChangeNoticeServiceTest extends TestCase {
 		);
 		$this->followers->method('findUids')->with(12)->willReturn(['piet', 'jan']);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId): bool => $action === 'read' && $userId !== 'kees'
+			static fn (PermissionAsk $ask): bool => $ask->action === 'read' && $ask->userId !== 'kees'
 		);
 
 		$this->assertSame(['jan', 'piet'], $this->service()->recipients(self::melding()));

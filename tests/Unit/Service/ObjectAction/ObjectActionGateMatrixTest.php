@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\RightCheck;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
 use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -134,7 +135,7 @@ class ObjectActionGateMatrixTest extends TestCase {
 	public function testAScalarRowIsSkippedAndALaterRowGrants(): void {
 		$this->permissions->expects($this->once())
 			->method('hasPermission')
-			->with($this->isInstanceOf(Schema::class), 'take', 'anna')
+			->with(...PermissionAskArgs::with($this->isInstanceOf(Schema::class), 'take', 'anna'))
 			->willReturn(true);
 
 		$this->assertTrue($this->mayTake(schema: self::schema(matrix: ['field' => 'group', 'rows' => ['take', ['group' => 'team', 'actions' => [' take ']]]])));

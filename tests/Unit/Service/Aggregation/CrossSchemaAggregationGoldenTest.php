@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -284,7 +285,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($case): bool {
 				$schema = ($args['schema'] ?? $args[0]);
 				$action = ($args['action'] ?? $args[1] ?? null);
@@ -292,7 +293,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 				$this->calls[] = ['permission' => [$schema->getSlug(), $action, $userId]];
 				return $case['allow'][$schema->getSlug()];
 			}
-		);
+		));
 
 		$session = $this->createMock(IUserSession::class);
 		$user = null;

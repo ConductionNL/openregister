@@ -2266,7 +2266,7 @@ class SaveObjectsTest extends TestCase {
 		$groups = $this->createMock(\OCP\IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(static fn (...$args): bool => $args[1] !== 'create');
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(static fn (...$args): bool => $args[1] !== 'create'));
 
 		$stored = new \OCA\OpenRegister\Db\ObjectEntity();
 		$stored->setUuid('11111111-1111-1111-1111-111111111111');

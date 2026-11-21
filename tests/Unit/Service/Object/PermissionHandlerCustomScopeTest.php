@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -132,9 +133,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			);
 
 		$verdict = $this->handler->hasPermission(
-			schema: $schema,
-			action: 'besluit_nemen',
-			userId: 'behandelaar-1'
+			ask: (new PermissionAsk(schema: $schema, action: 'besluit_nemen'))
+				->askedBy(userId: 'behandelaar-1', objectOwner: null)
 		);
 
 		$this->assertTrue($verdict, 'listener allow MUST grant the custom action');
@@ -168,9 +168,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			);
 
 		$verdict = $this->handler->hasPermission(
-			schema: $schema,
-			action: 'besluit_nemen',
-			userId: 'behandelaar-1'
+			ask: (new PermissionAsk(schema: $schema, action: 'besluit_nemen'))
+				->askedBy(userId: 'behandelaar-1', objectOwner: null)
 		);
 
 		$this->assertFalse($verdict, 'listener deny MUST reject the custom action');
@@ -202,9 +201,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			);
 
 		$verdict = $this->handler->hasPermission(
-			schema: $schema,
-			action: 'besluit_nemen',
-			userId: 'behandelaar-1'
+			ask: (new PermissionAsk(schema: $schema, action: 'besluit_nemen'))
+				->askedBy(userId: 'behandelaar-1', objectOwner: null)
 		);
 
 		$this->assertTrue(
@@ -234,9 +232,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 			);
 
 		$verdict = $this->handler->hasPermission(
-			schema: $schema,
-			action: 'besluit_nemen',
-			userId: 'behandelaar-1'
+			ask: (new PermissionAsk(schema: $schema, action: 'besluit_nemen'))
+				->askedBy(userId: 'behandelaar-1', objectOwner: null)
 		);
 
 		$this->assertFalse($verdict, 'standard chain MUST decide when no listener votes');
@@ -264,9 +261,8 @@ class PermissionHandlerCustomScopeTest extends TestCase {
 		foreach (['read', 'create', 'update', 'delete', 'list'] as $action) {
 			$this->handler->clearPermissionCache();
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: 'behandelaar-1'
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: 'behandelaar-1', objectOwner: null)
 			);
 		}
 

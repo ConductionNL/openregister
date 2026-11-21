@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * The one check every write that grants a right calls before it stores.
@@ -107,10 +108,9 @@ class GrantCeiling {
 
 		try {
 			return $this->permissions->hasPermission(
-				schema: $grant->schema,
-				action: $grant->action,
-				userId: $granter->getUID(),
-				register: $grant->register
+				ask: (new PermissionAsk(schema: $grant->schema, action: $grant->action))
+					->askedBy(userId: $granter->getUID(), objectOwner: null)
+					->about(object: null, register: $grant->register)
 			);
 		} catch (Throwable $e) {
 			return false;
