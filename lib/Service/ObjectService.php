@@ -42,6 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindTarget as PublishedObjectFindTarget;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Adbar\Dot;
 use DateTime;
@@ -7902,14 +7903,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * relies on. The identifier is passed through unchanged: casting a uuid to int
      * resolves to an unrelated row.
      *
-     * @param string           $objectId The identifier the caller holds.
-     * @param ObjectFindTarget $target   The register and schema the call names.
+     * @param string                    $objectId The identifier the caller holds.
+     * @param PublishedObjectFindTarget $target   The register and schema the call names.
      *
      * @return ObjectEntity The stored object.
      *
      * @spec exclude Private step of patchObject(); the rights are checked by the saveObject() it ends in.
      */
-    private function findPatchTarget(string $objectId, ObjectFindTarget $target): ObjectEntity
+    private function findPatchTarget(string $objectId, PublishedObjectFindTarget $target): ObjectEntity
     {
         $scopedRegister = null;
         $scopedSchema   = null;
