@@ -379,3 +379,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest 4 errors: TypeError ObjectsControllerFactory::args() Argument #14 ($eventDispatcher) must be ?IEventDispatcher, MockObject_WebhookService given.
 - Cause: the test's positional factory args lag ObjectsControllerFactory on main; red on plain main, not a PR defect.
 - Fix: inherited for PR fixes; do not fix it in a PR branch.
+
+## RecentLensLookupCallSitesTest names a PR's new ->find( call (or-fix-14)
+- Symptom: tests/Unit/Service/Interaction/RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision lists 'lib/<file>.php::<method>' from the PR.
+- Cause: main scans lib/ for $this->objectService / $objectService / $this->objects ->find( and requires each to be a lookup, _audit: false, or a listed open.
+- Fix: a person opening the object: add to OPENED; a background/system read through ObjectService: wrap in WriteCause::asLookup(fn () => ...) or pass _audit: false; a receiver that is not ObjectService (e.g. MagicObjectFinderInterface): add to NOT_OBJECT_SERVICE. (#10534)
