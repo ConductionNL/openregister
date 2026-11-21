@@ -80,6 +80,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRawSource(?string $rawSource)
  * @method array|null getRawHeaders()
  * @method void setRawHeaders(?array $rawHeaders)
+ * @method string|null getWithdrawnBy()
+ * @method void setWithdrawnBy(?string $withdrawnBy)
+ * @method DateTime|null getWithdrawnAt()
+ * @method void setWithdrawnAt(?DateTime $withdrawnAt)
+ * @method string|null getWithdrawnReason()
+ * @method void setWithdrawnReason(?string $withdrawnReason)
  * @method array|null getSiblings()
  * @method void setSiblings(?array $siblings)
  * @method DateTime|null getCreated()
@@ -232,6 +238,28 @@ class TimelineEntry extends Entity implements JsonSerializable {
 	protected ?string $language = null;
 
 	/**
+	 * Who withdrew the entry. A withdrawn entry leaves the working timeline and
+	 * stays in the record (D-C29-4).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $withdrawnBy = null;
+
+	/**
+	 * When it was withdrawn; null while the entry is in the working timeline.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $withdrawnAt = null;
+
+	/**
+	 * Why it was withdrawn.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $withdrawnReason = null;
+
+	/**
 	 * The raw inbound message, exactly as it arrived (D-5).
 	 *
 	 * @var string|null
@@ -287,6 +315,9 @@ class TimelineEntry extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'pinnedBy', type: 'string');
 		$this->addType(fieldName: 'pinnedAt', type: 'datetime');
 		$this->addType(fieldName: 'language', type: 'string');
+		$this->addType(fieldName: 'withdrawnBy', type: 'string');
+		$this->addType(fieldName: 'withdrawnAt', type: 'datetime');
+		$this->addType(fieldName: 'withdrawnReason', type: 'string');
 		$this->addType(fieldName: 'rawSource', type: 'string');
 		$this->addType(fieldName: 'rawHeaders', type: 'json');
 		$this->addType(fieldName: 'siblings', type: 'json');
@@ -329,9 +360,29 @@ class TimelineEntry extends Entity implements JsonSerializable {
 			'language' => $this->language,
 			'hasSource' => ($this->rawSource !== null && $this->rawSource !== ''),
 			'siblings' => ($this->siblings ?? []),
+			'withdrawn' => $this->withdrawal(),
 			'created' => $this->created?->format(DateTime::ATOM),
 			'updated' => $this->updated?->format(DateTime::ATOM),
 		];
 
 	}//end jsonSerialize()
+
+	/**
+	 * The withdrawal as the API returns it: who, when and why, or null.
+	 *
+	 * @return array{by: string|null, at: string, reason: string|null}|null
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function withdrawal(): ?array {
+		if ($this->withdrawnAt === null) {
+			return null;
+		}
+
+		return [
+			'by' => $this->withdrawnBy,
+			'at' => $this->withdrawnAt->format(DateTime::ATOM),
+			'reason' => $this->withdrawnReason,
+		];
+	}//end withdrawal()
 }//end class
