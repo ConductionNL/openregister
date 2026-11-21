@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
@@ -68,16 +69,16 @@ final class C03MiscInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		CodedOptionsBuilder::class => [CodedOptionsBuilderInterface::class, ContractBindings::class],
-		DbalConnectionFactory::class => [DbalConnectionFactoryInterface::class, ContractBindings::class],
-		PdokGeocoder::class => [PdokGeocoderInterface::class, ContractBindings::class],
-		RegisterCacheHandler::class => [RegisterCacheHandlerInterface::class, ContractBindings::class],
-		RegisterSerializer::class => [RegisterSerializerInterface::class, ContractBindings::class],
+		CodedOptionsBuilder::class => [CodedOptionsBuilderInterface::class, CoreServiceBindings::class],
+		DbalConnectionFactory::class => [DbalConnectionFactoryInterface::class, CoreServiceBindings::class],
+		PdokGeocoder::class => [PdokGeocoderInterface::class, CoreServiceBindings::class],
+		RegisterCacheHandler::class => [RegisterCacheHandlerInterface::class, CoreServiceBindings::class],
+		RegisterSerializer::class => [RegisterSerializerInterface::class, CoreServiceBindings::class],
 		RuleRunMapper::class => [RuleRunMapperInterface::class, ProcessesMapperRegistrar::class],
-		SchemaMigrationService::class => [SchemaMigrationServiceInterface::class, ContractBindings::class],
-		SchemaObjectReader::class => [SchemaObjectReaderInterface::class, ContractBindings::class],
+		SchemaMigrationService::class => [SchemaMigrationServiceInterface::class, CoreServiceBindings::class],
+		SchemaObjectReader::class => [SchemaObjectReaderInterface::class, CoreServiceBindings::class],
 		SecurityTxtBuilder::class => [SecurityTxtBuilderInterface::class, ContractBindings::class],
-		VocabularyDeclarationResolver::class => [VocabularyDeclarationResolverInterface::class, ContractBindings::class],
+		VocabularyDeclarationResolver::class => [VocabularyDeclarationResolverInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
