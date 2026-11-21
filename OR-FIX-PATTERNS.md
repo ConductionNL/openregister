@@ -164,3 +164,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: conflict in lib/Db/SchemaMapper.php checkBehaviourDeclarations / SchemaMapperServices / MapperWiring (objectActions gone on main).
 - Cause: main runs the schema-save checks by slot (SchemaDeclarationOrder), contributed via SchemaDeclarationChecksEvent listeners (Processes: lib/Listener/SchemaDeclarationChecksListener.php).
 - Fix: take main's three files; add a slot constant for each new check next to its neighbour (extend the section's last slot if at an end), contribute it from the owning area's listener (lazy collaborators via container closure), add the name to SchemaDeclarationOrderTest's list (or-fix-9, #10529).
+
+## New lib file has its csv row but no component pattern (or-fix-7)
+- Symptom: ComponentDefinitionTest 'matches no component (Remainder)' / 'matches [] in the components yaml' for a file the PR added, although scripts/component-map.csv has its row (main sometimes carries the row already).
+- Fix: python3 scripts/component-patterns.py (rewrites the components yaml), commit the one-line yaml change. Also check registrar order tests (e.g. tests/Unit/Service/ServiceRegistrarTest::testRegistersTheServicesInOrder) for a binding the PR added.
