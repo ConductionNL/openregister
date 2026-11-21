@@ -21,7 +21,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the flows JSON column to openregister_configurations table.
@@ -32,7 +31,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  */
-class Version1Date20261106140000 extends SimpleMigrationStep {
+class Version1Date20261106140000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -42,7 +41,7 @@ class Version1Date20261106140000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The updated schema
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		// @var ISchemaWrapper $schema
 		$schema = $schemaClosure();
 
@@ -66,5 +65,5 @@ class Version1Date20261106140000 extends SimpleMigrationStep {
 		);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
