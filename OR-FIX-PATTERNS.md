@@ -57,3 +57,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: add/add conflict on lib/Migration/Version1Date<ts>.php, or SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted, or BLOCK 'migration without info.xml bump'.
 - Cause: main landed a different migration under the same timestamp; main requires every new step to extend TargetedMigrationStep (changeTargetedSchema).
 - Fix: take main's file, re-add the PR's step under a new later timestamp extending TargetedMigrationStep (protected changeTargetedSchema), rename its component-map row, bump appinfo/info.xml <version>, check with php scripts/check-migration-version-bump.php --base=origin/main (see #10277).
+
+## New test builds a class with its pre-modularity constructor (or-fix-11)
+- Symptom: after the main merge a PR's new test errors with TypeError / ArgumentCountError on the constructor (e.g. RechainAuditTrailPreVerifyTest passing RepairPlatform).
+- Cause: a cloud/mod-* PR on main changed the class to take its ports directly (e.g. #10815: IDBConnection, IAppConfig, LoggerInterface, AuditRechainInterface instead of RepairPlatform + AuditHashService).
+- Fix: read the constructor on main, pass its arguments in order, mock the interface it now types (not the concrete service), drop the stale @uses. (#10491 6d52f2fd)
