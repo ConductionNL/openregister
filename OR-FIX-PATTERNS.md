@@ -296,3 +296,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: none on the PR alone; php scripts/check-migration-version-bump.php --base=origin/main fails ('adds N migration(s) but does not move the app version'), and the same lib/Migration/Version1Date<ts>.php is added by other open PRs (whichever lands second gets an add/add conflict or a duplicate class).
 - Find: fetch open PR heads and list `git diff --name-only --diff-filter=A origin/main...<head> -- lib/Migration` per head; count duplicates.
 - Fix: git mv the step and its test to an unused version (keep the order of the PR's own steps; e.g. suffix the lane number in the seconds), sed the class name in csv/tasks.md, python3 scripts/component-patterns.py, bump appinfo/info.xml <version> (dev.N+1), rerun the check (#10496, #10516, #10156).
+
+## Constructor golden cannot double a new nullable param (or-fix-11)
+- Symptom: FileServiceConstructorGoldenTest (or a sibling *ConstructorGoldenTest) UnknownTypeException 'Class or interface "?OCA\...\X" does not exist'.
+- Cause: the golden's argumentsFor() uses (string)$parameter->getType(), which yields '?X' for a nullable param the PR added to a platform bundle.
+- Fix: read ReflectionNamedType::getName() (fallback (string) for unions); rerun with UPDATE_GOLDEN=1 and check the fixture diff is only the PR's new property (#10451 35eb59e9).
