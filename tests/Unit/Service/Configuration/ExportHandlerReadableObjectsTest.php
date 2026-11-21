@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -107,6 +108,7 @@ class ExportHandlerReadableObjectsTest extends TestCase {
 			objectEntityMapper: $objects,
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
+			flowMapper: $this->createMock(FlowMapperInterface::class),
 			logger: new NullLogger(),
 			readableObjects: new ReadableExportObjects(properties: $properties, userSession: $session, groupManager: $groups)
 		);

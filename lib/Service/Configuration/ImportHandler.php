@@ -37,7 +37,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -335,9 +335,9 @@ class ImportHandler {
 	 * entirely — an instance that cannot build it imports every other
 	 * component exactly as before Flow export/import existed.
 	 *
-	 * @var FlowMapper|null
+	 * @var FlowMapperInterface|null
 	 */
-	private ?FlowMapper $flowMapper = null;
+	private ?FlowMapperInterface $flowMapper = null;
 
 	/**
 	 * Publishes an imported flow so its graph actually runs. Null leaves an
@@ -633,13 +633,13 @@ class ImportHandler {
 	 *
 	 * Optional: when null, `components.flows` is not imported.
 	 *
-	 * @param FlowMapper|null $flowMapper The flow mapper.
+	 * @param FlowMapperInterface|null $flowMapper The flow mapper.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function setFlowMapper(?FlowMapper $flowMapper): void {
+	public function setFlowMapper(?FlowMapperInterface $flowMapper): void {
 		$this->flowMapper = $flowMapper;
 	}//end setFlowMapper()
 

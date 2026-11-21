@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
@@ -129,9 +129,9 @@ class ExportHandler {
 	/**
 	 * Flow mapper instance for handling flow operations.
 	 *
-	 * @var FlowMapper The flow mapper instance.
+	 * @var FlowMapperInterface The flow mapper instance.
 	 */
-	private readonly FlowMapper $flowMapper;
+	private readonly FlowMapperInterface $flowMapper;
 
 
 	/**
@@ -142,7 +142,7 @@ class ExportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param FlowMapper $flowMapper The flow mapper.
+	 * @param FlowMapperInterface $flowMapper The flow mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param ReadableExportObjects|null $readableObjects Projects exported objects to what the caller may read.
 	 */
@@ -152,7 +152,7 @@ class ExportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
-		FlowMapper $flowMapper,
+		FlowMapperInterface $flowMapper,
 		LoggerInterface $logger,
 		private readonly ?ReadableExportObjects $readableObjects = null,
 	) {
