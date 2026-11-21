@@ -3,7 +3,7 @@
 /**
  * The classes lane F08 hid stay hidden behind their interfaces.
  *
- * For each class below: it implements the interface next to it, ContractBindings
+ * For each class below: it implements the interface next to it, CoreServiceBindings
  * binds that interface to it (a missing binding is a 500 at the first request,
  * which no unit test of the callers sees), and no lib/ file outside the class's
  * own component names the class itself. Comments do not count.
@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -62,13 +62,13 @@ final class F08InterfaceBindingsTest extends TestCase {
 	}//end testEveryClassImplementsItsInterface()
 
 	/**
-	 * ContractBindings binds each interface to its class.
+	 * CoreServiceBindings binds each interface to its class.
 	 *
 	 * @return void
 	 */
 	public function testEveryInterfaceIsBound(): void {
 		foreach (self::CLASSES as $class => $entry) {
-			$this->assertSame(expected: $class, actual: ContractBindings::BINDINGS[$entry[0]] ?? null, message: $entry[0] . ' is bound');
+			$this->assertSame(expected: $class, actual: CoreServiceBindings::BINDINGS[$entry[0]] ?? null, message: $entry[0] . ' is bound');
 		}
 	}//end testEveryInterfaceIsBound()
 
