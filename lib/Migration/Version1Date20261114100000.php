@@ -31,12 +31,11 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the `openregister_foreign_ids` table.
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261114100000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -48,7 +47,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-an-object-carries-foreign-identifiers-that-name-their-issuer-req-gid-005
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -73,5 +72,5 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 		$output->info('Created openregister_foreign_ids table');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

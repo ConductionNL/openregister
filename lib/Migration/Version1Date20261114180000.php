@@ -28,7 +28,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the `openregister_id_scheme_runs` table.
@@ -39,7 +38,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
  */
-class Version1Date20261114180000 extends SimpleMigrationStep {
+class Version1Date20261114180000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -51,7 +50,7 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -87,5 +86,5 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 		$output->info('Created openregister_id_scheme_runs table');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
