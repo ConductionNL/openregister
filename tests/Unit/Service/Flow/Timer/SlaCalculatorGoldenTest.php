@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use Closure;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -47,8 +48,28 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WalkCollector
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RollRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursFrame
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursWalk
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\UnitConversion
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @covers \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarRoll
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RollRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursFrame
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursWalk
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\UnitConversion
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class SlaCalculatorGoldenTest extends TestCase {
 
@@ -117,7 +138,7 @@ class SlaCalculatorGoldenTest extends TestCase {
 				foreach (SlaCalculator::UNITS as $unit) {
 					foreach ($amounts as $amount) {
 						$key = "add / {$calName} / {$startName} / {$unit} / {$amount}";
-						$actual[$key] = self::capture(fn () => $calc->add(from: self::at($start), value: $amount, unit: $unit, calendar: $calendar));
+						$actual[$key] = self::capture(fn () => $calc->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(self::at($start)), value: $amount, unit: $unit, calendar: $calendar)));
 					}
 
 					$actual["sub / {$calName} / {$startName} / {$unit} / 2"] = self::capture(fn () => $calc->sub(from: self::at($start), value: 2.0, unit: $unit, calendar: $calendar));
@@ -147,7 +168,7 @@ class SlaCalculatorGoldenTest extends TestCase {
 					$actual["measure / {$calName} / {$spanName} / {$unit}"] = self::capture(fn () => $calc->measure(span: new CalendarSpan(from: self::at($from), to: self::at($to), calendar: $calendar), unit: $unit));
 				}
 
-				$actual["elapsed / {$calName} / {$spanName}"] = self::capture(fn () => $calc->elapsedBusinessHours(from: self::at($from), to: self::at($to), calendar: $calendar));
+				$actual["elapsed / {$calName} / {$spanName}"] = self::capture(fn () => $calc->elapsedBusinessHours(new CalendarSpan(from: self::at($from), to: self::at($to), calendar: $calendar)));
 			}
 
 			foreach (SlaCalculator::UNITS as $fromUnit) {
@@ -164,10 +185,10 @@ class SlaCalculatorGoldenTest extends TestCase {
 			}
 		}
 
-		$actual['add / bad unit'] = self::capture(fn () => $calc->add(from: self::at('2026-01-01'), value: 1.0, unit: 'weeks', calendar: null));
-		$actual['add / too long forward'] = self::capture(fn () => $calc->add(from: self::at('2026-01-01 UTC'), value: 30000.0, unit: 'businessDays', calendar: self::calendars()['plain']));
-		$actual['add / too long backward'] = self::capture(fn () => $calc->add(from: self::at('2026-01-01 UTC'), value: -30000.0, unit: 'businessDays', calendar: self::calendars()['plain']));
-		$actual['add / negative zero'] = self::capture(fn () => $calc->add(from: self::at('2026-04-25 12:00:00 UTC'), value: -0.0, unit: 'businessDays', calendar: self::calendars()['nl']));
+		$actual['add / bad unit'] = self::capture(fn () => $calc->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(self::at('2026-01-01')), value: 1.0, unit: 'weeks', calendar: null)));
+		$actual['add / too long forward'] = self::capture(fn () => $calc->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(self::at('2026-01-01 UTC')), value: 30000.0, unit: 'businessDays', calendar: self::calendars()['plain'])));
+		$actual['add / too long backward'] = self::capture(fn () => $calc->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(self::at('2026-01-01 UTC')), value: -30000.0, unit: 'businessDays', calendar: self::calendars()['plain'])));
+		$actual['add / negative zero'] = self::capture(fn () => $calc->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(self::at('2026-04-25 12:00:00 UTC')), value: -0.0, unit: 'businessDays', calendar: self::calendars()['nl'])));
 		foreach ([['value' => 5, 'unit' => 'businessDays'], ['value' => 0, 'unit' => 'hours'], ['value' => 5, 'unit' => 'weeks'], 'x'] as $index => $sla) {
 			$actual["validateSla / {$index}"] = self::capture(fn () => $calc->validateSla(sla: $sla));
 		}

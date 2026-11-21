@@ -434,13 +434,8 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	private function managedSchemasByTableId(Register $register): array {
 		$result = [];
 		foreach ($register->getSchemas() as $ref) {
-			try {
-				$schema = $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			if ($this->isManaged(schema: $schema) === false) {
+			$schema = $this->findUnscopedSchema(ref: $ref);
+			if ($schema === null || $this->isManaged(schema: $schema) === false) {
 				continue;
 			}
 
@@ -452,6 +447,21 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 
 		return $result;
 	}//end managedSchemasByTableId()
+
+	/**
+	 * A schema a register lists, read outside RBAC and multitenancy.
+	 *
+	 * @param mixed $ref The schema reference as the register lists it.
+	 *
+	 * @return Schema|null Null when it cannot be read.
+	 */
+	private function findUnscopedSchema(mixed $ref): ?Schema {
+		try {
+			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findUnscopedSchema()
 
 	/**
 	 * Whether a schema is managed by this sync (vs hand-authored).

@@ -364,7 +364,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
 					'webhook' => [
-						'url' => 'https://example.com/hooks/x',
+						'url' => 'https://93.184.215.14/hooks/x',
 					],
 					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
 					'subject' => 'inline',
@@ -380,6 +380,165 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$dispatcher = $this->makeDispatcher();
 		$dispatcher->dispatch($this->object($schema), 'updated');
 	}//end testInlinePostFiresWhenWebhookNotPersistent()
+
+	/**
+	 * A rule naming `webhook.urlField` posts to the URL the object carries.
+	 *
+	 * @return void
+	 */
+	public function testAWebhookUrlFieldPostsToTheObjectsUrl(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'outcomeDecided' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['urlField' => 'outcomeCallbackUrl'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'decided',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())->method('request')
+			->with('POST', 'https://93.184.215.14/callbacks/decision-1', $this->callback(static fn (array $options): bool => ($options['json']['notification'] ?? null) === 'outcomeDecided'));
+		$this->httpClient->expects($this->once())->method('newClient')->willReturn($client);
+
+		$object = $this->object(schema: $schema);
+		$object->setObject(['title' => 'demo', 'outcomeCallbackUrl' => ' https://93.184.215.14/callbacks/decision-1 ']);
+		$this->makeDispatcher()->dispatch($object, 'updated');
+	}//end testAWebhookUrlFieldPostsToTheObjectsUrl()
+
+	/**
+	 * Object values a URL field must refuse.
+	 *
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function badUrlFieldValues(): array {
+		return ['absent' => [null], 'empty' => [''], 'not a url' => ['not a url'], 'not a string' => [['https://93.184.215.14/x']]];
+	}//end badUrlFieldValues()
+
+	/**
+	 * An object whose URL field is empty, malformed or not a string gets no call,
+	 * even when the rule also names a fixed url, and the reason is logged.
+	 *
+	 * @param mixed $value The object's URL field.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('badUrlFieldValues')]
+	public function testAnEmptyOrMalformedUrlFieldSendsNothingAndLogsWhy(mixed $value): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'outcomeDecided' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['urlField' => 'outcomeCallbackUrl', 'url' => 'https://93.184.215.14/rule-url'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'decided',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->httpClient->expects($this->never())->method('newClient');
+		$this->logger->expects($this->atLeastOnce())->method('info')
+			->with($this->stringContains('webhook url field outcomeCallbackUrl missing or malformed on the object'));
+
+		$object = $this->object(schema: $schema);
+		$object->setObject(['title' => 'demo', 'outcomeCallbackUrl' => $value]);
+		$this->makeDispatcher()->dispatch($object, 'updated');
+	}//end testAnEmptyOrMalformedUrlFieldSendsNothingAndLogsWhy()
+
+	/**
+	 * A webhook to a scheme other than http or https is not sent.
+	 *
+	 * @return void
+	 */
+	public function testInlinePostToAnotherSchemeIsNotSent(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'ftp://93.184.215.14/hooks/x'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->httpClient->expects($this->never())->method('newClient');
+
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+	}//end testInlinePostToAnotherSchemeIsNotSent()
+
+	/**
+	 * The target is checked by Nextcloud's client at connect time, on the address it calls.
+	 *
+	 * @return void
+	 */
+	public function testInlinePostLeavesTheAddressCheckToTheNextcloudClient(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'http://169.254.169.254/latest/meta-data'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$calls = [];
+		$client = $this->createMock(originalClassName: IClient::class);
+		$client->method('request')->willReturnCallback(
+			static function (string $method, string $url, array $opts) use (&$calls) {
+				$calls[] = ['url' => $url, 'options' => $opts];
+				throw new \OCP\Http\Client\LocalServerException('Host "169.254.169.254" violates local access rules');
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+
+		$this->assertCount(expectedCount: 1, haystack: $calls);
+		$this->assertSame(expected: 'http://169.254.169.254/latest/meta-data', actual: $calls[0]['url']);
+		$this->assertSame(expected: ['allow_local_address' => false], actual: ($calls[0]['options']['nextcloud'] ?? null));
+		$this->assertFalse(condition: ($calls[0]['options']['allow_redirects'] ?? null));
+	}//end testInlinePostLeavesTheAddressCheckToTheNextcloudClient()
+
+	public function testInlinePostDoesNotFollowRedirects(): void {
+		$schema = $this->schemaWithNotification(
+			[
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'https://93.184.215.14/hooks/x'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$options = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willReturnCallback(
+			function (string $method, string $url, array $opts) use (&$options) {
+				$options = $opts;
+				return $this->createMock(\OCP\Http\Client\IResponse::class);
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+
+		$this->assertFalse($options['allow_redirects'] ?? null);
+	}//end testInlinePostDoesNotFollowRedirects()
 
 	// ====================================================================
 	// NL/EN i18n — Open spec item:
@@ -618,7 +777,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 				'broadcast' => [
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
-					'webhook' => ['url' => 'https://example.com/h'],
+					'webhook' => ['url' => 'https://93.184.215.14/h'],
 					'recipients' => [['kind' => 'users', 'users' => ['nl-user', 'en-user']]],
 					'subject' => [
 						'defaultLocale' => 'en',

@@ -37,6 +37,9 @@ use RuntimeException;
  * fixtures/example-set-app-config-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue
  */
 class ExampleSetAppConfigGoldenTest extends TestCase {
 

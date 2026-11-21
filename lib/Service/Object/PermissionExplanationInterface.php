@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCP\IUser;
 
 /**
  * Permitted actions, provenance and the deny rules of PermissionHandler.
@@ -82,19 +83,13 @@ interface PermissionExplanationInterface {
 	 * custom verb an app declared, because those are the ones an object screen
 	 * offers.
 	 *
-	 * @param Schema            $schema The schema the row belongs to.
-	 * @param ObjectEntity|null $object The row, when the question is about one.
-	 * @param string|null       $userId The caller, or null to resolve from the session.
+	 * @param VerbListing $listing The schema, the row when the question is about one, and the caller (null for the session user).
 	 *
 	 * @return array<int, string> The verbs, in catalogue order.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function permittedActionsFor(
-		Schema $schema,
-		?ObjectEntity $object = null,
-		?string $userId = null,
-	): array;
+	public function permittedActionsFor(VerbListing $listing): array;
 
 	/**
 	 * Why this caller may or may not do each of these verbs.
@@ -113,16 +108,13 @@ interface PermissionExplanationInterface {
 	 * that would remove it is reported as `stagedDeny`, so the field that says
 	 * why a person may act also says what stops them the day the switch moves.
 	 *
-	 * @param Schema             $schema  The schema being reported on.
-	 * @param array<int, string> $actions The verbs to report.
-	 * @param string|null        $userId  The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null  $object  The row, when the question is about one.
+	 * @param ProvenanceRequest $request The schema, the actions, the caller (null for the session user) and the optional row.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array;
+	public function provenanceFor(ProvenanceRequest $request): array;
 
 	/**
 	 * The deny rule that removes this verb from this caller, or null.
@@ -164,4 +156,21 @@ interface PermissionExplanationInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array;
+
+	/**
+	 * The scopes a schema's department matrix compiles to for one user, for
+	 * the administrator's preview (rbac-department-role-matrix 3.2).
+	 *
+	 * It runs the same compiler the authorization path runs, with that user's
+	 * own values from the matrix's user source, and reads no objects of the
+	 * schema. A schema without a matrix compiles to nothing.
+	 *
+	 * @param Schema $schema The schema whose matrix is previewed.
+	 * @param IUser  $user   The user previewed.
+	 *
+	 * @return array{values: list<string>, scopes: array<string, mixed>} The user's own values and the compiled scopes by action.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	public function previewDepartmentMatrix(Schema $schema, IUser $user): array;
 }//end interface

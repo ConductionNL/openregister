@@ -32,6 +32,8 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
  */
 class FlowTimerDefinitionStoreTest extends TestCase {
 

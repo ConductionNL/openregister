@@ -45,6 +45,13 @@ use Throwable;
  */
 class TableMetricSource implements MetricSourceInterface {
 	/**
+	 * The filter operators, each the name of the expression builder method it becomes.
+	 *
+	 * @var string[]
+	 */
+	private const COMPARISONS = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -78,53 +85,104 @@ class TableMetricSource implements MetricSourceInterface {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.3
 	 */
 	public function collect(string $appId, MetricDescriptor $descriptor): array {
-		$source = $descriptor->source;
-		$table = (string)($source['table'] ?? '');
-		$help = $descriptor->help ?? sprintf('Row count of %s', $table);
+		$table = (string)($descriptor->source['table'] ?? '');
+		$help  = $descriptor->help ?? sprintf('Row count of %s', $table);
 
-		// SECURITY BOUNDARY (re-enforced): only [a-z0-9_] table names reach the
-		// QueryBuilder. The descriptor validator already rejects others; this is
-		// defence in depth so the source can never be misused in isolation.
+		self::assertTableAllowed(table: $table);
+
+		// Graceful zero-emission when the table does not exist (drained-table parity).
+		$samples = [];
+		if ($this->db->tableExists($table) === true) {
+			$samples = $this->countedSamples(appId: $appId, descriptor: $descriptor);
+		}
+
+		return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
+	}//end collect()
+
+	/**
+	 * Refuse a table name outside [a-z0-9_].
+	 *
+	 * SECURITY BOUNDARY (re-enforced): only [a-z0-9_] table names reach the
+	 * QueryBuilder. The descriptor validator already rejects others; this is
+	 * defence in depth so the source can never be misused in isolation.
+	 *
+	 * @param string $table The descriptor's table.
+	 *
+	 * @return void
+	 *
+	 * @throws ObservabilityValidationException When the table is not allowlisted.
+	 */
+	private static function assertTableAllowed(string $table): void {
 		if (preg_match(MetricDescriptor::TABLE_REGEX, $table) !== 1) {
 			$errorMessage = sprintf('tableCount table "%s" is not allowlisted.', $table);
 			throw new ObservabilityValidationException(message: $errorMessage);
 		}
+	}//end assertTableAllowed()
 
-		// Graceful zero-emission when the table does not exist (drained-table parity).
-		if ($this->db->tableExists($table) === false) {
-			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [])];
-		}
-
-		$groupBy = array_values($source['groupBy'] ?? []);
-		$labelMap = $source['labelMap'] ?? [];
-		$labelDefaults = $source['labelDefaults'] ?? [];
+	/**
+	 * The samples of an existing table; none, logged, when counting fails.
+	 *
+	 * @param string           $appId      Calling app id.
+	 * @param MetricDescriptor $descriptor The metric descriptor.
+	 *
+	 * @return array<int, array{labels: array<string, string>, value: int}>
+	 */
+	private function countedSamples(string $appId, MetricDescriptor $descriptor): array {
+		$groupBy = array_values($descriptor->source['groupBy'] ?? []);
 
 		try {
-			$count = new TableCount(table: $table, filter: ($source['filter'] ?? []));
-			if ($groupBy === []) {
-				$value = $this->countAll(count: $count);
-				$samples = [['labels' => [], 'value' => $value]];
-				return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
-			}
-
-			$labels  = new TableLabels(columns: $groupBy, map: $labelMap, defaults: $labelDefaults);
-			$samples = [];
-			foreach ($this->countGrouped(count: $count, columns: $groupBy) as $row) {
-				$samples[] = [
-					'labels' => $this->labelsOf(row: $row, labels: $labels),
-					'value' => (int)($row['cnt'] ?? 0),
-				];
-			}
-
-			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: $samples)];
+			return $this->samplesOf(descriptor: $descriptor, groupBy: $groupBy);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Metrics] tableCount "%s" (app %s) failed: %s', $descriptor->name, $appId, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return [new MetricSample(name: $descriptor->name, type: $descriptor->type, help: $help, samples: [])];
-		}//end try
-	}//end collect()
+			return [];
+		}
+	}//end countedSamples()
+
+	/**
+	 * Count the table, as one sample or one per group.
+	 *
+	 * @param MetricDescriptor $descriptor The metric descriptor.
+	 * @param string[]         $groupBy    Columns to group by; none for one total.
+	 *
+	 * @return array<int, array{labels: array<string, string>, value: int}>
+	 *
+	 * @throws \OCP\DB\Exception On DB error.
+	 */
+	private function samplesOf(MetricDescriptor $descriptor, array $groupBy): array {
+		$source = $descriptor->source;
+		$count  = new TableCount(table: (string)($source['table'] ?? ''), filter: ($source['filter'] ?? []));
+		if ($groupBy === []) {
+			return [['labels' => [], 'value' => $this->countAll(count: $count)]];
+		}
+
+		$labels = new TableLabels(columns: $groupBy, map: ($source['labelMap'] ?? []), defaults: ($source['labelDefaults'] ?? []));
+		return $this->groupedSamples(count: $count, labels: $labels);
+	}//end samplesOf()
+
+	/**
+	 * One sample per group of the table.
+	 *
+	 * @param TableCount  $count  The allowlisted table and its column filters.
+	 * @param TableLabels $labels The columns grouped by and how they become labels.
+	 *
+	 * @return array<int, array{labels: array<string, string>, value: int}>
+	 *
+	 * @throws \OCP\DB\Exception On DB error.
+	 */
+	private function groupedSamples(TableCount $count, TableLabels $labels): array {
+		$samples = [];
+		foreach ($this->countGrouped(count: $count, columns: $labels->columns) as $row) {
+			$samples[] = [
+				'labels' => $this->labelsOf(row: $row, labels: $labels),
+				'value' => (int)($row['cnt'] ?? 0),
+			];
+		}
+
+		return $samples;
+	}//end groupedSamples()
 
 	/**
 	 * COUNT(*) of the table with optional filters.
@@ -217,29 +275,9 @@ class TableMetricSource implements MetricSourceInterface {
 			$this->assertColumn(column: (string)$column);
 			foreach ($ops as $operator => $value) {
 				$param = $qb->createNamedParameter($value);
-				switch ($operator) {
-					case 'eq':
-						$qb->andWhere($qb->expr()->eq((string)$column, $param));
-						break;
-					case 'neq':
-						$qb->andWhere($qb->expr()->neq((string)$column, $param));
-						break;
-					case 'lt':
-						$qb->andWhere($qb->expr()->lt((string)$column, $param));
-						break;
-					case 'lte':
-						$qb->andWhere($qb->expr()->lte((string)$column, $param));
-						break;
-					case 'gt':
-						$qb->andWhere($qb->expr()->gt((string)$column, $param));
-						break;
-					case 'gte':
-						$qb->andWhere($qb->expr()->gte((string)$column, $param));
-						break;
-					case 'like':
-						$qb->andWhere($qb->expr()->like((string)$column, $param));
-						break;
-				}//end switch
+				if (in_array($operator, self::COMPARISONS, true) === true) {
+					$qb->andWhere($qb->expr()->{$operator}((string)$column, $param));
+				}
 			}//end foreach
 		}//end foreach
 	}//end applyFilters()

@@ -39,6 +39,10 @@ use Symfony\Component\Workflow\Workflow;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowItemPlacement
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
+ * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
  */
 final class FlowItemPlacementTest extends TestCase {
 

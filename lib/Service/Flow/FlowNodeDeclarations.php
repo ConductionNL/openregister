@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ final class FlowNodeDeclarations {
 	 *
 	 * @throws InvalidArgumentException When a node has no usable id, or ids collide.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function extract(array $flow): array {
 		$nodes = [];
@@ -143,7 +143,7 @@ final class FlowNodeDeclarations {
 	 *
 	 * @throws InvalidArgumentException When a branching node has no else.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function assertExitsCanAlwaysBeTaken(array $node, string $id): void {
 		$exits = ($node['exits'] ?? []);
@@ -151,17 +151,29 @@ final class FlowNodeDeclarations {
 			return;
 		}
 
-		throw new InvalidArgumentException(
+		throw self::noElse(id: $id, exitCount: count($exits));
+	}//end assertExitsCanAlwaysBeTaken()
+
+	/**
+	 * The refusal of a node whose exits are all conditional.
+	 *
+	 * @param string $id        The node id.
+	 * @param int    $exitCount How many exits it declares.
+	 *
+	 * @return InvalidArgumentException The refusal.
+	 */
+	private static function noElse(string $id, int $exitCount): InvalidArgumentException {
+		return new InvalidArgumentException(
 			message: sprintf(
 				'Flow node "%s" conditions all %d of its exits and declares no else. A token is exclusive and '
 				. 'must always leave through exactly one exit, so if no condition holds the token has nowhere to '
 				. 'go — and the run stops without reporting anything, which is indistinguishable from a flow that '
 				. 'finished. Add an exit with no condition.',
 				$id,
-				count($exits)
+				$exitCount
 			)
 		);
-	}//end assertExitsCanAlwaysBeTaken()
+	}//end noElse()
 
 	/**
 	 * Whether any exit is unconditioned: the else. Entries that are not objects are skipped.

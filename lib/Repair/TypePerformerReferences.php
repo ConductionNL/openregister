@@ -46,7 +46,8 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Repair\Support\EveryFlow;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -116,7 +117,7 @@ class TypePerformerReferences implements IRepairStep {
 
 		$typing = new PerformerTyping(flows: $flows, kinds: $kinds);
 
-		foreach ($this->everyFlow(flows: $flows) as $flow) {
+		foreach ((new EveryFlow(flows: $flows))->read() as $flow) {
 			try {
 				$typing->typeFlow(flow: $flow);
 			} catch (Throwable $e) {
@@ -134,34 +135,4 @@ class TypePerformerReferences implements IRepairStep {
 		$typing->report(output: $output);
 
 	}//end run()
-
-	/**
-	 * Every flow, paged.
-	 *
-	 * 🔴 `findAllFlows()` DEFAULTS TO 100. A single call would silently type
-	 * the first hundred flows and leave the rest, reporting success.
-	 *
-	 * @param FlowMapperInterface $flows The mapper.
-	 *
-	 * @return array<int, Flow> Every flow.
-	 *
-	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
-	 */
-	private function everyFlow(FlowMapperInterface $flows): array {
-		$page = 500;
-		$offset = 0;
-		$all = [];
-
-		while (true) {
-			$batch = $flows->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
-			$all = array_merge($all, $batch);
-
-			if (count($batch) < $page) {
-				return $all;
-			}
-
-			$offset += $page;
-		}
-
-	}//end everyFlow()
 }//end class

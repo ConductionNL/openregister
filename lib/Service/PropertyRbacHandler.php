@@ -52,7 +52,6 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -210,7 +209,12 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// applied above). Explicit-reveal masking is not done here: the
 		// ExplicitRevealMasker applies it on the render routes, admins included.
 		// A schema with no property-level authorization is returned as-is.
-		if ($this->isAdmin() === true || $schema->hasPropertyAuthorization() === false) {
+		if ($schema->hasPropertyAuthorization() === false) {
+			return $object;
+		}
+
+		if ($this->isAdmin() === true) {
+			$this->countBypassedReveals(schema: $schema, object: $object);
 			return $object;
 		}
 
@@ -225,6 +229,34 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 
 		return $object;
 	}//end filterReadableProperties()
+
+	/**
+	 * Count, for an internal run in progress, the audited values an administrator's read passes unfiltered.
+	 *
+	 * The filtered path counts through recordReveal(); this covers the bypass, so
+	 * an export or job run by an administrator is recorded too.
+	 *
+	 * @param Schema               $schema The schema.
+	 * @param array<string, mixed> $object The object as returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function countBypassedReveals(Schema $schema, array $object): void {
+		if ($this->reveals?->inProcess() !== true) {
+			return;
+		}
+
+		$revealed = 0;
+		foreach ($schema->getPropertiesWithAuthorization() as $propertyName => $authorization) {
+			if (array_key_exists($propertyName, $object) === true && $this->revealIsAudited(authorization: $authorization) === true) {
+				$revealed++;
+			}
+		}
+
+		$this->reveals->countProcessReveals(revealed: $revealed);
+	}//end countBypassedReveals()
 
 	/**
 	 * Drop one property the user cannot read; record the reveal of one they can.

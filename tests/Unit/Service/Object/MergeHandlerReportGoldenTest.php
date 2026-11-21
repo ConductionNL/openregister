@@ -36,6 +36,15 @@ use RuntimeException;
  * fixtures/merge-handler-report-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\MergeHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\Object\FileActionRun
+ * @uses \OCA\OpenRegister\Service\Object\FileMove
+ * @uses \OCA\OpenRegister\Service\Object\MergeRun
  */
 class MergeHandlerReportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/merge-handler-report-golden.json';

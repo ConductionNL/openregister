@@ -62,7 +62,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\IL10N;
@@ -94,7 +95,7 @@ use RuntimeException;
  * to say the same thing.
  */
 class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
-	use FormFieldsTrait;
+	use TaskNodeTrait;
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -146,6 +147,16 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	private readonly IURLGenerator $urls;
 
 	/**
+	 * The registry that says which performer types this instance understands,
+	 * offered to the editor on every `principal` field. Null in a wiring
+	 * without one: the field then declares no list, and the editor offers what
+	 * it can search by itself.
+	 *
+	 * @var PrincipalResolverRegistry|null
+	 */
+	private readonly ?PrincipalResolverRegistry $principals;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param UserTaskServices     $services     The task bridge, form reader and
@@ -168,6 +179,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$this->bridge     = $services->bridge;
 		$this->timers     = $services->timers;
 		$this->subjects   = $hooks->subjects;
+		$this->principals = $hooks->principals;
 		$this->l10n       = $presentation->l10n;
 		$this->urls       = $presentation->urls;
 		$this->config     = new UserTaskConfig(l10n: $this->l10n, forms: $services->forms);
@@ -335,6 +347,10 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$resume = $this->resumeSlot(context: $context);
 
+		// A performer named through a field of the item (`{{ employee.0.managerUserId }}`)
+		// is resolved once here, so the task, the resume slot and the suspension agree.
+		$config = UserTaskItemPerformers::resolve(config: $config, items: $items);
+
 		return $this->pass(step: new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId()), resume: $resume);
 	}//end execute()
 
@@ -480,6 +496,13 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$data = $this->config->taskData(step: $step, nodeType: $this->getId());
 
+		// Who the performers resolved to NOW, kept as evidence in `metadata`
+		// only: the answer guard resolves again when somebody answers, and must.
+		$evidence = $this->performers->resolutionEvidence(config: $config);
+		if ($evidence !== null) {
+			$data['metadata']['performersAtCreation'] = $evidence;
+		}
+
 		// 🔴 BEFORE THE TASK EXISTS, AND IT THROWS. `attachTo` naming a role the
 		// run never recorded fails the step and creates NOTHING: a task attached
 		// to nothing looks fine in every list and is exactly the task an author
@@ -557,7 +580,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function armDeadline(UserTaskStep $step, array $binding): void {
 		$config = $step->config;
@@ -568,7 +591,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		$timerConfig = $binding + ['title' => $this->timerTitle(config: $config), 'sla' => $config['sla']]
 			+ $this->optionalTimerKeys(config: $config);
 
-		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $step->context));
+		$this->timers->arm(config: $timerConfig, act: FlowTimerAct::of(actor: $this->actingIdentity(context: $step->context)));
 
 	}//end armDeadline()
 
@@ -579,7 +602,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return bool True when a deadline should be armed.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function declaresSla(array $config): bool {
 		$sla = ($config['sla'] ?? null);
@@ -593,7 +616,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return string|null The title.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function timerTitle(array $config): ?string {
 		$title = trim((string)($config['title'] ?? ''));
@@ -614,7 +637,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 *
 	 * @return array<string, mixed> The keys that are present, not null and not ''.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function optionalTimerKeys(array $config): array {
 		$set = [];
@@ -643,21 +666,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	private function placeOutcome(UserTaskStep $step, array $bag): array {
-		$key   = $this->config->outcomeKey(config: $step->config);
-		$items = $step->items;
-
-		foreach ($items as $index => $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$json[$key] = $bag;
-			$item[FlowItems::JSON] = $json;
-			$items[$index] = $item;
-		}
-
-		return $items;
+		return (new EveryItemField(key: $this->config->outcomeKey(config: $step->config), value: $bag))->placedOn(items: $step->items);
 	}//end placeOutcome()
 
 	/**
@@ -682,28 +691,6 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			reason: sprintf('waiting for a person: %s', $title)
 		);
 	}//end suspension()
-
-	/**
-	 * The run's acting identity: who the task is requested by.
-	 *
-	 * The run's owner (`runAs`) first, the person who triggered it second.
-	 * Null is passed through and refused by the task service by name, which
-	 * is the loud failure an unattributed run should produce.
-	 *
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return string|null The uid, or null when the run has none.
-	 */
-	private function actingIdentity(array $context): ?string {
-		foreach (['runAs', 'triggeredBy'] as $key) {
-			$uid = trim((string)($context[$key] ?? ''));
-			if ($uid !== '') {
-				return $uid;
-			}
-		}
-
-		return null;
-	}//end actingIdentity()
 
 	/**
 	 * What the task is.
@@ -753,11 +740,11 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			// person OR a group and could only ever say one of them, so
 			// authors typed a committee's name into a box labelled for a
 			// user and nothing recorded which they meant.
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'assignee', label: $this->l10n->t('Assign directly to'), type: 'principal', help: $this->l10n->t(
 				'A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'
 			))),
-			$this->field(field: new NodeFormField(key: 'candidates', label: $this->l10n->t('Candidates'), type: 'principal', help: $this->l10n->t(
+			$this->principalField(field: new NodeFormField(key: 'candidates', label: $this->l10n->t('Candidates'), type: 'principal', help: $this->l10n->t(
 				'Anybody who may claim the task. People and groups may be mixed.'
 			))),
 			$this->field(field: new NodeFormField(key: 'prompt', label: $this->l10n->t('Prompt for an agent'), type: 'textarea', help: $this->l10n->t(
@@ -765,6 +752,32 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			))),
 		];
 	}//end whoFields()
+
+	/**
+	 * One performer field, carrying the types this instance can resolve.
+	 *
+	 * 🔑 THE LIST IS DECLARED BY THE SERVER, NOT KNOWN BY THE EDITOR. A type an
+	 * app contributes — a position, a function, a case role — exists only
+	 * where that app is installed, so the editor must be told which ones to
+	 * offer rather than carry a list of its own. The list is a hint for
+	 * drawing the field; what is VALID is still decided by the registry when
+	 * the step is saved.
+	 *
+	 * @param NodeFormField $field The field, declared with type `principal`.
+	 *
+	 * @return array<string, mixed> The field description, with `principalTypes`
+	 *                              when a registry is wired.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-user-task-node/spec.md
+	 */
+	private function principalField(NodeFormField $field): array {
+		$described = $this->field(field: $field);
+		if ($this->principals !== null) {
+			$described['principalTypes'] = $this->principals->types();
+		}
+
+		return $described;
+	}//end principalField()
 
 	/**
 	 * The candidate fields kept for flows written before Candidates existed.
@@ -775,15 +788,15 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function legacyCandidateFields(): array {
 		return [
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateUsers', label: $this->l10n->t('Candidate users'), type: 'principal', help: $this->l10n->t(
 				'Kept for flows written before Candidates existed. Any of them may claim the task.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateGroups', label: $this->l10n->t('Candidate groups'), type: 'principal', help: $this->l10n->t(
 				'Kept for flows written before Candidates existed. Any member may claim the task.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'candidateRole', label: $this->l10n->t('Candidate role'), type: 'principal', help: $this->l10n->t(
 				'A role that resolves to a group of performers.'
 			))),
@@ -803,7 +816,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 				key: 'routingStrategy', label: $this->l10n->t('How to pick a performer'), type: 'text', help: $this->l10n->t(
 				'One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'
 			))),
-			$this->field(field: new NodeFormField(
+			$this->principalField(field: new NodeFormField(
 				key: 'routingFallback', label: $this->l10n->t('Fallback performer'), type: 'principal', help: $this->l10n->t(
 				'Who gets the task when the strategy finds nobody.'
 			))),
@@ -837,18 +850,9 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
 	private function timeoutFields(): array {
-		return [
-			$this->field(field: new NodeFormField(key: 'onTimeout', label: $this->l10n->t('On timeout'), type: 'text', help: $this->l10n->t(
-				'What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
-			))),
-			$this->field(field: new NodeFormField(key: 'onReject', label: $this->l10n->t('On rejection'), type: 'text', help: $this->l10n->t(
-				'Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'
-			))),
-			$this->field(field: new NodeFormField(
-				key: 'heartbeatMinutes', label: $this->l10n->t('Re-check every (minutes)'), type: 'number', help: $this->l10n->t(
-				'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
-			))),
-		];
+		return $this->timeoutFieldsWith(onTimeoutHelp: $this->l10n->t(
+			'What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
+		));
 	}//end timeoutFields()
 
 	/**

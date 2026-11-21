@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\IDBConnection;
@@ -29,6 +29,8 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Db\ObjectReadStateMapper
  * @uses   \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Db\ObjectReadState\ReadStateScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ObjectReadStateMapperBehaviourTest extends TestCase {
 	use RecordingQueryBuilderTrait;

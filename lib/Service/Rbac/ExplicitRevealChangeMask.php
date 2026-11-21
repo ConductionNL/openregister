@@ -42,9 +42,7 @@ final class ExplicitRevealChangeMask {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public static function maskChange(mixed $change): mixed {
-		$isDiff = is_array($change) === true
-			&& (array_key_exists('old', $change) === true || array_key_exists('new', $change) === true);
-		if ($isDiff === false) {
+		if (self::isDiff(change: $change) === false) {
 			return self::maskValue(value: $change);
 		}
 
@@ -56,6 +54,18 @@ final class ExplicitRevealChangeMask {
 
 		return $change;
 	}//end maskChange()
+
+	/**
+	 * Whether a change is an `{old, new}` diff: an array carrying either side.
+	 *
+	 * @param mixed $change The change.
+	 *
+	 * @return bool
+	 */
+	private static function isDiff(mixed $change): bool {
+		return is_array($change) === true
+			&& (array_key_exists('old', $change) === true || array_key_exists('new', $change) === true);
+	}//end isDiff()
 
 	/**
 	 * Mask a scalar, or replace an array by five stars.

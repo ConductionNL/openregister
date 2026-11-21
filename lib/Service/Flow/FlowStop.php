@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+ * @spec openspec/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class FlowStop extends RuntimeException {
 	 *
 	 * @return boolean True for an error stop.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	public function isError(): bool {
 		return $this->isError;

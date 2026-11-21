@@ -34,6 +34,7 @@ use RuntimeException;
  * left out. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\CacheSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices
  */
 class CacheSettingsControllerAppStoreGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/cache-appstore-golden.json';

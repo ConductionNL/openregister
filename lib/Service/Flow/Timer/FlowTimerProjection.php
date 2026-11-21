@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ final class FlowTimerProjection {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function project(FlowTimer $timer, ?DateTimeInterface $suspendedUntil = null): void {
 		$task = $this->subjectTask(timer: $timer);
@@ -97,7 +97,7 @@ final class FlowTimerProjection {
 	 *
 	 * @return Task|null The task.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function subjectTask(FlowTimer $timer): ?Task {
 		if ($timer->getSubjectType() !== 'task') {

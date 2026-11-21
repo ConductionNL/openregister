@@ -50,4 +50,26 @@ final class MetricSample {
 		public readonly array $samples,
 	) {
 	}//end __construct()
+
+	/**
+	 * A metric with one sample.
+	 *
+	 * @param string                $name   Metric name.
+	 * @param string                $type   Prometheus type.
+	 * @param string                $help   HELP text.
+	 * @param float|int             $value  Sample value.
+	 * @param array<string, string> $labels Optional labels.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
+	 */
+	public static function single(string $name, string $type, string $help, float|int $value, array $labels = []): self {
+		return new self(
+			name: $name,
+			type: $type,
+			help: $help,
+			samples: [['labels' => $labels, 'value' => $value]]
+		);
+	}//end single()
 }//end class

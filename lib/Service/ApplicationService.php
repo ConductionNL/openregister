@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -52,7 +52,7 @@ class ApplicationService implements ApplicationServiceInterface {
 	 *
 	 * Handles all database CRUD operations for application entities.
 	 *
-	 * @var ApplicationMapperInterface Application mapper instance
+	 * @var ApplicationMapperInterface<Application> Application mapper instance
 	 */
 	private readonly ApplicationMapperInterface $applicationMapper;
 
@@ -70,7 +70,7 @@ class ApplicationService implements ApplicationServiceInterface {
 	 *
 	 * Initializes service with required dependencies for application operations.
 	 *
-	 * @param ApplicationMapperInterface $applicationMapper Application mapper for database operations
+	 * @param ApplicationMapperInterface<Application> $applicationMapper Application mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @return void

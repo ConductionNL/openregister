@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Event\FlowEmailItem;
+use OCA\OpenRegister\Event\FlowEmailMessage;
+use OCA\OpenRegister\Event\FlowEmailOrigin;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -94,17 +97,18 @@ class FlowEmailAnnouncer {
 		$context = $send->context;
 
 		return new FlowEmailSentEvent(
-			register: FlowScalarText::orNull(value: ($self['register'] ?? null)),
-			schema: FlowScalarText::orNull(value: ($self['schema'] ?? null)),
-			objectUuid: FlowScalarText::orNull(value: ($self['id'] ?? ($item->json['uuid'] ?? null))),
-			recipient: $item->recipient,
-			channelKind: $item->kind,
-			subject: $item->title,
-			body: $item->body,
-			flowId: FlowScalarText::orNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
-			runId: FlowScalarText::orNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
-			stepName: $this->stepName(fallback: $send->stepName),
-			actingUser: $send->actor
+			item: new FlowEmailItem(
+				register: FlowScalarText::orNull(value: ($self['register'] ?? null)),
+				schema: FlowScalarText::orNull(value: ($self['schema'] ?? null)),
+				objectUuid: FlowScalarText::orNull(value: ($self['id'] ?? ($item->json['uuid'] ?? null)))
+			),
+			message: new FlowEmailMessage(recipient: $item->recipient, channelKind: $item->kind, subject: $item->title, body: $item->body),
+			origin: new FlowEmailOrigin(
+				flowId: FlowScalarText::orNull(value: ($context[FlowRunServiceInterface::FLOW_ID_CONTEXT_KEY] ?? null)),
+				runId: FlowScalarText::orNull(value: ($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? null))),
+				stepName: $this->stepName(fallback: $send->stepName),
+				actingUser: $send->actor
+			)
 		);
 	}//end event()
 

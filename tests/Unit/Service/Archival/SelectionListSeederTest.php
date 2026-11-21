@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 class SelectionListSeederTest extends TestCase {
 
@@ -73,7 +74,7 @@ class SelectionListSeederTest extends TestCase {
 
 		$saveObject = $this->createMock(SaveObject::class);
 		$saveObject->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->writes++;
 				$uuid = ($uuid ?? 'row-' . (count($this->rows) + 1));
 				$row = new ObjectEntity();
@@ -81,7 +82,7 @@ class SelectionListSeederTest extends TestCase {
 				$row->setObject($data);
 				$this->rows[$uuid] = $row;
 				return $row;
-			}
+			})
 		);
 
 		$settings = $this->createMock(ObjectRetentionHandler::class);

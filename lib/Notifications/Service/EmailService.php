@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * EmailService manages email-to-object links via the openregister_email_links table.

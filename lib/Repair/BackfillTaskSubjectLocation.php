@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -95,121 +94,80 @@ class BackfillTaskSubjectLocation implements IRepairStep {
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
 	public function run(IOutput $output): void {
+		$backfill = $this->prepare(output: $output);
+		if ($backfill === null) {
+			return;
+		}
+
+		foreach ($backfill->batches(size: self::BATCH) as $batch) {
+			$this->locateBatch(backfill: $backfill, batch: $batch);
+		}
+
+		$output->info(self::summary(backfill: $backfill));
+	}//end run()
+
+	/**
+	 * The closing line: how many of the tasks without a location this pass located.
+	 *
+	 * @param TaskSubjectLocationBackfill $backfill The finished pass.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private static function summary(TaskSubjectLocationBackfill $backfill): string {
+		return sprintf(
+			'Task subject location: %d of %d tasks located; the rest keep the cross-table lookup.',
+			$backfill->located,
+			$backfill->total()
+		);
+	}//end summary()
+
+	/**
+	 * Resolve the services and read the unlocated subjects, or say why the step is skipped.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return TaskSubjectLocationBackfill|null The pass, or null when there is nothing to do.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private function prepare(IOutput $output): ?TaskSubjectLocationBackfill {
 		try {
 			$db = $this->container->get(IDBConnection::class);
 			$locator = $this->container->get(TaskSubjectLocatorInterface::class);
 			if ($db->tableExists('openregister_tasks') === false) {
 				$output->info('Task subject location: no task table yet.');
-				return;
+				return null;
 			}
 
-			$uuids = $this->unlocatedSubjects(db: $db);
+			$backfill = TaskSubjectLocationBackfill::load(db: $db, locator: $locator);
 		} catch (Throwable $e) {
 			$output->info('Task subject location backfill skipped: ' . $e->getMessage());
-			return;
+			return null;
 		}
 
-		$located = 0;
-		foreach (array_chunk($uuids, self::BATCH) as $batch) {
-			try {
-				foreach ($locator->locateMany(uuids: $batch) as $uuid => $location) {
-					$located += $this->record(db: $db, location: ['uuid' => (string)$uuid] + $location);
-				}
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					'[BackfillTaskSubjectLocation] A batch could not be located: ' . $e->getMessage(),
-					['exception' => $e]
-				);
-			}
+		return $backfill;
+	}//end prepare()
+
+	/**
+	 * Locate one batch; a batch that fails is logged and the next one still runs.
+	 *
+	 * @param TaskSubjectLocationBackfill $backfill The pass.
+	 * @param array<int, string>          $batch    The subject uuids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private function locateBatch(TaskSubjectLocationBackfill $backfill, array $batch): void {
+		try {
+			$backfill->locateBatch(batch: $batch);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[BackfillTaskSubjectLocation] A batch could not be located: ' . $e->getMessage(),
+				['exception' => $e]
+			);
 		}
-
-		$output->info(
-			sprintf(
-				'Task subject location: %d of %d tasks located; the rest keep the cross-table lookup.',
-				$located,
-				$this->countUnlocatedTasks(db: $db) + $located
-			)
-		);
-	}//end run()
-
-	/**
-	 * The distinct subject uuids of tasks without a location.
-	 *
-	 * @param IDBConnection $db The connection.
-	 *
-	 * @return array<int, string> The uuids.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md
-	 */
-	private function unlocatedSubjects(IDBConnection $db): array {
-		$qb = $this->unlocated(db: $db);
-		$qb->selectDistinct('object_uuid');
-
-		return array_map('strval', $qb->executeQuery()->fetchAll(\PDO::FETCH_COLUMN));
-	}//end unlocatedSubjects()
-
-	/**
-	 * How many tasks are still without a location.
-	 *
-	 * @param IDBConnection $db The connection.
-	 *
-	 * @return int The count.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md
-	 */
-	private function countUnlocatedTasks(IDBConnection $db): int {
-		$qb = $this->unlocated(db: $db);
-		$qb->select($qb->func()->count('*'));
-
-		return (int)$qb->executeQuery()->fetchOne();
-	}//end countUnlocatedTasks()
-
-	/**
-	 * Tasks with a subject but without its register or schema.
-	 *
-	 * @param IDBConnection $db The connection.
-	 *
-	 * @return IQueryBuilder The query, without a select.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md
-	 */
-	private function unlocated(IDBConnection $db): IQueryBuilder {
-		$qb = $db->getQueryBuilder();
-		$qb->from('openregister_tasks')
-			->where($qb->expr()->isNotNull('object_uuid'))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('register_id'),
-					$qb->expr()->isNull('schema_id')
-				)
-			);
-
-		return $qb;
-	}//end unlocated()
-
-	/**
-	 * Write one subject's location onto its unlocated tasks.
-	 *
-	 * @param IDBConnection $db The connection.
-	 * @param array{uuid: string, registerId: int, schemaId: int} $location The subject uuid and where it lives.
-	 *
-	 * @return int Tasks updated.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md
-	 */
-	private function record(IDBConnection $db, array $location): int {
-		$qb = $db->getQueryBuilder();
-		$qb->update('openregister_tasks')
-			->set('register_id', $qb->createNamedParameter($location['registerId'], IQueryBuilder::PARAM_INT))
-			->set('schema_id', $qb->createNamedParameter($location['schemaId'], IQueryBuilder::PARAM_INT))
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($location['uuid'])))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('register_id'),
-					$qb->expr()->isNull('schema_id')
-				)
-			);
-
-		return $qb->executeStatement();
-	}//end record()
+	}//end locateBatch()
 }//end class

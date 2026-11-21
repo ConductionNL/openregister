@@ -28,6 +28,12 @@ use Psr\Log\LoggerInterface;
  * Pins totals, error entries and what gets stored, in serial and parallel mode.
  *
  * @covers \OCA\OpenRegister\Search\Service\VectorizationService
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\VectorizationRun
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\VectorizedEntity
  */
 final class VectorizationBatchGoldenTest extends TestCase {
 
