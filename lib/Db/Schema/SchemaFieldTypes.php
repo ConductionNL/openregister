@@ -77,5 +77,6 @@ final class SchemaFieldTypes {
 		'talk' => 'json',
 		'deck' => 'json',
 		'draft' => 'json',
+		'formerSlugs' => 'json',
 	];
 }//end class

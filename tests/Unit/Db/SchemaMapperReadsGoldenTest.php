@@ -94,6 +94,11 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 			'slug page' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 2, offset: 4))],
 			'slug without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10), _multitenancy: false)],
 			'slug none' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10))],
+			'slug none, former slug hit' => [
+				[[], [self::ROW + ['former_slugs' => '["seven"]'], self::TWIN + ['former_slugs' => '["sevens"]']]],
+				static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10)),
+			],
+			'slug none, former slug miss' => [[[], []], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10), _multitenancy: false)],
 			'all defaults' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findAll()],
 			'all without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findAll(_multitenancy: false)],
 			'all filtered and searched' => [
