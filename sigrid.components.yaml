@@ -2807,7 +2807,7 @@ components:
       - ".*/lib/Controller/Support/ConversationDomain[.]php"
       - ".*/lib/Dashboard/[^/]*"
       - ".*/lib/Db/(Feedback|FeedbackMapper|FeedbackMapperInterface|PlatformMapperBindings|PlatformMapperRegistrar)[.]php"
-      - ".*/lib/Listener/(ListenerBootstrap|NotifyPushBatch|NotifyPushListener|NotifyPushRun|PlatformListenerBindings)[.]php"
+      - ".*/lib/Listener/(ListenerBootstrap|NotifyPushBatch|NotifyPushListener|NotifyPushRun|PlatformListenerBindings|TeamResourcesDeclarationCheckListener)[.]php"
       - ".*/lib/Middleware/[^/]*"
       - ".*/lib/Middleware/Exception/[^/]*"
       - ".*/lib/Middleware/Support/[^/]*"
