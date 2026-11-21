@@ -130,22 +130,6 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	}//end isAnalyticsAvailable()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
-
-	/**
 	 * Lazily resolve NC Analytics' ReportService behind a class_exists
 	 * guard so OR boots cleanly without the Analytics app.
 	 *
@@ -189,7 +173,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkReport(LinkTarget $target, int $reportId): AnalyticsLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 		$this->assertReportLinkable(target: $target, reportId: $reportId);
 
 		$info = $this->fetchReportInfo(reportId: $reportId);
@@ -240,7 +224,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkReport(LinkTarget $target, AnalyticsReportDraft $draft): AnalyticsLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$name = trim($draft->name);
 		if ($name === '') {
@@ -334,7 +318,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function unlinkReport(string $objectUuid, int $reportId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->analyticsLinkMapper->deleteByObjectAndReport($objectUuid, $reportId);
 		if ($deleted === 0) {

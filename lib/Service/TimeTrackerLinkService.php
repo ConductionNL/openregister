@@ -175,17 +175,6 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	}//end resolveMapper()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
-	}//end requireUid()
-
-	/**
 	 * Normalise + validate an entry-type discriminator.
 	 *
 	 * @param string $entryType The raw entry type.
@@ -221,7 +210,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @spec openspec/specs/integration-time-tracker/spec.md
 	 */
 	public function linkEntry(LinkTarget $target, TimeEntry $entry): TimeTrackerLink {
-		$uid   = $this->requireUid();
+		$uid   = $this->runtime->requireUid();
 		$entry = new TimeEntry(type: $this->normaliseEntryType(entryType: $entry->type), id: $this->requireEntryId(id: $entry->id));
 		$this->assertEntryUnlinked(target: $target, key: $this->entryLink(entryType: $entry->type, id: $entry->id));
 
@@ -286,7 +275,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 *       owned by the integration-time-tracker capability.
 	 */
 	public function createAndLinkClient(LinkTarget $target, string $name): TimeTrackerLink {
-		$uid  = $this->requireUid();
+		$uid  = $this->runtime->requireUid();
 		$name = trim($name);
 		if ($name === '') {
 			throw new Exception('Client name is required', 400);
@@ -437,7 +426,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink contract is owned by the integration-time-tracker capability.
 	 */
 	public function unlink(string $objectUuid, string $entryId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->timeTrackerLinkMapper->deleteByObjectAndEntryId($objectUuid, $entryId);
 		if ($deleted === 0) {

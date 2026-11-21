@@ -226,7 +226,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the form-link contract is owned by the integration-forms capability.
 	 */
 	public function linkFormTo(FormLinkScope $scope, int $formId): FormLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$existing = $this->formLinkMapper->findFormLink($scope->objectUuid, $formId);
 		if ($existing !== null) {
@@ -251,7 +251,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the submission-link contract is owned by the integration-forms capability.
 	 */
 	public function linkSubmissionTo(FormLinkScope $scope, FormSubmissionRef $submission): FormLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$existing = $this->formLinkMapper->findSubmissionLink(objectUuid: $scope->objectUuid, submission: $submission);
 		if ($existing !== null) {
@@ -262,22 +262,6 @@ class FormLinkService implements FormLinkServiceInterface {
 		$link->setSubmissionId($submission->submissionId);
 		return $this->insertLink(link: $link, formId: $submission->formId);
 	}//end linkSubmissionTo()
-
-	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		$user = $this->runtime->userSession()->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
-	}//end requireUid()
 
 	/**
 	 * Stamp a link with its form and the form's metadata, and insert it.
@@ -362,7 +346,7 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-forms capability.
 	 */
 	public function createAndLinkForm(FormLinkScope $scope, NewForm $form): FormLink {
-		$uid      = $this->requireUid();
+		$uid      = $this->runtime->requireUid();
 		$services = $this->resolveFormsServices();
 		// Mirror NC Forms' own ApiController::newForm shape.
 		$fields = ['ownerId' => $uid, 'title' => $form->title, 'description' => $form->description];
