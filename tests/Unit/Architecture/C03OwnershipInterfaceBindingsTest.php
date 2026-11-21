@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipServiceInterface;
@@ -51,7 +51,7 @@ final class C03OwnershipInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AuditAggregationService::class => [AuditAggregationServiceInterface::class, ContractBindings::class],
+		AuditAggregationService::class => [AuditAggregationServiceInterface::class, ComplianceServiceBindings::class],
 		ObjectOwnershipService::class => [ObjectOwnershipServiceInterface::class, CoreServiceBindings::class],
 	];
 

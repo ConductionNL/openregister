@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
@@ -74,18 +74,18 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AnonymisationBackendService::class => [AnonymisationBackendServiceInterface::class, ContractBindings::class],
-		ArchivalNominationService::class => [ArchivalNominationServiceInterface::class, ContractBindings::class],
+		AnonymisationBackendService::class => [AnonymisationBackendServiceInterface::class, ComplianceServiceBindings::class],
+		ArchivalNominationService::class => [ArchivalNominationServiceInterface::class, ComplianceServiceBindings::class],
 		CasePlanAuthorizationService::class => [CasePlanAuthorizationServiceInterface::class, ProcessesServiceBindings::class],
 		DelegationConsentService::class => [DelegationConsentServiceInterface::class, CoreServiceBindings::class],
 		DelegationGrantMapper::class => [DelegationGrantMapperInterface::class, DbRegistrar::class],
 		DelegationNotifier::class => [DelegationNotifierInterface::class, CoreServiceBindings::class],
-		DestructionListCreator::class => [DestructionListCreatorInterface::class, ContractBindings::class],
-		DestructionListRepository::class => [DestructionListRepositoryInterface::class, ContractBindings::class],
-		DestructionReviewService::class => [DestructionReviewServiceInterface::class, ContractBindings::class],
-		DestructionService::class => [DestructionServiceInterface::class, ContractBindings::class],
-		LegalHoldService::class => [LegalHoldServiceInterface::class, ContractBindings::class],
-		ReviewOutcomeService::class => [ReviewOutcomeServiceInterface::class, ContractBindings::class],
+		DestructionListCreator::class => [DestructionListCreatorInterface::class, ComplianceServiceBindings::class],
+		DestructionListRepository::class => [DestructionListRepositoryInterface::class, ComplianceServiceBindings::class],
+		DestructionReviewService::class => [DestructionReviewServiceInterface::class, ComplianceServiceBindings::class],
+		DestructionService::class => [DestructionServiceInterface::class, ComplianceServiceBindings::class],
+		LegalHoldService::class => [LegalHoldServiceInterface::class, ComplianceServiceBindings::class],
+		ReviewOutcomeService::class => [ReviewOutcomeServiceInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**

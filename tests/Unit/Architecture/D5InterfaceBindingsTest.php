@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
@@ -60,7 +61,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
 			ContractBindings::class,
 		],
-		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ComplianceServiceBindings::class],
 		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', CoreServiceBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', FlowWiring::class],
 		'OCA\OpenRegister\Service\SharedSchemaDedupeService' => [

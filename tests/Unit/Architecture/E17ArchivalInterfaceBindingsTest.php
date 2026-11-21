@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferAttemptInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
@@ -48,11 +48,11 @@ final class E17ArchivalInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		ArchivalNominationTriggerInterface::class => [ArchivalNominationService::class, ContractBindings::class],
-		DestructionReviewReminderInterface::class => [DestructionReviewService::class, ContractBindings::class],
-		EdepotTransferAttemptInterface::class => [EdepotTransferService::class, ContractBindings::class],
-		TransferListRunInterface::class => [TransferListService::class, ContractBindings::class],
-		TransferRecordStoreInterface::class => [TransferRecordService::class, ContractBindings::class],
+		ArchivalNominationTriggerInterface::class => [ArchivalNominationService::class, ComplianceServiceBindings::class],
+		DestructionReviewReminderInterface::class => [DestructionReviewService::class, ComplianceServiceBindings::class],
+		EdepotTransferAttemptInterface::class => [EdepotTransferService::class, ComplianceServiceBindings::class],
+		TransferListRunInterface::class => [TransferListService::class, ComplianceServiceBindings::class],
+		TransferRecordStoreInterface::class => [TransferRecordService::class, ComplianceServiceBindings::class],
 	];
 
 	/**

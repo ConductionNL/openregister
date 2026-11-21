@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
@@ -62,14 +62,14 @@ final class F01GdprInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		CaseAccessControl::class => [CaseAccessControlInterface::class, ContractBindings::class],
-		CaseObjectAccessor::class => [CaseObjectAccessorInterface::class, ContractBindings::class],
-		EvidenceHarvestService::class => [EvidenceHarvestServiceInterface::class, ContractBindings::class],
-		ExportBundleService::class => [ExportBundleServiceInterface::class, ContractBindings::class],
-		IdentityVerifyRegistry::class => [IdentityVerifyRegistryInterface::class, ContractBindings::class],
-		DsarPolicyPackResolver::class => [DsarPolicyPackResolverInterface::class, ContractBindings::class],
-		RedactionWriteService::class => [RedactionWriteServiceInterface::class, ContractBindings::class],
-		RegulatorEscalateRegistry::class => [RegulatorEscalateRegistryInterface::class, ContractBindings::class],
+		CaseAccessControl::class => [CaseAccessControlInterface::class, ComplianceServiceBindings::class],
+		CaseObjectAccessor::class => [CaseObjectAccessorInterface::class, ComplianceServiceBindings::class],
+		EvidenceHarvestService::class => [EvidenceHarvestServiceInterface::class, ComplianceServiceBindings::class],
+		ExportBundleService::class => [ExportBundleServiceInterface::class, ComplianceServiceBindings::class],
+		IdentityVerifyRegistry::class => [IdentityVerifyRegistryInterface::class, ComplianceServiceBindings::class],
+		DsarPolicyPackResolver::class => [DsarPolicyPackResolverInterface::class, ComplianceServiceBindings::class],
+		RedactionWriteService::class => [RedactionWriteServiceInterface::class, ComplianceServiceBindings::class],
+		RegulatorEscalateRegistry::class => [RegulatorEscalateRegistryInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**

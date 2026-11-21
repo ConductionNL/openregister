@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\AuditRechainInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -49,7 +49,7 @@ final class E18AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		AuditHashService::class => [AuditRechainInterface::class, ContractBindings::class],
+		AuditHashService::class => [AuditRechainInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**
