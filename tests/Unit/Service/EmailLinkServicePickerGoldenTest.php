@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\MailboxPage;
  * @covers \OCA\OpenRegister\Service\EmailLinkService
  * @uses   \OCA\OpenRegister\Service\MailboxPage
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class EmailLinkServicePickerGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

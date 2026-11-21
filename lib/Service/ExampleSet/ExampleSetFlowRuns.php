@@ -27,7 +27,7 @@
  * @link https://www.OpenRegister.nl
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Psr\Container\ContainerInterface;
 /**
  * Checks and writes the runs of a set's flows, and fills a waiting run's slot.
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 class ExampleSetFlowRuns {
 	/**
@@ -123,7 +123,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function unnamedRefusals(array $fragment): array {
 		$named    = array_map(static fn (mixed $task): string => trim((string) ($task['data']['runUuid'] ?? '')), (array) ($fragment['tasks'] ?? []));
@@ -185,7 +185,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function taskRefusal(array $data, array $context): string {
 		$run  = trim((string) ($data['runUuid'] ?? ''));
@@ -249,7 +249,7 @@ class ExampleSetFlowRuns {
 	 *                                                                             `waitsOn` (waiting run uuid to step),
 	 *                                                                             each present only when it holds something.
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function write(ExampleSetRunsWrite $write): array {
 		$entry = [];
@@ -292,7 +292,7 @@ class ExampleSetFlowRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function fill(ExampleSetRunSlot $slot): void {
 		if (trim($slot->runUuid) === '') {
@@ -336,25 +336,48 @@ class ExampleSetFlowRuns {
 	 * @return FlowRun
 	 */
 	private function entity(ExampleSetRunsWrite $write, array $run): FlowRun {
-		$created = new DateTime((string) ($run['created'] ?? 'now'));
-
 		$entity = new FlowRun();
 		$entity->setUuid((string) ($write->newUuid)());
 		$entity->setFlowId((string) $write->flow->getUuid());
 		$entity->setFlowVersion($write->version);
 		$entity->setStatus((string) $run['status']);
-		$entity->setSubjectUuid((string) $run['subject']);
-		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
-		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
+		self::setSubject(entity: $entity, run: $run);
 		$entity->setTrigger((string) ($run['trigger'] ?? $write->flow->getTrigger() ?? 'manual'));
 		$entity->setTriggeredBy(($run['triggeredBy'] ?? null));
 		$entity->setError(($run['error'] ?? null));
 		$entity->setOrganisation($write->flow->getOrganisation());
-		$entity->setCreated($created);
-		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
+		self::setMoments(entity: $entity, run: $run);
 
 		return $entity;
 	}//end entity()
+
+	/**
+	 * Date the run as declared: created then, updated then or else when created.
+	 *
+	 * @param FlowRun              $entity The run being built.
+	 * @param array<string, mixed> $run    The declared run.
+	 *
+	 * @return void
+	 */
+	private static function setMoments(FlowRun $entity, array $run): void {
+		$created = new DateTime((string) ($run['created'] ?? 'now'));
+		$entity->setCreated($created);
+		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
+	}//end setMoments()
+
+	/**
+	 * Point the run at its declared subject.
+	 *
+	 * @param FlowRun              $entity The run being built.
+	 * @param array<string, mixed> $run    The declared run.
+	 *
+	 * @return void
+	 */
+	private static function setSubject(FlowRun $entity, array $run): void {
+		$entity->setSubjectUuid((string) $run['subject']);
+		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
+		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
+	}//end setSubject()
 
 	/**
 	 * Park a run on a step as the user-task step does: one token and one item there, the step's slot empty
@@ -374,14 +397,26 @@ class ExampleSetFlowRuns {
 		$run->setItems([$item]);
 		$run->setRunAs($actor);
 		$run->setResumeAt(null);
-		$run->setContext(
-			[
-				'runUuid'                    => $run->getUuid(),
-				'flowId'                     => $run->getFlowId(),
-				'triggeredBy'                => $actor,
-				'runAs'                      => $actor,
-				FlowResumeState::CONTEXT_KEY => [$node => []],
-			]
-		);
+		$run->setContext(self::parkedContext(run: $run, node: $node));
 	}//end park()
+
+	/**
+	 * The context of a run parked at a node, acting as whoever triggered it.
+	 *
+	 * @param FlowRun $run  The run.
+	 * @param string  $node The node it waits at.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private static function parkedContext(FlowRun $run, string $node): array {
+		$actor = $run->getTriggeredBy();
+
+		return [
+			'runUuid'                    => $run->getUuid(),
+			'flowId'                     => $run->getFlowId(),
+			'triggeredBy'                => $actor,
+			'runAs'                      => $actor,
+			FlowResumeState::CONTEXT_KEY => [$node => []],
+		];
+	}//end parkedContext()
 }//end class

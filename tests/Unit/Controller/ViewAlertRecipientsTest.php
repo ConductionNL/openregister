@@ -56,6 +56,16 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Search\Service\ViewService
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\AlertRecipientChange
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachedView
+ * @uses \OCA\OpenRegister\Service\Rbac\ShareTargetLookup
+ * @uses \OCA\OpenRegister\Service\View\ViewAlertLine
  */
 class ViewAlertRecipientsTest extends TestCase {
 

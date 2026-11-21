@@ -17,6 +17,7 @@ use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -109,8 +110,8 @@ class PartyMergeListenerTest extends TestCase {
 
 		$this->links->method('findByPartyUuid')->willReturnCallback(fn (): array => $this->loserLinks);
 		$this->links->method('findByObjectContactAndRole')->willReturnCallback(
-			fn (string $objectUuid, string $contactUid, ?string $role): ?ContactLink
-				=> ($this->survivorHolds[$objectUuid . '|' . (string)$role] ?? null)
+			fn (PersonLinkRef $ref): ?ContactLink
+				=> ($this->survivorHolds[$ref->objectUuid . '|' . (string)$ref->role] ?? null)
 		);
 		$this->links->method('update')->willReturnCallback(
 			function (ContactLink $link): ContactLink {

@@ -41,8 +41,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use Psr\Container\ContainerInterface;
@@ -52,7 +54,7 @@ use UnexpectedValueException;
 /**
  * A declared loop region: a source, a body, and a bound.
  */
-class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * Default ceiling when a flow declares none.
@@ -147,6 +149,36 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	public function configKeys(): array {
 		return ['source', 'body', 'maxIterations', 'onLimit'];
 	}//end configKeys()
+
+	/**
+	 * The bounds of the repeat; its source and body stay in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// `source` (a step that produces each batch) and `body` (the chain of
+		// steps to repeat) are nested step declarations; they stay in the JSON
+		// pane. The form covers the two bounds that keep the loop finite.
+		return [
+			[
+				'key' => 'maxIterations',
+				'label' => $this->l10n->t('At most this many passes'),
+				'type' => 'number',
+				'help' => $this->l10n->t(
+					'A loop that never runs dry repeats its side effects until something stops it; this is that '
+						. 'something. Defaults to 100. The batch source and the steps to repeat are edited in the JSON pane.'
+				),
+			],
+			[
+				'key' => 'onLimit',
+				'label' => $this->l10n->t('When the limit is reached'),
+				'type' => 'text',
+				'help' => $this->l10n->t('"fail" (the default) ends the run as failed; "stop" ends the loop and carries on with what it collected.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Refuse a loop that cannot converge or has nothing to repeat.
@@ -307,9 +339,7 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 * the final page. That is what an author expects from "repeat until done",
 	 * and getting it wrong would silently discard all but the last batch.
 	 *
-	 * @param array $items The input items, passed to the first source call.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array Every item produced across all iterations.
 	 *
@@ -317,7 +347,10 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 *
 	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		return $this->repeat(step: new NodeInvocation(items: $items, config: $config, context: $context));
 	}//end execute()
 

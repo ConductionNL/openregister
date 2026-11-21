@@ -86,16 +86,34 @@ final class RelatedObjectSet {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function withFallback(array $located, ?Closure $admits = null): array {
-		$missingUuids = array_diff($this->wanted, $this->foundUuids);
 		$objects = $this->objects;
-		foreach ($located as $candidate) {
-			if (in_array($candidate->getUuid(), $missingUuids, true) === true
-				&& ($admits === null || $admits($candidate) === true)
-			) {
+		foreach ($this->stillMissingAmong(located: $located) as $candidate) {
+			if ($admits === null || $admits($candidate) === true) {
 				$objects[] = $candidate;
 			}
 		}
 
 		return $objects;
 	}//end withFallback()
+
+	/**
+	 * The located rows whose uuid is wanted but was not found, in located order.
+	 *
+	 * @param ObjectEntity[] $located The rows the cross-table lookup found.
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function stillMissingAmong(array $located): array {
+		$missingUuids = array_diff($this->wanted, $this->foundUuids);
+		$missing = [];
+		foreach ($located as $candidate) {
+			if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
+				$missing[] = $candidate;
+			}
+		}
+
+		return $missing;
+	}//end stillMissingAmong()
 }//end class

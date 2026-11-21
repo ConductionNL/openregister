@@ -21,6 +21,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\FileInputReader
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileFormat
  */
 final class FileInputReaderTest extends TestCase {
 

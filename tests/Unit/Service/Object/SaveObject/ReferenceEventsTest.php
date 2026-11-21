@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
  * Which event each outcome raises, what it carries, and that a failing dispatch never fails the save.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses \OCA\OpenRegister\Event\AbstractReferenceValidationEvent
  */
 class ReferenceEventsTest extends TestCase {
 

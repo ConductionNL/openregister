@@ -119,27 +119,6 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 	}//end isComplete()
 
 	/**
-	 * Summarise a raw `ObjectService::saveObjects()` result.
-	 *
-	 * The rejected rows arrive in `invalid[]`, each already carrying the
-	 * validator's own message — this is the detail the endpoint used to
-	 * discard, and rediscovering it cost a manual bisect over individual
-	 * fields.
-	 *
-	 * @param array $bulkResult Raw result from ObjectService::saveObjects().
-	 * @param int $requestedCount Rows the caller submitted.
-	 * @param int $accountedCount Rows the result accounts for (saved + updated + unchanged).
-	 *
-	 * @return self The summarised outcome.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public static function fromBulkResult(array $bulkResult, int $requestedCount, int $accountedCount): self {
-		return self::fromSaveResult(bulkResult: $bulkResult, rows: new BulkRowCount(requested: $requestedCount, accounted: $accountedCount));
-
-	}//end fromBulkResult()
-
-	/**
 	 * Summarise a raw `ObjectService::saveObjects()` result against the row counts.
 	 *
 	 * Every rejected row in `invalid[]` is reported with the validator's own
@@ -239,29 +218,6 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 	}//end rejection()
 
 	/**
-	 * Summarise a streaming batch status into the same shape.
-	 *
-	 * The streaming path already derived its `success` from the failed count,
-	 * but reported the detail under its own key layout, so a caller had to know
-	 * which path it had asked for before it could read the answer.
-	 *
-	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
-	 * @param int $requestedCount Rows the caller submitted.
-	 * @param int $accountedCount Rows the status accounts for (created + updated + unchanged).
-	 *
-	 * @return self The summarised outcome.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public static function fromBatchStatus(
-		BatchOperationStatusInterface $status,
-		int $requestedCount,
-		int $accountedCount
-	): self {
-		return self::fromStreamedBatch(status: $status, rows: new StreamedRowCount(requested: $requestedCount, accounted: $accountedCount));
-	}//end fromBatchStatus()
-
-	/**
 	 * Summarise a streaming batch status, given the rows asked for and accounted for.
 	 *
 	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
@@ -327,6 +283,25 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			return '';
 		}
 
+		$messages = self::unattributedMessages(errors: $errors);
+		if ($messages === []) {
+			return '';
+		}
+
+		return ' Reported errors: ' . implode('; ', $messages);
+
+	}//end describeUnattributedErrors()
+
+	/**
+	 * The messages of the batch-level errors that belong to no row, at most MAX_REPORTED_BATCH_ERRORS.
+	 *
+	 * @param array $errors The `errors` list of the bulk result.
+	 *
+	 * @return list<string> The messages, in order.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function unattributedMessages(array $errors): array {
 		$messages = [];
 		foreach ($errors as $error) {
 			if (is_array($error) === false || ($error['type'] ?? '') === 'BulkSafeguardException') {
@@ -339,13 +314,8 @@ class BulkSaveOutcome implements BulkSaveOutcomeInterface {
 			}
 		}
 
-		if ($messages === []) {
-			return '';
-		}
-
-		return ' Reported errors: ' . implode('; ', $messages);
-
-	}//end describeUnattributedErrors()
+		return $messages;
+	}//end unattributedMessages()
 
 	/**
 	 * Pull the caller-supplied identifier out of a rejected row.

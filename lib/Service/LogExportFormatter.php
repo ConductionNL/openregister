@@ -26,6 +26,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use InvalidArgumentException;
 use JsonSerializable;
 use SimpleXMLElement;
@@ -222,7 +223,7 @@ final class LogExportFormatter {
 		$output = fopen('php://temp', 'r+');
 		fputcsv($output, array_keys($data[0]));
 		foreach ($data as $row) {
-			fputcsv($output, $row);
+			fputcsv($output, SpreadsheetCell::csvRow(row: $row));
 		}
 
 		rewind($output);

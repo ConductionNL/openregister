@@ -73,13 +73,7 @@ final class ReadableDeletionAnalysis {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function analysisFor(DeletionAnalysis $analysis): DeletionAnalysis {
-		$entries = array_merge($analysis->cascadeTargets, $analysis->nullifyTargets, $analysis->defaultTargets, $analysis->blockers);
-		foreach ($entries as $entry) {
-			$uuid = (string) ($entry['objectUuid'] ?? '');
-			if ($uuid !== '') {
-				$this->callerReads(uuid: $uuid);
-			}
-		}
+		$this->readEveryEntry(analysis: $analysis);
 
 		return new DeletionAnalysis(
 			deletable: $analysis->deletable,
@@ -92,6 +86,23 @@ final class ReadableDeletionAnalysis {
 			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
 		);
 	}//end analysisFor()
+
+	/**
+	 * Ask, for every object the analysis names, whether the caller may read it.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis.
+	 *
+	 * @return void
+	 */
+	private function readEveryEntry(DeletionAnalysis $analysis): void {
+		$entries = array_merge($analysis->cascadeTargets, $analysis->nullifyTargets, $analysis->defaultTargets, $analysis->blockers);
+		foreach ($entries as $entry) {
+			$uuid = (string) ($entry['objectUuid'] ?? '');
+			if ($uuid !== '') {
+				$this->callerReads(uuid: $uuid);
+			}
+		}
+	}//end readEveryEntry()
 
 	/**
 	 * The entries the caller reads, then one counting entry per schema for the rest.

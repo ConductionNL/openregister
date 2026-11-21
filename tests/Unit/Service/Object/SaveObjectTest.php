@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
@@ -29,7 +31,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\ObjectUpdateOptions;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\StoredObjectUpdate;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
@@ -54,6 +58,9 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Unit tests for SaveObject
@@ -1180,7 +1187,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-01-15');
 
 		// objectPublishedField is deprecated — should not throw, just log warning.
@@ -1201,7 +1208,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('not-a-date');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1220,7 +1227,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('2025-12-31');
 
 		// objectDepublishedField is deprecated — should not throw, just log warning.
@@ -1241,7 +1248,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('invalid');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -1260,7 +1267,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		// objectPublishedField is deprecated — should not throw.
@@ -3386,20 +3393,21 @@ class SaveObjectTest extends TestCase {
 
 		$handler = $this->getMockBuilder(SaveObject::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['saveObject'])
+			->onlyMethods(['saveObject', 'assertMayUpdateRelated'])
 			->getMock();
 		$saved = [];
 		$handler->method('saveObject')->willReturnCallback(
-			function (mixed ...$args) use (&$saved, $target): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$args) use (&$saved, $target): ObjectEntity {
 				$saved[] = $args;
 				return $target;
-			}
+			})
 		);
 		$writeBack = new InverseWriteBack(
 			objects: $mapper,
 			saver: $handler,
 			lookups: new SaveLookups(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class)),
-			urls: $this->createMock(IURLGenerator::class)
+			urls: $this->createMock(IURLGenerator::class),
+			guard: $handler
 		);
 		$method = new \ReflectionMethod(InverseWriteBack::class, 'writeToTarget');
 		$method->invoke($writeBack, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
@@ -3719,7 +3727,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -3739,7 +3747,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4048,7 +4056,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn('');
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4068,7 +4076,7 @@ class SaveObjectTest extends TestCase {
 
 		$schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
 
-		$this->metaHydrationHandler->method('extractMetadataValue')
+		$this->metaHydrationHandler->method('metadataText')
 			->willReturn(null);
 
 		$this->metaHydrationHandler->expects($this->once())
@@ -4687,10 +4695,8 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		$result = $this->handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['name' => 'Test Object'],
-			uuid: null,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 			persist: false
 		);
 
@@ -4727,10 +4733,8 @@ class SaveObjectTest extends TestCase {
 			->willReturn(['auditTrailsEnabled' => false]);
 
 		$result = $this->handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['name' => 'New Name'],
-			uuid: 'existing-uuid',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'existing-uuid'),
 			persist: false
 		);
 
@@ -4822,7 +4826,7 @@ class SaveObjectTest extends TestCase {
 		$register = $this->createMockRegister(id: 7);
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->objectEntityMapper->method('findSlugHolders')->willReturnCallback(
-			static fn (Register $r, Schema $s, string $slug): array => ($holders[$slug] ?? [])
+			static fn (RegisterSchema $table, string $slug): array => ($holders[$slug] ?? [])
 		);
 		$this->setPrivateProperty(
 			'slugHandler',
@@ -4869,7 +4873,12 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, [])]);
+		$preparation = new UpdatePreparation(
+			existingObject: $entity,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: [])
+		);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$preparation]);
 		$sent = new ObjectPayload(data: $data, selfData: []);
 		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), 'hello-world']);
 
@@ -4927,7 +4936,10 @@ class SaveObjectTest extends TestCase {
 		$this->invokePrivateMethod('decideSlug', [new SlugRequest(entity: $entity, schema: $schema, clientSlug: $sent->clientSlug()), null]);
 		$this->assertNull($entity->getSlug(), 'precondition: the decision is no slug');
 
-		$updated = $this->handler->updateObject(register: $register, schema: $schema, data: $data, existingObject: $entity, silent: true);
+		$updated = $this->handler->updateObject(
+			update: new StoredObjectUpdate(register: $register, schema: $schema, data: $data, existingObject: $entity),
+			options: new ObjectUpdateOptions(silent: true)
+		);
 
 		$this->assertNull($updated->getSlug(), 'updateObject() leaves the decision alone');
 	}

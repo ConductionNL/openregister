@@ -1,0 +1,192 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MdmConflictResolutionModal (golden) offers only the attributes whose sources disagree 1`] = `
+[
+  {
+    "attribute": "name",
+    "options": [
+      {
+        "id": "name::crm::"Ann"",
+        "label": "Ann (crm)",
+        "sourceSystem": "crm",
+        "value": "Ann",
+      },
+      {
+        "id": "name::erp::"Anne"",
+        "label": "Anne (erp)",
+        "sourceSystem": "erp",
+        "value": "Anne",
+      },
+    ],
+  },
+  {
+    "attribute": "tags",
+    "options": [
+      {
+        "id": "tags::crm::["a"]",
+        "label": "["a"] (crm)",
+        "sourceSystem": "crm",
+        "value": [
+          "a",
+        ],
+      },
+      {
+        "id": "tags::erp::["b"]",
+        "label": "["b"] (erp)",
+        "sourceSystem": "erp",
+        "value": [
+          "b",
+        ],
+      },
+    ],
+  },
+  {
+    "attribute": "age",
+    "options": [
+      {
+        "id": "age::crm::3",
+        "label": "3 (crm)",
+        "sourceSystem": "crm",
+        "value": 3,
+      },
+      {
+        "id": "age::::4",
+        "label": "4 ()",
+        "sourceSystem": "",
+        "value": 4,
+      },
+    ],
+  },
+]
+`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of a sources list 1`] = `
+[
+  {
+    "sourceSystem": "a",
+  },
+  {
+    "b": 1,
+  },
+]
+`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of a string 1`] = `[]`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of no list of source entries 1`] = `[]`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of no object 1`] = `[]`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of sources that are not a list 1`] = `
+[
+  {
+    "sourceSystem": "s",
+  },
+]
+`;
+
+exports[`MdmConflictResolutionModal (golden) reads the source records of the first list of source entries 1`] = `
+[
+  {
+    "sourceSystem": "b",
+  },
+  {
+    "sourceSystem": "c",
+  },
+]
+`;
+
+exports[`MdmMergeWizardModal (golden) confirms a merge that fails 1`] = `
+{
+  "calls": [
+    [
+      "a",
+      "b",
+      "manual-bulk",
+    ],
+  ],
+  "during": {
+    "error": "",
+    "executing": true,
+  },
+  "emitted": [],
+  "error": "t:The merge could not be completed.",
+  "executing": false,
+}
+`;
+
+exports[`MdmMergeWizardModal (golden) confirms a merge that is refused 1`] = `
+{
+  "calls": [
+    [
+      "a",
+      "b",
+      "manual-bulk",
+    ],
+  ],
+  "during": {
+    "error": "",
+    "executing": true,
+  },
+  "emitted": [],
+  "error": "Locked",
+  "executing": false,
+}
+`;
+
+exports[`MdmMergeWizardModal (golden) confirms a merge that merges 1`] = `
+{
+  "calls": [
+    [
+      "a",
+      "b",
+      "manual-bulk",
+    ],
+  ],
+  "during": {
+    "error": "",
+    "executing": true,
+  },
+  "emitted": [
+    [
+      "merged",
+      {
+        "merged": true,
+      },
+    ],
+    [
+      "close",
+    ],
+  ],
+  "error": "",
+  "executing": false,
+}
+`;
+
+exports[`MdmMergeWizardModal (golden) starts loading, without a reason, offering four reasons 1`] = `
+{
+  "error": "",
+  "executing": false,
+  "loading": true,
+  "preview": null,
+  "reasonModel": null,
+  "reasonOptions": [
+    {
+      "id": "duplicate-confirmed",
+      "label": "t:Confirmed duplicate",
+    },
+    {
+      "id": "data-stewardship-review",
+      "label": "t:Data stewardship review",
+    },
+    {
+      "id": "manual-bulk",
+      "label": "t:Manual bulk cleanup",
+    },
+    {
+      "id": "migration",
+      "label": "t:Migration cleanup",
+    },
+  ],
+}
+`;

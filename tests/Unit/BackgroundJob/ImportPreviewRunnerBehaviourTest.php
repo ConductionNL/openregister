@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewFinderInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
@@ -110,7 +111,7 @@ class ImportPreviewRunnerBehaviourTest extends TestCase {
 	public function testCommitPhaseCommitsWithTheSourceHash(): void {
 		$this->finder->expects($this->once())->method('find')->with(9)->willReturn($this->preview);
 		$this->service->expects($this->once())->method('commit')
-			->with($this->identicalTo($this->preview), 'abc123')->willReturn($this->preview);
+			->with($this->identicalTo($this->preview), new ImportCommit(sourceHash: 'abc123'))->willReturn($this->preview);
 		$this->service->expects($this->never())->method('runPreview');
 
 		$this->runJob(['preview_id' => 9, 'phase' => ImportPreviewRunner::PHASE_COMMIT, 'source_hash' => 'abc123']);
@@ -119,7 +120,7 @@ class ImportPreviewRunnerBehaviourTest extends TestCase {
 	public function testCommitPhaseWithoutHashPassesNull(): void {
 		$this->finder->method('find')->willReturn($this->preview);
 		$this->service->expects($this->once())->method('commit')
-			->with($this->identicalTo($this->preview), null)->willReturn($this->preview);
+			->with($this->identicalTo($this->preview), new ImportCommit(sourceHash: null))->willReturn($this->preview);
 
 		$this->runJob(['preview_id' => 9, 'phase' => 'commit']);
 	}

@@ -24,6 +24,8 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCP\EventDispatcher\Event;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -33,6 +35,13 @@ use RuntimeException;
  * Which schema each event installs, which configurations install nothing, and the payload defaults.
  *
  * @covers \OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  */
 class NotificationsAnnotationInstallerEventsTest extends TestCase {
 
@@ -61,7 +70,7 @@ class NotificationsAnnotationInstallerEventsTest extends TestCase {
 	 * @return NotificationsAnnotationInstaller
 	 */
 	private function installer(?LoggerInterface $logger = null): NotificationsAnnotationInstaller {
-		return new NotificationsAnnotationInstaller($this->mapper, $logger ?? $this->createMock(LoggerInterface::class));
+		return new NotificationsAnnotationInstaller($this->mapper, $logger ?? $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class));
 
 	}//end installer()
 

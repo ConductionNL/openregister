@@ -40,6 +40,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Service\Flow\FlowTriggerDerivation
  * @uses \OCA\OpenRegister\Service\Flow\FlowTriggerSources
+ * @uses \OCA\OpenRegister\Db\Flow\FlowTriggerSet
  */
 class FlowTriggerIndexBehaviourTest extends TestCase {
 

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
@@ -79,7 +80,7 @@ final class OpenProjectListGoldenTest extends TestCase {
 	public function testEnvelopes(array $answer, array $ids): void {
 		$this->assertSame(
 			array_map(fn (string $id): array => $this->row(id: $id), $ids),
-			$this->provider($answer)->list('r', 's', 'o')
+			$this->provider($answer)->list(new ObjectRef(register: 'r', schema: 's', id: 'o'))
 		);
 	}//end testEnvelopes()
 
@@ -100,7 +101,7 @@ final class OpenProjectListGoldenTest extends TestCase {
 					],
 				],
 			]
-		)->list('r', 's', 'o');
+		)->list(new ObjectRef(register: 'r', schema: 's', id: 'o'));
 
 		$this->assertSame(
 			['extra', 'reference', 'name', '_links', '_embedded', 'id', 'subject', 'title', 'status', 'type', 'priority', 'assignee', 'project', 'url'],
@@ -124,7 +125,7 @@ final class OpenProjectListGoldenTest extends TestCase {
 		$mapper = $this->createMock(OpenProjectLinkMapper::class);
 		$mapper->method('findByObjectUuid')->with('o')->willReturn([$link]);
 
-		$rows = $this->provider(['results' => [['id' => 'remote']]], $mapper)->list('r', 's', 'o');
+		$rows = $this->provider(['results' => [['id' => 'remote']]], $mapper)->list(new ObjectRef(register: 'r', schema: 's', id: 'o'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame(
@@ -163,7 +164,7 @@ final class OpenProjectListGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[$this->row(id: 'remote')],
-			$this->provider(['results' => [['id' => 'remote']]], $mapper)->list('r', 's', 'o')
+			$this->provider(['results' => [['id' => 'remote']]], $mapper)->list(new ObjectRef(register: 'r', schema: 's', id: 'o'))
 		);
 	}//end testTheSourceAnswersWithoutLinks()
 }//end class

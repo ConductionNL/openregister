@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\CalendarEvent\VeventDraft;
 
 /**
  * @covers \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventDraft
  */
 class VeventCodecHeaderGoldenTest extends TestCase {
 

@@ -5,7 +5,7 @@
  * pinned before a refactor.
  *
  * Covers the object guard (absent, DoesNotExist), the task-ownership guard
- * on update/destroy (requireTaskOf before the write), the per-verb error
+ * on update/destroy (requireTaskAt before the write), the per-verb error
  * mapping, and the aggregate's session gate plus the admin/group facts it
  * hands to the inbox query.
  *
@@ -33,7 +33,10 @@ use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\TasksControllerFactory;
@@ -230,8 +233,11 @@ class TasksControllerA24GoldenTest extends TestCase {
 	 */
 	public function testCreate(): void {
 		$this->givenObject();
-		$this->taskService->method('createTask')
-			->with(1, 2, 'obj-uuid', 'obj-uuid', ['summary' => 'Do'])
+		$this->taskService->method('createObjectTask')
+			->with(
+				new ObjectRef(register: 1, schema: 2, id: 'obj-uuid'),
+				new LinkedTaskDraft(objectTitle: 'obj-uuid', data: ['summary' => 'Do'])
+			)
 			->willReturnOnConsecutiveCalls(['id' => 'n'], $this->throwException(new Exception('caldav', 404)));
 
 		$blank = $this->controller(params: ['summary' => ''])->create('r', 's', 'o');
@@ -252,11 +258,11 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->givenObject();
 		$order = [];
 		$this->taskService->expects($this->never())->method('getTasksForObject');
-		$this->taskService->method('requireTaskOf')->with('obj-uuid', 'cal-1', 'task.ics')
+		$this->taskService->method('requireTaskAt')->with('obj-uuid', new TaskLocation(calendarId: 'cal-1', uri: 'task.ics'))
 			->willReturnCallback(function () use (&$order): void {
 				$order[] = 'require';
 			});
-		$this->taskService->method('updateTask')->with('cal-1', 'task.ics', ['calendarId' => 'cal-1', 'x' => 1])
+		$this->taskService->method('changeTask')->with(new TaskLocation(calendarId: 'cal-1', uri: 'task.ics'), ['calendarId' => 'cal-1', 'x' => 1])
 			->willReturnCallback(function () use (&$order): array {
 				$order[] = 'update';
 				return ['id' => 'task.ics'];
@@ -280,8 +286,8 @@ class TasksControllerA24GoldenTest extends TestCase {
 			['id' => 'task.ics', 'calendarId' => 'cal-2'],
 			['id' => 'task.ics', 'calendarId' => 'cal-3'],
 		]);
-		$this->taskService->expects($this->exactly(2))->method('requireTaskOf')->with('obj-uuid', 'cal-2', 'task.ics');
-		$this->taskService->expects($this->once())->method('updateTask')->with('cal-2', 'task.ics', [])->willReturn(['ok' => 1]);
+		$this->taskService->expects($this->exactly(2))->method('requireTaskAt')->with('obj-uuid', new TaskLocation(calendarId: 'cal-2', uri: 'task.ics'));
+		$this->taskService->expects($this->once())->method('changeTask')->with(new TaskLocation(calendarId: 'cal-2', uri: 'task.ics'), [])->willReturn(['ok' => 1]);
 		$this->taskService->expects($this->once())->method('deleteTask')->with('cal-2', 'task.ics');
 
 		$updated = $this->controller()->update('r', 's', 'o', 'task.ics');
@@ -299,8 +305,8 @@ class TasksControllerA24GoldenTest extends TestCase {
 	public function testUnknownTaskIsRefused(): void {
 		$this->givenObject();
 		$this->taskService->method('getTasksForObject')->willReturn([['id' => 'other.ics', 'calendarId' => 'c']]);
-		$this->taskService->expects($this->never())->method('requireTaskOf');
-		$this->taskService->expects($this->never())->method('updateTask');
+		$this->taskService->expects($this->never())->method('requireTaskAt');
+		$this->taskService->expects($this->never())->method('changeTask');
 		$this->taskService->expects($this->never())->method('deleteTask');
 
 		$updated = $this->controller()->update('r', 's', 'o', 'task.ics');
@@ -311,15 +317,15 @@ class TasksControllerA24GoldenTest extends TestCase {
 	}//end testUnknownTaskIsRefused()
 
 	/**
-	 * A foreign task (requireTaskOf refuses with 404) is never written.
+	 * A foreign task (requireTaskAt refuses with 404) is never written.
 	 *
 	 * @return void
 	 */
 	public function testForeignTaskIsRefused(): void {
 		$this->givenObject();
 		$this->taskService->method('getTasksForObject')->willReturn([['id' => 'task.ics', 'calendarId' => 'c']]);
-		$this->taskService->method('requireTaskOf')->willThrowException(new Exception('Task not found', 404));
-		$this->taskService->expects($this->never())->method('updateTask');
+		$this->taskService->method('requireTaskAt')->willThrowException(new Exception('Task not found', 404));
+		$this->taskService->expects($this->never())->method('changeTask');
 		$this->taskService->expects($this->never())->method('deleteTask');
 
 		$updated = $this->controller(params: ['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
@@ -337,7 +343,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	public function testWriteFailuresAre400(): void {
 		$this->givenObject();
 		$this->taskService->method('getTasksForObject')->willReturn([['id' => 'task.ics', 'calendarId' => 'c']]);
-		$this->taskService->method('updateTask')->willThrowException(new Exception('bad', 3));
+		$this->taskService->method('changeTask')->willThrowException(new Exception('bad', 3));
 		$this->taskService->method('deleteTask')->willThrowException(new Exception('worse'));
 
 		$updated = $this->controller(params: ['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
@@ -447,7 +453,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNoTaskTouched(): void {
-		foreach (['getTasksForObject', 'createTask', 'updateTask', 'deleteTask', 'requireTaskOf'] as $method) {
+		foreach (['getTasksForObject', 'createObjectTask', 'changeTask', 'deleteTask', 'requireTaskAt'] as $method) {
 			$this->taskService->expects($this->never())->method($method);
 		}
 	}//end expectNoTaskTouched()

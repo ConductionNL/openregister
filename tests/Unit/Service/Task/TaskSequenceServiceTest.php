@@ -47,6 +47,14 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Service\Task\ChainPosition
+ * @uses \OCA\OpenRegister\Service\Task\PositionAdvance
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
+ * @uses \OCA\OpenRegister\Service\Task\SequenceClosure
+ * @uses \OCA\OpenRegister\Service\Task\TaskSequenceServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
  */
 class TaskSequenceServiceTest extends TestCase {
 
@@ -277,7 +285,9 @@ class TaskSequenceServiceTest extends TestCase {
 
 		$terminated = [];
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source) use (&$terminated): Task {
+			function (string $uuid, TaskTrigger $trigger) use (&$terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason, $source];
 
 				return new Task();
@@ -347,7 +357,9 @@ class TaskSequenceServiceTest extends TestCase {
 	private function recordTerminations(): \ArrayObject {
 		$terminated = new \ArrayObject();
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			static function (string $uuid, string $reason, string $source) use ($terminated): Task {
+			static function (string $uuid, TaskTrigger $trigger) use ($terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason];
 
 				return new Task();

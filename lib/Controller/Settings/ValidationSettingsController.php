@@ -21,9 +21,10 @@ namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -117,7 +118,7 @@ class ValidationSettingsController extends Controller {
 		IRequest $request,
 		ValidationSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 	}//end __construct()
@@ -127,8 +128,6 @@ class ValidationSettingsController extends Controller {
 	 *
 	 * This method validates all objects against their schemas and returns
 	 * a summary of validation results including any errors found.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with validation results
 	 *
@@ -156,8 +155,6 @@ class ValidationSettingsController extends Controller {
 	 * is triggered and objects are properly processed according to current rules.
 	 * Unlike validateAllObjects, this actually saves each object.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with mass validation results
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -181,11 +178,13 @@ class ValidationSettingsController extends Controller {
 	 * @return array The validation results
 	 */
 	private function runMassValidation(array $options): array {
-		return $this->settingsService->massValidateObjects(
-			maxObjects: $options['maxObjects'],
-			batchSize: $options['batchSize'],
-			mode: $options['mode'],
-			collectErrors: $options['collectErrors']
+		return $this->settingsService->massValidate(
+			request: new MassValidationRequest(
+				maxObjects: $options['maxObjects'],
+				batchSize: $options['batchSize'],
+				mode: $options['mode'],
+				collectErrors: $options['collectErrors']
+			)
 		);
 	}//end runMassValidation()
 
@@ -287,8 +286,6 @@ class ValidationSettingsController extends Controller {
 
 	/**
 	 * Predict memory usage for mass validation operation
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with memory prediction
 	 *

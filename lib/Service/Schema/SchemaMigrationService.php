@@ -51,7 +51,12 @@ use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Service\Schemas\IdentityRewriteScope;
+
 
 /**
  * Declarative migration engine with rollback.
@@ -428,13 +433,17 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	 * @return ObjectEntity The saved object.
 	 */
 	private function saveAs(SchemaRunBatch $batch, SchemaObjectWrite $write): ObjectEntity {
-		return $this->objectService->saveObject(
-			object: $write->data,
-			register: $batch->run->getRegisterId(),
-			schema: $batch->schema,
-			uuid: $write->uuid,
-			_rbac: false,
-			_multitenancy: false
+		// The audited migration is the one path that may rewrite identity values.
+		return IdentityRewriteScope::run(
+			fn (): ObjectEntity => $this->objectService->saveObject(
+				object: $write->data,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $batch->run->getRegisterId(), schema: $batch->schema),
+					uuid: $write->uuid
+				),
+				_rbac: false,
+				_multitenancy: false
+			)
 		);
 	}//end saveAs()
 
@@ -535,8 +544,7 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	private function findCurrent(SchemaRunBatch $batch, ?string $uuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $uuid,
-			register: $batch->run->getRegisterId(),
-			schema: $batch->schema,
+			options: new ObjectFindOptions(register: $batch->run->getRegisterId(), schema: $batch->schema),
 			_rbac: false,
 			_multitenancy: false
 		));

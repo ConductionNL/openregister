@@ -119,4 +119,28 @@ final class ProbeResult implements JsonSerializable {
 			'probedAt' => $this->probedAt,
 		];
 	}//end jsonSerialize()
+
+	/**
+	 * The probe error an HTTP client failure message stands for: a timeout,
+	 * a DNS failure, else a refused connection.
+	 *
+	 * @param string $message The exception message.
+	 *
+	 * @return string One of the ERROR_* codes.
+	 *
+	 * @spec openspec/changes/anonymiser-backend-selection/specs/anonymiser-backend-selection/spec.md#requirement-a-per-backend-test-connection-probe-must-be-exposed-via-an-admin-ocs-endpoint
+	 */
+	public static function errorFromHttpMessage(string $message): string {
+		$lower = strtolower($message);
+
+		if (str_contains($lower, 'timed out') === true || str_contains($lower, 'timeout') === true) {
+			return self::ERROR_TIMEOUT;
+		}
+
+		if (str_contains($lower, 'could not resolve') === true || str_contains($lower, 'name or service not known') === true) {
+			return self::ERROR_DNS_ERROR;
+		}
+
+		return self::ERROR_CONNECT_REFUSED;
+	}//end errorFromHttpMessage()
 }//end class

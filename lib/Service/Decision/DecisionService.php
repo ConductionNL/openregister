@@ -70,6 +70,22 @@ class DecisionService {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
 	 */
 	public function record(Decision $decision): Decision {
+		$this->assertComplete(decision: $decision);
+		$this->assertNoteFits(decision: $decision);
+
+		return $this->decisionMapper->insert(entity: $decision);
+	}//end record()
+
+	/**
+	 * Refuse a decision without its subject, verdict or decider.
+	 *
+	 * @param Decision $decision The decision to record.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException Naming the first missing field.
+	 */
+	private function assertComplete(Decision $decision): void {
 		$required = [
 			'subjectType' => $decision->getSubjectType(),
 			'subjectId' => $decision->getSubjectId(),
@@ -81,14 +97,23 @@ class DecisionService {
 				throw new InvalidArgumentException('A decision needs '.$field.'.');
 			}
 		}
+	}//end assertComplete()
 
+	/**
+	 * Refuse a note longer than MAX_NOTE characters.
+	 *
+	 * @param Decision $decision The decision to record.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the note is too long.
+	 */
+	private function assertNoteFits(Decision $decision): void {
 		$note = $decision->getNote();
 		if ($note !== null && mb_strlen($note) > self::MAX_NOTE) {
 			throw new InvalidArgumentException('A decision note is at most '.self::MAX_NOTE.' characters.');
 		}
-
-		return $this->decisionMapper->insert(entity: $decision);
-	}//end record()
+	}//end assertNoteFits()
 
 	/**
 	 * One decision by uuid, or null when the uuid is empty or names none.

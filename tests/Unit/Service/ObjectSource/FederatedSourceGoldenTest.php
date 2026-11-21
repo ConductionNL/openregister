@@ -47,6 +47,13 @@ use RuntimeException;
  * The federated object source, recorded.
  *
  * @covers \OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\ObjectSource\FederatedPeer
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
  */
 class FederatedSourceGoldenTest extends TestCase {
 

@@ -33,6 +33,13 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Serializer\RegisterSerializer
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterExpansion
+ * @uses \OCA\OpenRegister\Service\Serializer\RegisterListExtension
+ * @uses \OCA\OpenRegister\Service\Serializer\SchemaObjectCounts
  */
 class RegisterSerializerStatsCharacterisationTest extends TestCase {
 
@@ -125,7 +132,7 @@ class RegisterSerializerStatsCharacterisationTest extends TestCase {
 	}
 
 	public function testSerializeManyWithoutExtendKeepsIds(): void {
-		$result = $this->serializer()->serializeMany([$this->register(1, [10])]);
+		$result = $this->serializer()->serializePage([$this->register(1, [10])], new RegisterListExtension());
 
 		$this->assertSame([[10]], array_column($result, 'schemas'));
 	}

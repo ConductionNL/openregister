@@ -82,10 +82,41 @@ final class ActivityRowFilter {
 	 * @return bool
 	 */
 	public function admits(array $row): bool {
-		return ($this->type === '' || (string)($row['type'] ?? '') === $this->type)
-			&& ($this->actor === '' || (string)($row['affecteduser'] ?? '') === $this->actor)
-			&& ($this->after <= 0 || (int)($row['timestamp'] ?? 0) >= $this->after);
+		return $this->admitsType(row: $row) && $this->admitsActor(row: $row) && $this->admitsTimestamp(row: $row);
 	}//end admits()
+
+	/**
+	 * Whether the row passes the type filter (always, when no type is set).
+	 *
+	 * @param array $row The activity row.
+	 *
+	 * @return bool
+	 */
+	private function admitsType(array $row): bool {
+		return $this->type === '' || (string)($row['type'] ?? '') === $this->type;
+	}//end admitsType()
+
+	/**
+	 * Whether the row passes the actor filter (always, when no actor is set).
+	 *
+	 * @param array $row The activity row.
+	 *
+	 * @return bool
+	 */
+	private function admitsActor(array $row): bool {
+		return $this->actor === '' || (string)($row['affecteduser'] ?? '') === $this->actor;
+	}//end admitsActor()
+
+	/**
+	 * Whether the row passes the after filter (always, when no positive cutoff is set).
+	 *
+	 * @param array $row The activity row.
+	 *
+	 * @return bool
+	 */
+	private function admitsTimestamp(array $row): bool {
+		return $this->after <= 0 || (int)($row['timestamp'] ?? 0) >= $this->after;
+	}//end admitsTimestamp()
 
 	/**
 	 * A string filter value, or '' when it is not set.

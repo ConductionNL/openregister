@@ -143,19 +143,13 @@ class GitHubGuards implements GitHubGuardsInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14
 	 */
 	public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse {
-		$rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
-		$allowed = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn ($ownerStr) => $ownerStr !== ''));
-
+		$allowed = $this->allowedOwners();
 		if ($allowed === []) {
-			if ($isRead === true) {
-				return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
-			}
-
-			return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+			return $this->notConfigured(isRead: $isRead);
 		}
 
-		$owner = explode('/', $repo, 2)[0];
-		$ownerLower = strtolower($owner);
+		$owner        = explode('/', $repo, 2)[0];
+		$ownerLower   = strtolower($owner);
 		$allowedLower = array_map('strtolower', $allowed);
 		if (in_array($ownerLower, $allowedLower, true) === true) {
 			return null;
@@ -163,6 +157,32 @@ class GitHubGuards implements GitHubGuardsInterface {
 
 		return new JSONResponse(['error' => 'repo_not_allowed'], Http::STATUS_FORBIDDEN);
 	}//end enforceRepoAllowlist()
+
+	/**
+	 * The repository owners this instance may reach, as configured.
+	 *
+	 * @return array<int, string> The owners, trimmed, without blanks.
+	 */
+	private function allowedOwners(): array {
+		$rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
+
+		return array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn ($ownerStr) => $ownerStr !== ''));
+	}//end allowedOwners()
+
+	/**
+	 * The answer when no repository owner is configured: an empty list for a read, else 503.
+	 *
+	 * @param bool $isRead Whether the call only reads.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function notConfigured(bool $isRead): JSONResponse {
+		if ($isRead === true) {
+			return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
+		}
+
+		return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
+	}//end notConfigured()
 
 	/**
 	 * Enforce per-user GET cache-miss rate limit (tasks 1.19 + 1.18). Counts distinct cache-key
@@ -188,19 +208,42 @@ class GitHubGuards implements GitHubGuardsInterface {
 			return new JSONResponse(['error' => 'rate_limiter_unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
-		$retryAfter = $this->rateLimiter->consumeFromBudget(
-			budget: new DistinctKeyBudget(bucketKey: 'getmiss:' . $user->getUID(), maxKeys: self::GET_RATE_LIMIT_MAX, windowSeconds: self::GET_RATE_LIMIT_WINDOW),
-			distinctKey: $cacheKey
-		);
+		$retryAfter = $this->consumeMissBudget(userId: $user->getUID(), cacheKey: $cacheKey);
 		if ($retryAfter === null) {
 			return null;
 		}
 
+		return $this->tooManyRequests(retryAfter: $retryAfter);
+	}//end enforceGetRateLimit()
+
+	/**
+	 * Count a cache miss against a user's budget of distinct keys.
+	 *
+	 * @param string $userId   The user.
+	 * @param string $cacheKey The key that missed.
+	 *
+	 * @return int|null Seconds until the budget frees up, or null while it holds.
+	 */
+	private function consumeMissBudget(string $userId, string $cacheKey): ?int {
+		return $this->rateLimiter->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'getmiss:' . $userId, maxKeys: self::GET_RATE_LIMIT_MAX, windowSeconds: self::GET_RATE_LIMIT_WINDOW),
+			distinctKey: $cacheKey
+		);
+	}//end consumeMissBudget()
+
+	/**
+	 * The 429 answer for a user over their budget, naming when to retry.
+	 *
+	 * @param int $retryAfter Seconds until the budget frees up.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function tooManyRequests(int $retryAfter): JSONResponse {
 		$resp = new JSONResponse(
 			['error' => 'user_rate_limited', 'retry_after' => $retryAfter],
 			Http::STATUS_TOO_MANY_REQUESTS
 		);
 		$resp->addHeader('Retry-After', (string)$retryAfter);
 		return $resp;
-	}//end enforceGetRateLimit()
+	}//end tooManyRequests()
 }//end class
