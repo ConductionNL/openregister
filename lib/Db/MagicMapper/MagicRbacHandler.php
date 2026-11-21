@@ -48,6 +48,9 @@ use OCA\OpenRegister\Service\Rbac\DenyRowTest;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
@@ -838,7 +841,13 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
-		// Confidentiality narrows ahead of the schema's rules, and holds even
+		// Classification is final: it narrows ahead of every grant and schema
+		// rule, and holds even where an undecidable posture leaves the rest open.
+		if ($this->applyClassification(call: $call) === false) {
+			return;
+		}
+
+		// Confidentiality narrows ahead of the schema's rules too, and holds even
 		// where an undecidable posture leaves the rest of the query open.
 		if ($this->applyConfidentiality(call: $call) === false) {
 			return;
@@ -933,6 +942,29 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	}//end applyAnyOf()
 
 	/**
+	 * Narrow the query to the classification labels the caller may see.
+	 *
+	 * @param RbacFilterCall $call The filter application, its caller identified.
+	 *
+	 * @return bool False when no label is admitted and the query was clamped to no rows.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function applyClassification(RbacFilterCall $call): bool {
+		$term = $this->classificationTermSql(call: $call);
+		if ($term === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($term !== null) {
+			$call->qb->andWhere($call->qb->createFunction($term));
+		}
+
+		return true;
+	}//end applyClassification()
+
+	/**
 	 * Narrow the query to the rows the schema's confidentiality block admits.
 	 *
 	 * @param RbacFilterCall $call The filter application, its caller identified.
@@ -1001,6 +1033,40 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return '(' . implode(' OR ', array_map(static fn (string $condition): string => "({$condition})", $conditions)) . ')';
 	}//end confidentialityTermSql()
+
+	/**
+	 * The classification term every listed row must satisfy, as raw SQL.
+	 *
+	 * An `IN` over the declared labels at or below the caller's clearance, less
+	 * those a ceiling refuses an anonymous caller. Compiled by the same match
+	 * emitter as a `$in` rule, so the column and the quoting are the ones every
+	 * other rule term uses.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|false|null The term; false when no label is admitted; null when classification narrows nothing.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationTermSql(RbacAccessCall $call): string|false|null {
+		$block = (new ClassificationListTerm(clearances: new ClearanceResolver(logger: $this->logger)))->matchBlock(
+			schema: $call->schema,
+			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action)
+		);
+		if ($block === null) {
+			return null;
+		}
+
+		if ((reset($block)['$in'] ?? []) === []) {
+			$this->logger->debug(
+				message: '[MagicRbacHandler] No classification level is admitted to the caller; the list returns nothing',
+				context: ['userId' => $call->userId, 'action' => $call->action]
+			);
+			return false;
+		}
+
+		return ($this->matchSql()->matchConditions(block: $block, columnPrefix: $call->columnPrefix) ?? false);
+	}//end classificationTermSql()
 
 	/**
 	 * Apply the schema's deny rules to the query.
@@ -2117,27 +2183,38 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
+		$classification = $this->classificationTermSql(call: $call);
+		if ($classification === false) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
 		$confidentiality = $this->confidentialityTermSql(call: $call);
 		if ($confidentiality === false) {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		$result = $this->authorizedAccessConditions(call: $call);
-		if ($confidentiality === null) {
+		$result = $this->unclassifiedAccessConditions(call: $call);
+		$terms  = array_values(array_filter([$classification, $confidentiality], static fn (?string $term): bool => $term !== null));
+		if ($terms === []) {
 			return $result;
 		}
 
-		// Confidentiality narrows every condition, and an open result becomes
-		// the one condition that the block admits the row.
+		// Classification is final and confidentiality restricts: both narrow every
+		// condition, and an open result becomes the one condition both admit.
 		if ($result['bypass'] === true) {
-			return ['bypass' => false, 'conditions' => [$confidentiality]];
+			return ['bypass' => false, 'conditions' => [implode(' AND ', array_map(static fn (string $term): string => "({$term})", $terms))]];
 		}
 
-		return ['bypass' => false, 'conditions' => $this->withDenyTerm(conditions: $result['conditions'], denyTerm: $confidentiality)];
+		$conditions = $result['conditions'];
+		foreach ($terms as $term) {
+			$conditions = $this->withDenyTerm(conditions: $conditions, denyTerm: $term);
+		}
+
+		return ['bypass' => false, 'conditions' => $conditions];
 	}//end accessConditions()
 
 	/**
-	 * The bypass flag and the SQL conditions the schema's authorization gives one access call; fails closed.
+	 * The bypass flag and the SQL conditions of one access call before classification and confidentiality; fails closed.
 	 *
 	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read, its caller identified.
 	 *
@@ -2145,8 +2222,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function authorizedAccessConditions(RbacAccessCall $call): array {
-
+	private function unclassifiedAccessConditions(RbacAccessCall $call): array {
 		// Fail-closed: an unresolvable authorization yields the deny-all result
 		// (`bypass => false` with no conditions) rather than the open bypass.
 		$unresolvable = $this->unresolvableAuthorization(call: $call);
@@ -2160,7 +2236,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end authorizedAccessConditions()
+	}//end unclassifiedAccessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.

@@ -25,6 +25,16 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovConformance
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovFindings
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDateTimeRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovErrorRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentInfoRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovMarker
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue
+ * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
  * @uses \OCA\OpenRegister\Service\Oas\OasNames
  * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
  * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair

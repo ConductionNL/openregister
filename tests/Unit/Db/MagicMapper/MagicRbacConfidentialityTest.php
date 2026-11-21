@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
@@ -65,6 +66,11 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate
  * @uses   \OCA\OpenRegister\Service\Confidentiality\ConfidentialityRule
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\ClassificationCaller
+ * @uses   \OCA\OpenRegister\Service\Rbac\ClassificationLimits
+ * @uses   \OCA\OpenRegister\Service\Rbac\ClassificationListTerm
+ * @uses   \OCA\OpenRegister\Service\Rbac\ClassificationScale
+ * @uses   \OCA\OpenRegister\Service\Rbac\ClearanceResolver
  *
  * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
  */
@@ -305,4 +311,41 @@ class MagicRbacConfidentialityTest extends TestCase {
 		$this->assertStringContainsString('t.`releaseat` <=', $this->queryLog[0]);
 		$this->assertStringContainsString(self::NOW, $this->queryLog[0]);
 	}//end testTheQueryBuilderPathAndsTheTerm()
+	/**
+	 * A schema that also declares a classification scale is narrowed by both: neither block widens the other.
+	 *
+	 * @return void
+	 */
+	public function testAClassificationScaleAndTheBlockBothNarrow(): void {
+		$schema = self::schema();
+		$schema->setProperties(array_merge($schema->getProperties(), ['level' => ['type' => 'string']]));
+		$schema->setConfiguration(
+			array_merge(
+				$schema->getConfiguration(),
+				[
+					ClassificationScale::ANNOTATION => [
+						'property' => 'level',
+						'levels' => ['openbaar', 'intern', 'geheim'],
+						'clearances' => [['group' => 'staff', 'level' => 'intern']],
+						'default' => 'openbaar',
+					],
+				]
+			)
+		);
+
+		$db = new PDO('sqlite::memory:');
+		$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		$db->sqliteCreateFunction('JSON_UNQUOTE', static fn (mixed $value): mixed => $value, 1);
+		$db->exec('CREATE TABLE rows (_uuid TEXT, _owner TEXT, _authorization TEXT, _status TEXT, tier TEXT, releaseat TEXT, level TEXT)');
+		$insert = $db->prepare('INSERT INTO rows VALUES (?, ?, NULL, NULL, ?, ?, ?)');
+		$insert->execute(['public-intern', 'someone-else', 'public', null, 'intern']);
+		$insert->execute(['public-geheim', 'someone-else', 'public', null, 'geheim']);
+		$insert->execute(['released-intern', 'someone-else', 'confidential', '2020-01-01 00:00:00', 'intern']);
+		$insert->execute(['unreleased-intern', 'someone-else', 'confidential', null, 'intern']);
+
+		$predicate = $this->predicate('pieter', ['staff'], $schema);
+		$listed = $db->query('SELECT _uuid FROM rows WHERE ' . $predicate . ' ORDER BY _uuid')->fetchAll(PDO::FETCH_COLUMN);
+
+		$this->assertSame(['public-intern', 'released-intern'], $listed, 'geheim is above the clearance, the unreleased row below the tier clearance');
+	}//end testAClassificationScaleAndTheBlockBothNarrow()
 }//end class
