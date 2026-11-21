@@ -155,3 +155,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: add/add conflict on lib/Migration/Version1DateXXXX.php, or SchemaReuseHygieneTest (return null / not targeted) red after merging main.
 - Cause: main landed another step with the same class name; main now requires steps after 2.10 to extend TargetedMigrationStep (protected changeTargetedSchema) and every return to be `return $schema;`.
 - Fix: keep main's file, move the PR's step (and its test, tasks.md mention, component-map row) to a new unused Version1Date<today>; extend TargetedMigrationStep, rename changeSchema to protected changeTargetedSchema, turn `return null;` into `return $schema;` and assertNull into assertSame($schema, ...).
+
+## CredentialBrokerService built positionally in a test (or-fix-19)
+- Symptom: TypeError: CredentialBrokerService::__construct() Argument #1 ($sources) must be CredentialSources, ObjectService mock given.
+- Cause: main bundles the constructor into CredentialSources(objectService, credentialStore, catalogue), CredentialPrincipals(userSession, organisationService, ...) and CredentialOutbound(clientService, logger, ...).
+- Fix: wrap the test's existing mocks in those three bundles with named arguments (see main's CredentialBrokerOutsideVaultTest, #9419).
