@@ -62,3 +62,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after the main merge a PR's new test errors with TypeError / ArgumentCountError on the constructor (e.g. RechainAuditTrailPreVerifyTest passing RepairPlatform).
 - Cause: a cloud/mod-* PR on main changed the class to take its ports directly (e.g. #10815: IDBConnection, IAppConfig, LoggerInterface, AuditRechainInterface instead of RepairPlatform + AuditHashService).
 - Fix: read the constructor on main, pass its arguments in order, mock the interface it now types (not the concrete service), drop the stale @uses. (#10491 6d52f2fd)
+
+## Component patterns not regenerated after adding lib files
+- Symptom: ComponentDefinitionTest::testEveryFileMatchesExactlyOneComponent / testEveryFileHasACsvRowAndTheYamlAgrees: 'lib/X.php matches no component' or 'is Core in component-map.csv but matches []'.
+- Cause: the PR (often after a component-map.csv conflict merge) has csv rows but the generated components yaml at the repo root was not regenerated.
+- Fix: keep both sides' csv rows, run python3 scripts/component-patterns.py, commit the regenerated yaml with the merge (see #10525).
