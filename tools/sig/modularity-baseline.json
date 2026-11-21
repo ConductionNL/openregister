@@ -1844,8 +1844,8 @@
  "exposed_loc": {
   "Compliance": 14300,
   "Configuration": 874,
-  "Core": 35024,
-  "Files": 1263,
+  "Core": 35012,
+  "Files": 1283,
   "Integrations": 17689,
   "Kernel": 6027,
   "Notifications": 1760,
@@ -2178,6 +2178,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 7631,
- "total_loc": 462400,
+ "total_loc": 462506,
  "violation_degree": 0.0051
 }
