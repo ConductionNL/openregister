@@ -186,7 +186,7 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 *
 	 * @return array<int, string> The unanswerable names, in the order they appear, without repeats.
 	 *
-	 * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function unanswered(string $template, PlaceholderValues $values): array {
 		if (preg_match_all(self::PLACEHOLDER, $template, $matches) === false) {

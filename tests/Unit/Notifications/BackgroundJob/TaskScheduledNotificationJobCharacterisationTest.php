@@ -18,6 +18,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob;
@@ -53,6 +54,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\TaskInboxSelection
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates
+ * @uses \OCA\OpenRegister\Service\Task\OverdueOpenTasks
  * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery
  * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskSweep
  * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskSweepRun
@@ -131,7 +133,7 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
 
         return new TaskScheduledNotificationJob(
             $time,
-            new TaskNotificationCandidates($ruleSet, $this->tasks, $inbox, new ScheduledFilterEvaluator()),
+            new TaskNotificationCandidates($ruleSet, new OverdueOpenTasks($this->tasks), $inbox, new ScheduledFilterEvaluator()),
             new TaskNotificationDelivery($this->dedupe, $this->dispatcher, $appConfig, $logger)
         );
     }

@@ -296,7 +296,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator()), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator(), relations: $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class)), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);
@@ -354,7 +354,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();

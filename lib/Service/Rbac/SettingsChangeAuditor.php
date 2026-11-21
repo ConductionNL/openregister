@@ -43,16 +43,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -60,7 +60,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Turns a settings write into per-key audit rows on the existing chain.
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 class SettingsChangeAuditor {
 
@@ -108,12 +108,12 @@ class SettingsChangeAuditor {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $mapper The trail, which owns the chain.
+	 * @param AuditEntryWriterInterface $trail The audit trail, which owns the chain.
 	 * @param IUserSession $userSession Who is making the change.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $mapper,
+		private readonly AuditEntryWriterInterface $trail,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -130,7 +130,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return array<int, array{key: string, old: mixed, new: mixed, secret: bool}> The changes.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function diff(SettingsChange $change): array {
 		$keys = array_unique(array_merge(array_keys($change->before), array_keys($change->after)));
@@ -184,7 +184,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return array<int, string> The secret keys.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function secretKeysIn(array $configuration): array {
 		$secrets = [];
@@ -213,7 +213,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordUpdate(string $app, array $before, array $after, array $secretKeys = []): int {
 		return $this->recordChange(app: $app, change: new SettingsChange(before: $before, after: $after, secretKeys: $secretKeys));
@@ -227,7 +227,7 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordChange(string $app, SettingsChange $change): int {
 		$rows = [];
@@ -243,14 +243,14 @@ class SettingsChangeAuditor {
 	}//end recordChange()
 
 	/**
-	 * The row for one changed key.
+	 * The entry for one changed key.
 	 *
 	 * @param string                                                 $app   The app whose settings changed.
 	 * @param array{key: string, old: mixed, new: mixed, secret: bool} $entry The change.
 	 *
-	 * @return AuditTrail The row.
+	 * @return AuditEntry The entry.
 	 */
-	private function updateRow(string $app, array $entry): AuditTrail {
+	private function updateRow(string $app, array $entry): AuditEntry {
 		return $this->row(
 			action: self::ACTION_UPDATED,
 			changed: [
@@ -275,10 +275,6 @@ class SettingsChangeAuditor {
 	 *
 	 * @return int How many rows were written.
 	 *
-	 * @orphaned-write-capability exclude task 1.1c of settings-change-audit:
-	 *   loadConfiguration() does not yet compute the overwritten-key count this row
-	 *   needs, so it is not called from there.
-	 *
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	public function recordImport(string $app, SettingsImport $import): int {
@@ -297,25 +293,24 @@ class SettingsChangeAuditor {
 	}//end recordImport()
 
 	/**
-	 * One row, unsealed; the mapper seals it.
+	 * One entry, unsealed; the trail seals it.
 	 *
 	 * @param string $action The action.
 	 * @param array<string, mixed> $changed What changed.
 	 *
-	 * @return AuditTrail The row.
+	 * @return AuditEntry The entry.
 	 */
-	private function row(string $action, array $changed): AuditTrail {
+	private function row(string $action, array $changed): AuditEntry {
 		[$userId, $userName] = $this->actor();
 
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction($action);
-		$row->setUser($userId);
-		$row->setUserName($userName);
-		$row->setChanged($changed);
-		$row->setCreated(new DateTime());
-
-		return $row;
+		return new AuditEntry(
+			uuid: Uuid::v4()->toRfc4122(),
+			action: $action,
+			user: $userId,
+			userName: $userName,
+			changed: $changed,
+			created: new DateTimeImmutable()
+		);
 	}//end row()
 
 	/**
@@ -336,17 +331,17 @@ class SettingsChangeAuditor {
 	}//end actor()
 
 	/**
-	 * Write the rows through the one path that seals.
+	 * Write the entries through the one path that seals.
 	 *
-	 * @param array<int, AuditTrail> $rows The rows.
+	 * @param list<AuditEntry> $rows The entries.
 	 *
 	 * @return int How many were written.
 	 */
 	private function write(array $rows): int {
-		$writer = new AuditRowWriter(mapper: $this->mapper, logger: $this->logger);
+		$recorder = new AuditEntryRecorder(trail: $this->trail, logger: $this->logger);
 
-		return $writer->write(
-			rows: $rows,
+		return $recorder->record(
+			entries: $rows,
 			failure: '[SettingsChangeAuditor] Could not record a settings change; the setting itself was stored'
 		);
 	}//end write()

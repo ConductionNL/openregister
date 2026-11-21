@@ -985,8 +985,8 @@
             },
             "post": {
                 "operationId": "files-create",
-                "summary": "Attach a new file to an object (base64/text content)",
-                "description": "Creates a file from an inline `content` payload. Enforces object-level write RBAC.",
+                "summary": "Attach a new file to an object (inline content, or fetched from a URL)",
+                "description": "Creates a file from an inline `content` payload, or from `source.url`, whose bytes the server fetches itself behind its outbound-address guard (no redirects, 30 second timeout, the upload size ceiling enforced while reading). Send exactly one of `content` and `source`. A file created from a URL carries `metadata.sourceUrl`, `metadata.fetchedAt` and `metadata.sha256`, and the fetch is on the object's audit trail. Enforces object-level write RBAC.",
                 "tags": [
                     "files"
                 ],
@@ -997,8 +997,7 @@
                             "schema": {
                                 "type": "object",
                                 "required": [
-                                    "name",
-                                    "content"
+                                    "name"
                                 ],
                                 "properties": {
                                     "name": {
@@ -1007,7 +1006,21 @@
                                     },
                                     "content": {
                                         "type": "string",
-                                        "description": "File content (base64-encoded for binary files)."
+                                        "description": "File content (base64-encoded for binary files). Send this or `source`, not both."
+                                    },
+                                    "source": {
+                                        "type": "object",
+                                        "description": "Fetch the file's bytes from a URL instead of sending them. Send this or `content`, not both.",
+                                        "required": [
+                                            "url"
+                                        ],
+                                        "properties": {
+                                            "url": {
+                                                "type": "string",
+                                                "format": "uri",
+                                                "example": "https://example.org/besluit.pdf"
+                                            }
+                                        }
                                     },
                                     "share": {
                                         "type": "boolean",
@@ -1041,7 +1054,7 @@
                         }
                     },
                     "400": {
-                        "description": "Missing file name or content.",
+                        "description": "Missing file name, or not exactly one of content and source.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -1085,6 +1098,42 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The source URL produced no file; nothing was created. `reason` is one of refused-address, timeout, status, too-large, empty.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "error",
+                                                "reason"
+                                            ],
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string"
+                                                },
+                                                "reason": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "refused-address",
+                                                        "timeout",
+                                                        "status",
+                                                        "too-large",
+                                                        "empty"
+                                                    ]
+                                                }
+                                            }
                                         }
                                     ]
                                 }
@@ -3420,8 +3469,8 @@
             },
             "post": {
                 "operationId": "files-create-unversioned",
-                "summary": "Attach a new file to an object (base64/text content)",
-                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files`, which answers the same. Creates a file from an inline `content` payload. Enforces object-level write RBAC.",
+                "summary": "Attach a new file to an object (inline content, or fetched from a URL)",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files`, which answers the same. Creates a file from an inline `content` payload, or from `source.url`, whose bytes the server fetches itself behind its outbound-address guard (no redirects, 30 second timeout, the upload size ceiling enforced while reading). Send exactly one of `content` and `source`. A file created from a URL carries `metadata.sourceUrl`, `metadata.fetchedAt` and `metadata.sha256`, and the fetch is on the object's audit trail. Enforces object-level write RBAC.",
                 "tags": [
                     "files"
                 ],
@@ -3432,8 +3481,7 @@
                             "schema": {
                                 "type": "object",
                                 "required": [
-                                    "name",
-                                    "content"
+                                    "name"
                                 ],
                                 "properties": {
                                     "name": {
@@ -3442,7 +3490,21 @@
                                     },
                                     "content": {
                                         "type": "string",
-                                        "description": "File content (base64-encoded for binary files)."
+                                        "description": "File content (base64-encoded for binary files). Send this or `source`, not both."
+                                    },
+                                    "source": {
+                                        "type": "object",
+                                        "description": "Fetch the file's bytes from a URL instead of sending them. Send this or `content`, not both.",
+                                        "required": [
+                                            "url"
+                                        ],
+                                        "properties": {
+                                            "url": {
+                                                "type": "string",
+                                                "format": "uri",
+                                                "example": "https://example.org/besluit.pdf"
+                                            }
+                                        }
                                     },
                                     "share": {
                                         "type": "boolean",
@@ -3476,7 +3538,7 @@
                         }
                     },
                     "400": {
-                        "description": "Missing file name or content.",
+                        "description": "Missing file name, or not exactly one of content and source.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -3520,6 +3582,42 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The source URL produced no file; nothing was created. `reason` is one of refused-address, timeout, status, too-large, empty.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "error",
+                                                "reason"
+                                            ],
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string"
+                                                },
+                                                "reason": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "refused-address",
+                                                        "timeout",
+                                                        "status",
+                                                        "too-large",
+                                                        "empty"
+                                                    ]
+                                                }
+                                            }
                                         }
                                     ]
                                 }

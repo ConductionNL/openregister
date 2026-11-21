@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportContent
  * @uses \OCA\OpenRegister\Search\Service\Reporting\ReportWidgetEntry
  * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class SpreadsheetReportWriterGoldenTest extends TestCase {
 

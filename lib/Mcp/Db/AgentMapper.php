@@ -292,7 +292,15 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	/**
 	 * Find all agents with optional filters
 	 *
-	 * @param ListQuery $query The limit (ListQuery::unbounded() for none), offset, filter criteria and order.
+	 * Takes main's ListQuery, or the release's limit, offset, filters and order, by name or by
+	 * position (an int in the first slot); a ListQuery wins.
+	 *
+	 * @param ListQuery|int|null $query   The limit (ListQuery::unbounded() for none), offset, filter criteria and order; an int here is the
+	 *                                    release's positional `$limit`.
+	 * @param int|null           $offset  Offset for pagination.
+	 * @param array|null         $filters Filter criteria.
+	 * @param array|null         $order   Order by criteria.
+	 * @param int|null           $limit   Maximum number of results; null for every agent.
 	 *
 	 * @return Agent[]
 	 *
@@ -300,7 +308,24 @@ class AgentMapper extends QBMapper implements AgentMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Mcp\Db\Agent>
 	 */
-	public function findAll(ListQuery $query): array {
+	public function findAll(
+		ListQuery|int|null $query = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $order = [],
+		int|null $limit = null,
+	): array {
+		if (is_int($query) === true) {
+			$limit = $query;
+			$query = null;
+		}
+
+		$query ??= new ListQuery(
+			limit: ($limit ?? ListQuery::UNBOUNDED),
+			offset: $offset,
+			filters: ($filters ?? []),
+			sort: ($order ?? [])
+		);
 		$this->verifyRbacPermission(action: 'read', entityType: 'agent');
 		$qb = $this->filteredQuery(filters: $query->filters, order: $query->sort);
 		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);

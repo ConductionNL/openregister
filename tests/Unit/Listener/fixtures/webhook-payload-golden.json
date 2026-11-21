@@ -69,7 +69,7 @@
                 "objectType": "application",
                 "action": "created",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getApplication"
                 }
             }
@@ -88,7 +88,7 @@
                 "objectType": "application",
                 "action": "deleted",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getApplication"
                 }
             }
@@ -107,7 +107,7 @@
                 "objectType": "application",
                 "action": "updated",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getNewApplication"
                 }
             }
@@ -126,7 +126,7 @@
                 "objectType": "configuration",
                 "action": "created",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -145,7 +145,7 @@
                 "objectType": "configuration",
                 "action": "deleted",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -164,7 +164,7 @@
                 "objectType": "configuration",
                 "action": "updated",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -733,7 +733,99 @@
                 "objectUuid": "uuid-getNewObject",
                 "register": "register-getNewObject",
                 "schema": "schema-getNewObject",
-                "timestamp": "<timestamp>"
+                "timestamp": "<timestamp>",
+                "newObject": {
+                    "@self": {
+                        "id": "uuid-getNewObject",
+                        "slug": null,
+                        "name": "uuid-getNewObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getNewObject",
+                        "schema": "schema-getNewObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getNewObject"
+                },
+                "oldObject": {
+                    "@self": {
+                        "id": "uuid-getOldObject",
+                        "slug": null,
+                        "name": "uuid-getOldObject",
+                        "description": null,
+                        "summary": null,
+                        "image": null,
+                        "uri": null,
+                        "version": null,
+                        "register": "register-getOldObject",
+                        "schema": "schema-getOldObject",
+                        "schemaVersion": null,
+                        "files": [],
+                        "relations": [],
+                        "locked": null,
+                        "owner": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "folder": null,
+                        "application": null,
+                        "validation": [],
+                        "quality": [],
+                        "geo": [],
+                        "retention": [],
+                        "tmlo": [],
+                        "size": null,
+                        "updated": null,
+                        "lastUserActivity": null,
+                        "created": null,
+                        "deleted": [],
+                        "archived": [],
+                        "frozen": [],
+                        "status": null,
+                        "source": null,
+                        "mail": null,
+                        "contacts": null,
+                        "notes": null,
+                        "todos": null,
+                        "calendar": null,
+                        "talk": null,
+                        "deck": null
+                    },
+                    "id": "uuid-getOldObject"
+                }
             }
         ]
     ],
@@ -859,7 +951,7 @@
                 "objectType": "organisation",
                 "action": "created",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -878,7 +970,7 @@
                 "objectType": "organisation",
                 "action": "deleted",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -897,7 +989,7 @@
                 "objectType": "organisation",
                 "action": "updated",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -1030,7 +1122,7 @@
                 "objectType": "source",
                 "action": "created",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }
@@ -1049,7 +1141,7 @@
                 "objectType": "source",
                 "action": "deleted",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }
@@ -1068,7 +1160,7 @@
                 "objectType": "source",
                 "action": "updated",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }

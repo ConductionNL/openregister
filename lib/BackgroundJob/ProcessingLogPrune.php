@@ -27,7 +27,7 @@ use DateTime;
 /**
  * One prune of the processing log: the retention applied, the cutoff it gave and how many entries went.
  *
- * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+ * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
 final class ProcessingLogPrune {
 	/**
@@ -37,7 +37,7 @@ final class ProcessingLogPrune {
 	 * @param DateTime $cutoff    Entries created before this moment went.
 	 * @param int      $deleted   How many entries went.
 	 *
-	 * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function __construct(
 		public readonly string $retention,
@@ -51,7 +51,7 @@ final class ProcessingLogPrune {
 	 *
 	 * @return array{retention: string, before: string, deleted: int} The recorded change.
 	 *
-	 * @spec openspec/changes/processing-activity-register/specs/avg-verwerkingsregister/spec.md
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function recorded(): array {
 		return ['retention' => $this->retention, 'before' => $this->cutoff->format('c'), 'deleted' => $this->deleted];

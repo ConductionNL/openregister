@@ -140,7 +140,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 			),
 			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
 				logger: $this->logger,
-				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens, archivalReading: new \OCA\OpenRegister\Service\Archival\RecordArchivalReading(logger: $this->logger)),
 				request: $request,
 				container: $container
 			),

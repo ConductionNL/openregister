@@ -13,10 +13,16 @@
 - [ ] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
       exists and the store is subject-agnostic; the register import path is a
       second seam in the same 5,484-line handler and is its own task.
-- [ ] 1.2c Annotations (`x-openregister-*`) are deliberately NOT guarded:
-      `Schema::setConfiguration()` DROPS an unknown key, so a guarded
-      annotation would read as removed on every import and conflict with
-      itself forever. Guarding them needs the vocabulary check first.
+- [x] 1.2c Annotations (`x-openregister-*`), as one more part,
+      `configuration`, holding only keys of `AnnotationVocabulary::KEYS`
+      (the keys that survive `setConfiguration()`), read from the top level
+      and from `configuration` with the nested form winning, and written back
+      nested with the maintained keys (`objectNameField`, ...) untouched
+      (`GuardedAnnotations`). Guarded only when the app ships any, so an app
+      that ships none leaves them as an import always has. A baseline recorded
+      before this has no `configuration` part and is seeded from the instance,
+      so the first guarded release lands the app's annotation changes instead
+      of reporting every one as a conflict.
 
 ## 2. The divergence
 
@@ -30,10 +36,17 @@
       returns the divergence without inventing a `null` that reads as
       "nobody". Naming a schema edit on the trail is its own change and it is
       the same gap `settings-change-audit` closed for settings.
-- [ ] 2.3 Beside the explainer: the baseline is already a value the
+- [x] 2.3 Beside the explainer: the baseline is already a value the
       explainer can address (that is why it lives in its store), but joining
       it into `ConfigurationExplainer::explain()` is a change to that service
       and its controller.
+      > second pass: `GET /api/configuration/effective?key=schema.shippedBaseline&subject=schema:<slug>`
+      > now carries `divergence`: the app, version and moment of the baseline and
+      > every part the instance changed (`ShippedDivergenceReport`, behind
+      > `ShippedDivergenceSourceInterface` so the explainer does not depend on
+      > ShippedBaseline). Only the parts the baseline holds are compared. The
+      > actor and moment per part stay out until 2.2. An instance-wide and per-app
+      > listing is not built.
 
 ## 3. The guarded update
 
