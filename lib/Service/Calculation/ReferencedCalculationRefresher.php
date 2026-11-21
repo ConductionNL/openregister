@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -47,6 +47,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Re-saves the objects whose materialised calculations read a field of an updated object.
@@ -484,9 +486,10 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 			// The read decodes JSON held in a `type: string` property; hand it back as stored.
 			$service->saveObject(
 				object: (new SchemaTypeConverter())->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
-				register: $row->getRegister(),
-				schema: $row->getSchema(),
-				uuid: $row->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $row->getRegister(), schema: $row->getSchema()),
+					uuid: $row->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

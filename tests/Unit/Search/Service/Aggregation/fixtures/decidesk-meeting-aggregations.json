@@ -1,0 +1,251 @@
+{
+	"$comment": "decidesk's Meeting schema as it ships (lib/Settings/decidesk_register.json, decidiq development): the properties and x-openregister-aggregations the aggregation-dialect-repair diagnosis names. Kept verbatim so the reproduction tests the real annotation, not one written from the diagnosis.",
+	"slug": "meeting",
+	"title": "Meeting",
+	"properties": {
+		"quorumPercentage": {
+			"type": "number",
+			"title": "Quorum Percentage",
+			"description": "Share of the governance body present at this meeting, as a percentage. Materialised by OpenRegister on save from x-openregister-calculations. Never written by decidiq."
+		},
+		"quorumWith": {
+			"type": "boolean",
+			"title": "Quorum Met",
+			"description": "Whether the meeting met its quorum, true when no quorum is required. Materialised by OpenRegister on save from x-openregister-calculations. Never written by decidiq."
+		},
+		"actionItemCompletionRate": {
+			"type": "number",
+			"title": "Action Item Completion Rate",
+			"description": "Share of this meeting's action items that are completed, as a percentage. Materialised by OpenRegister on save from x-openregister-calculations. Never written by decidiq."
+		},
+		"title": {
+			"title": "Title",
+			"type": "string",
+			"description": "Meeting title",
+			"example": "Raadsvergadering 10 april 2025"
+		},
+		"meetingType": {
+			"title": "Meeting type",
+			"description": "The kind of meeting (e.g. regular, committee, public hearing).",
+			"order": 4,
+			"type": "string",
+			"enum": [
+				"regular",
+				"extraordinary",
+				"committee",
+				"public hearing",
+				"general_assembly"
+			],
+			"example": "regular"
+		},
+		"governanceBody": {
+			"type": "string",
+			"format": "uuid",
+			"$ref": "governance-body",
+			"title": "Body",
+			"description": "The governance body or team this meeting belongs to. Materialises the governanceBody relation as a real property so per-body meeting filters and the participant-count aggregations (which filter on @self.governanceBody) resolve.",
+			"order": 6,
+			"x-openregister": {
+				"schemaType": "schema:organizer"
+			}
+		},
+		"scheduledDate": {
+			"title": "Start date",
+			"description": "Date and time the meeting starts.",
+			"order": 1,
+			"type": "string",
+			"format": "date-time"
+		},
+		"endDate": {
+			"title": "End date",
+			"description": "Date and time the meeting ends.",
+			"order": 2,
+			"type": "string",
+			"format": "date-time"
+		},
+		"location": {
+			"title": "Location",
+			"description": "Physical address or video-conference link for the meeting.",
+			"order": 3,
+			"type": "string",
+			"example": "Raadzaal, Gemeentehuis Leek"
+		},
+		"meetingMode": {
+			"title": "Attendance mode",
+			"description": "How participants attend: in person, digital, or hybrid.",
+			"order": 5,
+			"type": "string",
+			"enum": [
+				"in-person",
+				"digital",
+				"hybrid"
+			],
+			"example": "in-person"
+		},
+		"lifecycle": {
+			"title": "Status",
+			"description": "Lifecycle state of the meeting.",
+			"type": "string",
+			"enum": [
+				"draft",
+				"scheduled",
+				"opened",
+				"paused",
+				"adjourned",
+				"closed"
+			],
+			"example": "draft"
+		},
+		"quorumRequired": {
+			"title": "Quorum override",
+			"description": "Optional per-meeting override of the minimum participants required. Defaults to the meeting type's quorum.",
+			"type": "integer",
+			"example": 19
+		},
+		"series": {
+			"title": "Series",
+			"type": "string",
+			"description": "Meeting series identifier"
+		},
+		"seriesPattern": {
+			"title": "Recurrence pattern",
+			"type": "object",
+			"description": "Recurrence pattern stored on the series template meeting (meeting-series). Expanded into individual meeting instances by MeetingSeriesService.",
+			"properties": {
+				"frequency": {
+					"title": "Frequency",
+					"type": "string",
+					"enum": [
+						"daily",
+						"weekly",
+						"monthly"
+					],
+					"description": "Recurrence frequency"
+				},
+				"interval": {
+					"title": "Interval",
+					"type": "integer",
+					"description": "Step between occurrences in frequency units (>= 1)",
+					"example": 1
+				},
+				"until": {
+					"title": "Until",
+					"type": "string",
+					"format": "date",
+					"description": "Inclusive end date of the series"
+				},
+				"exceptions": {
+					"title": "Exceptions",
+					"type": "array",
+					"items": {
+						"type": "string",
+						"format": "date"
+					},
+					"description": "Dates (Y-m-d) on which no instance is generated"
+				}
+			}
+		},
+		"eventAttendanceMode": {
+			"title": "Attendance mode (schema.org)",
+			"description": "Schema.org attendance mode, derived from the attendance mode field; not edited directly.",
+			"type": "string",
+			"enum": [
+				"schema:OfflineEventAttendanceMode",
+				"schema:OnlineEventAttendanceMode",
+				"schema:MixedEventAttendanceMode"
+			],
+			"example": "schema:OfflineEventAttendanceMode",
+			"x-openregister": {
+				"schemaType": "schema:eventAttendanceMode"
+			},
+			"readOnly": true,
+			"visible": false
+		},
+		"virtualLocation": {
+			"title": "Video-conference link",
+			"description": "Deprecated: use Location. Hidden from the form; retained for existing data.",
+			"type": "string",
+			"format": "uri",
+			"example": "https://meet.example.org/alv-2026",
+			"x-openregister": {
+				"schemaType": "schema:VirtualLocation"
+			},
+			"visible": false
+		},
+		"chair": {
+			"title": "Chair",
+			"type": "string",
+			"description": "UUID of the Participant who chairs this meeting. Resolved to the Participant record in MCP and minutes generation; the chair field on the Participant (role=chair) applies to the governance body broadly, while this field overrides the chair for this specific meeting.",
+			"example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+		},
+		"isPublic": {
+			"title": "Public",
+			"type": "boolean",
+			"description": "Staff INTENT flag (publish-decisions-via-opencatalogi): marks that this meeting is intended for public visibility. It is a precondition for AGENDA publication eligibility (true + convocation sent), NOT itself a publication action: anonymous visibility happens only when staff explicitly publish the derived agenda payload via the public-publication flow. When true, the agenda (if published), recordings, and approved minutes become eligible for citizen visibility.",
+			"default": false,
+			"example": false
+		},
+		"submissionDeadline": {
+			"title": "Submission deadline",
+			"type": "string",
+			"format": "date-time",
+			"description": "Deadline for submitting motions and amendments for this meeting (motion-amendment spec). Empty = no deadline. Motion/amendment creations after this moment are rejected server-side by the SubmissionDeadlineListener."
+		},
+		"openedAt": {
+			"title": "Opened at",
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp of the first 'open' lifecycle transition, stamped server-side by MeetingService (meeting-efficiency). Basis for the live cost calculator and duration analytics. NOT readOnly: OpenRegister reads readOnly as immutable-after-create and rejects the UPDATE for every writer, including MeetingService itself, a meeting is created before it is opened, so a readOnly stamp can never be written."
+		},
+		"closedAt": {
+			"title": "Closed at",
+			"type": "string",
+			"format": "date-time",
+			"description": "Timestamp of the 'close' lifecycle transition, stamped server-side by MeetingService (meeting-efficiency). NOT readOnly: see openedAt: readOnly made every opened -> closed transition fail with 'Cannot modify readOnly property: closedAt' (422)."
+		},
+		"meetingCost": {
+			"title": "Meeting cost",
+			"type": "number",
+			"description": "Total meeting cost in EUR, computed server-side on close from elapsed time x attendee count x the governance body's hourlyRate (meeting-efficiency). Schema.org MonetaryAmount value. NOT readOnly: see openedAt: it is stamped on close, i.e. always after create."
+		}
+	},
+	"x-openregister-aggregations": {
+		"totalParticipantCount": {
+			"metric": "count",
+			"schema": "Participant",
+			"filter": {
+				"governanceBody": "@self.governanceBody"
+			}
+		},
+		"presentParticipantCount": {
+			"metric": "count",
+			"schema": "Participant",
+			"filter": {
+				"governanceBody": "@self.governanceBody",
+				"attendanceStatus": "present"
+			}
+		},
+		"actionItemCount": {
+			"metric": "count",
+			"schema": "ActionItem",
+			"filter": {
+				"meeting": "@self.id"
+			}
+		},
+		"completedActionItemCount": {
+			"metric": "count",
+			"schema": "ActionItem",
+			"filter": {
+				"meeting": "@self.id",
+				"taskStatus": "completed"
+			}
+		},
+		"engagementRecordCount": {
+			"metric": "count",
+			"schema": "EngagementRecord",
+			"filter": {
+				"meeting": "@self.id"
+			}
+		}
+	}
+}

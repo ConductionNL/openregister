@@ -32,6 +32,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\File\FilePropertyRules
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  * @uses \OCA\OpenRegister\Service\Form\FormUploadClaims
+ * @uses \OCA\OpenRegister\Service\Form\FormFileStorage
+ * @uses \OCA\OpenRegister\Service\Form\FormFinding
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadClaim
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadPurgeRun
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadTarget
  */
 class FormUploadStoreTest extends TestCase {
 

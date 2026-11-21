@@ -86,6 +86,17 @@ interface ObjectExporterInterface {
 	public function exportToCsv(ObjectExportRequest $request): string;
 
 	/**
+	 * Export data to TSV format
+	 *
+	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws \InvalidArgumentException If trying to export multiple schemas to TSV
+	 */
+	public function exportToTsv(ObjectExportRequest $request): string;
+
+	/**
 	 * Export data to Excel format
 	 *
 	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
@@ -111,6 +122,24 @@ interface ObjectExporterInterface {
 	 * @throws \InvalidArgumentException When no schema is given (JSON export is single-schema, like CSV)
 	 */
 	public function exportToJson(ObjectExportRequest $request): string;
+
+	/**
+	 * Export objects of a single schema to an XML document
+	 *
+	 * A root `<objects>` with one `<object id="...">` per record, each property a
+	 * child element, lists as repeated children, nested objects as nested
+	 * elements, null as `xsi:nil="true"`, and `<property name="...">` for a
+	 * property name that is not a valid XML name.
+	 *
+	 * @param ObjectExportRequest $request The register context, the schema whose objects are exported (required) and the filters.
+	 *
+	 * @return string The XML document, UTF-8
+	 *
+	 * @throws \InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function exportToXml(ObjectExportRequest $request): string;
 
 	/**
 	 * Export data to PDF format

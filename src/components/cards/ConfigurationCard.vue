@@ -160,7 +160,7 @@
 </template>
 
 <script>
-import { NcActionButton, NcActions } from '@nextcloud/vue'
+import { translate as t } from '@nextcloud/l10n'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -286,30 +286,12 @@ export default {
 		importedActions() {
 			return [
 				viewAction(() => this.handleView()),
-				{
-					label: 'Preview Update',
-					icon: EyeOutline,
-					run: () => this.handlePreviewUpdate(),
-					hidden: !this.hasUpdateAvailable,
-				},
-				{
-					label: 'Check Version',
-					icon: Sync,
-					run: () => this.handleCheckVersion(),
-					hidden: !this.isRemoteConfiguration,
-				},
+				previewUpdateAction(this),
+				checkVersionAction(this),
 				editAction(() => this.handleEdit()),
-				{
-					label: 'Export',
-					icon: Download,
-					run: () => this.handleExport(),
-				},
-				{
-					label: this.isPublished ? 'Update Published' : 'Publish',
-					icon: CloudUploadOutline,
-					run: () => this.handlePublish(),
-					hidden: !this.isPublished && !this.isLocalConfiguration,
-				},
+				exportAction(this),
+				publishAction(this),
+				gitlabPublishAction(this),
 				deleteAction(() => this.handleDelete()),
 			]
 		},
@@ -380,22 +362,7 @@ export default {
 
 			// Not in store, create a minimal config object for display
 			// with properties needed for version checking
-			return {
-				id: this.importedConfigId,
-				app: this.appId,
-				title: this.configuration.config?.title || this.appId,
-				description: this.configuration.config?.description || '',
-				sourceType: 'github', // Assume github for discovered configs
-				isLocal: false,
-				// Version info from discovered config
-				localVersion: this.configuration.config?.version || null,
-				remoteVersion: null, // Will be fetched on check
-				// GitHub sync info
-				githubRepo: this.configuration.repository,
-				githubBranch: this.configuration.branch || 'main',
-				githubPath: this.configuration.path,
-				syncEnabled: true,
-			}
+			return importedStandIn(this)
 		},
 
 		/**
@@ -408,23 +375,10 @@ export default {
 		displayConfiguration() {
 			if (this.isDiscovered && this.existingConfiguration) {
 				// Merge discovered metadata with local configuration
-				return {
-					...this.existingConfiguration,
-					repository: this.configuration.repository, // Full repo name (owner/repo)
-					organization: this.configuration.organization,
-					stars: this.configuration.stars,
-					url: this.configuration.url,
-					owner: this.configuration.owner, // Repository owner
-					repo: this.configuration.repo, // Repository name
-					// Ensure isLocal and sourceType are preserved
-					isLocal:
-						this.existingConfiguration.isLocal
-						?? this.configuration.isLocal,
-
-					sourceType:
-						this.existingConfiguration.sourceType
-						?? this.configuration.sourceType,
-				}
+				return withDiscoveredMetadata(
+					this.existingConfiguration,
+					this.configuration,
+				)
 			}
 			// For imported configurations, ensure we have the properties
 			const config = this.configuration || {}
@@ -592,12 +546,7 @@ export default {
 
 			// Try to extract from sourceUrl
 			if (config.sourceUrl) {
-				const githubMatch = config.sourceUrl.match(
-					/github\.com\/([^/]+\/[^/]+)/,
-				)
-				if (githubMatch) {
-					return githubMatch[1].replace(/\/blob\/.*$/, '')
-				}
+				return githubRepoIn(config.sourceUrl)
 			}
 
 			return null
@@ -782,6 +731,16 @@ export default {
 		},
 
 		/**
+		 * Open the GitLab publish dialog for this configuration.
+		 *
+		 * @spec openspec/changes/capability-rows-verified-b/tasks.md#task-2.1
+		 */
+		handlePublishGitLab() {
+			configurationStore.setConfigurationItem(this.existingConfiguration || this.displayConfiguration)
+			navigationStore.setModal('publishConfigurationGitLab')
+		},
+
+		/**
 		 * Handle delete action
 		 *
 		 * @spec exclude emit/store-dispatch UI handler opening delete dialog
@@ -821,6 +780,159 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * The Preview Update action, shown when an update is available.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function previewUpdateAction(card) {
+	return {
+		label: 'Preview Update',
+		icon: EyeOutline,
+		run: () => card.handlePreviewUpdate(),
+		hidden: !card.hasUpdateAvailable,
+	}
+}
+
+/**
+ * The Check Version action, shown for a remote configuration.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function checkVersionAction(card) {
+	return {
+		label: 'Check Version',
+		icon: Sync,
+		run: () => card.handleCheckVersion(),
+		hidden: !card.isRemoteConfiguration,
+	}
+}
+
+/**
+ * The Export action.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function exportAction(card) {
+	return {
+		label: 'Export',
+		icon: Download,
+		run: () => card.handleExport(),
+	}
+}
+
+/**
+ * The Publish (or Update Published) action, shown for a published or a local
+ * configuration.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ */
+function publishAction(card) {
+	return {
+		label: card.isPublished ? 'Update Published' : 'Publish',
+		icon: CloudUploadOutline,
+		run: () => card.handlePublish(),
+		hidden: !card.isPublished && !card.isLocalConfiguration,
+	}
+}
+
+/**
+ * The Publish to GitLab action, shown for a local configuration only: the
+ * server publishes local configurations and refuses any other.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ * @spec openspec/changes/capability-rows-verified-b/tasks.md#task-2.1
+ */
+function gitlabPublishAction(card) {
+	return {
+		label: t('openregister', 'Publish Configuration to GitLab'),
+		icon: CloudUploadOutline,
+		run: () => card.handlePublishGitLab(),
+		hidden: !card.isLocalConfiguration,
+	}
+}
+
+/**
+ * A minimal stand-in for an imported configuration the store does not hold,
+ * with what the card needs for display and version checks.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The configuration
+ */
+function importedStandIn(card) {
+	const discovered = card.configuration
+	return {
+		id: card.importedConfigId,
+		app: card.appId,
+		title: discovered.config?.title || card.appId,
+		description: discovered.config?.description || '',
+		sourceType: 'github', // Assume github for discovered configs
+		isLocal: false,
+		...discoveredSyncInfo(discovered),
+	}
+}
+
+/**
+ * The version and GitHub sync details of a discovered configuration.
+ *
+ * @param {object} discovered The discovered configuration
+ * @return {object} The details
+ */
+function discoveredSyncInfo(discovered) {
+	return {
+		// Version info from discovered config
+		localVersion: discovered.config?.version || null,
+		remoteVersion: null, // Will be fetched on check
+		// GitHub sync info
+		githubRepo: discovered.repository,
+		githubBranch: discovered.branch || 'main',
+		githubPath: discovered.path,
+		syncEnabled: true,
+	}
+}
+
+/**
+ * A local configuration with the repository metadata of its discovery, keeping
+ * its own isLocal and sourceType where it has them.
+ *
+ * @param {object} existing The local configuration
+ * @param {object} discovered The discovered configuration
+ * @return {object} The configuration to display
+ */
+function withDiscoveredMetadata(existing, discovered) {
+	return {
+		...existing,
+		repository: discovered.repository, // Full repo name (owner/repo)
+		organization: discovered.organization,
+		stars: discovered.stars,
+		url: discovered.url,
+		owner: discovered.owner, // Repository owner
+		repo: discovered.repo, // Repository name
+		// Ensure isLocal and sourceType are preserved
+		isLocal: existing.isLocal ?? discovered.isLocal,
+		sourceType: existing.sourceType ?? discovered.sourceType,
+	}
+}
+
+/**
+ * The owner/repo a GitHub source URL points at, if it is one.
+ *
+ * @param {string} sourceUrl The source URL
+ * @return {string|null} The repository, or null for another URL
+ */
+function githubRepoIn(sourceUrl) {
+	const githubMatch = sourceUrl.match(/github\.com\/([^/]+\/[^/]+)/)
+	if (githubMatch) {
+		return githubMatch[1].replace(/\/blob\/.*$/, '')
+	}
+	return null
 }
 </script>
 
@@ -995,12 +1107,7 @@ export default {
 
 /* Sync status badges */
 @include config-badge-sync-success-rules;
-
-.configBadge--sync-pending,
-.configBadge--sync-never {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
-}
+@include config-badge-sync-idle;
 
 /* Update available badge */
 @include config-badge-update;

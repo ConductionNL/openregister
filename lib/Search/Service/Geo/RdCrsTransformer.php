@@ -63,6 +63,88 @@ class RdCrsTransformer {
 	private const LAM0 = 5.38720621;
 
 	/**
+	 * The RD → WGS84 latitude series, in arc seconds.
+	 *
+	 * Each term is [coefficient, power of dX, power of dY], summed in this order.
+	 *
+	 * @var list<array{0: float, 1: int, 2: int}>
+	 */
+	private const LATITUDE_TERMS = [
+		[3235.65389, 0, 1],
+		[-32.58297, 2, 0],
+		[-0.24750, 0, 2],
+		[-0.84978, 2, 1],
+		[-0.06550, 0, 3],
+		[-0.01709, 2, 2],
+		[-0.00738, 1, 0],
+		[0.00530, 4, 0],
+		[-0.00039, 2, 3],
+		[0.00033, 4, 1],
+		[-0.00012, 1, 1],
+	];
+
+	/**
+	 * The RD → WGS84 longitude series, in arc seconds.
+	 *
+	 * Each term is [coefficient, power of dX, power of dY], summed in this order.
+	 *
+	 * @var list<array{0: float, 1: int, 2: int}>
+	 */
+	private const LONGITUDE_TERMS = [
+		[5260.52916, 1, 0],
+		[105.94684, 1, 1],
+		[2.45656, 1, 2],
+		[-0.81885, 3, 0],
+		[0.05594, 1, 3],
+		[-0.05607, 3, 1],
+		[0.01199, 0, 1],
+		[-0.00256, 3, 2],
+		[0.00128, 1, 4],
+		[0.00022, 0, 2],
+		[-0.00022, 2, 0],
+		[0.00026, 5, 0],
+	];
+
+	/**
+	 * The WGS84 → RD x series, in meters.
+	 *
+	 * Each term is [coefficient, power of dPhi, power of dLam], summed in this order.
+	 *
+	 * @var list<array{0: float, 1: int, 2: int}>
+	 */
+	private const X_TERMS = [
+		[190094.945, 0, 1],
+		[-11832.228, 1, 1],
+		[-114.221, 1, 3],
+		[-32.391, 0, 3],
+		[-0.705, 1, 0],
+		[-2.340, 3, 1],
+		[-0.608, 1, 5],
+		[-0.008, 0, 2],
+		[0.148, 2, 3],
+	];
+
+	/**
+	 * The WGS84 → RD y series, in meters.
+	 *
+	 * Each term is [coefficient, power of dPhi, power of dLam], summed in this order.
+	 *
+	 * @var list<array{0: float, 1: int, 2: int}>
+	 */
+	private const Y_TERMS = [
+		[309056.544, 1, 0],
+		[3638.893, 0, 2],
+		[73.077, 2, 0],
+		[-157.984, 1, 2],
+		[59.788, 3, 0],
+		[0.433, 0, 1],
+		[-6.439, 2, 2],
+		[-0.032, 1, 1],
+		[0.092, 0, 4],
+		[-0.054, 1, 4],
+	];
+
+	/**
 	 * Whether a CRS string is supported (REQ-GEO-015).
 	 *
 	 * @param string $crs The CRS identifier (e.g. `EPSG:28992`).
@@ -100,32 +182,11 @@ class RdCrsTransformer {
 		$dX = (($x - self::X0) * 1e-5);
 		$dY = (($y - self::Y0) * 1e-5);
 
-		$sumPhi = 3235.65389 * $dY;
-		$sumPhi += -32.58297 * ($dX ** 2);
-		$sumPhi += -0.24750 * ($dY ** 2);
-		$sumPhi += -0.84978 * ($dX ** 2) * $dY;
-		$sumPhi += -0.06550 * ($dY ** 3);
-		$sumPhi += -0.01709 * ($dX ** 2) * ($dY ** 2);
-		$sumPhi += -0.00738 * $dX;
-		$sumPhi += 0.00530 * ($dX ** 4);
-		$sumPhi += -0.00039 * ($dX ** 2) * ($dY ** 3);
-		$sumPhi += 0.00033 * ($dX ** 4) * $dY;
-		$sumPhi += -0.00012 * $dX * $dY;
+		$sumPhi = self::series(terms: self::LATITUDE_TERMS, point: [$dX, $dY]);
 
 		$latitude = (self::PHI0 + ($sumPhi / 3600.0));
 
-		$sumLam = 5260.52916 * $dX;
-		$sumLam += 105.94684 * $dX * $dY;
-		$sumLam += 2.45656 * $dX * ($dY ** 2);
-		$sumLam += -0.81885 * ($dX ** 3);
-		$sumLam += 0.05594 * $dX * ($dY ** 3);
-		$sumLam += -0.05607 * ($dX ** 3) * $dY;
-		$sumLam += 0.01199 * $dY;
-		$sumLam += -0.00256 * ($dX ** 3) * ($dY ** 2);
-		$sumLam += 0.00128 * $dX * ($dY ** 4);
-		$sumLam += 0.00022 * ($dY ** 2);
-		$sumLam += -0.00022 * ($dX ** 2);
-		$sumLam += 0.00026 * ($dX ** 5);
+		$sumLam = self::series(terms: self::LONGITUDE_TERMS, point: [$dX, $dY]);
 
 		$longitude = (self::LAM0 + ($sumLam / 3600.0));
 
@@ -146,31 +207,34 @@ class RdCrsTransformer {
 		$dPhi = (0.36 * ($latitude - self::PHI0));
 		$dLam = (0.36 * ($longitude - self::LAM0));
 
-		$sumX = 190094.945 * $dLam;
-		$sumX += -11832.228 * $dPhi * $dLam;
-		$sumX += -114.221 * $dPhi * ($dLam ** 3);
-		$sumX += -32.391 * ($dLam ** 3);
-		$sumX += -0.705 * $dPhi;
-		$sumX += -2.340 * ($dPhi ** 3) * $dLam;
-		$sumX += -0.608 * $dPhi * ($dLam ** 5);
-		$sumX += -0.008 * ($dLam ** 2);
-		$sumX += 0.148 * ($dPhi ** 2) * ($dLam ** 3);
+		$sumX = self::series(terms: self::X_TERMS, point: [$dPhi, $dLam]);
 
 		$x = (self::X0 + $sumX);
 
-		$sumY = 309056.544 * $dPhi;
-		$sumY += 3638.893 * ($dLam ** 2);
-		$sumY += 73.077 * ($dPhi ** 2);
-		$sumY += -157.984 * $dPhi * ($dLam ** 2);
-		$sumY += 59.788 * ($dPhi ** 3);
-		$sumY += 0.433 * $dLam;
-		$sumY += -6.439 * ($dPhi ** 2) * ($dLam ** 2);
-		$sumY += -0.032 * $dPhi * $dLam;
-		$sumY += 0.092 * ($dLam ** 4);
-		$sumY += -0.054 * $dPhi * ($dLam ** 4);
+		$sumY = self::series(terms: self::Y_TERMS, point: [$dPhi, $dLam]);
 
 		$y = (self::Y0 + $sumY);
 
 		return [round($x, 3), round($y, 3)];
 	}//end wgs84ToRd()
+
+	/**
+	 * Sum a two-variable polynomial series at a point, term by term in order.
+	 *
+	 * Each term is `coefficient * a^p * b^q`, multiplied left to right, so the
+	 * result is the same float as writing the series out by hand.
+	 *
+	 * @param list<array{0: float, 1: int, 2: int}> $terms The series.
+	 * @param array{0: float, 1: float}              $point The two variables (a, b).
+	 *
+	 * @return float
+	 */
+	private static function series(array $terms, array $point): float {
+		$sum = 0.0;
+		foreach ($terms as [$coefficient, $powerA, $powerB]) {
+			$sum += $coefficient * ($point[0] ** $powerA) * ($point[1] ** $powerB);
+		}
+
+		return $sum;
+	}//end series()
 }//end class

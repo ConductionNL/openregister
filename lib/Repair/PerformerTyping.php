@@ -173,22 +173,39 @@ final class PerformerTyping {
 			return null;
 		}
 
-		$changed = false;
+		return $this->typedEachNode(nodes: $nodes, flowUuid: (string)$flow->getUuid());
+
+	}//end typedNodes()
+
+	/**
+	 * The nodes with each step's performer fields typed, or null when no step changed.
+	 *
+	 * A typed config is only returned for a step whose config changed, so the
+	 * nodes are unchanged exactly when no step returned one.
+	 *
+	 * @param array  $nodes    The flow's nodes.
+	 * @param string $flowUuid The flow, as a warning names it.
+	 *
+	 * @return array|null The typed nodes.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
+	 */
+	private function typedEachNode(array $nodes, string $flowUuid): ?array {
+		$typedNodes = $nodes;
 		foreach ($nodes as $index => $node) {
-			$config = $this->typedConfig(node: $node, flowUuid: (string)$flow->getUuid());
+			$config = $this->typedConfig(node: $node, flowUuid: $flowUuid);
 			if ($config !== null) {
-				$nodes[$index]['config'] = $config;
-				$changed = true;
+				$typedNodes[$index]['config'] = $config;
 			}
 		}
 
-		if ($changed === false) {
+		if ($typedNodes === $nodes) {
 			return null;
 		}
 
-		return $nodes;
+		return $typedNodes;
 
-	}//end typedNodes()
+	}//end typedEachNode()
 
 	/**
 	 * One step's config with its performers typed, or null when none changed.
@@ -203,11 +220,25 @@ final class PerformerTyping {
 			return null;
 		}
 
-		$config = $node['config'];
+		return $this->typedFields(config: $node['config'], step: $flowUuid . ' step "' . (string)($node['id'] ?? '?') . '"');
+
+	}//end typedConfig()
+
+	/**
+	 * The step's config with every performer field typed, or null when none changed.
+	 *
+	 * @param array  $config The step's config.
+	 * @param string $step   The flow and step, as a warning names them.
+	 *
+	 * @return array|null The typed config.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
+	 */
+	private function typedFields(array $config, string $step): ?array {
 		$changed = false;
 		foreach (self::FIELDS as $name => $impliedType) {
-			$where = $flowUuid . ' step "' . (string)($node['id'] ?? '?') . '" field "' . $name . '"';
-			$typed = $this->typeValue(value: ($config[$name] ?? null), field: new PerformerField(impliedType: $impliedType, where: $where));
+			$field = new PerformerField(impliedType: $impliedType, where: $step . ' field "' . $name . '"');
+			$typed = $this->typeValue(value: ($config[$name] ?? null), field: $field);
 			if ($typed !== null) {
 				$config[$name] = $typed;
 				$changed = true;
@@ -220,7 +251,7 @@ final class PerformerTyping {
 
 		return $config;
 
-	}//end typedConfig()
+	}//end typedFields()
 
 	/**
 	 * The typed replacement for one stored value, or null to leave it alone.
@@ -238,24 +269,9 @@ final class PerformerTyping {
 			return null;
 		}
 
-		$out = [];
-		$touched = false;
-		foreach ($entries as $entry) {
-			$typed = $this->typeOneEntry(entry: $entry, field: $field);
-			if ($typed === null) {
-				// An empty string is not a performer and is not kept.
-				continue;
-			}
-
-			if ($typed !== $entry) {
-				$touched = true;
-				$this->pending++;
-			}
-
-			$out[] = $typed;
-		}
-
-		if ($touched === false) {
+		$pendingBefore = $this->pending;
+		$out = $this->typeEntries(entries: $entries, field: $field);
+		if ($this->pending === $pendingBefore) {
 			return null;
 		}
 
@@ -266,6 +282,36 @@ final class PerformerTyping {
 		return ($out[0] ?? null);
 
 	}//end typeValue()
+
+	/**
+	 * Type each entry, counting every entry that changed as pending.
+	 *
+	 * @param array          $entries The stored entries.
+	 * @param PerformerField $field   The field they are stored in.
+	 *
+	 * @return array The typed entries, without the empty ones.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
+	 */
+	private function typeEntries(array $entries, PerformerField $field): array {
+		$out = [];
+		foreach ($entries as $entry) {
+			$typed = $this->typeOneEntry(entry: $entry, field: $field);
+			if ($typed === null) {
+				// An empty string is not a performer and is not kept.
+				continue;
+			}
+
+			if ($typed !== $entry) {
+				$this->pending++;
+			}
+
+			$out[] = $typed;
+		}
+
+		return $out;
+
+	}//end typeEntries()
 
 	/**
 	 * The entries a stored value holds, or null when it holds none.

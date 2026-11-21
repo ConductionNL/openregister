@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Case\AppPlanWrite;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
@@ -86,8 +87,8 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use Stringable;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
 use OCA\OpenRegister\Service\Case\CaseItemTransition;
@@ -595,8 +596,8 @@ class CaseUnitsGoldenTest extends TestCase {
 		$armed = [];
 		$core = $this->createMock(FlowTimerService::class);
 		$core->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed): FlowTimer {
-				$armed[] = [$config['subjectUuid'], $config['purpose'], $config['legalEffect'], $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed): FlowTimer {
+				$armed[] = [$config['subjectUuid'], $config['purpose'], $config['legalEffect'], $act->actor];
 
 				return new FlowTimer();
 			}
@@ -747,20 +748,20 @@ class CaseUnitsGoldenTest extends TestCase {
 		$out['complete'] = self::attempt(static fn (): array => $service->completeCase(completion: new CaseCompletion(objectUuid: $obj, result: 'verleend', actor: 'boss')));
 		$out['system bad app'] = self::attempt(
 			static fn (): array => $service->createPlanAsSystem(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				app: 'Bad App'
+				write: new AppPlanWrite(
+					anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
+					definition: CasePlanDefinitionTest::permitDefinition(),
+					app: 'Bad App'
+				)
 			)
 		);
 		$out['system'] = self::attempt(
 			static fn (): array => $service->createPlanAsSystem(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
-				definition: CasePlanDefinitionTest::permitDefinition(),
-				app: 'dossiq'
+				write: new AppPlanWrite(
+					anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
+					definition: CasePlanDefinitionTest::permitDefinition(),
+					app: 'dossiq'
+				)
 			)
 		);
 		$out['system read'] = self::attempt(static fn (): array => $service->getPlanAsSystem(objectUuid: self::OTHER, app: 'dossiq'));
@@ -982,8 +983,8 @@ class CaseUnitsGoldenTest extends TestCase {
 		$refuse = false;
 		$core = $this->createMock(FlowTimerService::class);
 		$core->method('arm')->willReturnCallback(
-			static function (array $config, ?string $actor) use (&$armed, &$refuse): FlowTimer {
-				$armed[] = [$config, $actor];
+			static function (array $config, FlowTimerAct $act) use (&$armed, &$refuse): FlowTimer {
+				$armed[] = [$config, $act->actor];
 				if ($refuse === true) {
 					throw new RuntimeException('clock refused');
 				}

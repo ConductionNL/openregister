@@ -147,6 +147,13 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private ?ShareGrantAttributes $shareAttributes = null;
 
 	/**
+	 * Keeps the shares that are on their object's stored folder; made on first use.
+	 *
+	 * @var StoredFolderShares|null
+	 */
+	private ?StoredFolderShares $storedFolderShares = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger.
@@ -222,6 +229,8 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			$run->shareType = $shareType;
 			$this->collectForType(run: $run);
 		}
+
+		$this->admitCandidates(run: $run);
 
 		return $this->expandDownHierarchies(granted: $run->granted);
 	}//end resolve()
@@ -418,22 +427,24 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			$shares = $this->readPage(run: $run, page: $page);
-			if (empty($shares) === true) {
-				return;
-			}
-
-			foreach ($shares as $share) {
-				$this->absorbShare(share: $share, run: $run);
-			}
-
-			if (count($shares) < self::PAGE_SIZE) {
+			if ($this->absorbPage(run: $run, shares: $this->readPage(run: $run, page: $page)) === false) {
 				return;
 			}
 
 			$page++;
-		}//end while
+		}
 
+		$this->warnPagingBound(run: $run);
+	}//end collectForType()
+
+	/**
+	 * Say that the paging bound was hit, so some grants of this type were not read.
+	 *
+	 * @param ShareGrantRun $run The run: its share type.
+	 *
+	 * @return void
+	 */
+	private function warnPagingBound(ShareGrantRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectGrantResolver] Hit the share paging bound; some grants were NOT read',
 			context: [
@@ -443,7 +454,30 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
-	}//end collectForType()
+	}//end warnPagingBound()
+
+	/**
+	 * Add one page of shares to the run's candidates, and say whether another page may follow.
+	 *
+	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
+	 * @param IShare[]      $shares The page.
+	 *
+	 * @return bool True when the page was full, so the next one must be read.
+	 */
+	private function absorbPage(ShareGrantRun $run, array $shares): bool {
+		if (empty($shares) === true) {
+			return false;
+		}
+
+		foreach ($shares as $share) {
+			$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
+			if ($uuid !== null) {
+				$run->candidates[] = [$uuid, $share];
+			}
+		}
+
+		return count($shares) >= self::PAGE_SIZE;
+	}//end absorbPage()
 
 	/**
 	 * Read one page of one share type, or nothing when the read failed.
@@ -463,33 +497,55 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 				($page * self::PAGE_SIZE)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'shareType' => $run->shareType,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnUnreadableType(run: $run, error: $e);
 			return [];
 		}
 	}//end readPage()
 
 	/**
-	 * Add one share to the grant map, when it is a folder share on an object.
+	 * Say that the shares of one type could not be read, so the type is skipped.
 	 *
+	 * @param ShareGrantRun $run   The run: its share type.
+	 * @param Throwable     $error Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function warnUnreadableType(ShareGrantRun $run, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'shareType' => $run->shareType,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnreadableType()
+
+	/**
+	 * Grant each candidate share whose node is the folder stored for its object.
+	 *
+	 * @param ShareGrantRun $run The run whose candidates are checked and whose grant map takes them.
+	 *
+	 * @return void
+	 */
+	private function admitCandidates(ShareGrantRun $run): void {
+		$this->storedFolderShares ??= new StoredFolderShares(logger: $this->logger, container: $this->container);
+		foreach ($this->storedFolderShares->admitted(candidates: $run->candidates) as [$uuid, $share]) {
+			$this->absorbShare(uuid: $uuid, share: $share, run: $run);
+		}
+	}//end admitCandidates()
+
+	/**
+	 * Add one share to the grant map for the object it was admitted on.
+	 *
+	 * @param string        $uuid  The object the share grants.
 	 * @param IShare        $share The share.
 	 * @param ShareGrantRun $run   The run whose grant map takes the share.
 	 *
 	 * @return void
 	 */
-	private function absorbShare(IShare $share, ShareGrantRun $run): void {
-		$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
-		if ($uuid === null) {
-			return;
-		}
-
+	private function absorbShare(string $uuid, IShare $share, ShareGrantRun $run): void {
 		// A caller may hold several grants on one object (directly and
 		// through a group). The widest wins, which is how core itself
 		// composes overlapping shares.

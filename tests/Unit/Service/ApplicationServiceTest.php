@@ -4,7 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\ApplicationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;

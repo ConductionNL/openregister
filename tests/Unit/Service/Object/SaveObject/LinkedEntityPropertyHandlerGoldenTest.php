@@ -27,6 +27,9 @@ use Psr\Log\LoggerInterface;
  * Pins which ids land in which metadata column, their order, merging and the debug log.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityIds
  */
 class LinkedEntityPropertyHandlerGoldenTest extends TestCase {
 

@@ -39,6 +39,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\CaseItemAudit
  * @uses \OCA\OpenRegister\Db\CaseItemAuditMapper
  * @uses \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanStore
  */
 class SeedCaseFixturesTest extends TestCase {
 

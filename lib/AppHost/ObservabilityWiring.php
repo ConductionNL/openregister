@@ -26,13 +26,15 @@ use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
-use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
+use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -71,17 +73,18 @@ final class ObservabilityWiring {
 		self::registerEngineServices(context: $context);
 
 		// OpenRegister's own IMetricsProvider, under the alias
-		// ProviderMetricSource looks up for this app id. It carries the one
-		// metric the declarative kinds cannot express: overdue is
-		// COALESCE(due_at, expires_at) < now, and a tableCount filter
-		// compares one column to a literal. Registered here, in OR's own
+		// ProviderMetricSource looks up for this app id. It carries the
+		// metrics the declarative kinds cannot express because they compare
+		// with the clock: overdue tasks (COALESCE(due_at, expires_at) < now)
+		// and queued webhook retries (next_retry_at > now), while a
+		// tableCount filter compares one column to a literal. Registered here, in OR's own
 		// container, because the source resolves the alias from the CALLING
 		// app's container (#390) and OR is the calling app when it scrapes
 		// itself.
 		$context->registerService(
 			\OCA\OpenRegister\AppHost\IMetricsProvider::class . '::' . $appId,
 			function (ContainerInterface $container) {
-				return $container->get(TaskMetricsProviderInterface::class);
+				return $container->get(OpenRegisterMetricsProvider::class);
 			}
 		);
 
@@ -251,14 +254,18 @@ final class ObservabilityWiring {
 	 */
 	private static function metricsEngine(ContainerInterface $container): MetricsEngine {
 		return new MetricsEngine(
-			objectSource: $container->get(ObjectMetricSource::class),
-			tableSource: $container->get(TableMetricSource::class),
-			appConfigSource: $container->get(AppConfigMetricSource::class),
-			providerSource: $container->get(ProviderMetricSource::class),
+			sources: new MetricSources(
+				object: $container->get(ObjectMetricSource::class),
+				table: $container->get(TableMetricSource::class),
+				appConfig: $container->get(AppConfigMetricSource::class),
+				provider: $container->get(ProviderMetricSource::class)
+			),
 			renderer: $container->get(PrometheusRenderer::class),
-			manifestLoader: $container->get(ManifestLoader::class),
-			cacheFactory: $container->get('OCP\ICacheFactory'),
-			config: $container->get('OCP\IConfig'),
+			runtime: new MetricsRuntime(
+				manifestLoader: $container->get(ManifestLoader::class),
+				cacheFactory: $container->get('OCP\ICacheFactory'),
+				config: $container->get('OCP\IConfig')
+			),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end metricsEngine()

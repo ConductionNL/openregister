@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return FlowTimer The inserted timer, with its id.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function insert(Entity $entity): FlowTimer {
 		if ($entity instanceof FlowTimer === false) {
@@ -90,7 +90,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return FlowTimer The updated timer.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function update(Entity $entity): FlowTimer {
 		if ($entity instanceof FlowTimer === false) {
@@ -111,7 +111,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such timer exists.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findByUuid(string $uuid): FlowTimer {
 		$qb = $this->db->getQueryBuilder();
@@ -135,7 +135,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The due expiry timers.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function findDueExpiries(DateTimeInterface $now, int $limit): array {
 		$qb = $this->db->getQueryBuilder();
@@ -159,7 +159,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The timers with a due rung.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function findDueRungs(DateTimeInterface $now, int $limit): array {
 		$qb = $this->db->getQueryBuilder();
@@ -182,7 +182,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The subject's timers, oldest first.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findBySubject(TimerSubject $subject, array $states = []): array {
 		$qb = $this->db->getQueryBuilder();
@@ -207,7 +207,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The open timers.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findOpenByRun(string $runUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -223,12 +223,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 					)
 				)
 			)
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -242,7 +237,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The page.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findByStatePaged(string $state, IdCursor $cursor): array {
 		$qb = $this->db->getQueryBuilder();
@@ -266,7 +261,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 	 *
 	 * @return boolean True when this caller won the claim.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function claimFired(string $uuid, DateTimeInterface $firedAt): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -299,12 +294,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
+			->andWhere($this->isOpen(qb: $qb))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 
@@ -330,12 +320,7 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 		$qb->select($qb->func()->count('*', 'open_timers'))
 			->from($this->getTableName())
 			->where($qb->expr()->eq('calendar_slug', $qb->createNamedParameter($calendarSlug)))
-			->andWhere(
-				$qb->expr()->in(
-					'state',
-					$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
+			->andWhere($this->isOpen(qb: $qb));
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -343,4 +328,18 @@ class FlowTimerMapper extends QBMapper implements FlowTimerMapperInterface {
 
 		return $count;
 	}//end countOpenByCalendarSlug()
+
+	/**
+	 * The condition that a timer is still open: armed or suspended.
+	 *
+	 * @param IQueryBuilder $qb The query the condition is for.
+	 *
+	 * @return string
+	 */
+	private function isOpen(IQueryBuilder $qb): string {
+		return $qb->expr()->in(
+			'state',
+			$qb->createNamedParameter([FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED], IQueryBuilder::PARAM_STR_ARRAY)
+		);
+	}//end isOpen()
 }//end class

@@ -111,6 +111,15 @@ final class SharedMasterDataGuardHost {
  * Golden outcomes of the shared master data write refusal.
  *
  * @covers \OCA\OpenRegister\Db\MultiTenancyTrait
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Service\DeclaredRow
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
+ * @uses \OCA\OpenRegister\Service\TenantLogRedactor
+ * @uses \OCA\OpenRegister\Exception\SharedMasterDataWriteException
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationWriteGuardTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class SharedMasterDataWriteGuardGoldenTest extends TestCase {
 

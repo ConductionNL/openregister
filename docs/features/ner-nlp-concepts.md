@@ -583,7 +583,7 @@ Planned improvements to NER/NLP:
 
 ```bash
 # Using MITIE (local)
-curl -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract \
+curl -H 'OCS-APIRequest: true' -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -592,7 +592,7 @@ curl -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract 
   }'
 
 # Using Presidio (production)
-curl -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract \
+curl -H 'OCS-APIRequest: true' -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -606,7 +606,7 @@ curl -X POST http://nextcloud.local/index.php/apps/openregister/api/ner/extract 
 
 ```bash
 # Get all data for a person
-curl -X GET http://nextcloud.local/index.php/apps/openregister/api/gdpr/profile/john.doe@example.com \
+curl -H 'OCS-APIRequest: true' -X GET http://nextcloud.local/index.php/apps/openregister/api/gdpr/profile/john.doe@example.com \
   -u admin:admin
 
 # Response includes all files, chunks, and occurrences

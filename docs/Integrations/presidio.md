@@ -53,6 +53,16 @@ Presidio is automatically configured when the container is running. Configure in
 - **Default Language**: Select your primary language (e.g., Dutch)
 - **Supported Languages**: Select languages to support
 
+### Presidio on a local or private address
+
+OpenRegister reaches Presidio through the Nextcloud HTTP client, so Nextcloud's outbound rules apply to both the analyse call and the health check. Nextcloud refuses requests to local and private addresses by default, which includes a container name such as `presidio-analyzer` that resolves to a private address. To allow a Presidio that runs next to Nextcloud, an administrator sets this in `config/config.php`:
+
+```php
+'allow_local_remote_servers' => true,
+```
+
+or runs `occ config:system:set allow_local_remote_servers --value=true --type=boolean`. Without it, detection falls back to the regex detector and the health check reports Presidio as unreachable.
+
 ## Configuration Details
 
 ### Presidio Service Configuration
@@ -350,8 +360,9 @@ docker exec openregister-presidio-analyzer ls /app/models
 
 **Solutions**:
 1. Verify analyzer URL uses container name: `http://presidio-analyzer:5001`
-2. Check containers are on same Docker network
-3. Test connection from Nextcloud container:
+2. For a local or private address, check that `allow_local_remote_servers` is set (see [Presidio on a local or private address](#presidio-on-a-local-or-private-address))
+3. Check containers are on same Docker network
+4. Test connection from Nextcloud container:
    ```bash
    docker exec <nextcloud-container> curl http://presidio-analyzer:5001/health
    ```

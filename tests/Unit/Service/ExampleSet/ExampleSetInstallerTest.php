@@ -71,6 +71,61 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsRemoval
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetKeptObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemovalRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRestorePart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\KeptObjectRewrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteTally
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewrittenObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
  */
 class ExampleSetInstallerTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -378,5 +433,82 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 		$this->assertSame(['brp person openregister/brp-sanne ('.$stuck.'): the register refused it'], $report['failed']);
 		$this->assertSame(['openregister/brp-sanne'], array_keys($this->record->read(set: 'demo')['objects']));
+	}
+
+	/**
+	 * A catalogue fragment whose publication looks up a theme in an app the instance may not have.
+	 *
+	 * @param bool   $optional Whether the publication is marked optional.
+	 * @param string $register The register the lookup reads.
+	 *
+	 * @return void
+	 */
+	private function publicationFragment(bool $optional, string $register = 'catalogi'): void {
+		$publication = [
+			'key'      => 'publication-1',
+			'register' => 'cases',
+			'schema'   => 'case',
+			'lookups'  => ['theme' => ['register' => $register, 'schema' => 'theme', 'where' => ['slug' => 'wonen']]],
+			'data'     => ['type' => '{{lookup:theme}}'],
+		];
+		if ($optional === true) {
+			$publication['optional'] = true;
+		}
+
+		$this->app(app: 'catalogue', fragment: ['objects' => [$publication]]);
+	}//end publicationFragment()
+
+	public function testAnOptionalEntryWhoseAppIsAbsentIsSkippedAndTheSetInstalls(): void {
+		$this->publicationFragment(optional: true);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['skipped'][0]);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok'], json_encode($report));
+		$this->assertSame(3, $this->store->creates, 'the rest of the set is written, the skipped entry is not');
+		$this->assertCount(1, $report['skipped']);
+		$this->assertStringContainsString('object "publication-1"', $report['skipped'][0]);
+		$this->assertArrayNotHasKey('catalogue/publication-1', json_decode($this->config['example_set_demo'], true)['objects']);
+	}
+
+	public function testAnOptionalEntryWhoseLookupFindsNothingIsSkipped(): void {
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+	}
+
+	public function testAnEntryNotMarkedOptionalStillRefusesTheSet(): void {
+		$this->publicationFragment(optional: false);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['refusals'][0]);
+		$this->assertFalse($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertSame(0, $this->store->creates, 'a refused check writes nothing');
+	}
+
+	public function testAnOptionalEntryWithTwoMatchesIsStillRefused(): void {
+		// Optional covers "nothing there", not "more than one there": an ambiguous lookup still refuses.
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('a lookup needs exactly one', $check['refusals'][0]);
 	}
 }

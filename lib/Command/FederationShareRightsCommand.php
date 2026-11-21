@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
+use OCA\OpenRegister\Service\Federation\ShareCreatorCheck;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -84,20 +85,7 @@ class FederationShareRightsCommand extends Command {
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$shares = $this->shareMapper->findLiveOutgoingAcrossOrganisations();
-		$rows   = [];
-		foreach ($shares as $share) {
-			$finding = $this->finding(share: $share);
-			if ($finding !== null) {
-				$rows[] = [
-					$share->getId(),
-					(string)$share->getOrganisation(),
-					$share->getScope() . ' ' . $share->getPermissions(),
-					trim($share->getRegister() . ' / ' . $share->getSchema() . ' ' . $share->getObjectUri()),
-					(string)$share->getOwner(),
-					$finding,
-				];
-			}
-		}
+		$rows   = $this->reviewRows(shares: $shares);
 
 		if ($rows !== []) {
 			(new Table(output: $output))
@@ -112,6 +100,44 @@ class FederationShareRightsCommand extends Command {
 	}//end execute()
 
 	/**
+	 * One table row for every share with a finding, in share order.
+	 *
+	 * @param array<int, FederatedShare> $shares The live outgoing shares.
+	 *
+	 * @return array<int, array<int, mixed>> The rows.
+	 */
+	private function reviewRows(array $shares): array {
+		$rows = [];
+		foreach ($shares as $share) {
+			$finding = $this->finding(share: $share);
+			if ($finding !== null) {
+				$rows[] = self::row(share: $share, finding: $finding);
+			}
+		}
+
+		return $rows;
+	}//end reviewRows()
+
+	/**
+	 * The table row of a share that needs review.
+	 *
+	 * @param FederatedShare $share   The share.
+	 * @param string         $finding What is wrong with it.
+	 *
+	 * @return array<int, mixed> The row: id, organisation, grant, target, creator, finding.
+	 */
+	private static function row(FederatedShare $share, string $finding): array {
+		return [
+			$share->getId(),
+			(string)$share->getOrganisation(),
+			$share->getScope() . ' ' . $share->getPermissions(),
+			trim($share->getRegister() . ' / ' . $share->getSchema() . ' ' . $share->getObjectUri()),
+			(string)$share->getOwner(),
+			$finding,
+		];
+	}//end row()
+
+	/**
 	 * What is wrong with one share, or null when its creator holds every right it grants.
 	 *
 	 * @param FederatedShare $share The share.
@@ -119,22 +145,6 @@ class FederationShareRightsCommand extends Command {
 	 * @return string|null The finding.
 	 */
 	private function finding(FederatedShare $share): ?string {
-		$owner = (string)$share->getOwner();
-		if ($owner === '') {
-			return 'creator not recorded (created before creators were recorded)';
-		}
-
-		$creator = $this->userManager->get($owner);
-		if ($creator === null) {
-			return 'creator no longer exists';
-		}
-
-		$previous = $this->userSession->getUser();
-		$this->userSession->setUser($creator);
-		try {
-			return $this->grantor->refusal(share: $share);
-		} finally {
-			$this->userSession->setUser($previous);
-		}
+		return (new ShareCreatorCheck(grantor: $this->grantor, userManager: $this->userManager, userSession: $this->userSession))->refusal(share: $share);
 	}//end finding()
 }//end class

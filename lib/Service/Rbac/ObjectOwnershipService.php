@@ -57,6 +57,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -74,6 +75,8 @@ use Throwable;
  * clauses: four entry points, each refusing before it writes. Splitting them into
  * separate classes would put the refusals further from the write they protect,
  * which is the arrangement that produces a guard nothing calls.
+ *
+ * @spec openspec/specs/object-ownership/spec.md
  */
 class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
@@ -86,6 +89,11 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @var string
 	 */
 	public const AUDIT_ACTION = 'ownership_handover';
+
+	/**
+	 * The audit action of a record handed to the system identity.
+	 */
+	public const RELEASE_AUDIT_ACTION = 'ownership_release';
 
 	/**
 	 * The notification subject the previous owner receives.
@@ -166,6 +174,10 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			);
 		}
 
+		if ($cascade === true) {
+			$this->requireRightOnFamily(record: $record, action: 'update');
+		}
+
 		return $this->transfer(
 			record: $record,
 			handover: new OwnershipHandover(newOwner: $actor, cascade: $cascade)
@@ -173,29 +185,169 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	}//end claim()
 
 	/**
+	 * Require that the caller holds a verb on every child a cascade would carry.
+	 *
+	 * Walks the same family the cascade moves (records that reference the parent
+	 * and share its owner, up to the depth cap) before anything is written, so a
+	 * refused child fails the whole handover instead of leaving half a family moved.
+	 *
+	 * @param OwnedRecord $record The record being handed over.
+	 * @param string      $action `update` for a claim, `assign` for an assignment.
+	 *
+	 * @throws NotAuthorizedException When the rules refuse the caller the verb on any child.
+	 *
+	 * @return void
+	 */
+	private function requireRightOnFamily(OwnedRecord $record, string $action): void {
+		$rootUuid = $record->object->getUuid();
+		$owner = $record->previousOwner;
+		if ($this->isCascadable(uuid: $rootUuid, previousOwner: $owner) === false) {
+			return;
+		}
+
+		$seen = [(string)$rootUuid => true];
+		$frontier = [[(string)$rootUuid, $record->depth]];
+		while ($frontier !== []) {
+			[$uuid, $depth] = array_shift($frontier);
+			if ($depth >= self::MAX_CASCADE_DEPTH) {
+				continue;
+			}
+
+			foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+				$child = $this->wholeChild(child: $candidate);
+				$childUuid = $child?->getUuid();
+				if ($child === null || $childUuid === null || isset($seen[$childUuid]) === true || $child->getOwner() !== $owner) {
+					continue;
+				}
+
+				$seen[$childUuid] = true;
+				$this->requireRightOnChild(child: $child, action: $action);
+				$frontier[] = [$childUuid, ($depth + 1)];
+			}
+		}
+	}//end requireRightOnFamily()
+
+	/**
+	 * Require that the caller holds a verb on one child of a cascade.
+	 *
+	 * @param ObjectEntity $child  The child.
+	 * @param string       $action `update` for a claim, `assign` for an assignment.
+	 *
+	 * @throws NotAuthorizedException When the child's schema cannot be read or the rules refuse the verb.
+	 *
+	 * @return void
+	 */
+	private function requireRightOnChild(ObjectEntity $child, string $action): void {
+		try {
+			$schema = $this->sources->lookup->schemaMapper->find((int)$child->getSchema());
+		} catch (Throwable $e) {
+			$schema = null;
+		}
+
+		if ($action === 'assign') {
+			if ($schema === null || $this->mayAssign(schema: $schema, object: $child) === false) {
+				throw new NotAuthorizedException(
+					message: 'Only somebody who may assign every related record can assign this record with its related records'
+				);
+			}
+
+			return;
+		}
+
+		if ($schema === null || $this->mayEdit(schema: $schema, object: $child) === false) {
+			throw new NotAuthorizedException(
+				message: 'Only somebody who may edit every related record can take ownership of this record with its related records'
+			);
+		}
+	}//end requireRightOnChild()
+
+	/**
 	 * Assign one record to a named owner.
 	 *
-	 * Administrators only. An ordinary caller may take a record
-	 * ({@see claim()}) and may not give one away: handing a colleague a record
-	 * they have not accepted makes them answerable for something they may never
-	 * see, and it would let anybody park a record on somebody else's name.
+	 * Gated on the `assign` verb, not on editing (ledger row 13.40). An
+	 * administrator may always assign. Anybody else may only where the record's
+	 * authorization block (the schema's, or the object's own) DECLARES `assign`
+	 * and admits them to it. Holding `update` does not imply it: an ordinary
+	 * caller may take a record ({@see claim()}) and may not give one away,
+	 * because handing a colleague a record they have not accepted makes them
+	 * answerable for something they may never see.
+	 *
+	 * A block that does not name `assign` leaves it to administrators, as
+	 * before the verb existed, so an upgraded instance gives nobody a new right
+	 * until an administrator writes one. A cascade by a non-administrator needs
+	 * `assign` on every child it would carry, checked before anything moves.
 	 *
 	 * @param OwnedRecord       $record   The record, its register and schema.
 	 * @param OwnershipHandover $handover The uid of the new owner and whether the change carries to the record's children.
 	 *
-	 * @throws NotAuthorizedException When the caller is not an administrator.
+	 * @throws NotAuthorizedException When the caller is neither an administrator nor holds `assign` on the record (and, with a cascade, on every child).
 	 * @throws InvalidArgumentException When no such user exists.
 	 *
 	 * @return array The outcome, as {@see transfer()} describes it.
 	 *
 	 * @spec openspec/specs/object-ownership/spec.md
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function assign(OwnedRecord $record, OwnershipHandover $handover): array {
-		$this->requireAdmin();
+		$this->requireAssignRight(record: $record, cascade: $handover->cascade);
 		$this->requireExistingUser(uid: $handover->newOwner);
 
 		return $this->transfer(record: $record, handover: $handover);
 	}//end assign()
+
+	/**
+	 * Hand a stored record to the system identity.
+	 *
+	 * For repair steps that move records an editor came to own, although the
+	 * system should, back to the system. Only a system operation may call it:
+	 * a request has no business giving a record away to nobody. One audit entry
+	 * per record; a record the system already owns is reported, not written, so
+	 * a repeated run records nothing. The previous owner is not notified and
+	 * children are not carried.
+	 *
+	 * @param OwnedRecord $record The record, its register and schema.
+	 *
+	 * @throws NotAuthorizedException When no system operation is running.
+	 * @throws InvalidArgumentException When the record carries no uuid.
+	 *
+	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool}
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function releaseToSystem(OwnedRecord $record): array {
+		if (SystemOperationContext::isActive() === false) {
+			throw new NotAuthorizedException(message: 'Only a system operation can hand a record to the system');
+		}
+
+		$object = $record->object;
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
+			throw new InvalidArgumentException('A record with no uuid cannot change hands');
+		}
+
+		$system = $this->sources->systemOwner();
+		$outcome = ['uuid' => $uuid, 'previousOwner' => $record->previousOwner, 'newOwner' => $system, 'changed' => false];
+		if ($record->previousOwner === $system) {
+			return $outcome;
+		}
+
+		$before = clone $object;
+		$this->writers->ownerWriter->writeOwner(
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new OwnerAssignment(objectUuid: $uuid, owner: $system)
+		);
+		$object->setOwner($system);
+		$this->writers->auditTrailMapper->createAuditTrail(old: $before, new: $object, action: self::RELEASE_AUDIT_ACTION);
+
+		$this->log->logger->info(
+			message: '[ObjectOwnershipService] A record was handed to the system',
+			context: ['uuid' => $uuid, 'previousOwner' => $record->previousOwner]
+		);
+
+		$outcome['changed'] = true;
+
+		return $outcome;
+	}//end releaseToSystem()
 
 	/**
 	 * Reassign many records to one owner, in one action.
@@ -540,6 +692,10 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 		);
 		$object->setOwner($handover->newOwner);
 
+		if ($record->previousOwner !== null && $record->previousOwner !== '') {
+			$this->guards->sharerAccess?->endViewOf(object: $object, uid: $record->previousOwner);
+		}
+
 		$this->writers->auditTrailMapper->recordChange(
 			change: new AuditedChange(
 				old: $before,
@@ -585,8 +741,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$cascade = new OwnershipCascade(parent: $parent, handover: $handover);
 		$outcomes = [];
-		foreach ($this->childCandidates(uuid: $uuid) as $child) {
-			if ($handover->carries(child: $child, previousOwner: $previousOwner) === false) {
+		foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+			$child = $this->wholeChild(child: $candidate);
+			if ($child === null || $handover->carries(child: $child, previousOwner: $previousOwner) === false) {
 				continue;
 			}
 
@@ -629,6 +786,40 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return [];
 		}
 	}//end childCandidates()
+
+	/**
+	 * The child as stored, read again when the relation lookup returned only some of its columns.
+	 *
+	 * The relation lookup answers partial rows without an owner, so the shared-owner
+	 * test would never hold for them. The read applies the caller's access rules: a
+	 * child the caller may not read is skipped.
+	 *
+	 * @param ObjectEntity $child The candidate from the relation lookup.
+	 *
+	 * @return ObjectEntity|null The whole child, or null when it cannot be read (logged).
+	 */
+	private function wholeChild(ObjectEntity $child): ?ObjectEntity {
+		if (($child instanceof PartialObjectEntity) === false) {
+			return $child;
+		}
+
+		try {
+			$found = $this->sources->lookup->magicMapper->findAcrossAllSources(identifier: (string)$child->getUuid());
+		} catch (Throwable $e) {
+			$this->log->logger->warning(
+				message: '[ObjectOwnershipService] Could not read a child record',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $child->getUuid(), 'exception' => get_class($e)]
+			);
+			return null;
+		}
+
+		$object = ($found['object'] ?? null);
+		if (($object instanceof ObjectEntity) === false || ($object instanceof PartialObjectEntity) === true) {
+			return null;
+		}
+
+		return $object;
+	}//end wholeChild()
 
 	/**
 	 * Carry a handover to one child, or null when that failed (logged).
@@ -836,6 +1027,114 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			);
 		}
 	}//end requireAdmin()
+
+	/**
+	 * Require that the caller may assign the record, and its family on a cascade.
+	 *
+	 * A trusted system operation and an administrator pass, unchanged. Anybody
+	 * else needs a signed-in session and `assign` on the record ({@see mayAssign()}).
+	 *
+	 * @param OwnedRecord $record  The record being assigned.
+	 * @param bool        $cascade Whether the assignment carries to the record's children.
+	 *
+	 * @throws NotAuthorizedException When the caller may not assign the record or a child it would carry.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The cascade is a property of the request.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	private function requireAssignRight(OwnedRecord $record, bool $cascade): void {
+		if (SystemOperationContext::isActive() === true
+			|| in_array(needle: self::ADMIN_GROUP, haystack: $this->callerGroups(), strict: true) === true
+		) {
+			return;
+		}
+
+		// Where nobody declared `assign`, the refusal is the one callers have
+		// always had: the right is still an administrator's.
+		if ($this->callerUid() === null || $this->assignDeclared(schema: $record->schema, object: $record->object) === false) {
+			throw new NotAuthorizedException(
+				message: 'Only an administrator may assign a record to somebody else'
+			);
+		}
+
+		if ($this->mayAssign(schema: $record->schema, object: $record->object) === false) {
+			throw new NotAuthorizedException(
+				message: 'Only an administrator, or somebody holding assign on this record, may assign it to somebody else'
+			);
+		}
+
+		if ($cascade === true) {
+			$this->requireRightOnFamily(record: $record, action: 'assign');
+		}
+	}//end requireAssignRight()
+
+	/**
+	 * Whether the rules admit the caller to `assign` on a record.
+	 *
+	 * Only a block that DECLARES `assign` (on the schema, or on the object, which
+	 * replaces the schema's key; {@see assignDeclared()}) can admit anybody: an
+	 * absent or empty `assign` leaves it to administrators. Without that, a schema with no block, which
+	 * the rule chain treats as open, would hand every caller the right to give
+	 * records away. A declared verb is then decided by the one evaluator, so
+	 * denies, private scopes and object grants apply as for every other verb.
+	 *
+	 * @param Schema       $schema The record's schema.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return bool True when `assign` is declared and the caller holds it; false otherwise, and on any error.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	private function mayAssign(Schema $schema, ObjectEntity $object): bool {
+		if ($this->assignDeclared(schema: $schema, object: $object) === false) {
+			return false;
+		}
+
+		try {
+			return $this->guards->permissions->hasPermission(
+				schema: $schema,
+				action: 'assign',
+				objectOwner: $object->getOwner(),
+				object: $object
+			);
+		} catch (Throwable $e) {
+			// Fail closed: a verdict that could not be reached is not a yes.
+			$this->log->logger->warning(
+				message: '[ObjectOwnershipService] Could not decide whether the caller may assign; refusing',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return false;
+		}
+	}//end mayAssign()
+
+	/**
+	 * Whether the record's cascaded authorization block declares `assign`.
+	 *
+	 * @param Schema       $schema The record's schema.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return bool True when `assign` names at least one rule; false when absent, empty, malformed or unreadable.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
+	 */
+	private function assignDeclared(Schema $schema, ObjectEntity $object): bool {
+		try {
+			$authorization = $this->guards->permissions->resolveAuthorization(schema: $schema, object: $object);
+		} catch (Throwable $e) {
+			$this->log->logger->warning(
+				message: '[ObjectOwnershipService] Could not read the authorization block; assign stays with administrators',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return false;
+		}
+
+		$declared = ($authorization['assign'] ?? null);
+
+		return is_array($declared) === true && $declared !== [];
+	}//end assignDeclared()
 
 	/**
 	 * Require that a named new owner is a real user.

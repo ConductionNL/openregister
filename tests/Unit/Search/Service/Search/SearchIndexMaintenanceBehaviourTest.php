@@ -50,6 +50,7 @@ use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
  * @uses   \OCA\OpenRegister\Search\Service\Search\SearchIndexPass
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 class SearchIndexMaintenanceBehaviourTest extends TestCase
 {

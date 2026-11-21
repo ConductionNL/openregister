@@ -28,6 +28,7 @@ use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
@@ -175,9 +176,7 @@ class SyncConfigurationsJob extends TimedJob {
 		try {
 			$this->configurationMapper->updateSyncStatus(
 				id: $configuration->getId(),
-				status: 'failed',
-				syncDate: new DateTime(),
-				_message: $error->getMessage()
+				result: new ConfigurationSyncResult(status: 'failed', syncDate: new DateTime(), message: $error->getMessage())
 			);
 		} catch (Exception $statusError) {
 			$this->logError(message: 'Failed to update sync status: ' . $statusError->getMessage());
@@ -395,8 +394,7 @@ class SyncConfigurationsJob extends TimedJob {
 	private function markSynced(Configuration $configuration): void {
 		$this->configurationMapper->updateSyncStatus(
 			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
+			result: new ConfigurationSyncResult(status: 'success', syncDate: new DateTime())
 		);
 	}//end markSynced()
 

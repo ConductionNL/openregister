@@ -58,6 +58,16 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Query\PropertyReadGuard::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Query\RelatedRowAccess::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicTableSql::class)]
+#[UsesClass(\OCA\OpenRegister\Db\SchemaCatalog::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Query\RelatedRowLookups::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Search\SearchGrammar::class)]
 class MagicMapperFilterReadableUuidsTest extends TestCase {
 
 	private IDBConnection&MockObject $db;

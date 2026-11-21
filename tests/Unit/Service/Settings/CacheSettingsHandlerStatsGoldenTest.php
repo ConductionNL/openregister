@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Settings\CacheSettingsHandler
+ * @uses \OCA\OpenRegister\Service\Settings\SchemaCacheClearers
  */
 class CacheSettingsHandlerStatsGoldenTest extends TestCase {
 

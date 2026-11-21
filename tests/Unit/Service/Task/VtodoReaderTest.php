@@ -7,13 +7,14 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
-use OCA\OpenRegister\Service\TaskLocation;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\VtodoReader;
 use PHPUnit\Framework\TestCase;
 use Sabre\VObject\Reader;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\VtodoReader
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
  */
 class VtodoReaderTest extends TestCase {
 

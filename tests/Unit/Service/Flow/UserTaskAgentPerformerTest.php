@@ -69,6 +69,17 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
+ * @uses \OCA\OpenRegister\Event\AgentRunDispatch
+ * @uses \OCA\OpenRegister\Event\AgentRunInstruction
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
  */
 final class UserTaskAgentPerformerTest extends TestCase {
 

@@ -49,6 +49,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Connection\ConnectionReporter
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Service\Connection\ConnectionStatusReport
+ * @uses   \OCA\OpenRegister\Service\Connection\ConnectionStatusReport
  */
 class ConnectionReporterTest extends TestCase {
 
@@ -236,6 +238,33 @@ class ConnectionReporterTest extends TestCase {
 		$this->assertCount(expectedCount: 6, haystack: $this->sent);
 		$this->assertContains(needle: 'limited', haystack: ConnectionReporter::STATUSES);
 	}//end testStatusMustBeOneOfTheSix()
+
+	/**
+	 * Each refusal logs its exact message and context, and the key is checked before the status.
+	 *
+	 * @return void
+	 */
+	public function testEachRefusalLogsItsExactMessageAndContext(): void {
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, $context];
+			}
+		);
+		$reporter = $this->reporter();
+
+		$this->assertFalse(condition: $reporter->report(key: 'llm', status: 'degraded', message: 'm'));
+		$this->assertFalse(condition: $reporter->report(key: 'whatsapp', status: 'degraded'));
+
+		$this->assertSame(
+			expected: [
+				['[ConnectionReporter] Refusing to report an unknown connection status', ['key' => 'llm', 'status' => 'degraded']],
+				['[ConnectionReporter] Refusing to report an unknown connection key', ['key' => 'whatsapp']],
+			],
+			actual: $warnings
+		);
+		$this->assertSame(expected: [], actual: $this->sent);
+	}//end testEachRefusalLogsItsExactMessageAndContext()
 
 	/**
 	 * A listener that throws never escapes into the request that reported.

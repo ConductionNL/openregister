@@ -30,6 +30,19 @@ use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
  * Pins the observable output of every public MetadataHydrationHandler method.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\LanguageKeyedMap
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FieldValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\LanguageMapText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MapFilterDefinition
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MetadataField
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationPropertyShape
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UuidReference
  */
 class MetadataHydrationHandlerGoldenTest extends TestCase {
 

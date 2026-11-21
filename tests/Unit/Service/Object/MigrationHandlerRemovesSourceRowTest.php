@@ -10,7 +10,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -51,8 +51,32 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
  * @uses   \OCA\OpenRegister\Service\Object\MoveObject
  * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class MigrationHandlerRemovesSourceRowTest extends TestCase {
 
@@ -273,7 +297,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator()), auditTrail: $audit),
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(recording: new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($mapper, $audit, $logger, ($this->guards ?? $this->createStub(IEventDispatcher::class))), validator: $this->validator(), relations: $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class)), auditTrail: $audit),
 			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);
@@ -331,7 +355,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->auditEntries[] = [$action, $context];
 				return new AuditTrail();

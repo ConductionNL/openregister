@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -48,6 +48,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\LockStores
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 final class LockHandlerUpdatePermissionTest extends TestCase {
 

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;

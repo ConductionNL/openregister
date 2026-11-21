@@ -42,6 +42,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
  */
 class BulkControllerWholeTableDeleteTest extends TestCase {
 
@@ -89,7 +93,7 @@ class BulkControllerWholeTableDeleteTest extends TestCase {
 		$objects->method('setSchema')->willReturnSelf();
 		$objects->method('getRegister')->willReturn(1);
 		$objects->method('getSchema')->willReturn(2);
-		$objects->method('deleteObjectsBySchema')->willReturnCallback(
+		$objects->method('deleteObjectsOfTable')->willReturnCallback(
 			function (): array {
 				$this->deletes[] = 'schema';
 				return ['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 2];

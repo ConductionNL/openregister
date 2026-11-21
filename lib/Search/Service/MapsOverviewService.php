@@ -2,7 +2,7 @@
 
 /**
  * MapsOverviewService — page-level multi-object MAP render surface, the
- * maps equivalent of {@see AnalyticsSeriesServiceInterface}.
+ * maps equivalent of the analytics series service.
  *
  * Where the per-object {@see \OCA\OpenRegister\Service\Integration\Providers\MapsProvider}
  * lists the locations linked to ONE object (a sidebar tab), this service
@@ -13,8 +13,8 @@
  *   1. declareOverview() — declares a `map` page widget on the
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
- *      can discover and place the map surface. Mirrors
- *      AnalyticsSeriesServiceInterface::register()'s widget declaration.
+ *      can discover and place the map surface. Mirrors the widget
+ *      declaration of the analytics series registration.
  *   2. queryPoints() — resolves the marker point set for a register/schema
  *      (+ optional filters) by running the CANONICAL OpenRegister read
  *      path with `_rbac: true`, then extracting `{id,label,lat,lng,...}`
@@ -51,9 +51,7 @@ namespace OCA\OpenRegister\Search\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
-use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
-use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -366,6 +364,24 @@ class MapsOverviewService {
 			return null;
 		}
 
+		return $this->markerIdentity(row: $row, feature: $feature) + [
+			'lat' => $latLng['lat'],
+			'lng' => $latLng['lng'],
+			'register' => (string)$source->register,
+			'schema' => (string)$source->schema,
+			'geometry' => ($feature['geometry'] ?? null),
+		];
+	}//end pointFromRow()
+
+	/**
+	 * A marker's id and label: the row's id, else its `@self` id, else the feature's.
+	 *
+	 * @param array<string,mixed> $row     The rendered object row.
+	 * @param array<string,mixed> $feature The row's GeoJSON feature.
+	 *
+	 * @return array{id: ?string, label: string}
+	 */
+	private function markerIdentity(array $row, array $feature): array {
 		$self = ($row['@self'] ?? []);
 		$id = ($row['id'] ?? ($self['id'] ?? ($feature['id'] ?? null)));
 		$label = $this->deriveLabel(row: $row, id: $id);
@@ -378,13 +394,8 @@ class MapsOverviewService {
 		return [
 			'id' => $idString,
 			'label' => $label,
-			'lat' => $latLng['lat'],
-			'lng' => $latLng['lng'],
-			'register' => (string)$source->register,
-			'schema' => (string)$source->schema,
-			'geometry' => ($feature['geometry'] ?? null),
 		];
-	}//end pointFromRow()
+	}//end markerIdentity()
 
 	/**
 	 * Reduce a GeoJSON geometry to a single representative [lat,lng].
