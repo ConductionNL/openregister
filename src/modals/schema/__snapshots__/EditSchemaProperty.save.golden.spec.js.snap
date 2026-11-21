@@ -18,6 +18,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: blank title only, null orde
     "visible": true,
     "hideOnCollection": false,
     "facetable": true,
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -87,6 +89,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: date histogram without form
       "interval": "day"
      }
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -170,6 +174,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: date range with custom rang
       ]
      }
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -239,6 +245,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: date range with default ran
       "useDefaultRanges": true
      }
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -308,6 +316,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: date range without defaults
       "useDefaultRanges": false
      }
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -374,6 +384,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: facet off, edit with rename
     "visible": true,
     "hideOnCollection": false,
     "facetable": false,
+    "indexed": false,
+    "searchable": false,
     "order": 2,
     "minLength": 1.5,
     "maxLength": null,
@@ -439,6 +451,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: facet on with the default c
     "visible": true,
     "hideOnCollection": false,
     "facetable": true,
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -502,6 +516,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: facet type set on a non-dat
     "visible": true,
     "hideOnCollection": false,
     "facetable": true,
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -572,6 +588,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: facet with title, descripti
       "format": "ww"
      }
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -640,6 +658,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: not aggregated, unparseable
      "description": null,
      "order": null
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -701,6 +721,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: not required but no require
     "visible": true,
     "hideOnCollection": false,
     "facetable": true,
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -767,6 +789,8 @@ exports[`EditSchemaProperty addSchemaProperty saves: other facet type on a date 
      "order": null,
      "type": "terms"
     },
+    "indexed": false,
+    "searchable": false,
     "order": null,
     "minLength": null,
     "maxLength": null,
@@ -873,6 +897,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation without type
  "facetFormat": "",
  "facetUseDefaultRanges": true,
  "facetCustomRanges": [],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": true,
  "calculationType": "string",
  "calculationExpression": "null",
@@ -896,6 +921,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation without type
   "visible": true,
   "hideOnCollection": false,
   "facetable": false,
+  "indexed": false,
+  "searchable": false,
   "order": 4,
   "minLength": 2,
   "maxLength": 10,
@@ -1103,6 +1130,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation, facetable t
  "facetFormat": "",
  "facetUseDefaultRanges": true,
  "facetCustomRanges": [],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": true,
  "calculationType": "number",
  "calculationExpression": "{\\n  \\"+\\": [\\n    1,\\n    2\\n  ]\\n}",
@@ -1126,6 +1154,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation, facetable t
   "visible": true,
   "hideOnCollection": false,
   "facetable": true,
+  "indexed": false,
+  "searchable": false,
   "order": 0,
   "minLength": 0,
   "maxLength": 0,
@@ -1353,6 +1383,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with date o
    "to": ""
   }
  ],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": false,
  "calculationType": "string",
  "calculationExpression": "",
@@ -1400,6 +1431,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with date o
     ]
    }
   },
+  "indexed": false,
+  "searchable": false,
   "order": 0,
   "minLength": 0,
   "maxLength": 0,
@@ -1602,6 +1635,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with option
  "facetFormat": "",
  "facetUseDefaultRanges": true,
  "facetCustomRanges": [],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": false,
  "calculationType": "string",
  "calculationExpression": "",
@@ -1629,6 +1663,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with option
    "order": 7,
    "options": {}
   },
+  "indexed": false,
+  "searchable": false,
   "order": 0,
   "minLength": 0,
   "maxLength": 0,
@@ -1831,6 +1867,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config without opt
  "facetFormat": "",
  "facetUseDefaultRanges": true,
  "facetCustomRanges": [],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": false,
  "calculationType": "string",
  "calculationExpression": "",
@@ -1856,6 +1893,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config without opt
   "facetable": {
    "order": null
   },
+  "indexed": false,
+  "searchable": false,
   "order": 0,
   "minLength": 0,
   "maxLength": 0,
@@ -2058,6 +2097,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: no property key 1`] = `
  "facetFormat": "",
  "facetUseDefaultRanges": true,
  "facetCustomRanges": [],
+ "textSearchIndexAvailable": null,
  "calculationEnabled": false,
  "calculationType": "string",
  "calculationExpression": "",
@@ -2081,6 +2121,8 @@ exports[`EditSchemaProperty initializeSchemaItem loads: no property key 1`] = `
   "visible": true,
   "hideOnCollection": false,
   "facetable": true,
+  "indexed": false,
+  "searchable": false,
   "order": 0,
   "minLength": 0,
   "maxLength": 0,

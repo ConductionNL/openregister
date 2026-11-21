@@ -198,6 +198,18 @@ interface MagicTableMaintenanceInterface {
 	public function tableIndexes(Register $register, Schema $schema): array;
 
 	/**
+	 * Whether this instance can build a text-search (trigram) index on a property.
+	 *
+	 * True only on PostgreSQL with the pg_trgm extension installed; a property's
+	 * `searchable` flag creates no index anywhere else.
+	 *
+	 * @return bool True when a trigram index can be built.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-the-property-editor-offers-both-index-kinds
+	 */
+	public function canBuildTextSearchIndex(): bool;
+
+	/**
 	 * Drop table
 	 *
 	 * @param string $tableName The table name to drop

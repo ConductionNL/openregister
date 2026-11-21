@@ -2,7 +2,7 @@
 
 exports[`default shapes golden hands out fresh copies 1`] = `
 [
-  "{"description":"","title":"","type":"string","format":"","pattern":"","default":"","behavior":"","required":false,"deprecated":false,"visible":true,"hideOnCollection":false,"facetable":true,"order":0,"minLength":0,"maxLength":0,"example":"","immutable":false,"minimum":0,"maximum":0,"multipleOf":0,"exclusiveMin":false,"exclusiveMax":false,"minItems":0,"maxItems":0,"cascadeDelete":false,"inversedBy":"","$ref":"","register":"","writeBack":false,"removeAfterWriteBack":false,"items":{"cascadeDelete":false,"$ref":"","type":"","inversedBy":"","register":"","writeBack":false,"removeAfterWriteBack":false,"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""}},"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""},"fileConfiguration":{"handling":"ignore","allowedMimeTypes":[],"location":"","maxSize":0},"oneOf":[]}",
+  "{"description":"","title":"","type":"string","format":"","pattern":"","default":"","behavior":"","required":false,"deprecated":false,"visible":true,"hideOnCollection":false,"facetable":true,"indexed":false,"searchable":false,"order":0,"minLength":0,"maxLength":0,"example":"","immutable":false,"minimum":0,"maximum":0,"multipleOf":0,"exclusiveMin":false,"exclusiveMax":false,"minItems":0,"maxItems":0,"cascadeDelete":false,"inversedBy":"","$ref":"","register":"","writeBack":false,"removeAfterWriteBack":false,"items":{"cascadeDelete":false,"$ref":"","type":"","inversedBy":"","register":"","writeBack":false,"removeAfterWriteBack":false,"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""}},"objectConfiguration":{"handling":"nested-object","schema":"","queryParams":""},"fileConfiguration":{"handling":"ignore","allowedMimeTypes":[],"location":"","maxSize":0},"oneOf":[]}",
   "{"overview":{"totalCacheSize":0,"totalCacheEntries":0,"overallHitRate":0,"averageResponseTime":0,"cacheEfficiency":0},"services":{"object":{"entries":0,"hits":0,"requests":0,"memoryUsage":0},"schema":{"entries":0,"hits":0,"requests":0,"memoryUsage":0},"facet":{"entries":0,"hits":0,"requests":0,"memoryUsage":0}},"distributed":{"type":"unknown","backend":"Unknown","available":false},"performance":{"averageHitTime":0,"averageMissTime":0,"performanceGain":0,"optimalHitRate":85,"currentTrend":"unknown"},"names":{"cache_size":0,"hit_rate":0,"hits":0,"misses":0,"warmups":0,"enabled":false},"lastUpdated":null,"unavailable":true,"errorMessage":"Loading..."}",
   "{"warnings":{"objectsWithoutOwner":0,"objectsWithoutOrganisation":0,"auditTrailsWithoutExpiry":0,"searchTrailsWithoutExpiry":0,"expiredAuditTrails":0,"expiredSearchTrails":0,"expiredObjects":0},"totals":{"totalObjects":0,"totalBlobObjects":0,"totalMagicObjects":0,"totalSize":0,"totalBlobSize":0,"totalMagicSize":0,"totalAuditTrails":0,"totalSearchTrails":0,"totalConfigurations":0,"totalDataAccessProfiles":0,"totalOrganisations":0,"totalRegisters":0,"totalSchemas":0,"totalSources":0,"totalWebhookLogs":0,"deletedObjects":0},"lastUpdated":null}",
 ]
@@ -75,6 +75,8 @@ exports[`default shapes golden keeps every default shape, in key order 1`] = `
  "visible": true,
  "hideOnCollection": false,
  "facetable": true,
+ "indexed": false,
+ "searchable": false,
  "order": 0,
  "minLength": 0,
  "maxLength": 0,
