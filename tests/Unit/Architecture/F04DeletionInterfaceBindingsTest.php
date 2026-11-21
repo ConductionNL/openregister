@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
 use OCA\OpenRegister\Service\Deletion\DeletionWindow;
@@ -43,7 +43,7 @@ final class F04DeletionInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string|null, 2: string}>
 	 */
 	private const HIDDEN = [
-		DeletedObjectAuthorizer::class => [DeletedObjectAuthorizerInterface::class, ContractBindings::class, 'Service'],
+		DeletedObjectAuthorizer::class => [DeletedObjectAuthorizerInterface::class, CoreServiceBindings::class, 'Service'],
 		DeletionWindow::class => [DeletionWindowInterface::class, null, 'Service'],
 		DestructionScope::class => [DestructionActionInterface::class, null, 'Service'],
 	];
