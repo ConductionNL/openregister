@@ -4623,3 +4623,4 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
