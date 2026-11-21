@@ -242,3 +242,14 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity fails for ~79 of 82 data sets; the actual entity has one extra field.
 - Cause: tests/Unit/Db/MagicMapper/fixtures/row-to-entity.php pins every entity property positionally.
 - Fix: re-record by calling the test's public runCase() for each cases() entry and var_export into the fixture (keep its header); the diff must be only the new field (see #10239).
+
+## Schema-save check conflicts with main's runSlots/accessSteps (SchemaMapper)
+- Symptom: conflict in SchemaMapper where main has $this->runSlots(steps: $this->*Steps(...)) and the PR adds a $access->checkX() line.
+- Fix: take main's call; add a SchemaDeclarationOrder constant between its neighbours (e.g. 355), add the step to the matching *Steps() array, add the name to SchemaDeclarationOrderTest::testTheSlotsRunInThisOrder.
+
+## Annotation key conflict in Db/Schema/AnnotationVocabulary.php
+- Cause: main lists annotation keys as Schema::*_ANNOTATION constants; Db may not import Service classes.
+- Fix: add the key as a Schema constant, point the Service class's ANNOTATION at it, list the Schema constant.
+
+## Person-link events return ContactLinkInterface on main
+- Fix: same as the organisation entry: instanceof Db\\ContactLink, skip otherwise, add a test with a createMock(ContactLinkInterface).
