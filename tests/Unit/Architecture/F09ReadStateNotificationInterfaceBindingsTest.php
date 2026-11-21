@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\NotificationsServiceBindings;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
@@ -56,7 +57,7 @@ final class F09ReadStateNotificationInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		ReadStateService::class => [ReadStateServiceInterface::class, ContractBindings::class],
+		ReadStateService::class => [ReadStateServiceInterface::class, CoreServiceBindings::class],
 		ReferencedAddressNotifier::class => [ReferencedAddressNotifierInterface::class, NotificationsServiceBindings::class],
 		NotificationsAnnotationInstaller::class => [NotificationsAnnotationInstallerInterface::class, ContractBindings::class],
 	];
