@@ -572,6 +572,133 @@
                         "example": "/index.php/apps/openregister/api/objects/zaken/zaak/42/files"
                     }
                 }
+            },
+            "UploadSessionOpenRequest": {
+                "type": "object",
+                "description": "The file an upload in parts will deliver.",
+                "required": [
+                    "name",
+                    "size",
+                    "sha256"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "mail-export.mbox"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "The file size in bytes."
+                    },
+                    "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{64}$",
+                        "description": "The SHA-256 of the whole file, checked on completion."
+                    }
+                }
+            },
+            "UploadSessionPlan": {
+                "type": "object",
+                "description": "An upload session and its part boundaries. `partSize` comes from the setting `upload.partSizeBytes` (default 10485760, 1 MiB to 100 MiB); every part but the last is exactly that long.",
+                "required": [
+                    "uploadId",
+                    "partSize",
+                    "partCount",
+                    "parts",
+                    "expiresAt"
+                ],
+                "properties": {
+                    "uploadId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "partSize": {
+                        "type": "integer",
+                        "example": 10485760
+                    },
+                    "partCount": {
+                        "type": "integer"
+                    },
+                    "parts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "n",
+                                "start",
+                                "end"
+                            ],
+                            "properties": {
+                                "n": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "start": {
+                                    "type": "integer",
+                                    "description": "First byte of the part, from 0."
+                                },
+                                "end": {
+                                    "type": "integer",
+                                    "description": "Last byte of the part, inclusive."
+                                }
+                            }
+                        }
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When the unfinished session is removed; every part moves it on."
+                    }
+                }
+            },
+            "UploadSessionStatus": {
+                "description": "The plan plus what has arrived.",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/UploadSessionPlan"
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "size",
+                            "sha256",
+                            "received",
+                            "missing",
+                            "complete"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "size": {
+                                "type": "integer"
+                            },
+                            "sha256": {
+                                "type": "string"
+                            },
+                            "received": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "description": "The part numbers received."
+                            },
+                            "missing": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "description": "The part numbers still to send."
+                            },
+                            "complete": {
+                                "type": "boolean",
+                                "description": "True when every part has arrived; the file exists only after completion."
+                            }
+                        }
+                    }
+                ]
             }
         },
         "headers": {
@@ -3033,6 +3160,629 @@
                                                     "type": "string"
                                                 }
                                             }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/objects/{register}/{schema}/{id}/uploads": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "uploads-open",
+                "summary": "Open an upload in parts",
+                "description": "Opens an upload session for a declared name, size and SHA-256 and states the part boundaries. Parts are kept in the app data store, never in the object folder, until the upload is completed; an unfinished session expires after `upload.sessionTtl` (default `PT24H`) and is removed by an hourly job. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadSessionOpenRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The session and its plan.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionPlan"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing name, a size that is not positive, or a SHA-256 that is not 64 hex digits.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/objects/{register}/{schema}/{id}/uploads/{uploadId}": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "uploads-status",
+                "summary": "Read what an upload has received",
+                "description": "Lists the received and missing parts and whether the upload is complete. A client whose connection broke reads this and sends only the missing parts. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The session status.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionStatus"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/objects/{register}/{schema}/{id}/uploads/{uploadId}/parts/{n}": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                {
+                    "name": "n",
+                    "in": "path",
+                    "required": true,
+                    "description": "The part number, from 1 to `partCount`.",
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "uploads-part",
+                "summary": "Send one part",
+                "description": "Stores part n. The body is the raw bytes of the part and its length must be exactly the length of the part's stated range. Every part moves the session expiry on. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "type": "string",
+                                "format": "binary"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The session status after the part.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionStatus"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A part number outside the plan, or a body whose length differs from the part's range.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/objects/{register}/{schema}/{id}/uploads/{uploadId}/complete": {
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "uploads-complete",
+                "summary": "Complete an upload",
+                "description": "Assembles the parts in order, verifies the declared size and SHA-256, runs the same upload checks as a single-request upload and creates the file on the object through the same path. Anything missing or mismatched is refused and no file is created; the parts stay for a retry until the session expires. On success the parts and the session are removed. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The upload checks refused the assembled file.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Parts are missing (named), the assembled size or SHA-256 differs from the declared one, or the object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
                                         }
                                     ]
                                 }
@@ -5727,6 +6477,681 @@
                                                     "type": "string"
                                                 }
                                             }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/uploads": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "uploads-open-unversioned",
+                "summary": "Open an upload in parts",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/uploads`, which answers the same. Opens an upload session for a declared name, size and SHA-256 and states the part boundaries. Parts are kept in the app data store, never in the object folder, until the upload is completed; an unfinished session expires after `upload.sessionTtl` (default `PT24H`) and is removed by an hourly job. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadSessionOpenRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The session and its plan.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionPlan"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing name, a size that is not positive, or a SHA-256 that is not 64 hex digits.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/uploads/{uploadId}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "uploads-status-unversioned",
+                "summary": "Read what an upload has received",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/uploads/{uploadId}`, which answers the same. Lists the received and missing parts and whether the upload is complete. A client whose connection broke reads this and sends only the missing parts. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The session status.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionStatus"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/uploads/{uploadId}/parts/{n}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                {
+                    "name": "n",
+                    "in": "path",
+                    "required": true,
+                    "description": "The part number, from 1 to `partCount`.",
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "uploads-part-unversioned",
+                "summary": "Send one part",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/uploads/{uploadId}/parts/{n}`, which answers the same. Stores part n. The body is the raw bytes of the part and its length must be exactly the length of the part's stated range. Every part moves the session expiry on. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "type": "string",
+                                "format": "binary"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The session status after the part.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadSessionStatus"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A part number outside the plan, or a body whose length differs from the part's range.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/uploads/{uploadId}/complete": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "uploadId",
+                    "in": "path",
+                    "required": true,
+                    "description": "The upload id the session was opened with.",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "uploads-complete-unversioned",
+                "summary": "Complete an upload",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/uploads/{uploadId}/complete`, which answers the same. Assembles the parts in order, verifies the declared size and SHA-256, runs the same upload checks as a single-request upload and creates the file on the object through the same path. Anything missing or mismatched is refused and no file is created; the parts stay for a retry until the session expires. On success the parts and the session are removed. Auth posture: `#[NoAdminRequired]`, with the object update check (`addFiles`) and the session owner check run in the method.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The upload checks refused the assembled file.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The caller may read the object but not add files to it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The object, or the upload session, is not one the caller can reach. A session is reachable only by the user who opened it, on its own object, before it expires.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Parts are missing (named), the assembled size or SHA-256 differs from the declared one, or the object is frozen or archived.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
                                         }
                                     ]
                                 }

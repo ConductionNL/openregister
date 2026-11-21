@@ -321,12 +321,12 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testFileDoorRecordsTheChangedKey(): void {
-		$this->store['fileManagement'] = json_encode(['maxFileSize' => 100]);
+		$this->store['fileManagement'] = json_encode(['chunkSize' => 100]);
 
 		$handler = new FileSettingsHandler($this->appConfig, $this->recorder());
-		$handler->updateFileSettingsOnly(['maxFileSize' => 200]);
+		$handler->updateFileSettingsOnly(['chunkSize' => 200]);
 
-		$this->assertSame([100, 200], $this->lastChange('fileManagement.maxFileSize'));
+		$this->assertSame([100, 200], $this->lastChange('fileManagement.chunkSize'));
 	}//end testFileDoorRecordsTheChangedKey()
 
 }//end class

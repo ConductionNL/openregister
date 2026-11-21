@@ -43,6 +43,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\EntityRelation
  * @uses \OCA\OpenRegister\Db\GdprEntity
  * @uses \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextSearchedMarker
  * @uses \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
  * @uses \OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup
  * @uses   \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
@@ -62,6 +63,7 @@ final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 			[
 				'fileId' => 7, 'extractionStatus' => 'none', 'chunkCount' => 0, 'entityCount' => 0, 'riskLevel' => 'none',
 				'extractedAt' => null, 'entities' => [], 'anonymized' => false, 'anonymizedAt' => null, 'anonymizedFileId' => null,
+				'textSearched' => false,
 			],
 			$service->getExtractionStatus(7)
 		);
@@ -79,6 +81,7 @@ final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 			[
 				'fileId' => 7, 'extractionStatus' => 'completed', 'chunkCount' => 3, 'entityCount' => 0, 'riskLevel' => 'none',
 				'extractedAt' => null, 'entities' => [], 'anonymized' => false, 'anonymizedAt' => null, 'anonymizedFileId' => null,
+				'textSearched' => true,
 			],
 			$service->getExtractionStatus(7)
 		);
@@ -102,11 +105,33 @@ final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 			[
 				'fileId' => 7, 'extractionStatus' => 'completed', 'chunkCount' => 2, 'entityCount' => 4, 'riskLevel' => 'medium',
 				'extractedAt' => date('c', 1700000000), 'entities' => [['type' => 'PERSON', 'count' => 2], ['type' => 'EMAIL', 'count' => 1]],
-				'anonymized' => true, 'anonymizedAt' => null, 'anonymizedFileId' => null,
+				'anonymized' => true, 'anonymizedAt' => null, 'anonymizedFileId' => null, 'textSearched' => true,
 			],
 			$service->getExtractionStatus(7)
 		);
 	}//end testEntitiesAreCountedByType()
+
+	/**
+	 * A file above the extraction ceiling has its metadata chunk only: its status
+	 * says it was skipped, with the ceiling, and not text-searched (REQ-LFH-001).
+	 *
+	 * @return void
+	 */
+	public function testAFileAboveTheCeilingStatesItWasNotTextSearched(): void {
+		$metadata = new Chunk();
+		$metadata->setChunkIndex(-1);
+		$metadata->setTextContent((string) json_encode(['source_type' => 'file', 'extraction_status' => 'skipped-too-large', 'ceiling_bytes' => 52428800]));
+		$service = $this->service(chunks: 1, timestamp: null, relations: [], risk: 'none', chunkList: [$metadata]);
+
+		$this->assertSame(
+			[
+				'fileId' => 7, 'extractionStatus' => 'skipped-too-large', 'chunkCount' => 1, 'entityCount' => 0, 'riskLevel' => 'none',
+				'extractedAt' => null, 'entities' => [], 'anonymized' => false, 'anonymizedAt' => null, 'anonymizedFileId' => null,
+				'textSearched' => false, 'ceilingBytes' => 52428800,
+			],
+			$service->getExtractionStatus(7)
+		);
+	}//end testAFileAboveTheCeilingStatesItWasNotTextSearched()
 
 	/**
 	 * The service over a file with this many chunks, this timestamp and these [entityId, anonymized] relations.
@@ -115,12 +140,13 @@ final class FileSidebarExtractionStatusGoldenTest extends TestCase {
 	 * @param int|null                      $timestamp The latest chunk update.
 	 * @param array<int, array{int, bool}> $relations The file's entity relations.
 	 * @param string                        $risk      The risk level.
+	 * @param list<Chunk>|null              $chunkList The chunks themselves, instead of $chunks empty ones.
 	 *
 	 * @return FileSidebarService
 	 */
-	private function service(int $chunks, ?int $timestamp, array $relations, string $risk): FileSidebarService {
+	private function service(int $chunks, ?int $timestamp, array $relations, string $risk, ?array $chunkList = null): FileSidebarService {
 		$chunkMapper = $this->createMock(ChunkMapper::class);
-		$chunkMapper->method('findBySource')->willReturn(array_fill(0, $chunks, new Chunk()));
+		$chunkMapper->method('findBySource')->willReturn($chunkList ?? array_fill(0, $chunks, new Chunk()));
 		$chunkMapper->method('getLatestUpdatedTimestamp')->willReturn($timestamp);
 
 		$rows = [];
