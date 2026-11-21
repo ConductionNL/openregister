@@ -290,3 +290,4 @@
 2026-11-21T19:19:13Z dev=e158c36ac5 prs=8084,9823,9915,10075,10132,10139,10182,10188 Tests: 63660, Assertions: 223247, Errors: 7, Failures: 7, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-21T19:37:03Z dev=e158c36ac5 prs=9847,9869,10156,10190,10214,10232,10243 Tests: 63671, Assertions: 223449, Errors: 7, Failures: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=red
 2026-11-21T19:54:06Z dev=e158c36ac5 prs=10244,10247,10277,10300,10343,10358,10363 Tests: 63593, Assertions: 223165, Errors: 7, Failures: 8, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
+2026-11-21T20:16:36Z dev=e158c36ac5 prs=10239,10366,10395,10398,10427,10435,10483 Tests: 63542, Assertions: 222837, Errors: 7, Failures: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=red
