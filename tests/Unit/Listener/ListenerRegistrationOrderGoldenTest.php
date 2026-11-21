@@ -28,15 +28,18 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 257;
+	private const LISTENER_COUNT = 258;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
-	 * Last changed when SlotOccupantAuditListener took the three person-link events in the
-	 * Access slot (grants-that-follow-a-slot-a-relation-or-a-reason).
+	 * Last changed when Search started contributing the widget declaration check: one
+	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
+	 * listeners; every other registration is unchanged and in the same order. Then
+	 * SlotOccupantAuditListener took the three person-link events in the Access slot
+	 * (grants-that-follow-a-slot-a-relation-or-a-reason).
 	 */
-	private const SEQUENCE_SHA256 = '5c17a4bd817fa1f39fbff2659981f4ec9f00bfe3c627c9d5e01ab34bfe6f8d98';
+	private const SEQUENCE_SHA256 = '3afc1df7619ee5bf06c48223efd7f883cb24477879fc410d1ad8a4759bfd608a';
 
 	/**
 	 * The registration calls, in call order, with every argument.

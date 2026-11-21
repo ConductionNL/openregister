@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchemaInterface;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -51,7 +51,7 @@ final class F05SchemaImportInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		SchemaImportService::class => [SchemaImportServiceInterface::class, ContractBindings::class],
+		SchemaImportService::class => [SchemaImportServiceInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
