@@ -70,18 +70,26 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 		$views = $options['views'] ?? null;
 		$limit = $options['batch_size'] ?? 25;
 
-		$this->logger->debug(
-			message: '[ObjectVectorizationStrategy] Fetching objects',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'views' => $views,
-				'limit' => $limit,
-			]
-		);
+		$this->logFetching(views: $views, limit: $limit);
 
+		$objects = $this->asObjectList(result: $this->searchViewObjects(views: $views, limit: $limit));
+
+		$this->logFetchedCount(count: count($objects));
+
+		return $objects;
+	}//end fetchEntities()
+
+	/**
+	 * Search the database for one batch of objects, scoped to the given views.
+	 *
+	 * @param mixed $views The view IDs to apply, null for all objects
+	 * @param mixed $limit The batch size
+	 *
+	 * @return mixed The search result: a list of objects, or a count.
+	 */
+	private function searchViewObjects(mixed $views, mixed $limit): mixed {
 		// Get objects using ObjectService with view support.
-		$result = $this->objectService->searchObjects(
+		return $this->objectService->searchObjects(
 			query: [
 				'_limit' => $limit,
 				'_source' => 'database',
@@ -99,15 +107,52 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 			// that cannot be applied fails the run rather than silently widening it.
 			_viewScopeRequired: true
 		);
+	}//end searchViewObjects()
 
+	/**
+	 * The search result as a list of objects.
+	 *
+	 * @param mixed $result The search result
+	 *
+	 * @return array The objects, empty when the search returned a count.
+	 */
+	private function asObjectList(mixed $result): array {
 		// SearchObjects can return array|int, but we need array for vectorization (@var array $objects).
-		$objects = [];
 		if (is_array($result) === true) {
-			$objects = $result;
+			return $result;
 		}
 
-		$count = count($objects);
+		return [];
+	}//end asObjectList()
 
+	/**
+	 * Log the start of a fetch.
+	 *
+	 * @param mixed $views The view IDs to apply
+	 * @param mixed $limit The batch size
+	 *
+	 * @return void
+	 */
+	private function logFetching(mixed $views, mixed $limit): void {
+		$this->logger->debug(
+			message: '[ObjectVectorizationStrategy] Fetching objects',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'views' => $views,
+				'limit' => $limit,
+			]
+		);
+	}//end logFetching()
+
+	/**
+	 * Log how many objects a fetch returned.
+	 *
+	 * @param int $count The number of objects fetched
+	 *
+	 * @return void
+	 */
+	private function logFetchedCount(int $count): void {
 		$this->logger->debug(
 			message: '[ObjectVectorizationStrategy] Fetched objects',
 			context: [
@@ -116,9 +161,7 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 				'count' => $count,
 			]
 		);
-
-		return $objects;
-	}//end fetchEntities()
+	}//end logFetchedCount()
 
 	/**
 	 * Extract text from object by serializing it
@@ -133,10 +176,7 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 	 */
 	public function extractVectorizationItems($entity): array {
 		// Get object data.
-		$objectData = $entity->jsonSerialize();
-		if (is_array($entity) === true) {
-			$objectData = $entity;
-		}
+		$objectData = $this->objectDataOf(entity: $entity);
 
 		// Get vectorization config.
 		$config = $this->settingsService->getObjectSettingsOnly();
@@ -182,23 +222,65 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 	 *     }
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function prepareVectorMetadata($entity, array $item): array {
+		$objectData = $this->objectDataOf(entity: $entity);
+		$objectId = $this->objectIdOf(objectData: $objectData);
+
+		$this->logMetadataInput(objectData: $objectData, objectId: $objectId);
+
+		return [
+			'entity_type' => 'object',
+			'entity_id' => (string)$objectId,
+			'chunk_index' => 0,
+			'total_chunks' => 1,
+			'chunk_text' => substr($item['text'], 0, 500),
+			'additional_metadata' => $this->describingMetadata(objectData: $objectData, objectId: $objectId)
+				+ $this->placementMetadata(objectData: $objectData),
+		];
+	}//end prepareVectorMetadata()
+
+	/**
+	 * The object data of an entity: its serialization, or the array itself.
+	 *
+	 * @param mixed $entity ObjectEntity or object data array
+	 *
+	 * @return mixed The object data.
+	 */
+	private function objectDataOf($entity): mixed {
 		$objectData = $entity->jsonSerialize();
 		if (is_array($entity) === true) {
 			$objectData = $entity;
 		}
 
-		$objectId = 'unknown';
+		return $objectData;
+	}//end objectDataOf()
+
+	/**
+	 * The object's id, or 'unknown' when it has none.
+	 *
+	 * @param mixed $objectData Object data
+	 *
+	 * @return mixed The object id.
+	 */
+	private function objectIdOf(mixed $objectData): mixed {
 		if (($objectData['id'] ?? null) !== null) {
-			$objectId = $objectData['id'];
+			return $objectData['id'];
 		}
 
-		// DEBUG: Log what we're receiving.
+		return 'unknown';
+	}//end objectIdOf()
+
+	/**
+	 * Log the object data metadata is being prepared from.
+	 *
+	 * @param array $objectData Object data
+	 * @param mixed $objectId   The object id
+	 *
+	 * @return void
+	 */
+	private function logMetadataInput(array $objectData, mixed $objectId): void {
 		$this->logger->debug(
 			message: '[ObjectVectorizationStrategy] Preparing metadata',
 			context: [
@@ -211,7 +293,37 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 				'register_@self' => $objectData['@self']['register'] ?? 'none',
 			]
 		);
+	}//end logMetadataInput()
 
+	/**
+	 * The metadata that describes the object: id, title and description.
+	 *
+	 * @param array $objectData Object data
+	 * @param mixed $objectId   The object id
+	 *
+	 * @return array The describing metadata.
+	 */
+	private function describingMetadata(array $objectData, mixed $objectId): array {
+		$title = $this->titleOf(objectData: $objectData, objectId: $objectId);
+
+		return [
+			'object_id' => $objectId,
+			'object_title' => $title,
+			'title' => $title,
+			'name' => $title,
+			'description' => $this->descriptionOf(objectData: $objectData),
+		];
+	}//end describingMetadata()
+
+	/**
+	 * The object's title: a title field, else its first short string, else its id.
+	 *
+	 * @param array $objectData Object data
+	 * @param mixed $objectId   The object id
+	 *
+	 * @return mixed The title.
+	 */
+	private function titleOf(array $objectData, mixed $objectId): mixed {
 		// Extract title/name - check multiple possible fields.
 		$title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
 		if ($title === null) {
@@ -222,44 +334,46 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 			$title = 'Object #' . $objectId;
 		}
 
-		// Extract description - check common variants.
+		return $title;
+	}//end titleOf()
+
+	/**
+	 * The object's description, checking the common variants.
+	 *
+	 * @param array $objectData Object data
+	 *
+	 * @return mixed The description, '' when there is none.
+	 */
+	private function descriptionOf(array $objectData): mixed {
 		$description = $objectData['description'] ?? $objectData['_description'] ?? $objectData['Beschrijving'];
 		if ($description === null) {
 			$description = $objectData['beschrijving'] ?? $objectData['summary'] ?? $objectData['_summary'] ?? '';
 		}
 
-		// No "extract @self keys for logging" call here: extractSelfKeys() is
-		// pure, nothing consumed its result, and the metadata builder above
-		// already calls it for the '@self_keys' field that is actually stored.
+		return $description;
+	}//end descriptionOf()
 
-		// Extract register and schema IDs from multiple possible locations.
+	/**
+	 * Where the object lives: register, schema, uuid and uri, from the object or its @self block.
+	 *
+	 * @param array $objectData Object data
+	 *
+	 * @return array The placement metadata.
+	 */
+	private function placementMetadata(array $objectData): array {
 		$selfData = $objectData['@self'] ?? [];
 		$registerId = $objectData['_register'] ?? $objectData['register'] ?? $selfData['register'] ?? null;
 		$schemaId = $objectData['_schema'] ?? $objectData['schema'] ?? $selfData['schema'] ?? null;
-		$uuid = $objectData['uuid'] ?? $objectData['_uuid'] ?? $selfData['id'] ?? null;
-		$uri = $objectData['uri'] ?? $objectData['_uri'] ?? $selfData['uri'] ?? null;
 
 		return [
-			'entity_type' => 'object',
-			'entity_id' => (string)$objectId,
-			'chunk_index' => 0,
-			'total_chunks' => 1,
-			'chunk_text' => substr($item['text'], 0, 500),
-			'additional_metadata' => [
-				'object_id' => $objectId,
-				'object_title' => $title,
-				'title' => $title,
-				'name' => $title,
-				'description' => $description,
-				'register' => $registerId,
-				'register_id' => $registerId,
-				'schema' => $schemaId,
-				'schema_id' => $schemaId,
-				'uuid' => $uuid,
-				'uri' => $uri,
-			],
+			'register' => $registerId,
+			'register_id' => $registerId,
+			'schema' => $schemaId,
+			'schema_id' => $schemaId,
+			'uuid' => $objectData['uuid'] ?? $objectData['_uuid'] ?? $selfData['id'] ?? null,
+			'uri' => $objectData['uri'] ?? $objectData['_uri'] ?? $selfData['uri'] ?? null,
 		];
-	}//end prepareVectorMetadata()
+	}//end placementMetadata()
 
 	/**
 	 * Extract @self keys from object data
@@ -327,16 +441,7 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function getEntityIdentifier($entity) {
-		$objectData = $entity->jsonSerialize();
-		if (is_array($entity) === true) {
-			$objectData = $entity;
-		}
-
-		if (($objectData['id'] ?? null) !== null) {
-			return $objectData['id'];
-		}
-
-		return 'unknown';
+		return $this->objectIdOf(objectData: $this->objectDataOf(entity: $entity));
 	}//end getEntityIdentifier()
 
 	/**
@@ -352,24 +457,32 @@ class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterfac
 	private function serializeObject(array $object, array $config): string|false {
 		// TODO: Implement configurable serialization.
 		// For now, just JSON encode with pretty print for readability.
-		$includeMetadata = $config['includeMetadata'] ?? true;
-		$includeRelations = $config['includeRelations'] ?? true;
-		$maxNestingDepth = $config['maxNestingDepth'] ?? 10;
+		$this->logSerializing(object: $object, config: $config);
 
+		// Simple JSON serialization.
+		// Future enhancement: smart serialization based on schema.
+		return json_encode($object, JSON_PRETTY_PRINT);
+	}//end serializeObject()
+
+	/**
+	 * Log the object being serialized and the serialization options in effect.
+	 *
+	 * @param array $object Object data
+	 * @param array $config Vectorization configuration
+	 *
+	 * @return void
+	 */
+	private function logSerializing(array $object, array $config): void {
 		$this->logger->debug(
 			message: '[ObjectVectorizationStrategy] Serializing object',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'objectId' => $object['id'] ?? 'unknown',
-				'includeMetadata' => $includeMetadata,
-				'includeRelations' => $includeRelations,
-				'maxNestingDepth' => $maxNestingDepth,
+				'includeMetadata' => $config['includeMetadata'] ?? true,
+				'includeRelations' => $config['includeRelations'] ?? true,
+				'maxNestingDepth' => $config['maxNestingDepth'] ?? 10,
 			]
 		);
-
-		// Simple JSON serialization.
-		// Future enhancement: smart serialization based on schema.
-		return json_encode($object, JSON_PRETTY_PRINT);
-	}//end serializeObject()
+	}//end logSerializing()
 }//end class

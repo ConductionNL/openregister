@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -51,15 +52,17 @@ use UnexpectedValueException;
 /**
  * Turns an array field into one item per element.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
-class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 	/**
 	 * The step type.
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string {
 		return 'openregister.explode';
@@ -70,7 +73,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Explode');
@@ -81,7 +84,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t('Turn a list on the item into one item per entry, so later steps act on each.');
@@ -92,7 +95,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('openregister', 'app-dark.svg');
@@ -103,11 +106,42 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['path', 'as', 'keepRecord'];
 	}//end configKeys()
+
+	/**
+	 * The list to split into items, the field each element lands under, and whether the rest of the item comes along.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'path',
+				'label' => $this->l10n->t('List field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field on each item that holds a list, like "findings". Every element becomes an item of its own.'),
+				'required' => true,
+			],
+			[
+				'key' => 'as',
+				'label' => $this->l10n->t('Name each element'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field each new item carries its element under. Defaults to "item".'),
+			],
+			[
+				'key' => 'keepRecord',
+				'label' => $this->l10n->t('Keep the rest of the item'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('On by default: each new item also carries the fields of the item it came from.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject an explode that names no path.
@@ -118,7 +152,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When no path is named.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['path'] ?? '')) === '') {
@@ -147,7 +181,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function execute(FlowNodeCall $call): array {
 		$items = $call->items;
@@ -173,7 +207,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *   constructor every node uses; injecting a factory for it would add a
 	 *   dependency to describe a shape.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function explode(array $items, array $config): array {
 		$out = [];
@@ -197,7 +231,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function recordsFrom(array $json, array $config): array {
 		$under = (string)($config['as'] ?? 'item');
@@ -226,7 +260,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the path holds something other than a list.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function listAt(array $json, string $path): array {
 		$list = $this->valueAt(json: $json, path: $path);
@@ -252,7 +286,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 *
 	 * @return mixed The value, or null.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function valueAt(array $json, string $path) {
 		$value = $json;

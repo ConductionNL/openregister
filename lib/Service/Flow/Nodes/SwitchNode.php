@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+ * @spec openspec/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -41,7 +42,9 @@ use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree, SwitchNodeInterface {
+class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree, SwitchNodeInterface,
+	IFlowNodeConfigForm
+{
 	/**
 	 * The step type.
 	 *
@@ -88,11 +91,28 @@ class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys
 	 *
 	 * @return array<int, string> The accepted config keys — none.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return [];
 	}//end configKeys()
+
+	/**
+	 * A switch takes no configuration, and says so.
+	 *
+	 * An empty form, not an absent one: the editor shows "this node takes no
+	 * configuration" instead of a JSON pane over keys nothing reads.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// The conditions live on the outgoing edges, not on the node, so there is
+		// no key to describe.
+		return [];
+	}//end configForm()
 
 	/**
 	 * Nothing to validate on the node — the conditions live on its edges.
@@ -101,7 +121,7 @@ class SwitchNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	public function validateConfig(array $config): void {
 

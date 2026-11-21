@@ -55,7 +55,7 @@ use Throwable;
  * constructible, no `can()` method, `can()` throwing — is a refusal, and each
  * one is logged with the name that could not be resolved.
  *
- * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
  */
 class StoreActionAuthorizer {
 	/**
@@ -79,7 +79,7 @@ class StoreActionAuthorizer {
 	 *
 	 * @return bool True only when the leaf app's own matrix says yes.
 	 *
-	 * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
 	 */
 	public function permits(StoreActionCheck $check): bool {
 		$service = $this->leafService(check: $check);
@@ -169,7 +169,24 @@ class StoreActionAuthorizer {
 			return true;
 		}
 
-		foreach ($groups as $group) {
+		return $this->isInANamedPublishGroup(descriptor: $descriptor, uid: $uid);
+	}//end canPublish()
+
+	/**
+	 * Whether the user is in one of the descriptor's named publish groups.
+	 *
+	 * A named group that does not exist admits nobody, and is logged so
+	 * "nobody may publish" has a trace of why.
+	 *
+	 * @param StoreDescriptor $descriptor The consuming app's store descriptor.
+	 * @param string          $uid        The signed-in user's uid.
+	 *
+	 * @return bool True when an existing named group has the user as a member.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
+	 */
+	private function isInANamedPublishGroup(StoreDescriptor $descriptor, string $uid): bool {
+		foreach ($descriptor->namedPublishGroups() as $group) {
 			if ($this->groupManager->groupExists($group) === false) {
 				// A group nothing answers to admits nobody. Logged, so "nobody
 				// may publish" has a trace of why.
@@ -186,7 +203,7 @@ class StoreActionAuthorizer {
 		}
 
 		return false;
-	}//end canPublish()
+	}//end isInANamedPublishGroup()
 
 	/**
 	 * Log a refused install action with the reason it could not be decided.

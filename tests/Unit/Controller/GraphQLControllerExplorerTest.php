@@ -3,24 +3,13 @@
 /**
  * Contract tests for GraphQLController::explorer().
  *
- * Covers GET /api/graphql/explorer — the GraphiQL UI shell.
+ * Covers GET /api/graphql/explorer — the GraphiQL explorer page.
  *
- * The explorer is not a JSON endpoint: its contract is an HTML document whose
- * inline script is only executable because the response relaxes CSP for the
- * CDN that serves GraphiQL. A shell that renders but ships the wrong endpoint
- * URL, an unusable request token, or an un-nonced inline script is a broken
- * explorer that still returns 200 — so all three are asserted.
- *
- * ⚠ KNOWN OUTAGE ON NEXTCLOUD 34 — see testExplorerFatalsOnServersWithoutAllowEvalScript().
- * `appinfo/info.xml` declares `max-version="34"`, and Nextcloud 34 DELETED
- * `OCP\AppFramework\Http\EmptyContentSecurityPolicy::allowEvalScript()`, which
- * `explorer()` still calls. On such a server the endpoint throws a PHP `Error`
- * (which the AppFramework dispatcher does not catch — it only catches
- * `\Exception`) and answers 500. The tests below therefore branch on the
- * framework capability rather than pretending one answer covers both: on a
- * server that still has the method the full wire contract is asserted, and on
- * a server that does not, the outage itself is asserted as a tripwire so the
- * suite goes red the moment either side of the incompatibility is repaired.
+ * The explorer is bundled with the app (api-explorer-in-the-app, REQ-APIX-001):
+ * the page is a template that loads `openregister-graphqlExplorer.js` from the
+ * instance, and its policy is Nextcloud's default. So the response allows no
+ * outside script domain (no unpkg.com), no inline or eval script, and only the
+ * instance's own workers, which the bundled editor starts.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -30,11 +19,12 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @link https://OpenRegister.app
  *
  * @spec openspec/specs/graphql-api/spec.md
+ * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.3
  */
 
 declare(strict_types=1);
@@ -44,27 +34,14 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OC\Security\CSP\ContentSecurityPolicyNonceManager;
-use OC\Security\CSRF\CsrfToken;
-use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Search\Controller\GraphQLController;
 use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
-use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
-use OCP\IURLGenerator;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class GraphQLControllerExplorerTest extends TestCase {
-	/**
-	 * The URL the GraphiQL fetcher must post queries to.
-	 *
-	 * @var string
-	 */
-	private const EXECUTE_ROUTE = '/index.php/apps/openregister/api/graphql';
-
 	/**
 	 * The controller under test.
 	 *
@@ -72,173 +49,48 @@ class GraphQLControllerExplorerTest extends TestCase {
 	 */
 	private GraphQLController $controller;
 
-	/**
-	 * The mocked HTTP request.
-	 *
-	 * @var IRequest&MockObject
-	 */
-	private IRequest&MockObject $request;
-
-	/**
-	 * The mocked GraphQL execution service.
-	 *
-	 * @var GraphQLService&MockObject
-	 */
-	private GraphQLService&MockObject $graphQLService;
-
-	/**
-	 * The mocked URL generator used to link the execute route.
-	 *
-	 * @var IURLGenerator&MockObject
-	 */
-	private IURLGenerator&MockObject $urlGenerator;
-
-	/**
-	 * The mocked CSP nonce provider.
-	 *
-	 * @var ContentSecurityPolicyNonceManager&MockObject
-	 */
-	private ContentSecurityPolicyNonceManager&MockObject $nonceManager;
-
-	/**
-	 * The mocked CSRF token manager.
-	 *
-	 * @var CsrfTokenManager&MockObject
-	 */
-	private CsrfTokenManager&MockObject $csrfManager;
-
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->request = $this->createMock(IRequest::class);
-		$this->graphQLService = $this->createMock(GraphQLService::class);
-		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->nonceManager = $this->createMock(ContentSecurityPolicyNonceManager::class);
-		$this->csrfManager = $this->createMock(CsrfTokenManager::class);
-
-		$this->nonceManager->method('getNonce')->willReturn('test-nonce-value');
-
-		$token = $this->createMock(CsrfToken::class);
-		$token->method('getEncryptedValue')->willReturn('encrypted-request-token');
-		$this->csrfManager->method('getToken')->willReturn($token);
-
 		$this->controller = new GraphQLController(
-			$this->request,
-			new GraphQLControllerServices($this->graphQLService, $this->urlGenerator, $this->nonceManager, $this->csrfManager)
+			$this->createMock(IRequest::class),
+			new GraphQLControllerServices($this->createMock(GraphQLService::class))
 		);
 	}
 
-	/**
-	 * Whether the running server still exposes the CSP method `explorer()` calls.
-	 *
-	 * Asked of the framework class itself rather than of a Nextcloud version
-	 * number: the version is a proxy, the method is the thing that decides.
-	 *
-	 * @return bool True when the server still has allowEvalScript().
-	 */
-	private static function serverHasAllowEvalScript(): bool {
-		return method_exists(ContentSecurityPolicy::class, 'allowEvalScript');
+	public function testTheExplorerIsTheBundledTemplate(): void {
+		$response = $this->controller->explorer();
+
+		$this->assertInstanceOf(TemplateResponse::class, $response);
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('openregister', $response->getApp());
+		$this->assertSame('graphqlExplorer', $response->getTemplateName());
+		$this->assertSame([], $response->getParams());
 	}
 
-	/**
-	 * TRIPWIRE. On Nextcloud 34 — inside this app's own declared support range
-	 * — `explorer()` calls a CSP method the server no longer has, so the route
-	 * is a hard 500 rather than a GraphiQL page.
-	 *
-	 * This test asserts the outage on purpose. It will FAIL (and must be
-	 * deleted) as soon as either side is fixed: `explorer()` dropping the
-	 * `allowEvalScript()` call, or the server reinstating it.
-	 *
-	 * @return void
-	 */
-	public function testExplorerFatalsOnServersWithoutAllowEvalScript(): void {
-		if (self::serverHasAllowEvalScript() === true) {
-			$this->assertTrue(
-				method_exists(ContentSecurityPolicy::class, 'allowEvalScript'),
-				'This server still exposes allowEvalScript(), so explorer() is reachable here.'
-			);
-			return;
-		}
+	public function testTheTemplateLoadsTheBundledEntryAndNoOutsideScript(): void {
+		$template = (string)file_get_contents(__DIR__ . '/../../../templates/graphqlExplorer.php');
 
-		$this->urlGenerator->method('linkToRoute')->willReturn(self::EXECUTE_ROUTE);
-
-		$caught = null;
-		try {
-			$this->controller->explorer();
-		} catch (\Error $e) {
-			$caught = $e;
-		}
-
-		$this->assertNotNull(
-			$caught,
-			'explorer() unexpectedly succeeded without ContentSecurityPolicy::allowEvalScript() — '
-			. 'the known Nextcloud 34 outage is repaired, so this tripwire test should be removed '
-			. 'and the assertions in the sibling tests unconditionally enabled.'
-		);
-		$this->assertStringContainsString('allowEvalScript', $caught->getMessage());
+		$this->assertStringContainsString("addEntryScripts(\$appId, 'graphqlExplorer', \$appId.'-graphqlExplorer')", $template);
+		$this->assertStringContainsString('<div id="openregister-graphql-explorer"', $template);
+		$this->assertStringNotContainsString('<script', $template);
+		$this->assertStringNotContainsString('https://', $template);
 	}
 
-	public function testExplorerRendersTheGraphiQlShell(): void {
-		if (self::serverHasAllowEvalScript() === false) {
-			$this->assertFalse(
-				method_exists(ContentSecurityPolicy::class, 'allowEvalScript'),
-				'Guarded by the NC34 outage tripwire above.'
-			);
-			return;
+	public function testThePolicyAllowsNoOutsideOrInlineScript(): void {
+		$policy = $this->controller->explorer()->getContentSecurityPolicy()->buildPolicy();
+
+		$this->assertStringNotContainsString('unpkg.com', $policy);
+		$this->assertStringNotContainsString("'unsafe-eval'", $policy);
+
+		$directives = [];
+		foreach (explode(';', $policy) as $directive) {
+			$parts = preg_split('/\s+/', trim($directive));
+			$directives[$parts[0]] = array_slice($parts, 1);
 		}
 
-		$this->urlGenerator->method('linkToRoute')
-			->with('openregister.graphQL.execute')
-			->willReturn(self::EXECUTE_ROUTE);
-
-		$result = $this->controller->explorer();
-
-		$this->assertInstanceOf(Response::class, $result);
-		$this->assertSame(200, $result->getStatus());
-		$this->assertSame('text/html; charset=utf-8', $result->getHeaders()['Content-Type']);
-
-		$html = $result->render();
-		$this->assertStringStartsWith('<!DOCTYPE html>', $html);
-		$this->assertStringContainsString('<div id="graphiql">', $html);
-		$this->assertStringContainsString('graphiql.min.js', $html);
-
-		// The fetcher must target THIS app's execute route and carry the CSRF
-		// request token — without it every query is rejected by Nextcloud
-		// middleware while the page still renders perfectly well.
-		$this->assertStringContainsString("url: '" . self::EXECUTE_ROUTE . "'", $html);
-		$this->assertStringContainsString("'requesttoken': 'encrypted-request-token'", $html);
-
-		// Every inline <style>/<script> must carry the nonce the response's own
-		// CSP publishes, and the CDN serving GraphiQL must be allow-listed —
-		// otherwise the shell renders as a bare "Loading..." div.
-		$this->assertStringContainsString('<style nonce="test-nonce-value">', $html);
-		$this->assertStringContainsString('<script nonce="test-nonce-value"', $html);
-
-		$policy = $result->getContentSecurityPolicy()->buildPolicy();
-		$this->assertStringContainsString('https://unpkg.com', $policy);
-		$this->assertStringContainsString('script-src', $policy);
-	}
-
-	/**
-	 * Instances without URL rewriting hand back a route WITHOUT /index.php.
-	 * The shell must repair it, or the fetcher posts to a 404.
-	 *
-	 * @return void
-	 */
-	public function testExplorerPrefixesIndexPhpWhenTheRouteLacksIt(): void {
-		if (self::serverHasAllowEvalScript() === false) {
-			$this->assertFalse(
-				method_exists(ContentSecurityPolicy::class, 'allowEvalScript'),
-				'Guarded by the NC34 outage tripwire above.'
-			);
-			return;
-		}
-
-		$this->urlGenerator->method('linkToRoute')
-			->willReturn('/apps/openregister/api/graphql');
-
-		$html = $this->controller->explorer()->render();
-
-		$this->assertStringContainsString("url: '" . self::EXECUTE_ROUTE . "'", $html);
+		$this->assertArrayHasKey('script-src', $directives);
+		$this->assertNotContains("'unsafe-inline'", $directives['script-src']);
+		$this->assertSame(["'self'"], $directives['worker-src']);
 	}
 }

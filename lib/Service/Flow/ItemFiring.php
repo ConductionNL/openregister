@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * A fired transition's items and the exits they may travel.
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 final class ItemFiring {
 	/**
@@ -36,7 +36,7 @@ final class ItemFiring {
 	 * @param array         $items      What the step produced.
 	 * @param array<string> $taken      The output places the exit claimed.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public function __construct(
 		public readonly object $transition,

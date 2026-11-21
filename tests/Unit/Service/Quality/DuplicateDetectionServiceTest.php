@@ -48,7 +48,8 @@ class DuplicateDetectionServiceTest extends TestCase {
 			$this->objectService,
 			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Search\Service\Quality\TextGroupFinder::class)
 		);
 	}
 

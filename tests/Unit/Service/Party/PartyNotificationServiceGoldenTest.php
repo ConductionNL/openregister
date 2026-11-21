@@ -19,7 +19,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -34,6 +34,14 @@ use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
  * `send` is anything but boolean true.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyMessage
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyReachGates
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
  */
 class PartyNotificationServiceGoldenTest extends TestCase
 {
@@ -125,7 +133,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
             }
         );
 
-        return new PartyNotificationService($linkMapper, $partyService, $email, new PartyReachGates(indicators: $indicators, optOut: $optOut));
+        return new PartyNotificationService(new PartyRecipients(links: $linkMapper, parties: $partyService, indicators: $indicators), $email, $optOut);
     }
 
     /**

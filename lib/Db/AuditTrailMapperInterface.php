@@ -22,21 +22,37 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\RegisterAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * Every public method of AuditTrailMapper. Callers depend on this interface, not on the class.
+ *
+ * It extends the Core port through which Core records an action on one object.
  */
-interface AuditTrailMapperInterface {
+interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 *
+	 * Owned here, by the port, because the slug backfill (Core) splits its log
+	 * lines by the same number the entry is capped at.
+	 *
+	 * @var int
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -196,6 +212,20 @@ interface AuditTrailMapperInterface {
 	): AuditTrail;
 
 	/**
+	 * Record one change to an object: the typed form of {@see createAuditTrail()}.
+	 *
+	 * It also carries the change's named markers (a revert names the point it
+	 * restored), which the positional form has no room for.
+	 *
+	 * @param AuditedChange $change The old and new state, the action, the cascade context and the markers.
+	 *
+	 * @return AuditTrail The created (or merged) audit trail
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 */
+	public function recordChange(AuditedChange $change): AuditTrail;
+
+	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
 	 *
 	 * Contains the complete row-building logic shared by {@see createAuditTrail()}
@@ -241,6 +271,21 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function applyRetentionExpiry(AuditTrail $auditTrail, ?ObjectEntity $objectEntity): AuditTrail;
+
+	/**
+	 * Record what referential integrity did to one object: build the row, stamp its expiry, insert it.
+	 *
+	 * The row's expiry follows the retention of `$entry->object` (or#4101); without
+	 * one it is retained indefinitely, as {@see applyRetentionExpiry()} says. A
+	 * database failure is thrown; the caller decides whether that blocks it.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object, by whom, and the object itself when found.
+	 *
+	 * @return AuditTrail The stored row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail;
 
 	/**
 	 * Create audit trail rows for many object changes with batched inserts.
@@ -296,20 +341,17 @@ interface AuditTrailMapperInterface {
 	public function findByObjectUntil(string $objectUuid, DateTime|int|string|null $until = null): array;
 
 	/**
-	 * Revert an object to a previous state
+	 * Revert an object to a point in its trail.
 	 *
-	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
-	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
-	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
+	 * @param mixed                    $identifier The object itself, or its ID, UUID or URI to look it up by.
+	 * @param AuditTrail\RevertOptions $options    The reversion point and the version handling.
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found
 	 * @throws \Exception If revert fails
 	 *
 	 * @return ObjectEntity The reverted object (unsaved)
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
-	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity;
+	public function revertObjectWith(mixed $identifier, AuditTrail\RevertOptions $options): ObjectEntity;
 
 	/**
 	 * The number and total size of the audit trails in a scope.
@@ -454,21 +496,20 @@ interface AuditTrailMapperInterface {
 	public function countObjectTrail(string $objectUuid, ActionScope $scope): int;
 
 	/**
-	 * Read the audit rows of one object, by action, newest first.
+	 * One object's entries, optionally only some actions, newest first.
 	 *
 	 * Keyed on `object_uuid` rather than the numeric `object` id, because the
 	 * caller this exists for reads a destruction record AFTER the object row
 	 * is gone and the numeric id resolves to nothing.
 	 *
-	 * @param string $objectUuid The object's UUID.
-	 * @param array<int, string> $actions Actions to return; every action when empty.
-	 * @param int $limit Maximum rows.
+	 * @param string                         $objectUuid The object's UUID.
+	 * @param AuditTrail\ActionLookupOptions $options    The actions to return (every action when empty) and the row cap.
 	 *
 	 * @return array<int, AuditTrail> The matching rows, newest first.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findForObjectByAction(string $objectUuid, array $actions = [], int $limit = 50): array;
+	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
 
 	/**
 	 * Tombstone the audit rows that belong to one object.
@@ -794,6 +835,23 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordExport(ExportOutcome $export): AuditTrail;
+
+	/**
+	 * Create one immutable, hash-chained audit record for a register-level event.
+	 *
+	 * For what happens to a register as a whole rather than to one of its objects, such
+	 * as a compliance export being requested. The row names the register and no object,
+	 * so it stays off every object's timeline, and it is chained and verified like any
+	 * other row.
+	 *
+	 * @param RegisterAuditEvent $event The register id; the action, namespaced as `<area>.<verb>`; the details,
+	 *                                  stored as the result summary; and the actor, the session user when unnamed.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function recordRegisterEvent(RegisterAuditEvent $event): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.

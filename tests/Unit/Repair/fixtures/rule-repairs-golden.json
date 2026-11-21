@@ -1,0 +1,29 @@
+{
+    "grant": [
+        "update 2 {\"read\":[\"hr\"],\"update\":[\"hr\"],\"export\":[\"hr\"]}",
+        "update 5 {\"read\":[{\"group\":\"hr\",\"match\":{\"owner\":\"$userId\"}},\"staff\",{\"group\":\"public\"}],\"export\":[{\"group\":\"hr\",\"match\":{\"owner\":\"$userId\"}},\"staff\",{\"group\":\"public\"}]}",
+        "update 6 {\"read\":[{\"group\":\"hr\",\"match\":{\"_organisation\":\"$organisation\",\"unit\":\"$organisation\"}}],\"export\":[{\"group\":\"hr\",\"match\":{\"_organisation\":\"$organisation\",\"unit\":\"$organisation\"}}]}",
+        "update 7 {\"read\":[\"authenticated\",\"admin\",\"user:jan\",{\"group\":\"public\",\"crossOrganisation\":true}],\"export\":[\"authenticated\",\"admin\",\"user:jan\",{\"group\":\"public\",\"crossOrganisation\":true}]}",
+        "update 8 {\"read\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"}}],\"export\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"}}]}",
+        "log.warning [GrantExportWhereReadIsGranted] Could not write the export grant on schema 8: refused",
+        "update 9 {\"read\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"}},\"staff\"],\"export\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"}},\"staff\"]}",
+        "output.info Wrote the export grant onto 5 schema(s), 1 could not be written. Every schema that already named the export right was left alone."
+    ],
+    "grant-unlistable": [
+        "log.info [GrantExportWhereReadIsGranted] Could not list schemas, skipping: database gone"
+    ],
+    "mark": [
+        "log.info [MarkImplicitCrossOrganisationReadRules] Schema 2 has 1 read rule(s) that now keep the caller's organisation filter; add crossOrganisation: true to those meant to read other organisations' rows.",
+        "log.info [MarkImplicitCrossOrganisationReadRules] Schema 3 has 1 read rule(s) that now keep the caller's organisation filter; add crossOrganisation: true to those meant to read other organisations' rows.",
+        "log.info [MarkImplicitCrossOrganisationReadRules] Schema 5 has 2 read rule(s) that now keep the caller's organisation filter; add crossOrganisation: true to those meant to read other organisations' rows.",
+        "update 8 {\"read\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"},\"crossOrganisation\":true}]}",
+        "log.warning [MarkImplicitCrossOrganisationReadRules] Could not mark the read rules of schema 8: refused",
+        "log.info [MarkImplicitCrossOrganisationReadRules] Schema 9 has 1 read rule(s) that now keep the caller's organisation filter; add crossOrganisation: true to those meant to read other organisations' rows.",
+        "update 9 {\"read\":[{\"group\":\"hr\",\"match\":{\"unit\":\"$organisation\"},\"crossOrganisation\":true},\"staff\"]}",
+        "log.info [MarkImplicitCrossOrganisationReadRules] Marked crossOrganisation on the read rules of schema 9",
+        "output.info Marked crossOrganisation on the read rules of 1 schema(s), 1 could not be written. 5 other read rule(s) now keep the caller's organisation filter (listed in the log)."
+    ],
+    "mark-unlistable": [
+        "log.info [MarkImplicitCrossOrganisationReadRules] Could not list schemas, skipping: database gone"
+    ]
+}

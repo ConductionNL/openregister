@@ -106,12 +106,15 @@ class GenericSettingsService extends AppHostSettingsService {
 			throw $this->registerJsonMissing();
 		}
 
+		$before = $this->getSettings();
 		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
 		if (empty($result) === true) {
 			// Version-gated no-op or empty import: explicit non-success, never
 			// dressed up as a successful import.
 			return $this->registerImportEmpty();
 		}
+
+		$this->auditImport(before: $before, forced: $force);
 
 		return $this->registerImportSucceeded(result: $result);
 	}//end loadConfiguration()

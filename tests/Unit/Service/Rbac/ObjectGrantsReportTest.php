@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -79,6 +80,37 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionBit
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantHolder
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowSet
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowsQuery
+ * @uses \OCA\OpenRegister\Service\Rbac\HeldRule
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses   \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantHolder
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantReportSources
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantRowSet
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantRowsQuery
+ * @uses   \OCA\OpenRegister\Service\Rbac\HeldRule
+ * @uses   \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses   \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses   \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
  */
 class ObjectGrantsReportTest extends TestCase {
 
@@ -133,7 +165,7 @@ class ObjectGrantsReportTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($denyMode);
 
 		$accessReport = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $this->createMock(AuditTrailMapper::class)),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrail: new ObjectTrailReader(mapper: $this->createMock(AuditTrailMapper::class))),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())

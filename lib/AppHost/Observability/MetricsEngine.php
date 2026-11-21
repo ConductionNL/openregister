@@ -28,13 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
-use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
-use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
-use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
-use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCP\ICache;
-use OCP\ICacheFactory;
-use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,25 +41,15 @@ class MetricsEngine {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectMetricSource $objectSource objectCount/objectSum.
-	 * @param TableMetricSource $tableSource tableCount.
-	 * @param AppConfigMetricSource $appConfigSource appConfig.
-	 * @param ProviderMetricSource $providerSource provider escape hatch.
+	 * @param MetricSources      $sources  One source per declarative metric kind.
 	 * @param PrometheusRenderer $renderer Text renderer.
-	 * @param ManifestLoader $manifestLoader App version resolution.
-	 * @param ICacheFactory $cacheFactory Distributed cache (cacheTtl).
-	 * @param IConfig $config NC version (implicit info).
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param MetricsRuntime     $runtime  App versions, cache and NC version.
+	 * @param LoggerInterface    $logger   PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectMetricSource $objectSource,
-		private readonly TableMetricSource $tableSource,
-		private readonly AppConfigMetricSource $appConfigSource,
-		private readonly ProviderMetricSource $providerSource,
+		private readonly MetricSources $sources,
 		private readonly PrometheusRenderer $renderer,
-		private readonly ManifestLoader $manifestLoader,
-		private readonly ICacheFactory $cacheFactory,
-		private readonly IConfig $config,
+		private readonly MetricsRuntime $runtime,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -100,7 +84,7 @@ class MetricsEngine {
 	 * @return MetricSample[]
 	 */
 	private function collectDescriptor(string $appId, MetricDescriptor $descriptor): array {
-		if ($descriptor->cacheTtl <= 0 || $this->cacheFactory->isAvailable() === false) {
+		if ($descriptor->cacheTtl <= 0 || $this->runtime->cacheFactory->isAvailable() === false) {
 			return $this->dispatch(appId: $appId, descriptor: $descriptor);
 		}
 
@@ -117,7 +101,7 @@ class MetricsEngine {
 	 * @return MetricSample[]
 	 */
 	private function collectCached(string $appId, MetricDescriptor $descriptor): array {
-		$cache = $this->cacheFactory->createDistributed('openregister_apphost_metrics');
+		$cache = $this->runtime->cacheFactory->createDistributed('openregister_apphost_metrics');
 		$cacheKey = $appId . ':' . $descriptor->name;
 
 		$restored = $this->cachedSamples(cache: $cache, cacheKey: $cacheKey);
@@ -176,11 +160,11 @@ class MetricsEngine {
 	 */
 	private function sourceFor(string $kind): ?MetricSourceInterface {
 		$sources = [
-			'objectCount' => $this->objectSource,
-			'objectSum' => $this->objectSource,
-			'tableCount' => $this->tableSource,
-			'appConfig' => $this->appConfigSource,
-			'provider' => $this->providerSource,
+			'objectCount' => $this->sources->object,
+			'objectSum' => $this->sources->object,
+			'tableCount' => $this->sources->table,
+			'appConfig' => $this->sources->appConfig,
+			'provider' => $this->sources->provider,
 		];
 
 		return $sources[$kind] ?? null;
@@ -226,9 +210,9 @@ class MetricsEngine {
 	 */
 	private function infoMetric(string $appId): MetricSample {
 		$labels = [
-			'version' => $this->manifestLoader->appVersion(appId: $appId),
+			'version' => $this->runtime->manifestLoader->appVersion(appId: $appId),
 			'php_version' => PHP_VERSION,
-			'nextcloud_version' => $this->config->getSystemValueString('version', 'unknown'),
+			'nextcloud_version' => $this->runtime->config->getSystemValueString('version', 'unknown'),
 		];
 
 		return new MetricSample(

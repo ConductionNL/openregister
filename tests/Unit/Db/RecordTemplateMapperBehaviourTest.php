@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\RecordTemplateMapper
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @uses   \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RecordTemplateMapperBehaviourTest extends TestCase {
 	use RecordingQueryBuilderTrait;

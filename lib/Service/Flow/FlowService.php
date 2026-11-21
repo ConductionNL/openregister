@@ -41,7 +41,7 @@ use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
@@ -145,7 +145,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
 		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
@@ -159,7 +159,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function listFlows(ListQuery $query): array {
 		$organisation = $this->caller()->activeOrganisation();
@@ -187,7 +187,7 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function count(?string $app = null, ?string $applicationSlug = null): int {
 		$organisation = $this->caller()->activeOrganisation();
@@ -652,11 +652,21 @@ class FlowService implements FlowServiceInterface {
 	 * @return void
 	 *
 	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowLifecycleRefused When a run of the flow has not finished.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function delete(string $uuid): void {
-		$this->deleteStored(flow: $this->find(uuid: $uuid));
+		$flow = $this->find(uuid: $uuid);
+		if ($this->sweep->runs->hasActiveRun(flowId: (string)$flow->getUuid()) === true) {
+			$this->platform->logger->info(
+				message: '[FlowService] Refused to delete flow ' . $flow->getUuid() . ': a run has not finished',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			throw new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_RUNS_IN_FLIGHT, flowId: (string)$flow->getUuid());
+		}
+
+		$this->deleteStored(flow: $flow);
 
 	}//end delete()
 

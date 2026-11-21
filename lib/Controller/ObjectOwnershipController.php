@@ -39,10 +39,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rbac\OwnedRecord;
@@ -89,7 +89,7 @@ class ObjectOwnershipController extends Controller {
 		IRequest $request,
 		ObjectOwnershipControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		// The message is never echoed to the client: it can carry storage details.
 		$failure = 'Could not complete the ownership request';
@@ -136,7 +136,7 @@ class ObjectOwnershipController extends Controller {
 	}//end claim()
 
 	/**
-	 * Assign one record to a named owner. Administrators only.
+	 * Assign one record to a named owner. Administrators, and callers holding `assign` on the record.
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.

@@ -34,14 +34,14 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCP\IL10N;
 use Throwable;
 
 /**
  * Audit-trail integration provider (read-only, query-time).
  */
-class AuditTrailProvider extends AbstractIntegrationProvider {
+class AuditTrailProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -84,24 +84,6 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -109,15 +91,6 @@ class AuditTrailProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'query-time';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * The object's audit-trail entries, as its history gives them to this caller.

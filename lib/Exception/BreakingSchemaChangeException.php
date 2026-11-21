@@ -50,6 +50,13 @@ class BreakingSchemaChangeException extends Exception {
 	private ?int $invalidCount;
 
 	/**
+	 * Who the change would reach: affectedCallers and followers.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $reach = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array<int, array<string, mixed>> $changes The typed change list.
@@ -78,8 +85,22 @@ class BreakingSchemaChangeException extends Exception {
 			$body['invalidCount'] = $this->invalidCount;
 		}
 
-		return $body;
+		return array_merge($body, $this->reach);
 	}//end toResponse()
+
+	/**
+	 * Add who the change would reach to the 409 body.
+	 *
+	 * @param array<string, mixed> $reach `affectedCallers` and `followers`.
+	 *
+	 * @return self This exception.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-the-breaking-change-gate-shows-who-will-be-affected
+	 */
+	public function withReach(array $reach): self {
+		$this->reach = $reach;
+		return $this;
+	}//end withReach()
 
 	/**
 	 * Get the typed change list.

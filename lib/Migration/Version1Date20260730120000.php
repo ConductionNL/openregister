@@ -43,7 +43,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+ * @spec openspec/specs/flow-active-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds `or_flowrun_org_status_idx` on `openregister_flow_runs`.
  *
- * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+ * @spec openspec/specs/flow-active-runs/spec.md
  */
 class Version1Date20260730120000 extends SimpleMigrationStep {
 	/**
@@ -77,7 +77,7 @@ class Version1Date20260730120000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

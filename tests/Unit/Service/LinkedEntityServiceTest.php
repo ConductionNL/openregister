@@ -45,6 +45,11 @@ use OCA\OpenRegister\Service\EntityLink;
  * @coversDefaultClass \OCA\OpenRegister\Service\LinkedEntityService
  * @uses \OCA\OpenRegister\Service\LinkedEntityService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\LinkedEntityIntegrations
+ * @uses \OCA\OpenRegister\Service\LinkedEntityMappers
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LinkedEntityServiceTest extends TestCase {
 
@@ -166,7 +171,7 @@ class LinkedEntityServiceTest extends TestCase {
 		$this->registry->method('listIds')->willReturn(['mail']);
 
 		$this->expectException(Exception::class);
-		$this->service->removeLink(objectUuid: 'u', type: 'invalid', entityId: 'e');
+		$this->service->removeLink(objectUuid: 'u', link: new EntityLink(type: 'invalid', entityId: 'e'));
 	}//end testRemoveLinkThrowsForUnknownType()
 
 	/**

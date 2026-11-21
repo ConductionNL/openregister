@@ -29,12 +29,16 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 
 /**
  * Every public method of SaveObject. Callers depend on this interface, not on the class.
  */
-interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveObjectWriterInterface {
+interface SaveObjectInterface extends
+	SaveObjectRelationScannerInterface,
+	SaveObjectWriterInterface,
+	SaveObjectRelatedUpdateGuardInterface,
+	SaveObjectUpdaterInterface
+{
 
 	/**
 	 * Get sub-objects created during cascade operations.
@@ -174,7 +178,7 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -277,7 +281,7 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 *
 	 * @return ObjectSlugHandler The handler.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function getSlugHandler(): ObjectSlugHandler;
 
@@ -331,27 +335,4 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
-
-	/**
-	 * Updates an existing object.
-	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
-	 *
-	 * @return ObjectEntity The updated object entity.
-	 *
-	 * @throws Exception If there is an error during update.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function updateObject(
-		Register|int|string $register, Schema|int|string $schema, array $data, ObjectEntity $existingObject,
-		bool $silent = false, ?ObjectEntity $oldObject = null
-	): ObjectEntity;
 }//end interface

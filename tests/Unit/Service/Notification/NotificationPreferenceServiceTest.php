@@ -9,6 +9,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -99,11 +101,12 @@ class NotificationPreferenceServiceTest extends TestCase {
 		// No stored value → resolve to the schema default, tagged schema-default.
 		$this->config->method('getUserValue')->willReturn('');
 
-		$effective = $this->service->resolveEffective(
-			['enabled' => true, 'channels' => ['nc-notification']],
-			'piet',
-			'meldingen',
-			'object_created'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true, 'channels' => ['nc-notification']],
+				userId: 'piet',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'object_created')
+			)
 		);
 
 		$this->assertTrue($effective['enabled']);
@@ -113,11 +116,12 @@ class NotificationPreferenceServiceTest extends TestCase {
 	public function testOverrideFlipsSchemaDefaultOff(): void {
 		$this->config->method('getUserValue')->willReturn('{"enabled":false}');
 
-		$effective = $this->service->resolveEffective(
-			['enabled' => true],
-			'jan',
-			'meldingen',
-			'object_created'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true],
+				userId: 'jan',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'object_created')
+			)
 		);
 
 		$this->assertFalse($effective['enabled']);
@@ -133,8 +137,20 @@ class NotificationPreferenceServiceTest extends TestCase {
 			}
 		);
 
-		$jan = $this->service->resolveEffective(['enabled' => true], 'jan', 'meldingen', 'object_created');
-		$piet = $this->service->resolveEffective(['enabled' => true], 'piet', 'meldingen', 'object_created');
+		$jan = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true],
+				userId: 'jan',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'object_created')
+			)
+		);
+		$piet = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true],
+				userId: 'piet',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'object_created')
+			)
+		);
 
 		$this->assertFalse($jan['enabled']);
 		$this->assertTrue($piet['enabled']);
@@ -144,11 +160,12 @@ class NotificationPreferenceServiceTest extends TestCase {
 		// Override narrows the two declared channels down to in-app only.
 		$this->config->method('getUserValue')->willReturn('{"enabled":true,"channels":["nc-notification"]}');
 
-		$effective = $this->service->resolveEffective(
-			['enabled' => true, 'channels' => ['nc-notification', 'push']],
-			'jan',
-			'meldingen',
-			'object_created'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true, 'channels' => ['nc-notification', 'push']],
+				userId: 'jan',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'object_created')
+			)
 		);
 
 		$this->assertTrue($effective['enabled']);

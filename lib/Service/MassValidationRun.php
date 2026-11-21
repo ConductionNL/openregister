@@ -25,16 +25,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Re-saves objects in batches, serially or in chunks of batches, and collects the counts,
- * errors, timings and memory use of the run in the shape SettingsService::massValidateObjects()
+ * errors, timings and memory use of the run in the shape SettingsService::massValidate()
  * returns.
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
@@ -567,10 +571,11 @@ final class MassValidationRun {
 			// Re-saving triggers all business logic; saveObject() signals failure by throwing.
 			$this->objectService()->saveObject(
 				object: $object->getObject(),
-				extend: [],
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					uuid: $object->getUuid(),
+					extend: []
+				)
 			);
 			return null;
 		} catch (Exception $e) {

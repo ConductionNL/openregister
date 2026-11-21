@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ImportPreviewRow;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Db\Support\RecordsQueries;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\ImportPreviewRowMapper
  * @uses   \OCA\OpenRegister\Db\ImportPreviewRow
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ImportPreviewRowMapperTest extends TestCase {
 	use RecordsQueries;

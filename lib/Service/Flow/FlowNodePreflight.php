@@ -79,7 +79,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+ * @spec openspec/specs/flow-preflight/spec.md
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ use UnexpectedValueException;
  *   move the branching, not remove it, and would put "what makes a step
  *   unrunnable" in two places — which is the drift this class exists to end.
  *
- * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+ * @spec openspec/specs/flow-preflight/spec.md
  */
 class FlowNodePreflight implements FlowNodePreflightInterface {
 
@@ -313,7 +313,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return boolean True when the data describes a flow graph.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function looksLikeFlow(array $data): bool {
 		$nodes = ($data['nodes'] ?? null);
@@ -332,7 +332,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return boolean True when it is.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function nodesLookRight(array $nodes): bool {
 		if ($nodes === []) {
@@ -355,7 +355,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return boolean True when it is.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function edgesLookRight(array $edges): bool {
 		if ($edges === []) {
@@ -381,7 +381,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return boolean True when it does.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function edgeLooksRight(mixed $edge): bool {
 		if (is_array($edge) === false) {
@@ -425,7 +425,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function inspect(array $flow): array {
 		$blocking = $this->preInversionFindings(flow: $flow);
@@ -453,7 +453,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function nodesReport(array $flow): array {
 		$report = self::EMPTY_REPORT;
@@ -472,7 +472,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array, warnings: array} The combined report.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function mergeReports(array $first, array $second): array {
 		return [
@@ -497,7 +497,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array<int, array<string, string>> Blocking findings, empty when the shape is current.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function preInversionFindings(array $flow): array {
 		$blocking = [];
@@ -522,7 +522,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return FlowPreflightStep|null The step.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function stepOf(mixed $entry, int|string $index): ?FlowPreflightStep {
 		if (is_array($entry) === false) {
@@ -545,7 +545,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function nodeFindings(mixed $entry, int|string $index): array {
 		$step = $this->stepOf(entry: $entry, index: $index);
@@ -593,7 +593,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function resolvedFindings(IFlowNode $node, FlowPreflightStep $step): array {
 		$report = self::EMPTY_REPORT;
@@ -616,7 +616,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function unresolvedFindings(FlowPreflightStep $step): array {
 		if ($step->app() === '') {
@@ -640,7 +640,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @throws UnexpectedValueException When a step type can never resolve here.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function assertRunnable(array $flow, ?string $label = null): void {
 		$report = $this->inspect(flow: $flow);
@@ -666,7 +666,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function warningMessage(string $flow, array $warning): string {
 		if ($warning['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
@@ -684,7 +684,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array<string, mixed> The context.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function warningContext(string $flow, array $warning): array {
 		$context = ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow, 'type' => $warning['type']];
@@ -706,7 +706,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function describe(string $flow, array $blocking): string {
 		$lines = array_map(fn (array $finding): string => $this->describeFinding(finding: $finding), $blocking);
@@ -725,7 +725,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string The line.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function describeFinding(array $finding): string {
 		return sprintf(
@@ -747,7 +747,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string The vocabulary, or "no config at all".
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function readsOf(array $finding): string {
 		$reads = (string)($finding['reads'] ?? '');
@@ -766,7 +766,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string|null The node's message, or null when it accepts the config.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function configRejection(IFlowNode $node, FlowPreflightStep $step): ?string {
 		$config = $step->config();
@@ -811,7 +811,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return string|null The node's message, or null when it accepts the config.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function refusalOf(IFlowNode $node, array $config): ?string {
 		try {
@@ -836,7 +836,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function logNodeFailure(string $message, IFlowNode $node): void {
 		$this->logger->warning(
@@ -872,7 +872,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function dialectFindings(IFlowNode $node, FlowPreflightStep $step): array {
 		$config = $step->config();
@@ -900,7 +900,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return array<int, string>|null The keys, or null when unchecked.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function declaredKeys(IFlowNode $node): ?array {
 		if (($node instanceof IFlowNodeConfigKeys) === false) {
@@ -924,7 +924,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return IFlowNode|null The node.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function resolve(string $type): ?IFlowNode {
 		try {
@@ -946,7 +946,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 *
 	 * @return boolean True when the app is enabled.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	private function isAppEnabled(string $appId): bool {
 		try {

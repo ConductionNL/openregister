@@ -136,8 +136,21 @@ class BulkJobGuards {
 			return;
 		}
 
-		$bytes = 0;
+		if ($this->exceedsUndoCeiling(job: $job, action: $action) === true) {
+			throw $this->undoCeilingRefusal(objectCount: count($job->objects));
+		}
+	}//end assertUndoCeiling()
 
+	/**
+	 * Whether the job's reversal plans, summed in object order, outgrow the undo ceiling.
+	 *
+	 * @param RehearsedJob                  $job    The rehearsed job.
+	 * @param ReversibleBulkActionInterface $action The job's reversible action.
+	 *
+	 * @return bool True as soon as the running total passes the ceiling.
+	 */
+	private function exceedsUndoCeiling(RehearsedJob $job, ReversibleBulkActionInterface $action): bool {
+		$bytes = 0;
 		foreach ($job->objects as $object) {
 			$size = $this->encodedSize(plan: $action->reversalPlanFor(object: $object, parameters: $job->parameters));
 			if ($size === null) {
@@ -146,10 +159,12 @@ class BulkJobGuards {
 
 			$bytes += $size;
 			if ($bytes > $this->undoCeiling) {
-				throw $this->undoCeilingRefusal(objectCount: count($job->objects));
+				return true;
 			}
 		}
-	}//end assertUndoCeiling()
+
+		return false;
+	}//end exceedsUndoCeiling()
 
 	/**
 	 * The size of one reversal plan as stored, or null when it cannot be encoded.

@@ -40,6 +40,15 @@ use PHPUnit\Framework\TestCase;
  * Display name and e-mail resolution, in their order of preference.
  *
  * @covers \OCA\OpenRegister\Service\Party\PartyLinkWriter
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
+ * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkRequest
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkTarget
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
  */
 class PartyLinkWriterFieldsTest extends TestCase {
 

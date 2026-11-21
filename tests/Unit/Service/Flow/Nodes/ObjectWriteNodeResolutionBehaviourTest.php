@@ -45,6 +45,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -67,6 +68,13 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatchFilters
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatcher
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
  */
 class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 
@@ -152,7 +160,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 	 */
 	private function savesAs(array $uuids): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (mixed $object) use (&$uuids): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)array_shift($uuids));
 				$entity->setObject((array)$object);
@@ -191,8 +199,8 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->registers->method('find')->willReturn($this->register);
 		$this->schemas->method('find')->with('2', self::anything(), false, false)->willReturn($this->schema);
 		$this->objects->expects(self::once())->method('saveObject')
-			->with(['title' => 'a'], self::anything(), $this->register, $this->schema)
-			->willReturnCallback(static function (): ObjectEntity {
+			->with(['title' => 'a'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->target->register == $this->register && $options->target->schema == $this->schema))
+			->willReturnCallback(static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid('u-1');
 				$entity->setObject(['title' => 'a']);

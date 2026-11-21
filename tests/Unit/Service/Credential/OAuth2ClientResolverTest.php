@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Credential\InjectableSecretRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ClientResolver
+ * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
  */
 class OAuth2ClientResolverTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every resolveInjectable() the resolver made. */

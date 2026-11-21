@@ -165,6 +165,7 @@ import {
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 import { timestampColumns } from '../indexPageOptions.js'
 
 /**
@@ -247,37 +248,6 @@ function postNamesWarmup() {
 			},
 		},
 	)
-}
-
-/**
- * The URL of a register's OpenAPI specification.
- *
- * @param {object} register The register row
- * @return {string} The absolute URL
- */
-function registerOasUrl(register) {
-	const baseUrl = window.location.origin
-	return `${baseUrl}/index.php/apps/openregister/api/registers/${register.id}/oas`
-}
-
-/**
- * Let the browser save data as a pretty-printed JSON file.
- *
- * @param {object} data The data to save
- * @param {string} filename The file name to offer
- * @return {void}
- */
-function saveJsonFile(data, filename) {
-	const blob = new Blob([JSON.stringify(data, null, 2)], {
-		type: 'application/json',
-	})
-	const downloadLink = document.createElement('a')
-	downloadLink.href = URL.createObjectURL(blob)
-	downloadLink.download = filename
-	document.body.appendChild(downloadLink)
-	downloadLink.click()
-	document.body.removeChild(downloadLink)
-	URL.revokeObjectURL(downloadLink.href)
 }
 
 /**
@@ -692,11 +662,7 @@ export default {
 		 */
 		async downloadOas(register) {
 			try {
-				const response = await axios.get(registerOasUrl(register))
-				saveJsonFile(
-					response.data,
-					`${register.title.toLowerCase()}-api-specification.json`,
-				)
+				await downloadRegisterOas(register)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -708,10 +674,7 @@ export default {
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(registerOasUrl(register))}`,
-				'_blank',
-			)
+			viewRegisterOas(register.id)
 		},
 
 		/**

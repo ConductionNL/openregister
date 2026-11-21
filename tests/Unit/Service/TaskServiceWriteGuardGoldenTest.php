@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
@@ -108,7 +111,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->expects($this->never())->method('createCalendarObject');
 
 		try {
-			$this->service()->createTask(1, 2, 'obj', 'Object', array_merge(['summary' => 'Forged'], $forged));
+			$this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'obj'), draft: new LinkedTaskDraft(objectTitle: 'Object', data: array_merge(['summary' => 'Forged'], $forged)));
 			$this->fail('expected a refusal');
 		} catch (TaskAccessDeniedException $refused) {
 			$this->assertSame(
@@ -133,7 +136,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->method('getCalendarsForUser')->willReturn([['id' => 5, 'uri' => 'personal', self::COMPONENTS => 'VTODO']]);
 		$this->backend->expects($this->once())->method('createCalendarObject');
 
-		$result = $this->service()->createTask(1, 2, 'obj', 'Object', array_merge(['summary' => 'Fine'], $payload));
+		$result = $this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'obj'), draft: new LinkedTaskDraft(objectTitle: 'Object', data: array_merge(['summary' => 'Fine'], $payload)));
 
 		$this->assertSame('Fine', $result['summary']);
 	}
@@ -149,19 +152,19 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$result = $this->service()->createTask(
-			3,
-			4,
-			'obj-1',
-			'Title; with, chars',
-			[
-				'summary'     => "Line\none, two; three\\",
-				'description' => 'Desc, here',
-				'status'      => 'in-process',
-				'priority'    => '7',
-				'due'         => '2030-01-02T03:04:05Z',
-				'fields'      => ['assignee' => 'bob'],
-			]
+		$result = $this->service()->createObjectTask(
+			ref: new ObjectRef(register: 3, schema: 4, id: 'obj-1'),
+			draft: new LinkedTaskDraft(
+				objectTitle: 'Title; with, chars',
+				data: [
+					'summary'     => "Line\none, two; three\\",
+					'description' => 'Desc, here',
+					'status'      => 'in-process',
+					'priority'    => '7',
+					'due'         => '2030-01-02T03:04:05Z',
+					'fields'      => ['assignee' => 'bob'],
+				]
+			)
 		);
 
 		$expected = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:*\r\nDTSTAMP:*\r\n"
@@ -188,7 +191,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$this->service()->createTask(1, 2, 'o', 'T', ['description' => '', 'due' => '', 'fields' => []]);
+		$this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'o'), draft: new LinkedTaskDraft(objectTitle: 'T', data: ['description' => '', 'due' => '', 'fields' => []]));
 
 		$this->assertSame(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OpenRegister//Tasks//EN\r\nBEGIN:VTODO\r\nUID:*\r\nDTSTAMP:*\r\n"
@@ -204,7 +207,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->expects($this->never())->method('createCalendarObject');
 
 		$this->expectException(Exception::class);
-		$this->service()->createTask(1, 2, 'o', 'T', ['due' => 'not a date at all']);
+		$this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'o'), draft: new LinkedTaskDraft(objectTitle: 'T', data: ['due' => 'not a date at all']));
 	}
 
 	private function projected(string $status): string {
@@ -226,7 +229,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
 		try {
-			$this->service()->updateTask('9', 'p.ics', $change);
+			$this->service()->changeTask(at: new TaskLocation(calendarId: '9', uri: 'p.ics'), data: $change);
 			$this->fail('expected a refusal');
 		} catch (TaskAccessDeniedException $refused) {
 			$this->assertSame(
@@ -242,7 +245,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$gate->expects($this->once())->method('handleWrite')->with($this->projected('IN-PROCESS'), 'alice')->willReturn(null);
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
-		$result = $this->service($gate)->updateTask('9', 'p.ics', ['summary' => 'ignored']);
+		$result = $this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'p.ics'), data: ['summary' => 'ignored']);
 
 		$this->assertSame('in-process', $result['status']);
 		$this->assertSame('Approve', $result['summary']);
@@ -261,7 +264,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		);
 		$this->backend->expects($this->once())->method('updateCalendarObject')->with(9, 'p.ics', $this->projected('COMPLETED'));
 
-		$result = $this->service($gate)->updateTask('9', 'p.ics', ['status' => 'completed']);
+		$result = $this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'p.ics'), data: ['status' => 'completed']);
 
 		$this->assertStringContainsString("STATUS:COMPLETED\r\n", $requested);
 		$this->assertStringNotContainsString('NEEDS-ACTION', $requested);
@@ -275,7 +278,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
 		$this->expectExceptionObject(new RuntimeException('engine said no'));
-		$this->service($gate)->updateTask('9', 'p.ics', ['status' => 'completed']);
+		$this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'p.ics'), data: ['status' => 'completed']);
 	}
 
 	public function testAStandaloneUpdateStoresThisExactDocument(): void {
@@ -290,11 +293,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$result = $this->service()->updateTask(
-			'9',
-			's.ics',
-			['summary' => 'New', 'description' => 'D', 'status' => 'completed', 'priority' => '3', 'due' => '', 'fields' => ['a' => 1]]
-		);
+		$result = $this->service()->changeTask(at: new TaskLocation(calendarId: '9', uri: 's.ics'), data: ['summary' => 'New', 'description' => 'D', 'status' => 'completed', 'priority' => '3', 'due' => '', 'fields' => ['a' => 1]]);
 
 		$this->assertSame(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:x\r\nBEGIN:VTODO\r\nUID:*\r\nX-OPENREGISTER-OBJECT:obj\r\nSUMMARY:New\r\n"
@@ -316,7 +315,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$this->service()->updateTask('9', 's.ics', ['status' => 'in-process', 'due' => '2031-05-06T07:08:09Z', 'fields' => []]);
+		$this->service()->changeTask(at: new TaskLocation(calendarId: '9', uri: 's.ics'), data: ['status' => 'in-process', 'due' => '2031-05-06T07:08:09Z', 'fields' => []]);
 
 		$this->assertSame(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:*\r\nSUMMARY:Old\r\nSTATUS:IN-PROCESS\r\nDUE:20310506T070809Z\r\n"
@@ -330,7 +329,7 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
 		$this->expectExceptionObject(new Exception('Calendar object is not a VTODO'));
-		$this->service()->updateTask('9', 's.ics', ['summary' => 'x']);
+		$this->service()->changeTask(at: new TaskLocation(calendarId: '9', uri: 's.ics'), data: ['summary' => 'x']);
 	}
 
 	public static function deepLinks(): array {
