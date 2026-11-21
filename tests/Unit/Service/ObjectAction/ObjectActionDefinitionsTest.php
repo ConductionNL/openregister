@@ -111,7 +111,7 @@ class ObjectActionDefinitionsTest extends TestCase {
 
 		$definitions = new ObjectActionDefinitions($registers);
 
-		$this->assertNotNull($definitions->find($this->schema(), 'publish', '3'));
-		$this->assertNull($definitions->find($this->schema(), 'publish', '4'));
+		$this->assertNotNull(($definitions->forSchema($this->schema(), '3')['publish'] ?? null));
+		$this->assertNull(($definitions->forSchema($this->schema(), '4')['publish'] ?? null));
 	}//end testTheRegisterIsLoadedByIdAndAMissingOneInheritsNothing()
 }//end class

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
-class TranslationProjectionService implements TranslationProjectionServiceInterface {
+class TranslationProjectionService implements TranslationProjectionServiceInterface, SourceLanguagesInterface {
 
 	/**
 	 * Constructor.
@@ -286,20 +287,32 @@ class TranslationProjectionService implements TranslationProjectionServiceInterf
 				continue;
 			}
 
-			try {
-				$this->stores->translationMapper->delete($row);
-			} catch (\Throwable $e) {
-				// Best effort: the row is retried on the next projection of this object.
-				$this->logger->warning(
-					message: '[TranslationProjection] Stale translation row not deleted',
-					context: [
-						'uuid' => $uuid,
-						'exception' => $e->getMessage(),
-					]
-				);
-			}
+			$this->deleteStaleRow(row: $row, uuid: $uuid);
 		}
 	}//end deleteRowsNotIn()
+
+	/**
+	 * Delete one stale translation row, best effort.
+	 *
+	 * @param object $row  The stale translation row.
+	 * @param string      $uuid The object it belongs to.
+	 *
+	 * @return void
+	 */
+	private function deleteStaleRow(object $row, string $uuid): void {
+		try {
+			$this->stores->translationMapper->delete($row);
+		} catch (\Throwable $e) {
+			// Best effort: the row is retried on the next projection of this object.
+			$this->logger->warning(
+				message: '[TranslationProjection] Stale translation row not deleted',
+				context: [
+					'uuid' => $uuid,
+					'exception' => $e->getMessage(),
+				]
+			);
+		}
+	}//end deleteStaleRow()
 
 	/**
 	 * Drop every translation row for the given object.

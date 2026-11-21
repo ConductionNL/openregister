@@ -96,7 +96,8 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	 *     expiresAt: string,
 	 *     aggregationLevel?: string,
 	 *     useRestriction?: array{type: string, description?: string},
-	 *     temporalCoverage?: array{type: string, start: string, end?: string}
+	 *     temporalCoverage?: array{type: string, start: string, end?: string},
+	 *     parties?: list<array{role: string, name: string, id?: string}>
 	 * } Effective retention duration (ISO-8601), matched rule index (or null
 	 *   when fallback to default), absolute expiry as ATOM-formatted string,
 	 *   and the archival facts the schema declares, each present only when it
@@ -266,6 +267,7 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	 * @return array<string, mixed> The established facts, keyed in the abstract English vocabulary.
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
 	 */
 	private function declaredFacts(array $annotation, array $row): array {
 		$level = ($annotation['aggregationLevel'] ?? null);
@@ -277,6 +279,8 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 			'aggregationLevel' => $level,
 			'useRestriction' => $this->useRestriction(restriction: ($annotation['useRestriction'] ?? null)),
 			'temporalCoverage' => $this->coverageForRow(coverage: ($annotation['temporalCoverage'] ?? null), row: $row),
+			'parties' => ArchivalParties::forRow(declared: ($annotation['parties'] ?? null), row: $row),
+			'containment' => ArchivalContainment::forRow(declared: ($annotation['containment'] ?? null), row: $row),
 		];
 
 		return array_filter($facts, static fn (mixed $fact): bool => $fact !== null);

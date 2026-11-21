@@ -94,10 +94,12 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'isTransitionAuthorized',
 			'matrixRowsFromApps',
 			'permittedActionsFor',
+			'previewDepartmentMatrix',
 			'provenanceFor',
 			'resolveAuthorization',
 			'resolveDeclaredAuthorization',
 			'resolveInheritFromPublic',
+			'updateCrossesOrganisations',
 		],
 		ValidateObjectInterface::class => [
 			'generateErrorMessage',
@@ -105,8 +107,8 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'resolveSchema',
 			'validateImmutableConstraints',
 			'validateObject',
-			'validateObjectWithPlannedUsers',
 			'validateReadOnlyConstraints',
+			'validateWithPlannedAccounts',
 		],
 	];
 

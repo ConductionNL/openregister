@@ -23,9 +23,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApplicationsControllerServices;
+use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -71,7 +72,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * Used for direct database queries when needed, bypassing service layer.
 	 *
-	 * @var ApplicationMapperInterface Application mapper instance
+	 * @var ApplicationMapperInterface<Application> Application mapper instance
 	 */
 	private readonly ApplicationMapperInterface $applicationMapper;
 
@@ -100,7 +101,7 @@ class ApplicationsController extends Controller {
 		ApplicationsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->applicationService = $services->applicationService;
@@ -220,8 +221,6 @@ class ApplicationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created application
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
@@ -255,8 +254,6 @@ class ApplicationsController extends Controller {
 	 * @param int $id Application database ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated application
 	 *
@@ -295,8 +292,6 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing patched application
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Application,
 	 *     array<never, never>>|JSONResponse<400, array{error: string},
 	 *     array<never, never>>
@@ -322,8 +317,6 @@ class ApplicationsController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing deletion result
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400,
 	 *     array{error?: 'Failed to delete application',

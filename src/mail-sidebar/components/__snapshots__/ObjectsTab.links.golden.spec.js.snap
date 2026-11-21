@@ -141,7 +141,7 @@ exports[`ObjectsTab requests (golden) uploads an attachment named and typed 1`] 
     },
     "timeout": 20000,
   },
-  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/files-multipart",
 }
 `;
 
@@ -165,7 +165,7 @@ exports[`ObjectsTab requests (golden) uploads an attachment typed by the downloa
     },
     "timeout": 20000,
   },
-  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/files-multipart",
 }
 `;
 
@@ -189,6 +189,6 @@ exports[`ObjectsTab requests (golden) uploads an attachment without any type 1`]
     },
     "timeout": 20000,
   },
-  "url": "/index.php/apps/openregister/api/objects/r/s/o/filesMultipart",
+  "url": "/index.php/apps/openregister/api/objects/r/s/o/files-multipart",
 }
 `;

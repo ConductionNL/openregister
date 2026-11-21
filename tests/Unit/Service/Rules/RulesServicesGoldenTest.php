@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
@@ -66,6 +68,7 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -73,6 +76,8 @@ use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUser;
@@ -346,12 +351,12 @@ class RulesServicesGoldenTest extends TestCase {
 		];
 		foreach ($cases as $name => [$ruleId, $enabled]) {
 			$this->calls = [];
-			$actual[$name] = ['outcome' => $this->enablement()->setEnabled($schema, $ruleId, $enabled), 'calls' => $this->calls];
+			$actual[$name] = ['outcome' => $this->enablement()->setEnabled(new RuleSwitch($schema, $ruleId, $enabled)), 'calls' => $this->calls];
 		}
 
 		$this->calls = [];
 		$actual['write fails'] = [
-			'outcome' => $this->enablement(failWrite: true)->setEnabled($schema, 'calculation:bezwaar:kapot', true),
+			'outcome' => $this->enablement(failWrite: true)->setEnabled(new RuleSwitch($schema, 'calculation:bezwaar:kapot', true)),
 			'calls' => $this->calls,
 		];
 		$this->assertGolden('enablement', $actual);
@@ -359,8 +364,9 @@ class RulesServicesGoldenTest extends TestCase {
 
 	private function replay(int|Throwable $count): RuleReplayService {
 		$jobs = $this->createMock(BulkJobService::class);
-		$jobs->method('create')->willReturnCallback(
-			function (...$args): BulkJob {
+		$jobs->method('createFromRequest')->willReturnCallback(
+			function (BulkJobRequest $request): BulkJob {
+				$args = [$request->call, $request->selection, $request->actorUid, $request->justification];
 				$this->calls[] = ['create', $args];
 				$job = $this->createMock(BulkJob::class);
 				$job->method('jsonSerialize')->willReturn(['previewed' => $args[0]]);
@@ -402,7 +408,7 @@ class RulesServicesGoldenTest extends TestCase {
 		foreach ($cases as $name => [$count, $target, $ruleId, $selection, $registerId]) {
 			$this->calls = [];
 			try {
-				$outcome = $this->replay($count)->preview($target, $ruleId, $selection, 'jan', 'reden', $registerId);
+				$outcome = $this->replay($count)->previewReplay(new RuleReplayRequest($ruleId, 'jan', 'reden'), new RuleReplaySelection($target, $registerId, $selection));
 			} catch (Throwable $e) {
 				$outcome = [get_class($e), $e->getMessage()];
 			}
@@ -427,8 +433,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		$summaries = $this->createMock(RuleRunSummaryMapper::class);
 		$summaries->method('record')->willReturnCallback(
-			function (...$args) use ($failSummary): RuleRunSummary {
-				$args[3] = $args[3]->format(DATE_ATOM);
+			function (RuleRun $run, RuleEvaluation $evaluation) use ($failSummary): RuleRunSummary {
+				$args = [$run->getRuleId(), $run->getSchemaSlug(), $evaluation->verdict, $evaluation->moment->format(DATE_ATOM), $evaluation->error];
 				$this->calls[] = ['summary', $args];
 				if ($failSummary === true) {
 					throw new RuntimeException('summary failed');

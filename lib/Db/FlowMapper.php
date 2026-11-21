@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Db\Flow\TriggerLookup;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -120,34 +121,57 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 * and `Entity`'s camelCase<->snake_case conversion only applies to
 	 * property access, never to a query builder's raw column literal.
 	 *
-	 * @param string|null $app Restrict to one owning app id.
-	 * @param string|null $applicationSlug Restrict to one OpenBuild virtual-app slug.
-	 * @param string|null $organisation Restrict to one organisation uuid.
-	 * @param boolean|null $enabled Restrict to enabled or disabled flows.
-	 * @param integer $limit Page size.
-	 * @param integer $offset Page offset.
+	 * Takes main's FlowSelection and ListQuery, or the release's separate filters and page, by name
+	 * or by position (strings in the first two slots); separate arguments, when given, win.
+	 *
+	 * @param FlowSelection|string|null $selection       Which flows: owning app id, OpenBuild virtual-app slug, organisation uuid and enabled
+	 *                                                   state; a string here is the release's positional `$app`.
+	 * @param ListQuery|string|null     $query           The page size and offset; a string here is the release's positional `$applicationSlug`.
+	 * @param string|null               $organisation    Only flows of this organisation.
+	 * @param bool|null                 $enabled         Only enabled (true) or disabled (false) flows.
+	 * @param int                       $limit           The page size.
+	 * @param int                       $offset          The offset.
+	 * @param string|null               $app             Only flows of this app.
+	 * @param string|null               $applicationSlug Only flows of this OpenBuild virtual app.
 	 *
 	 * @return array<int, Flow> The flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's form plus the release's separate arguments.
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) The release's positional form is told apart by type.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The release's flag.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function findAllFlows(
-		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
-		?bool $enabled = null, int $limit = 100, int $offset = 0,
+		FlowSelection|string|null $selection = new FlowSelection(),
+		ListQuery|string|null $query = new ListQuery(limit: 100, offset: 0),
+		string|null $organisation = null,
+		bool|null $enabled = null,
+		int $limit = 100,
+		int $offset = 0,
+		string|null $app = null,
+		string|null $applicationSlug = null,
 	): array {
-		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
-		return $this->findSelected(selection: $selection, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end findAllFlows()
+		if (is_string($selection) === true || $selection === null) {
+			$app       ??= $selection;
+			$selection   = null;
+		}
 
-	/**
-	 * One page of the selected flows, newest first.
-	 *
-	 * @param FlowSelection $selection Which flows.
-	 * @param ListQuery     $query     The limit and offset.
-	 *
-	 * @return array<int, Flow> The flows.
-	 */
-	private function findSelected(FlowSelection $selection, ListQuery $query): array {
+		if (is_string($query) === true || $query === null) {
+			$applicationSlug ??= $query;
+			$query             = null;
+		}
+
+		if ($selection === null || [$organisation, $enabled, $app, $applicationSlug] !== [null, null, null, null]) {
+			$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation, enabled: $enabled);
+		}
+
+		if ($query === null || [$limit, $offset] !== [100, 0]) {
+			$query = new ListQuery(limit: $limit, offset: $offset);
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -158,7 +182,7 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 		$this->applySelection(qb: $qb, selection: $selection);
 
 		return $this->findEntities(query: $qb);
-	}//end findSelected()
+	}//end findAllFlows()
 
 	/**
 	 * Restrict a query to the selected flows: app, slug and organisation, then enabled.
@@ -190,7 +214,7 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 *
 	 * @return integer The number of matching flows.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function countFlows(FlowSelection $selection=new FlowSelection()): int {
 		$qb = $this->db->getQueryBuilder();

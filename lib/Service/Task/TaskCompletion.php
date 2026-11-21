@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 /**
- * The arguments of {@see TaskService::complete()} and
+ * The arguments of {@see TaskService::completeWithAnswer()} and
  * {@see TaskService::resolve()}, carried together to the shared completion.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed

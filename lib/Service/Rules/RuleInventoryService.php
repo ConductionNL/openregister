@@ -178,6 +178,88 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	}//end find()
 
 	/**
+	 * Each named condition of a schema, with the rules that name it directly (task 1.4b).
+	 *
+	 * Every rule in the inventory and every administered validation is read
+	 * for `$condition` references, keyed by the same rule id the run log and
+	 * the routes use. Direct references only, as {@see NamedConditionLibrary::usage()}
+	 * answers them: a condition that merely composes another is not a rule.
+	 *
+	 * A name a rule references but the schema does not declare is listed too,
+	 * with `declared: false`: such a rule refuses at evaluation, and the
+	 * inventory is where an administrator looks for why.
+	 *
+	 * @param Schema $schema The schema to read.
+	 *
+	 * @return array<int, array{name: string, description: string, declared: bool, usedBy: array<int, string>}> One row per condition, by name.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md#requirement-a-condition-is-named-once-and-used-inside-other-rules-req-rct-001
+	 */
+	public function namedConditions(Schema $schema): array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$library = new NamedConditionLibrary();
+		$declared = $library->libraryFrom(annotation: $this->annotationOf(configuration: $configuration, key: NamedConditionLibrary::ANNOTATION));
+		$usage = $library->usage(usingNodes: $this->conditionNodes(schema: $schema, configuration: $configuration));
+
+		$rows = [];
+		foreach (array_unique(array_merge(array_keys($declared), array_keys($usage))) as $name) {
+			$rows[(string)$name] = [
+				'name' => (string)$name,
+				'description' => ($declared[$name]['description'] ?? ''),
+				'declared' => array_key_exists($name, $declared),
+				'usedBy' => ($usage[$name] ?? []),
+			];
+		}
+
+		ksort($rows);
+		return array_values($rows);
+	}//end namedConditions()
+
+	/**
+	 * The condition of every rule and administered validation, by rule id.
+	 *
+	 * @param Schema               $schema        The schema to read.
+	 * @param array<string, mixed> $configuration The schema's configuration block.
+	 *
+	 * @return array<string, mixed> Condition node by rule id.
+	 */
+	private function conditionNodes(Schema $schema, array $configuration): array {
+		$nodes = [];
+		foreach ($this->describe(schema: $schema) as $descriptor) {
+			if ($descriptor->getCondition() !== null) {
+				$nodes[$descriptor->getId()] = $descriptor->getCondition();
+			}
+		}
+
+		$slug = (string)($schema->getSlug() ?? '');
+		foreach ($this->annotationOf(configuration: $configuration, key: AdministeredValidations::ANNOTATION) ?? [] as $key => $validation) {
+			if (is_array($validation) === true && array_key_exists('condition', $validation) === true) {
+				$id = RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$key);
+				$nodes[$id] = $validation['condition'];
+			}
+		}
+
+		return $nodes;
+	}//end conditionNodes()
+
+	/**
+	 * One annotation of a configuration block, or null when it is absent or not an object.
+	 *
+	 * @param array<string, mixed> $configuration The schema's configuration block.
+	 * @param string               $key           The annotation key.
+	 *
+	 * @return array<string, mixed>|null The annotation.
+	 */
+	private function annotationOf(array $configuration, string $key): ?array {
+		$annotation = ($configuration[$key] ?? null);
+		if (is_array($annotation) === false) {
+			return null;
+		}
+
+		return $annotation;
+	}//end annotationOf()
+
+	/**
 	 * The one calculations map: the annotation with every property calculation lifted in.
 	 *
 	 * The same merge the save listener runs, so an authored property

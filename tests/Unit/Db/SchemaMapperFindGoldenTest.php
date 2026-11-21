@@ -33,6 +33,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -46,6 +48,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class SchemaMapperFindGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -174,14 +184,18 @@ class SchemaMapperFindGoldenTest extends TestCase {
 		}
 
 		return new SchemaMapper(
-			$db,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$logger
+			db: $db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $logger
+			)
 		);
 	}//end makeMapper()
 }//end class

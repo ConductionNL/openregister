@@ -123,8 +123,8 @@ class AuthorizationAuditServiceEntryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemaEntry(): void {
-		$this->service($this->user())->logSchemaAuthorizationChange(7, 'Zaken', ['read' => ['a']], null);
-		$this->service(null)->logSchemaAuthorizationChange(8, '', null, []);
+		$this->service($this->user())->recordSchemaChange(new AuthorizationChange(7, 'Zaken', ['read' => ['a']], null));
+		$this->service(null)->recordSchemaChange(new AuthorizationChange(8, '', null, []));
 
 		$this->assertSame(
 			[

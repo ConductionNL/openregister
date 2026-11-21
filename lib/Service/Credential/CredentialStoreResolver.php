@@ -101,7 +101,7 @@ class CredentialStoreResolver {
 	 *
 	 * @var string
 	 */
-	private const SECRET_SERVICE_NAME = 'SecretService';
+	private const VAULT_SERVICE_NAME = 'SecretService';
 
 	/**
 	 * Application-scoped seam methods that must exist on the secret service.
@@ -158,6 +158,19 @@ class CredentialStoreResolver {
 			return false;
 		}
 
+		if ($this->hasDoriathServices() === false || $this->hasApplicationSeam() === false) {
+			return false;
+		}
+
+		return $this->isSelfRegistered();
+	}//end isDoriathEligible()
+
+	/**
+	 * Whether every Doriath service class this store needs is loadable; the first missing one is logged.
+	 *
+	 * @return bool True when all are present.
+	 */
+	private function hasDoriathServices(): bool {
 		foreach ($this->doriathServiceClasses() as $className) {
 			if (class_exists($className) === false) {
 				$this->settings->logger->debug(
@@ -168,6 +181,15 @@ class CredentialStoreResolver {
 			}
 		}
 
+		return true;
+	}//end hasDoriathServices()
+
+	/**
+	 * Whether the secret service carries every application-scoped seam method; the first missing one is logged.
+	 *
+	 * @return bool True when all are present.
+	 */
+	private function hasApplicationSeam(): bool {
 		$secretServiceClass = $this->secretServiceClass();
 		foreach (self::REQUIRED_SEAM_METHODS as $method) {
 			if (method_exists($secretServiceClass, $method) === false) {
@@ -179,8 +201,8 @@ class CredentialStoreResolver {
 			}
 		}
 
-		return $this->isSelfRegistered();
-	}//end isDoriathEligible()
+		return true;
+	}//end hasApplicationSeam()
 
 	/**
 	 * Whether OR's Doriath self-registration state exists (design D-B output).
@@ -271,6 +293,6 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function secretServiceClass(): string {
-		return $this->resolveNamespace() . self::SECRET_SERVICE_NAME;
+		return $this->resolveNamespace() . self::VAULT_SERVICE_NAME;
 	}//end secretServiceClass()
 }//end class

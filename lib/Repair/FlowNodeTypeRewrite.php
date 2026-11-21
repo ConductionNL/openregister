@@ -99,6 +99,25 @@ final class FlowNodeTypeRewrite {
 
 		$flow->setNodes($nodes);
 
+		if ($this->save(flow: $flow) === false) {
+			return;
+		}
+
+		$this->flowsWritten++;
+		$this->nodesRewritten += $changed;
+
+	}//end rewriteFlow()
+
+	/**
+	 * Save a rewritten flow, or warn that it could not be saved.
+	 *
+	 * @param mixed $flow The flow entity, its nodes rewritten.
+	 *
+	 * @return bool True when the flow was saved.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function save(mixed $flow): bool {
 		try {
 			$this->mapper->update($flow);
 		} catch (Throwable $e) {
@@ -110,13 +129,12 @@ final class FlowNodeTypeRewrite {
 				)
 			);
 
-			return;
+			return false;
 		}
 
-		$this->flowsWritten++;
-		$this->nodesRewritten += $changed;
+		return true;
 
-	}//end rewriteFlow()
+	}//end save()
 
 	/**
 	 * Say what the pass did, naming the renames it applied.
@@ -134,8 +152,39 @@ final class FlowNodeTypeRewrite {
 			return;
 		}
 
+		$this->output->info($this->rewroteLine());
+
+	}//end report()
+
+	/**
+	 * The report line of a pass that rewrote nodes.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function rewroteLine(): string {
+		return sprintf(
+			'OpenRegister: rewrote %d node(s) across %d flow(s) of %d to their current type ids (%s).',
+			$this->nodesRewritten,
+			$this->flowsWritten,
+			$this->flowsSeen,
+			self::renamedPairs()
+		);
+
+	}//end rewroteLine()
+
+	/**
+	 * The renames this pass applies, as `old → new` pairs.
+	 *
+	 * @return string The pairs, comma-separated.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private static function renamedPairs(): string {
 		$renamed = FlowNodeRegistryInterface::RENAMED_TYPES;
-		$pairs = implode(
+
+		return implode(
 			', ',
 			array_map(
 				static fn (string $old, string $new): string => $old . ' → ' . $new,
@@ -144,17 +193,7 @@ final class FlowNodeTypeRewrite {
 			)
 		);
 
-		$this->output->info(
-			sprintf(
-				'OpenRegister: rewrote %d node(s) across %d flow(s) of %d to their current type ids (%s).',
-				$this->nodesRewritten,
-				$this->flowsWritten,
-				$this->flowsSeen,
-				$pairs
-			)
-		);
-
-	}//end report()
+	}//end renamedPairs()
 
 	/**
 	 * Rewrite the renamed node types in place.
@@ -164,24 +203,41 @@ final class FlowNodeTypeRewrite {
 	 * @return integer How many nodes were rewritten.
 	 */
 	private function rewriteNodes(array &$nodes): int {
-		$renamed = FlowNodeRegistryInterface::RENAMED_TYPES;
 		$changed = 0;
 
 		foreach ($nodes as $index => $node) {
-			if (is_array($node) === false) {
+			$currentType = self::currentType(node: $node);
+			if ($currentType === null) {
 				continue;
 			}
 
-			$type = (string)($node['type'] ?? '');
-			if ($type === '' || isset($renamed[$type]) === false) {
-				continue;
-			}
-
-			$nodes[$index]['type'] = $renamed[$type];
+			$nodes[$index]['type'] = $currentType;
 			$changed++;
 		}
 
 		return $changed;
 
 	}//end rewriteNodes()
+
+	/**
+	 * The current type id of a node stored under a renamed one.
+	 *
+	 * @param mixed $node One stored node.
+	 *
+	 * @return string|null The current type id, or null when the node is malformed or not renamed.
+	 */
+	private static function currentType(mixed $node): ?string {
+		if (is_array($node) === false) {
+			return null;
+		}
+
+		$renamed = FlowNodeRegistryInterface::RENAMED_TYPES;
+		$type = (string)($node['type'] ?? '');
+		if ($type === '' || isset($renamed[$type]) === false) {
+			return null;
+		}
+
+		return $renamed[$type];
+
+	}//end currentType()
 }//end class

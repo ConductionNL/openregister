@@ -38,12 +38,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Imports, versions and diffs a selectielijst or classification plan.
@@ -411,7 +413,8 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 			// The ENTITIES, not their ids. saveObject() accepts either, and a
 			// register or schema whose id is not yet materialised would be
 			// passed as null, which its signature refuses.
-			$this->storage->writer->saveObject($table->register, $table->schema, $row);
+			$target = new ObjectFindTarget(register: $table->register, schema: $table->schema);
+			$this->storage->writer->saveObject(data: $row, options: new ObjectSaveOptions(target: $target));
 			return true;
 		} catch (Throwable $e) {
 			$this->logger->warning(

@@ -21,7 +21,6 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -31,6 +30,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Controller\Support\GitHubTokenFailure;
 use OCA\OpenRegister\Controller\Support\UserSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Class UserSettingsController
@@ -74,7 +74,7 @@ class UserSettingsController extends Controller {
 		IRequest $request,
 		UserSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->gitHubService = $services->gitHubService;
 		$this->userSession = $services->userSession;
@@ -130,8 +130,6 @@ class UserSettingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response containing result of token save operation
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -175,8 +173,6 @@ class UserSettingsController extends Controller {
 	 * Remove GitHub personal access token for the current user.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Success or error message
 	 *

@@ -35,7 +35,7 @@
     "dompurify": "3.4.17",
     "estree-util-value-to-estree": "3.5.0",
     "fast-uri": "3.1.9",
-    "fast-xml-parser": "5.7.0",
+    "fast-xml-parser": "5.12.1",
     "follow-redirects": "1.16.2",
     "http-proxy-middleware": "2.0.10",
     "image-size": "2.0.3",

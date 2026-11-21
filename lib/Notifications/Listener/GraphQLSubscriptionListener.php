@@ -54,6 +54,10 @@ class GraphQLSubscriptionListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * @listener-placement inline sapi-memory — SubscriptionService::pushEvent stores via apcu_store, and
+	 *   APCu is per-SAPI; a cron worker writes a different segment than the SSE reader, so deferring would
+	 *   silently drop the event.
+	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	public function handle(Event $event): void {
