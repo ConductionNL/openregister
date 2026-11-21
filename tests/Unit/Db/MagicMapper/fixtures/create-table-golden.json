@@ -392,7 +392,7 @@
     "maria / 'oc_' / metadata": {
         "events": [
             {
-                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`_object`)), PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
             },
             {
                 "log": "debug",
@@ -415,7 +415,7 @@
         "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
         "events": [
             {
-                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+                "sql": "CREATE TABLE IF NOT EXISTS `oc_openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`_object`)), PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
             },
             {
                 "log": "error",
@@ -571,7 +571,7 @@
     "maria / '' / metadata": {
         "events": [
             {
-                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`_object`)), PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
             },
             {
                 "log": "debug",
@@ -594,7 +594,7 @@
         "thrown": "Exception: Failed to create table openregister_table_1_2: statement refused",
         "events": [
             {
-                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` JSON, PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
+                "sql": "CREATE TABLE IF NOT EXISTS `openregister_table_1_2` (`_id` BIGINT NOT NULL AUTO_INCREMENT, `_uuid` VARCHAR(36) NOT NULL, `_name` VARCHAR(255), `_created` DATETIME, `_object` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`_object`)), PRIMARY KEY (`_id`), CONSTRAINT `openregister_table_1_2_uuid_uq` UNIQUE (`_uuid`))"
             },
             {
                 "log": "error",

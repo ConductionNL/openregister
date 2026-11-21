@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaAggregationValidator
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\GroupByMember
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
  */
 class AggregationAnnotationGroupByGoldenTest extends TestCase {
 
