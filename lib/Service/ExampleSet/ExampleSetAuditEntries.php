@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -224,7 +225,8 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 */
 	private function earlierId(AuditTrailMapperInterface $mapper, ExampleSetRow $row): ?int {
 		$run = $this->causeRun(row: $row);
-		foreach ($mapper->findForObjectByAction((string) $row->data['object'], [(string) $row->data['action']], 500) as $earlier) {
+		$options = new ActionLookupOptions(actions: [(string) $row->data['action']], limit: 500);
+		foreach ($mapper->findObjectActions(objectUuid: (string) $row->data['object'], options: $options) as $earlier) {
 			if ($earlier->getCauseRun() === $run) {
 				return (int) $earlier->getId();
 			}

@@ -287,6 +287,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TagEdit from 'vue-material-design-icons/TagEdit.vue'
 import UploadNotice from './UploadNotice.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
+import { uploadSizeLabel } from '../../services/byteSize.js'
 import { useFileSelection } from './../../composables/UseFileSelection.js'
 
 const dropzone = ref(null)
@@ -423,18 +424,7 @@ export default {
 			navigationStore.setModal(false)
 		},
 
-		/**
-		 * @param {number} bytes
-		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
-		 */
-		bytesToSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		bytesToSize: uploadSizeLabel,
 
 		/**
 		 * @param {string} fullname

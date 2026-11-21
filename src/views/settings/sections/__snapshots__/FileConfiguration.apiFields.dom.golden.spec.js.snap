@@ -1,0 +1,72 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`file configuration API fields renders the Dolphin fields 1`] = `
+[
+  "<div class="field-group">
+<label for="dolphin-endpoint">Dolphin API Endpoint</label>
+<x-nctextfield id="dolphin-endpoint" modelvalue="" placeholder="https://api.your-dolphin-instance.com">
+<slot-trailing-button-icon>
+<x-information size="20">
+</x-information>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">URL to your Dolphin API instance</p>
+</div>",
+  "<div class="field-group">
+<label for="dolphin-key">Dolphin API Key</label>
+<x-nctextfield id="dolphin-key" modelvalue="" type="password" placeholder="[Enter your API key]">
+<slot-trailing-button-icon>
+<x-key size="20">
+</x-key>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">Your Dolphin API authentication key</p>
+</div>",
+]
+`;
+
+exports[`file configuration API fields renders the Presidio fields 1`] = `
+[
+  "<div class="field-group">
+<label for="presidio-endpoint">Presidio API Endpoint</label>
+<x-nctextfield id="presidio-endpoint" modelvalue="" placeholder="http://openregister-presidio-analyzer:3000">
+<slot-trailing-button-icon>
+<x-information size="20">
+</x-information>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">URL to your Presidio Analyzer instance</p>
+</div>",
+]
+`;
+
+exports[`file configuration API fields renders the external OpenAnonymiser fields 1`] = `
+[
+  "<div class="field-group">
+<label for="openanonymiser-endpoint">[OpenAnonymiser API endpoint]</label>
+<x-nctextfield id="openanonymiser-endpoint" modelvalue="" placeholder="http://openregister-openanonymiser:8080">
+<slot-trailing-button-icon>
+<x-information size="20">
+</x-information>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">[URL to an external OpenAnonymiser instance (Dutch-focused PII detection)]</p>
+</div>",
+  "<div class="field-group">
+<label for="openanonymiser-username">[OpenAnonymiser user name]</label>
+<x-nctextfield id="openanonymiser-username" modelvalue="" autocomplete="off">
+</x-nctextfield>
+<p class="field-hint">[Leave empty when the endpoint does not ask for a login.]</p>
+</div>",
+  "<div class="field-group">
+<label for="openanonymiser-password">[OpenAnonymiser password]</label>
+<x-nctextfield id="openanonymiser-password" modelvalue="" type="password" autocomplete="new-password" placeholder="">
+<slot-trailing-button-icon>
+<x-key size="20">
+</x-key>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">[Stored as a secret and never shown again. Type a new one to replace it.]</p>
+</div>",
+]
+`;

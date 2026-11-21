@@ -115,6 +115,11 @@
 			</div>
 		</div>
 
+		<FileAccessLinksModal
+			v-if="sharingFile"
+			:file="sharingFile"
+			@close="sharingFile = null" />
+
 		<!-- Search Sidebar -->
 		<template #details>
 			<FilesSidebar
@@ -134,8 +139,10 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
@@ -162,6 +169,9 @@ export default {
 		NcEmptyContent,
 		FileDocumentOutline,
 		FilesSidebar,
+		FileAccessLinksModal: defineAsyncComponent(
+			() => import('../../modals/file/FileAccessLinksModal.vue'),
+		),
 	},
 
 	mixins: [offsetPaging('totalFiles', 'loadFiles')],
@@ -169,6 +179,8 @@ export default {
 	data() {
 		return {
 			filesList: [],
+			// The file row whose access links are open, or null.
+			sharingFile: null,
 			loading: false,
 			totalFiles: 0,
 			limit: 50,
@@ -231,6 +243,13 @@ export default {
 					icon: AlertCircleOutline,
 					run: () => this.showError(file),
 					hidden: !file.extractionError,
+				},
+				{
+					// A file link names its object, so only a file an object carries can be shared.
+					label: t('openregister', 'Share by link'),
+					icon: LinkVariant,
+					run: () => { this.sharingFile = file },
+					hidden: !file.objectUuid,
 				},
 			]
 		},

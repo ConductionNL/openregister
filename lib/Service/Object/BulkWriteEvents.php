@@ -44,7 +44,7 @@ use Symfony\Component\Uid\Uuid;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class BulkWriteEvents {
 
@@ -78,7 +78,7 @@ final class BulkWriteEvents {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-whether-a-bulk-write-fires-the-save-events-is-configured-per-schema
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-whether-a-bulk-write-fires-the-save-events-is-configured-per-schema
 	 */
 	public function appliesTo(Schema $schema, ?Register $register): bool {
 		$schemaConfig = ($schema->getConfiguration() ?? []);
@@ -105,7 +105,7 @@ final class BulkWriteEvents {
 	 *
 	 * @return array{0: array, 1: string|null}
 	 *
-	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function screen(array $row, BulkSafeguardRun $run): array {
 		if ($run->rowUuid === null) {

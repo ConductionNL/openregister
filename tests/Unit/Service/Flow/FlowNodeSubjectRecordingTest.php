@@ -51,6 +51,7 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Wiring tests for the two recording nodes.
@@ -66,6 +67,27 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectCandidates
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockAttempt
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockHold
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockStepContext
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockStepRun
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteConfigValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePayload
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
  */
 final class FlowNodeSubjectRecordingTest extends TestCase {
 
@@ -299,7 +321,7 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	public function testAMultiObjectWriteHandsOverEveryUuid(): void {
 		$uuids = ['obj-1', 'obj-2'];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use (&$uuids): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				return $this->saved((string)array_shift($uuids));
 			}
 		);

@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Listener\ObjectStateDeleteGuardListener;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
@@ -41,6 +42,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunFrame;
  * @uses   \OCA\OpenRegister\Exception\LockedException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
  */
 class ObjectStateDeleteGuardListenerTest extends TestCase {
 
@@ -106,6 +110,26 @@ class ObjectStateDeleteGuardListenerTest extends TestCase {
 
 		$this->assertFalse($this->delete()->isPropagationStopped());
 	}//end testTheRunHoldingALockMayDelete()
+
+	/**
+	 * The guard needs only the Core current-run port: any answer naming the holding run admits it.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardReadsTheRunThroughTheCorePort(): void {
+		$this->object->setLocked(['kind' => ObjectEntity::LOCK_KIND_RUN, 'runUuid' => self::RUN, 'user' => 'bob']);
+		$run = $this->createMock(CurrentFlowRunInterface::class);
+		$run->method('currentRunUuid')->willReturn(self::RUN);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$event = new ObjectDeletingEvent(object: $this->object);
+		(new ObjectStateDeleteGuardListener(userSession: $session, runContext: $run, retention: new RetentionDestruction()))->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+	}//end testTheGuardReadsTheRunThroughTheCorePort()
 
 	public function testAnArchivedObjectRefusesAndNamesTheArchive(): void {
 		$this->object->setArchived(self::ARCHIVE);

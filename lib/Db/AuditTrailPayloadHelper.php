@@ -129,7 +129,19 @@ class AuditTrailPayloadHelper {
 			return;
 		}
 
-		$data = ($object->getObject() ?? []);
+		$object->setObject($this->revertedData(data: ($object->getObject() ?? []), changes: $changes));
+	}//end revertChanges()
+
+	/**
+	 * The object data with every revertible change undone: a field that was added is removed,
+	 * any other gets its old value back.
+	 *
+	 * @param array<string, mixed> $data    The object data.
+	 * @param array<string, mixed> $changes The audit entry's change set.
+	 *
+	 * @return array<string, mixed> The reverted data.
+	 */
+	private function revertedData(array $data, array $changes): array {
 		foreach ($changes as $field => $change) {
 			if ($this->isRevertible(field: $field, change: $change) === false) {
 				continue;
@@ -143,8 +155,8 @@ class AuditTrailPayloadHelper {
 			$data[$field] = $change['old'];
 		}
 
-		$object->setObject($data);
-	}//end revertChanges()
+		return $data;
+	}//end revertedData()
 
 	/**
 	 * Whether one change-set entry is a data property with a recorded old value.

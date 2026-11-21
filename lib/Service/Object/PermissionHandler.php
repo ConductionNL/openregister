@@ -30,13 +30,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
+use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
@@ -48,7 +56,6 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -76,6 +83,7 @@ use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -457,6 +465,47 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end hasPermission()
 
 	/**
+	 * Whether an update rule marked `crossOrganisation: true` lets the signed-in caller change a row.
+	 *
+	 * The ordinary update question, asked of the marked update rules only. The
+	 * verdict is not cached: it answers a narrower question than the update rule.
+	 *
+	 * @param Schema       $schema The row's schema.
+	 * @param ObjectEntity $row    The stored row.
+	 *
+	 * @return bool True when a marked update rule admits the caller.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function updateCrossesOrganisations(Schema $schema, ObjectEntity $row): bool {
+		$check = (new PermissionAsk(schema: $schema, action: 'update'))
+			->askedBy(userId: null, objectOwner: $row->getOwner())
+			->about(object: $row, register: null)
+			->check();
+
+		if ($this->resolveCheckAuthorization(check: $check) === false
+			|| $this->deniedByRule(check: $check) === true
+		) {
+			return false;
+		}
+
+		$tenancy = new ReadRuleTenancy();
+		$marked  = array_values(
+			array_filter(
+				(array)($check->authorization['update'] ?? []),
+				static fn (mixed $rule): bool => $tenancy->isMarked(rule: $rule)
+			)
+		);
+		if ($marked === []) {
+			return false;
+		}
+
+		$check->authorization = ['update' => $marked];
+
+		return $this->grantVerdict(check: $check);
+	}//end updateCrossesOrganisations()
+
+	/**
 	 * Whether a permission question is answered yes, or RBAC is bypassed for it.
 	 *
 	 * RBAC disabled bypasses all permission checks. Explicitly-scoped system
@@ -577,9 +626,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param bool          $verdict The person's own verdict.
 	 * @param PermissionAsk $ask     The question, with the schema, register and verb written to.
 	 *
-	 * @return bool The verdict after elevation.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @return bool The verdict after elevation; without an elevation port the person's own verdict stands.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -588,9 +635,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::permits(
-			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
-		);
+		return ($this->rules->writeElevation?->permits(ask: $ask) ?? false);
 	}//end elevated()
 
 	/**
@@ -658,7 +703,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function dispatchActionEvaluated(PermissionAsk $ask, bool $granted): void {
 		if ($this->rules->eventDispatcher === null) {
@@ -855,9 +900,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService).
 		$check = $ask->check();
 
-		if ($this->resolveCheckAuthorization(check: $check) === false
-			|| $this->deniedByRule(check: $check) === true
-		) {
+		$undecidable = $this->unresolvedAuthorization(check: $check);
+		if ($undecidable !== null) {
+			return $this->undecidableVerdict(check: $check, error: $undecidable);
+		}
+
+		if ($this->deniedByRule(check: $check) === true) {
+			$this->lastRefusalFinal = true;
+			return false;
+		}
+
+		if ($this->classificationRefuses(ask: $ask) === true) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -867,6 +920,41 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $verdict;
 	}//end evaluatePermission()
+
+	/**
+	 * Whether the schema's classification block refuses this caller this object.
+	 *
+	 * Checked before any grant, so neither a schema rule, a per-object grant nor
+	 * an elevation re-opens it (the refusal is final). Only an ask about one
+	 * object is checked; the list path compiles the same comparison into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| is_array((new SchemaAnnotation(schema: $ask->schema, key: ClassificationScale::ANNOTATION))->value()) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$logger = $this->data->logger;
+		$gate   = new ClassificationReadGate(
+			classification: new ObjectClassification(logger: $logger),
+			clearances: new ClearanceResolver(logger: $logger),
+			logger: $logger
+		);
+
+		return $gate->refusal(
+			schema: $ask->schema,
+			object: $ask->object,
+			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+		) !== null;
+	}//end classificationRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
@@ -907,25 +995,90 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool Whether the authorization was resolved
 	 */
 	private function resolveCheckAuthorization(PermissionCheck $check): bool {
+		$error = $this->unresolvedAuthorization(check: $check);
+		if ($error === null) {
+			return true;
+		}
+
+		$this->logUnresolvableRefusal(check: $check, error: $error);
+		return false;
+	}//end resolveCheckAuthorization()
+
+	/**
+	 * Resolve the effective authorization block onto the check; the reason when it cannot be resolved.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return AuthorizationUnresolvableException|null Why it did not resolve, or null when it did.
+	 */
+	private function unresolvedAuthorization(PermissionCheck $check): ?AuthorizationUnresolvableException {
 		try {
 			$check->authorization = $this->resolveAuthorization(schema: $check->schema, object: $check->object);
+			return null;
 		} catch (AuthorizationUnresolvableException $e) {
-			$this->data->logger->error(
-				message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $check->schema->getId(),
-					'action' => $check->action,
-					'userId' => $check->userId,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $e;
+		}
+	}//end unresolvedAuthorization()
+
+	/**
+	 * Log a refusal because the authorization could not be resolved (fail-closed).
+	 *
+	 * @param PermissionCheck                    $check The check
+	 * @param AuthorizationUnresolvableException $error Why it did not resolve.
+	 *
+	 * @return void
+	 */
+	private function logUnresolvableRefusal(PermissionCheck $check, AuthorizationUnresolvableException $error): void {
+		$this->data->logger->error(
+			message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $check->schema->getId(),
+				'action' => $check->action,
+				'userId' => $check->userId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnresolvableRefusal()
+
+	/**
+	 * The verdict on a question whose authorization could not be resolved: the schema's declared posture.
+	 *
+	 * The posture is read from the schema's OWN block, because the resolved one
+	 * is what failed. `closed` (the default) refuses finally, as before; `open`
+	 * grants, and is logged at warning with the object and what was missing, so
+	 * a schema that chose to serve undecidable questions is never silent about it.
+	 *
+	 * @param PermissionCheck                    $check The check
+	 * @param AuthorizationUnresolvableException $error Why it did not resolve.
+	 *
+	 * @return bool True only when the schema declares `onUndecidable: open`.
+	 *
+	 * @spec openspec/changes/an-app-declares-object-access-rather-than-guarding-it/specs/object-access-contract/spec.md#requirement-a-schema-declares-what-an-undecidable-access-question-means
+	 */
+	private function undecidableVerdict(PermissionCheck $check, AuthorizationUnresolvableException $error): bool {
+		if ((new UndecidablePosture())->admits(authorization: $check->schema->getAuthorization()) === false) {
+			$this->logUnresolvableRefusal(check: $check, error: $error);
+			$this->lastRefusalFinal = true;
 			return false;
 		}
 
+		$this->data->logger->warning(
+			message: '[PermissionHandler] Authorization unresolvable; granting action because the schema declares onUndecidable: open',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $check->schema->getId(),
+				'action' => $check->action,
+				'userId' => $check->userId,
+				'object' => $check->object?->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+		$this->lastRefusalFinal = false;
 		return true;
-	}//end resolveCheckAuthorization()
+	}//end undecidableVerdict()
 
 	/**
 	 * The DENY pass: whether an enforced explicit deny removes the verb.
@@ -1314,22 +1467,16 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * custom verb an app declared, because those are the ones an object screen
 	 * offers.
 	 *
-	 * @param Schema            $schema The schema the row belongs to.
-	 * @param ObjectEntity|null $object The row, when the question is about one.
-	 * @param string|null       $userId The caller, or null to resolve from the session.
+	 * @param VerbListing $listing The schema, the row when the question is about one, and the caller (null for the session user).
 	 *
 	 * @return array<int, string> The verbs, in catalogue order.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function permittedActionsFor(
-		Schema $schema,
-		?ObjectEntity $object = null,
-		?string $userId = null,
-	): array {
-		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $schema, action: $verb))
-			->askedBy(userId: $userId, objectOwner: $object?->getOwner())
-			->about(object: $object, register: null);
+	public function permittedActionsFor(VerbListing $listing): array {
+		$asks = static fn (string $verb): PermissionAsk => (new PermissionAsk(schema: $listing->schema, action: $verb))
+			->askedBy(userId: $listing->userId, objectOwner: $listing->object?->getOwner())
+			->about(object: $listing->object, register: null);
 
 		return array_values(
 			array_filter($this->rowVerbs(), fn (string $verb): bool => $this->permits(ask: $asks($verb), _rbac: true))
@@ -1369,29 +1516,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * that would remove it is reported as `stagedDeny`, so the field that says
 	 * why a person may act also says what stops them the day the switch moves.
 	 *
-	 * @param Schema             $schema  The schema being reported on.
-	 * @param array<int, string> $actions The verbs to report.
-	 * @param string|null        $userId  The caller, or null to resolve from the session.
-	 * @param ObjectEntity|null  $object  The row, when the question is about one.
+	 * @param ProvenanceRequest $request The schema, the actions, the caller (null for the session user) and the optional row.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array {
-		return $this->provenance(request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $userId, object: $object));
-	}//end provenanceFor()
-
-	/**
-	 * Where the caller's answer for each requested action comes from (see provenanceFor()).
-	 *
-	 * @param ProvenanceRequest $request The schema, the actions, the caller and the optional object.
-	 *
-	 * @return array<string, array<string, mixed>> One provenance record per action.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function provenance(ProvenanceRequest $request): array {
+	public function provenanceFor(ProvenanceRequest $request): array {
 		$userId = $this->callerId(userId: $request->userId);
 		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $this->groupsOf(userId: $userId));
 
@@ -1417,7 +1548,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$enforced = $this->denyEnforcementMode()->enforces();
 
 		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
-	}//end provenance()
+	}//end provenanceFor()
 
 	/**
 	 * The blocks provenance reads: object, schema, register and the register's role definitions.
@@ -2779,7 +2910,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function resolveDeclaredAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array {
 		return self::stripMcpScope(
@@ -2813,24 +2944,36 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $authorization;
 		}
 
-		$registerSlug = null;
-		try {
-			$register = $this->getRegisterForSchema(schema: $schema);
-			if ($register !== null) {
-				$registerSlug = $register->getSlug();
-			}
-		} catch (Throwable $e) {
-			// A register we cannot name is a register the grant cannot be
-			// checked against. That narrows rather than widens: a grant scoped
-			// by register will not cover it.
-			$registerSlug = null;
-		}
+		$registerSlug = $this->registerSlugFor(schema: $schema);
 
 		return $this->grants->derived->tokenGrantNarrower->narrow(
 			authorization: $authorization,
 			use: new TokenGrantUse(grant: $grant, target: new TokenGrantTarget(schemaSlug: $schema->getSlug(), registerSlug: $registerSlug))
 		);
 	}//end narrowByToken()
+
+	/**
+	 * The slug of the register a schema belongs to, for checking a token grant against.
+	 *
+	 * @param Schema $schema The schema being resolved.
+	 *
+	 * @return string|null The slug, or null when the schema belongs to no register or it cannot be read.
+	 */
+	private function registerSlugFor(Schema $schema): ?string {
+		try {
+			$register = $this->getRegisterForSchema(schema: $schema);
+			if ($register !== null) {
+				return $register->getSlug();
+			}
+		} catch (Throwable $e) {
+			// A register we cannot name is a register the grant cannot be
+			// checked against. That narrows rather than widens: a grant scoped
+			// by register will not cover it.
+			return null;
+		}
+
+		return null;
+	}//end registerSlugFor()
 
 	/**
 	 * Compile the schema's department matrix into the block, if it declares one.
@@ -2865,38 +3008,110 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
-
-			$userId = $this->callerId(userId: null);
-			$userGroups = $this->groupsOf(userId: $userId);
-
-			$source = $matrix['userSource'] ?? null;
-			if (is_array($source) === false) {
-				$source = null;
-			}
-
-			// Both sources may be declared; the caller's own values are the
-			// union. The person source is read only when it is declared.
-			$ownValues = $compiler->valuesFromGroups(source: $source, userGroups: $userGroups);
-			if (trim((string)($source['schema'] ?? '')) !== '') {
-				$ownValues = array_values(
-					array_unique(array_merge($ownValues, $this->personValues()->valuesFor(source: $source, userId: $userId)))
-				);
-			}
-
-			return $compiler->merge(
-				authorization: $authorization,
-				compiled: $compiler->compile(matrix: $matrix, ownValues: $ownValues)
-			);
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
+			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
+			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
-			$this->data->logger->error(
-				message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
+			$this->logMatrixCompileFailure(error: $e);
 			return $authorization;
 		}
 	}//end compileDepartmentMatrix()
+
+	/**
+	 * The rules a matrix (its app rows added) compiles to for the caller's own values.
+	 *
+	 * @param DepartmentMatrixCompiler $compiler The compiler, for the schema's declared actions.
+	 * @param array<string, mixed>     $matrix   The matrix declaration with its app rows.
+	 *
+	 * @return array<string, mixed> The compiled rules, by action.
+	 */
+	private function compiledMatrixRules(DepartmentMatrixCompiler $compiler, array $matrix): array {
+		$userId = $this->callerId(userId: null);
+
+		return $compiler->compile(matrix: $matrix, ownValues: $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $userId));
+	}//end compiledMatrixRules()
+
+	/**
+	 * A user's own values for a matrix: the union of both declared sources.
+	 *
+	 * @param DepartmentMatrixCompiler $compiler The compiler.
+	 * @param array<string, mixed>     $matrix   The matrix declaration.
+	 * @param string|null              $userId   The user, or null for none.
+	 *
+	 * @return list<string>
+	 */
+	private function matrixOwnValues(DepartmentMatrixCompiler $compiler, array $matrix, ?string $userId): array {
+		$source = self::matrixUserSource(matrix: $matrix);
+
+		// Both sources may be declared; the caller's own values are the
+		// union. The person source is read only when it is declared.
+		$ownValues = $compiler->valuesFromGroups(source: $source, userGroups: $this->groupsOf(userId: $userId));
+		if (trim((string)($source['schema'] ?? '')) !== '') {
+			$ownValues = array_values(
+				array_unique(array_merge($ownValues, $this->personValues()->valuesFor(source: $source, userId: $userId)))
+			);
+		}
+
+		return array_values($ownValues);
+	}//end matrixOwnValues()
+
+	/**
+	 * The scopes a schema's department matrix compiles to for one user.
+	 *
+	 * The schema's own authorization block, with the rows its provider apps
+	 * add, through the same compiler the authorization path runs. Unlike that
+	 * path a compile failure is not swallowed: an administrator previewing a
+	 * matrix is told it does not compile.
+	 *
+	 * @param Schema $schema The schema whose matrix is previewed.
+	 * @param IUser  $user   The user previewed.
+	 *
+	 * @return array{values: list<string>, scopes: array<string, mixed>}
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	public function previewDepartmentMatrix(Schema $schema, IUser $user): array {
+		$matrix = ($schema->getAuthorization()[DepartmentMatrixCompiler::KEY] ?? null);
+		if (is_array($matrix) === false) {
+			return ['values' => [], 'scopes' => []];
+		}
+
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
+		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
+		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
+
+		return ['values' => $values, 'scopes' => $compiler->compile(matrix: $matrix, ownValues: $values)];
+	}//end previewDepartmentMatrix()
+
+	/**
+	 * The matrix's user source, or null when it does not declare one as a map.
+	 *
+	 * @param array<string, mixed> $matrix The matrix declaration.
+	 *
+	 * @return array<string, mixed>|null The user source.
+	 */
+	private static function matrixUserSource(array $matrix): ?array {
+		$source = $matrix['userSource'] ?? null;
+		if (is_array($source) === false) {
+			return null;
+		}
+
+		return $source;
+	}//end matrixUserSource()
+
+	/**
+	 * Log a department matrix that could not be compiled.
+	 *
+	 * @param \Throwable $error Why it could not be compiled.
+	 *
+	 * @return void
+	 */
+	private function logMatrixCompileFailure(\Throwable $error): void {
+		$this->data->logger->error(
+			message: '[PermissionHandler] Could not compile a department matrix; the schema keeps its own rules',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()]
+		);
+	}//end logMatrixCompileFailure()
 
 	/**
 	 * The asker of app-contributed matrix rows, built once.
@@ -3087,8 +3302,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function baselineAuthorization(Schema $schema): ?array {
+		// A block holding only `onUndecidable` has no rules of its own: it still
+		// cascades to the register, and the posture answers when that fails.
 		$schemaAuthorization = $schema->getAuthorization();
-		if (empty($schemaAuthorization) === false) {
+		if (empty((new UndecidablePosture())->rulesOf(authorization: $schemaAuthorization)) === false) {
 			return $this->expandRoles(authorization: $schemaAuthorization, schema: $schema);
 		}
 
@@ -3160,7 +3377,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array|null The block with the mcp scope removed, or null when
 	 *                    nothing enforceable remains.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function stripMcpScope(?array $authorization): ?array {
 		return McpScope::strip(authorization: $authorization);
@@ -3175,7 +3392,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return array<int, string> The offered action names, in declaration order.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function mcpOfferedActions(?array $authorization): array {
 		return McpScope::offeredActions(authorization: $authorization);

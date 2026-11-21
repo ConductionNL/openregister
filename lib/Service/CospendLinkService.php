@@ -718,13 +718,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function queryProjects(string $uid, ?string $needle): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::PROJECTS_TABLE)
-				->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
-				->orderBy('name', 'ASC');
-
-			$result = $qb->executeQuery();
+			$result = $this->userProjectsQuery(uid: $uid)->executeQuery();
 			$out = $this->collectProjects(result: $result, needle: $needle);
 			$result->closeCursor();
 			return $out;
@@ -733,6 +727,23 @@ class CospendLinkService implements CospendLinkServiceInterface {
 			return [];
 		}//end try
 	}//end queryProjects()
+
+	/**
+	 * The query for a user's projects, by name.
+	 *
+	 * @param string $uid The user id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function userProjectsQuery(string $uid): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::PROJECTS_TABLE)
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
+			->orderBy('name', 'ASC');
+
+		return $qb;
+	}//end userProjectsQuery()
 
 	/**
 	 * Normalise the fetched project rows, keeping those whose name contains the needle.
@@ -844,13 +855,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function fetchProject(string $projectId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::PROJECTS_TABLE)
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($projectId)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
+			$result = $this->projectQuery(projectId: $projectId)->executeQuery();
 			$row = $result->fetch();
 			$result->closeCursor();
 
@@ -866,6 +871,23 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	}//end fetchProject()
 
 	/**
+	 * The query for one project.
+	 *
+	 * @param string $projectId The Cospend project id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function projectQuery(string $projectId): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::PROJECTS_TABLE)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($projectId)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end projectQuery()
+
+	/**
 	 * Fetch a normalised Cospend bill row by project + bill id.
 	 *
 	 * @param string $projectId The Cospend project id.
@@ -875,14 +897,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function fetchBill(string $projectId, int $billId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::BILLS_TABLE)
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($billId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
+			$result = $this->billQuery(projectId: $projectId, billId: $billId)->executeQuery();
 			$row = $result->fetch();
 			$result->closeCursor();
 
@@ -890,22 +905,53 @@ class CospendLinkService implements CospendLinkServiceInterface {
 				return null;
 			}
 
-			$amount = null;
-			if (isset($row['amount']) === true) {
-				$amount = (float)$row['amount'];
-			}
-
-			return [
-				'id' => (int)($row['id'] ?? 0),
-				'projectId' => (string)($row['project_id'] ?? $projectId),
-				'what' => (string)($row['what'] ?? ''),
-				'amount' => $amount,
-			];
+			return self::billRow(row: $row, projectId: $projectId);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('CospendLinkService::fetchBill failed: ' . $e->getMessage());
 			return null;
 		}//end try
 	}//end fetchBill()
+
+	/**
+	 * The query for one bill of a project.
+	 *
+	 * @param string $projectId The Cospend project id.
+	 * @param int    $billId    The Cospend bill id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function billQuery(string $projectId, int $billId): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::BILLS_TABLE)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($billId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end billQuery()
+
+	/**
+	 * A bill row in the shape the link service uses.
+	 *
+	 * @param array<string, mixed> $row       The bill row.
+	 * @param string               $projectId The project it was read under.
+	 *
+	 * @return array{id: int, projectId: string, what: string, amount: float|null}
+	 */
+	private static function billRow(array $row, string $projectId): array {
+		$amount = null;
+		if (isset($row['amount']) === true) {
+			$amount = (float)$row['amount'];
+		}
+
+		return [
+			'id' => (int)($row['id'] ?? 0),
+			'projectId' => (string)($row['project_id'] ?? $projectId),
+			'what' => (string)($row['what'] ?? ''),
+			'amount' => $amount,
+		];
+	}//end billRow()
 
 	/**
 	 * Normalise a raw cospend_projects row into the picker / cache shape.

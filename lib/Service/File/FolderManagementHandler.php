@@ -25,9 +25,9 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\Files\Config\IUserMountCache;
@@ -39,6 +39,7 @@ use OCP\Files\NotPermittedException;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,15 +67,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Lifecycle + access-control by design.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-006
  */
 class FolderManagementHandler {
-	/**
-	 * Root folder name for all OpenRegister files.
-	 *
-	 * @var string
-	 */
-	private const ROOT_FOLDER = 'Open Registers';
-
 	/**
 	 * Application group name.
 	 *
@@ -94,10 +89,12 @@ class FolderManagementHandler {
 	 * @param AuditTrailMapperInterface $auditTrailMapper Mapper for writing forensic audit-trail entries on folder-access denials.
 	 * @param IUserMountCache $mountCache Mount cache, used to recognise a folder OpenRegister manages
 	 *                                    without setting up the owning user's mounts.
-	 * @param RegisterFolderRecorder $folderRecorder Records a register's folder id as bookkeeping, so a
-	 *                                               first upload needs no register-update permission.
+	 * @param RegisterFolderRecordsInterface $folderRecorder Records a register's folder id as bookkeeping, so a
+	 *                                                       first upload needs no register-update permission.
 	 * @param FileHandlerSupportInterface|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
+	 * @param ContainerInterface|null $container Resolves the facade on first use when nothing
+	 *                                           has injected it yet (see fileService()).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
@@ -110,10 +107,29 @@ class FolderManagementHandler {
 		private readonly LoggerInterface $logger,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserMountCache $mountCache,
-		private readonly RegisterFolderRecorder $folderRecorder,
+		private readonly RegisterFolderRecordsInterface $folderRecorder,
 		private ?FileHandlerSupportInterface $fileService = null,
+		private readonly ?ContainerInterface $container = null,
+		private readonly ?DocumentStore $documentStore = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The document store root every managed folder sits under.
+	 *
+	 * Without a DocumentStore (a handler built by hand) it is the default root.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		if ($this->documentStore === null) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+
+		return $this->documentStore->root();
+	}//end documentRoot()
 
 	/**
 	 * Set the FileService facade for cross-handler coordination.
@@ -131,6 +147,43 @@ class FolderManagementHandler {
 	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
+
+	/**
+	 * The FileService facade, resolved on first use when nobody injected it.
+	 *
+	 * The facade is handed in by FileService's own constructor, so it is only
+	 * set in a request that happened to build FileService first. A request
+	 * that reaches this handler another way (ObjectSharingService granting a
+	 * share or minting a link) found it null, and every system-account lookup
+	 * failed with "The OpenRegister account is not available". Resolving
+	 * FileService here builds it, and its constructor wires itself back in.
+	 *
+	 * @return FileHandlerSupportInterface|null The facade, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function fileService(): ?FileHandlerSupportInterface {
+		if ($this->fileService !== null || $this->container === null) {
+			return $this->fileService;
+		}
+
+		try {
+			$resolved = $this->container->get(FileHandlerSupportInterface::class);
+			// Building FileService has normally wired it in already; setting the
+			// same instance again is harmless and covers a container that hands
+			// back an already-built one.
+			if (($resolved instanceof FileHandlerSupportInterface) === true) {
+				$this->setFileService(fileService: $resolved);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[FolderManagementHandler] FileService could not be resolved: '.$e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $this->fileService;
+	}//end fileService()
 
 	/**
 	 * Creates a folder for an entity (Register or ObjectEntity).
@@ -197,7 +250,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers; nobody gets a share any more.
 	 */
@@ -216,7 +269,7 @@ class FolderManagementHandler {
 
 		// Create the folder path and node.
 		$registerFolderName = $this->getRegisterFolderName(register: $register);
-		$folderPath = self::ROOT_FOLDER . '/' . $registerFolderName;
+		$folderPath = $this->documentRoot() . '/' . $registerFolderName;
 
 		$folderNode = $this->createFolderPath(folderPath: $folderPath);
 
@@ -726,7 +779,7 @@ class FolderManagementHandler {
 		// Check if folder exists and if not create it.
 		try {
 			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
-			$root = $this->getOrCreateFolder(parent: $userFolder, path: self::ROOT_FOLDER);
+			$root = $this->getOrCreateFolder(parent: $userFolder, path: $this->documentRoot());
 			if ($root['created'] === true && $this->groupManager->groupExists(self::APP_GROUP) === false) {
 				$this->groupManager->createGroup(self::APP_GROUP);
 			}
@@ -887,7 +940,7 @@ class FolderManagementHandler {
 	 * @psalm-return   Folder
 	 * @phpstan-return Folder
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getOpenRegisterUserFolder(): Folder {
 		try {
@@ -992,7 +1045,7 @@ class FolderManagementHandler {
 	 *
 	 * @return Node|null The managed node, or null.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getManagedNodeById(int $nodeId): ?Node {
 		try {
@@ -1015,7 +1068,7 @@ class FolderManagementHandler {
 	 *
 	 * @return bool True when it is under `Open Registers/` in some home.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isManagedNode(Node $node): bool {
 		try {
@@ -1039,7 +1092,7 @@ class FolderManagementHandler {
 	 *
 	 * @return ObjectEntity|null The object, or null when no object owns the file.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {
@@ -1057,11 +1110,12 @@ class FolderManagementHandler {
 	 * @throws Exception When the account cannot be resolved.
 	 */
 	private function getSystemAccount(): IUser {
-		if ($this->fileService === null) {
+		$fileService = $this->fileService();
+		if ($fileService === null) {
 			throw new Exception('The OpenRegister account is not available');
 		}
 
-		return $this->fileService->getUser();
+		return $fileService->getUser();
 	}//end getSystemAccount()
 
 	/**
@@ -1298,12 +1352,13 @@ class FolderManagementHandler {
 	 * @phpstan-return IUser|null
 	 */
 	private function resolveSystemPrincipal(): ?IUser {
-		if ($this->fileService === null) {
+		$fileService = $this->fileService();
+		if ($fileService === null) {
 			return null;
 		}
 
 		try {
-			return $this->fileService->getUser();
+			return $fileService->getUser();
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[FolderManagementHandler] System principal unavailable: ' . $e->getMessage(),
@@ -1437,7 +1492,7 @@ class FolderManagementHandler {
 	 * @return bool True when the path is inside an `Open Registers` tree.
 	 */
 	private function isManagedFolderPath(string $path): bool {
-		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '(/|$)#';
+		$pattern = '#^/[^/]+/files/' . preg_quote($this->documentRoot(), '#') . '(/|$)#';
 
 		return preg_match($pattern, $path) === 1;
 	}//end isManagedFolderPath()
@@ -1454,7 +1509,7 @@ class FolderManagementHandler {
 	 * @return bool True when the path is "/<uid>/files/Open Registers/<one folder>".
 	 */
 	private function isRegisterFolderPath(string $path): bool {
-		$pattern = '#^/[^/]+/files/' . preg_quote(self::ROOT_FOLDER, '#') . '/[^/]+/?$#';
+		$pattern = '#^/[^/]+/files/' . preg_quote($this->documentRoot(), '#') . '/[^/]+/?$#';
 
 		return preg_match($pattern, $path) === 1;
 	}//end isRegisterFolderPath()

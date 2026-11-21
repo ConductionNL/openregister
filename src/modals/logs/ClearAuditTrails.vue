@@ -73,6 +73,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 import { NcNoteCard } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { withRequestToken } from '../../services/requestToken.js'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
 import { deletionAnswer } from './deletionAnswer.js'
 
@@ -225,10 +226,10 @@ export default {
 			const params = new URLSearchParams(Object.entries(this.displayFilters))
 			const response = await fetch(
 				`/index.php/apps/openregister/api/audit-trails?${params.toString()}`,
-				{
+				withRequestToken({
 					method: 'DELETE',
 					headers: { 'Content-Type': 'application/json' },
-				},
+				}),
 			)
 			return deletionAnswer(response)
 		},

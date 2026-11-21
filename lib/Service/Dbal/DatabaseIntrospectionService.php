@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,6 +56,20 @@ use Throwable;
  *   objects plus the OR mapper/diff seams the design names explicitly.
  */
 class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterface {
+	/**
+	 * The engine namespaces whose objects are never user tables.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SYSTEM_NAMESPACES = [
+		'pg_catalog.',
+		'information_schema.',
+		'pg_toast.',
+		'mysql.',
+		'performance_schema.',
+		'sys.',
+	];
+
 	/**
 	 * The object-source provider id every introspected schema is bound to.
 	 *
@@ -95,7 +109,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * table-name-ordered `schemas` list — suitable for golden-file assertions
 	 * and as the input to {@see introspect()}.
 	 *
-	 * @param Source $source The `type: database` source to introspect.
+	 * @param SourceInterface $source The `type: database` source to introspect.
 	 *
 	 * @return array{register: array<string, mixed>, schemas: array<int, array<string, mixed>>}
 	 *
@@ -103,7 +117,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function buildBlueprint(Source $source): array {
+	public function buildBlueprint(SourceInterface $source): array {
 		$sourceId = $this->sourceId(source: $source);
 		$tables   = $this->introspectSource(source: $source, sourceId: $sourceId);
 
@@ -116,21 +130,35 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		}
 
 		return [
-			'register' => [
-				'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
-				'slug' => $this->slugify(value: 'db-' . $sourceId),
-				'source' => $sourceId,
-				'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
-			],
+			'register' => $this->registerBlueprint(source: $source, sourceId: $sourceId),
 			'schemas' => $schemas,
 		];
 	}//end buildBlueprint()
 
 	/**
+	 * The virtual register a database source is introspected into.
+	 *
+	 * @param SourceInterface $source   The database source.
+	 * @param string          $sourceId The owning source id.
+	 *
+	 * @return array<string, string> title, slug, source and description.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function registerBlueprint(SourceInterface $source, string $sourceId): array {
+		return [
+			'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
+			'slug' => $this->slugify(value: 'db-' . $sourceId),
+			'source' => $sourceId,
+			'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
+		];
+	}//end registerBlueprint()
+
+	/**
 	 * Introspect every user table and view of a source into working records, foreign keys applied.
 	 *
-	 * @param Source $source   The `type: database` source.
-	 * @param string $sourceId The source id.
+	 * @param SourceInterface $source   The `type: database` source.
+	 * @param string          $sourceId The source id.
 	 *
 	 * @return array<string, array<string, mixed>> The working records, keyed by table name.
 	 *
@@ -138,17 +166,36 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function introspectSource(Source $source, string $sourceId): array {
+	private function introspectSource(SourceInterface $source, string $sourceId): array {
 		$pass = new SourceIntrospection(
 			connection: $this->tools->connectionFactory->getConnection(source: $source),
 			sourceId: $sourceId
 		);
-		$schemaManager = $pass->schemaManager;
-		$tableNames    = $this->userTableNames(schemaManager: $schemaManager);
-		$viewNames     = $this->userViewNames(schemaManager: $schemaManager);
 
 		// First pass: introspect every table/view into a working record so the
 		// second pass can resolve foreign-key targets and add inverse sides.
+		$tables = $this->workingRecords(pass: $pass);
+
+		// Second pass: map single-column foreign keys onto the relation dialect
+		// and add the inverse side on the referenced schema.
+		$this->applyForeignKeys(schemaManager: $pass->schemaManager, tables: $tables);
+
+		return $tables;
+	}//end introspectSource()
+
+	/**
+	 * The working record of every user table, then of every user view not already a table.
+	 *
+	 * @param SourceIntrospection $pass The schema manager and the owning source id.
+	 *
+	 * @return array<string, array<string, mixed>> The records, keyed by table name.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function workingRecords(SourceIntrospection $pass): array {
+		$tableNames = $this->userTableNames(schemaManager: $pass->schemaManager);
+		$viewNames  = $this->userViewNames(schemaManager: $pass->schemaManager);
+
 		$tables = [];
 		foreach ($tableNames as $tableName) {
 			$tables[$tableName] = $this->introspectTable(pass: $pass, table: new TableRef(name: $tableName, isView: false));
@@ -160,12 +207,8 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 			}
 		}
 
-		// Second pass: map single-column foreign keys onto the relation dialect
-		// and add the inverse side on the referenced schema.
-		$this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables);
-
 		return $tables;
-	}//end introspectSource()
+	}//end workingRecords()
 
 	/**
 	 * The source's table names, system objects left out, sorted.
@@ -247,7 +290,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * schemas (matched by source id / table name) and logs structural drift via
 	 * {@see SchemaDiffService}; it never creates duplicates.
 	 *
-	 * @param Source $source The `type: database` source to introspect.
+	 * @param SourceInterface $source The `type: database` source to introspect.
 	 *
 	 * @return array{register: int, created: array<int, string>, updated: array<int, string>, drift: array<int, array<string, mixed>>}
 	 *
@@ -255,7 +298,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function introspect(Source $source): array {
+	public function introspect(SourceInterface $source): array {
 		$blueprint = $this->buildBlueprint(source: $source);
 		$sourceId  = $this->sourceId(source: $source);
 
@@ -896,7 +939,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	 * Find or create the register for a source and return it.
 	 *
 	 * @param array<string, mixed> $definition The register blueprint.
-	 * @param string $sourceId The owning source id.
+	 * @param string          $sourceId The owning source id.
 	 *
 	 * @return Register The persisted register.
 	 *
@@ -941,13 +984,13 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 	/**
 	 * Resolve the source id used as the register `source` and config `sourceId`.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The stable source identifier.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function sourceId(Source $source): string {
+	private function sourceId(SourceInterface $source): string {
 		$uuid = $source->getUuid();
 		if ($uuid !== null && $uuid !== '') {
 			return (string)$uuid;
@@ -995,15 +1038,7 @@ class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterf
 		$lower = strtolower($name);
 		$short = strtolower($this->shortName(name: $name));
 
-		$systemNamespaces = [
-			'pg_catalog.',
-			'information_schema.',
-			'pg_toast.',
-			'mysql.',
-			'performance_schema.',
-			'sys.',
-		];
-		foreach ($systemNamespaces as $prefix) {
+		foreach (self::SYSTEM_NAMESPACES as $prefix) {
 			if (str_starts_with($lower, $prefix) === true) {
 				return true;
 			}

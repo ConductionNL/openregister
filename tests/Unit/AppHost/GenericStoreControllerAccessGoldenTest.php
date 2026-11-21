@@ -42,6 +42,14 @@ use RuntimeException;
  * and which collaborators are reached before the refusal.
  *
  * @covers \OCA\OpenRegister\AppHost\Controller\GenericStoreController
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  */
 class GenericStoreControllerAccessGoldenTest extends TestCase
 {
@@ -80,7 +88,9 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
         $service = $this->getMockBuilder(GenericStoreService::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'publish'])->getMock();
         $service->method('resolve')->willReturnCallback($resolver);
         $service->method('search')->willReturnCallback($searcher);
-        $catalog = $this->getMockBuilder(FederatedStoreCatalog::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
+        $catalog = $this->getMockBuilder(FederatedStoreCatalog::class)->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install', 'ownedTypes'])->getMock();
+        // Every declared type is owned here: this golden records access outcomes, not ownership.
+        $catalog->method('ownedTypes')->willReturnCallback(static fn (array $typeIds): array => $typeIds);
         $catalog->method('resolve')->willReturnCallback($resolver);
         $catalog->method('search')->willReturnCallback($searcher);
         $catalog->method('install')->willReturnCallback(

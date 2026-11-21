@@ -37,6 +37,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowSend
  * @uses \OCA\OpenRegister\Service\Flow\FlowSendItem
  * @uses \OCA\OpenRegister\Event\FlowEmailSentEvent
+ * @uses \OCA\OpenRegister\Event\FlowEmailItem
+ * @uses \OCA\OpenRegister\Event\FlowEmailMessage
+ * @uses \OCA\OpenRegister\Event\FlowEmailOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowScalarText
  */
 class FlowEmailAnnouncerTest extends TestCase {
 

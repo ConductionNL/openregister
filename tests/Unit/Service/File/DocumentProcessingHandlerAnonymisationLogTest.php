@@ -2,7 +2,7 @@
 
 /**
  * Characterisation test for the per-run anonymisation log row that
- * DocumentProcessingHandler::anonymizeDocument() persists.
+ * DocumentProcessingHandler::anonymize() persists.
  *
  * Pins the row's file id, MIME type, engine, status, replacement count and
  * sanitisation column, the id-0 fallback, and the PII-free warning when the
@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Db\AnonymisationLog;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
@@ -47,6 +48,28 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler
+ * @uses \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
+ * @uses \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
+ * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses \OCA\OpenRegister\Service\Anonymisation\PipelineSteps
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 
@@ -171,12 +194,12 @@ class DocumentProcessingHandlerAnonymisationLogTest extends TestCase {
 		$node->method('getContent')->willReturn('Jan Jansen woont in Amsterdam.');
 		$node->method('getParent')->willReturn($parent);
 
-		$handler->anonymizeDocument(
+		$handler->anonymize(new DocumentAnonymisationRequest(
 			node: $node,
 			entities: [
 				['text' => 'Jan Jansen', 'entityType' => 'PERSON', 'key' => 'p1'],
 				['text' => 'Amsterdam', 'entityType' => 'LOCATION', 'key' => 'l1'],
 			]
-		);
+		));
 	}//end anonymise()
 }//end class

@@ -35,9 +35,10 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const VALUE_OBJECTS = [
-		'Db/ListQuery.php',
+		'Kernel/Contracts/ListQuery.php',
 		'Db/RegisterSchema.php',
 		'Kernel/Contracts/ExampleSetInstallInput.php',
+		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/DeckPlacement.php',
 		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
@@ -48,11 +49,17 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/RenderSelection.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
+		'Kernel/Contracts/Core/AuditEntry.php',
+		'Kernel/Contracts/Notifications/NotificationRun.php',
+		'Kernel/Contracts/Core/BundleImport.php',
+		'Kernel/Contracts/Core/ObjectAuditEntry.php',
+		'Kernel/Contracts/Core/PlacedAuditEntry.php',
 	];
 
 	/**
@@ -62,6 +69,8 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 */
 	private const KERNEL_LEAVES = [
 		'Kernel/Contracts/ExampleSetInstallInput.php',
+		'Kernel/Contracts/ListQuery.php',
+		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/DeckPlacement.php',
 		'Kernel/Contracts/MassValidationRequest.php',
 		'Kernel/Contracts/ContactDetails.php',
@@ -72,6 +81,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
+		'Kernel/Contracts/RenderSelection.php',
 		'Kernel/Contracts/ReportCaller.php',
 		'Kernel/Contracts/ScheduledReportUpdate.php',
 		'Kernel/Contracts/TemplateRendering.php',
@@ -80,6 +90,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/TimerAnchorMove.php',
 		'Kernel/Contracts/TimerChange.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
+		'Kernel/Contracts/Core/AuditEntry.php',
+		'Kernel/Contracts/Core/BundleImport.php',
+		'Kernel/Contracts/Core/PlacedAuditEntry.php',
 	];
 
 	/**

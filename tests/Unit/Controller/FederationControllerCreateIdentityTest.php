@@ -53,6 +53,8 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * A federated create may not address an existing object.
@@ -120,7 +122,8 @@ class FederationControllerCreateIdentityTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				// saveObject is called with named arguments; the object is the
 				// first, however PHPUnit hands it back.
 				$this->written = (array)($args[0] ?? []);
@@ -128,7 +131,8 @@ class FederationControllerCreateIdentityTest extends TestCase {
 			}
 		);
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (...$args): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
 				$this->deleted = (string)($args[0] ?? '');
 				return true;
 			}

@@ -58,7 +58,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return string|null The slug to store at the target.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, RegisterSchema $table): ?string;
 
@@ -75,7 +75,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function findSlugHolders(RegisterSchema $table, string $slug, ?string $excludeUuid=null): array;
 
@@ -93,7 +93,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function findSlugState(RegisterSchema $table, array $slugs, array $uuids): array;
 
@@ -107,7 +107,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return array<string, list<string>> Slug => holder uuids, oldest first.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function findDuplicateSlugs(Register $register, Schema $schema): array;
 
@@ -121,7 +121,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return array<string, list<string>> Slug => holder uuids.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function findAllSlugs(Register $register, Schema $schema): array;
 
@@ -148,7 +148,7 @@ interface MagicSlugStoreInterface {
 	 *     lastId: int
 	 * } The convertible rows, how many rows the query returned, and the `_id` of the last one (`$afterId` when none).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function findSlugBackfillPage(Register $register, Schema $schema, int $afterId, int $pageSize): array;
 
@@ -167,7 +167,7 @@ interface MagicSlugStoreInterface {
 	 *
 	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function updateSlugColumn(RegisterSchema $table, string $uuid, string $slug): int;
 }//end interface

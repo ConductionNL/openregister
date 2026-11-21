@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 /**
  * The DSAR object lookups, erasure and rectification the DSAR endpoints call.
@@ -32,6 +31,50 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
  * class stays its own.
  */
 interface DsarServiceInterface {
+
+	/**
+	 * Update a single object with DSAR attribution (Art 16 rectificatie).
+	 *
+	 * Thin wrapper around the existing object update path that pins
+	 * the audit row to the configured DSAR activity. Use this when a
+	 * data subject requests correction of specific fields rather than
+	 * a wholesale erasure.
+	 *
+	 * @param int $objectId Internal id of the object.
+	 * @param array<string, mixed> $changes Property → new value map.
+	 *
+	 * @return array<string, mixed>|null Updated object envelope or null on miss.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-12
+	 */
+	public function rectifyObjectForSubject(int $objectId, array $changes): ?array;
+
+	/**
+	 * Find every object that contains personal data for the given subject.
+	 *
+	 * Walks `oc_openregister_entities` for rows whose `value` matches
+	 * the subject (case-insensitive exact match by default; pass
+	 * `mode='ilike'` for substring), then joins
+	 * `oc_openregister_entity_relations.object_id` to dedupe and load
+	 * the owning ObjectEntity rows.
+	 *
+	 * Returns a list of envelopes:
+	 *
+	 *   [
+	 *     [
+	 *       'object'        => <ObjectEntity::jsonSerialize() output>,
+	 *       'gdprEntities'  => [{type, value, category, detectedAt}, ...]
+	 *     ],
+	 *     ...
+	 *   ]
+	 *
+	 * @param DsarSubjectQuery $query The subject identifier, optional GdprEntity type filter and match mode.
+	 *
+	 * @return array<int, array{object: array, gdprEntities: array}>
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
+	 */
+	public function findObjectsFor(DsarSubjectQuery $query): array;
 
 	/**
 	 * Soft-delete every object matching a subject (Art 17 vergetelheid).
@@ -74,9 +117,8 @@ interface DsarServiceInterface {
 	 * the same request is still erased. A run that withheld anything reports
 	 * `complete: false`, because the data is still there.
 	 *
-	 * @param string $subject Subject identifier.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param bool $dryRun When true, returns matches without erasing.
+	 * @param DsarSubjectQuery $query  The subject identifier and optional GdprEntity type filter (exact match).
+	 * @param bool             $dryRun When true, returns matches without erasing.
 	 *
 	 * @return array<string, mixed>
 	 *
@@ -84,51 +126,5 @@ interface DsarServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
 	 */
-	public function eraseObjectsForSubject(string $subject, ?string $type = null, bool $dryRun = false): array;
-
-	/**
-	 * Find every object that contains personal data for the given subject.
-	 *
-	 * Walks `oc_openregister_entities` for rows whose `value` matches
-	 * the subject (case-insensitive exact match by default; pass
-	 * `mode='ilike'` for substring), then joins
-	 * `oc_openregister_entity_relations.object_id` to dedupe and load
-	 * the owning ObjectEntity rows.
-	 *
-	 * Returns a list of envelopes:
-	 *
-	 *   [
-	 *     [
-	 *       'object'        => <ObjectEntity::jsonSerialize() output>,
-	 *       'gdprEntities'  => [{type, value, category, detectedAt}, ...]
-	 *     ],
-	 *     ...
-	 *   ]
-	 *
-	 * @param string $subject Subject identifier value (email, BSN, …).
-	 * @param string|null $type Optional GdprEntity type filter (e.g. `email`).
-	 * @param string $mode `exact` (default) or `ilike`.
-	 *
-	 * @return array<int, array{object: array, gdprEntities: array}>
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
-	 */
-	public function findObjectsForSubject(string $subject, ?string $type = null, string $mode = 'exact'): array;
-
-	/**
-	 * Update a single object with DSAR attribution (Art 16 rectificatie).
-	 *
-	 * Thin wrapper around the existing object update path that pins
-	 * the audit row to the configured DSAR activity. Use this when a
-	 * data subject requests correction of specific fields rather than
-	 * a wholesale erasure.
-	 *
-	 * @param int $objectId Internal id of the object.
-	 * @param array<string, mixed> $changes Property → new value map.
-	 *
-	 * @return array<string, mixed>|null Updated object envelope or null on miss.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-12
-	 */
-	public function rectifyObjectForSubject(int $objectId, array $changes): ?array;
+	public function eraseObjectsFor(DsarSubjectQuery $query, bool $dryRun): array;
 }//end interface

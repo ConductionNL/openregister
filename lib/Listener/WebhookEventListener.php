@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
@@ -63,6 +64,7 @@ use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -75,7 +77,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class WebhookEventListener implements IEventListener {
+class WebhookEventListener implements IEventListener, AppEventWebhookListenerInterface {
 
 	/**
 	 * Events whose payload is one serialised entity: event class => [objectType, action, getter].
@@ -166,24 +168,55 @@ class WebhookEventListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md#requirement-trigger-flow-and-rule-resolution-must-filter-at-query-time
 	 */
 	public function handle(Event $event): void {
 		$eventClass = get_class($event);
-		$payload = $this->extractPayload(event: $event);
 
-		if ($payload === null) {
-			$this->logger->warning(
-				message: '[WebhookEventListener] Could not extract payload from event',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventClass,
-				]
-			);
+		// No webhook for this event: return before the entity is serialised.
+		if ($this->webhookService->hasWebhooksFor(eventName: $eventClass) === false) {
 			return;
 		}
 
+		$payload = $this->extractPayload(event: $event);
+
+		if ($payload === null) {
+			$this->logUnextractable(eventClass: $eventClass);
+			return;
+		}
+
+		$this->logProcessing(eventClass: $eventClass);
+
+		// Dispatch to webhook service.
+		$this->webhookService->dispatchEvent(eventName: $eventClass, payload: $payload);
+	}//end handle()
+
+	/**
+	 * Log an event no payload could be extracted from.
+	 *
+	 * @param string $eventClass The event class.
+	 *
+	 * @return void
+	 */
+	private function logUnextractable(string $eventClass): void {
+		$this->logger->warning(
+			message: '[WebhookEventListener] Could not extract payload from event',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'event' => $eventClass,
+			]
+		);
+	}//end logUnextractable()
+
+	/**
+	 * Log an event about to be dispatched to the webhooks.
+	 *
+	 * @param string $eventClass The event class.
+	 *
+	 * @return void
+	 */
+	private function logProcessing(string $eventClass): void {
 		$this->logger->debug(
 			message: '[WebhookEventListener] Processing event for webhooks',
 			context: [
@@ -192,10 +225,7 @@ class WebhookEventListener implements IEventListener {
 				'event' => $eventClass,
 			]
 		);
-
-		// Dispatch to webhook service.
-		$this->webhookService->dispatchEvent(eventName: $eventClass, payload: $payload);
-	}//end handle()
+	}//end logProcessing()
 
 	/**
 	 * Extract payload from event
@@ -203,12 +233,15 @@ class WebhookEventListener implements IEventListener {
 	 * Events that carry one entity map to `objectType`, `action` and the
 	 * serialised entity under the objectType key (SNAPSHOT_EVENTS). Object
 	 * create, update and revert events carry more context (objectPayload()).
+	 * An event another app declared through AppWebhookEvents returns its own
+	 * payload.
 	 *
 	 * @param Event $event The event
 	 *
 	 * @return array<string, mixed>|null The event payload or null if not extractable
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-event-payload-input-must-include-full-context-for-mapping-templates
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md#requirement-a-declared-event-is-delivered-with-its-own-payload
 	 */
 	private function extractPayload(Event $event): ?array {
 		foreach (self::SNAPSHOT_EVENTS as $class => [$objectType, $action, $getter]) {
@@ -221,7 +254,8 @@ class WebhookEventListener implements IEventListener {
 			}
 		}
 
-		return $this->objectPayload(event: $event);
+		// An event another app declared hands over its own payload.
+		return ($this->objectPayload(event: $event) ?? AppWebhookEvents::payloadOf(event: $event));
 	}//end extractPayload()
 
 	/**
@@ -232,46 +266,129 @@ class WebhookEventListener implements IEventListener {
 	 * @return array<string, mixed>|null The payload, or null for any other event
 	 */
 	private function objectPayload(Event $event): ?array {
+		return ($this->lifecyclePayload(event: $event) ?? $this->statePayload(event: $event));
+	}//end objectPayload()
+
+	/**
+	 * Build the payload of an object create, update or revert in progress.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return array<string, mixed>|null The payload, or null for any other event
+	 */
+	private function lifecyclePayload(Event $event): ?array {
 		if ($event instanceof ObjectCreatingEvent) {
-			$object = $event->getObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'creating',
-				'object' => $object->jsonSerialize(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-			];
+			return $this->creatingPayload(event: $event);
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$newObject = $event->getNewObject();
-			return [
-				'objectType' => 'object',
-				'action' => 'updating',
-				'newObject' => $newObject->jsonSerialize(),
-				'oldObject' => $event->getOldObject()?->jsonSerialize(),
-				'register' => $newObject->getRegister(),
-				'schema' => $newObject->getSchema(),
-			];
+			return $this->updatingPayload(event: $event);
 		}
 
 		if ($event instanceof ObjectRevertedEvent) {
-			return [
-				'objectType' => 'object',
-				'action' => 'reverted',
-				'object' => $event->getObject()->jsonSerialize(),
-				'revertPoint' => $event->getRevertPoint(),
-			];
+			return $this->revertedPayload(event: $event);
 		}
 
+		return null;
+	}//end lifecyclePayload()
+
+	/**
+	 * Build the payload of a created, updated or deleted object.
+	 *
+	 * @param Event $event The event
+	 *
+	 * @return array<string, mixed>|null The payload, or null for any other event
+	 */
+	private function statePayload(Event $event): ?array {
 		foreach (self::OBJECT_STATE_EVENTS as $class => [$action, $getter]) {
 			if ($event instanceof $class) {
-				return $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				$payload = $this->objectStatePayload(object: $event->{$getter}(), action: $action);
+				if ($event instanceof ObjectUpdatedEvent) {
+					$payload = $this->withUpdateStates(payload: $payload, event: $event);
+				}
+
+				return $payload;
 			}
 		}
 
 		return null;
-	}//end objectPayload()
+	}//end statePayload()
+
+	/**
+	 * Add the object before and after an update to its payload.
+	 *
+	 * `newObject` and `oldObject` let a webhook filter on a change rather than
+	 * on a state, such as `{"oldObject.status": "draft", "newObject.status":
+	 * "final"}`, which matches only the update that made the move. `object`
+	 * stays as it was, so existing subscriptions and mappings see the same
+	 * payload. Without an old object `oldObject` is null.
+	 *
+	 * @param array<string, mixed> $payload The update payload.
+	 * @param ObjectUpdatedEvent   $event   The event.
+	 *
+	 * @return array<string, mixed> The payload with both states.
+	 *
+	 * @spec openspec/changes/publication-tells-its-source/specs/webhooks/spec.md#requirement-an-update-payload-carries-the-object-before-and-after
+	 */
+	private function withUpdateStates(array $payload, ObjectUpdatedEvent $event): array {
+		$payload['newObject'] = $payload['object'];
+		$payload['oldObject'] = $event->getOldObject()?->jsonSerialize();
+
+		return $payload;
+	}//end withUpdateStates()
+
+	/**
+	 * Build the payload of an object about to be created.
+	 *
+	 * @param ObjectCreatingEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function creatingPayload(ObjectCreatingEvent $event): array {
+		$object = $event->getObject();
+		return [
+			'objectType' => 'object',
+			'action' => 'creating',
+			'object' => $object->jsonSerialize(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+		];
+	}//end creatingPayload()
+
+	/**
+	 * Build the payload of an object about to be updated, with its old version.
+	 *
+	 * @param ObjectUpdatingEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function updatingPayload(ObjectUpdatingEvent $event): array {
+		$newObject = $event->getNewObject();
+		return [
+			'objectType' => 'object',
+			'action' => 'updating',
+			'newObject' => $newObject->jsonSerialize(),
+			'oldObject' => $event->getOldObject()?->jsonSerialize(),
+			'register' => $newObject->getRegister(),
+			'schema' => $newObject->getSchema(),
+		];
+	}//end updatingPayload()
+
+	/**
+	 * Build the payload of an object reverted to an earlier point.
+	 *
+	 * @param ObjectRevertedEvent $event The event
+	 *
+	 * @return array<string, mixed> The payload
+	 */
+	private function revertedPayload(ObjectRevertedEvent $event): array {
+		return [
+			'objectType' => 'object',
+			'action' => 'reverted',
+			'object' => $event->getObject()->jsonSerialize(),
+			'revertPoint' => $event->getRevertPoint(),
+		];
+	}//end revertedPayload()
 
 	/**
 	 * Build the payload of a saved or deleted object.

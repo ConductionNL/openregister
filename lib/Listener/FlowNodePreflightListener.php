@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+ * @spec openspec/specs/flow-preflight/spec.md
  */
 
 declare(strict_types=1);
@@ -71,7 +71,7 @@ class FlowNodePreflightListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {

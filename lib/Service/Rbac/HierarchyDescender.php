@@ -342,30 +342,55 @@ class HierarchyDescender {
 	 * @return array<string, string> Child UUID => parent UUID.
 	 */
 	private function childrenInChunk(ChildrenRead $read, array $parents): array {
-		$parentColumn = $read->parentColumn;
-		$limit = $read->remaining();
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('_uuid', $parentColumn)
-			->from($read->table)
-			->where(
-				$qb->expr()->in(
-					$parentColumn,
-					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		if ($limit !== null) {
-			$qb->andWhere($qb->expr()->neq('_uuid', $parentColumn));
-			$qb->setMaxResults($limit);
-		}
-
-		$result = $qb->executeQuery();
-		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $parentColumn);
+		$result = $this->childrenQuery(read: $read, parents: $parents)->executeQuery();
+		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $read->parentColumn);
 
 		$result->closeCursor();
 
 		return $children;
 	}//end childrenInChunk()
+
+	/**
+	 * The query for one chunk's children, bounded when the read has a remaining budget.
+	 *
+	 * A bounded read also leaves out a row that names itself as its parent, so a
+	 * self-loop cannot spend the budget.
+	 *
+	 * @param ChildrenRead       $read    The table, the parent column and the remaining budget.
+	 * @param array<int, string> $parents The parent uuids of this chunk.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function childrenQuery(ChildrenRead $read, array $parents): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('_uuid', $read->parentColumn)
+			->from($read->table)
+			->where(
+				$qb->expr()->in(
+					$read->parentColumn,
+					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+		self::boundByBudget(qb: $qb, read: $read);
+
+		return $qb;
+	}//end childrenQuery()
+
+	/**
+	 * Bound a children query by the read's remaining budget, leaving out self-parented rows; unbounded reads are left alone.
+	 *
+	 * @param IQueryBuilder $qb   The children query.
+	 * @param ChildrenRead  $read The read, for its budget and parent column.
+	 *
+	 * @return void
+	 */
+	private static function boundByBudget(IQueryBuilder $qb, ChildrenRead $read): void {
+		$limit = $read->remaining();
+		if ($limit !== null) {
+			$qb->andWhere($qb->expr()->neq('_uuid', $read->parentColumn));
+			$qb->setMaxResults($limit);
+		}
+	}//end boundByBudget()
 
 	/**
 	 * Child uuid => parent uuid from fetched rows, dropping blanks and self-parents.
