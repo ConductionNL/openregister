@@ -27,9 +27,10 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
@@ -400,7 +401,7 @@ class SyncConfigurationsJob extends TimedJob {
 	 *
 	 * @throws Exception When a schema declares `elevate`.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDefinition::declarations() is the one reader of the action block.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDeclarations::declarations() is the one reader of the action block.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -411,20 +412,23 @@ class SyncConfigurationsJob extends TimedJob {
 		}
 
 		foreach ($schemas as $slug => $schema) {
-			$schemaConfiguration = [];
-			if (is_array($schema) === true) {
-				$schemaConfiguration = ($schema['configuration'] ?? []);
+			if (is_array($schema) === false) {
+				continue;
 			}
 
-			if (is_string($schemaConfiguration) === true) {
-				$schemaConfiguration = json_decode($schemaConfiguration, true);
+			if (is_string($schema['configuration'] ?? null) === true) {
+				$schema['configuration'] = json_decode($schema['configuration'], true);
 			}
 
+			// Read the configuration the way Schema::hydrate() will store it: top-level
+			// `x-openregister-*` blocks fold into `configuration` on import.
+			$folded = (new TopLevelAnnotationFold())->folded(object: $schema);
+			$schemaConfiguration = ($folded['configuration'] ?? []);
 			if (is_array($schemaConfiguration) === false) {
 				continue;
 			}
 
-			foreach (ObjectActionDefinition::declarations(configuration: $schemaConfiguration) as $key => $definition) {
+			foreach (ObjectActionDeclarations::declarations(configuration: $schemaConfiguration) as $key => $definition) {
 				if (array_key_exists('elevate', $definition) === true) {
 					throw new Exception(
 						sprintf('Schema "%s", action "%s" declares "elevate"; a synced configuration may not, import it as an administrator.', $slug, $key)
