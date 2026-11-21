@@ -12,8 +12,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ServiceRegistrar;
-use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
-use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
@@ -21,7 +19,6 @@ use OCP\IMemcache;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
-use RuntimeException;
 
 class ServiceRegistrarTest extends TestCase {
 
@@ -37,23 +34,14 @@ class ServiceRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Service\LanguageService',
-				'OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext',
-				'OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass',
 				'OCA\OpenRegister\Service\RegisterSlugResolver',
 				'OCA\OpenRegister\Contract\RegisterSlugResolverInterface',
-				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
 				'OCA\OpenRegister\Contract\ObjectFileReaderInterface',
-				'OCA\OpenRegister\Service\Credential\CredentialStore',
-				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
-				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Service\SchemaImport\SchemaImportService',
 				'OCA\OpenRegister\Service\OrganisationService',
 				'OCA\OpenRegister\Service\UserService',
-				'OCA\OpenRegister\Service\Task\TaskInboxService',
-				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
 				'OCA\OpenRegister\Service\Object\CacheHandler',
 				'OCA\OpenRegister\Service\File\FolderManagementHandler',
-				'OCA\OpenRegister\Service\TaskService',
 			],
 			actual: $context->services
 		);
@@ -92,36 +80,6 @@ class ServiceRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
-
-	/**
-	 * TaskService is still built when the container cannot build its write-back
-	 * gate; it then refuses updates of projected VTODOs.
-	 *
-	 * @return void
-	 */
-	public function testTaskServiceIsBuiltWithoutTheWriteBackGate(): void {
-		$context = new RecordingRegistrationContext();
-		ServiceRegistrar::register(context: $context);
-
-		$logger = $this->createMock(originalClassName: LoggerInterface::class);
-		$logger->expects($this->once())->method('debug');
-
-		$container = $this->createMock(originalClassName: IAppContainer::class);
-		$container->method('get')->willReturnCallback(
-			function (string $id) use ($logger) {
-				if ($id === TaskVtodoWriteBackGate::class) {
-					throw new RuntimeException(message: 'not buildable');
-				}
-
-				return $id === 'Psr\Log\LoggerInterface' ? $logger : $this->createMock(originalClassName: $id);
-			}
-		);
-
-		$this->assertInstanceOf(
-			expected: TaskService::class,
-			actual: $context->factories[TaskService::class]($container)
-		);
-	}//end testTaskServiceIsBuiltWithoutTheWriteBackGate()
 
 	/**
 	 * The office converter seam points at the converter that uses Nextcloud's conversion API.

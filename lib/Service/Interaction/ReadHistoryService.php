@@ -50,6 +50,8 @@ namespace OCA\OpenRegister\Service\Interaction;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -61,7 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
-class ReadHistoryService {
+class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterface {
 
 	/**
 	 * How many distinct objects one user's read history answers.
@@ -99,7 +101,7 @@ class ReadHistoryService {
 	 *
 	 * @var string
 	 */
-	public const REASON_UNAVAILABLE = 'read-history-unavailable';
+	public const REASON_UNAVAILABLE = ReadHistoryInterface::REASON_UNAVAILABLE;
 
 	/**
 	 * Constructor.
@@ -235,6 +237,23 @@ class ReadHistoryService {
 		}
 
 	}//end registerListRead()
+
+	/**
+	 * Register a list or search read with its query parameters, as a read.
+	 *
+	 * The object read path's door to registerListRead(): it names the query
+	 * and no Processes type.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 * @param array<string, mixed>     $query   The query parameters of the list or search.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+	 */
+	public function registerQueriedRead(array $objects, array $query): void {
+		$this->registerListRead(objects: $objects, read: new ProcessingListRead(query: $query));
+	}//end registerQueriedRead()
 
 	/**
 	 * The listed rows as ObjectEntities grouped per register and schema; rows

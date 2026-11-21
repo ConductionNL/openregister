@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
-use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 
 /**
  * Joins the task, webhook, search, storage, request, object count, cache, import and alert metrics under OpenRegister's provider alias.
@@ -42,7 +42,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskMetricsProviderInterface   $tasks     The overdue-task gauge.
+	 * @param TaskGaugeInterface             $tasks     The overdue-task gauge.
 	 * @param WebhookRetryMetricsProvider    $webhooks  The webhook retry queue gauge.
 	 * @param SearchMetricsProvider          $search    The search and embedding metrics.
 	 * @param WebhookDurationMetricsProvider $durations The webhook delivery latency histogram.
@@ -55,7 +55,7 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	 * @param RequestAlertMetricsProvider    $alerts    The error rate and response time alert outcomes.
 	 */
 	public function __construct(
-		private readonly TaskMetricsProviderInterface $tasks,
+		private readonly TaskGaugeInterface $tasks,
 		private readonly WebhookRetryMetricsProvider $webhooks,
 		private readonly SearchMetricsProvider $search,
 		private readonly WebhookDurationMetricsProvider $durations,
