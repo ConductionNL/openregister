@@ -102,6 +102,8 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

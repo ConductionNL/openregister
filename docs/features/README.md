@@ -60,10 +60,11 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Favourites & Recently Opened | [favourites-and-recent.md](favourites-and-recent.md) | Collaboration | Implemented | Per-user star, view history, two index lenses |
 | Follow and Catch Up on Records | [follow-and-catch-up.md](follow-and-catch-up.md) | Collaboration | Implemented | Follow toggle, unread tab badges and the Following, Recent and Unread filters on OpenRegister's own screens |
 | Access Links | [access-links.md](access-links.md) | Collaboration | Implemented | Scoped, expiring link that opens one record without an account |
+| Collections Across Apps | [collaboration-resources.md](collaboration-resources.md) | Collaboration | Implemented | A record joins a Nextcloud collection beside its folder, conversation and board |
 | Generated Identifiers | [generated-identifier.md](generated-identifier.md) | Data Modelling | Implemented | Case numbers from a named sequence and a format, frozen after issue |
 | Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
 | Forms into their destination | [form-destination.md](form-destination.md) | Data Modelling | Implemented | A form is checked against its destination schema and submits into that object in one request |
-| Record Templates | [record-templates.md](record-templates.md) | Data Modelling | Implemented (API) | Named, shareable starting values for new records |
+| Record Templates | [record-templates.md](record-templates.md) | Data Modelling | Implemented | Named, shareable starting values for new records |
 | Flows (Workflow Automation) | [flows.md](flows.md) | Automation | Implemented | The built-in flow engine: triggers, steps, approvals, run history. External tools: see [workflow-automation.md](workflow-automation.md) |
 | Workflow Automation (external tools) | [workflow-automation.md](workflow-automation.md) | Integration | Implemented | Integration with external automation tools (n8n, Windmill), schema hooks. Built-in automation: see [flows.md](flows.md) |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
@@ -110,6 +111,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
 - [Follow and Catch Up on Records](follow-and-catch-up.md) — Follow, Mark as unread and tab badges on the record page; the Following, Recent and Unread filters on the Tables page
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
+- [Collections Across Apps](collaboration-resources.md): put a record in a Nextcloud collection beside the folder and the conversation that belong to it
 - [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
 - [Record Templates](record-templates.md) — Named starting values per schema, shared like saved views, offered only to users who may create there
 - [Flows (Workflow Automation)](flows.md) — The built-in flow engine: canvas, triggers, steps, approvals, runs, kill switch, shipping flows
