@@ -42,7 +42,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Task\ApprovalPositionForm;
 use OCA\OpenRegister\Service\Task\ApprovingOutcomeSet;
+use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -204,12 +206,13 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
-		$body = $this->templateBody(spec: $spec, chainKey: $chainKey);
+		$body = $this->templateBody(spec: $spec, chainKey: $chainKey, schemaId: (int)$schema->getId());
 		if ($body === null) {
 			return null;
 		}
 
 		$template = $this->templateHead(schemaId: (int)$schema->getId(), chainKey: $chainKey) + $body;
+		$template['templateVersion'] = self::templateVersionOf(positions: $body['positions']);
 
 		return $this->withApprovingOutcomes(template: $template, spec: $spec);
 	}//end compile()
@@ -241,11 +244,12 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @param array<string, mixed> $spec     The declared chain.
 	 * @param string               $chainKey The declarative chain key.
+	 * @param int                  $schemaId The owning schema id, the subject of a position's form.
 	 *
 	 * @return array<string, mixed>|null The rules and positions, or null when the chain has no usable approver or an unknown tiers mode.
 	 */
-	private function templateBody(array $spec, string $chainKey): ?array {
-		$positions = $this->compilePositions(approvers: (array)($spec['approvers'] ?? []));
+	private function templateBody(array $spec, string $chainKey, int $schemaId): ?array {
+		$positions = $this->compilePositions(approvers: (array)($spec['approvers'] ?? []), schemaId: $schemaId);
 		if ($positions === []) {
 			return null;
 		}
@@ -255,8 +259,54 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
-		return $this->templateRules(spec: $spec, tiers: $tiers) + ['positions' => $positions];
+		$body = $this->templateRules(spec: $spec, tiers: $tiers) + ['positions' => $positions];
+		if (ChangeGateDeclaration::declaredIn(chain: $spec) === false) {
+			return $body;
+		}
+
+		$changeGate = $this->changeGate(spec: $spec, chainKey: $chainKey);
+		if ($changeGate === null) {
+			return null;
+		}
+
+		$body['changeGate'] = $changeGate->toArray();
+
+		return $body;
 	}//end templateBody()
+
+	/**
+	 * The change gate a chain declares, when it is usable.
+	 *
+	 * A chain gates either a transition or a change, never both: one sequence
+	 * cannot both hold a write and release a lifecycle step. A malformed gate
+	 * or an entry that names both is a misconfiguration and fails closed.
+	 *
+	 * @param array<string, mixed> $spec     The declared chain.
+	 * @param string               $chainKey The declarative chain key.
+	 *
+	 * @return ChangeGateDeclaration|null The gate, or null when it is malformed or combined with a transition (logged).
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
+	 */
+	private function changeGate(array $spec, string $chainKey): ?ChangeGateDeclaration {
+		if ((string)($spec['transition'] ?? '') !== '') {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] A chain gates either a transition or a change, not both; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+			return null;
+		}
+
+		$gate = ChangeGateDeclaration::fromChain(chain: $spec);
+		if ($gate === null) {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] Malformed change gate; the chain is not compiled.',
+				context: ['chain' => $chainKey]
+			);
+		}
+
+		return $gate;
+	}//end changeGate()
 
 	/**
 	 * How a chain's amount tiers combine.
@@ -339,13 +389,16 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * One ordered position per usable `approvers` entry.
 	 *
 	 * @param array<int, mixed> $approvers The declared approver tiers.
+	 * @param int               $schemaId  The owning schema id, the subject of a position's form.
 	 *
 	 * @return array<int, array<string, mixed>> The ordered positions.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
 	 */
-	private function compilePositions(array $approvers): array {
+	private function compilePositions(array $approvers, int $schemaId): array {
 		$positions = [];
 		foreach ($approvers as $tier) {
-			$position = $this->position(tier: $tier, order: (count($positions) + 1));
+			$position = $this->position(tier: $tier, order: (count($positions) + 1), schemaId: $schemaId);
 			if ($position !== null) {
 				$positions[] = $position;
 			}
@@ -358,12 +411,13 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	/**
 	 * One position from a declared approver tier.
 	 *
-	 * @param mixed $tier  The declared tier.
-	 * @param int   $order The position's place in the chain.
+	 * @param mixed $tier     The declared tier.
+	 * @param int   $order    The position's place in the chain.
+	 * @param int   $schemaId The owning schema id, the subject of a position's form.
 	 *
 	 * @return array<string, mixed>|null The position, or null when the tier is not an array or names no role.
 	 */
-	private function position(mixed $tier, int $order): ?array {
+	private function position(mixed $tier, int $order, int $schemaId): ?array {
 		if (is_array($tier) === false) {
 			return null;
 		}
@@ -378,8 +432,44 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			'role' => $role,
 		];
 
-		return $this->withCarriedFields(position: $position, tier: $tier);
+		$position = $this->withCarriedFields(position: $position, tier: $tier);
+		$form     = ApprovalPositionForm::record(declared: ($tier['form'] ?? null), schemaId: $schemaId);
+		if ($form !== null) {
+			$position['form'] = $form;
+		}
+
+		return $position;
 	}//end position()
+
+	/**
+	 * The template version: 1 for a chain without forms, else one per distinct set of forms.
+	 *
+	 * The template is a pure function of the declaration, and a position's
+	 * form is part of it (design D-3): a changed form is a different version,
+	 * while a chain without any form keeps the version it always had.
+	 *
+	 * @param array<int, array<string, mixed>> $positions The compiled positions.
+	 *
+	 * @return int The version.
+	 *
+	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
+	 */
+	public static function templateVersionOf(array $positions): int {
+		$forms = [];
+		foreach ($positions as $position) {
+			if (isset($position['form']) === true) {
+				$forms[(int)($position['order'] ?? 0)] = $position['form'];
+			}
+		}
+
+		if ($forms === []) {
+			return self::TEMPLATE_VERSION;
+		}
+
+		// Kept below 2^30 so it fits a signed 32-bit integer column, and
+		// above 1 so it never equals the form-less version.
+		return ((crc32((string)json_encode($forms)) & 0x3FFFFFFF) + (self::TEMPLATE_VERSION + 1));
+	}//end templateVersionOf()
 
 
 	/**

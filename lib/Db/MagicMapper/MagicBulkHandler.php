@@ -86,6 +86,14 @@ class MagicBulkHandler {
 	private float $maxPacketSizeBuffer = 0.5;
 
 	/**
+	 * Metadata columns whose value keeps a row from the expiry purge: an archived,
+	 * frozen or locked row, or one with retention metadata (a legal hold lives there).
+	 *
+	 * @var list<string>
+	 */
+	private const PURGE_KEEPING_COLUMNS = ['_archived', '_frozen', '_locked', '_retention'];
+
+	/**
 	 * Cache for table columns to avoid repeated database queries
 	 *
 	 * @var array<string, array<string>>
@@ -240,6 +248,9 @@ class MagicBulkHandler {
 				// 2. Column types might differ from schema (e.g., table created with old schema)
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
+
+				// Date/date-time normalization, matching the non-bulk path — see normalizeDateProperty().
+				$value = $this->normalizeDateProperty(value: $value, propertyFormat: ($schema->getProperties()[$propertyName]['format'] ?? null));
 
 				// Convert complex values for database storage.
 				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
@@ -908,6 +919,34 @@ class MagicBulkHandler {
 	}//end formatDateTimeForDatabase()
 
 	/**
+	 * Normalise a date/date-time property, matching the non-bulk path
+	 * (MagicMapper::prepareObjectDataForTable()). Shares one `datetime` column
+	 * for both formats; see DateTimeNormalizer::formatForDatabase()/
+	 * formatDateForDatabase() for the offset-handling difference. Anything else
+	 * passes through unchanged.
+	 *
+	 * @param mixed $value The raw property value.
+	 * @param mixed $propertyFormat The schema property's `format`, if any; any
+	 *                              non-string (malformed schema) passes through.
+	 *
+	 * @return mixed The normalised value, or $value unchanged when not applicable.
+	 */
+	private function normalizeDateProperty(mixed $value, mixed $propertyFormat): mixed {
+		if (in_array($propertyFormat, ['date-time', 'date'], true) === false || $value === null) {
+			return $value;
+		}
+
+		if ($value instanceof \DateTimeInterface === false && is_string($value) === false) {
+			return $value;
+		}
+
+		return match ($propertyFormat) {
+			'date' => $this->dateTimeNormalizer->formatDateForDatabase($value),
+			default => $this->dateTimeNormalizer->formatForDatabase($value),
+		};
+	}//end normalizeDateProperty()
+
+	/**
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
 	 *
 	 * The counterpart of a raw append: rows written through `bulkUpsert()` with an
@@ -935,7 +974,9 @@ class MagicBulkHandler {
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.
 	 *
 	 * See purgeExpired() for why the rows are removed rather than soft-deleted
-	 * and why the database clock decides.
+	 * and why the database clock decides. A row with any value in one of the
+	 * PURGE_KEEPING_COLUMNS the table has is kept; when the table's columns cannot
+	 * be read, nothing is purged.
 	 *
 	 * @param RegisterSchema $table     The register and schema whose rows are swept.
 	 * @param string         $tableName The bare (unprefixed) table name to sweep.
@@ -947,12 +988,27 @@ class MagicBulkHandler {
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-raw-append-for-high-volume-writers
 	 */
 	public function purgeExpiredRows(RegisterSchema $table, string $tableName): int {
+		$columns = $this->getTableColumns(tableName: $tableName);
+		if ($columns === []) {
+			$this->sql->logger->warning(
+				message: '[MagicBulkHandler] Skipped the expiry purge: the table columns could not be read',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableName]
+			);
+			return 0;
+		}
+
 		$qb = $this->sql->db->getQueryBuilder();
 		$qb->delete($tableName)
 			->where($qb->expr()->eq('_register', $qb->createNamedParameter($table->register->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('_schema', $qb->createNamedParameter($table->schema->getId(), IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->isNotNull('_expires'))
 			->andWhere($qb->expr()->lt('_expires', $qb->createFunction('NOW()')));
+
+		foreach (self::PURGE_KEEPING_COLUMNS as $keeping) {
+			if (in_array($keeping, $columns, true) === true) {
+				$qb->andWhere($qb->expr()->isNull($keeping));
+			}
+		}
 
 		$purged = $qb->executeStatement();
 

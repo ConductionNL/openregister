@@ -518,6 +518,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -552,6 +553,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -579,6 +581,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -611,6 +614,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -637,6 +641,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -663,6 +668,7 @@ exports[`configuration source actions golden importFromGitHub([{"owner":"o","rep
         "body": "{"owner":"o","repo":"r","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -689,6 +695,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -723,6 +730,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -750,6 +758,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -782,6 +791,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -808,6 +818,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -834,6 +845,7 @@ exports[`configuration source actions golden importFromGitLab([{"project":"p","p
         "body": "{"project":"p","path":"x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -860,6 +872,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -894,6 +907,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -921,6 +935,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -953,6 +968,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -979,6 +995,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1005,6 +1022,7 @@ exports[`configuration source actions golden importFromUrl([{"url":"https://exam
         "body": "{"url":"https://example.org/x.json"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },

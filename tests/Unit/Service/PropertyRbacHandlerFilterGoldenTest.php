@@ -48,6 +48,20 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\PropertyWriteCheck
+ * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\OmittedWriteOnly
+ * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyValue
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * The optional parts of queueing a run, with the defaults queue() applies.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 final class FlowRunQueueOptions {
 

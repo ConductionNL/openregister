@@ -31,7 +31,7 @@
 
 ### Not in the first PR, and why
 
-- [ ] C29.2 A lifecycle state may declare that entering it freezes the object (D-C29-2).
+- [x] C29.2 A lifecycle state may declare that entering it freezes the object (D-C29-2). (`lib/Listener/StateEntryFreezeListener.php` on `ObjectTransitionedEvent`, after `ArchivalNominationListener`; `freezesObject` on a `states` block, checked as a boolean by `LifecycleStateValidator`; `tests/Unit/Listener/StateEntryFreezeListenerTest.php`.)
 
   The freeze itself ships, and `@self.frozen` already carries the `state` that
   declared it, so the marker this needs is in place. What is missing is the

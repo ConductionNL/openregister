@@ -30,13 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -45,14 +44,12 @@ use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use RuntimeException;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Service for referential integrity enforcement on object deletion.
@@ -238,7 +235,11 @@ class ReferentialIntegrityService {
 
 		[$cascadeTargets, $retained] = $this->partitionRetainedTargets(cascadeTargets: array_reverse($analysis->cascadeTargets));
 		if (empty($cascadeTargets) === false) {
-			$this->applyBatchCascadeDelete(cascadeTargets: $cascadeTargets, origin: $origin);
+			try {
+				$this->applyBatchCascadeDelete(cascadeTargets: $cascadeTargets, origin: $origin);
+			} catch (HookStoppedException $refusal) {
+				throw HookStoppedException::forDependent(refusal: $refusal);
+			}
 		}
 
 		return $retained;
@@ -306,8 +307,8 @@ class ReferentialIntegrityService {
 	/**
 	 * Split cascade targets into the ones that may be deleted and the ones the law keeps.
 	 *
-	 * Asks {@see ArchivalRetentionGuard}, which asks
-	 * {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}. That is the
+	 * Asks the cascade retention check {@see IntegrityCascadeControls} holds,
+	 * which asks {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}. That is the
 	 * single definition of "is archival" and the four HTTP delete doors read the
 	 * same one, so the cascade cannot quietly disagree with them.
 	 *
@@ -443,6 +444,47 @@ class ReferentialIntegrityService {
 		$this->ensureRelationIndex();
 		return isset($this->relationIndex[$schemaId]);
 	}//end hasIncomingOnDeleteReferences()
+
+	/**
+	 * The table the references of a `cascade: true` property must live in.
+	 *
+	 * The property's `$ref` (or `items.$ref`) names the schema, resolved the way an
+	 * onDelete relation's target is. The register is the owner's own register when it
+	 * holds that schema, otherwise the register whose table holds it. A property that
+	 * names no schema refers into the owner's own table.
+	 *
+	 * @param array          $property The property definition.
+	 * @param RegisterSchema $owner    The register and schema of the object holding the property.
+	 *
+	 * @return RegisterSchema|null The table, or null when the named schema or its register does not resolve.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function cascadePropertyTable(array $property, RegisterSchema $owner): ?RegisterSchema {
+		$targetRef = $this->extractTargetRef(property: $property);
+		if ($targetRef === null) {
+			return $owner;
+		}
+
+		$this->ensureSchemaDetail();
+		$schemaId = $this->resolveSchemaRef(ref: $targetRef, allSchemas: ($this->schemaCache ?? []));
+		$schema   = ($this->schemaCache[$schemaId ?? ''] ?? null);
+		if ($schema === null) {
+			return null;
+		}
+
+		$ownerSchemas = array_map('strval', array_filter($owner->register->getSchemas(), 'is_scalar'));
+		$register     = ($this->schemaRegisterMap[$schemaId] ?? null);
+		if (in_array($schemaId, $ownerSchemas, true) === true) {
+			$register = $owner->register;
+		}
+
+		if ($register === null) {
+			return null;
+		}
+
+		return new RegisterSchema(register: $register, schema: $schema);
+	}//end cascadePropertyTable()
 
 	/**
 	 * Build the relation index from all schemas if not already cached.
@@ -1770,7 +1812,7 @@ class ReferentialIntegrityService {
 	/**
 	 * Log a referential integrity action to the audit trail.
 	 *
-	 * Creates an AuditTrail entry recording what integrity action was taken,
+	 * Creates an audit trail entry recording what integrity action was taken,
 	 * on which object, triggered by what, and by whom. Failures are caught
 	 * and logged as warnings to avoid blocking the integrity action.
 	 *
@@ -1792,65 +1834,21 @@ class ReferentialIntegrityService {
 	}//end logIntegrityAction()
 
 	/**
-	 * Build and store the audit row of an integrity action.
+	 * Store the audit row of an integrity action, through the audit trail.
 	 *
 	 * Expiry follows the retention of the object the row describes, not a flat
 	 * 30 days (or#4101): a cleared reference or a cascade on a record kept for
-	 * years must stay explainable for as long.
+	 * years must stay explainable for as long. So the object is looked up here
+	 * when the caller did not pass it.
 	 *
 	 * @param IntegrityAuditEntry $entry What happened to which object.
 	 *
 	 * @return void
 	 */
 	private function storeIntegrityRow(IntegrityAuditEntry $entry): void {
-		$auditTrail = self::integrityAuditRow(entry: $entry);
-		$this->controls->auditTrailMapper->applyRetentionExpiry(
-			auditTrail: $auditTrail,
-			objectEntity: ($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid))
-		);
-		$this->controls->auditTrailMapper->insert($auditTrail);
+		$entry->about($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid));
+		$this->controls->auditTrailMapper->recordIntegrityAction(entry: $entry);
 	}//end storeIntegrityRow()
-
-	/**
-	 * The audit row of an integrity action.
-	 *
-	 * @param IntegrityAuditEntry $entry What happened to which object.
-	 *
-	 * @return AuditTrail The row, not yet stored.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private static function integrityAuditRow(IntegrityAuditEntry $entry): AuditTrail {
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setObjectUuid($entry->objectUuid);
-		$auditTrail->setAction($entry->action);
-		$auditTrail->setChanged($entry->changed);
-		$auditTrail->setUser($entry->userId);
-		$auditTrail->setCreated(new DateTime());
-
-		return self::scopedAuditRow(auditTrail: $auditTrail, entry: $entry);
-	}//end integrityAuditRow()
-
-	/**
-	 * Set the schema and register an integrity audit row is scoped to, when the entry names them.
-	 *
-	 * @param AuditTrail          $auditTrail The row.
-	 * @param IntegrityAuditEntry $entry      What happened to which object.
-	 *
-	 * @return AuditTrail The row.
-	 */
-	private static function scopedAuditRow(AuditTrail $auditTrail, IntegrityAuditEntry $entry): AuditTrail {
-		if ($entry->schemaId !== null) {
-			$auditTrail->setSchema((int)$entry->schemaId);
-		}
-
-		if ($entry->registerId !== null) {
-			$auditTrail->setRegister((int)$entry->registerId);
-		}
-
-		return $auditTrail;
-	}//end scopedAuditRow()
 
 	/**
 	 * The object an integrity audit row describes, for its retention.

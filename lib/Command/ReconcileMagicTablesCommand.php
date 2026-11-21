@@ -56,6 +56,21 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
+
+	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'apply' => [
+			InputOption::VALUE_NONE,
+			'Create the missing columns. Without this flag the command runs in dry-run mode and '
+			. 'only reports the drift it would repair.',
+		],
+		'register' => [
+			InputOption::VALUE_REQUIRED,
+			'Limit to a single register id (default: every register).',
+		],
+	];
 	/**
 	 * Constructor.
 	 *
@@ -83,20 +98,10 @@ class ReconcileMagicTablesCommand extends Command {
 				'Detect and repair magic-table column drift: physical columns missing for schema '
 				. 'properties that were added to an existing schema without a subsequent write, and '
 				. 'metadata columns (_archived, _frozen, _status, ...) missing from any magic table.'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Create the missing columns. Without this flag the command runs in dry-run mode and '
-				. 'only reports the drift it would repair.'
-			)
-			->addOption(
-				'register',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit to a single register id (default: every register).'
 			);
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 
 	}//end configure()
 
@@ -115,11 +120,7 @@ class ReconcileMagicTablesCommand extends Command {
 		$registerFilter = $input->getOption('register');
 
 		$counts = $this->reconcileMetadataColumns(run: new MetadataReconcileRun(output: $output, apply: $apply), registerFilter: $registerFilter);
-		$pass = new SchemaColumnDriftPass(
-			output: $output,
-			magicMapper: $this->magicMapper,
-			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
-		);
+		$pass = $this->schemaPass(output: $output, apply: $apply);
 		foreach ($this->registersToReconcile(registerFilter: $registerFilter) as $register) {
 			foreach ($this->schemasOf(register: $register) as $schema) {
 				$counts = $this->addCounts(counts: $counts, delta: $pass->reconcile(register: $register, schema: $schema));
@@ -128,6 +129,22 @@ class ReconcileMagicTablesCommand extends Command {
 
 		return $pass->summarise(counts: $counts);
 	}//end execute()
+
+	/**
+	 * The schema-column pass, told the metadata columns it must leave to the metadata pass.
+	 *
+	 * @param OutputInterface $output Console output.
+	 * @param bool            $apply  Whether to repair.
+	 *
+	 * @return SchemaColumnDriftPass The pass.
+	 */
+	private function schemaPass(OutputInterface $output, bool $apply): SchemaColumnDriftPass {
+		return new SchemaColumnDriftPass(
+			output: $output,
+			magicMapper: $this->magicMapper,
+			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
+		);
+	}//end schemaPass()
 
 	/**
 	 * The registers the schema pass walks: every register, or the filtered one.

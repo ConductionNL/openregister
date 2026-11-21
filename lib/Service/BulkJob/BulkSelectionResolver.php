@@ -152,6 +152,17 @@ class BulkSelectionResolver {
 			return [];
 		}
 
+		return $this->uuidsOf(found: $found);
+	}//end queryUuids()
+
+	/**
+	 * The uuids of the objects a selection query found, skipping anything that is no object.
+	 *
+	 * @param array<int|string, mixed> $found The query's results.
+	 *
+	 * @return array<int, string> The uuids, in result order.
+	 */
+	private function uuidsOf(array $found): array {
 		$uuids = [];
 		foreach ($found as $object) {
 			if (($object instanceof ObjectEntity) === false) {
@@ -162,7 +173,7 @@ class BulkSelectionResolver {
 		}
 
 		return $uuids;
-	}//end queryUuids()
+	}//end uuidsOf()
 
 	/**
 	 * The caller's query, scoped to the job's register and schema and

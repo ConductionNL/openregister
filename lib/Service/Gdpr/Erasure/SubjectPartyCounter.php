@@ -95,11 +95,7 @@ class SubjectPartyCounter {
 		}
 
 		$count = 0;
-		foreach ($payload as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
-			}
-
+		foreach (array_filter($payload, 'is_array') as $key => $value) {
 			if ($this->isPartyList(key: (string)$key) === true) {
 				$count += $this->countInList(parties: $value, needles: $needles);
 				continue;

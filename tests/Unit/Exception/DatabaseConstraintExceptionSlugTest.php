@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Exception\DatabaseConstraintException
+ * @uses \OCA\OpenRegister\Exception\DatabaseConstraintMessages
  */
 class DatabaseConstraintExceptionSlugTest extends TestCase {
 

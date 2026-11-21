@@ -36,6 +36,8 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<BulkJob>
  */
 class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -56,12 +58,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function find(int $id): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -74,12 +71,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function findByUuid(string $uuid): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 	}//end findByUuid()
 
 	/**

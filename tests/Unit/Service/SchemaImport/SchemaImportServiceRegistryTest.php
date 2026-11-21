@@ -43,6 +43,18 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SchemaImport\SchemaImportService
+ * @uses \OCA\OpenRegister\Service\SchemaImport\BundledImporters
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmSnapshot
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportOptions
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchema
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading
+ * @uses \OCA\OpenRegister\Service\SchemaImport\MergeInstruction
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgSnapshot
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SourceUpdate
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge
  */
 class SchemaImportServiceRegistryTest extends TestCase {
 

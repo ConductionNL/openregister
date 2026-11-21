@@ -55,6 +55,13 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Search\Service\SizeTally
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Service\DashboardMappers
  */
 class DashboardServiceReadsGoldenTest extends TestCase {
 

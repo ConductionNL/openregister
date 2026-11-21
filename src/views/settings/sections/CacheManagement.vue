@@ -365,6 +365,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
+import { binarySize } from '../../../services/byteSize.js'
 import { settingsSectionState } from './settingsSectionState.js'
 
 /**
@@ -591,22 +592,7 @@ export default {
 			this.settingsStore.performClearCache()
 		},
 
-		/**
-		 * Format bytes to human readable format
-		 *
-		 * @param {number} bytes Number of bytes
-		 * @spec exclude UI plumbing — pure presentation helper
-		 * @return {string} Formatted string
-		 */
-		formatBytes(bytes) {
-			if (bytes === 0) return '0 B'
-
-			const k = 1024
-			const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-			const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-		},
+		formatBytes: binarySize,
 
 		/**
 		 * Get service hit rate

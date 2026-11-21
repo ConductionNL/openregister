@@ -63,6 +63,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
  */
 class RegistersControllerShowGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-show-golden.json';
@@ -172,6 +177,11 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message, array $context): void {
 			unset($context['file'], $context['line']);
+			// The exception-translation trait logs the throwable itself; record its class.
+			if (($context['exception'] ?? null) instanceof \Throwable) {
+				$context['exception'] = $context['exception']::class;
+			}
+
 			$this->calls[] = ['error', $message, $context];
 		});
 

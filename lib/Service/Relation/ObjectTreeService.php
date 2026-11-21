@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use Psr\Log\LoggerInterface;
@@ -124,7 +123,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			];
 		}
 
-		return self::partyDeclaration(schema: $schema);
+		return $this->partyDeclaration(schema: $schema);
 	}//end declarationFor()
 
 	/**
@@ -133,18 +132,16 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @param Schema $schema The schema.
 	 *
 	 * @return array{property: string, maxDepth: int, source: string}|null The declaration.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) PartyDefinition::fromSchema() is the party model's one reader of the annotation.
 	 */
-	private static function partyDeclaration(Schema $schema): array|null {
-		$party = PartyDefinition::fromSchema(schema: $schema);
-		if ($party === null || $party->parentProperty() === null) {
+	private function partyDeclaration(Schema $schema): array|null {
+		$party = $this->sources->parties->parentOf(schema: $schema);
+		if ($party === null) {
 			return null;
 		}
 
 		return [
-			'property' => $party->parentProperty(),
-			'maxDepth' => min($party->maxDepth(), HierarchyGrantExpander::DEPTH_CEILING),
+			'property' => $party['property'],
+			'maxDepth' => min($party['maxDepth'], HierarchyGrantExpander::DEPTH_CEILING),
 			'source' => 'x-openregister-party',
 		];
 	}//end partyDeclaration()
@@ -560,27 +557,38 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @return array{chain: array<string, ObjectEntity>, truncatedBy: string|null, topParent: string|null} The climb.
 	 */
 	private function ancestorChain(ObjectEntity $root, array $walk): array {
-		$chain   = [];
-		$seen    = [(string)$root->getUuid() => true];
-		$current = $root;
+		$chain    = [];
+		$rootUuid = (string)$root->getUuid();
+		$current  = $root;
 		for ($level = 1; $level <= ($walk['depth'] + 1); $level++) {
 			$parentUuid = $this->bounds->reference(value: ($current->getObject()[$walk['property']] ?? null));
-			if ($parentUuid !== null && isset($seen[$parentUuid]) === true) {
-				$parentUuid = null;
-			}
-
-			$step = $this->parentStep(parentUuid: $parentUuid, walk: $walk);
+			$step       = $this->parentStep(parentUuid: $this->unvisited(uuid: $parentUuid, visited: $chain + [$rootUuid => $root]), walk: $walk);
 			if ($step['object'] === null || $level > $walk['depth']) {
 				return $this->bounds->climbEnd(chain: $chain, step: $step);
 			}
 
 			$current = $step['object'];
-			$seen[(string)$current->getUuid()]  = true;
 			$chain[(string)$current->getUuid()] = $current;
 		}
 
 		return ['chain' => $chain, 'truncatedBy' => null, 'topParent' => null];
 	}//end ancestorChain()
+
+	/**
+	 * A parent uuid the climb has not visited yet, or null when it has (a cycle) or there is none.
+	 *
+	 * @param string|null                 $uuid    The parent uuid.
+	 * @param array<string, ObjectEntity> $visited The root and the ancestors so far, by uuid.
+	 *
+	 * @return string|null The parent uuid to step to.
+	 */
+	private function unvisited(?string $uuid, array $visited): ?string {
+		if ($uuid !== null && isset($visited[$uuid]) === true) {
+			return null;
+		}
+
+		return $uuid;
+	}//end unvisited()
 
 	/**
 	 * The parent of one object when it exists and is readable.

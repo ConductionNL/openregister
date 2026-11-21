@@ -24,6 +24,7 @@
    "listen": "prerequest",
    "script": {
     "exec": [
+     "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
      "// The quality workflow passes base_url, admin_user and admin_password; take",
      "// them for this collection's own names when those are not given.",
      "[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['adminUser', 'admin_user'], ['adminPassword', 'admin_password']].forEach(function (pair) {",

@@ -10,7 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileOverwrite;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -67,7 +67,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 				'byReadHandler' => $doc, 'existingTags' => ['object:abc', 'object:def', 'objective', 'red'],
 			],
 			'id via read handler, same content' => ['path' => 7, 'object' => true, 'content' => 'old', 'byReadHandler' => $doc],
-			'id read handler misses, user folder by id' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
+			'id read handler misses, object given' => ['path' => 7, 'object' => true, 'userById' => [7 => $doc]],
 			'id without object, user folder by id' => ['path' => 7, 'userById' => [7 => $doc], 'content' => 'new'],
 			'id not found' => ['path' => 9, 'userById' => []],
 			'id user folder throws' => ['path' => 9, 'userFolderThrows' => 'exception'],
@@ -232,7 +232,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 			}
 		});
 
-		$ownership = $this->createMock(FileOwnershipHandler::class);
+		$ownership = $this->createMock(FileOwnershipHandlerInterface::class);
 		$ownership->method('transferFileOwnershipIfNeeded')->willReturnCallback(function () {
 			$this->record(method: 'ownership.transferFileOwnershipIfNeeded', args: func_get_args());
 			return true;

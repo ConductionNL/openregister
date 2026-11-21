@@ -22,6 +22,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
@@ -29,7 +30,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -40,6 +41,12 @@ use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
  * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {
 
@@ -164,7 +171,20 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 				$history,
 			),
 			$logger,
+			$this->allRights(),
 		);
+	}
+
+	/**
+	 * A reader of special rights that lets everybody use everything; ChatSpecialRightsTest covers refusals.
+	 *
+	 * @return OrganisationSpecialRights
+	 */
+	private function allRights(): OrganisationSpecialRights {
+		$rights = $this->createMock(OrganisationSpecialRights::class);
+		$rights->method('mayUse')->willReturn(true);
+
+		return $rights;
 	}
 
 	/**

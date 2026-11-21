@@ -12,6 +12,7 @@ import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 import { getJson, objectAnswer, okJson, sendJson } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions, listStateFields } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -213,7 +214,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {object} state - Store state
 		 * @return {object|false} The schema to edit
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		editorSchemaItem: (state) => {
 			const item = state.schemaItem
@@ -246,7 +247,7 @@ export const useSchemaStore = defineStore('schema', {
 		 * Switch the editor between publishing and saving a draft.
 		 *
 		 * @param {boolean} draftMode - True to save edits as the schema's draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		setDraftMode(draftMode) {
 			this.draftMode = draftMode === true
@@ -257,7 +258,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {object} schemaItem - The edited schema (must have an id)
 		 * @return {Promise<Schema>} The schema with its draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async saveSchemaDraft(schemaItem) {
 			if (!schemaItem?.id) {
@@ -280,7 +281,7 @@ export const useSchemaStore = defineStore('schema', {
 		 * @param {object} [options] - Options
 		 * @param {boolean} [options.acknowledgeBreaking] - Accept a breaking change
 		 * @return {Promise<Schema>} The published schema
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async publishSchemaDraft(id, options = {}) {
 			const { data } = await axios.post(
@@ -296,7 +297,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {number|string} id - The schema id
 		 * @return {Promise<Schema>} The schema without a draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async discardSchemaDraft(id) {
 			const { data } = await axios.delete(
@@ -587,7 +588,7 @@ export const useSchemaStore = defineStore('schema', {
 		async updateSchemaFromExploration(schemaId, propertyUpdates) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
 
-			const response = await fetch(endpoint, {
+			const response = await fetch(endpoint, withRequestToken({
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -595,7 +596,7 @@ export const useSchemaStore = defineStore('schema', {
 				body: JSON.stringify({
 					properties: propertyUpdates,
 				}),
-			})
+			}))
 
 			const data = await okJson(response)
 

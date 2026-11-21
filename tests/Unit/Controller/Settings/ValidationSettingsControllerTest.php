@@ -65,7 +65,7 @@ class ValidationSettingsControllerTest extends TestCase {
 				['collectErrors', false, false],
 			]);
 		$results = ['total_objects' => 100, 'processed_objects' => 100];
-		$this->settingsService->method('massValidateObjects')
+		$this->settingsService->method('massValidate')
 			->willReturn($results);
 
 		$result = $this->controller->massValidateObjects();
@@ -81,7 +81,7 @@ class ValidationSettingsControllerTest extends TestCase {
 				['mode', 'serial', 'invalid_mode'],
 				['collectErrors', false, false],
 			]);
-		$this->settingsService->method('massValidateObjects')
+		$this->settingsService->method('massValidate')
 			->willThrowException(new \InvalidArgumentException('Invalid mode'));
 
 		$result = $this->controller->massValidateObjects();
@@ -97,7 +97,7 @@ class ValidationSettingsControllerTest extends TestCase {
 				['mode', 'serial', 'serial'],
 				['collectErrors', false, false],
 			]);
-		$this->settingsService->method('massValidateObjects')
+		$this->settingsService->method('massValidate')
 			->willThrowException(new \Exception('Failed'));
 
 		$result = $this->controller->massValidateObjects();

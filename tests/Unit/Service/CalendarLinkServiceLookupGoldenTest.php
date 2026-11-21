@@ -36,6 +36,11 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
  * @uses   \OCA\OpenRegister\Service\CalendarPickerScan
  * @uses   \OCA\OpenRegister\Db\CalendarLink
+ * @uses \OCA\OpenRegister\Service\CalendarEventKey
+ * @uses \OCA\OpenRegister\Service\CalendarObjectRef
+ * @uses \OCA\OpenRegister\Service\CalendarPickerWindow
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class CalendarLinkServiceLookupGoldenTest extends TestCase {
 

@@ -24,3 +24,15 @@ exports[`RelationsTab.normaliseEntry (golden) matches the recorded rows 1`] = `
   "{"id":"contact-17","type":"contact","title":"","subtitle":"","timestamp":null}",
 ]
 `;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises a results envelope 1`] = `"[{"id":"r","type":"contact","title":"R","subtitle":"","timestamp":null}]"`;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises a timeline 1`] = `"[{"id":"a","type":"email","title":"S","subtitle":"","timestamp":null},{"id":"b","type":"event","title":"","subtitle":"","timestamp":null}]"`;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises an empty envelope 1`] = `"[]"`;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises deck before deckCards 1`] = `"[{"id":"d2","type":"deck","title":"Deck","subtitle":"","timestamp":null}]"`;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises nothing 1`] = `"[]"`;
+
+exports[`RelationsTab.normaliseResponse (golden) normalises typed buckets, newest first 1`] = `"[{"id":"v1","type":"event","title":"New","subtitle":"","timestamp":"2024-01-01T00:00:00Z"},{"id":"c1","type":"contact","title":"C","subtitle":"","timestamp":"2022-06-01T00:00:00Z"},{"id":"d1","type":"deck","title":"Card","subtitle":"","timestamp":"2021-01-01T00:00:00Z"},{"id":"e1","type":"email","title":"Old","subtitle":"","timestamp":"2020-01-01T00:00:00Z"},{"id":"e2","type":"email","title":"Undated","subtitle":"","timestamp":null}]"`;
