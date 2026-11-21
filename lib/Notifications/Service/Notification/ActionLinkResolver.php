@@ -140,7 +140,7 @@ final class ActionLinkResolver {
 	 *    relation field on the triggering object to a related object's
 	 *    register/schema/uuid THROUGH OR RBAC ("Open client"): the related
 	 *    id is never trusted from the wire.
-	 *  - route: an originApp frontend route with {{prop}} interpolation (HTML-escaped).
+	 *  - route: an originApp frontend route with {{prop}} interpolation (URL-encoded).
 	 *  - url: an absolute web or mail URL, passed through verbatim.
 	 *  - task-verb: the task lifecycle verb route (POST), or the task form
 	 *    when the outcome requires a comment.
@@ -186,7 +186,7 @@ final class ActionLinkResolver {
 	}//end routeUrl()
 
 	/**
-	 * A route with its {{prop}} tokens replaced by object data, HTML-escaped.
+	 * A route with its {{prop}} tokens replaced by object data, URL-encoded.
 	 *
 	 * @param string               $route The route.
 	 * @param array<string, mixed> $data  The object data.
@@ -202,7 +202,7 @@ final class ActionLinkResolver {
 					return '';
 				}
 
-				return rawurlencode(htmlspecialchars((string)$value, (ENT_QUOTES | ENT_HTML5)));
+				return rawurlencode((string)$value);
 			},
 			$route
 		);

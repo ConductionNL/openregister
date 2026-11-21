@@ -45,6 +45,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -88,6 +89,7 @@ class ChatService implements ChatServiceInterface {
 	 * @param ChatServiceStores   $stores   Conversation, message and agent rows.
 	 * @param ChatServiceHandlers $handlers The handlers a chat turn is delegated to.
 	 * @param LoggerInterface     $logger   Logger.
+	 * @param OrganisationSpecialRightsInterface $specialRights Reads agent_use and llm_use.
 	 *
 	 * @return void
 	 */
@@ -95,6 +97,7 @@ class ChatService implements ChatServiceInterface {
 		private readonly ChatServiceStores $stores,
 		private readonly ChatServiceHandlers $handlers,
 		private readonly LoggerInterface $logger,
+		private readonly OrganisationSpecialRightsInterface $specialRights,
 	) {
 	}//end __construct()
 
@@ -174,6 +177,8 @@ class ChatService implements ChatServiceInterface {
 		try {
 			$conversation = $this->findOwnConversation(request: $request);
 			$agent = $this->findConversationAgent(conversation: $conversation);
+			// Special rights, before anything is stored or sent to a model.
+			$this->refuseMissingRight(conversation: $conversation, agent: $agent, userId: $request->userId);
 			$this->recordUserMessage(request: $request, conversation: $conversation);
 			$result = $this->answerMessage(request: $request, agent: $agent);
 			$this->titleNewConversation(request: $request, conversation: $conversation);
@@ -225,6 +230,84 @@ class ChatService implements ChatServiceInterface {
 
 		return $this->stores->agentMapper->find($conversation->getAgentId());
 	}//end findConversationAgent()
+
+	/**
+	 * Refuse a message when the caller lacks a special right it needs.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param Agent|null   $agent        The agent it runs, or null.
+	 * @param string       $userId       The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 403 when the caller lacks llm_use or agent_use.
+	 */
+	private function refuseMissingRight(Conversation $conversation, ?Agent $agent, string $userId): void {
+		$missing = $this->missingRight(conversation: $conversation, agent: $agent, userId: $userId);
+		if ($missing !== null) {
+			throw new Exception('You do not hold the special right ' . $missing . ' in this organisation', 403);
+		}
+	}//end refuseMissingRight()
+
+	/**
+	 * The special right a caller lacks to send a message in one of its conversations, or null.
+	 *
+	 * @param int    $conversationId The conversation.
+	 * @param string $userId         The caller.
+	 *
+	 * @return string|null The right's key, or null when the caller holds every right the conversation needs.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function missingRightIn(int $conversationId, string $userId): ?string {
+		$conversation = $this->stores->conversationMapper->find($conversationId);
+
+		return $this->missingRight(
+			conversation: $conversation,
+			agent: $this->findConversationAgent(conversation: $conversation),
+			userId: $userId
+		);
+	}//end missingRightIn()
+
+	/**
+	 * The special right a caller lacks to send a message in a conversation, or null.
+	 *
+	 * `llm_use` is read from the conversation's organisation: every message
+	 * calls a language model on the caller's behalf. `agent_use` is read from
+	 * the agent's organisation when the conversation runs an agent.
+	 * {@see OrganisationSpecialRightsInterface::mayUse()} for administrators, a missing
+	 * organisation and a missing key.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param Agent|null   $agent        The agent it runs, or null.
+	 * @param string       $userId       The caller.
+	 *
+	 * @return string|null The right's key, or null when the caller holds both.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	private function missingRight(Conversation $conversation, ?Agent $agent, string $userId): ?string {
+		if ($this->specialRights->mayUse(
+			right: OrganisationSpecialRightsInterface::LLM_USE,
+			userId: $userId,
+			organisationUuid: $conversation->getOrganisation()
+		) === false
+		) {
+			return OrganisationSpecialRightsInterface::LLM_USE;
+		}
+
+		if ($agent !== null
+			&& $this->specialRights->mayUse(
+				right: OrganisationSpecialRightsInterface::AGENT_USE,
+				userId: $userId,
+				organisationUuid: $agent->getOrganisation()
+			) === false
+		) {
+			return OrganisationSpecialRightsInterface::AGENT_USE;
+		}
+
+		return null;
+	}//end missingRight()
 
 	/**
 	 * Store the user's message with its CnAiContext snapshot and summarize the conversation when due.

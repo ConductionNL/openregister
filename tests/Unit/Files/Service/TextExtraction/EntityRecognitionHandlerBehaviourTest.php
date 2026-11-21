@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Files\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\TextDisclosureRecorder;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -116,7 +117,8 @@ class EntityRecognitionHandlerBehaviourTest extends TestCase {
 			backends: new EntityRecognitionBackends(
 				settingsService: $this->settings,
 				anonymisationBackendService: $this->anonymiser,
-				clientService: $this->guzzleClientService($this->calls)
+				clientService: $this->guzzleClientService($this->calls),
+				disclosureRecorder: $this->createMock(TextDisclosureRecorder::class)
 			),
 			logger: $this->logger
 		);
@@ -327,6 +329,7 @@ class EntityRecognitionHandlerBehaviourTest extends TestCase {
 	}//end testOpenAnonymiserFailureOtherThanARequestErrorFallsBackToRegex()
 
 	public function testAPhoneMatchInsideAValidBsnIsDroppedButOtherPhonesStay(): void {
+		$this->settings->method('getFileSettingsOnly')->willReturn(['entityPatternSets' => ['nl']]);
 		$entities = $this->detect(EntityRecognitionHandler::METHOD_REGEX, 'BSN 111222333 of bel 0612345678', ['SSN', 'PHONE']);
 
 		$byType = [];

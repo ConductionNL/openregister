@@ -23,7 +23,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionService;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
@@ -42,6 +42,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\CorrectionRefusedException
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\Correction
+ * @uses \OCA\OpenRegister\Service\Object\CorrectionAuditing
+ * @uses \OCA\OpenRegister\Service\Object\CorrectionTarget
  */
 class CorrectionServiceGoldenTest extends TestCase {
 
@@ -71,7 +82,7 @@ class CorrectionServiceGoldenTest extends TestCase {
 		}
 
 		$session->method('getUser')->willReturn($user);
-		$auth = $this->createMock(OpenRegisterActionAuthService::class);
+		$auth = $this->createMock(ActionRightCheckInterface::class);
 		$auth->method('requireAction')->willReturnCallback(
 			function ($user, string $action) use ($o): void {
 				$this->trace[] = ['requireAction', $action];

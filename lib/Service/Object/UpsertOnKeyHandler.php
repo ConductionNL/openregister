@@ -27,7 +27,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 * @param MatchResolver             $matchResolver   The import's capped, RBAC-scoped key lookup.
 	 * @param ILockingProvider          $lockingProvider Nextcloud's lock provider (memcache or database).
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		private readonly UniqueConstraintEvaluator $evaluator,
@@ -88,7 +88,7 @@ class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 	 *
 	 * @throws UpsertOnKeyException When the upsert is refused; the exception carries the answer.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function upsert(UpsertOnKeyRequest $request, callable $save): array {
 		return $this->upsertLocked(request: $request, save: $save);

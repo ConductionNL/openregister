@@ -314,6 +314,40 @@ decides.
 Next: pick the groups your schema should answer to, then write the block using
 the samples under [Code Examples](#code-examples) below.
 
+### Objects without an organisation
+
+A stored object without an organisation is readable by an administrator only.
+One exception remains in the code: a grant that reaches a schema through its
+register's cascade also admits such objects, because shared reference data was
+stored that way.
+
+The command `occ openregister:adopt-organisationless-rows` closes that gap in
+the data. It gives every object without an organisation the organisation of its
+register, else of its schema, else the instance's default organisation. It only
+writes with `--apply`; without it, it reports per table how many objects lack an
+organisation and which organisation they would get. On upgrade the repair step
+`AdoptOrganisationlessRows` only reports the same counts and writes nothing.
+
+Writing the organisation changes who may read those objects:
+
+- members of the organisation an object gets can now read it under the usual
+  organisation rules, where before only an administrator (or a register
+  cascade grant) could;
+- reads that admit objects without an organisation only, such as anonymous
+  reads that follow an inverse relation, no longer return them.
+
+A table for which none of the three is set keeps its objects as they are, and
+the command names that table.
+
+```bash
+occ openregister:adopt-organisationless-rows
+occ openregister:adopt-organisationless-rows --apply
+occ openregister:adopt-organisationless-rows --apply --register <slug> --schema <slug>
+```
+
+The command only fills an empty organisation, so running it twice changes
+nothing the second time.
+
 ### The action vocabulary: closed by default, extensible by declaration
 
 An `authorization` block may name `create`, `read`, `update` or `delete`, plus
@@ -738,6 +772,60 @@ How it behaves:
 - Everything that goes wrong denies: nobody signed in, a malformed operand (logged as a warning), a membership schema that cannot be found or read, a caller with no rows.
 - Like every conditional rule on a field other than `_organisation`, a caller it admits is no longer held to the organisation filter on that schema. To keep both, add `"_organisation": "$organisation"` to the same `match`.
 - Admins bypass RBAC and see every row, as with every other rule.
+
+### An app declares object access; it does not guard it
+
+When an app needs "only the people on this record may read it", it writes that rule into the schema's `authorization` block. It does not write a guard class that reads the object and decides in PHP. OpenRegister then enforces the rule on every path that reaches the data: the list (as SQL), the single-object read, the API, search, exports and MCP. An app-side guard only protects the screens that call it.
+
+The declaration is the conditional rule grammar from the section above, keyed on the action:
+
+- **Principals.** A rule names who it is for. That can be a Nextcloud group id, `authenticated` (anyone who is logged in), `public` (anyone, including anonymous callers) or a single account as `user:<uid>`. A plain string in the list grants that principal the action with no condition. Members of Nextcloud's `admin` group pass every rule.
+- **`match`.** An object field and the value it must have for the rule to admit the caller. Every key in one `match` must hold. Two rules in the same list are alternatives.
+- **Variables**, resolved for the caller at evaluation time:
+  - `$userId` (or `$user`): the caller's Nextcloud uid.
+  - `$user.groups`: the caller's group ids, for use with `$in` or `$contains`.
+  - `$organisation`: the caller's active organisation.
+  - `$now`: the current time, for date windows.
+- **`$contains`**: a list field holds the value, for example a list of assignees.
+
+Example: a record that its assignee may read and update, and that anyone in its `assignees` list may read.
+
+```json
+{
+  "authorization": {
+    "read": [
+      { "group": "authenticated", "match": { "assignee": "$userId" } },
+      { "group": "authenticated", "match": { "assignees": { "$contains": "$userId" } } }
+    ],
+    "update": [
+      { "group": "authenticated", "match": { "assignee": "$userId" } }
+    ]
+  }
+}
+```
+
+A caller who matches neither rule gets nothing back from the list, and a 404 from the single-object read. To the app, that is an ordinary empty read. The administrator bypass is the `admin` group's, enforced by OpenRegister, not app code.
+
+#### When the question cannot be decided (`onUndecidable`)
+
+Sometimes OpenRegister cannot answer an access question at all. The usual cause is a schema with no rules of its own whose register cannot be read, so the rules it would inherit are unknown. The schema says what that means with `onUndecidable`:
+
+- `closed` (the default when the key is absent): the question is refused, on the single-object read and on the list alike.
+- `open`: the question is granted, and a warning is logged with the schema, the action, the caller, the object and what could not be resolved.
+
+```json
+{
+  "authorization": {
+    "onUndecidable": "closed"
+  }
+}
+```
+
+The key is a setting, not a rule. A block that holds nothing but `onUndecidable` still takes its rules from the register, exactly as an empty block does. Any value other than `closed` or `open` is refused when the schema is saved. `open` never widens a question that can be decided: once the rules resolve, they alone decide.
+
+#### When an app still needs a guard of its own
+
+Sometimes a rule genuinely can't be expressed in this grammar. In that case the app-side guard **must** carry a comment that names the declaration it tried and says why it could not work, for example which operator or variable was missing. Without that comment, the next reader can't tell a necessary guard from a duplicate of a rule the schema could have held, and a duplicate drifts out of step with the schema the moment either one changes. A guard with such a comment is a request for a platform feature. Raise it against OpenRegister so the guard can be removed once the feature lands.
 
 ### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
 

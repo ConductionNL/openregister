@@ -33,6 +33,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Object\AccessFlags
  */
 class ObjectServiceBulkSaveContextTest extends TestCase {
 

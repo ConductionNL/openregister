@@ -734,17 +734,25 @@ the remote document names them, a `title`, and an `action`. These three slugs
 are the `register:schema:slug` key the preview modal posts back as the
 selection, so a row without them cannot be selected. The object MUST be looked
 up the way the import looks it up: by slug in the local register and schema,
-without RBAC or multitenancy. A missing object MUST be `create`; an object whose
-remote version is strictly newer MUST be `update`; any other existing object,
-and an object whose slug, register or schema is missing or not present locally,
-MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
+without RBAC or multitenancy. A missing object MUST be `create`, and so MUST an
+object whose register and schema each exist locally or are listed as `create`
+in the same preview (the import creates them first). An object whose remote
+version is strictly newer MUST be `update` when at least one compared field
+differs, and `skip` with a `reason` when none does. An object for which the
+local register holds more than one row with its slug MUST be `skip` with a
+`reason` naming the slug, as the import skips it, and MUST NOT fail the rest of
+the preview. Any other existing object, and an object whose slug is missing or
+whose register or schema is neither present locally nor created by the same
+preview, MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
 well as objects, MUST list the fields it changes as `{field, current, proposed}`:
 only keys the remote side carries are compared, nested maps by dotted path,
 lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
 An object row MUST compare what the import would write: its `@self.version`
 (which only gates the update) is not a change, and the seed format's top-level
 `uuid` and `slug` are not compared unless the schema declares a property of
-that name, because the import strips them from the data.
+that name, because the import strips them from the data. Other top-level
+properties the target schema does not declare are not compared either, because
+the import discards them; the row MUST list them under `discarded`.
 
 #### Scenario: A remote object can be selected from its row
 - **GIVEN** a remote object `omgevingsvergunning` in register `zaken` and schema `zaaktype`, both present locally, and no such object locally
@@ -766,6 +774,21 @@ that name, because the import strips them from the data.
 - **GIVEN** a local object `livepass-lane11-a1` stored at version `0.0.1` with colour `red`, imported from a seed that carries a top-level `slug` and `uuid`
 - **WHEN** the preview is built for the seed at version `1.0.1` with colour `blue`
 - **THEN** its row MUST be `update` and its changes MUST be exactly `colour` from `red` to `blue`
+
+#### Scenario: Two live rows share a seed slug
+- **GIVEN** the local register holds two `consent` objects with slug `standing-consent-verbal-bakker`
+- **WHEN** the preview is built
+- **THEN** that row MUST be `skip` with a reason naming the slug, and every other object MUST be previewed as usual
+
+#### Scenario: An undeclared property does not keep the preview busy
+- **GIVEN** an imported object whose remote data carries `notInSchema`, which the schema does not declare, and otherwise matches the stored object
+- **WHEN** the preview is built again with a newer remote version
+- **THEN** its row MUST be `skip` with no changes and MUST list `notInSchema` under `discarded`
+
+#### Scenario: The import creates the register and schema too
+- **GIVEN** a configuration whose register and schema do not exist locally yet
+- **WHEN** the preview is built for the first time
+- **THEN** the register and schema MUST be `create` and so MUST their objects
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 
@@ -1426,6 +1449,38 @@ A configuration bundle uploaded to a register by a caller who is not an administ
 - **WHEN** the import runs
 - **THEN** the importer MUST get the register's application as the app id
 - @e2e exclude {controller unit test}
+
+### Requirement: An import MUST NOT write its configuration into the log
+
+A stack trace created while a configuration import runs MUST NOT carry the arguments of its frames. Every frame of an import holds the decoded configuration, and Nextcloud writes the arguments of a logged trace into its log, unabridged at the debug level, which `occ upgrade` always uses. The setting that withholds them MUST be in effect for the import only and MUST be put back afterwards, also when the import throws. Measured on an app with 538 schemas before this requirement: 6.8 MB a log entry, four entries a schema, and 895 of 901 seconds of the import spent writing them (#9945).
+
+#### Scenario: A trace logged during an import
+- **GIVEN** PHP running with `zend.exception_ignore_args` off
+- **WHEN** an exception is created while `importFromApp()` or `importFromJson()` runs
+- **THEN** its trace MUST hold the frames and MUST NOT hold their arguments
+- @e2e exclude {process-level setting with no screen of its own; covered by TraceArgumentsTest}
+
+#### Scenario: After the import
+- **GIVEN** PHP running with `zend.exception_ignore_args` off
+- **WHEN** the import has returned or thrown
+- **THEN** the setting MUST be off again
+- @e2e exclude {process-level setting with no screen of its own; covered by TraceArgumentsTest}
+
+### Requirement: The second schema pass MUST write only what resolving references changed
+
+A configuration import creates or updates every schema in a first pass and imports each again in a second, so a reference to a schema declared later in the file resolves. In the second pass a schema MUST NOT be written when the definition about to be written, references resolved, is identical to the definition the first pass of the same import wrote for it: no store write, no shipped baseline write, no changelog entry and no installer run. A schema the first pass did not write, because it was unchanged, MUST still be imported by the second pass as before. What the first pass wrote MUST NOT be remembered beyond the import's second pass, so an import of a single schema outside a run always writes.
+
+#### Scenario: A schema without references
+- **GIVEN** a configuration in which `product` references no other schema
+- **WHEN** the configuration is imported
+- **THEN** `product` MUST be written once
+- @e2e exclude {backend import path with no screen of its own; covered by ImportHandlerSecondPassTest}
+
+#### Scenario: A schema referencing one declared after it
+- **GIVEN** a configuration in which `order` references `customer`, declared after it
+- **WHEN** the configuration is imported
+- **THEN** `order` MUST be written in the first pass and again in the second, and MUST end up holding the id of `customer`
+- @e2e exclude {backend import path with no screen of its own; covered by ImportHandlerSecondPassTest}
 
 ## Current Implementation Status
 - **Implemented:**

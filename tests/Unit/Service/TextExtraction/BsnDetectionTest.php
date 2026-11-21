@@ -50,11 +50,36 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Formats\BsnFormat
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Formats\IdentifierFormats
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\JurisdictionPatternSets
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlLicensePlates
+ * @uses \OCA\OpenRegister\Formats\LicensePlateNlFormat
  */
 class BsnDetectionTest extends TestCase {
 
 	/**
 	 * Run the handler's regex method over a text.
+	 *
+	 * @param string $text The text.
+	 * @param array|null $entityTypes The type filter.
+	 *
+	 * @return array The detected entities.
+	 */
+	private function settingsWithTheDutchSet(): SettingsService {
+		// BSNs come from the Dutch jurisdiction pattern set, which runs when enabled.
+		$settings = $this->createMock(SettingsService::class);
+		$settings->method('getFileSettingsOnly')->willReturn(['entityPatternSets' => ['nl']]);
+
+		return $settings;
+	}
+
+	/**
+	 * Run the handler's detection over a text with the Dutch set enabled.
 	 *
 	 * @param string $text The text.
 	 * @param array|null $entityTypes The type filter.
@@ -70,15 +95,15 @@ class BsnDetectionTest extends TestCase {
 				db: $this->createMock(IDBConnection::class)
 			),
 			backends: new EntityRecognitionBackends(
-				settingsService: $this->createMock(SettingsService::class),
+				settingsService: $this->settingsWithTheDutchSet(),
 				anonymisationBackendService: $this->createMock(AnonymisationBackendService::class)
 			),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
-		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithRegex');
+		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectEntities');
 
-		return array_values($method->invoke($handler, new EntityDetectionQuery($text, $entityTypes, 0.5)));
+		return array_values($method->invoke($handler, new EntityDetectionQuery($text, $entityTypes, 0.5), EntityRecognitionHandler::METHOD_REGEX));
 
 	}//end detect()
 

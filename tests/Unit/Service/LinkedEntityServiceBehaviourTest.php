@@ -56,6 +56,9 @@ use OCA\OpenRegister\Service\EntityLink;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LinkedEntityServiceBehaviourTest extends TestCase {
 

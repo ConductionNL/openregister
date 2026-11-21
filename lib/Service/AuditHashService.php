@@ -76,7 +76,8 @@ use Psr\Log\LoggerInterface;
  *     brokenAt: int|null,
  *     entriesVerified: int,
  *     skippedNullHashes: int,
- *     purgedTombstones: int
+ *     purgedTombstones: int,
+ *     unkeyedEntries: int
  * }
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
@@ -153,6 +154,13 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private const SWEEP_BATCH_SIZE = 500;
 
 	/**
+	 * Most ids in one IN list when a seal reads the payload of unsealed rows.
+	 *
+	 * @var integer
+	 */
+	private const PAYLOAD_CHUNK = 1000;
+
+	/**
 	 * Most rows one sweep will re-chain in a single pass.
 	 *
 	 * The sweep cannot seal a gap in place. If a row was left unsealed and LATER
@@ -201,6 +209,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		'entriesVerified' => 0,
 		'skippedNullHashes' => 0,
 		'purgedTombstones' => 0,
+		'unkeyedEntries' => 0,
 	];
 
 	/**
@@ -226,12 +235,14 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @param ILockingProvider $lockingProvider Advisory lock provider serializing seal passes
 	 * @param LoggerInterface $logger Logger for fail-soft lock warnings
 	 * @param IAppConfig $appConfig Records when the seal lock was taken, to detect an abandoned one
+	 * @param AuditChainKey|null $chainKey Keys the chain from its keyed-from row on; without it every link is unkeyed
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ILockingProvider $lockingProvider,
 		private readonly LoggerInterface $logger,
 		private readonly IAppConfig $appConfig,
+		private readonly ?AuditChainKey $chainKey = null,
 	) {
 	}//end __construct()
 
@@ -273,21 +284,87 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	}//end getCanonicalJson()
 
 	/**
-	 * Compute the SHA-256 hash for an audit trail entry.
+	 * Compute the chain link for an audit trail entry.
+	 *
+	 * From the keyed-from row on, the link is an HMAC-SHA256 under the chain
+	 * key, so it cannot be recomputed by someone who can only write the table.
+	 * Rows before it keep their unkeyed SHA-256 link.
 	 *
 	 * @param AuditTrail $entry The audit trail entry to hash
 	 * @param string $previousHash The hash of the previous entry in the chain
 	 *
-	 * @return string The SHA-256 hex digest
+	 * @return string The hex digest
 	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function computeHash(AuditTrail $entry, string $previousHash): string {
 		$canonicalJson = $this->getCanonicalJson(entry: $entry);
 
+		if ($this->isKeyedRow(id: $entry->getId()) === true) {
+			return $this->chainKey->hmac(data: $previousHash . $canonicalJson);
+		}
+
 		return hash('sha256', $previousHash . $canonicalJson);
 	}//end computeHash()
+
+	/**
+	 * Whether a row is chained with the key.
+	 *
+	 * @param int|null $id The row id.
+	 *
+	 * @return bool
+	 */
+	private function isKeyedRow(?int $id): bool {
+		return $this->chainKey?->isKeyed(id: $id) === true;
+	}//end isKeyedRow()
+
+	/**
+	 * Start the keyed chain after the last existing row, once.
+	 *
+	 * The existing rows keep their unkeyed links and are verified first, so the
+	 * verdict on them is on record; the next row links onto the last of them
+	 * under the key. Runs under the seal lock, so no row is sealed in between.
+	 *
+	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
+	 *
+	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function startKeyedChain(): array {
+		if ($this->chainKey === null || $this->chainKey->keyedFrom() !== null) {
+			return ['started' => false, 'keyedFrom' => $this->chainKey?->keyedFrom(), 'unkeyedChain' => null];
+		}
+
+		if ($this->acquireSealLock() === false) {
+			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+		}
+
+		try {
+			$unkeyedChain = $this->verifyChain();
+			$keyedFrom    = ($this->maxAuditId() + 1);
+			$this->chainKey->startAt(id: $keyedFrom);
+
+			return ['started' => true, 'keyedFrom' => $keyedFrom, 'unkeyedChain' => $unkeyedChain];
+		} finally {
+			$this->releaseSealLock();
+		}
+	}//end startKeyedChain()
+
+	/**
+	 * The highest audit row id, or 0 when there are none.
+	 *
+	 * @return int
+	 */
+	private function maxAuditId(): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->max('id'))->from('openregister_audit_trails');
+		$result = $qb->executeQuery();
+		$max = $result->fetchOne();
+		$result->closeCursor();
+
+		return (int)$max;
+	}//end maxAuditId()
 
 	/**
 	 * Seal a batch of already-inserted audit-trail rows into the hash chain.
@@ -978,9 +1055,12 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private function sealRowsLocked(array $ids): int {
 		$minId = min($ids);
 
-		// Fetch every row in the id range so interleaved foreign rows keep
-		// their place in the chain.
-		$rows = $this->rowsBetween(minId: $minId, maxId: max($ids));
+		// Walk every row in the id range so interleaved foreign rows keep
+		// their place in the chain. A sealed row contributes only its hash as
+		// a chain link, so the range is read as an `id, hash` skeleton and the
+		// full payload is fetched for the unsealed rows alone: bytes read stay
+		// proportional to what is sealed, not to the window's id span.
+		$rows = $this->withUnsealedPayloads(links: $this->linksBetween(minId: $minId, maxId: max($ids)));
 		if ($rows === []) {
 			return 0;
 		}
@@ -998,16 +1078,18 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	}//end sealRowsLocked()
 
 	/**
-	 * Every row with an id in the inclusive range, oldest first.
+	 * The `id` and `hash` of every row in the inclusive range, oldest first.
 	 *
 	 * @param int $minId Inclusive lower bound.
 	 * @param int $maxId Inclusive upper bound.
 	 *
-	 * @return array<int, array<string, mixed>> The rows.
+	 * @return array<int, array<string, mixed>> The skeleton rows.
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md
 	 */
-	private function rowsBetween(int $minId, int $maxId): array {
+	private function linksBetween(int $minId, int $maxId): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
+		$qb->select('id', 'hash')
 			->from('openregister_audit_trails')
 			->where($qb->expr()->gte('id', $qb->createNamedParameter($minId, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->lte('id', $qb->createNamedParameter($maxId, IQueryBuilder::PARAM_INT)))
@@ -1018,7 +1100,87 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$result->closeCursor();
 
 		return $rows;
-	}//end rowsBetween()
+	}//end linksBetween()
+
+	/**
+	 * The skeleton with each unsealed row replaced by its full row, in the
+	 * skeleton's order. Sealed rows stay `id, hash` only. An unsealed row that
+	 * is gone by the time its payload is read is left out, as the full-range
+	 * read would have missed it too.
+	 *
+	 * @param array<int, array<string, mixed>> $links The skeleton, oldest first.
+	 *
+	 * @return array<int, array<string, mixed>> The rows to chain.
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md
+	 */
+	private function withUnsealedPayloads(array $links): array {
+		$unsealed = [];
+		foreach ($links as $link) {
+			if (self::isUnsealed(row: $link) === true) {
+				$unsealed[] = (int)$link['id'];
+			}
+		}
+
+		if ($unsealed === []) {
+			return $links;
+		}
+
+		$full = $this->rowsWithIds(ids: $unsealed);
+		$rows = [];
+		foreach ($links as $link) {
+			if (self::isUnsealed(row: $link) === false) {
+				$rows[] = $link;
+				continue;
+			}
+
+			if (isset($full[(int)$link['id']]) === true) {
+				$rows[] = $full[(int)$link['id']];
+			}
+		}
+
+		return $rows;
+	}//end withUnsealedPayloads()
+
+	/**
+	 * Whether a row carries no hash yet.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return bool
+	 */
+	private static function isUnsealed(array $row): bool {
+		$hash = ($row['hash'] ?? null);
+
+		return ($hash === null || $hash === '');
+	}//end isUnsealed()
+
+	/**
+	 * The full rows with the given ids, keyed by id. Read in chunks so the IN
+	 * list stays within every supported database's parameter limit.
+	 *
+	 * @param list<int> $ids The ids (non-empty).
+	 *
+	 * @return array<int, array<string, mixed>> The rows by id.
+	 */
+	private function rowsWithIds(array $ids): array {
+		$rows = [];
+		foreach (array_chunk($ids, self::PAYLOAD_CHUNK) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from('openregister_audit_trails')
+				->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+
+			$result = $qb->executeQuery();
+			foreach ($result->fetchAll() as $row) {
+				$rows[(int)$row['id']] = $row;
+			}
+
+			$result->closeCursor();
+		}
+
+		return $rows;
+	}//end rowsWithIds()
 
 	/**
 	 * The hash and predecessor of each unsealed row, walking the range in id order.
@@ -1314,6 +1476,9 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
@@ -1450,6 +1615,9 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 
 		$walk['previousHash'] = $row['hash'];
 		$walk['entriesVerified']++;
+		if ($this->isKeyedRow(id: (int)$row['id']) === false) {
+			$walk['unkeyedEntries']++;
+		}
 
 		return $walk;
 	}//end verifySealedRow()
@@ -1520,17 +1688,24 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     brokenAt: int|null,
 	 *     skippedNullHashes: int,
 	 *     purgedTombstones: int,
+	 *     unkeyedEntries: int,
+	 *     keyedFrom: int|null,
+	 *     keyBoundaryIntact: bool,
 	 *     range?: array{from: int|null, to: int|null}
 	 * }
 	 */
 	private function buildChainReport(array $walk): array {
 		$brokenAt = $walk['brokenAt'];
+		$boundaryIntact = ($this->chainKey?->boundaryIntact() ?? true);
 		$response = [
-			'valid' => ($brokenAt === null),
+			'valid' => ($brokenAt === null && $boundaryIntact === true),
 			'entriesVerified' => $walk['entriesVerified'],
 			'brokenAt' => $brokenAt,
 			'skippedNullHashes' => $walk['skippedNullHashes'],
 			'purgedTombstones' => $walk['purgedTombstones'],
+			'unkeyedEntries' => $walk['unkeyedEntries'],
+			'keyedFrom' => $this->chainKey?->keyedFrom(),
+			'keyBoundaryIntact' => $boundaryIntact,
 		];
 
 		return self::withRange(response: $response, walk: $walk);

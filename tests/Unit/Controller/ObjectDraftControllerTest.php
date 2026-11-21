@@ -67,6 +67,14 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses \OCA\OpenRegister\Service\Object\DraftAddress
  * @uses \OCA\OpenRegister\Service\Object\UserDraftActivation
+ * @uses \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ObjectDraftControllerTest extends TestCase {
 

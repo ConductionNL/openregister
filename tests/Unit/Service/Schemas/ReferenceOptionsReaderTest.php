@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferencePick
  */
 class ReferenceOptionsReaderTest extends TestCase {
 

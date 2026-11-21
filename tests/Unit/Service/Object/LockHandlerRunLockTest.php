@@ -51,6 +51,13 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
+ * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\LockStores
  */
 final class LockHandlerRunLockTest extends TestCase {
 
@@ -200,7 +207,7 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
 		$recorded = [];
-		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$this->audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$recorded) {
 				$recorded = ['action' => $action, 'context' => $context];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);

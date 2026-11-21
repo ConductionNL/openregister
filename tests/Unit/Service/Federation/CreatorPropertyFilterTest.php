@@ -40,6 +40,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class CreatorPropertyFilterTest extends TestCase {
 

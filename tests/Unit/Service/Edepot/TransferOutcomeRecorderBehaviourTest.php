@@ -90,6 +90,18 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 		);
 	}
 
+	public function testARefusedObjectGetsNoProofAndNoTransferMark(): void {
+		$object = self::object(['archiefstatus' => 'active']);
+		$this->records->expects($this->never())->method('createProof');
+		$this->records->expects($this->never())->method('findProof');
+
+		$this->recorder()->recordRefused($object, 'nope', self::AT);
+
+		$this->assertArrayNotHasKey('eDepotReferentie', $object->getRetention());
+		$this->assertArrayNotHasKey('transferProof', $object->getRetention());
+		$this->assertSame('active', $object->getRetention()['archiefstatus']);
+	}
+
 	public function testRecordRefusedAppendsToAnExistingErrorList(): void {
 		$object = self::object(['transferErrors' => [['error' => 'old', 'timestamp' => 't0']]]);
 

@@ -160,6 +160,22 @@ class FlowEngineTest extends TestCase {
 		}
 	}//end testEachStepIsTracedInTheRunLog()
 
+	public function testEachCompletedStepRecordsWhatItProducedInTheItems(): void {
+		$result = $this->runFlow($this->linearFlow());
+
+		// The first step added `ranBy`; the second changed it. Neither touched
+		// anything else, so that one key is each step's whole delta.
+		$this->assertSame([['ranBy' => 'first']], $result['log'][0]['produced']);
+		$this->assertSame([['ranBy' => 'second']], $result['log'][1]['produced']);
+	}//end testEachCompletedStepRecordsWhatItProducedInTheItems()
+
+	public function testAFailedStepRecordsNoDelta(): void {
+		$result = $this->runFlow($this->linearFlow(), new RecordingDispatcher(failOn: 'second'));
+
+		$this->assertSame([['ranBy' => 'first']], $result['log'][0]['produced']);
+		$this->assertArrayNotHasKey('produced', $result['log'][1]);
+	}//end testAFailedStepRecordsNoDelta()
+
 	public function testEveryStepEntryCarriesWhenItStarted(): void {
 		$before = microtime(true);
 		$result = $this->runFlow($this->linearFlow(), new RecordingDispatcher(failOn: 'second'));

@@ -31,6 +31,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer
+ * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  */
 class PdfTextReplacerParserFailureLogTest extends TestCase {
 

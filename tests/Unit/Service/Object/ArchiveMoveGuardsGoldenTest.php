@@ -159,7 +159,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testMoveSentences(): void {
-		$move = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createMock(IEventDispatcher::class)), $this->createMock(ObjectValidatorInterface::class));
+		$move = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createMock(IEventDispatcher::class)), $this->createMock(ObjectValidatorInterface::class), $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class));
 		$sentence = new ReflectionMethod(MoveObject::class, 'sentenceFor');
 
 		$withPath = new class {

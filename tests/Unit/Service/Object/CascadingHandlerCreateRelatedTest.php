@@ -60,6 +60,11 @@ abstract class CascadeSaveHandlerDouble implements SaveObjectInterface {
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class CascadingHandlerCreateRelatedTest extends TestCase {
 

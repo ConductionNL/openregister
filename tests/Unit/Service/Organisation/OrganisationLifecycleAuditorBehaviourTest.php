@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Organisation\OrganisationEdit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -35,6 +36,12 @@ use Psr\Log\LoggerInterface;
  * No-op changes write nothing, and a change without a session is attributed to the system.
  *
  * @covers \OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationEdit
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\AuditEntryWriter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry
+ * @uses \OCA\OpenRegister\Service\Organisation\OrganisationChange
  */
 class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 
@@ -49,7 +56,11 @@ class OrganisationLifecycleAuditorBehaviourTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		return new OrganisationLifecycleAuditor(mapper: $mapper, userSession: $session, logger: $this->createMock(LoggerInterface::class));
+		return new OrganisationLifecycleAuditor(
+			auditEntries: new AuditEntryWriter(mapper: $mapper),
+			userSession: $session,
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
+		);
 	}//end auditor()
 
 	/**

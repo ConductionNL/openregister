@@ -38,6 +38,12 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FilledRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallStep
  */
 class ExampleSetRowInstallGapTest extends TestCase {
 

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\Organisation\NewOrganisation;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -1364,7 +1365,7 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		// Add admin group to special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRightsInterface::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === false) {
@@ -1417,7 +1418,7 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		// Check special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRightsInterface::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === true) {

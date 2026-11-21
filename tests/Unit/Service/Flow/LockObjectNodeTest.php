@@ -47,6 +47,16 @@ use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockAttempt
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockHold
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockStepContext
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockStepRun
  */
 final class LockObjectNodeTest extends TestCase {
 

@@ -9,6 +9,7 @@
  */
 import DenialComposerDialog from './DenialComposerDialog.vue'
 import EditActivityDialog from './EditActivityDialog.vue'
+import RedactionDialog from './RedactionDialog.vue'
 import { resolveGroundOptions, resolveTemplateRef } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
@@ -203,5 +204,32 @@ describe('EditActivityDialog form', () => {
 		expect(ctx.form[field]).toEqual([])
 		ctx.form[field] = 'not a list'
 		expect(ctx[text]).toBe('')
+	})
+})
+
+describe('RedactionDialog', () => {
+	it('opens with an empty form, idle and without an error, and refuses to submit it', async () => {
+		avgStore.applyRedaction = jest.fn()
+		const ctx = context(RedactionDialog, { caseId: 'case-1' })
+
+		expect(ctx.form).toEqual({ field: '', after: '', ground: '' })
+		expect(ctx.saving).toBe(false)
+		expect(ctx.error).toBeNull()
+
+		await ctx.onSubmit()
+		expect(avgStore.applyRedaction).not.toHaveBeenCalled()
+		expect(ctx.emitted).toEqual([])
+	})
+
+	it('submits exactly the field, the replacement and the ground', async () => {
+		avgStore.applyRedaction = jest.fn().mockResolvedValue()
+		const ctx = context(RedactionDialog, { caseId: 'case-1' })
+		ctx.form.field = 'email'
+		ctx.form.after = '[weggelakt]'
+		ctx.form.ground = 'art-10-2e'
+
+		await ctx.onSubmit()
+		expect(avgStore.applyRedaction).toHaveBeenCalledWith('case-1', { field: 'email', after: '[weggelakt]', ground: 'art-10-2e' })
+		expect(ctx.emitted).toEqual([['redacted']])
 	})
 })

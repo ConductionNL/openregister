@@ -42,7 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IGroupManager;
@@ -82,7 +82,7 @@ class DestructionCheckJob extends TimedJob {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
+			$handler = $this->container->get(ArchivalSettingsInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -149,7 +149,7 @@ class DestructionCheckJob extends TimedJob {
 	 */
 	private function startCheck(LoggerInterface $logger): DestructionCheckRun {
 		$check           = new DestructionCheckRun(logger: $logger, retention: $this->container->get(RetentionServiceInterface::class));
-		$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
+		$settingsHandler = $this->container->get(ArchivalSettingsInterface::class);
 		$check->settings = $settingsHandler->getArchivalSettingsOnly();
 		return $check;
 	}//end startCheck()
@@ -263,7 +263,13 @@ class DestructionCheckJob extends TimedJob {
 			// both stores, pages them, and caps one run.
 			$scan = $retentionService->scanObjectsWithRetention(accept: $accept);
 
-			$this->notifyEach(objects: $scan['objects'], pass: $pass);
+			// An object a declared ancestor keeps is not going to be destroyed,
+			// so nobody is warned that it will be.
+			$approaching = array_filter(
+				$scan['objects'],
+				static fn (ObjectEntity $object): bool => $retentionService->heldBackByAncestor(object: $object) === null
+			);
+			$this->notifyEach(objects: $approaching, pass: $pass);
 			$pass->save(truncated: ($scan['truncated'] === true));
 		} catch (Exception $e) {
 			$logger->warning('[DestructionCheckJob] Notification error: ' . $e->getMessage());

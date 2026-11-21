@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\EntityRelation\EntityRelationFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\EntityRelationInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -66,6 +67,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setBases(?array $bases)
  * @method bool getSkipAnonymization()
  * @method void setSkipAnonymization(bool $skipAnonymization)
+ * @method int|null getPage()
+ * @method void setPage(?int $page)
+ * @method array|null getBox()
+ * @method void setBox(?array $box)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
@@ -75,7 +80,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
-class EntityRelation extends Entity implements JsonSerializable {
+class EntityRelation extends Entity implements JsonSerializable, EntityRelationInterface {
 
 	/**
 	 * Entity ID.
@@ -234,6 +239,20 @@ class EntityRelation extends Entity implements JsonSerializable {
 	protected ?string $decisionUuid = null;
 
 	/**
+	 * The page an image region sits on, null for text or a standalone image.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $page = null;
+
+	/**
+	 * The image region `{x, y, w, h}`, each 0..1 relative to the image; null for a text-only finding.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $box = null;
+
+	/**
 	 * Created at timestamp.
 	 *
 	 * @var DateTime|null
@@ -262,6 +281,7 @@ class EntityRelation extends Entity implements JsonSerializable {
 	 *     context: null|string, anonymized: bool,
 	 *     anonymizedValue: null|string, bases: array|null,
 	 *     skipAnonymization: bool, decision: null|string,
+	 *     page: int|null, box: array|null,
  *     createdAt: null|string}
 	 */
 	public function jsonSerialize(): array {

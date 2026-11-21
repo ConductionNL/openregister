@@ -51,6 +51,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
  */
 class ApprovalChainAdvanceListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;

@@ -27,6 +27,8 @@ use PHPUnit\Framework\TestCase;
  * permits(): allowed and refused writes, and the attribution an allowed one leaves.
  *
  * @covers \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
  */
 class ObjectActionElevationScopePermitsGoldenTest extends TestCase {
 

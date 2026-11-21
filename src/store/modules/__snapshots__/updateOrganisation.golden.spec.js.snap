@@ -36,7 +36,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "agent_use": [],
+          "agent_use": [
+            "*",
+          ],
           "application": {
             "create": [],
             "delete": [],
@@ -49,15 +51,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "dashboard_view": [],
-          "llm_use": [],
+          "llm_use": [
+            "*",
+          ],
           "object": {
             "create": [],
             "delete": [],
             "read": [],
             "update": [],
           },
-          "object_publish": [],
           "register": {
             "create": [],
             "delete": [],
@@ -149,7 +151,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -162,15 +166,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -233,7 +237,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "agent_use": [],
+          "agent_use": [
+            "*",
+          ],
           "application": {
             "create": [],
             "delete": [],
@@ -246,15 +252,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "dashboard_view": [],
-          "llm_use": [],
+          "llm_use": [
+            "*",
+          ],
           "object": {
             "create": [],
             "delete": [],
             "read": [],
             "update": [],
           },
-          "object_publish": [],
           "register": {
             "create": [],
             "delete": [],
@@ -346,7 +352,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -359,15 +367,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],
@@ -430,7 +438,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "agent_use": [],
+          "agent_use": [
+            "*",
+          ],
           "application": {
             "create": [],
             "delete": [],
@@ -443,15 +453,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "dashboard_view": [],
-          "llm_use": [],
+          "llm_use": [
+            "*",
+          ],
           "object": {
             "create": [],
             "delete": [],
             "read": [],
             "update": [],
           },
-          "object_publish": [],
           "register": {
             "create": [],
             "delete": [],
@@ -545,7 +555,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "agent_use": [],
+          "agent_use": [
+            "*",
+          ],
           "application": {
             "create": [],
             "delete": [],
@@ -558,15 +570,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
             "read": [],
             "update": [],
           },
-          "dashboard_view": [],
-          "llm_use": [],
+          "llm_use": [
+            "*",
+          ],
           "object": {
             "create": [],
             "delete": [],
             "read": [],
             "update": [],
           },
-          "object_publish": [],
           "register": {
             "create": [],
             "delete": [],
@@ -661,7 +673,9 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "agent_use": [],
+        "agent_use": [
+          "*",
+        ],
         "application": {
           "create": [],
           "delete": [],
@@ -674,15 +688,15 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
           "read": [],
           "update": [],
         },
-        "dashboard_view": [],
-        "llm_use": [],
+        "llm_use": [
+          "*",
+        ],
         "object": {
           "create": [],
           "delete": [],
           "read": [],
           "update": [],
         },
-        "object_publish": [],
         "register": {
           "create": [],
           "delete": [],

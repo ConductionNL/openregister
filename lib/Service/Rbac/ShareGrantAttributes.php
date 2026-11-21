@@ -68,6 +68,42 @@ class ShareGrantAttributes {
 	public const INHERITABLE_ATTRIBUTE_KEY = 'inheritable';
 
 	/**
+	 * The attribute key marking a share as a sharer's view of an object folder.
+	 *
+	 * Such a share gives a user who may share the object a view of its folder,
+	 * which core requires of whoever creates a share. It grants nothing.
+	 *
+	 * @var string
+	 */
+	public const SHARER_ACCESS_KEY = 'sharerAccess';
+
+	/**
+	 * Whether a share is a sharer's view of an object folder rather than a grant.
+	 *
+	 * Only a user share made by the folder's own account counts, so the mark on
+	 * a share anybody else made cannot take that share out of the grants.
+	 *
+	 * @param IShare $share The share to inspect.
+	 *
+	 * @return bool True when the share is a marked view from the folder's account.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function isSharerAccess(IShare $share): bool {
+		try {
+			if ($share->getShareType() !== IShare::TYPE_USER || $share->getSharedBy() !== $share->getShareOwner()) {
+				return false;
+			}
+
+			$raw = $share->getAttributes()?->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::SHARER_ACCESS_KEY);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $raw === true;
+	}//end isSharerAccess()
+
+	/**
 	 * Whether a grant travels to the object's descendants.
 	 *
 	 * Rides in the same attribute bag as the extension verbs, for the same
@@ -159,6 +195,10 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function objectUuidOf(IShare $share): ?string {
+		if ($this->isSharerAccess(share: $share) === true) {
+			return null;
+		}
+
 		try {
 			if ($share->getNodeType() !== 'folder') {
 				return null;

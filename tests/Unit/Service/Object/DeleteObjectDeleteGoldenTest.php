@@ -51,6 +51,26 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @uses   \OCA\OpenRegister\Service\Object\DeletionTarget
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionAttribution
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionIntegrity
+ * @uses   \OCA\OpenRegister\Service\Object\RemovalOptions
+ * @uses   \OCA\OpenRegister\Service\Object\RemovedDraft
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Object\DeletionAttribution
+ * @uses \OCA\OpenRegister\Service\Object\DeletionIntegrity
+ * @uses \OCA\OpenRegister\Service\Object\RemovalOptions
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -355,7 +375,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 				return new AuditTrail();
 			}
 		);
-		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$auditMapper->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();

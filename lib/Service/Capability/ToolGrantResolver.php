@@ -1149,4 +1149,21 @@ class ToolGrantResolver {
 
 		return $clean;
 	}//end sanitizeGrants()
+
+	/**
+	 * Whether a specific invocation is covered by a waived grant entry, by the whole waiver map.
+	 *
+	 * The published call; waivedBy() takes the invoked tool's own entry.
+	 *
+	 * @param array<string, array<int, array<string, array>>> $waivedSets The `waivedConstraintSets()` map.
+	 * @param string                                          $toolId     The invoked tool.
+	 * @param array<string, mixed>                            $arguments  The decoded tool-call arguments.
+	 *
+	 * @return bool True when a waived entry covers this exact invocation.
+	 *
+	 * @spec openspec/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
+	 */
+	public static function waives(array $waivedSets, string $toolId, array $arguments): bool {
+		return self::waivedBy(alternatives: ($waivedSets[$toolId] ?? []), arguments: $arguments);
+	}//end waives()
 }//end class

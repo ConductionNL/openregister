@@ -94,6 +94,7 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'isTransitionAuthorized',
 			'matrixRowsFromApps',
 			'permittedActionsFor',
+			'previewDepartmentMatrix',
 			'provenanceFor',
 			'resolveAuthorization',
 			'resolveDeclaredAuthorization',
