@@ -246,14 +246,7 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * @return ConfigurationDraft|null The pending value, or null.
 	 */
 	private function draftAt(DraftStageRun $run): ?ConfigurationDraft {
-		$address = $run->change->address;
-
-		return $this->drafts->findAtAddress(
-			setUuid: $run->setUuid,
-			layer: $address->layer,
-			layerRef: $address->layerRef,
-			configKey: $address->configKey
-		);
+		return $this->drafts->findAt(setUuid: $run->setUuid, address: $run->change->address);
 
 	}//end draftAt()
 

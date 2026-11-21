@@ -1,5 +1,5 @@
 {
-    "findByRule NULL open": {
+    "findRuns NULL open": {
         "result": [
             4,
             9
@@ -17,7 +17,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule NULL open": {
+    "countRuns NULL open": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -43,7 +43,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule NULL since": {
+    "findRuns NULL since": {
         "result": [
             4,
             9
@@ -64,7 +64,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule NULL since": {
+    "countRuns NULL since": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -96,7 +96,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule NULL until": {
+    "findRuns NULL until": {
         "result": [
             4,
             9
@@ -117,7 +117,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule NULL until": {
+    "countRuns NULL until": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -146,7 +146,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule NULL both": {
+    "findRuns NULL both": {
         "result": [
             4,
             9
@@ -170,7 +170,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule NULL both": {
+    "countRuns NULL both": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -205,7 +205,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule '' open": {
+    "findRuns '' open": {
         "result": [
             4,
             9
@@ -223,7 +223,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule '' open": {
+    "countRuns '' open": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -234,7 +234,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule '' since": {
+    "findRuns '' since": {
         "result": [
             4,
             9
@@ -255,7 +255,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule '' since": {
+    "countRuns '' since": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -269,7 +269,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule '' until": {
+    "findRuns '' until": {
         "result": [
             4,
             9
@@ -290,7 +290,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule '' until": {
+    "countRuns '' until": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -304,7 +304,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule '' both": {
+    "findRuns '' both": {
         "result": [
             4,
             9
@@ -328,7 +328,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule '' both": {
+    "countRuns '' both": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -345,7 +345,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule 'pass' open": {
+    "findRuns 'pass' open": {
         "result": [
             4,
             9
@@ -366,7 +366,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule 'pass' open": {
+    "countRuns 'pass' open": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -380,7 +380,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule 'pass' since": {
+    "findRuns 'pass' since": {
         "result": [
             4,
             9
@@ -404,7 +404,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule 'pass' since": {
+    "countRuns 'pass' since": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -421,7 +421,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule 'pass' until": {
+    "findRuns 'pass' until": {
         "result": [
             4,
             9
@@ -445,7 +445,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule 'pass' until": {
+    "countRuns 'pass' until": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -462,7 +462,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule 'pass' both": {
+    "findRuns 'pass' both": {
         "result": [
             4,
             9
@@ -489,7 +489,7 @@
             "#1 executeQuery()"
         ]
     },
-    "countByRule 'pass' both": {
+    "countRuns 'pass' both": {
         "result": 7,
         "queries": [
             "#1 selectAlias(COUNT(*), run_count)",
@@ -509,7 +509,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule paging 0 -5": {
+    "findRuns paging 0 -5": {
         "result": [
             4,
             9
@@ -542,7 +542,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule paging 1 0": {
+    "findRuns paging 1 0": {
         "result": [
             4,
             9
@@ -575,7 +575,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule paging 50 10": {
+    "findRuns paging 50 10": {
         "result": [
             4,
             9
@@ -608,7 +608,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule paging 501 3": {
+    "findRuns paging 501 3": {
         "result": [
             4,
             9
@@ -641,7 +641,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findByRule paging -2 7": {
+    "findRuns paging -2 7": {
         "result": [
             4,
             9

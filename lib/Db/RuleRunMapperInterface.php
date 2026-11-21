@@ -42,29 +42,6 @@ interface RuleRunMapperInterface {
 	public const DEFAULT_LIMIT = 50;
 
 	/**
-	 * One rule's runs, newest first, optionally narrowed.
-	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string|null $verdict Narrow to one verdict.
-	 * @param DateTime|null $since Only runs at or after this moment.
-	 * @param DateTime|null $until Only runs at or before this moment.
-	 * @param int $limit How many rows to return, capped at MAX_LIMIT.
-	 * @param int $offset Where to start.
-	 *
-	 * @return array<int, RuleRun> The rows.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function findByRule(
-		string $ruleId,
-		?string $verdict = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array;
-
-	/**
 	 * One rule's runs, newest first, narrowed by the selection's filter.
 	 *
 	 * @param RuleRunSelection $selection The rule and its filter.
@@ -82,7 +59,7 @@ interface RuleRunMapperInterface {
 	 * The per-rule listing answers "how is this rule doing"; an operations
 	 * console asks the other question, "what has the engine been doing", and
 	 * cannot ask it by walking the rules one at a time. The order and the
-	 * narrowing are the same as {@see findByRule()}, minus the rule.
+	 * narrowing are the same as {@see findRuns()}, minus the rule.
 	 *
 	 * Index-backed on `created` (`or_rulerun_created_idx`), which is the
 	 * column the ordering and the window both use, so the console never
@@ -96,25 +73,6 @@ interface RuleRunMapperInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findRecent(?DateTime $since = null, int $limit = self::DEFAULT_LIMIT): array;
-
-	/**
-	 * How many runs one rule has in the log, under the same filters.
-	 *
-	 * @param string $ruleId The derived rule id.
-	 * @param string|null $verdict Narrow to one verdict.
-	 * @param DateTime|null $since Only runs at or after this moment.
-	 * @param DateTime|null $until Only runs at or before this moment.
-	 *
-	 * @return int The number of matching rows.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function countByRule(
-		string $ruleId,
-		?string $verdict = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
-	): int;
 
 	/**
 	 * How many runs one rule has in the log, under the selection's filter.
