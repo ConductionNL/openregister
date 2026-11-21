@@ -22,27 +22,13 @@
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-
 /**
- * The default register and schema of one bulk batch, as the caller passed them.
+ * The published BulkBatchDefaults, under the name openregister used before it was published.
  *
- * No strict_types: SaveObjects declares none, and these values arrive from it.
+ * @deprecated Use \OCA\OpenRegister\Contract\BulkBatchDefaults, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/rbac-zaaktype/spec.md
  */
-final class BulkBatchDefaults {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param Register|string|int|null $register Default register context.
-	 * @param Schema|string|int|null   $schema   Default schema context (null = mixed-schema).
-	 */
-	public function __construct(
-		public readonly Register|string|int|null $register=null,
-		public readonly Schema|string|int|null $schema=null,
-	) {
-	}//end __construct()
+final class BulkBatchDefaults extends \OCA\OpenRegister\Contract\BulkBatchDefaults {
 }//end class
