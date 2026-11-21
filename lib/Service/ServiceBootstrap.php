@@ -22,15 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Registers the hand-wired services of the Service component.
  *
- * Application::register() calls register() and registerGdpr() once each, at
- * the points in its sequence where it called ServiceRegistrar and
- * GdprRegistrar before. The registrars themselves stay inside the component.
+ * Application::register() calls register() once, at the point in its
+ * sequence where it called ServiceRegistrar before. The registrar itself
+ * stays inside the component. The Compliance GDPR registrar is reached
+ * through ComplianceServiceRegistrar, so this Core class does not name it.
  *
  * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
  */
@@ -48,17 +48,4 @@ final class ServiceBootstrap {
 	public static function register(IRegistrationContext $context): void {
 		ServiceRegistrar::register(context: $context);
 	}//end register()
-
-	/**
-	 * Register the DSAR signer and the shared DSAR registries with their fail-closed defaults.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 */
-	public static function registerGdpr(IRegistrationContext $context): void {
-		GdprRegistrar::register(context: $context);
-	}//end registerGdpr()
 }//end class

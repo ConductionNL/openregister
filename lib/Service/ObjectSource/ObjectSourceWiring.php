@@ -20,11 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\UserTaskListInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -76,8 +78,6 @@ final class ObjectSourceWiring {
 		DbalObjectSourceProvider::class,
 		// A saved view's rows as a read-only type (modelling-query-backed-type).
 		\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
-		// An external register (BAG, BRK, WOZ, ...) through a configured OpenConnector source.
-		OpenConnectorHttpProvider::class,
 	];
 
 	/**
@@ -102,7 +102,7 @@ final class ObjectSourceWiring {
 			'logger'     => 'Psr\Log\LoggerInterface',
 		],
 		CalDavVtodoObjectSourceProvider::class => [
-			'taskService' => TaskService::class,
+			'taskService' => UserTaskListInterface::class,
 			'app'         => OptionalAppBridge::class,
 		],
 		UserDirectoryObjectSourceProvider::class => [
@@ -130,7 +130,7 @@ final class ObjectSourceWiring {
 			'app'             => OptionalAppBridge::class,
 		],
 		CalendarEventObjectSourceProvider::class => [
-			'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
+			'calendarEventService' => UserCalendarEventsInterface::class,
 			'app'                  => OptionalAppBridge::class,
 		],
 		FilesObjectSourceProvider::class => [
@@ -145,9 +145,9 @@ final class ObjectSourceWiring {
 			'app'         => OptionalAppBridge::class,
 			'userSession' => 'OCP\IUserSession',
 		],
-		// DBAL virtual registers: the connection factory depends only on the CredentialStore interface.
+		// DBAL virtual registers: the connection factory only reads secrets, through the Core credential port.
 		DbalConnectionFactory::class => [
-			'credentialStore' => \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+			'credentialStore' => CredentialSecretReaderInterface::class,
 			'logger'          => 'Psr\Log\LoggerInterface',
 		],
 		SqlTypeMapper::class => [
@@ -188,12 +188,6 @@ final class ObjectSourceWiring {
 		TablesObjectSourceProvider::class => [
 			'parts'   => TablesProviderParts::class,
 			'session' => \OCA\OpenRegister\Service\LinkSessionRuntime::class,
-		],
-		OpenConnectorHttpProvider::class => [
-			'router'         => 'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface',
-			'mappingMapper'  => 'OCA\OpenRegister\Db\MappingMapperInterface',
-			'mappingService' => 'OCA\OpenRegister\Service\MappingService',
-			'logger'         => 'Psr\Log\LoggerInterface',
 		],
 	];
 

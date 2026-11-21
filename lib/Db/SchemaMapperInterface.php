@@ -334,6 +334,15 @@ interface SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int;
 
 	/**
+	 * The advisory annotations the last schema save logged and ignored, one entry per family.
+	 *
+	 * @return list<array{family: string, schema: string, messages: list<string>}> The ignored annotations.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function discardedAnnotations(): array;
+
+	/**
 	 * From now on a notification url action that cannot be linked to only warns on save.
 	 *
 	 * @return bool Whether it already did.

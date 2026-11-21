@@ -34,7 +34,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -64,7 +64,12 @@ class ObjectsControllerRefusalStatusTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
-	private WebhookService&MockObject $webhookService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
+	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -82,7 +87,7 @@ class ObjectsControllerRefusalStatusTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->webhookService = $this->createMock(WebhookService::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// resolveRegisterSchemaRef() reuses the entities resolved by
@@ -103,7 +108,7 @@ class ObjectsControllerRefusalStatusTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger
 		);
 	}//end setUp()
