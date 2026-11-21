@@ -76,6 +76,13 @@ final class PlatformShareRoutingListener implements IEventListener {
 	private const UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
 	/**
+	 * The refusal when the record is not offered for platform sharing.
+	 *
+	 * @var string
+	 */
+	private const NOT_OFFERED = 'This record is not offered for sharing here';
+
+	/**
 	 * The permission mapping.
 	 *
 	 * @var PlatformSharePermissions
@@ -118,8 +125,20 @@ final class PlatformShareRoutingListener implements IEventListener {
 			return;
 		}
 
-		$share  = $event->getShare();
-		$object = $this->objectOf(share: $share);
+		$share = $event->getShare();
+		try {
+			$object = $this->objectOf(share: $share);
+		} catch (Throwable $e) {
+			// Fail closed: when we cannot tell whether the folder belongs to an
+			// object, the share is refused rather than created ungated.
+			$this->logger->warning(
+				message: '[PlatformShareRoutingListener] Could not tell whether a shared folder belongs to an object',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			$event->setError(self::NOT_OFFERED);
+			return;
+		}
+
 		if ($object === null) {
 			return;
 		}
@@ -145,7 +164,7 @@ final class PlatformShareRoutingListener implements IEventListener {
 	public function refusal(ObjectEntity $object, int $permissions): ?string {
 		$schema = $this->schemaOf(object: $object);
 		if ($schema === null || $this->gate->isOffered(schema: $schema) === false) {
-			return 'This record is not offered for sharing here';
+			return self::NOT_OFFERED;
 		}
 
 		try {
@@ -180,24 +199,19 @@ final class PlatformShareRoutingListener implements IEventListener {
 	 * @param IShare $share The share.
 	 *
 	 * @return ObjectEntity|null
+	 *
+	 * @throws Throwable When the node or the object lookup cannot be read; the caller refuses the share.
 	 */
 	private function objectOf(IShare $share): ?ObjectEntity {
-		try {
-			$node = $share->getNode();
-			if (($node instanceof Folder) === false || preg_match(self::UUID, (string)$node->getName()) !== 1) {
-				return null;
-			}
+		$node = $share->getNode();
+		if (($node instanceof Folder) === false || preg_match(self::UUID, (string)$node->getName()) !== 1) {
+			return null;
+		}
 
-			foreach ($this->objects->findStoredAcrossAllMagicTables(uuids: [(string)$node->getName()]) as $object) {
-				if ((string)$object->getFolder() === (string)$node->getId()) {
-					return $object;
-				}
+		foreach ($this->objects->findStoredAcrossAllMagicTables(uuids: [(string)$node->getName()]) as $object) {
+			if ((string)$object->getFolder() === (string)$node->getId()) {
+				return $object;
 			}
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[PlatformShareRoutingListener] Could not tell whether a shared folder belongs to an object',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
 		}
 
 		return null;

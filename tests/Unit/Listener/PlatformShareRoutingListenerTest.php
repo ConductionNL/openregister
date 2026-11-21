@@ -212,6 +212,24 @@ final class PlatformShareRoutingListenerTest extends TestCase {
 		$this->assertNull($this->errorFor(permissions: Constants::PERMISSION_ALL));
 	}
 
+	public function testAFailingObjectLookupRefusesTheShare(): void {
+		$this->objects = $this->createMock(MagicMapperInterface::class);
+		$this->objects->method('findStoredAcrossAllMagicTables')->willThrowException(new \RuntimeException('database gone'));
+
+		$this->assertSame('This record is not offered for sharing here', $this->errorFor(permissions: Constants::PERMISSION_READ));
+	}
+
+	public function testAnUnreadableNodeRefusesTheShare(): void {
+		$share = $this->createMock(IShare::class);
+		$share->method('getNode')->willThrowException(new \OCP\Files\NotFoundException('gone'));
+		$share->method('getPermissions')->willReturn(Constants::PERMISSION_READ);
+
+		$event = new BeforeShareCreatedEvent($share);
+		$this->listener()->handle($event);
+
+		$this->assertSame('This record is not offered for sharing here', $event->getError());
+	}
+
 	public function testAFileIsNotAnObjectFolder(): void {
 		$file = $this->createMock(File::class);
 		$file->method('getName')->willReturn(self::UUID);
