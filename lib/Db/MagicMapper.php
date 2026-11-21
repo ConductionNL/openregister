@@ -40,16 +40,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
+use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
@@ -105,6 +109,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectDelete;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectInsert;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLock;
+use OCA\OpenRegister\Db\MagicMapper\MagicLockClaim;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectUnlock;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
@@ -788,9 +793,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class),
 			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
 			relatedRows: $relatedRowApplier,
-			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
+			languageService: $this->container->get(RequestLanguagesInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
+			appConfig: $this->appConfig,
+			searchProfile: $this->container->get(PropertySearchProfileInterface::class)
 		);
 	}//end initializeSearchHandler()
 
@@ -976,7 +983,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		}
 
-		return $sql;
+		return $sql.$this->columnSql()->check(type: (string)$definition['type'], name: (string)$definition['name']);
 	}//end buildAddColumnSql()
 
 	/**
@@ -1438,9 +1445,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			);
 
 			return $count;
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 			// Fail loud (design intent): never degrade a filter on an encrypted
-			// property to a silent count of 0.
+			// property, or a refused `_where` tree, to a silent count of 0.
 			throw $e;
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -1940,13 +1947,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return false;
 		}
 
-		// 🔴 `_related`, `_referenced` and `_element` are EXISTS subqueries that only the
+		// 🔴 `_related`, `_referenced`, `_ref` and `_element` are EXISTS subqueries that only the
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
 		// `_relations_contains` has no raw-SQL twin either: a union would answer
 		// without the filter.
-		$builderOnly = ['_related', '_referenced', '_element', '_relations_contains'];
+		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains'];
 		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
@@ -2982,7 +2989,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->invalidateTableMemos();
 
 		// Create indexes for performance.
-		$this->createTableIndexes(tableName: $tableName, schema: $schema);
+		$this->createNewTableIndexes(tableName: $tableName, schema: $schema);
 
 		// Store schema version for change detection.
 		$this->storeRegisterSchemaVersion(register: $register, schema: $schema);
@@ -3064,10 +3071,28 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string The SQL type string
 	 */
 	private function mapColumnTypeToSQL(string $type, array $column): string {
-		$isPostgres = $this->db->getDatabasePlatform() instanceof PostgreSQLPlatform;
-
-		return (new MagicColumnSql(isPostgres: $isPostgres))->type(type: $type, column: $column);
+		return $this->columnSql()->type(type: $type, column: $column);
 	}//end mapColumnTypeToSQL()
+
+	/**
+	 * The condition that keeps a catalogue query inside this instance's own database.
+	 *
+	 * @return string
+	 */
+	private function catalogueScope(): string {
+		return (new CatalogueScope(db: $this->db))->condition();
+	}//end catalogueScope()
+
+	/**
+	 * The column writer of the connection's platform.
+	 *
+	 * @return MagicColumnSql
+	 */
+	private function columnSql(): MagicColumnSql {
+		$platform = $this->db->getDatabasePlatform();
+
+		return new MagicColumnSql(isPostgres: ($platform instanceof PostgreSQLPlatform), jsonAsText: ($platform instanceof MariaDBPlatform));
+	}//end columnSql()
 
 	/**
 	 * Create indexes for table performance
@@ -3084,6 +3109,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
+
+	/**
+	 * Create the indexes of a table created just now; on MariaDB the standard ones go in one statement.
+	 *
+	 * @param string $tableName The table name
+	 * @param Schema $schema    The schema for index analysis
+	 *
+	 * @return void
+	 */
+	private function createNewTableIndexes(string $tableName, Schema $schema): void {
+		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$run->indexesAtOnce = ($this->db->getDatabasePlatform() instanceof MariaDBPlatform);
+		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer->create(run: $run, schema: $schema);
+	}//end createNewTableIndexes()
 
 	/**
 	 * Save single object to register+schema-specific table
@@ -3784,7 +3824,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			tableName: $tableName,
 			fullTableName: $this->getFullTableName(tableName: $tableName),
 			columns: $columns,
-			isPostgres: $this->onPostgres()
+			isPostgres: $this->onPostgres(),
+			jsonAsText: ($this->db->getDatabasePlatform() instanceof MariaDBPlatform)
 		);
 	}//end tableSync()
 
@@ -5290,7 +5331,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -5755,7 +5796,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -6304,7 +6345,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function listCrossTableScanTables(MagicCrossTableScan $scan): void {
 		$prefix = $this->getTablePrefix();
-		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?');
+		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope());
 		$tables = $stmt->execute([$prefix . 'openregister_table_%'])->fetchAll();
 
 		$scan->tables = [];
@@ -7810,12 +7851,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// discarded before it reached the payload. integriq mints a fresh
 		// UUID per lock and passes it in, and no caller has ever been able to
 		// read back what a lock was taken FOR.
-		$entity->lock(
-			userSession: $this->userSession,
-			process: ($process ?? 'MagicMapper lock'),
-			duration: $lockDuration,
-			runUuid: $runUuid
-		);
+		// The refusals (no user, held by someone else) are the entity's own,
+		// as before. The lock is then stored atomically (see claimLockIn()), so
+		// two callers that both read the object unlocked cannot both hold it.
+		$acquire = function (ObjectEntity $object) use ($process, $lockDuration, $runUuid): void {
+			$object->lock(
+				userSession: $this->userSession,
+				process: ($process ?? 'MagicMapper lock'),
+				duration: $lockDuration,
+				runUuid: $runUuid
+			);
+		};
+		if ($this->claimLockIn(table: $table, entity: $entity, acquire: $acquire) === false) {
+			throw new Exception(sprintf('Object is locked by %s', (string)($entity->describeLockHolder() ?? 'another holder')));
+		}
 
 		// Update entity in table with locked field set.
 		$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
@@ -7835,6 +7884,108 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $entity;
 	}//end lockIn()
+
+	/**
+	 * Claim a lock on an object for an explicit owner, atomically, without a session.
+	 *
+	 * For background jobs and workers: the owner is named instead of read from
+	 * a signed-in user. The claim succeeds when the object is unlocked, its lock
+	 * has expired, or the same owner (and run) already holds it, and only one of
+	 * two racing claimers gets true. No RBAC check runs here: callers that act
+	 * for a person go through lockObjectEntity() and its checks.
+	 *
+	 * @param ObjectEntity $entity       The object to lock.
+	 * @param Register     $register     The register context.
+	 * @param Schema       $schema       The schema context.
+	 * @param string       $ownerId      The owner the lock is taken for.
+	 * @param int|null     $lockDuration Lock duration in seconds (null for no expiry).
+	 * @param string|null  $process      What the lock was taken for.
+	 * @param string|null  $runUuid      Flow run taking the lock, for a run-scoped lock.
+	 *
+	 * @return bool True when this caller now holds the lock; false when another holder has it.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function claimObjectEntity(
+		ObjectEntity $entity,
+		Register $register,
+		Schema $schema,
+		string $ownerId,
+		?int $lockDuration = null,
+		?string $process = null,
+		?string $runUuid = null,
+	): bool {
+		if (trim($ownerId) === '') {
+			return false;
+		}
+
+		$table = new RegisterSchema(register: $register, schema: $schema);
+		$terms = new LockTerms(process: ($process ?? 'MagicMapper claim'), duration: $lockDuration, runUuid: $runUuid);
+		try {
+			$claimed = $this->claimLockIn(
+				table: $table,
+				entity: $entity,
+				acquire: static function (ObjectEntity $object) use ($ownerId, $terms): void {
+					$object->acquireLockAs(ownerId: $ownerId, terms: $terms);
+				}
+			);
+		} catch (Exception) {
+			// Held by another owner or run.
+			return false;
+		}
+
+		if ($claimed === false) {
+			return false;
+		}
+
+		$this->eventDispatcher->dispatchTyped(new ObjectLockedEvent(object: $entity));
+
+		return true;
+	}//end claimObjectEntity()
+
+	/**
+	 * Take the lock in memory, then store it with one conditional UPDATE.
+	 *
+	 * The decision (unlocked, expired, or the same holder) is made on the lock
+	 * as read; MagicLockClaim stores the new lock only while the row still holds
+	 * that lock. When the row changed since the entity was read, the lock it
+	 * holds now is read back and judged once more, so a stale entity does not
+	 * refuse a lock the table would grant, and a lock another caller just took
+	 * is refused the way any held lock is.
+	 *
+	 * @param RegisterSchema               $table   The register and schema whose table holds the object.
+	 * @param ObjectEntity                 $entity  The object; on success it carries the new lock.
+	 * @param callable(ObjectEntity): void $acquire Takes the lock in memory; throws when it is held.
+	 *
+	 * @throws Exception What $acquire throws, with the entity's previous lock restored.
+	 *
+	 * @return bool True when the lock is stored; false when the row kept changing under the claim.
+	 */
+	private function claimLockIn(RegisterSchema $table, ObjectEntity $entity, callable $acquire): bool {
+		$claim     = new MagicLockClaim(db: $this->db);
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+		$uuid      = (string)$entity->getUuid();
+		$previous  = $entity->getLocked();
+
+		for ($attempt = 0; $attempt < 2; $attempt++) {
+			try {
+				$acquire($entity);
+			} catch (Exception $e) {
+				$entity->setLocked($previous);
+				throw $e;
+			}
+
+			if ($claim->swap(tableName: $tableName, uuid: $uuid, previous: $previous, next: (array)$entity->getLocked()) === true) {
+				return true;
+			}
+
+			// The row changed since it was read: judge the lock it holds now.
+			$previous = $claim->current(tableName: $tableName, uuid: $uuid);
+			$entity->setLocked($previous);
+		}
+
+		return false;
+	}//end claimLockIn()
 
 	/**
 	 * Unlock object in register+schema table.
@@ -8708,7 +8859,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// catalog index, so each lookup walked the columns of every table
 		// (89k columns over 1.7k magic tables: 18-33 ms against 3-4 ms).
 		$sql = 'SELECT LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns
-                WHERE table_name = ?';
+                WHERE table_name = ? AND ' . $this->catalogueScope();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);
@@ -9299,6 +9450,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * land before the save returns, and deferring would silently break that
 	 * promise. So this stays off until an instance decides it wants the trade,
 	 * via `occ config:app:set openregister defer_object_events --value=1`.
+	 * A caller that needs the side effects before the response sends
+	 * `X-OpenRegister-Effects: sync` (ObjectEventDeferral), and that request's
+	 * event is dispatched inline as without deferral.
 	 *
 	 * Returns false — meaning "dispatch it inline yourself" — whenever the
 	 * deferral cannot be set up, so a misconfiguration degrades to the current
@@ -9312,7 +9466,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
 	 */
 	private function dispatchCreatedDeferred(ObjectEntity $entity, RegisterSchema $table): bool {
-		if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+		if ((new ObjectEventDeferral(appConfig: $this->appConfig, request: $this->currentRequest()))->defers() === false) {
 			return false;
 		}
 
@@ -9355,6 +9509,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}//end try
 
 	}//end dispatchCreatedDeferred()
+
+	/**
+	 * The current request, or null when this write runs outside one (a job, occ).
+	 *
+	 * @return \OCP\IRequest|null The request.
+	 */
+	private function currentRequest(): ?\OCP\IRequest {
+		try {
+			$request = $this->container->get(\OCP\IRequest::class);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($request instanceof \OCP\IRequest === false) {
+			return null;
+		}
+
+		return $request;
+	}//end currentRequest()
 
 	/**
 	 * Update an existing object entity with event dispatching.
@@ -10447,8 +10620,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					register: $register,
 					schema: $schema
 				);
-			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
-				// Fail loud (design intent): a filter on an encrypted property must
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
+				// Fail loud (design intent): a filter on an encrypted property, or a
+				// refused `_where` tree (answered 400 with its node path), must
 				// reach the caller as a clear error, never a swallowed warning that
 				// degrades into an empty/zero result.
 				throw $e;
@@ -10645,9 +10819,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					register: $register,
 					schema: $schema
 				);
-			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 				// Fail loud (design intent): never degrade a filter on an encrypted
-				// property to a silent count of 0.
+				// property, or a refused `_where` tree, to a silent count of 0.
 				throw $e;
 			} catch (\Exception $e) {
 				$this->logger->warning(
@@ -11282,9 +11456,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				register: $register,
 				schema: $schema
 			);
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 			// Fail loud: never silently drop a schema from the total because its
-			// count hit an encrypted-field filter.
+			// count hit an encrypted-field filter or a refused `_where` tree.
 			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->warning(
@@ -11399,7 +11573,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeBoundTables(): PurposeBoundTables {
-		return new PurposeBoundTables(guard: $this->container->get(PurposeGuardInterface::class));
+		return new PurposeBoundTables(guard: $this->container->get(ReadPurposeGuardInterface::class));
 	}//end purposeBoundTables()
 
 	/**

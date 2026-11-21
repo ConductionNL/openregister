@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 
 /**
  * Tells administrators that a configuration has an update available.
@@ -36,7 +36,7 @@ interface NotificationServiceInterface {
 	 * configuration updates. Always includes admin group regardless of configuration.
 	 * Deduplicates users across multiple groups to avoid duplicate notifications.
 	 *
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return int Number of notifications successfully sent (0 or positive integer)
 	 *
@@ -44,18 +44,18 @@ interface NotificationServiceInterface {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function notifyConfigurationUpdate(Configuration $configuration): int;
+	public function notifyConfigurationUpdate(ConfigurationInterface $configuration): int;
 
 	/**
 	 * Mark configuration update notification as processed.
 	 *
 	 * Removes notifications for a specific configuration after update is applied.
 	 *
-	 * @param Configuration $configuration The configuration that was updated
+	 * @param ConfigurationInterface $configuration The configuration that was updated
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function markConfigurationUpdated(Configuration $configuration): void;
+	public function markConfigurationUpdated(ConfigurationInterface $configuration): void;
 }//end interface

@@ -143,7 +143,7 @@ final class BuiltinIntegrationServices {
 			'services' => [
 				\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices::class,
 				[
-					'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
+					'taskService'    => \OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface::class,
 					'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
 					'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 					'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
@@ -301,20 +301,6 @@ final class BuiltinIntegrationServices {
 			'db'      => \OCP\IDBConnection::class,
 			'runtime' => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
-		// @spec openspec/specs/integration-flow/spec.md
-		\OCA\OpenRegister\Service\FlowLinkService::class => [
-			'platform'     => [
-				\OCA\OpenRegister\Service\FlowLinkPlatform::class,
-				[
-					'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
-					'db'             => \OCP\IDBConnection::class,
-					'appManager'     => \OCP\App\IAppManager::class,
-				],
-			],
-			'userSession'  => \OCP\IUserSession::class,
-			'groupManager' => \OCP\IGroupManager::class,
-			'logger'       => \Psr\Log\LoggerInterface::class,
-		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class => [
 			'leaf'          => self::LEAF_MARKER_SCANNING,
@@ -402,6 +388,14 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
 			'planner' => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
 			'runs'    => self::SCHEMA_POPULATION_RUNS,
+		],
+		// An external register (BAG, BRK, WOZ, ...) read through a configured OpenConnector source;
+		// IntegrationWiring::bootObjectSources() adds it to the object source registry.
+		\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class => [
+			'router'         => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface::class,
+			'mappingMapper'  => \OCA\OpenRegister\Db\MappingMapperInterface::class,
+			'mappingService' => \OCA\OpenRegister\Service\MappingService::class,
+			'logger'         => \Psr\Log\LoggerInterface::class,
 		],
 	];
 
