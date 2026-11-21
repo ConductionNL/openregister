@@ -49,9 +49,6 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
-use OCA\OpenRegister\Db\AuditTrail\NamedActor;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -62,8 +59,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Each dependency is load-bearing:
  * the mapper is the store, the hasher and the RNG are the two secrets a link
- * carries, the URL generator builds the link a holder is given, and the audit
- * mapper is where every use is written. Splitting them would move the refusals
+ * carries, the URL generator builds the link a holder is given, and the use
+ * recorder is where every use is written. Splitting them would move the refusals
  * away from the row they refuse.
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
@@ -336,23 +333,7 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	public function recordUse(AccessLink $link, AccessLinkUse $use): void {
 		if ($use->object !== null) {
 			try {
-				$this->useLog->auditTrail->recordObjectEvent(
-					event: new ObjectAuditEvent(
-						object: $use->object,
-						action: $use->act,
-						context: array_merge(
-							$use->context,
-							[
-								'accessLink' => $link->getUuid(),
-								'capabilities' => $link->declaredCapabilities(),
-								'subjectType' => $link->getSubjectType(),
-								'subjectId' => $link->getSubjectId(),
-								'ipAddress' => $use->ipAddress,
-							]
-						),
-						options: new ObjectAuditEventOptions(actor: new NamedActor(id: $link->principalId(), name: $link->principalName()), ipAddress: $use->ipAddress)
-					)
-				);
+				$this->useLog->recorder->recordLinkUse(link: $link, use: $use);
 			} catch (Throwable $failure) {
 				// An audit write that fails must be visible, and it must not
 				// silently turn a recorded act into an unrecorded one.

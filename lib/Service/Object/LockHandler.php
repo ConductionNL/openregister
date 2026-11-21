@@ -29,12 +29,12 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
@@ -106,6 +106,57 @@ class LockHandler {
 			'schema' => $result['schema'],
 		];
 	}//end findObjectWithContext()
+
+	/**
+	 * Claim a lock for an explicit owner, atomically, without a session.
+	 *
+	 * For background jobs and workers that have no signed-in user: the owner is
+	 * named by the caller, the object is read in system context, and the claim
+	 * succeeds when the object is unlocked, its lock expired, or the same owner
+	 * (and run) holds it. Of two racing claimers only one gets true. An
+	 * identifier that resolves to no stored object takes the advisory lock.
+	 * Locks taken for a person keep going through lock() and its checks.
+	 *
+	 * @param LockRequest $request The object, process, duration and the flow run step taking the lock.
+	 * @param string      $ownerId The owner the lock is taken for.
+	 *
+	 * @return bool True when the caller now holds the lock; false when another holder has it.
+	 *
+	 * @throws \InvalidArgumentException When the owner id is empty.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	public function claim(LockRequest $request, string $ownerId): bool {
+		if (trim($ownerId) === '') {
+			throw new \InvalidArgumentException('A lock claim needs an owner id.');
+		}
+
+		try {
+			$context = $this->findObjectWithContext(identifier: $request->identifier, _rbacBypass: true);
+		} catch (DoesNotExistException $e) {
+			return $this->stores->advisory->claim(request: $request, ownerId: $ownerId);
+		}
+
+		$before  = clone $context['object'];
+		$claimed = $this->stores->magicMapper->claimObjectEntity(
+			entity: $context['object'],
+			register: $context['register'],
+			schema: $context['schema'],
+			ownerId: $ownerId,
+			lockDuration: $request->duration,
+			process: $request->process,
+			runUuid: $request->runUuid
+		);
+		if ($claimed === false) {
+			return false;
+		}
+
+		$this->stores->runLocks?->record(object: $context['object'], step: new LockRunStep(runUuid: $request->runUuid, nodeId: $request->nodeId));
+		$this->stores->auditTrailMapper->createAuditTrail(old: $before, new: $context['object'], action: 'lock');
+		$this->logLocked(after: $context['object'], request: $request);
+
+		return true;
+	}//end claim()
 
 	/**
 	 * Lock an object
@@ -247,7 +298,7 @@ class LockHandler {
 		);
 		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
 		if ($request->break === true) {
-			$this->stores->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $objectAfter, action: 'lock.broken', context: $displaced));
+			$this->stores->auditTrailMapper->writeObjectEvent(entry: new ObjectAuditEntry(object: $objectAfter, action: 'lock.broken', context: $displaced));
 		}
 
 		$this->recordUnlock(before: $objectBefore, after: $objectAfter);
