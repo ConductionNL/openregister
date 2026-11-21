@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
 use OCA\OpenRegister\Service\Rbac\ClassificationDeclarationValidator;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -182,6 +183,33 @@ final class AccessDeclarationChecks {
 			throw new Exception(ClassificationScale::ANNOTATION . ': ' . implode('; ', $errors));
 		}
 	}//end checkClassification()
+
+	/**
+	 * Refuse a broken `x-openregister-break-glass` declaration at save.
+	 *
+	 * THIS ONE THROWS: a malformed declaration offers no emergency access at
+	 * all (BreakGlassDeclaration fails closed), so the author must learn at
+	 * save time rather than at the counter.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-emergency-self-granted-access-is-declared-bounded-and-announced-req-gsr-004
+	 */
+	public function checkBreakGlass(Schema $schema): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: BreakGlassDeclaration::ANNOTATION);
+		if ($annotation->hasValue() === false) {
+			return;
+		}
+
+		$errors = BreakGlassDeclaration::errorsOf(block: $annotation->value());
+		if ($errors !== []) {
+			throw new Exception(BreakGlassDeclaration::ANNOTATION . ': ' . implode('; ', $errors));
+		}
+	}//end checkBreakGlass()
 
 	/**
 	 * Log a faulty `x-openregister-confidentiality` block at error level.
