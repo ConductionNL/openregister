@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ContractBindingsRegistrar;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -38,7 +39,7 @@ final class F08ContractBindingsEntryTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * The registrar registers exactly the aliases ContractBindings lists.
+	 * The registrar registers exactly the aliases ContractBindings lists, less the Core entries ServiceRegistrar binds.
 	 *
 	 * @return void
 	 */
@@ -46,7 +47,7 @@ final class F08ContractBindingsEntryTest extends TestCase {
 		$context = new RecordingRegistrationContext();
 		ContractBindingsRegistrar::register(context: $context);
 		$aliases = array_column($context->aliases, 'target', 'alias');
-		$this->assertSame(expected: ContractBindings::BINDINGS, actual: $aliases);
+		$this->assertSame(expected: array_diff_key(ContractBindings::BINDINGS, CoreServiceBindings::BINDINGS), actual: $aliases);
 	}//end testTheRegistrarRegistersEveryBinding()
 
 	/**
