@@ -48,7 +48,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses   \OCA\OpenRegister\Service\Query\ReferenceFilterParser
- * @uses   \OCA\OpenRegister\Service\Query\ReferenceFilterDeclaration
+ * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
@@ -62,6 +62,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowSubquery
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\AliasedRows
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowBlockField
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ReferenceFilterApplyTest extends TestCase {
 

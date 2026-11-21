@@ -54,6 +54,7 @@ use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -77,7 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * contract, and live beside `publishedInputs()` for the reason above: one
  * place decides what a client is told a transition asks for.
  */
-class TransitionEngine {
+class TransitionEngine implements LifecycleTransitionInterface {
 	/**
 	 * App-config key opting an instance into the documented slug contract.
 	 *

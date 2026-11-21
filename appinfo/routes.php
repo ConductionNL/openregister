@@ -325,9 +325,13 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Settings - Focused endpoints for better performance.
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
+        ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
+        ['name' => 'settings#queueSearchIndexRun', 'url' => '/api/settings/search-index/run', 'verb' => 'POST'],
         // The last report of the operator's seed directory (administrator only).
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
+        ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
+        ['name' => 'Settings\TranslationSettings#update', 'url' => '/api/settings/translation', 'verb' => 'PUT'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -395,6 +399,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'fileExtraction#extractAll', 'url' => '/api/files/extract', 'verb' => 'POST'],
         ['name' => 'fileExtraction#retryFailed', 'url' => '/api/files/retry-failed', 'verb' => 'POST'],
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
+        // near-duplicate-documents-by-text (REQ-NDT-002): before /api/files/{id}, which would take the literal.
+        ['name' => 'duplicate#nearDuplicates', 'url' => '/api/files/near-duplicates', 'verb' => 'GET'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
@@ -1260,7 +1266,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
-        ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
@@ -1437,11 +1443,21 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
+        ['name' => 'qualityAudit#index', 'url' => '/api/quality-audits', 'verb' => 'GET'],
+        ['name' => 'qualityAudit#create', 'url' => '/api/quality-audits', 'verb' => 'POST'],
+        ['name' => 'qualityAudit#show', 'url' => '/api/quality-audits/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#update', 'url' => '/api/quality-audits/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#destroy', 'url' => '/api/quality-audits/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#run', 'url' => '/api/quality-audits/{id}/run', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#runs', 'url' => '/api/quality-audits/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failures', 'url' => '/api/quality-audit-runs/{id}/failures', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'qualityAudit#failuresCsv', 'url' => '/api/quality-audit-runs/{id}/failures.csv', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#commit', 'url' => '/api/import-previews/{id}/commit', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
         // Audit Trails — specific routes MUST come before parameterized {id} routes.
         ['name' => 'auditTrail#objects', 'url' => '/api/objects/{register}/{schema}/{id}/audit-trails', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -1999,6 +2015,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// Entity Relations - Decision-metadata PATCH (bases + skipAnonymization). See `entity-relation-grondslagen`.
 		['name' => 'entityRelations#update', 'url' => '/api/entity-relations/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '\\d+']],
+		// Entity Relations - the findings of one file, as the caller may see them (woo-document-assessment-screen).
+		['name' => 'fileEntityRelations#index', 'url' => '/api/entity-relations', 'verb' => 'GET'],
 
 		// GDPR Entities - Manage detected PII entities.
 		['name' => 'gdprEntities#index', 'url' => '/api/entities', 'verb' => 'GET'],
