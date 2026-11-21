@@ -130,6 +130,23 @@ class IntegrationWiringTest extends TestCase {
 		$this->assertArrayNotHasKey(\OCA\OpenRegister\Notifications\Service\EmailServiceInterface::class, \OCA\OpenRegister\Notifications\NotificationsWiring::BINDINGS);
 	}//end testTheMailLinkServiceIsBoundByIntegrationsOnly()
 
+	/**
+	 * The CloudEvent formatter and the webhook interception cache are bound by
+	 * Integrations, the area of the webhook services that use them, not by Notifications.
+	 *
+	 * @return void
+	 */
+	public function testTheWebhookHelpersAreBoundByIntegrationsOnly(): void {
+		$helpers = [
+			\OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface::class      => \OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter::class,
+			\OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface::class => \OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache::class,
+		];
+		foreach ($helpers as $contract => $service) {
+			$this->assertSame($service, IntegrationWiring::BINDINGS[$contract]);
+			$this->assertArrayNotHasKey($contract, \OCA\OpenRegister\Notifications\NotificationsWiring::BINDINGS);
+		}
+	}//end testTheWebhookHelpersAreBoundByIntegrationsOnly()
+
 	public function testTheRegistryAndSemanticValidatorFactoriesBuildFromTheContainer(): void {
 		$this->registerAll();
 		$container = $this->createMock(ContainerInterface::class);

@@ -38,7 +38,6 @@ use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
-use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
@@ -85,12 +84,8 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
-use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\MoveAddress;
 use OCA\OpenRegister\Service\Object\ObjectKeyResolver;
 use OCA\OpenRegister\Service\Object\ObjectMove;
@@ -110,8 +105,14 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaChangeReportingControllerInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -163,7 +164,7 @@ use OCA\OpenRegister\Service\Object\VerbListing;
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
-class ObjectsController extends Controller {
+class ObjectsController extends Controller implements SchemaChangeReportingControllerInterface {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 	use ResolvesRegisterAndSchemaTrait;
 
@@ -977,7 +978,7 @@ class ObjectsController extends Controller {
 				register: ($resolved['registerEntity'] ?? null),
 				schema: ($resolved['schemaEntity'] ?? null)
 			);
-		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return self::purposeRefusal(refusal: $refusal);
 		}
 
@@ -987,13 +988,13 @@ class ObjectsController extends Controller {
 	/**
 	 * The answer to a read refused for want of a purpose.
 	 *
-	 * @param \OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal The refusal.
+	 * @param ReadPurposeRefusalInterface $refusal The refusal.
 	 *
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private static function purposeRefusal(\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal): JSONResponse {
+	private static function purposeRefusal(ReadPurposeRefusalInterface $refusal): JSONResponse {
 		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 	}//end purposeRefusal()
 
@@ -2829,7 +2830,7 @@ class ObjectsController extends Controller {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return self::purposeRefusal(refusal: $refusal);
 		}
 
@@ -5285,7 +5286,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
+			$page = $this->container->get(ReadableObjectHistoryInterface::class)->page(
 				ref: $ref,
 				params: [
 					'limit' => $config['limit'],
@@ -5296,7 +5297,7 @@ class ObjectsController extends Controller {
 					'search' => $search,
 				]
 			);
-		} catch (PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		} catch (MultipleObjectsReturnedException $e) {
 			// The 409 an administrator gets on this route (#4037), not a 500.
@@ -6379,7 +6380,7 @@ class ObjectsController extends Controller {
 	 * @return DataDownloadResponse|JSONResponse Download response or error.
 	 *
 	 * @throws ContainerExceptionInterface If there's an issue with dependency injection.
-	 * @throws NotFoundExceptionInterface If the FileService dependency is not found.
+	 * @throws NotFoundExceptionInterface If the file archive dependency is not found.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -6400,18 +6401,14 @@ class ObjectsController extends Controller {
 			// Get the object to ensure it exists and we have access.
 			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 
-			/*
-			 * Get the FileService from the container.
-			 * @var FileServiceInterface $fileService
-			 */
-
-			$fileService = $this->container->get(FileServiceInterface::class);
+			// File storage builds the archive.
+			$archive = $this->container->get(ObjectFilesArchiveInterface::class);
 
 			// Optional: get custom filename from query parameters.
 			$customFilename = $this->request->getParam(key: 'filename');
 
 			// Create the ZIP archive.
-			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
+			$zipInfo = $archive->createZip(object: $object, zipName: $customFilename);
 
 			$zipContent = self::takeZipContent(path: $zipInfo['path']);
 
@@ -6476,17 +6473,7 @@ class ObjectsController extends Controller {
 	 */
 	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
 		try {
-			$fileService = $this->container->get(FileServiceInterface::class);
-			$files = $fileService->getFiles($object);
-			$fileService->getAuditHandler()->logBulkDownload(
-				object: $object,
-				archive: new BulkDownloadArchive(
-					fileIds: array_map(static fn ($file) => $file->getId(), $files),
-					fileNames: array_map(static fn ($file) => $file->getName(), $files),
-					zipName: $zipInfo['filename'],
-					totalBytes: $zipInfo['size'] ?? null
-				)
-			);
+			$this->container->get(ObjectFilesArchiveInterface::class)->recordDownload(object: $object, zipInfo: $zipInfo);
 		} catch (\Throwable $auditError) {
 			// The audit trail must never break the download response.
 			$this->logger->warning(
@@ -6835,12 +6822,12 @@ class ObjectsController extends Controller {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class);
+			$flowContext = $this->container->get(CurrentFlowRunInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContextInterface === false) {
+		if ($flowContext instanceof CurrentFlowRunInterface === false) {
 			return null;
 		}
 

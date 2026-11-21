@@ -34,6 +34,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 
 /**
  * The consistency check, the repair plan and the repair.
@@ -48,7 +49,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class OperationsConsistencyController extends Controller {
+class OperationsConsistencyController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * The acting administrator and the parameter readers.
