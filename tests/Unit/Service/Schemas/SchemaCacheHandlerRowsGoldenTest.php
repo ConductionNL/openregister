@@ -38,6 +38,11 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\SchemaCacheHandler
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaCacheSlot
  */
 final class SchemaCacheHandlerRowsGoldenTest extends TestCase {
 

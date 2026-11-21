@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey
  */
 class ExampleSetConfigValueTest extends TestCase {
 

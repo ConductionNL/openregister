@@ -15,7 +15,7 @@ Enforce referential integrity between register objects connected via `$ref` sche
 
 ## Requirements
 
-### Requirement 1: Schema properties with $ref MUST support configurable onDelete behavior
+### Requirement: Schema properties with $ref MUST support configurable onDelete behavior
 Properties that reference other schemas via `$ref` MUST define what happens when the referenced object is deleted. The system MUST support five onDelete actions: `CASCADE`, `SET_NULL`, `SET_DEFAULT`, `RESTRICT`, and `NO_ACTION` (default). The `onDelete` value MUST be stored on the schema property definition alongside `$ref` and SHALL be validated against the `VALID_ON_DELETE_ACTIONS` constant in `ReferentialIntegrityService`.
 
 #### Scenario: Configure CASCADE delete
@@ -73,7 +73,7 @@ Properties that reference other schemas via `$ref` MUST define what happens when
 - **AND** orders with the now-broken reference MUST NOT be modified
 - **AND** the broken reference is the caller's responsibility (eventual consistency)
 
-### Requirement 2: Referential integrity MUST apply within database transactions
+### Requirement: Referential integrity MUST apply within database transactions
 All integrity actions (CASCADE, SET_NULL, SET_DEFAULT) and the root deletion MUST be atomic. `DeleteObject::executeIntegrityTransaction()` MUST wrap all operations in `IDBConnection::beginTransaction()` / `commit()` / `rollBack()`.
 
 #### Scenario: Atomic CASCADE with rollback on failure
@@ -97,7 +97,7 @@ All integrity actions (CASCADE, SET_NULL, SET_DEFAULT) and the root deletion MUS
 - **THEN** Nextcloud's database abstraction (Doctrine DBAL) MUST handle nested transactions via savepoints
 - **AND** the graph walk in `walkDeletionGraph()` MUST recurse to depth 2 and collect all targets before mutations begin
 
-### Requirement 3: Circular references MUST be detected and handled safely
+### Requirement: Circular references MUST be detected and handled safely
 The system MUST detect circular reference chains and prevent infinite cascades. `ReferentialIntegrityService` MUST enforce two safeguards: visited-UUID tracking (cycle detection) and `MAX_DEPTH = 10` (depth limiting).
 
 #### Scenario: Circular CASCADE detection via visited set
@@ -123,7 +123,7 @@ The system MUST detect circular reference chains and prevent infinite cascades. 
 - **THEN** `child-1`, `child-2`, and `child-3` MUST all be cascade-deleted
 - **AND** the visited set MUST prevent re-processing if any child also references another in the chain
 
-### Requirement 4: Reference validation MUST be configurable on save
+### Requirement: Reference validation MUST be configurable on save
 The system MUST support a `validateReference` boolean on schema properties. When enabled, the save pipeline SHALL verify that the UUID stored in a `$ref` property corresponds to an existing object in the target schema before persisting. See the reference-existence-validation spec for full details.
 
 #### Scenario: Validate reference on save (enabled)
@@ -150,7 +150,7 @@ The system MUST support a `validateReference` boolean on schema properties. When
 - **THEN** `SaveObject::validateReferences()` MUST skip validation for unchanged values
 - **AND** the save MUST succeed
 
-### Requirement 5: Orphan detection and cleanup MUST be supported for inversedBy relations
+### Requirement: Orphan detection and cleanup MUST be supported for inversedBy relations
 When a parent object is updated and sub-objects are removed from an `inversedBy` array property, the system MUST detect and soft-delete orphaned sub-objects. `SaveObject::deleteOrphanedRelatedObjects()` handles this cleanup. The cleanup is opt-in per parent schema through `configuration.orphanCleanup` (default false: the child stays and only loses the reference), and it deletes only a row the caller may delete within the caller's organisations.
 
 #### Scenario: Sub-objects removed during update are soft-deleted
@@ -170,7 +170,7 @@ When a parent object is updated and sub-objects are removed from an `inversedBy`
 - **WHEN** the parent object is updated and referenced UUIDs are removed
 - **THEN** no orphan cleanup SHALL occur (the references are plain pointers, not owned sub-objects)
 
-### Requirement 6: Bidirectional reference consistency via inversedBy and writeBack
+### Requirement: Bidirectional reference consistency via inversedBy and writeBack
 When a schema property has `inversedBy` configuration, the system MUST maintain bidirectional consistency. Creating or deleting a child object MUST update the parent's reference array, and vice versa. The `CascadingHandler` and `RelationCascadeHandler` coordinate this.
 
 #### Scenario: Cascade create populates inverse reference
@@ -191,7 +191,7 @@ When a schema property has `inversedBy` configuration, the system MUST maintain 
 - **WHEN** a `$ref` is provided as numeric ID, UUID, slug, JSON Schema path (`#/components/schemas/Note`), or URL
 - **THEN** the system MUST resolve to the correct schema ID using case-insensitive slug matching
 
-### Requirement 7: Cross-register references MUST be supported and enforced
+### Requirement: Cross-register references MUST be supported and enforced
 When a `$ref` property includes a `register` configuration pointing to a different register, referential integrity MUST apply across register boundaries. `ReferentialIntegrityService::buildSchemaRegisterMap()` maps schemas to registers via magic table naming conventions.
 
 #### Scenario: Cross-register CASCADE delete
@@ -213,7 +213,7 @@ When a `$ref` property includes a `register` configuration pointing to a differe
 - **AND** populate `$schemaRegisterMap` mapping schema IDs to Register entities
 - **AND** this map MUST be cached for the duration of the request
 
-### Requirement 8: Reference type validation MUST enforce correct structure
+### Requirement: Reference type validation MUST enforce correct structure
 References stored in object data MUST be valid UUIDs (or resolvable reference formats). `RelationCascadeHandler::isReference()` and `looksLikeObjectReference()` define what constitutes a valid reference.
 
 #### Scenario: UUID reference (with dashes)
@@ -239,7 +239,7 @@ References stored in object data MUST be valid UUIDs (or resolvable reference fo
 - **THEN** `isReference()` MUST return `false`
 - **AND** if validateReference is enabled, the save MUST fail with HTTP 422
 
-### Requirement 9: Bulk operations MUST respect referential integrity per object
+### Requirement: Bulk operations MUST respect referential integrity per object
 Bulk delete operations via `ObjectService::deleteObjects()` MUST process integrity rules for each affected object individually. Objects blocked by RESTRICT MUST be skipped, and the response MUST include aggregate counts.
 
 #### Scenario: Bulk delete with CASCADE
@@ -264,7 +264,7 @@ Bulk delete operations via `ObjectService::deleteObjects()` MUST process integri
 - **THEN** each object's integrity check and cascade MUST run within its own transaction scope
 - **AND** a failure on object #50 MUST NOT roll back deletions of objects #1-#49
 
-### Requirement 10: Referential integrity actions MUST be audited
+### Requirement: Referential integrity actions MUST be audited
 Each integrity action MUST produce an audit trail entry via `ReferentialIntegrityService::logIntegrityAction()` and `AuditTrailMapper::createAuditTrail()`. The audit trail MUST distinguish user-initiated deletions from system-triggered integrity actions.
 
 #### Scenario: Audit CASCADE action
@@ -290,7 +290,7 @@ Each integrity action MUST produce an audit trail entry via `ReferentialIntegrit
 - **THEN** the entry MUST have `expires` set to 30 days from creation
 - **AND** expired entries SHALL be eligible for cleanup per the deletion-audit-trail spec
 
-### Requirement 11: API _extend parameter MUST support lazy and eager reference resolution
+### Requirement: API _extend parameter MUST support lazy and eager reference resolution
 The API MUST support an `_extend` query parameter that controls whether referenced objects are resolved inline (eager) or returned as UUIDs (lazy, default). `RelationHandler::bulkLoadRelationshipsBatched()` handles bulk resolution.
 
 #### Scenario: Lazy resolution (default)
@@ -316,7 +316,7 @@ The API MUST support an `_extend` query parameter that controls whether referenc
 - **THEN** `getUses()` MUST search across all magic tables (register+schema pairs) to find the referenced object
 - **AND** RBAC filtering MUST be applied to extended objects via `filterByRbac()`
 
-### Requirement 12: Relation graph MUST support bidirectional traversal (uses/usedBy)
+### Requirement: Relation graph MUST support bidirectional traversal (uses/usedBy)
 The system MUST provide API endpoints to traverse the relation graph in both directions: outgoing references (uses) and incoming references (usedBy). `RelationHandler::getUses()` and `RelationHandler::getUsedBy()` implement this.
 
 #### Scenario: Get outgoing references (uses)
@@ -338,7 +338,7 @@ The system MUST provide API endpoints to traverse the relation graph in both dir
 - **WHEN** `getUses()` is called
 - **THEN** the object's own UUID MUST be filtered out before loading related objects
 
-### Requirement 13: Performance MUST be bounded for deep reference chains
+### Requirement: Performance MUST be bounded for deep reference chains
 The system MUST enforce performance boundaries to prevent timeout on complex reference graphs. This includes depth limits, batch sizes, and circuit breakers.
 
 #### Scenario: Relation index cached per request
@@ -369,7 +369,7 @@ The system MUST enforce performance boundaries to prevent timeout on complex ref
 - **AND** each group MUST be deleted via a single `MagicMapper::deleteObjects()` call
 - **AND** audit trail entries MUST still be created individually per object
 
-### Requirement 14: Array-type reference properties MUST be handled correctly
+### Requirement: Array-type reference properties MUST be handled correctly
 Properties with `type: array` and `items.$ref` MUST be handled differently from scalar `$ref` properties for all integrity actions (SET_NULL removes the UUID from the array rather than nullifying the whole property).
 
 #### Scenario: SET_NULL on array property removes specific UUID
@@ -391,7 +391,7 @@ Properties with `type: array` and `items.$ref` MUST be handled differently from 
 - **THEN** the index entry MUST have `isArray: true`
 - **AND** `extractTargetRef()` MUST extract the `$ref` from `items.$ref`
 
-### Requirement 15: Multi-tenancy and RBAC MUST be respected during integrity enforcement
+### Requirement: Multi-tenancy and RBAC MUST be respected during integrity enforcement
 Referential integrity operations MUST bypass RBAC and multi-tenancy filters when scanning for dependent objects (system-level enforcement), but MUST respect them when loading schemas and registers for user-facing operations.
 
 #### Scenario: Integrity scan bypasses RBAC
@@ -413,7 +413,7 @@ Referential integrity operations MUST bypass RBAC and multi-tenancy filters when
 - **THEN** `filterByRbac()` MUST check schema authorization for each result
 - **AND** only the 3 accessible orders MUST be returned
 
-### Requirement 16: A reference that cites a row by a key property MUST be able to refuse its delete
+### Requirement: A reference that cites a row by a key property MUST be able to refuse its delete
 A schema property whose values cite rows of another schema by a key property (a code, not a uuid) MUST be able to declare `referenceSchema` (the cited schema, on the property or on `items`), `referenceKey` (the cited schema's property, e.g. `code`) and `onDelete: RESTRICT`. Deleting a cited row MUST then be refused with the citing rows as blockers, exactly as for a uuid reference. `referenceSchema` MUST NOT engage the `$ref` relation behaviour (rendering, `_extend`, uuid validation). A key reference MUST be honoured only with `RESTRICT`: saving a schema that declares `referenceKey` with any other action MUST be refused (a `referenceKey` that is empty or the literal `uuid` is a plain uuid reference, to which every action applies, and is read that way by the save and by the delete), and such a relation that reaches the relation index anyway MUST be left out with a warning. `onDelete` MUST be accepted on a property with `referenceSchema` as it is on one with `$ref`. The check MUST fail closed: when the citing rows cannot be read, the delete MUST be refused with a blocker whose `reason` is `unverifiable`; only a citing table that does not exist yet MUST count as "nothing cites it". A row without a value for the key MUST be deletable. This is the generic reference guard (capability C25 of hydra's `procedures-are-configuration`), so an app needs no delete listener of its own.
 
 #### Scenario: A cited code refuses the delete

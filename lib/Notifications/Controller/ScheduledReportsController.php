@@ -27,12 +27,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Service\Connection\ConnectionReportForbiddenException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,7 +82,7 @@ class ScheduledReportsController extends Controller {
 		IRequest $request,
 		ScheduledReportsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->service = $services->service;
 		$this->jobList = $services->jobList;
@@ -184,7 +188,7 @@ class ScheduledReportsController extends Controller {
 
 		try {
 			$report = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(report: $report, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {
@@ -200,12 +204,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -217,6 +219,10 @@ class ScheduledReportsController extends Controller {
 			if (str_starts_with($key, '_') === true) {
 				unset($data[$key]);
 			}
+		}
+
+		if (($data['kind'] ?? null) === ScheduledReport::KIND_CONNECTION_HEALTH && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => (new ConnectionReportForbiddenException())->getMessage()], statusCode: 403);
 		}
 
 		try {
@@ -242,12 +248,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -262,14 +266,12 @@ class ScheduledReportsController extends Controller {
 		}
 
 		try {
-			$report = $this->service->update(
-				id: $id,
-				data: $data,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
+			$caller = new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
+			$report = $this->service->applyUpdate(update: new ScheduledReportUpdate(id: $id, data: $data, caller: $caller));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
+		} catch (ConnectionReportForbiddenException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (\RuntimeException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (InvalidArgumentException $e) {
@@ -293,12 +295,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -306,7 +306,7 @@ class ScheduledReportsController extends Controller {
 		}
 
 		try {
-			$this->service->delete(id: $id, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->deleteAs(id: $id, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {
@@ -333,12 +333,10 @@ class ScheduledReportsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function runNow(int $id): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -347,7 +345,7 @@ class ScheduledReportsController extends Controller {
 
 		try {
 			$report = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(report: $report, callerUid: $userId, callerIsAdmin: $this->isCurrentUserAdmin());
+			$this->service->assertMayAccess(report: $report, caller: new ReportCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin()));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Scheduled report not found'], statusCode: 404);
 		} catch (\RuntimeException $e) {

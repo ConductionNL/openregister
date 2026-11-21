@@ -11,9 +11,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -61,7 +63,10 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->scenarios() as $name => [$data, $analysis, $failure]) {
 			$this->seen = ['updated' => [], 'audit' => [], 'warnings' => []];
-			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions($analysis, 'alice', 'root-uuid', 'org-1', 'parent-schema');
+			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions(
+				$analysis,
+				new CascadeDeleteOrigin(userId: 'alice', cascadeSource: 'root-uuid', triggerSchemaSlug: 'parent-schema', organisationId: 'org-1')
+			);
 			$actual[$name] = $this->seen + ['result' => $result];
 		}
 
@@ -134,7 +139,7 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 			}
 		);
 
-		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$auditMapper->method('insert')->willReturnCallback(
 			function (AuditTrail $row): AuditTrail {
 				$this->seen['audit'][] = [

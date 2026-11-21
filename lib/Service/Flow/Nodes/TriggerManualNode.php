@@ -34,12 +34,13 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use UnexpectedValueException;
 
 /**
  * Starts the flow when someone runs it.
  */
-class TriggerManualNode extends TriggerNodeBase implements IFlowNode, TriggerManualNodeInterface {
+class TriggerManualNode extends TriggerNodeBase implements IFlowNode, TriggerManualNodeInterface, IFlowNodeConfigForm {
 	/**
 	 * The node type.
 	 *
@@ -98,6 +99,30 @@ class TriggerManualNode extends TriggerNodeBase implements IFlowNode, TriggerMan
 	public function configKeys(): array {
 		return ['next'];
 	}//end configKeys()
+
+	/**
+	 * Where the person who ran the flow goes afterwards.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		// A manual trigger takes no subject; its one key says where the person
+		// who ran it goes afterwards. Inline options are not part of the field
+		// vocabulary, so the three words are named in the help text.
+		return [
+			[
+				'key' => 'next',
+				'label' => $this->l10n->t('Afterwards, go to'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'"stay" keeps the person on the record, "next" opens the next '
+						. 'record in their list, "list" returns to the list. Empty means "stay".'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Refuse a `next` outside the vocabulary.

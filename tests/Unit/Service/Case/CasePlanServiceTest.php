@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Service\Case\AppPlanWrite;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
@@ -50,7 +51,7 @@ use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
@@ -80,6 +81,42 @@ use OCA\OpenRegister\Service\Case\CasePlanTrigger;
  * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  * @uses \OCA\OpenRegister\Service\Case\CasePlanEnsurer
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Case\AppPlanWrite
+ * @uses \OCA\OpenRegister\Service\Case\CaseAdHocAttachment
+ * @uses \OCA\OpenRegister\Service\Case\CaseAdHocRequest
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeReaders
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeRun
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeStep
+ * @uses \OCA\OpenRegister\Service\Case\CaseDefinitionNode
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemMove
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemTransition
+ * @uses \OCA\OpenRegister\Service\Case\CasePassState
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanAct
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanAnchorAccess
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanBringOver
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanCreation
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanInsertion
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanMechanics
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanMove
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanPlacement
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanProvenance
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanStore
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTrigger
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanValidation
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOccasion
+ * @uses \OCA\OpenRegister\Service\Case\CaseStateChange
+ * @uses \OCA\OpenRegister\Service\Case\CaseStepCause
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionCause
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionEffects
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Case\CaseCompletion
+ * @uses \OCA\OpenRegister\Service\Case\CaseEnsureRun
+ * @uses \OCA\OpenRegister\Service\Case\CaseEnsuredHistory
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemsEnsureRequest
  */
 class CasePlanServiceTest extends TestCase {
 
@@ -577,7 +614,13 @@ class CasePlanServiceTest extends TestCase {
 		$this->anchor->method('read')->willReturn(['status' => 'open']);
 		$this->anchor->method('mayRead')->willReturn(false);
 
-		$plan = $this->service()->createPlanAsSystem(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), app: 'dossiq');
+		$plan = $this->service()->createPlanAsSystem(
+			write: new AppPlanWrite(
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1),
+				definition: CasePlanDefinitionTest::permitDefinition(),
+				app: 'dossiq'
+			)
+		);
 		$this->assertCount(7, $plan['items']);
 		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
 		$this->assertCount(7, $this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: 'dossiq')['items']);

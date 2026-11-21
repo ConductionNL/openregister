@@ -21,7 +21,9 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
 use OCA\OpenRegister\Service\SharedSchema\OwnerCandidates;
 use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
@@ -216,7 +218,14 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('getSlugToIdMap')->willReturn(['person' => 5]);
 		$this->importHandler->expects($this->once())->method('importSchema')
-			->with($definition, ['person' => 5], 'owner-two', 'app-two', '2.0.0', true, [])
+			->with(
+				new ImportedSchemaLookup(
+					data: $definition,
+					registerSchemaIds: [],
+					options: new SchemaImportOptions(owner: 'owner-two', appId: 'app-two', version: '2.0.0', force: true)
+				),
+				['person' => 5]
+			)
 			->willReturn($created);
 		$this->schemaMapper->expects($this->never())->method('createFromArray');
 		$this->attribution->method('replaceSchemaId')->willReturn([12]);
@@ -231,7 +240,14 @@ class SharedSchemaDedupeServiceGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 		$this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
 		$this->importHandler->expects($this->once())->method('importSchema')
-			->with(['slug' => 'p'], [], 'owner-two', 'app-two', '0.0.1', true, [])
+			->with(
+				new ImportedSchemaLookup(
+					data: ['slug' => 'p'],
+					registerSchemaIds: [],
+					options: new SchemaImportOptions(owner: 'owner-two', appId: 'app-two', version: '0.0.1', force: true)
+				),
+				[]
+			)
 			->willReturn(new Schema());
 		$this->schemaMapper->method('find')->willReturn($this->schema(5, 'p'));
 		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($this->schema(13, 'p'));

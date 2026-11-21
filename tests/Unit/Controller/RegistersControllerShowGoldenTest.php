@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -62,6 +63,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
  */
 class RegistersControllerShowGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-show-golden.json';
@@ -163,14 +169,19 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+		$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 			$this->calls[] = ['auditStatistics', array_slice($args, 0, 2)];
 			return ['total' => 8, 'size' => 80];
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message, array $context): void {
 			unset($context['file'], $context['line']);
+			// The exception-translation trait logs the throwable itself; record its class.
+			if (($context['exception'] ?? null) instanceof \Throwable) {
+				$context['exception'] = $context['exception']::class;
+			}
+
 			$this->calls[] = ['error', $message, $context];
 		});
 

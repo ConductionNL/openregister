@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -62,13 +63,15 @@ class ObjectHelperUnitsGoldenTest extends TestCase {
 		$events = [];
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findSlugState')->willReturnCallback(
-			function (...$args) use (&$events): array {
+			function (RegisterSchema $table, mixed ...$rest) use (&$events): array {
+				$args = [$table->register, $table->schema, ...$rest];
 				$events[] = 'state:' . implode(',', $args[2]);
 				return ['holders' => ['a' => ['u-other'], 'b' => ['u-2'], 'c' => []]];
 			}
 		);
 		$magic->method('updateSlugColumn')->willReturnCallback(
-			function (...$args) use (&$events): int {
+			function (RegisterSchema $table, mixed ...$rest) use (&$events): int {
+				$args = [$table->register, $table->schema, ...$rest];
 				$events[] = 'update:' . $args[2] . '=' . $args[3];
 				return $args[2] === 'u-2' ? 1 : 0;
 			}

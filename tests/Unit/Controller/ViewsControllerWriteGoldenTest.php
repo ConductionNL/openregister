@@ -41,6 +41,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\ReachedView
  */
 class ViewsControllerWriteGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/views-write-golden.json';
@@ -189,6 +195,10 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 			$service->method($method)->willReturnCallback(function (...$args) use ($case, $recordedAs) {
 				if ($recordedAs === 'update') {
 					$args = self::updateArguments(id: $args[0], edit: $args[1]);
+				}
+
+				if ($recordedAs === 'create') {
+					$args = [$args[0]->definition, $args[0]->audience, $args[0]->alert];
 				}
 
 				$this->calls[] = ['viewService.' . $recordedAs => $args];

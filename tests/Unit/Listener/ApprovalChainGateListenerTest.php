@@ -66,6 +66,13 @@ use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Listener\Support\ApprovalChainSequences
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateMove
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
  */
 class ApprovalChainGateListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;

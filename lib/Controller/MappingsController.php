@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Service\MappingServiceInterface;
@@ -60,6 +61,8 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class MappingsController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * App configuration
 	 *
@@ -131,31 +134,11 @@ class MappingsController extends Controller {
 		// Get request parameters.
 		$params = $this->request->getParams();
 
-		// Extract pagination parameters.
-		$limit = null;
-		if (isset($params['_limit']) === true) {
-			$limit = (int)$params['_limit'];
-		}
-
-		$offset = null;
-		if (isset($params['_offset']) === true) {
-			$offset = (int)$params['_offset'];
-		}
-
-		$page = null;
-		if (isset($params['_page']) === true) {
-			$page = (int)$params['_page'];
-		}
-
-		// Convert page to offset if provided.
-		if ($page !== null && $limit !== null) {
-			$offset = ($page - 1) * $limit;
-		}
-
 		// Retrieve mappings using mapper.
+		$limit = $this->intParam(params: $params, key: '_limit');
 		$mappings = $this->mappingMapper->findAll(
 			limit: $limit,
-			offset: $offset
+			offset: $this->pageOffset(params: $params, limit: $limit)
 		);
 
 		// Serialize mappings to arrays.
@@ -168,6 +151,42 @@ class MappingsController extends Controller {
 
 		return new JSONResponse(data: ['results' => $mappingsArr]);
 	}//end index()
+
+	/**
+	 * A paging parameter as an integer, or null when absent.
+	 *
+	 * @param array<string, mixed> $params The request parameters
+	 * @param string               $key    The parameter name
+	 *
+	 * @return int|null The value
+	 */
+	private function intParam(array $params, string $key): ?int {
+		if (isset($params[$key]) === true) {
+			return (int)$params[$key];
+		}
+
+		return null;
+	}//end intParam()
+
+	/**
+	 * The offset to list from: `_page` converted to an offset when both it and the limit are given, else `_offset`.
+	 *
+	 * @param array<string, mixed> $params The request parameters
+	 * @param int|null             $limit  The requested limit
+	 *
+	 * @return int|null The offset
+	 */
+	private function pageOffset(array $params, ?int $limit): ?int {
+		$offset = $this->intParam(params: $params, key: '_offset');
+		$page = $this->intParam(params: $params, key: '_page');
+
+		// Convert page to offset if provided.
+		if ($page !== null && $limit !== null) {
+			$offset = ($page - 1) * $limit;
+		}
+
+		return $offset;
+	}//end pageOffset()
 
 	/**
 	 * Retrieves a single mapping by ID
@@ -189,7 +208,7 @@ class MappingsController extends Controller {
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Mapping read failed');
 		}
 	}//end show()
 
@@ -200,22 +219,12 @@ class MappingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created mapping
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	public function create(): JSONResponse {
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
+		$data = $this->withoutInternalParams(data: $this->request->getParams());
 
 		// Remove ID if present to ensure a new record is created.
 		if (isset($data['id']) === true) {
@@ -228,19 +237,42 @@ class MappingsController extends Controller {
 
 			return new JSONResponse(data: $mapping->jsonSerialize(), statusCode: 201);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MappingsController] Mapping creation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-				]
-			);
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->creationFailed(exception: $e);
 		}
 	}//end create()
+
+	/**
+	 * The request parameters without the internal ones (starting with '_').
+	 *
+	 * @param array<string, mixed> $data The request parameters
+	 *
+	 * @return array<string, mixed> The mapping fields
+	 */
+	private function withoutInternalParams(array $data): array {
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with($key, '_') === true) {
+				unset($data[$key]);
+			}
+		}
+
+		return $data;
+	}//end withoutInternalParams()
+
+	/**
+	 * Log a failed creation and answer it.
+	 *
+	 * A typed failure keeps its status and message; anything else answers a
+	 * generic 500 and the message goes to the server log only.
+	 *
+	 * @param Exception $exception Why the creation failed
+	 *
+	 * @return JSONResponse The translated error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	private function creationFailed(Exception $exception): JSONResponse {
+		return $this->handleApiException(e: $exception, context: 'Mapping creation failed');
+	}//end creationFailed()
 
 	/**
 	 * Updates an existing mapping
@@ -251,22 +283,12 @@ class MappingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated mapping
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	public function update(int $id): JSONResponse {
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
+		$data = $this->withoutInternalParams(data: $this->request->getParams());
 
 		// Remove immutable fields.
 		unset($data['id']);
@@ -281,20 +303,26 @@ class MappingsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MappingsController] Mapping update failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'mapping_id' => $id,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-				]
-			);
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->updateFailed(id: $id, exception: $e);
 		}//end try
 	}//end update()
+
+	/**
+	 * Log a failed update and answer it.
+	 *
+	 * A typed failure keeps its status and message; anything else answers a
+	 * generic 500 and the message goes to the server log only.
+	 *
+	 * @param int       $id        The mapping
+	 * @param Exception $exception Why the update failed
+	 *
+	 * @return JSONResponse The translated error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	private function updateFailed(int $id, Exception $exception): JSONResponse {
+		return $this->handleApiException(e: $exception, context: 'Mapping update failed (mapping ' . $id . ')');
+	}//end updateFailed()
 
 	/**
 	 * Deletes a mapping
@@ -313,7 +341,6 @@ class MappingsController extends Controller {
 	 * @return JSONResponse JSON response containing patched mapping.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
@@ -328,8 +355,6 @@ class MappingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Empty JSON response on success
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
@@ -343,7 +368,7 @@ class MappingsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Mapping not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Mapping deletion failed');
 		}
 	}//end destroy()
 
@@ -355,7 +380,6 @@ class MappingsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt No per-object resource: stateless evaluation of a caller-supplied transient mapping over caller-supplied input;
 	 *   nothing is loaded by id.
 	 *
@@ -377,29 +401,34 @@ class MappingsController extends Controller {
 			);
 		}
 
-		// Get input object and mapping configuration.
-		$inputObject = $data['inputObject'];
-		$mappingConfig = $data['mapping'];
-
 		// Create a new Mapping object and hydrate it with the provided mapping.
 		$mappingObject = new Mapping();
-		$mappingObject->hydrate(object: $mappingConfig);
+		$mappingObject->hydrate(object: $data['mapping']);
 
+		return $this->mappingTrial(mapping: $mappingObject, input: $data['inputObject']);
+	}//end test()
+
+	/**
+	 * Run a mapping on an input object and answer the result.
+	 *
+	 * @param Mapping $mapping The hydrated, unsaved mapping
+	 * @param mixed   $input   The input object as sent
+	 *
+	 * @return JSONResponse The result object, or a 400 naming why the mapping failed
+	 */
+	private function mappingTrial(Mapping $mapping, mixed $input): JSONResponse {
 		try {
-			// Perform the mapping operation.
 			$resultObject = $this->mappingService->executeMapping(
-				mapping: $mappingObject,
-				input: $inputObject
-			);
-
-			// Return the result.
-			return new JSONResponse(
-				data: [
-					'resultObject' => $resultObject,
-					'success' => true,
-				]
+				mapping: $mapping,
+				input: $input
 			);
 		} catch (Exception $e) {
+			// The author sees why the trial failed; the log keeps the class for support.
+			$this->logger->debug(
+				message: '[MappingsController] Mapping trial failed',
+				context: ['exception' => $e::class]
+			);
+
 			// If mapping fails, return an error response.
 			return new JSONResponse(
 				data: [
@@ -408,6 +437,13 @@ class MappingsController extends Controller {
 				],
 				statusCode: 400
 			);
-		}//end try
-	}//end test()
+		}
+
+		return new JSONResponse(
+			data: [
+				'resultObject' => $resultObject,
+				'success' => true,
+			]
+		);
+	}//end mappingTrial()
 }//end class

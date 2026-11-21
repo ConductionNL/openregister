@@ -43,6 +43,13 @@ use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\TalkLink
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFieldRules
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom
+ * @uses \OCA\OpenRegister\Service\ExampleSet\HeldTalkCall
  */
 class ExampleSetTalkConversationsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-talk-conversations-golden.json';

@@ -37,16 +37,17 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityAuditCounts;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityHydrator;
+use OCA\OpenRegister\Controller\Support\ProcessingActivityViewer;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
 use OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -111,7 +112,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		IRequest $request,
 		VerwerkingsactiviteitenControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->visibility = new ProcessingActivityVisibility(organisationService: $services->organisationService);
 		$this->auditCounts = new ProcessingActivityAuditCounts(db: $services->db);
@@ -152,7 +153,10 @@ class VerwerkingsactiviteitenController extends Controller {
 		// Enforce tenant scoping in-controller: the mapper filter accepts
 		// a single org while a user may belong to several, and a
 		// caller-supplied `organisation` must never widen visibility.
-		$visible = $this->visibility->filter(activities: $rows, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$visible = $this->visibility->visibleTo(
+			activities: $rows,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$results = array_map(static fn (Verwerkingsactiviteit $activity): array => $activity->jsonSerialize(), $visible);
 
@@ -201,8 +205,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @return JSONResponse The persisted activity (201) or a 422 envelope.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -226,8 +228,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @param string $id Identifier (id|uuid|code).
 	 *
 	 * @return JSONResponse The updated activity, 404, 403, or 422.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -256,8 +256,6 @@ class VerwerkingsactiviteitenController extends Controller {
 	 * @param string $id Identifier (id|uuid|code).
 	 *
 	 * @return JSONResponse 204 on success, 404, or 403.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -320,7 +318,10 @@ class VerwerkingsactiviteitenController extends Controller {
 		}
 
 		$all = $this->services->vrwMapper->findAll();
-		$activities = $this->visibility->filter(activities: $all, accessibleOrgs: $scope['orgs'], isAdmin: $scope['admin']);
+		$activities = $this->visibility->visibleTo(
+			activities: $all,
+			viewer: new ProcessingActivityViewer(isAdmin: $scope['admin'], accessibleOrgs: $scope['orgs'])
+		);
 
 		$payload = $this->withAuditCounts(activities: $activities);
 

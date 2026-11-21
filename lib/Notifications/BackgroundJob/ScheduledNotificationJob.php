@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\DedupeSighting;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -51,6 +52,8 @@ use OCP\ICacheFactory;
  * Scheduled notification background job.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class ScheduledNotificationJob extends TimedJob {
 
@@ -586,6 +589,9 @@ final class ScheduledNotificationJob extends TimedJob {
 	/**
 	 * The filter fields that use a time-window operator (`withinNext`, `olderThan`).
 	 *
+	 * The operator set is `ScheduledFilterGrammar::DURATION_OPERATORS`, so the
+	 * grammar stays enumerated in one place.
+	 *
 	 * @param array<string, mixed> $trigger Scheduled trigger
 	 *
 	 * @return string[]
@@ -597,7 +603,7 @@ final class ScheduledNotificationJob extends TimedJob {
 				continue;
 			}
 
-			if (in_array((string)($spec['operator'] ?? ''), ['withinNext', 'olderThan'], true) === true) {
+			if (in_array((string)($spec['operator'] ?? ''), ScheduledFilterGrammar::DURATION_OPERATORS, true) === true) {
 				$fields[] = $field;
 			}
 		}
@@ -633,6 +639,7 @@ final class ScheduledNotificationJob extends TimedJob {
 	 */
 	private function computeFingerprint(array $objectData, array $watchedFields): string {
 		if ($watchedFields === []) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			return sha1('constant');
 		}
 
@@ -647,6 +654,7 @@ final class ScheduledNotificationJob extends TimedJob {
 			$encoded = var_export($payload, true);
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1($encoded);
 	}//end computeFingerprint()
 }//end class
