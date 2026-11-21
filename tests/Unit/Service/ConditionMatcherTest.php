@@ -344,4 +344,46 @@ class ConditionMatcherTest extends TestCase {
 		$this->assertTrue(condition: $this->matcher->objectMatchesConditions(object: ['_organisation' => 'org-a'], match: ['_organisation' => 'org-a']));
 		$this->assertFalse(condition: $this->matcher->objectMatchesConditions(object: ['_organisation' => 'org-a'], match: ['_organisation' => 'org-b']));
 	}//end testAFlatRowStillAnswersMetadata()
+
+	/**
+	 * Without a group manager `$user.groups` resolves to no groups and says why.
+	 *
+	 * @return void
+	 */
+	public function testUserGroupsWithoutAGroupManagerResolvesToNone(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->logger->expects($this->once())->method('warning')->with(
+			'[ConditionMatcher] $user.groups requested but no IGroupManager available — returning empty array',
+			$this->anything()
+		);
+
+		$this->assertSame([], $this->matcher->resolveDynamicValue('$user.groups'));
+	}//end testUserGroupsWithoutAGroupManagerResolvesToNone()
+
+	/**
+	 * A group lookup that throws resolves to no groups and logs the error.
+	 *
+	 * @return void
+	 */
+	public function testUserGroupsLookupFailureResolvesToNone(): void {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$groupManager->expects($this->once())->method('getUserGroupIds')->with($user)
+			->willThrowException(new \RuntimeException('ldap down'));
+		$this->logger->expects($this->once())->method('warning')->with(
+			'[ConditionMatcher] Failed to resolve $user.groups',
+			$this->callback(static fn (array $context): bool => $context['error'] === 'ldap down')
+		);
+
+		$matcher = new ConditionMatcher(
+			new ConditionUserResolvers($this->userSession, $groupManager),
+			$this->container,
+			$this->operatorEvaluator,
+			$this->logger
+		);
+
+		$this->assertSame([], $matcher->resolveDynamicValue('$user.groups'));
+	}//end testUserGroupsLookupFailureResolvesToNone()
 }

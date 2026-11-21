@@ -34,6 +34,13 @@ final class MagicTableIndexRun {
 	public bool $isPostgres = false;
 
 	/**
+	 * Whether the standard indexes are added in one statement: for a table created just now on MariaDB.
+	 *
+	 * @var boolean
+	 */
+	public bool $indexesAtOnce = false;
+
+	/**
 	 * The sanitized name of the property column being indexed.
 	 *
 	 * @var string
@@ -74,6 +81,13 @@ final class MagicTableIndexRun {
 	 * @var array<int, string>
 	 */
 	public array $sortIndexes = [];
+
+	/**
+	 * The identity index the pass made, if any (modelling-composite-identity).
+	 *
+	 * @var string|null
+	 */
+	public ?string $identityIndex = null;
 
 	/**
 	 * Constructor.

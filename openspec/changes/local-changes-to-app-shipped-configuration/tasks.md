@@ -36,10 +36,17 @@
       returns the divergence without inventing a `null` that reads as
       "nobody". Naming a schema edit on the trail is its own change and it is
       the same gap `settings-change-audit` closed for settings.
-- [ ] 2.3 Beside the explainer: the baseline is already a value the
+- [x] 2.3 Beside the explainer: the baseline is already a value the
       explainer can address (that is why it lives in its store), but joining
       it into `ConfigurationExplainer::explain()` is a change to that service
       and its controller.
+      > second pass: `GET /api/configuration/effective?key=schema.shippedBaseline&subject=schema:<slug>`
+      > now carries `divergence`: the app, version and moment of the baseline and
+      > every part the instance changed (`ShippedDivergenceReport`, behind
+      > `ShippedDivergenceSourceInterface` so the explainer does not depend on
+      > ShippedBaseline). Only the parts the baseline holds are compared. The
+      > actor and moment per part stay out until 2.2. An instance-wide and per-app
+      > listing is not built.
 
 ## 3. The guarded update
 

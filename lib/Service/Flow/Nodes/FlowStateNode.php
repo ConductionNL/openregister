@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
@@ -62,7 +63,7 @@ use OCP\IURLGenerator;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowNodeConfigForm {
 
 	/**
 	 * Read one key into the item.
@@ -207,6 +208,87 @@ class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInt
 		return self::CONFIG_KEYS;
 
 	}//end configKeys()
+
+	/**
+	 * The scalar keys of a flow-state step, across its five operations.
+	 *
+	 * `default` and `value` take any JSON value and `record` is a list of field
+	 * names; a text field would turn the first two into strings and cannot hold
+	 * the third, so all three stay in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'operation',
+				'label' => $this->l10n->t('Operation'),
+				'type' => 'text',
+				'help' => $this->l10n->t('One of: get, set, forget, claim, release. Which other fields apply depends on it.'),
+				'required' => true,
+			],
+			[
+				'key' => 'key',
+				'label' => $this->l10n->t('State key'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The name the value is kept under. Needed for get, set and forget.'),
+			],
+			[
+				'key' => 'as',
+				'label' => $this->l10n->t('Read into field'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'get only: the item field the value lands in. Defaults to the state key. The value used when the key '
+						. 'is unset ("default") is edited in the JSON pane.'
+				),
+			],
+			[
+				'key' => 'from',
+				'label' => $this->l10n->t('Store the item field'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'set only: the item field whose value is stored. Leave empty to store the fixed "value", which is '
+						. 'edited in the JSON pane.'
+				),
+			],
+			[
+				'key' => 'slots',
+				'label' => $this->l10n->t('Slot table'),
+				'type' => 'text',
+				'help' => $this->l10n->t('claim and release: the state key of the table of slots.'),
+			],
+			[
+				'key' => 'capacity',
+				'label' => $this->l10n->t('Capacity'),
+				'type' => 'number',
+				'help' => $this->l10n->t('claim only: how many slots the table has. At least one.'),
+			],
+			[
+				'key' => 'leaseSeconds',
+				'label' => $this->l10n->t('Lease in seconds'),
+				'type' => 'number',
+				'help' => $this->l10n->t('claim only: after how long a held slot counts as free again. Zero or empty keeps it until it is released.'),
+			],
+			[
+				'key' => 'holder',
+				'label' => $this->l10n->t('Holder field'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'claim and release: the item field that names who holds the slot. Defaults to "holder". Extra fields '
+						. 'to keep on the slot ("record") are edited in the JSON pane.'
+				),
+			],
+			[
+				'key' => 'slot',
+				'label' => $this->l10n->t('Slot field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('release only: the item field that names the slot to give back. Defaults to "slot".'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Validate the authored configuration.

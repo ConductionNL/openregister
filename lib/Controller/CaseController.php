@@ -39,7 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ActionParameters;
 use OCA\OpenRegister\Controller\Support\CaseControllerServices;
 use OCA\OpenRegister\Controller\Support\CasePlanRequest;
@@ -50,6 +49,7 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseCompletion;
@@ -124,7 +124,7 @@ class CaseController extends Controller {
 		CaseControllerServices $services,
 		private readonly ?LoggerInterface $logger = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->plans = $services->plans;
 		$this->zaaktypes = $services->zaaktypes;
 		$this->authorization = $services->authorization;

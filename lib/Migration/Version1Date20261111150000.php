@@ -32,14 +32,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the expiry column to the federated shares table.
  *
  * @spec openspec/specs/federation-scope-enforcement/spec.md
  */
-class Version1Date20261111150000 extends SimpleMigrationStep {
+class Version1Date20261111150000 extends TargetedMigrationStep {
 	private const TABLE = 'openregister_federated_shares';
 
 	/**
@@ -54,7 +53,7 @@ class Version1Date20261111150000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -67,5 +66,5 @@ class Version1Date20261111150000 extends SimpleMigrationStep {
 		$schema->getTable(self::TABLE)->addColumn('expires_at', Types::DATETIME, ['notnull' => false, 'default' => null]);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

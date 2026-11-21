@@ -3,11 +3,11 @@
 ## 1. Disclosure per document (REQ-ADI-005)
 
 - [x] 1.1 Add `TextDisclosure` entity, mapper and migration (`file_id`, `service`, `host`, `at`, `bytes`) and `TextDisclosureRecorder`, called from every outbound site in `EntityRecognitionHandler` (Presidio, OpenAnonymiser external, LLM) and the Dolphin extraction client before the request is sent. Verify: `tests/Unit/Service/Anonymisation/TextDisclosureRecorderTest.php::testEveryOutboundSiteRecords` enumerates the outbound clients by reflection so a new client without a record fails; `testAFailingRecordStopsTheExternalCall`.
-- [ ] 1.2 Route `GET /api/files/{fileId}/anonymisation/disclosures` (`#[NoAdminRequired]`, file read access checked in the method). Verify: `tests/Unit/Controller/FileDisclosuresControllerTest.php` with 200 for a reader and 403 for a non-reader; Newman request in `tests/newman/`; hydra gates route-auth and no-admin-idor pass.
+- [x] 1.2 Route `GET /api/files/{fileId}/anonymisation/disclosures` (`#[NoAdminRequired]`, file read access checked in the method). Verify: `tests/Unit/Controller/FileDisclosuresControllerTest.php` with 200 for a reader and 403 for a non-reader; Newman request in `tests/newman/`; hydra gates route-auth and no-admin-idor pass.
 
 Build note (1.1): the only outbound call that carries text today is `EntityRecognitionHandler::postAnalyzeRequest` (Presidio, external OpenAnonymiser). LLM detection falls back to regex and no Dolphin client exists in `lib/`, so neither sends text yet; the reflection test fails the moment either opens an HTTP client without recording.
 
-Build note (1.2): route, controller and `FileDisclosuresControllerTest` are done; the Newman request (a live check) is not added yet, so the task stays open.
+Build note (1.2): route, controller and `FileDisclosuresControllerTest` are done. The Newman requests are in `tests/newman/openregister-anonymisation-disclosures.postman_collection.json` (reader 200, non-reader 403, anonymous 401, and the admin pipeline report with a non-admin 403), registered in `tests/newman/run-all.sh`; they have not been run against a live instance yet.
 
 ## 2. Pipeline report (REQ-ADI-006)
 
@@ -17,7 +17,7 @@ Build note (1.2): route, controller and `FileDisclosuresControllerTest` are done
 
 Build note (2.1): the PDF text replacer, the PDF metadata sanitiser and the DOCX and ODT sanitisers have no setting that turns them off, so they report `always-on`; the anonymiser reports `on`/`off` by `entityRecognitionEnabled`.
 
-Build note (2.3): open. Every new UI string must be present in all 37 locales before `test:l10n:parity` passes, so the list on the file configuration page and its e2e spec are a separate step.
+Build note (2.3): the list is on the file configuration page (`AnonymisationPipelineList.vue`, an "Anonymisation pipeline" card read again after every settings save), with its strings in all 37 locales and `AnonymisationPipelineList.spec.js`. The e2e spec is a browser check and is not written yet, so the task stays open.
 
 ## V. Verification and done
 

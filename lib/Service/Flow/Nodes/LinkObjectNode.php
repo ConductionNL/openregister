@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
@@ -66,7 +67,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The step type.
@@ -152,6 +155,60 @@ class LinkObjectNode extends ObjectNodeBase implements IFlowNode, LinkObjectNode
 	public function configKeys(): array {
 		return ['register', 'schema', 'data', 'relation', 'handoff'];
 	}//end configKeys()
+
+	/**
+	 * The fields of a link-object step.
+	 *
+	 * `data` is keyed by the target schema's own property names, a shape the
+	 * field vocabulary cannot describe: it stays in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'register',
+				'label' => $this->l10n->t('Register'),
+				'type' => 'select',
+				'help' => $this->l10n->t(
+					'Create mode: the register the new object is created in. Name a register and schema, or a handoff, '
+						. 'not both.'
+				),
+				'optionsFrom' => '/apps/openregister/api/registers',
+			],
+			[
+				'key' => 'schema',
+				'label' => $this->l10n->t('Schema'),
+				'type' => 'select',
+				'help' => $this->l10n->t(
+					'Create mode: the schema of the new object. Its properties are edited in the JSON pane as "data"; '
+						. 'placeholders such as {{uuid}} are filled in from each item.'
+				),
+				'optionsFrom' => '/apps/openregister/api/schemas',
+			],
+			[
+				'key' => 'relation',
+				'label' => $this->l10n->t('Link through property'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Create mode: the property of the item\'s object that receives the new object\'s uuid. Leave empty to '
+						. 'create without linking.'
+				),
+			],
+			[
+				'key' => 'handoff',
+				'label' => $this->l10n->t('Handoff'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Handoff mode: the key of a handoff the item\'s schema declares. A handoff whose app is not installed '
+						. 'fails the step.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Refuse a step that names neither a target nor a handoff, or both.

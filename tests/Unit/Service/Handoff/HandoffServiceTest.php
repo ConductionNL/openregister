@@ -1016,6 +1016,122 @@ class HandoffServiceTest extends TestCase {
 	}//end testProviderWithIncompleteBindingIsUnavailable()
 
 	/**
+	 * A drain narrowed to one kind reads only that kind's parked entries.
+	 *
+	 * @return void
+	 */
+	public function testDrainForOneKindReadsOnlyThatKind(): void {
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->queueMapper->expects($this->never())->method('findParked');
+		$this->queueMapper->expects($this->once())->method('findParkedByKind')
+			->with(self::CASE_URI)->willReturn([$this->queueEntry(), $this->queueEntry()]);
+
+		$summary = $this->service->drainParked(kindUri: self::CASE_URI);
+
+		$this->assertSame(['drained' => 0, 'failed' => 0, 'skipped' => 2], $summary);
+
+	}//end testDrainForOneKindReadsOnlyThatKind()
+
+	/**
+	 * An entry whose requesting user was deleted fails as a permission failure
+	 * without running the handoff or switching the session user.
+	 *
+	 * @return void
+	 */
+	public function testDrainOfADeletedRequesterFailsWithoutExecuting(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+
+		$entry = $this->queueEntry();
+		$this->queueMapper->method('findParked')->willReturn([$entry]);
+		$this->userManager->method('get')->with('alice')->willReturn(null);
+
+		$this->userSession->expects($this->never())->method('setUser');
+		$this->objectService->expects($this->never())->method('find');
+		$this->notificationManager->expects($this->never())->method('notify');
+		$this->queueMapper->expects($this->once())->method('update')->with($entry)->willReturnArgument(0);
+
+		$summary = $this->service->drainParked();
+
+		$this->assertSame(['drained' => 0, 'failed' => 1, 'skipped' => 0], $summary);
+		$this->assertSame(HandoffQueueEntry::STATUS_FAILED_PERMISSION, $entry->getStatus());
+		$this->assertSame('Requesting user no longer exists.', $entry->getLastError());
+		$this->assertSame(1, $entry->getAttempt());
+		$this->assertNotNull($entry->getLastAttemptAt());
+
+	}//end testDrainOfADeletedRequesterFailsWithoutExecuting()
+
+	/**
+	 * Any other failure while draining marks the entry failed-validation with
+	 * the error, restores the previous session user, and a notification that
+	 * cannot be sent does not break the drain.
+	 *
+	 * @return void
+	 */
+	public function testDrainOfAFailingHandoffIsAValidationFailure(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+		$this->objectService->method('find')->willThrowException(new \RuntimeException('source store offline'));
+
+		$entry = $this->queueEntry();
+		$this->queueMapper->method('findParked')->willReturn([$entry]);
+
+		$requester = $this->createMock(IUser::class);
+		$requester->method('getUID')->willReturn('alice');
+		$this->userManager->method('get')->with('alice')->willReturn($requester);
+
+		$previous = $this->userSession->getUser();
+		$sessionUsers = [];
+		$this->userSession->method('setUser')->willReturnCallback(
+			static function (?IUser $user) use (&$sessionUsers): void {
+				$sessionUsers[] = $user;
+			}
+		);
+
+		$this->queueMapper->expects($this->once())->method('update')->with($entry)->willReturnArgument(0);
+		$this->notificationManager->expects($this->once())->method('createNotification')
+			->willThrowException(new \RuntimeException('notifications disabled'));
+
+		$summary = $this->service->drainParked();
+
+		$this->assertSame(['drained' => 0, 'failed' => 1, 'skipped' => 0], $summary);
+		$this->assertSame(HandoffQueueEntry::STATUS_FAILED_VALIDATION, $entry->getStatus());
+		$this->assertNotNull($entry->getLastError());
+		$this->assertNull($entry->getExecutedAt());
+		$this->assertSame([$requester, $previous], $sessionUsers);
+
+	}//end testDrainOfAFailingHandoffIsAValidationFailure()
+
+	/**
+	 * Only array entries with a string id count as declared handoffs; a
+	 * non-array annotation declares none.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredHandoffsKeepsOnlyEntriesWithAStringId(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-handoff' => 'request-to-case']);
+		$this->assertSame([], $this->service->declaredHandoffs($schema));
+
+		$schema->setConfiguration([]);
+		$this->assertSame([], $this->service->declaredHandoffs($schema));
+
+		$kept = ['id' => 'request-to-case', 'targetKind' => self::CASE_URI];
+		$schema->setConfiguration(
+			[
+				'x-openregister-handoff' => [
+					$kept,
+					['id' => 7],
+					['targetKind' => self::CASE_URI],
+					'not-an-entry',
+				],
+			]
+		);
+		$this->assertSame([$kept], $this->service->declaredHandoffs($schema));
+
+	}//end testDeclaredHandoffsKeepsOnlyEntriesWithAStringId()
+
+	/**
 	 * The availability state of the canonical handoff when the only schema
 	 * implementing the kind carries the given binding.
 	 *

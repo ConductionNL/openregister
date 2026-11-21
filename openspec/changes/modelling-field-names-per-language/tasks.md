@@ -8,7 +8,8 @@
 ## 2. Read and edit
 
 - [x] 2.1 Language projection on schema read with `_lang` and `Accept-Language`, base-language fallback, stored schema without either. Verify: `SchemasControllerTest` for `nl`, `nl-BE`, `de` (falls back to `title`) and no language.
-- [ ] 2.2 Per-language name inputs in the schema edit modal's property form. Verify: component test adds and clears a Dutch name.
+- [x] 2.2 Per-language name inputs in the schema edit modal's property form. Verify: component test adds and clears a Dutch name.
+  - Done: `EditSchemaProperty.vue` has a "Names per language" fieldset of language-code and name rows, with add and remove. Saving writes the rows into `titles`, trimmed and without incomplete rows; when no row is left, `titles` is removed. Stored names load back into rows. The server still checks the language keys (task 1.1). Tests: `EditSchemaProperty.logic.spec.js`, "names per language" (4). The three new strings are in all 37 locales, one commit per language.
 
 ## 3. Proof and docs
 
