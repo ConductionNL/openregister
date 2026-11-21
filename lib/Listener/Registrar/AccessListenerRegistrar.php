@@ -45,6 +45,14 @@ final class AccessListenerRegistrar {
 		// sign-in: a Core listener, registered through Core's slot at this position.
 		\OCA\OpenRegister\Listener\CoreListenerRegistrar::identityClaims(context: $context);
 
+		// A service account signs in with its tokens only: any other sign-in
+		// is cancelled (REQ-SAT-004). PostLoginEvent is the one event every
+		// sign-in path dispatches, with whether a token was used.
+		$context->registerEventListener(
+			\OCP\User\Events\PostLoginEvent::class,
+			\OCA\OpenRegister\Listener\ServiceAccountLoginListener::class
+		);
+
 		// A removed user's object shares end with them.
 		$context->registerEventListener(
 			\OCP\User\Events\BeforeUserDeletedEvent::class,

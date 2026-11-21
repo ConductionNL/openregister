@@ -4,8 +4,12 @@ Second part of `scoped-api-tokens`. Build it after that change is merged: W.5 is
 
 ## 1. Service account (REQ-SAT-004, moved from scoped-api-tokens)
 
-- [ ] C40.3 A service account principal owned by a team, holding grants and tokens, with no interactive sign-in (D-C40-2).
-- [ ] W.4 Service accounts (REQ-SAT-004 and C40.3): `lib/Service/Authorization/MachineCredentialService.php` creating a Nextcloud user flagged as service account with owner group, contact and purpose; an interactive login refusal through a `BeforeUserLoggedInEvent` listener (or the login credential hook) for flagged users. Verify: `tests/Unit/Service/Authorization/MachineCredentialServiceTest.php::testProvisioningRequiresOwnerContactAndPurpose`, `testDisablingTheCreatorKeepsTheServiceAccountWorking`; `tests/Unit/Listener/ServiceAccountLoginTest.php::testInteractiveLoginIsRefused` with the real event class.
+- [x] C40.3 A service account principal owned by a team, holding grants and tokens, with no interactive sign-in (D-C40-2).
+- [x] W.4 Service accounts (REQ-SAT-004 and C40.3): `lib/Service/Authorization/MachineCredentialService.php` creating a Nextcloud user flagged as service account with owner group, contact and purpose; an interactive login refusal through a `BeforeUserLoggedInEvent` listener (or the login credential hook) for flagged users. Verify: `tests/Unit/Service/Authorization/MachineCredentialServiceTest.php::testProvisioningRequiresOwnerContactAndPurpose`, `testDisablingTheCreatorKeepsTheServiceAccountWorking`; `tests/Unit/Listener/ServiceAccountLoginTest.php::testInteractiveLoginIsRefused` with the real event class.
+
+  - Built: `MachineCredentialService` provisions a Nextcloud user `svc-<name>` with a random password nobody is given, marked in OpenRegister's user config with owner group, contact name and e-mail, purpose and creator. Refused before anything is created without a name, an existing owner group, a contact, a valid e-mail or a purpose, or when the user id is taken. The creator is a record only: nothing follows it, so a leaver does not break the account.
+  - 🔴 The sign-in refusal listens to `PostLoginEvent`, not `BeforeUserLoggedInEvent`: every sign-in ends in `Session::completeLogin()`, which dispatches `PostLoginEvent` with `isTokenLogin` and then cancels the sign-in ("Login canceled by app") when a listener logged the session out. The login form's chain never dispatches `BeforeUserLoggedInEvent` (read in nextcloud/server stable32). Token sign-ins pass; every other kind is refused. Test: `tests/Unit/Listener/ServiceAccountLoginTest.php::testInteractiveLoginIsRefused` with the real `PostLoginEvent`.
+  - Not yet: no route provisions an account. That is W.5's administrator endpoint, which also needs `scoped-api-tokens` 1.1c (a grant store for a personal token) to issue the account's token.
 
 ## 2. Acting human (REQ-SAT-006, row 12.20)
 
