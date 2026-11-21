@@ -60,17 +60,32 @@ final class MagicTableIndexer {
 	private const DROPPABLE_SUFFIXES = ['sort_idx', 'facet_idx', 'rel_idx', 'lower_idx'];
 
 	/**
+	 * The suffix of a trigram index on the folded text of a column.
+	 */
+	public const FOLDED_TRIGRAM_SUFFIX = 'foldgin_idx';
+
+	/**
+	 * Says whether `openregister_fold()` exists; built on first use.
+	 *
+	 * @var MagicUnaccentProbe|null
+	 */
+	private ?MagicUnaccentProbe $unaccent = null;
+
+	/**
 	 * Build the indexer.
 	 *
 	 * @param IDBConnection    $db     The connection.
 	 * @param LoggerInterface  $logger Receives the outcome.
 	 * @param MagicPgTrgmProbe $trgm   Says whether trigram indexes can be made.
+	 * @param MagicUnaccentProbe|null $unaccent Says whether the folded expression exists; asked of the connection when null.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicPgTrgmProbe $trgm,
+		?MagicUnaccentProbe $unaccent = null,
 	) {
+		$this->unaccent = $unaccent;
 	}//end __construct()
 
 	/**
@@ -88,6 +103,7 @@ final class MagicTableIndexer {
 			$this->createBaseIndexes(run: $run);
 			$this->createPlatformIndexes(run: $run);
 			$this->createSchemaIndexes(run: $run, schema: $schema);
+			$run->identityIndex = (new MagicTableIdentityIndex(db: $this->db, logger: $this->logger))->create(run: $run, schema: $schema);
 			$this->logCreated(run: $run);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -105,16 +121,18 @@ final class MagicTableIndexer {
 	 * @return void
 	 */
 	private function logCreated(MagicTableIndexRun $run): void {
-		$this->logger->debug(
-			message: '[MagicMapper] Created table indexes',
-			context: [
-				'tableName' => $run->tableName,
-				'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
-				'relationIndexes' => $run->relationIndexes,
-				'facetIndexes' => $run->facetIndexes,
-				'searchableIndexes' => $run->searchableIndexes,
-			]
-		);
+		$context = [
+			'tableName' => $run->tableName,
+			'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
+			'relationIndexes' => $run->relationIndexes,
+			'facetIndexes' => $run->facetIndexes,
+			'searchableIndexes' => $run->searchableIndexes,
+		];
+		if ($run->identityIndex !== null) {
+			$context['identityIndex'] = $run->identityIndex;
+		}
+
+		$this->logger->debug(message: '[MagicMapper] Created table indexes', context: $context);
 	}//end logCreated()
 
 	/**
@@ -129,12 +147,29 @@ final class MagicTableIndexer {
 		$table = $run->tableName;
 		$full = $run->fullTableName;
 
-		$this->db->executeStatement("CREATE UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx ON {$full} (_uuid)");
-		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_register_schema_idx ON {$full} (_register, _schema)");
-
 		// Organisation for multitenancy, owner for RBAC, then the frequently filtered fields.
+		$indexes = ["UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx" => '_uuid', "INDEX IF NOT EXISTS {$table}_register_schema_idx" => '_register, _schema'];
 		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
-			$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_{$field}_idx ON {$full} (_{$field})");
+			$indexes["INDEX IF NOT EXISTS {$table}_{$field}_idx"] = "_{$field}";
+		}
+
+		// Each index statement is a DDL transaction of its own on MariaDB: ten of
+		// them took 0.4 s a table, 206 of the 270 s it took to install an app with
+		// 538 schemas, where one statement adding all ten takes 0.04 s (#9945).
+		// Only for a table created just now: on an older one a missing column
+		// would refuse the whole statement instead of the one index.
+		if ($run->indexesAtOnce === true) {
+			$additions = [];
+			foreach ($indexes as $index => $columns) {
+				$additions[] = "ADD {$index} ({$columns})";
+			}
+
+			$this->db->executeStatement("ALTER TABLE {$full} " . implode(', ', $additions));
+			return;
+		}
+
+		foreach ($indexes as $index => $columns) {
+			$this->db->executeStatement("CREATE {$index} ON {$full} ({$columns})");
 		}
 	}//end createBaseIndexes()
 
@@ -205,7 +240,67 @@ final class MagicTableIndexer {
 		if ($this->trgm->available() === true) {
 			$this->createNameTrigramIndex(run: $run);
 		}
+
+		if ($this->foldedIndexesPossible() === true) {
+			$this->createFoldedTrigramIndex(
+				run: $run,
+				name: "{$table}_name_" . self::FOLDED_TRIGRAM_SUFFIX,
+				quotedColumn: '_name'
+			);
+		}
 	}//end createPostgresIndexes()
+
+	/**
+	 * Whether trigram indexes on folded text can be made: PostgreSQL with
+	 * pg_trgm and the `openregister_fold()` wrapper. A failed check counts as no.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	private function foldedIndexesPossible(): bool {
+		if ($this->trgm->available() === false) {
+			return false;
+		}
+
+		try {
+			$this->unaccent ??= new MagicUnaccentProbe(db: $this->db, logger: $this->logger);
+			return $this->unaccent->available();
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end foldedIndexesPossible()
+
+	/**
+	 * Create a pg_trgm GIN index on the folded text of a column.
+	 *
+	 * The expression is the one a folded search compares
+	 * ({@see SearchFolding::column()}), so the search keeps an index path. A
+	 * failure is logged and the pass goes on.
+	 *
+	 * @param MagicTableIndexRun $run          The index-creation pass.
+	 * @param string             $name         The index name.
+	 * @param string             $quotedColumn The quoted column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
+	 */
+	private function createFoldedTrigramIndex(MagicTableIndexRun $run, string $name, string $quotedColumn): void {
+		$expression = (new SearchFolding(platform: SearchFolding::PLATFORM_POSTGRES, folded: true))
+			->column(quotedColumn: $quotedColumn, nullSafe: false);
+
+		try {
+			$this->db->executeStatement(
+				"CREATE INDEX IF NOT EXISTS {$name} ON {$run->fullTableName} USING GIN (({$expression}) gin_trgm_ops)"
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Skipped folded trigram index',
+				context: ['tableName' => $run->tableName, 'index' => $name, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createFoldedTrigramIndex()
 
 	/**
 	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
@@ -311,6 +406,17 @@ final class MagicTableIndexer {
 
 		if (($propertyConfig['searchable'] ?? false) === true && $this->trgm->available() === true) {
 			$this->createSearchableIndex(run: $run);
+		}
+
+		if (($propertyConfig['searchable'] ?? false) === true
+			&& $run->isPostgres === true
+			&& $this->foldedIndexesPossible() === true
+		) {
+			$this->createFoldedTrigramIndex(
+				run: $run,
+				name: $run->columnIndexName(suffix: self::FOLDED_TRIGRAM_SUFFIX),
+				quotedColumn: $run->quotedColumn
+			);
 		}
 
 		$this->createLowerOrderingIndex(run: $run, propertyConfig: $propertyConfig);
@@ -463,7 +569,8 @@ final class MagicTableIndexer {
 	 * `{table}_{column}_{kind}` for a column of this schema and a droppable
 	 * kind is touched; a hand-made index, a base index and an index on a
 	 * column the schema no longer has all stay. A failed drop is logged and
-	 * the pass goes on.
+	 * the pass goes on. An identity index the schema's identity no longer
+	 * asks for is dropped the same way (modelling-composite-identity).
 	 *
 	 * @param MagicTableIndexRun $run      The pass, on the table.
 	 * @param Schema             $schema   The schema whose properties ask for indexes.
@@ -476,7 +583,12 @@ final class MagicTableIndexer {
 	public function dropUnasked(MagicTableIndexRun $run, Schema $schema, array $existing): array {
 		$run->isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
 		$dropped = [];
-		foreach ($this->unasked(run: $run, schema: $schema, existing: $existing) as $name) {
+		$identity = new MagicTableIdentityIndex(db: $this->db, logger: $this->logger);
+		$names = array_merge(
+			$this->unasked(run: $run, schema: $schema, existing: $existing),
+			$identity->stale(tableName: $run->tableName, schema: $schema, existing: $existing)
+		);
+		foreach ($names as $name) {
 			$sql = "DROP INDEX {$name} ON {$run->fullTableName}";
 			if ($run->isPostgres === true) {
 				$sql = "DROP INDEX IF EXISTS {$name}";
@@ -495,6 +607,83 @@ final class MagicTableIndexer {
 
 		return $dropped;
 	}//end dropUnasked()
+
+	/**
+	 * The property flag each convention-named index kind serves, and its kind.
+	 *
+	 * @var array<string, array{kind: string, flag: string|null}>
+	 */
+	private const DESCRIBED_SUFFIXES = [
+		'rel_idx' => ['kind' => 'btree', 'flag' => 'relation'],
+		'arr_gin_idx' => ['kind' => 'gin', 'flag' => 'relation'],
+		'facet_idx' => ['kind' => 'btree', 'flag' => 'facetable'],
+		self::SORT_SUFFIX => ['kind' => 'btree', 'flag' => 'indexed'],
+		'lower_idx' => ['kind' => 'btree', 'flag' => null],
+		'trgm_idx' => ['kind' => 'trigram', 'flag' => 'searchable'],
+		self::FOLDED_TRIGRAM_SUFFIX => ['kind' => 'trigram', 'flag' => 'searchable'],
+	];
+
+	/**
+	 * Every index on the table, with the property and flag that asked for it
+	 * (modelling-property-index-switch D-4).
+	 *
+	 * A convention-named index on a column of this schema names its property,
+	 * column, kind and flag. Any other index (a base index, a hand-made one, or
+	 * one on a column the schema no longer has) is listed with kind `other`
+	 * and no property or flag, so the list shows everything the table carries.
+	 *
+	 * @param MagicTableIndexRun $run      The pass, on the table.
+	 * @param Schema             $schema   The schema whose properties ask for indexes.
+	 * @param array<int, string> $existing The index names on the table.
+	 *
+	 * @return array<int, array{name: string, property: string|null, column: string|null, kind: string, flag: string|null}> By name.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
+	 */
+	public function describe(MagicTableIndexRun $run, Schema $schema, array $existing): array {
+		$known = [];
+		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === false) {
+				continue;
+			}
+
+			$run->column = $this->sanitizeColumnName(name: (string)$propertyName);
+			foreach (self::DESCRIBED_SUFFIXES as $suffix => $described) {
+				$known[$run->columnIndexName(suffix: $suffix)] = [
+					'property' => (string)$propertyName,
+					'column' => $run->column,
+					'kind' => $described['kind'],
+					'flag' => ($described['flag'] ?? self::lowerIndexFlag(propertyConfig: $propertyConfig)),
+				];
+			}
+		}
+
+		$indexes = [];
+		foreach (array_values(array_unique($existing)) as $name) {
+			$indexes[] = ['name' => $name] + ($known[$name] ?? ['property' => null, 'column' => null, 'kind' => 'other', 'flag' => null]);
+		}
+
+		usort($indexes, static fn (array $one, array $two): int => strcmp($one['name'], $two['name']));
+
+		return $indexes;
+	}//end describe()
+
+	/**
+	 * The flag a `lower()` index serves: the first of facetable, indexed and searchable the property sets.
+	 *
+	 * @param array $propertyConfig The property definition.
+	 *
+	 * @return string|null The flag, or null when none is set any more.
+	 */
+	private static function lowerIndexFlag(array $propertyConfig): ?string {
+		foreach (['facetable', 'indexed', 'searchable'] as $flag) {
+			if (($propertyConfig[$flag] ?? false) === true) {
+				return $flag;
+			}
+		}
+
+		return null;
+	}//end lowerIndexFlag()
 
 	/**
 	 * The existing convention-named property indexes no property asks for.

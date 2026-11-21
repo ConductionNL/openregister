@@ -145,6 +145,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation
  * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
  */
 class SaveObjectCascadeScopeTest extends TestCase {
 

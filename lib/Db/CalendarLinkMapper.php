@@ -71,6 +71,59 @@ class CalendarLinkMapper extends QBMapper implements CalendarLinkMapperInterface
 	}//end findByObjectAndEvent()
 
 	/**
+	 * The link rows attached to a VEVENT, oldest first.
+	 *
+	 * Scoped to one calendar when `$calendarUri` is given, so a UID reused on
+	 * another calendar does not match (REQ-CAL-INB-002).
+	 *
+	 * @param string      $eventUid    The VEVENT UID.
+	 * @param string|null $calendarUri The calendar URI, or null for every calendar.
+	 *
+	 * @return CalendarLink[] The matching rows.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-reverse-event-to-objects-lookup-req-cal-inb-002
+	 */
+	public function findByEventUid(string $eventUid, ?string $calendarUri=null): array {
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'event_uid', value: $eventUid));
+		if ($calendarUri !== null) {
+			$qb->andWhere($qb->expr()->eq('calendar_uri', $qb->createNamedParameter($calendarUri)));
+		}
+
+		$qb->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByEventUid()
+
+	/**
+	 * The oldest link row for an object, event and calendar, or null when there is none.
+	 *
+	 * Reads the oldest row rather than requiring exactly one, so rows duplicated
+	 * before linking became idempotent still resolve (REQ-CAL-INB-003).
+	 *
+	 * @param string $objectUuid  The object UUID.
+	 * @param string $eventUid    The VEVENT UID.
+	 * @param string $calendarUri The calendar URI.
+	 *
+	 * @return CalendarLink|null The row.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
+	 */
+	public function findLink(string $objectUuid, string $eventUid, string $calendarUri): ?CalendarLink {
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$qb->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)))
+			->andWhere($qb->expr()->eq('calendar_uri', $qb->createNamedParameter($calendarUri)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(1);
+
+		$rows = $this->findEntities(query: $qb);
+		if ($rows === []) {
+			return null;
+		}
+
+		return $rows[0];
+	}//end findLink()
+
+	/**
 	 * Delete a single calendar link by object UUID + event UID.
 	 *
 	 * @param string $objectUuid The object UUID.
