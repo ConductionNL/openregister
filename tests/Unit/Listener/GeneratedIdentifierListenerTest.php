@@ -27,6 +27,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\Schemas\IdentityRewriteScope;
 use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
@@ -354,6 +355,29 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		);
 
 	}//end testAnUpdateThatChangesTheIdentifierIsRefused()
+
+	/**
+	 * The audited scheme migration may rewrite an issued identifier.
+	 *
+	 * Only inside the rewrite scope; the same change outside it is refused
+	 * by the test above.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemeMigrationMayRewriteTheIdentifier(): void {
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
+
+		$event = new ObjectUpdatingEvent(
+			$this->objectWith(body: ['identifier' => 'Z-2026-00009']),
+			$this->objectWith(body: ['identifier' => '2026-0009'])
+		);
+
+		IdentityRewriteScope::run(fn () => $this->listener->handle($event));
+
+		$this->assertFalse(condition: $event->isPropagationStopped());
+		$this->assertSame(expected: [], actual: $event->getErrors());
+
+	}//end testTheSchemeMigrationMayRewriteTheIdentifier()
 
 	/**
 	 * An update that leaves the identifier alone is allowed.
