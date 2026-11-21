@@ -291,3 +291,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: CONFLICT in lib/Service/ContractBindings.php use block; main's side of the hunk is empty, HEAD lists ExternalLink/Federation/FieldEncryption imports plus the PR's new ones.
 - Cause: main moved those bindings to area registrars and dropped their imports; the PR's import lines sit inside the same hunk.
 - Fix: take main's (empty) side and re-add only the PR's own use lines; the PR's binding rows auto-merge. php -l, phpstan, Architecture (see #10182 de9d4f8b).
+
+## Migration version shared by several open PRs, or no info.xml bump (or-fix-16)
+- Symptom: none on the PR alone; php scripts/check-migration-version-bump.php --base=origin/main fails ('adds N migration(s) but does not move the app version'), and the same lib/Migration/Version1Date<ts>.php is added by other open PRs (whichever lands second gets an add/add conflict or a duplicate class).
+- Find: fetch open PR heads and list `git diff --name-only --diff-filter=A origin/main...<head> -- lib/Migration` per head; count duplicates.
+- Fix: git mv the step and its test to an unused version (keep the order of the PR's own steps; e.g. suffix the lane number in the seconds), sed the class name in csv/tasks.md, python3 scripts/component-patterns.py, bump appinfo/info.xml <version> (dev.N+1), rerun the check (#10496, #10516, #10156).
