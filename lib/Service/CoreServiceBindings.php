@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -111,10 +112,14 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
+use OCA\OpenRegister\Service\Object\CorrectionTargets;
+use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
@@ -148,6 +153,8 @@ use OCA\OpenRegister\Service\Object\RelationAddressRewrite;
 use OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -188,6 +195,8 @@ use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface;
@@ -236,6 +245,7 @@ use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
@@ -264,8 +274,11 @@ use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReaderInterface;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
@@ -280,6 +293,8 @@ use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializerInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
@@ -340,6 +355,7 @@ final class CoreServiceBindings {
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
 		TranslationCompletenessInterface::class => TranslationStatusService::class,
+		EntityEventsInterface::class => EntityEventPublisher::class,
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
@@ -378,6 +394,7 @@ final class CoreServiceBindings {
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LoginSecurityInterface::class => SecurityService::class,
+		MdiIconSvgInterface::class => MdiIconSvg::class,
 		MasterRecomputeInterface::class => MasterRecomputeService::class,
 		// Merge relinking (mdm-merge-relinks-every-reference): the relation index finds each reference, the save path moves it.
 		ReferenceFinderInterface::class => RelationIndexReferenceFinder::class,
@@ -391,8 +408,10 @@ final class CoreServiceBindings {
 		BatchOperationStatusInterface::class => BatchOperationStatus::class,
 		CacheHandlerInterface::class => CacheHandler::class,
 		ConflictReportInterface::class => ConflictReport::class,
+		CorrectionTargetsInterface::class => CorrectionTargets::class,
 		DraftActivationInterface::class => DraftActivation::class,
 		DraftExpiryInterface::class => DraftExpiry::class,
+		DraftRemovalFrameInterface::class => DraftRemovalFrame::class,
 		FacetCacheVersionInterface::class => FacetCacheVersion::class,
 		FileWriteGuardInterface::class => FileWriteGuard::class,
 		MovedObjectLookupInterface::class => MovedObjectLookup::class,
@@ -415,6 +434,7 @@ final class CoreServiceBindings {
 		QueryHandlerInterface::class => QueryHandler::class,
 		RelationAddressRewriteInterface::class => RelationAddressRewrite::class,
 		RenderObjectInterface::class => RenderObject::class,
+		RetentionDestructionInterface::class => RetentionDestruction::class,
 		RevertHandlerInterface::class => RevertHandler::class,
 		RunLockReleaseInterface::class => RunLockRegistry::class,
 		ObjectSlugTargetInterface::class => ObjectSlugHandler::class,
@@ -445,6 +465,7 @@ final class CoreServiceBindings {
 		AdminGateInterface::class => AdminGate::class,
 		AnonymousEnvelopeInterface::class => AnonymousEnvelope::class,
 		DefinitionWriteRightsInterface::class => DefinitionWriteRights::class,
+		DenyEnforcementModeInterface::class => DenyEnforcementMode::class,
 		DenyResolverInterface::class => DenyResolver::class,
 		DerivedGrantLoginInterface::class => DerivedGrantStore::class,
 		DerivedGrantStoreInterface::class => DerivedGrantStore::class,
@@ -488,8 +509,10 @@ final class CoreServiceBindings {
 		SchemaBatchMigratorInterface::class => SchemaMigrationService::class,
 		SchemaMigrationServiceInterface::class => SchemaMigrationService::class,
 		SchemaObjectReaderInterface::class => SchemaObjectReader::class,
+		SchemaRevalidatorInterface::class => SchemaRevalidationService::class,
 		SchemaImportServiceInterface::class => SchemaImportService::class,
 		ExtendingFormDeclarationInterface::class => ExtendingFormDeclaration::class,
+		ExtendingFormValidatorInterface::class => ExtendingFormDeclaration::class,
 		FacetResultCacheClearerInterface::class => FacetResultCacheClearer::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
 		PropertyVocabularyInterface::class => PropertyVocabulary::class,
@@ -497,6 +520,7 @@ final class CoreServiceBindings {
 		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
 		SemanticRoleHandlerInterface::class => SemanticRoleHandler::class,
 		UniqueConstraintEvaluatorInterface::class => UniqueConstraintEvaluator::class,
+		ObjectSearchResultFormatterInterface::class => ObjectSearchResultFormatter::class,
 		SecurityHeadersInterface::class => SecurityService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		RegisterSerializerInterface::class => RegisterSerializer::class,
