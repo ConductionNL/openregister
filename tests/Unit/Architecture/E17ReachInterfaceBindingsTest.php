@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,7 +40,7 @@ final class E17ReachInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		PrincipalReachListerInterface::class => [PrincipalReachService::class, ContractBindings::class],
+		PrincipalReachListerInterface::class => [PrincipalReachService::class, CoreServiceBindings::class],
 	];
 
 	/**
