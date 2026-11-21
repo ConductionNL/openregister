@@ -3489,3 +3489,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T16:25:41Z or-fix-10 start; 10190 fixed bd6e1e55, 8450 commented obsolete
 2026-11-21T16:25:52Z integrator-20261111T115842-a749432d RED tree eccd5620df prs 1 front=ok: Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Db\AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce
 2026-11-21T16:26:43Z session-20261121T152239-3d391879 or-fix-2 fixed 8999, 9011
+2026-11-21T16:29:47Z session-20261121T162913-b2c062ef or-fix-11 start; 9011 already done by or-fix-2; taking 10491 10451 10531 10631 then 9131
