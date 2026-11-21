@@ -124,6 +124,62 @@ class FlowWebhookSecretsTest extends TestCase {
 		$this->assertSame($second, $secrets->find(token: str_repeat('ab', 16))['secret'], 'the old secret is no longer the one checked');
 	}//end testRotationReplacesTheSecretAndTakesTheAskOffTheDocument()
 
+	public function testATokenCopiedFromAnotherFlowIsReissuedAndTheOriginalKeepsItsTrigger(): void {
+		$secrets = $this->secrets();
+		$token = str_repeat('ab', 16);
+		$original = self::flow(config: ['runAs' => 'betalingen', 'token' => $token]);
+		$secrets->stamp(flow: $original);
+		$originalSecret = $secrets->provision(flow: $original)['hook']['secret'];
+
+		$copy = self::flow(config: ['runAs' => 'betalingen', 'token' => $token]);
+		$copy->setUuid('flow-2');
+		$secrets->stamp(flow: $copy);
+		$copyToken = $copy->getNodes()[0]['config']['token'];
+		$this->assertNotSame($token, $copyToken, 'a token held by another flow is not taken over');
+		$this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $copyToken);
+
+		$issued = $secrets->provision(flow: $copy);
+		$this->assertSame('/index.php/apps/openregister/api/flows/hooks/' . $copyToken, $issued['hook']['address']);
+		$this->assertSame(['flow' => 'flow-1', 'node' => 'hook', 'secret' => $originalSecret], $secrets->find(token: $token), 'the original trigger keeps its address and secret');
+		$this->assertSame('flow-2', $secrets->find(token: $copyToken)['flow']);
+	}//end testATokenCopiedFromAnotherFlowIsReissuedAndTheOriginalKeepsItsTrigger()
+
+	public function testATokenDuplicatedWithinOneFlowIsReissued(): void {
+		$secrets = $this->secrets();
+		$token = str_repeat('ab', 16);
+		$flow = new Flow();
+		$flow->setUuid('flow-1');
+		$flow->setNodes([
+			['id' => 'hook', 'type' => 'openregister.trigger-webhook', 'config' => ['token' => $token]],
+			['id' => 'hook-copy', 'type' => 'openregister.trigger-webhook', 'config' => ['token' => $token]],
+		]);
+
+		$secrets->stamp(flow: $flow);
+		$nodes = $flow->getNodes();
+		$this->assertSame($token, $nodes[0]['config']['token']);
+		$this->assertNotSame($token, $nodes[1]['config']['token']);
+
+		$issued = $secrets->provision(flow: $flow);
+		$this->assertSame('hook', $secrets->find(token: $token)['node']);
+		$this->assertSame('hook-copy', $secrets->find(token: $nodes[1]['config']['token'])['node']);
+		$this->assertCount(2, $issued);
+	}//end testATokenDuplicatedWithinOneFlowIsReissued()
+
+	public function testProvisionNeverOverwritesAnotherTriggersRecord(): void {
+		$secrets = $this->secrets();
+		$token = str_repeat('ab', 16);
+		$original = self::flow(config: ['token' => $token]);
+		$secrets->stamp(flow: $original);
+		$originalSecret = $secrets->provision(flow: $original)['hook']['secret'];
+
+		$foreign = self::flow(config: ['token' => $token]);
+		$foreign->setUuid('flow-2');
+
+		$this->assertSame([], $secrets->provision(flow: $foreign, rotate: ['hook']));
+		$this->assertSame($originalSecret, $secrets->find(token: $token)['secret']);
+		$this->assertSame('flow-1', $secrets->find(token: $token)['flow']);
+	}//end testProvisionNeverOverwritesAnotherTriggersRecord()
+
 	public function testATokenThatIsNotOursOrMalformedFindsNothing(): void {
 		$secrets = $this->secrets();
 

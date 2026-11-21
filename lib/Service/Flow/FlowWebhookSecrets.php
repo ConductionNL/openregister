@@ -98,6 +98,7 @@ class FlowWebhookSecrets {
 		$nodes = ($flow->getNodes() ?? []);
 		$rotate = [];
 		$changed = false;
+		$seen = [];
 		foreach ($nodes as $index => $node) {
 			if (self::isWebhookNode(node: $node) === false) {
 				continue;
@@ -109,9 +110,19 @@ class FlowWebhookSecrets {
 			}
 
 			unset($config['rotateSecret'], $config['secret'], $config['secretEncrypted']);
-			if (preg_match('/^[0-9a-f]{' . self::TOKEN_LENGTH . '}$/', (string)($config['token'] ?? '')) !== 1) {
+			// A token already held by another trigger (a node copied from another
+			// flow, or duplicated within this one) gets a fresh one: the address
+			// belongs to the trigger it was issued to, and taking it over would
+			// silently break that trigger.
+			$token = (string)($config['token'] ?? '');
+			if (preg_match('/^[0-9a-f]{' . self::TOKEN_LENGTH . '}$/', $token) !== 1
+				|| isset($seen[$token]) === true
+				|| $this->heldElsewhere(token: $token, flowId: (string)$flow->getUuid(), nodeId: (string)$node['id']) === true
+			) {
 				$config['token'] = $this->random->generate(self::TOKEN_LENGTH, self::HEX);
 			}
+
+			$seen[(string)$config['token']] = true;
 
 			if ($config !== ($node['config'] ?? null)) {
 				$nodes[$index]['config'] = $config;
@@ -147,6 +158,13 @@ class FlowWebhookSecrets {
 			$nodeId = (string)$node['id'];
 			$token = (string)($node['config']['token'] ?? '');
 			if ($token === '') {
+				continue;
+			}
+
+			// Never overwrite the record of another trigger: its address and
+			// secret stay its own. stamp() re-issues such a token before the
+			// save, so this only guards a save that skipped it.
+			if ($this->heldElsewhere(token: $token, flowId: (string)$flow->getUuid(), nodeId: $nodeId) === true) {
 				continue;
 			}
 
@@ -205,6 +223,27 @@ class FlowWebhookSecrets {
 	public static function address(string $token): string {
 		return '/index.php/apps/openregister/api/flows/hooks/' . $token;
 	}//end address()
+
+	/**
+	 * Whether a token is stored for a trigger other than this flow's node.
+	 *
+	 * Reads the record's owner without decrypting its secret, so a record whose
+	 * secret cannot be read still counts as held.
+	 *
+	 * @param string $token  The address token.
+	 * @param string $flowId The uuid of the flow being saved.
+	 * @param string $nodeId The id of the node carrying the token.
+	 *
+	 * @return bool
+	 */
+	private function heldElsewhere(string $token, string $flowId, string $nodeId): bool {
+		$record = json_decode($this->appConfig->getValueString(self::APP_ID, self::KEY . $token, ''), true);
+		if (is_array($record) === false) {
+			return false;
+		}
+
+		return (string)($record['flow'] ?? '') !== $flowId || (string)($record['node'] ?? '') !== $nodeId;
+	}//end heldElsewhere()
 
 	/**
 	 * Whether a node is an incoming-webhook trigger with an id.
