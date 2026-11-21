@@ -63,7 +63,6 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
@@ -97,6 +96,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
+use OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
@@ -127,16 +127,12 @@ use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
-use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TmloServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Service\File\FolderAccessCheck;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -150,6 +146,10 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -460,16 +460,16 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationProjectionService
+	 * @var SourceLanguagesInterface
 	 */
-	private readonly TranslationProjectionService $translationProjectionService;
+	private readonly SourceLanguagesInterface $translationProjectionService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationStatusService
+	 * @var DerivedTranslationsInterface
 	 */
-	private readonly TranslationStatusService $translationStatusService;
+	private readonly DerivedTranslationsInterface $translationStatusService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -479,11 +479,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Stamps and checks the archival (TMLO) metadata, taken from the services bundle.
 	 *
-	 * @var TmloService
+	 * @var ObjectArchivalMetadataInterface
 	 */
-	private readonly TmloService $tmloService;
+	private readonly ObjectArchivalMetadataInterface $tmloService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -521,11 +521,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Which flow run is writing, taken from the services bundle.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 * @var CurrentFlowRunInterface|null
 	 */
-	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+	private readonly ?CurrentFlowRunInterface $runContext;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -1165,37 +1165,33 @@ class SaveObject implements SaveObjectInterface {
 	 * update would silently overwrite what a caseworker typed, which is a
 	 * calculation and is a different annotation.
 	 *
-	 * The resolver is built here from this handler's own session rather than
-	 * injected, because adding a constructor parameter to this class would
-	 * change the positional signature ten unit tests construct it by. It holds
-	 * no state between calls, so building it per create costs an object.
+	 * The expressions are the rules engine's work (Processes): this handler asks
+	 * the Core port {@see ExpressionDefaultsInterface}, resolved from the
+	 * injected app container rather than taken as a constructor parameter,
+	 * because adding one would change the positional form ten unit tests
+	 * construct this class by. A container that cannot serve the port fails
+	 * loudly; only a hand-built handler with no container at all derives nothing.
 	 *
 	 * @param Schema $schema The schema being written against.
 	 * @param array<string, mixed> $data The object being created.
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $properties === []) {
+		if ($this->container === null) {
 			return $data;
 		}
 
-		$resolver = new ExpressionDefaultResolver(
-			evaluator: new CalculationEvaluator(
-				placeholders: PlaceholderResolvers::forSession(userSession: $this->userSession)
-			)
-		);
-
-		if ($resolver->declaresAny(properties: $properties) === false) {
-			return $data;
+		$defaults = $this->container->get(ExpressionDefaultsInterface::class);
+		if ($defaults instanceof ExpressionDefaultsInterface === false) {
+			throw new \LogicException('The expression defaults port is bound to ' . get_debug_type($defaults));
 		}
 
-		return $resolver->apply(properties: $properties, data: $data);
+		return $defaults->apply(schema: $schema, data: $data);
 	}//end applyExpressionDefaults()
 
 	/**
@@ -2480,6 +2476,7 @@ class SaveObject implements SaveObjectInterface {
 
 		$this->normalizeCallTranslations(call: $call);
 		$this->guardPropertyAuthorization(call: $call);
+		$this->guardClassificationFloor(call: $call);
 
 		$existingObject = $this->existingObjectForSave(call: $call);
 		if ($existingObject !== null) {
@@ -2543,6 +2540,35 @@ class SaveObject implements SaveObjectInterface {
 			$this->refuseUnauthorizedProperties(call: $call);
 		}
 	}//end guardPropertyAuthorization()
+
+	/**
+	 * Refuse a save that sets a classification below the object's declared floor.
+	 *
+	 * Runs whatever the RBAC flag: the floor is a property of the record, not of
+	 * the caller, so a system write may not lower it either.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the label ranks below the floor.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-a-write-may-raise-a-classification-and-not-lower-it-below-its-floor
+	 */
+	private function guardClassificationFloor(ObjectSaveCall $call): void {
+		// The mapper is reached only when a floor sits behind a reference, so a
+		// schema without one never touches it.
+		$guard = new ClassificationFloorGuard(
+			referencedData: function (string $reference): ?array {
+				try {
+					return $this->unifiedObjectMapper->find(identifier: $reference, _rbac: false, _multitenancy: false)->getObject();
+				} catch (\Throwable) {
+					return null;
+				}
+			}
+		);
+		$guard->refuseBelowFloor(schema: $call->schema, data: $call->data);
+	}//end guardClassificationFloor()
 
 	/**
 	 * Refuse a save that modifies properties the caller may not write.
@@ -4314,7 +4340,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Populate TMLO defaults on a new object if the register has TMLO enabled.
 	 *
 	 * Client-supplied @self.tmlo is intentionally NOT accepted here (wave-11 WF1 fix).
-	 * All TMLO fields on CREATE are system-managed defaults applied by TmloService.
+	 * All TMLO fields on CREATE are system-managed defaults applied by the archival metadata port.
 	 * On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix instead.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity being created
@@ -4453,7 +4479,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function assertTmloTransition(ObjectEntity $existingObject, array $newTmlo): void {
 		$oldTmlo = $existingObject->getTmlo();
-		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
+		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloServiceInterface::ARCHIEFSTATUS_ACTIEF);
 		$newStatus = ($newTmlo['archiefstatus'] ?? null);
 		if ($newStatus === null || $newStatus === $oldStatus) {
 			return;

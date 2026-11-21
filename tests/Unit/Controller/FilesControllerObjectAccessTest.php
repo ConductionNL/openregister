@@ -118,6 +118,35 @@ class FilesControllerObjectAccessTest extends TestCase {
 	}//end setUp()
 
 	/**
+	 * A listed file Office opens carries the page that opens it, for this
+	 * object; another file carries none (object-files-follow-object-access 5.3).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	public function testAListedOfficeDocumentCarriesItsOfficeUrl(): void {
+		$office = $this->createMock(OfficeSessionService::class);
+		$office->expects($this->exactly(2))->method('officePageUrl')->willReturnCallback(
+			static fn (string $register, string $schema, string $objectId, int $fileId, string $mimeType): ?string => (
+				$mimeType === 'application/vnd.oasis.opendocument.text' ? '/office/' . $register . '/' . $schema . '/' . $objectId . '/' . $fileId : null
+			)
+		);
+		$this->officeService = $office;
+		$this->fileService->method('getFiles')->willReturn([
+			['id' => 5, 'type' => 'application/vnd.oasis.opendocument.text'],
+			['id' => 6, 'type' => 'image/png'],
+		]);
+
+		$results = $this->controllerAs('behandelaar', ['openformulieren-behandelaars'])
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID)
+			->getData()['results'];
+
+		$this->assertSame('/office/7/42/' . self::OBJECT_UUID . '/5', $results[0]['officeUrl']);
+		$this->assertArrayNotHasKey('officeUrl', $results[1]);
+	}//end testAListedOfficeDocumentCarriesItsOfficeUrl()
+
+	/**
 	 * A controller acting as a user in the given groups.
 	 *
 	 * @param string        $uid    The acting user.

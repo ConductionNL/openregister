@@ -806,6 +806,23 @@ Example: a record that its assignee may read and update, and that anyone in its 
 
 A caller who matches neither rule gets nothing back from the list, and a 404 from the single-object read. To the app, that is an ordinary empty read. The administrator bypass is the `admin` group's, enforced by OpenRegister, not app code.
 
+#### When the question cannot be decided (`onUndecidable`)
+
+Sometimes OpenRegister cannot answer an access question at all. The usual cause is a schema with no rules of its own whose register cannot be read, so the rules it would inherit are unknown. The schema says what that means with `onUndecidable`:
+
+- `closed` (the default when the key is absent): the question is refused, on the single-object read and on the list alike.
+- `open`: the question is granted, and a warning is logged with the schema, the action, the caller, the object and what could not be resolved.
+
+```json
+{
+  "authorization": {
+    "onUndecidable": "closed"
+  }
+}
+```
+
+The key is a setting, not a rule. A block that holds nothing but `onUndecidable` still takes its rules from the register, exactly as an empty block does. Any value other than `closed` or `open` is refused when the schema is saved. `open` never widens a question that can be decided: once the rules resolve, they alone decide.
+
 #### When an app still needs a guard of its own
 
 Sometimes a rule genuinely can't be expressed in this grammar. In that case the app-side guard **must** carry a comment that names the declaration it tried and says why it could not work, for example which operator or variable was missing. Without that comment, the next reader can't tell a necessary guard from a duplicate of a rule the schema could have held, and a duplicate drifts out of step with the schema the moment either one changes. A guard with such a comment is a request for a platform feature. Raise it against OpenRegister so the guard can be removed once the feature lands.
