@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 
@@ -57,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setBasis(?string $basis)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ * @method string|null getTimeZone()
+ * @method void setTimeZone(?string $timeZone)
  */
 class FlowTimerEvent extends Entity implements JsonSerializable {
 	use TypedFieldsJsonTrait;
@@ -162,6 +166,15 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 	protected ?DateTime $created = null;
 
 	/**
+	 * The IANA zone of the calendar the timer counted in, when the row was written
+	 * (calendar-time-zone 2.3). The instants stay UTC; this names the zone their
+	 * local dates are read in.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $timeZone = null;
+
+	/**
 	 * Constructor: declares the column types.
 	 */
 	public function __construct() {
@@ -176,6 +189,58 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'unrolledAt', type: 'datetime');
 		$this->addType(fieldName: 'rolledBy', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'timeZone', type: 'string');
 
 	}//end __construct()
+
+	/**
+	 * Beside each instant, its local date in the row's zone, naming the zone:
+	 * `2027-06-30 23:59 Europe/Amsterdam`. A row written before the zone was
+	 * recorded, or with a zone PHP cannot resolve, gets none.
+	 *
+	 * @return array<string, string|null>
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	protected function jsonOverrides(): array {
+		$zone = $this->localZone();
+		if ($zone === null) {
+			return [];
+		}
+
+		return [
+			'priorFireAtLocal' => self::localDate(moment: $this->priorFireAt, zone: $zone),
+			'newFireAtLocal' => self::localDate(moment: $this->newFireAt, zone: $zone),
+			'unrolledAtLocal' => self::localDate(moment: $this->unrolledAt, zone: $zone),
+		];
+	}//end jsonOverrides()
+
+	/**
+	 * The row's zone when PHP knows it, else null.
+	 *
+	 * @return DateTimeZone|null
+	 */
+	private function localZone(): ?DateTimeZone {
+		if ($this->timeZone === null || in_array($this->timeZone, DateTimeZone::listIdentifiers(), true) === false) {
+			return null;
+		}
+
+		return new DateTimeZone($this->timeZone);
+	}//end localZone()
+
+	/**
+	 * An instant as a local date in a zone, naming the zone, or null without an instant.
+	 *
+	 * @param DateTime|null $moment The instant.
+	 * @param DateTimeZone  $zone   The zone.
+	 *
+	 * @return string|null
+	 */
+	private static function localDate(?DateTime $moment, DateTimeZone $zone): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		return (new DateTimeImmutable('@'.$moment->format('U')))->setTimezone($zone)->format('Y-m-d H:i').' '.$zone->getName();
+	}//end localDate()
 }//end class

@@ -3496,6 +3496,7 @@
           "slug": "working-calendar-voorbeeld-title-1-1"
         },
         "slug": "Voorbeeld Slug 1",
+        "timezone": "Europe/Amsterdam",
         "workingWeekdays": [
           1
         ],
@@ -3529,6 +3530,7 @@
           "slug": "working-calendar-voorbeeld-title-2-2"
         },
         "slug": "Voorbeeld Slug 2",
+        "timezone": "Europe/Amsterdam",
         "workingWeekdays": [
           2
         ],
@@ -3562,6 +3564,7 @@
           "slug": "working-calendar-voorbeeld-title-3-3"
         },
         "slug": "Voorbeeld Slug 3",
+        "timezone": "Europe/Amsterdam",
         "workingWeekdays": [
           3
         ],

@@ -53,6 +53,7 @@ final class FormatFactory {
 			'iban'      => new IbanFormat(),
 			'semver'    => new SemVerFormat(),
 			'cron'      => new CronFormat(),
+			'time-zone' => new TimeZoneFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),
 			'date-time' => new Iso8601DateTimeFormat(),
 		];
