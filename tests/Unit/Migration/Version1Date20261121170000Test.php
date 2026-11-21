@@ -68,14 +68,15 @@ class Version1Date20261121170000Test extends TestCase {
 		$table->expects($this->never())->method('dropIndex');
 		$table->expects($this->never())->method('addUniqueIndex');
 
-		$this->assertNull($this->runMigration(schema: $this->schema(hasTable: true, table: $table)));
+		$schema = $this->schema(hasTable: true, table: $table);
+		$this->assertSame($schema, $this->runMigration(schema: $schema));
 	}
 
 	public function testAnInstallWithoutTheTableIsLeftAlone(): void {
 		$schema = $this->schema(hasTable: false, table: $this->createTableMock());
 		$schema->expects($this->never())->method('getTable');
 
-		$this->assertNull($this->runMigration(schema: $schema));
+		$this->assertSame($schema, $this->runMigration(schema: $schema));
 	}
 
 	private function runMigration(ISchemaWrapper $schema): ?ISchemaWrapper {

@@ -31,12 +31,11 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * The caller record learns which client library made a call.
  */
-class Version1Date20261121170000 extends SimpleMigrationStep {
+class Version1Date20261121170000 extends TargetedMigrationStep {
 
 	/**
 	 * The unique index name, rebuilt in place.
@@ -53,23 +52,23 @@ class Version1Date20261121170000 extends SimpleMigrationStep {
 	 * @param Closure                 $schemaClosure The schema closure.
 	 * @param array<array-key, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The schema, changed or not.
+	 * @return ISchemaWrapper The schema, changed or not: a null return drops the shared snapshot.
 	 *
 	 * @spec openspec/changes/api-client-libraries/specs/api-client-libraries/spec.md#requirement-the-caller-record-names-the-client-library
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable('openregister_api_calls') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable('openregister_api_calls');
 		if ($table->hasColumn('client') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn('client', Types::STRING, ['notnull' => true, 'length' => 48, 'default' => '']);
@@ -89,5 +88,5 @@ class Version1Date20261121170000 extends SimpleMigrationStep {
 		$output->info('Added client to openregister_api_calls');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
