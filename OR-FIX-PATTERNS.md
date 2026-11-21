@@ -140,3 +140,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: add/add conflict on lib/Migration/Version1Date<ts>.php and its test; or SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted names the PR's step.
 - Cause: main shipped a different step under the same version; and every step after 2.1.0 must extend TargetedMigrationStep (changeTargetedSchema, not changeSchema).
 - Fix: keep main's file, move the PR's step (class, test, component-map row) to a fresh version newer than main's newest, extend TargetedMigrationStep and rename changeSchema to protected changeTargetedSchema; the test calling changeSchema() keeps working. See #10398.
+
+## File guards resolved through Kernel Core contracts (or-fix-11)
+- Symptom: 'Call to undefined method MockObject_PartyIndicatorGuard_...::isRestricted()' in a PR test of FilePublishingHandler; or conflicts in its use block / FileServicePlatform (ShareUrlBuilderInterface).
+- Cause: main reads Kernel\Contracts\Core\FileReadRestrictionInterface (was Files FileRestrictionGuardInterface), PublicationRefusalInterface (was PartyIndicatorGuard) and ShareLinkUrlInterface from the container; PipelineSteps lost 'implementedBy' to Files\Service\File\PipelineStepImplementers.
+- Fix: keep main's imports plus the PR's own; in tests key the container match on the Core interfaces and mock them; a new pipeline step gets its class in PipelineStepImplementers::IMPLEMENTED_BY and in PipelineStepImplementersTest. (#10451 fd1b51db)
