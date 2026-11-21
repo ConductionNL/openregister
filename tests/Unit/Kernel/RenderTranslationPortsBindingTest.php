@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationRowStatusInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\RenderTranslations;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -44,7 +44,7 @@ final class RenderTranslationPortsBindingTest extends TestCase {
 
 	public function testTheStatusServiceAnswersTheCompletenessPort(): void {
 		self::assertTrue(is_subclass_of(TranslationStatusService::class, TranslationCompletenessInterface::class));
-		self::assertSame(TranslationStatusService::class, ContractBindings::BINDINGS[TranslationCompletenessInterface::class] ?? null);
+		self::assertSame(TranslationStatusService::class, CoreServiceBindings::BINDINGS[TranslationCompletenessInterface::class] ?? null);
 	}
 
 	public function testTheTranslationStoreAnswersTheRowStatusPort(): void {
@@ -55,7 +55,7 @@ final class RenderTranslationPortsBindingTest extends TestCase {
 
 	public function testTheLanguageServiceAnswersTheRequestLanguagesPort(): void {
 		self::assertTrue(is_subclass_of(LanguageService::class, RequestLanguagesInterface::class));
-		self::assertSame(LanguageService::class, ContractBindings::BINDINGS[RequestLanguagesInterface::class] ?? null);
+		self::assertSame(LanguageService::class, CoreServiceBindings::BINDINGS[RequestLanguagesInterface::class] ?? null);
 	}
 
 	public function testTheRenderPathTypesAgainstThePorts(): void {
