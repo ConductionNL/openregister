@@ -3468,3 +3468,4 @@
 9555 1d7eb7d0a69f6b78791a6f11e3d5d848a5c8d545 REVERIFY or-fix-0: merged main (ObjectsTab conflict: helper kept, main's files-multipart route adopted, golden snapshot updated), full jest green; review needed
 9709 20db8fd87e58d914711b9d2f277f5645f994c13d REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8690 passed, 8690 total; eslint clean on touched files); review needed
 9594 cd8742186ef24444d681700258d222e3c1b51824 REVERIFY or-fix-0: merged main (clean); parked specs (AvgIndex, pageShell, migrationPackTables) and full jest 8690 now green, no code change needed; review needed
+9565 cc100593c90bd49380ce8b89a06de33a3ad2c68e REVERIFY or-fix-1: merged main, fixed listPages golden spec stubbing the new toggleAction (snapshots unchanged); full jest green; review needed
