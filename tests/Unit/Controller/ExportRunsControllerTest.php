@@ -175,6 +175,26 @@ class ExportRunsControllerTest extends TestCase {
 	}//end testTheListingPassesOrderedFiltersAndClampsThePage()
 
 	/**
+	 * The exports page's Format filter reaches the listing.
+	 */
+	public function testTheFormatIsAFilter(): void {
+		$this->rights->method('seesEveryExportRun')->willReturn(false);
+		$seen = null;
+		$this->runs->expects($this->once())
+			->method('listFor')
+			->willReturnCallback(
+				static function (string $actor, bool $isAdmin, array $filters) use (&$seen): array {
+					$seen = $filters;
+					return [];
+				}
+			);
+
+		$this->controller(['format' => 'csv', 'status' => 'ready'])->index();
+
+		$this->assertSame(['status' => 'ready', 'format' => 'csv'], $seen);
+	}//end testTheFormatIsAFilter()
+
+	/**
 	 * Characterisation: the refusals answer exact bodies.
 	 */
 	public function testTheRefusalsAnswerExactBodies(): void {
