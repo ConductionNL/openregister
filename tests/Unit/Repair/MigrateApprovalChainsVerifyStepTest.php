@@ -40,6 +40,9 @@ use RuntimeException;
  * Pins verifyStep() outcome by outcome, and templateFor() for declared and undeclared chains.
  *
  * @covers \OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Repair\Support\ApprovalTaskStores
+ * @uses \OCA\OpenRegister\Repair\Support\RepairPlatform
  */
 class MigrateApprovalChainsVerifyStepTest extends TestCase {
 

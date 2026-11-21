@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Two settings states and the keys whose values are masked in the trail.
  *
- * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 final class SettingsChange {
 	/**

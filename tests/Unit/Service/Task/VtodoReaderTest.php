@@ -14,6 +14,7 @@ use Sabre\VObject\Reader;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\VtodoReader
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
  */
 class VtodoReaderTest extends TestCase {
 

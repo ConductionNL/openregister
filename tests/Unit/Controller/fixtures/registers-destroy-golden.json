@@ -95,7 +95,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "cache failed"
+            "error": "Internal server error"
         }
     },
     "count as text": {
@@ -160,7 +160,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "count failed"
+            "error": "Internal server error"
         }
     },
     "delete fails": {
@@ -196,7 +196,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "delete failed"
+            "error": "Internal server error"
         }
     },
     "delete still has objects": {
@@ -249,7 +249,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "find failed"
+            "error": "Internal server error"
         }
     },
     "force as a boolean": {

@@ -41,6 +41,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\RecordTemplate
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Exception\RecordTemplateRefused
+ * @uses \OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateChange
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions
  */
 class RecordTemplatesControllerTest extends TestCase {
 

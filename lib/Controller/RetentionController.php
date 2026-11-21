@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -78,9 +78,9 @@ class RetentionController extends Controller {
 	/**
 	 * Settings handler
 	 *
-	 * @var ArchivalSettingsReaderInterface
+	 * @var ArchivalSettingsInterface
 	 */
-	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+	private readonly ArchivalSettingsInterface $settingsHandler;
 
 	/**
 	 * Save object service
@@ -169,8 +169,6 @@ class RetentionController extends Controller {
 	 * POST /api/retention/destruction-lists/{id}/approve
 	 *
 	 * @param string $id Destruction list UUID
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response with updated destruction list
 	 *
@@ -303,8 +301,6 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $id Destruction list UUID
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated status
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -410,8 +406,6 @@ class RetentionController extends Controller {
 	 *
 	 * POST /api/retention/legal-holds
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated object
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -464,8 +458,6 @@ class RetentionController extends Controller {
 	 * DELETE /api/retention/legal-holds/{id}
 	 *
 	 * @param string $id Object UUID (the object the hold is on)
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response with updated object
 	 *
@@ -527,8 +519,6 @@ class RetentionController extends Controller {
 	 *
 	 * POST /api/retention/legal-holds/bulk
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response confirming the bulk operation
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -547,7 +537,7 @@ class RetentionController extends Controller {
 
 			// Queue via background job for large datasets.
 			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD,
+				\OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface::BULK_LEGAL_HOLD,
 				[
 					'schemaId' => $schemaId,
 					'reason' => $reason,

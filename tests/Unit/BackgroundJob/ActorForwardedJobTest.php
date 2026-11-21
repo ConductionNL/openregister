@@ -15,6 +15,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\WriteCause;
 
 /**
  * Concrete probe subclass recording execute() invocations.
@@ -160,5 +162,35 @@ class ActorForwardedJobTest extends TestCase {
 		$this->runJob($this->arguments('alice', 'org-OLD'));
 
 		$this->assertCount(1, $this->job->executed);
+	}
+
+	public function testTheDeferredWorkRunsUnderTheForwardedCause(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$seen = null;
+		$this->job->onExecute = static function () use (&$seen): void {
+			$seen = WriteCause::current();
+		};
+
+		$this->runJob((new DeferredListenerContext(
+			userId: null,
+			orgUuid: null,
+			entries: [['uuid' => 'u1']],
+			cause: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-7'),
+		))->toJobArguments());
+
+		$this->assertSame(['cause' => 'import', 'run' => 'run-7'], $seen);
+		$this->assertSame(['cause' => 'person', 'run' => null], WriteCause::current(), 'the frame does not outlive the job');
+	}
+
+	public function testAJobWithoutACauseRunsAsAPerson(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$seen = null;
+		$this->job->onExecute = static function () use (&$seen): void {
+			$seen = WriteCause::current();
+		};
+
+		$this->runJob($this->arguments(null));
+
+		$this->assertSame(['cause' => 'person', 'run' => null], $seen);
 	}
 }

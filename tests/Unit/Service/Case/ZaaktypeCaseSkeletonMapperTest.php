@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryOnPart
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
+ * @uses \OCA\OpenRegister\Service\Case\CaseDefinitionNode
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanValidation
  */
 class ZaaktypeCaseSkeletonMapperTest extends TestCase {
 

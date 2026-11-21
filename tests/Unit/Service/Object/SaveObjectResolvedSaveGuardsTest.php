@@ -42,6 +42,13 @@ use Throwable;
  * saveResolvedObject's guard order, golden.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
  */
 final class SaveObjectResolvedSaveGuardsTest extends TestCase {
 

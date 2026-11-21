@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion
  * @covers \OCA\OpenRegister\Service\Portal\PortalSubject
  * @covers \OCA\OpenRegister\Exception\PortalSubjectException
+ * @uses \OCA\OpenRegister\Service\Portal\PortalSubjectClaims
  */
 class PortalSubjectAssertionTest extends TestCase {
 

@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
@@ -48,7 +49,6 @@ use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateResult;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -57,6 +57,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * RBAC + case-level access controlled DSAR case-management endpoints.
@@ -89,9 +91,9 @@ class DsarCaseController extends Controller {
 	/**
 	 * Lifecycle transition driver (runs the guard on save).
 	 *
-	 * @var TransitionEngine
+	 * @var LifecycleTransitionInterface
 	 */
-	private readonly TransitionEngine $transitionEngine;
+	private readonly LifecycleTransitionInterface $transitionEngine;
 
 	/**
 	 * Evidence-collection service.
@@ -204,8 +206,9 @@ class DsarCaseController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $body,
-				register: CaseObjectAccessorInterface::REGISTER_SLUG,
-				schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CaseObjectAccessorInterface::REGISTER_SLUG, schema: CaseObjectAccessorInterface::SCHEMA_SLUG)
+				),
 				_rbac: true,
 				_multitenancy: true
 			);

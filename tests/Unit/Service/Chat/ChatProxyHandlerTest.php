@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Chat\ChatProxyHandler
+ * @uses \OCA\OpenRegister\Service\Chat\ChatProxyEndpoint
  */
 class ChatProxyHandlerTest extends TestCase {
 

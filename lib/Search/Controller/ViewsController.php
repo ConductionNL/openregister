@@ -21,7 +21,6 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Service\Rbac\ReachedView;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
@@ -32,6 +31,7 @@ use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -96,7 +96,7 @@ class ViewsController extends Controller {
 	 * @param ViewsControllerServices $services The saved-views API services.
 	 */
 	public function __construct(IRequest $request, ViewsControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->viewService             = $services->viewService;
 		$this->viewPresentationService = $services->viewPresentationService;
@@ -416,8 +416,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created view or error
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
@@ -504,8 +502,6 @@ class ViewsController extends Controller {
 	 * @param string $id The view ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated view or error
 	 *
@@ -605,8 +601,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched view or error
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -702,8 +696,6 @@ class ViewsController extends Controller {
 	 * @param string $id The view ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with delete confirmation or error
 	 *

@@ -52,6 +52,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
@@ -265,7 +266,8 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 */
 	private function createWorkPackage(LinkTarget $target, array $payload): array {
 		try {
-			return $this->provider->create(
+			return (new IntegrationProviderInvoker())->create(
+				provider: $this->provider,
 				ref: new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				payload: $payload
 			);
@@ -513,7 +515,8 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		}
 
 		try {
-			$row = $this->provider->get(
+			$row = (new IntegrationProviderInvoker())->get(
+				provider: $this->provider,
 				ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				entityId: (string)$workPackageId
 			);

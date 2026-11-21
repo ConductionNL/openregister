@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -53,6 +54,8 @@ use OCA\OpenRegister\Support\OrderParameter;
  * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
  */
 class ExplicitReveal implements ExplicitRevealInterface {
+	use MagicColumnNameTrait;
+
 
 	/**
 	 * How many characters of the value the mask keeps.
@@ -310,7 +313,7 @@ class ExplicitReveal implements ExplicitRevealInterface {
 			return;
 		}
 
-		$name = self::firstFilteredOrSorted(names: $names, query: $query);
+		$name = $this->firstFilteredOrSorted(names: $names, query: $query);
 		if ($name !== null) {
 			throw new ExplicitRevealQueryException(
 				message: sprintf('\'%s\' is shown only on request, so it cannot be filtered or sorted on.', $name)
@@ -321,16 +324,24 @@ class ExplicitReveal implements ExplicitRevealInterface {
 	/**
 	 * The first of these properties, in schema order, the query filters or sorts on.
 	 *
+	 * A key counts when it names the property's column in any spelling: a
+	 * cross-schema search orders and filters on the column, and another schema
+	 * may spell the same column differently (`first_name` for `firstName`).
+	 *
 	 * @param array<int, string> $names The explicit-reveal properties.
 	 * @param array<mixed>       $query The search query.
 	 *
 	 * @return string|null The property, or null when the query names none of them.
 	 */
-	private static function firstFilteredOrSorted(array $names, array $query): ?string {
+	private function firstFilteredOrSorted(array $names, array $query): ?string {
 		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
+		$columns = array_map(
+			fn (int|string $key): string => $this->sanitizeColumnName(name: $key),
+			array_merge(array_keys($query), array_keys($order))
+		);
 
 		foreach ($names as $name) {
-			if (array_key_exists($name, $query) === true || array_key_exists($name, $order) === true) {
+			if (in_array($this->sanitizeColumnName(name: $name), $columns, true) === true) {
 				return $name;
 			}
 		}

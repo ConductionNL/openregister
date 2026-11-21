@@ -35,11 +35,14 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Archival\RecordState;
 use Adbar\Dot;
 use DateTime;
 use Exception;
@@ -51,25 +54,22 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeleteRowRules;
 use OCA\OpenRegister\Service\Object\DeletionOptions;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
@@ -83,9 +83,13 @@ use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
+use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
+use OCA\OpenRegister\Service\Object\SampleValidationErrors;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -120,9 +124,8 @@ use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
@@ -146,7 +149,6 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -158,6 +160,9 @@ use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
@@ -242,7 +247,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Why a transferred object refuses a write.
      */
-    private const TRANSFERRED_MESSAGE = 'This object has been transferred to the e-Depot and is read-only.';
+    private const TRANSFERRED_MESSAGE = DeleteRowRules::TRANSFERRED_MESSAGE;
 
     /**
      * The current register context.
@@ -511,13 +516,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the mappers bundle.
      *
-     * @var ViewMapperInterface
-     */
-    private readonly ViewMapperInterface $viewMapper;
-
-    /**
-     * Collaborator taken from the mappers bundle.
-     *
      * @var MagicMapperInterface
      */
     private readonly MagicMapperInterface $objectMapper;
@@ -525,9 +523,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the storage bundle.
      *
-     * @var FileFolderServiceInterface
+     * @var ObjectFolderAccessInterface
      */
-    private readonly FileFolderServiceInterface $fileService;
+    private readonly ObjectFolderAccessInterface $fileService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -535,13 +533,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var IUserSession
      */
     private readonly IUserSession $userSession;
-
-    /**
-     * Collaborator taken from the storage bundle.
-     *
-     * @var SearchTrailService
-     */
-    private readonly SearchTrailService $searchTrailService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -609,9 +600,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the history bundle.
      *
-     * @var AutoTransitionPass|null
+     * @var SaveBoundaryInterface|null
      */
-    private readonly ?AutoTransitionPass $autoTransitions;
+    private readonly ?SaveBoundaryInterface $autoTransitions;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -661,11 +652,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->migrationHandler = $write->removal->migrationHandler;
         $this->registerMapper = $platform->mappers->registerMapper;
         $this->schemaMapper = $platform->mappers->schemaMapper;
-        $this->viewMapper = $platform->mappers->viewMapper;
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;
-        $this->searchTrailService = $platform->storage->searchTrailService;
         $this->groupManager = $access->caller->groupManager;
         $this->userManager = $access->caller->userManager;
         $this->organisationService = $access->authorisation->organisationService;
@@ -958,7 +947,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
-     * @throws InvalidArgumentException When the organisation does not exist.
+     * @throws InvalidArgumentException When the organisation does not exist or is not active.
      *
      * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
      */
@@ -966,7 +955,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         if ($this->organisationService->findContextOrganisation(uuid: $organisationUuid) === null) {
             throw new InvalidArgumentException(
-                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist.'
+                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist or is not active.'
             );
         }
 
@@ -1469,6 +1458,105 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end setObject()
 
     /**
+     * Whether a sample record would be accepted, without saving it.
+     *
+     * Runs what a save runs before it writes: the save defaults, the declared
+     * bounds, the schema validation (when the schema validates hard, or the
+     * sample is a draft), the read-only and lens rules, and then every
+     * {@see ObjectSaveCheck} (coded values, concept shapes, dependent
+     * values). Writes nothing and dispatches no object event. With an id the
+     * sample is merged onto that stored object and checked as an update.
+     *
+     * The service's current register, schema and object are restored after,
+     * so a validate call leaves no state behind.
+     *
+     * @param array                  $object   The sample record.
+     * @param Register|string|int    $register The register (id, uuid or slug).
+     * @param Schema|string|int      $schema   The schema (id, uuid or slug).
+     * @param string|null            $id       The object the sample updates, or null for a create.
+     *
+     * @return ObjectValidationVerdict The verdict, one error per refused property.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object to update does not exist.
+     *
+     * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+     */
+    public function validateObject(
+        array $object,
+        Register | string | int $register,
+        Schema | string | int $schema,
+        ?string $id=null
+    ): ObjectValidationVerdict {
+        $previous = [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject];
+        try {
+            $this->setRegister(register: $register);
+            $this->setSchema(schema: $schema);
+            return $this->sampleVerdict(object: $object, existing: $this->sampleTarget(id: $id));
+        } finally {
+            [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject] = $previous;
+        }
+    }//end validateObject()
+
+    /**
+     * The stored object a sample updates, or null for a create.
+     *
+     * @param string|null $id The object's id, uuid or slug.
+     *
+     * @return ObjectEntity|null
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When it does not exist.
+     */
+    private function sampleTarget(?string $id): ?ObjectEntity
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        return $this->objectMapper->find(
+            $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: false,
+            _multitenancy: false
+        );
+    }//end sampleTarget()
+
+    /**
+     * The verdict on a sample against the current register and schema.
+     *
+     * @param array             $object   The sample.
+     * @param ObjectEntity|null $existing The stored object on an update.
+     *
+     * @return ObjectValidationVerdict
+     */
+    private function sampleVerdict(array $object, ?ObjectEntity $existing): ObjectValidationVerdict
+    {
+        $data = $object;
+        if ($existing !== null) {
+            $data = array_merge(($existing->getObject() ?? []), $object);
+        }
+
+        $errors = [];
+        try {
+            $data = $this->prepareObjectForSave(
+                object: $data,
+                write: ['uuid' => $existing?->getUuid(), 'isCreate' => $existing === null]
+            );
+        } catch (ValidationException $refused) {
+            $errors = SampleValidationErrors::fromValidation(exception: $refused);
+        } catch (CustomValidationException $refused) {
+            $errors = SampleValidationErrors::fromCustom(exception: $refused);
+        }
+
+        if ($this->currentSchema !== null) {
+            $checks = $this->container->get(ObjectSaveChecks::class);
+            $errors = array_merge($errors, $checks->violations(object: $data, schema: $this->currentSchema, existing: $existing));
+        }
+
+        return new ObjectValidationVerdict(errors: $errors);
+    }//end sampleVerdict()
+
+    /**
      * Get the current object context.
      *
      * @return ObjectEntity|null The current object entity or null if not set.
@@ -1484,22 +1572,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -1512,18 +1594,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function find(
         int | string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectFindOptions $options=null,
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $_render=true,
-        bool $_audit=true
+        bool $_multitenancy=true
     ): ?ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: $_audit);
-        $target  = new ObjectFindTarget(register: $register, schema: $schema);
-        if ($_render === false) {
+        $options ??= new ObjectFindOptions();
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: $options->audit
+        );
+        $target    = ObjectFindTarget::fromFindOptions(options: $options);
+        if ($options->render === false) {
             return $this->findUnrendered(request: $request, target: $target);
         }
 
@@ -1925,7 +2010,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // which delegates to ProcessingLogService unchanged: same opt-in,
         // same storage, same retention, same readers.
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+            $this->container->get(ProcessingReadsInterface::class)
                 ->registerProcessingRead(object: $object);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks or slows the read path.
@@ -1954,8 +2039,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
+            $this->container->get(ProcessingReadsInterface::class)
+                ->registerQueriedRead(objects: $objects, query: $query);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(
@@ -1971,13 +2056,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -1989,15 +2071,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findSilent(
         string $id,
-        ?array $_extend=[],
-        bool $files=false,
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
+        ?ObjectFindOptions $options=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $request = new ObjectFindRequest(id: $id, extend: $_extend, files: $files, rbac: $_rbac, multitenancy: $_multitenancy, audit: false);
-        return $this->findWithoutAudit(request: $request, target: new ObjectFindTarget(register: $register, schema: $schema));
+        $options ??= new ObjectFindOptions();
+        $request   = new ObjectFindRequest(
+            id: $id,
+            extend: $options->extend,
+            files: $options->files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: false
+        );
+        return $this->findWithoutAudit(request: $request, target: ObjectFindTarget::fromFindOptions(options: $options));
     }//end findSilent()
 
     /**
@@ -2317,38 +2404,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * @param array|ObjectEntity       $object        The object data to save or ObjectEntity instance
-     * @param array|null               $extend        Properties to extend the object with
-     * @param Register|string|int|null $register      The register object or its ID/UUID
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID
-     * @param string|null              $uuid          The UUID of the object to update (if updating)
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
-     * @param bool                     $_validation   Whether to validate the object against its schema (default: true).
-     *                                                Was hardcoded true here, so a bulk importer with pre-validated
-     *                                                rows had no way to decline re-validating every one of them.
-     * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
-     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
-     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
-     * @param bool                     $_unowned      Stamp the SYSTEM identity as owner even when a user session
-     *                                                exists. For a genuinely anonymous write — a citizen submitting
-     *                                                a form on a public portal with no account — where the row must
-     *                                                not be attributed to whoever happens to be signed into the
-     *                                                instance in that browser. Defaults to false, so nothing changes
-     *                                                for any existing caller, and no controller forwards it, so no
-     *                                                REST request can ask to be anonymised.
-     *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
-     *                                                Defaults to null → `IUserSession::getUser()` resolution.
-     *                                                Non-HTTP callers (cron, import pipelines, event listeners)
-     *                                                MUST pass an explicit user to avoid the
-     *                                                default-deny fall-through on every folder-bound save.
-     * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
-     *                                                entitled to. Read from the RAW request by ObjectsController,
-     *                                                because the body filter there strips `_`-prefixed keys.
-     * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
-     *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
-     *                                                controller forwards it. An update keeps the stored owner.
+     * @param array|ObjectEntity $object        The object data to save or ObjectEntity instance
+     * @param ObjectSaveOptions  $options       The register and schema (object or ID/UUID), the UUID of the
+     *                                          object to update, the properties to extend the result with,
+     *                                          the files uploaded from multipart/form-data, the save policy
+     *                                          (events and audit, validation, insert-only, duplicate
+     *                                          override) and the actor (explicit acting user, explicit or
+     *                                          SYSTEM owner of a new row). See SavePolicy and SaveActor.
+     * @param bool               $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool               $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -2358,45 +2422,32 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ?array $extend=[],
-        Register | string | int | null $register=null,
-        Schema | string | int | null $schema=null,
-        ?string $uuid=null,
+        ObjectSaveOptions $options=new ObjectSaveOptions(),
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $silent=false,
-        bool $_validation=true,
-        ?array $uploadedFiles=null,
-        ?IUser $currentUser=null,
-        bool $failIfExists=false,
-        bool $_unowned=false,
-        bool $_dedupOverride=false,
-        ?string $_owner=null
+        bool $_multitenancy=true
     ): ObjectEntity {
         return $this->saveAtTransitionBoundary(
             object: $object,
             options: [
-                'extend'         => $extend,
-                'register'       => $register,
-                'schema'         => $schema,
-                'uuid'           => $uuid,
+                'extend'         => $options->extend,
+                'register'       => $options->target->register,
+                'schema'         => $options->target->schema,
+                'uuid'           => $options->uuid,
                 '_rbac'          => $_rbac,
                 '_multitenancy'  => $_multitenancy,
-                'silent'         => $silent,
-                '_validation'    => $_validation,
-                'uploadedFiles'  => $uploadedFiles,
-                'currentUser'    => $currentUser,
-                'failIfExists'   => $failIfExists,
-                '_unowned'       => $_unowned,
-                '_dedupOverride' => $_dedupOverride,
-                '_owner'         => $_owner,
+                'silent'         => $options->policy->silent,
+                '_validation'    => $options->policy->validation,
+                'uploadedFiles'  => $options->uploadedFiles,
+                'currentUser'    => $options->actor->currentUser,
+                'failIfExists'   => $options->policy->failIfExists,
+                '_unowned'       => $options->actor->unowned,
+                '_dedupOverride' => $options->policy->dedupOverride,
+                '_owner'         => $options->actor->owner,
             ]
         );
     }//end saveObject()
@@ -2853,22 +2904,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function persistObject(array $object, array $options): ObjectEntity
     {
-        return $this->saveHandler->saveObject(
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            data: $object,
-            uuid: $options['uuid'],
-            _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy'],
-            persist: true,
+        $policy = new SavePolicy(
             silent: $options['silent'],
-            _validation: $options['_validation'],
-            uploadedFiles: $options['uploadedFiles'],
-            currentUser: $options['currentUser'],
+            validation: $options['_validation'],
             failIfExists: $options['failIfExists'],
-            _unowned: $options['_unowned'],
-            _dedupOverride: $options['_dedupOverride'],
-            _owner: $options['_owner']
+            dedupOverride: $options['_dedupOverride']
+        );
+        $actor  = new SaveActor(currentUser: $options['currentUser'], owner: $options['_owner'], unowned: $options['_unowned']);
+        $target = new ObjectFindTarget(register: $this->currentRegister, schema: $this->currentSchema);
+
+        return $this->saveHandler->saveObject(
+            data: $object,
+            options: new ObjectSaveOptions(
+                target: $target,
+                uuid: $options['uuid'],
+                uploadedFiles: $options['uploadedFiles'],
+                policy: $policy,
+                actor: $actor
+            ),
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy']
         );
     }//end persistObject()
 
@@ -3062,9 +3117,74 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         try {
             return $this->assertMayUpdateStored(request: $request);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return $this->assertMayWriteUnseen(request: $request);
+            $stored = $this->assertMayWriteUnseen(request: $request);
+            if ($stored === null) {
+                $this->refuseANumericUuidForANewObject(uuid: $request->uuid, _rbac: $request->rbac);
+                $this->refuseAnUpperCaseUuidForANewObject(uuid: $request->uuid, _rbac: $request->rbac);
+            }
+
+            return $stored;
         }
     }//end authoriseSave()
+
+    /**
+     * Refuse a new object whose caller-chosen uuid is only digits.
+     *
+     * An identifier of digits also names a row by its id, and a uuid wins over
+     * an id when an identifier is resolved. A new object stored under such a uuid
+     * would later answer for the object that gets that id. Skipped with RBAC off:
+     * an administrator, a job or an import is judged by its caller.
+     *
+     * @param string $uuid  The uuid the save names, which no stored row holds.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws ValidationException When the uuid is only digits.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseANumericUuidForANewObject(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || ctype_digit(trim($uuid)) === false) {
+            return;
+        }
+
+        throw new ValidationException(
+            message: 'An identifier of only digits names a stored object by its id and cannot be the uuid of a new object.'
+        );
+    }//end refuseANumericUuidForANewObject()
+
+    /**
+     * Refuse a new object whose caller-chosen uuid is a UUID with upper-case letters.
+     *
+     * A uuid is matched without regard to case on some databases and with it on
+     * others, so two spellings of one UUID could name two rows. New objects take
+     * the lower-case form. Skipped with RBAC off, as for the digits-only refusal.
+     *
+     * @param string $uuid  The uuid the save names, which no stored row holds.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws ValidationException When the uuid is a UUID that is not lower case.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAnUpperCaseUuidForANewObject(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || $uuid === strtolower($uuid)) {
+            return;
+        }
+
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) !== 1) {
+            return;
+        }
+
+        throw new ValidationException(
+            message: 'The uuid of a new object is written in lower case: use "'.strtolower($uuid).'".'
+        );
+    }//end refuseAnUpperCaseUuidForANewObject()
 
     /**
      * Ask the create permission, about the incoming data.
@@ -3128,10 +3248,43 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema
         );
 
+        $this->refuseACrossingUpdate(stored: $existingObject, request: $request);
         $this->assertMayUpdate(stored: $existingObject, _rbac: $request->rbac);
 
         return $existingObject->getUuid();
     }//end assertMayUpdateStored()
+
+    /**
+     * Refuse an update of a row of another organisation that no marked update rule allows.
+     *
+     * The caller sees the row, possibly through a read rule that reaches across
+     * organisations, and the update rule it is judged by next does not look at
+     * organisations. So a row inside the caller's organisations, or with no
+     * organisation, is left to the update rule; any other row only to an update
+     * rule marked `crossOrganisation: true`. Skipped when the write does not keep
+     * to the caller's organisations or RBAC is off (an administrator, a job).
+     *
+     * @param ObjectEntity      $stored  The stored row the caller sees.
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When no marked update rule reaches the row.
+     *
+     * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+     */
+    private function refuseACrossingUpdate(ObjectEntity $stored, SaveAccessRequest $request): void
+    {
+        if ($request->rbac === false || $request->multitenancy === false
+            || trim((string) $stored->getOrganisation()) === ''
+            || $this->objectMapper->callerOrganisationsHold(row: $stored) === true
+            || $this->permissionHandler->updateCrossesOrganisations(schema: $this->currentSchema, row: $stored) === true
+        ) {
+            return;
+        }
+
+        throw new NotAuthorizedException(message: 'You may not change this object.');
+    }//end refuseACrossingUpdate()
 
     /**
      * Ask the permissions of a write to a uuid the caller does not see: new, or stored and hidden.
@@ -3146,7 +3299,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function assertMayWriteUnseen(SaveAccessRequest $request): ?string
     {
-        $hidden = $this->refuseSomebodyElsesDraft(uuid: $request->uuid, _rbac: $request->rbac);
+        $hidden = $this->hiddenStoredRow(uuid: $request->uuid, _rbac: $request->rbac);
 
         $this->assertMayCreate(request: $request);
         if ($hidden === null) {
@@ -3154,9 +3307,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         // Stored but hidden: the write lands on that row, so it must keep to
-        // the caller's organisations and pass the update rule against it.
+        // the caller's organisations and pass the update rule against it. The
+        // draft refusal comes after the create, append-only and organisation
+        // refusals, so its own answer is only given inside the caller's
+        // organisations and does not tell which uuids hold a draft elsewhere.
         $this->refuseAWriteOntoAnAppendOnlyRow();
         $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $request->multitenancy);
+        $this->refuseSomebodyElsesDraft(stored: $hidden);
         $this->assertMayUpdate(stored: $hidden, _rbac: $request->rbac);
 
         return $hidden->getUuid();
@@ -3219,30 +3376,27 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end refuseAnotherOrganisationsRow()
 
     /**
-     * Refuse a write to a stored draft the caller cannot read.
+     * The stored row a uuid names past the read rule, for a write the caller's own lookup did not find.
      *
      * A draft answers to its owner only (decision 180), and that rule lives in
-     * the read query. The lookup above therefore does not find somebody else's
-     * draft, and the write went on as a create under a chosen uuid, judged by
-     * the schema's create rule, and was then stored over the draft. Anybody
-     * who may create in the schema could change somebody else's draft through
-     * PATCH and got its content back in the answer. Found on a live instance,
-     * 12 October 2026.
+     * the read query. The caller's lookup therefore does not find somebody
+     * else's draft, and the write went on as a create under a chosen uuid,
+     * judged by the schema's create rule, and was then stored over the draft.
+     * Found on a live instance, 12 October 2026.
      *
      * So the uuid is looked up once more, past the read rule, and only for
-     * this question. Skipped with RBAC off: an administrator, a job and a
-     * scope-value owner (decision 195) are judged by their caller.
+     * the refusals of a write onto a hidden row. Skipped with RBAC off: an
+     * administrator, a job and a scope-value owner (decision 195) are judged
+     * by their caller.
      *
      * @param string $uuid  The uuid the caller's own lookup did not find.
      * @param bool   $_rbac Whether the write is judged for the signed-in caller.
      *
      * @return ObjectEntity|null The stored row the caller cannot read, null when there is none or RBAC is off.
      *
-     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
-     *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
      */
-    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): ?ObjectEntity
+    private function hiddenStoredRow(string $uuid, bool $_rbac): ?ObjectEntity
     {
         if ($_rbac === false || $this->currentSchema === null) {
             return null;
@@ -3250,7 +3404,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         try {
             // A soft-deleted row counts too: the write would land on it.
-            $stored = $this->objectMapper->find(
+            return $this->objectMapper->find(
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
@@ -3261,7 +3415,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         } catch (\OCP\AppFramework\Db\DoesNotExistException) {
             return null;
         }
+    }//end hiddenStoredRow()
 
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * @param ObjectEntity $stored The stored row the caller's own lookup did not find.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
+    {
         $user = $this->userSession->getUser();
         $kept = (new DraftCallerRule())->keptFromCaller(
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
@@ -3273,8 +3441,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
         }
-
-        return $stored;
     }//end refuseSomebodyElsesDraft()
 
     /**
@@ -4086,7 +4252,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             multitenancy: $_multitenancy,
             retentionSweep: $_retentionSweep,
             currentUser: $deletion->currentUser,
-            scoped: $deletion->isScoped()
+            scoped: $deletion->isScoped(),
+            reach: $deletion->reach
         );
         return $this->preservingScope(operation: function () use ($request, $deletion): bool {
             $this->enterDeleteScope(register: $deletion->target->register, schema: $deletion->target->schema);
@@ -4180,7 +4347,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
                 uuid: $request->uuid,
-                options: new DeletionOptions(scoped: $request->scoped, permanent: $permanent)
+                options: new DeletionOptions(
+                    scoped: $request->scoped,
+                    permanent: $permanent,
+                    actingUserId: $request->actingUserId(),
+                    reach: $request->reach
+                )
             ),
             _rbac: $request->rbac,
             _multitenancy: $request->multitenancy
@@ -4319,10 +4491,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function appendOnlyDeleteRefusal(Schema $schema): AppendOnlyException
     {
-        return new AppendOnlyException(
-            schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()),
-            operation: 'delete'
-        );
+        return DeleteRowRules::appendOnlyRefusal(schema: $schema);
     }//end appendOnlyDeleteRefusal()
 
     /**
@@ -4341,10 +4510,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end deleteAnswersToOrganisation()
 
     /**
-     * Refuse a delete in a register or schema the caller's organisation only consumes.
+     * Refuse a delete or move in a register or schema the caller's organisation only consumes.
      *
      * The organisation boundary answers a read question and lets a consumer of shared
-     * master data see the holder's rows. A delete is a write, as for a save.
+     * master data see the holder's rows. A delete or a move is a write, as for a save.
      *
      * @param int|null $registerId The register deleted from.
      * @param int|null $schemaId   The schema deleted from.
@@ -4796,7 +4965,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws ReadOnlyTypeException When the current schema is view-backed.
      *
-     * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
      */
     private function rejectIfViewBacked(string $operation): void
     {
@@ -4868,9 +5037,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function isTransferred(ObjectEntity $object): bool
     {
-        $retention = ($object->getRetention() ?? []);
-
-        return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true);
+        return DeleteRowRules::isTransferred(object: $object);
     }//end isTransferred()
 
     /**
@@ -5974,40 +6141,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Locks an object to prevent concurrent modifications.
      *
-     * @param string      $identifier Object ID or UUID
-     * @param string|null $process    Process ID (for tracking who locked it)
-     * @param int|null    $duration   Lock duration in seconds
-     * @param bool        $advisory   When true, treat the identifier as a synthetic
-     *                                pre-creation key and take the appConfig-backed
-     *                                advisory lock without scanning object tables
-     * @param string|null $runUuid    Flow run taking the lock, for a run-scoped lock
-     *                                that refuses every other caller including the
-     *                                run's own runAs user
-     * @param string|null $nodeId     Flow node that took it, recorded for the sweep
-     *
-     * @return array Lock information
-     *
-     * @throws \Exception If lock operation fails
-     *
-     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
-     */
-    public function lockObject(
-        string $identifier,
-        ?string $process=null,
-        ?int $duration=null,
-        bool $advisory=false,
-        ?string $runUuid=null,
-        ?string $nodeId=null
-    ): array {
-        $step = new LockRunStep(runUuid: $runUuid, nodeId: $nodeId);
-        $request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runStep: $step);
-        return $this->lock(request: $request, advisory: $advisory);
-    }//end lockObject()
-
-    /**
-     * Lock an object, as one lock request.
-     *
-     * @param LockRequest $request  The object, process, duration and flow run step of the lock.
+     * @param LockRequest $request  The object, process, duration and flow run step of the lock. A
+     *                              run-scoped lock refuses every other caller including the run's
+     *                              own runAs user.
      * @param bool        $advisory When true, treat the identifier as a synthetic
      *                              pre-creation key and take the appConfig-backed
      *                              advisory lock without scanning object tables
@@ -6016,36 +6152,61 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws \Exception If lock operation fails
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors lockObject() and the lock handler.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The advisory flag mirrors the lock handler.
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lock(LockRequest $request, bool $advisory=false): array
+    public function lockObject(LockRequest $request, bool $advisory=false): array
     {
         return $this->lockHandler->lock(request: $request, advisory: $advisory);
-    }//end lock()
+    }//end lockObject()
+
+    /**
+     * Claim a lock for an explicit owner, atomically, without a session.
+     *
+     * For background jobs and workers that have no signed-in user. Succeeds
+     * when the object is unlocked, its lock expired, or the same owner (and
+     * run) already holds it; of two racing claimers only one gets true. No
+     * RBAC check runs, as there is no user to check: locks taken for a person
+     * keep going through lockObject().
+     *
+     * @param LockRequest $request The object, process, duration and flow run step of the lock.
+     * @param string      $ownerId The owner the lock is taken for.
+     *
+     * @return bool True when the caller now holds the lock; false when another holder has it.
+     *
+     * @throws \InvalidArgumentException When the owner id is empty.
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
+     */
+    public function claimObject(LockRequest $request, string $ownerId): bool
+    {
+        return $this->lockHandler->claim(request: $request, ownerId: $ownerId);
+    }//end claimObject()
 
     /**
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
      *
-     * @param string|int $identifier The object to unlock
-     * @param bool       $advisory   When true, release the appConfig-backed advisory
-     *                               lock for this synthetic key without scanning tables
-     * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
+     * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a
+     *                               run-scoped lock. A request with `break` set is refused;
+     *                               breakObjectLock() breaks a lock.
      *
      * @return bool True if unlocked successfully
      *
+     * @throws \InvalidArgumentException When the request asks to break the lock
      * @throws \Exception If unlock operation fails
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool
+    public function unlockObject(UnlockRequest $request): bool
     {
-        return $this->lockHandler->unlock(
-            request: new UnlockRequest(identifier: (string) $identifier, advisory: $advisory, runUuid: $runUuid, break: false)
-        );
+        if ($request->break === true) {
+            throw new \InvalidArgumentException('unlockObject() does not break locks; use breakObjectLock().');
+        }
+
+        return $this->lockHandler->unlock(request: $request);
     }//end unlockObject()
 
     /**
@@ -6103,16 +6264,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array                    $objects        Array of objects in serialized format
-     * @param Register|string|int|null $register       Optional register filter for validation
-     * @param Schema|string|int|null   $schema         Optional schema filter for validation
-     * @param bool                     $_rbac          Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
-     * @param bool                     $validation     Whether to validate objects against schema definitions
-     * @param bool                     $events         Whether to dispatch object lifecycle events
-     * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID
-     * @param bool                     $enrich         Whether to enrich objects with metadata
-     * @param bool                     $_audit         Whether to write audit trail rows (bulk mirror of `silent`)
+     * @param array           $objects       Array of objects in serialized format
+     * @param BulkSaveOptions $options       The register and schema for rows that name none (optional
+     *                                       filters for validation), whether to validate objects
+     *                                       against schema definitions, whether to dispatch object
+     *                                       lifecycle events, and whether to write audit trail rows
+     *                                       (bulk mirror of `silent`)
+     * @param bool            $_rbac         Whether to apply RBAC filtering
+     * @param bool            $_multitenancy Whether to apply multi-organization filtering
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -6124,75 +6283,52 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @phpstan-return array<string, mixed>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
-     *   policy switch that the single-object saveObject() also takes, and the two paths have to
-     *   offer the same switches or a caller cannot move between them — which is exactly what the
-     *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
-     *   is a change to BOTH save paths and all their callers, not to this signature alone.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
         array $objects,
-        Register|string|int|null $register=null,
-        Schema|string|int|null $schema=null,
+        BulkSaveOptions $options=new BulkSaveOptions(),
         bool $_rbac=true,
-        bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false,
-        bool $deduplicateIds=true,
-        bool $enrich=true,
-        bool $_audit=true
+        bool $_multitenancy=true
     ): array {
         // A BULK SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $options = [
-            'register'       => $register,
-            'schema'         => $schema,
-            '_rbac'          => $_rbac,
-            '_multitenancy'  => $_multitenancy,
-            '_validation'    => $validation,
-            '_events'        => $events,
-            'deduplicateIds' => $deduplicateIds,
-            'enrich'         => $enrich,
-            '_audit'         => $_audit,
-        ];
+        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
 
         return $this->preservingScope(
-            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options)
+            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options, access: $access)
         );
     }//end saveObjects()
 
     /**
      * Runs one bulk save inside the context saveObjects() keeps.
      *
-     * @param array $objects The objects to save.
-     * @param array $options The arguments of the saveObjects() call.
+     * @param array           $objects The objects to save.
+     * @param BulkSaveOptions $options The register, schema, validation, events and audit choices of the call.
+     * @param AccessFlags     $access  The caller's RBAC and multitenancy flags.
      *
      * @phpstan-param array<int, array<string, mixed>> $objects
-     * @phpstan-param array<string, mixed>             $options
      * @psalm-param   array<int, array<string, mixed>> $objects
-     * @psalm-param   array<string, mixed>             $options
      *
      * @return array The bulk result of the SaveObjects handler.
      *
      * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
      */
-    private function saveBulkWithinScope(array $objects, array $options): array
+    private function saveBulkWithinScope(array $objects, BulkSaveOptions $options, AccessFlags $access): array
     {
-        $this->openBulkSave(register: $options['register'], schema: $options['schema']);
+        $this->openBulkSave(register: $options->defaults->register, schema: $options->defaults->schema);
 
         $bulkOptions = new BulkSaveOptions(
             defaults: new BulkBatchDefaults(register: $this->currentRegister, schema: $this->currentSchema),
-            validation: $options['_validation'],
-            events: $options['_events'],
-            audit: $options['_audit']
+            validation: $options->validation,
+            events: $options->events,
+            audit: $options->audit
         );
         $bulkResult  = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
             options: $bulkOptions,
-            _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy']
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
         );
 
         $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
@@ -6546,6 +6682,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws NotAuthorizedException If the caller may not create objects in the target schema.
+     * @throws SharedMasterDataWriteException If the caller's organisation only consumes the source or target.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -6558,6 +6695,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         $this->permissionHandler->checkPermission(schema: $targetSchema, action: 'create');
+
+        // A move removes rows from the source and writes rows into the target.
+        $targetRegister = $this->utilityHandler->normalizeEntity(entity: $migration->target->register, type: 'register');
+        $targetRegisterId = null;
+        if ($targetRegister instanceof Register) {
+            $targetRegisterId = $targetRegister->getId();
+        }
+
+        $this->rejectSharedMasterDataDelete(registerId: $source->register->getId(), schemaId: $source->schema->getId());
+        $this->rejectSharedMasterDataDelete(registerId: $targetRegisterId, schemaId: $targetSchema->getId());
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(
@@ -7424,11 +7571,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array
     {
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
             table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
-            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: SchemaTeardownInterface::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7438,8 +7585,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Empties every magic table of every schema the register lists, in one
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
-     * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsOfTable() gives.
+     * any of those schemas is archival. The work lives in SchemaDeletionService
+     * (Compliance), reached through SchemaTeardownInterface and resolved lazily.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -7460,7 +7607,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
         $register = $this->registerMapper->find(id: $registerId);
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,
@@ -7741,11 +7888,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $this->saveObject(
             object: $merged,
-            register: $patch->target->register,
-            schema: $patch->target->schema,
+            options: new ObjectSaveOptions(target: $patch->target, actor: new SaveActor(currentUser: $patch->currentUser)),
             _rbac: $access->rbac,
-            _multitenancy: $access->multitenancy,
-            currentUser: $patch->currentUser
+            _multitenancy: $access->multitenancy
         );
     }//end patchWithinScope()
 
