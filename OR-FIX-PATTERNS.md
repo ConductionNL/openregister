@@ -326,3 +326,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: 'Failed asserting that exception of type Exception is thrown' in a tests/Unit/Db/SchemaMapper*Test that builds SchemaMapper with eventDispatcher: createMock(IEventDispatcher::class); red on the PR head itself.
 - Cause: the check was moved (often by a fix lane) into a SchemaDeclarationChecksEvent listener slot; a mocked dispatcher never runs the listeners, so nothing refuses.
 - Fix: pass eventDispatcher: new \OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher() (as SchemaMapperAutoTransitionValidationTest does); the listener must be in its listeners() list. (#10529)
+
+## SchemaAuthorizationGoldenTest key list shifts after adding an authorization control key (or-fix-1)
+- Symptom: tests/Unit/Db/SchemaAuthorizationGoldenTest::testAuthorizationOutcomesMatchGolden, array_keys differ by one 'validate control <key> as text' entry.
+- Cause: the test builds one case per PermissionCatalogue::CONTROL_KEYS entry; a PR adding a control key adds a case.
+- Fix: UPDATE_GOLDEN=1 on that file; the fixture diff must be only the new key's case (check its outcome is intended); commit the json (see #10381 797aae8b).
