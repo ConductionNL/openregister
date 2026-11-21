@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Kernel\Contracts\ContactLinkInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\PersonLinkedEvent;
 use OCA\OpenRegister\Event\PersonLinkUpdatedEvent;
@@ -227,6 +228,22 @@ class SlotOccupantAuditListenerTest extends TestCase {
 
 		$listener->handle(new Event());
 	}//end testAPartyOrContactLinkWritesNothing()
+
+	/**
+	 * The link events carry the Core interface; a link that is not the stored entity cannot say it links a user,
+	 * so nothing is read or written.
+	 *
+	 * @return void
+	 */
+	public function testALinkThatIsNotTheEntityWritesNothing(): void {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->expects($this->never())->method('findSilent');
+		$audit = $this->createMock(AuditTrailMapperInterface::class);
+		$audit->expects($this->never())->method('recordObjectEvent');
+		$listener = new SlotOccupantAuditListener(objects: $objects, audit: $audit, logger: new NullLogger());
+
+		$listener->handle(new PersonLinkedEvent(link: $this->createMock(ContactLinkInterface::class)));
+	}//end testALinkThatIsNotTheEntityWritesNothing()
 
 	/**
 	 * An object that cannot be read is still recorded, against the link's object.

@@ -99,7 +99,12 @@ class SlotOccupantAuditListener implements IEventListener {
 			return;
 		}
 
+		// The event carries the Core interface; only the stored entity says whether it links a user.
 		$link = $event->getLink();
+		if ($link instanceof ContactLink === false) {
+			return;
+		}
+
 		$objectUuid = (string)($link->getObjectUuid() ?? '');
 		if ($link->isUserLink() === false || $objectUuid === '') {
 			return;
