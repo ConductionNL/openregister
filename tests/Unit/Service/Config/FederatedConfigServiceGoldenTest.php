@@ -71,7 +71,8 @@ class FederatedConfigServiceGoldenTest extends TestCase {
 			],
 		]);
 		return [
-			'install no allowlist unsigned allowed'   => ['install', ['source' => 'any/repo']],
+			'install no allowlist refused'             => ['install', ['allowlist' => '', 'source' => 'any/repo']],
+			'install allowlisted unsigned allowed'     => ['install', ['source' => 'o/r']],
 			'install source refused'                   => ['install', ['allowlist' => 'ConductionNL, other/x', 'source' => 'evil/repo']],
 			'install source exact'                     => ['install', ['allowlist' => 'ConductionNL, other/x', 'source' => 'other/x']],
 			'install source org prefix'                => ['install', ['allowlist' => 'ConductionNL, other/x', 'source' => 'ConductionNL/pack']],
@@ -175,7 +176,7 @@ class FederatedConfigServiceGoldenTest extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
 			static fn (string $app, string $key, string $default = ''): string => match ($key) {
-				'federated_config_source_allowlist' => ($scenario['allowlist'] ?? ''),
+				'federated_config_source_allowlist' => ($scenario['allowlist'] ?? 'o'),
 				'federated_config_allow_unverified_bundles' => ($scenario['allowUnverified'] ?? 'true'),
 				default => $default,
 			}
@@ -238,12 +239,12 @@ class FederatedConfigServiceGoldenTest extends TestCase {
 	 */
 	public function testRefusedInstallsNeverDeserialise(): void {
 		$golden = json_decode((string) file_get_contents(self::FIXTURE), true);
-		foreach (['install source refused', 'install tampered', 'install untrusted', 'install unverified not allowed', 'install unsigned untrusted', 'install source prefix not a segment'] as $case) {
+		foreach (['install no allowlist refused', 'install empty source with allowlist', 'install source refused', 'install tampered', 'install untrusted', 'install unverified not allowed', 'install unsigned untrusted', 'install source prefix not a segment'] as $case) {
 			$this->assertArrayHasKey('thrown', $golden[$case]['outcome'], $case);
 			$this->assertSame([], $golden[$case]['record']['deserialised'], $case);
 		}
 
-		foreach (['install no allowlist unsigned allowed', 'install enforced valid', 'install source org prefix'] as $case) {
+		foreach (['install allowlisted unsigned allowed', 'install enforced valid', 'install source org prefix'] as $case) {
 			$this->assertArrayNotHasKey('thrown', $golden[$case]['outcome'], $case);
 			$this->assertCount(1, $golden[$case]['record']['deserialised'], $case);
 		}

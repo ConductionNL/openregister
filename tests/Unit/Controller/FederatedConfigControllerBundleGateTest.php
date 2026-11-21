@@ -143,8 +143,9 @@ class FederatedConfigControllerBundleGateTest extends TestCase {
 	public function testAnInstallRefusedForACrossingRuleIsAForbidden(): void {
 		$this->access->method('canInstall')->willReturn(true);
 		$this->request->method('getParam')->willReturnCallback(
-			static fn (string $key, mixed $default = null): mixed => ($key === 'type' ? 'demo.type' : $default)
+			static fn (string $key, mixed $default = null): mixed => (['type' => 'demo.type', 'repo' => 'o/r', 'path' => 'b.json'][$key] ?? $default)
 		);
+		$this->service->method('fetchBundle')->willReturn(['type' => 'demo.type']);
 		$this->service->method('install')->willThrowException(new \RuntimeException('Only an administrator may ... (crossOrganisation: true)'));
 
 		$this->assertSame(403, $this->controller->install()->getStatus());
