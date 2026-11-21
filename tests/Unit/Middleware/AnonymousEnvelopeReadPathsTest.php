@@ -27,6 +27,7 @@ use DateTime;
 use GraphQL\GraphQL;
 use OCA\OpenRegister\Controller\FederationController;
 use OCA\OpenRegister\Controller\McpController;
+use OCA\OpenRegister\Controller\ObjectExportController;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
@@ -381,8 +383,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$translation,
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -530,9 +531,26 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	}//end testASignedInAnswerIsNotRewritten()
 
 	/**
+	 * The export answers a file the middleware does not read, so it is public only
+	 * through its own path: rate limited for the anonymous caller, which writes
+	 * no `@self` block (PublicExportService, ExportService::documentRows()).
+	 *
+	 * @return void
+	 */
+	public function testTheExportIsPublicOnlyWithItsOwnLimit(): void {
+		$route = new ReflectionMethod(ObjectExportController::class, 'export');
+
+		$this->assertStringContainsString(needle: '@PublicPage', haystack: (string)$route->getDocComment());
+		$limits = $route->getAttributes(\OCP\AppFramework\Http\Attribute\AnonRateLimit::class);
+		$this->assertCount(1, $limits);
+		$this->assertSame(['limit' => 10, 'period' => 60], $limits[0]->getArguments());
+	}//end testTheExportIsPublicOnlyWithItsOwnLimit()
+
+	/**
 	 * The routes that answer records in a form the middleware does not read stay behind a login.
 	 *
-	 * Export answers a file, and MCP's public discovery catalogue carries no records.
+	 * MCP's public discovery catalogue carries no records. The export is public by
+	 * design and checked above.
 	 *
 	 * @param class-string $controller The controller.
 	 * @param string       $method     The route's method.
@@ -557,7 +575,6 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 	 */
 	public static function signedInOnlyRoutes(): array {
 		return [
-			'export'         => [ObjectsController::class, 'export'],
 			'mcp capability' => [McpController::class, 'discoverCapability'],
 		];
 	}//end signedInOnlyRoutes()
