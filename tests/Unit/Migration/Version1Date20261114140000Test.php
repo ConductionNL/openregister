@@ -22,15 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use OCA\OpenRegister\Migration\Version1Date20261114100000;
+use OCA\OpenRegister\Migration\Version1Date20261114140000;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Version1Date20261114100000::class)]
-class Version1Date20261114100000Test extends TestCase {
+#[CoversClass(Version1Date20261114140000::class)]
+class Version1Date20261114140000Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	public function testTheTableIsCreatedUniqueOnIssuerAndValue(): void {
@@ -51,7 +51,7 @@ class Version1Date20261114100000Test extends TestCase {
 		$schema->method('hasTable')->with('openregister_foreign_ids')->willReturn(false);
 		$schema->expects($this->once())->method('createTable')->with('openregister_foreign_ids')->willReturn($table);
 
-		$this->assertSame($schema, (new Version1Date20261114100000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
+		$this->assertSame($schema, (new Version1Date20261114140000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
 		$this->assertSame(['object_uuid', 'issuer', 'value'], array_values(array_intersect(array_keys($columns), ['object_uuid', 'issuer', 'value'])));
 		$this->assertSame(128, $columns['issuer'][1]);
 		$this->assertSame(191, $columns['value'][1]);
@@ -63,6 +63,6 @@ class Version1Date20261114100000Test extends TestCase {
 		$schema->method('hasTable')->with('openregister_foreign_ids')->willReturn(true);
 		$schema->expects($this->never())->method('createTable');
 
-		$this->assertSame($schema, (new Version1Date20261114100000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
+		$this->assertSame($schema, (new Version1Date20261114140000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
 	}
 }

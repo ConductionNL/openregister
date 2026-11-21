@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\Bindings\SchemasBindings;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
@@ -38,10 +37,9 @@ final class K29ExtendingFormBindingTest extends TestCase {
 		$this->assertContains(ExtendingFormValidatorInterface::class, class_implements(ExtendingFormDeclaration::class));
 	}//end testTheClassImplementsTheInterface()
 
-	public function testTheInterfaceIsBoundInTheSchemasMap(): void {
-		$this->assertSame(ExtendingFormDeclaration::class, SchemasBindings::BINDINGS[ExtendingFormValidatorInterface::class]);
-		$this->assertSame(ExtendingFormDeclaration::class, ContractBindings::BINDINGS[ExtendingFormValidatorInterface::class]);
-	}//end testTheInterfaceIsBoundInTheSchemasMap()
+	public function testTheInterfaceIsBoundInTheCoreMap(): void {
+		$this->assertSame(ExtendingFormDeclaration::class, CoreServiceBindings::BINDINGS[ExtendingFormValidatorInterface::class]);
+	}//end testTheInterfaceIsBoundInTheCoreMap()
 
 	public function testTheFactoryHandsOutTheValidator(): void {
 		$this->assertInstanceOf(ExtendingFormDeclaration::class, SchemaDeclarationValidators::extendingForm());

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister Migration Version1Date20261114100000
+ * OpenRegister Migration Version1Date20261114140000
  *
  * Adds `openregister_foreign_ids`: the identifiers other systems gave an
  * object, each naming the system that issued it. One value per issuer is
@@ -35,7 +35,7 @@ use OCP\Migration\IOutput;
 /**
  * Create the `openregister_foreign_ids` table.
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114140000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
