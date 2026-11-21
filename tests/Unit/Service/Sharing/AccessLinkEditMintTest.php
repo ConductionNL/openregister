@@ -21,6 +21,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
@@ -39,6 +40,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkTerms
  * @uses   \OCA\OpenRegister\Service\Sharing\AccessLinkSecrets
  * @uses   \OCA\OpenRegister\Service\Sharing\AccessLinkUseLog
+ * @uses   \OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder
  * @uses   \OCA\OpenRegister\Service\Sharing\LinkMintRequest
  * @uses   \OCA\OpenRegister\Db\AccessLink\AccessLinkFieldTypes
  */
@@ -61,7 +63,7 @@ class AccessLinkEditMintTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->createMock(AuditTrailMapper::class)), logger: new NullLogger()),
 			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
 			urlGenerator: $urls
 		);
