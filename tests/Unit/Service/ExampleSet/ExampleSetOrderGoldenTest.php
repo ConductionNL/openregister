@@ -32,6 +32,8 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrderPath
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
  */
 class ExampleSetOrderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-order-golden.json';

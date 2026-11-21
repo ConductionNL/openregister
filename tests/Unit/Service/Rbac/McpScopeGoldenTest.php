@@ -35,6 +35,8 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionHandler
  */
 final class McpScopeGoldenTest extends TestCase {
 

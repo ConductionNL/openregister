@@ -21,21 +21,23 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
+use OCA\OpenRegister\Exception\DatabaseErrorChain;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Logs a refused schedule and keeps it for the publish response.
  *
  * One instance per request: the container shares it.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	/**
@@ -63,7 +65,7 @@ class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function refuse(ScheduleRelease $release, string $reason): void {
 		$this->refusals[] = $reason;
@@ -74,11 +76,32 @@ class ScheduleRefusals implements ScheduleRefusalReportInterface {
 	}//end refuse()
 
 	/**
+	 * Record a schedule whose store failed; a database error is reported in neutral words and logged.
+	 *
+	 * @param ScheduleRelease $release The publish.
+	 * @param Throwable       $failure What the store threw.
+	 *
+	 * @return void
+	 */
+	public function refuseFailure(ScheduleRelease $release, Throwable $failure): void {
+		if (DatabaseErrorChain::causeOf(failure: $failure) === null) {
+			$this->refuse(release: $release, reason: $failure->getMessage());
+			return;
+		}
+
+		$this->refusals[] = 'A schedule could not be stored.';
+		$this->logger->error(
+			message: '[AppHost\\Scheduling] Schedule could not be stored',
+			context: ['application' => $release->applicationUuid(), 'publisher' => $release->publisher, 'exception' => $failure]
+		);
+	}//end refuseFailure()
+
+	/**
 	 * This request's refusals.
 	 *
 	 * @return array<int, string> The reasons, in order.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function all(): array {
 		return $this->refusals;

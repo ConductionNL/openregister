@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Tests that an eligible set becomes one saved destruction list and one review notice.
@@ -153,7 +154,7 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$retention->method('findEligibleForDestruction')->willReturn($eligible);
 		$retention->method('createDestructionList')->willReturn($listData);
 
-		$settings = $this->createMock(ArchivalSettingsReaderInterface::class);
+		$settings = $this->createMock(ArchivalSettingsInterface::class);
 		$settings->method('getArchivalSettingsOnly')->willReturn(
 			['destructionListRegister' => 'reg-7', 'destructionListSchema' => 'schema-9', 'notificationLeadDays' => 30]
 		);
@@ -165,11 +166,11 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$saved->setUuid('list-uuid-1');
 		$saver = $this->createMock(SaveObjectWriterInterface::class);
 		$saver->method('saveObject')->willReturnCallback(
-			function (mixed ...$args) use ($saved): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$args) use ($saved): ObjectEntity {
 				// A mock fills in the defaulted trailing parameters; the job passes eight.
 				$this->saves[] = array_slice($args, 0, 8);
 				return $saved;
-			}
+			})
 		);
 
 		$logger = $this->createMock(LoggerInterface::class);
@@ -182,7 +183,7 @@ class DestructionCheckJobListCreationTest extends TestCase {
 		$services = [
 			LoggerInterface::class                 => $logger,
 			RetentionServiceInterface::class       => $retention,
-			ArchivalSettingsReaderInterface::class => $settings,
+			ArchivalSettingsInterface::class => $settings,
 			IAppConfig::class                      => $appConfig,
 			SaveObject::class                      => $saver,
 			SaveObjectWriterInterface::class       => $saver,

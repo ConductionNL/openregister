@@ -65,12 +65,42 @@ class WebhookEventListenerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->webhookService = $this->createMock(WebhookService::class);
+		// Every case below is about an event that has a subscribed webhook;
+		// the no-webhook guard has its own tests.
+		$this->webhookService->method('hasWebhooksFor')->willReturn(true);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->listener = new WebhookEventListener(
 			$this->webhookService,
 			$this->logger,
 		);
+	}
+
+	// --- No webhook for the event: nothing is serialised or dispatched ---
+
+	public function testAnEventWithoutWebhooksIsNotSerialised(): void {
+		$service = $this->createMock(WebhookService::class);
+		$service->expects($this->once())
+			->method('hasWebhooksFor')
+			->with(ObjectCreatedEvent::class)
+			->willReturn(false);
+		$service->expects($this->never())->method('dispatchEvent');
+
+		$object = $this->createMock(ObjectEntity::class);
+		$object->expects($this->never())->method('jsonSerialize');
+
+		$listener = new WebhookEventListener($service, $this->logger);
+		$listener->handle(new ObjectCreatedEvent($object));
+	}
+
+	public function testAnUnknownEventWithoutWebhooksLogsNothing(): void {
+		$service = $this->createMock(WebhookService::class);
+		$service->method('hasWebhooksFor')->willReturn(false);
+		$service->expects($this->never())->method('dispatchEvent');
+		$this->logger->expects($this->never())->method('warning');
+
+		$listener = new WebhookEventListener($service, $this->logger);
+		$listener->handle($this->createMock(Event::class));
 	}
 
 	// --- Unknown event returns null payload, logs warning, no dispatch ---
@@ -206,6 +236,32 @@ class WebhookEventListenerTest extends TestCase {
 	}
 
 	// --- ObjectUpdatedEvent ---
+
+	public function testObjectUpdatedEventCarriesBothStates(): void {
+		$old = new ObjectEntity();
+		$old->setUuid('uuid-456');
+		$old->setObject(['status' => 'draft']);
+		$new = new ObjectEntity();
+		$new->setUuid('uuid-456');
+		$new->setObject(['status' => 'final']);
+
+		$payloads = [];
+		$this->webhookService->method('dispatchEvent')->willReturnCallback(
+			function (string $eventName, array $payload) use (&$payloads): void {
+				$payloads[] = $payload;
+			}
+		);
+
+		$this->listener->handle(new ObjectUpdatedEvent($new, $old));
+		$this->listener->handle(new ObjectUpdatedEvent($new));
+
+		$this->assertCount(2, $payloads);
+		$this->assertSame('final', $payloads[0]['newObject']['status']);
+		$this->assertSame('draft', $payloads[0]['oldObject']['status']);
+		$this->assertSame($payloads[0]['object'], $payloads[0]['newObject']);
+		$this->assertNull($payloads[1]['oldObject']);
+		$this->assertSame($payloads[1]['object'], $payloads[1]['newObject']);
+	}
 
 	public function testObjectUpdatedEventDispatchesWebhook(): void {
 		$object = new ObjectEntity();

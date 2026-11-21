@@ -67,7 +67,7 @@ test.describe('linked-entity-types — entities REST lifecycle', () => {
 		if (!entityId) test.skip(true, 'no entity created in this run')
 		const resp = await request.delete(
 			`/index.php/apps/openregister/api/entities/${entityId}`,
-			{ headers: { Accept: 'application/json' } },
+			{ headers: { Accept: 'application/json', 'OCS-APIRequest': 'true' } },
 		)
 		expect(resp.status()).toBeLessThan(500)
 		entityId = null
@@ -76,7 +76,7 @@ test.describe('linked-entity-types — entities REST lifecycle', () => {
 	test.afterAll(async ({ request }) => {
 		if (!entityId) return
 		await request
-			.delete(`/index.php/apps/openregister/api/entities/${entityId}`)
+			.delete(`/index.php/apps/openregister/api/entities/${entityId}`, { headers: { 'OCS-APIRequest': 'true' } })
 			.catch(() => {})
 	})
 })

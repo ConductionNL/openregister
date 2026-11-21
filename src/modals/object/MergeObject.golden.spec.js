@@ -9,7 +9,9 @@ jest.mock('../../store/store.js', () => ({
 	registerStore: {},
 	schemaStore: {},
 }))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, s) => s }))
+jest.mock('@nextcloud/l10n', () => ({
+	translate: (app, s, vars = {}) => s.replace(/{(\w+)}/g, (match, key) => (key in vars ? String(vars[key]) : match)),
+}))
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('vue-material-design-icons/ArrowLeft.vue', () => ({}))
 jest.mock('vue-material-design-icons/ArrowRight.vue', () => ({}))

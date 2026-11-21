@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { Source } from '../../entities/index.js'
 import { getJson, objectAnswer, sendJson } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 
 /**
  * Where a source is saved: POST to the list for a new source, PUT to the
@@ -102,9 +103,9 @@ export const useSourceStore = defineStore('source', {
 
 			const endpoint = `/index.php/apps/openregister/api/sources/${sourceItem.id}`
 
-			const response = await fetch(endpoint, {
+			const response = await fetch(endpoint, withRequestToken({
 				method: 'DELETE',
-			})
+			}))
 
 			const responseData = await objectAnswer(response)
 

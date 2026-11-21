@@ -482,6 +482,29 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 	}//end testSchemaOwnBlockStillRefusesTheRegistersGroup()
 
 	/**
+	 * On a schema whose own read rule is only `authenticated`, a non-admin sees
+	 * the rows of the active organisation alone: `authenticated` never lifts the
+	 * organisation filter and never admits rows with no organisation. Those rows
+	 * are for admins only; giving them an organisation is the data fix.
+	 *
+	 * @return void
+	 */
+	public function testSchemaOwnAuthenticatedRuleHidesOrganisationlessRows(): void {
+		$this->wireLearniqRegister();
+		$schema = $this->createSchema(authorization: ['read' => ['authenticated']]);
+		$this->mockUser(uid: 'juf-01', groups: ['teachers']);
+
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+		$this->assertFalse(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
+		);
+		$this->assertSame(expected: ['own-org'], actual: $this->visibleRows(schema: $schema));
+
+	}//end testSchemaOwnAuthenticatedRuleHidesOrganisationlessRows()
+
+	/**
 	 * A register rule that only matches `_organisation` admits nothing extra.
 	 *
 	 * @return void

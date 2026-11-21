@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  * transform. They used to be static methods on PermissionHandler; they live here
  * so those callers name this small class instead of the whole permission handler.
  *
- * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 final class McpScope {
 
@@ -69,7 +69,7 @@ final class McpScope {
 	 * @return array|null The block with the mcp scope removed, or null when
 	 *                    nothing enforceable remains.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function strip(?array $authorization): ?array {
 		if ($authorization === null || $authorization === []) {
@@ -133,7 +133,7 @@ final class McpScope {
 	 *
 	 * @return array<int, string> The offered action names, in declaration order.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function offeredActions(?array $authorization): array {
 		if ($authorization === null || $authorization === []) {

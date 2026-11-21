@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * A step on its way to its node.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final class StepDispatch {
 	/**
@@ -36,7 +36,7 @@ final class StepDispatch {
 	 * @param array $items   The input items.
 	 * @param array $context Run-level metadata.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function __construct(
 		public readonly array $step,
@@ -50,7 +50,7 @@ final class StepDispatch {
 	 *
 	 * @return string The type.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function type(): string {
 		return trim((string)($this->step['type'] ?? ''));
@@ -61,7 +61,7 @@ final class StepDispatch {
 	 *
 	 * @return array The configuration.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function config(): array {
 		return (array)($this->step['config'] ?? []);
@@ -72,7 +72,7 @@ final class StepDispatch {
 	 *
 	 * @return string The checkpoint label.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function where(): string {
 		if ($this->type() === '') {
@@ -89,7 +89,7 @@ final class StepDispatch {
 	 *
 	 * @return self The scoped dispatch.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function withContext(array $context): self {
 		return new self(step: $this->step, items: $this->items, context: $context);
@@ -100,7 +100,7 @@ final class StepDispatch {
 	 *
 	 * @return FlowNodeCall The items, the step configuration and the context.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function nodeCall(): FlowNodeCall {
 		return new FlowNodeCall(items: $this->items, config: $this->config(), context: $this->context);

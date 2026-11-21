@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\ShippedBaseline;
  * A null shipped value means the leaf was added locally and never shipped,
  * so resetting it removes it.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 final class LeafReset {
 
@@ -49,7 +49,7 @@ final class LeafReset {
 	 *
 	 * @return bool True when the leaf was never shipped.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function removes(): bool {
 		return $this->to === null;
@@ -60,7 +60,7 @@ final class LeafReset {
 	 *
 	 * @return self The reset below the first segment.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function below(): self {
 		return new self(segments: array_slice($this->segments, 1), to: $this->to);
