@@ -1,18 +1,17 @@
 <?php
 
 /**
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * The text disclosure table and the per-step outcomes of an anonymisation run.
+ *
+ * `openregister_text_disclosures` holds one row per external call that
+ * carried a document's text (service, host, moment, byte count; never the
+ * text). `openregister_anonymisation_log.steps` holds, per run, the outcome
+ * of every content-altering step as JSON.
+ *
+ * Idempotent: the table and the column are created only when absent.
+ *
  * SPDX-License-Identifier: EUPL-1.2
- *
- * The triggering object of a cascade, as an indexed column on the audit trail.
- *
- * A delete that cascades writes one audit entry per dependant it deleted and
- * per reference it cleared or defaulted, each naming the root object it acted
- * for. That name lived only inside the JSON `changed` column, which nothing
- * indexes, so finding everything one delete took meant scanning audit rows.
- * The column is written in the same insert as the row and is a projection of
- * `changed`, so no existing row is rewritten and no hash chain is re-sealed
- * (openregister ADR-003); rows written before this migration stay null.
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
@@ -23,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
 
 declare(strict_types=1);
@@ -34,60 +33,59 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Adds `trigger_object` and the (trigger_object, action) index to the audit trail.
+ * Create the text disclosure table and the anonymisation log's steps column.
  *
- * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+ * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
  */
-class Version1Date20261113140000 extends SimpleMigrationStep {
+class Version1Date20261113140000 extends TargetedMigrationStep {
 
 	/**
-	 * The audit trail table.
+	 * Change the database schema.
+	 *
+	 * @param IOutput                 $output        Output for the migration process.
+	 * @param Closure                 $schemaClosure The schema closure.
+	 * @param array<array-key, mixed> $options       Migration options.
+	 *
+	 * @return ISchemaWrapper|null The changed schema.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md
 	 */
-	private const TABLE = 'openregister_audit_trails';
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
 
-	/**
-	 * The column this migration adds.
-	 */
-	private const COLUMN = 'trigger_object';
-
-	/**
-	 * The index this migration adds.
-	 */
-	private const INDEX = 'or_audit_trigger_action';
-
-	/**
-	 * Add the column and the index unless they are already there.
-	 *
-	 * @param IOutput              $output        Migration output.
-	 * @param Closure              $schemaClosure Returns the schema wrapper.
-	 * @param array<string, mixed> $options       Migration options.
-	 *
-	 * @return ISchemaWrapper|null The schema, changed or not.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
-	 *
-	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
-	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
-		if ($schema->hasTable(self::TABLE) === false) {
-			return $schema;
+
+		if ($schema->hasTable('openregister_text_disclosures') === false) {
+			$table = $schema->createTable('openregister_text_disclosures');
+			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
+			$table->addColumn('file_id', Types::BIGINT, ['notnull' => false]);
+			$table->addColumn('source_type', Types::STRING, ['notnull' => true, 'length' => 32]);
+			$table->addColumn('source_id', Types::BIGINT, ['notnull' => true]);
+			$table->addColumn('service', Types::STRING, ['notnull' => true, 'length' => 64]);
+			$table->addColumn('host', Types::STRING, ['notnull' => true, 'length' => 255]);
+			$table->addColumn('disclosed_at', Types::DATETIME, ['notnull' => true]);
+			$table->addColumn('bytes', Types::BIGINT, ['notnull' => true, 'default' => 0]);
+
+			$table->setPrimaryKey(['id']);
+			$table->addIndex(['file_id'], 'idx_or_txtdisc_file');
+			$table->addIndex(['source_type', 'source_id'], 'idx_or_txtdisc_source');
+
+			$output->info('Created openregister_text_disclosures table');
 		}
 
-		$table = $schema->getTable(self::TABLE);
-		if ($table->hasColumn(self::COLUMN) === false) {
-			$table->addColumn(self::COLUMN, Types::STRING, ['notnull' => false, 'length' => 36]);
-			$output->info('Added column '.self::COLUMN.' to '.self::TABLE);
-		}
-
-		if ($table->hasIndex(self::INDEX) === false && $table->hasColumn('action') === true) {
-			$table->addIndex([self::COLUMN, 'action'], self::INDEX);
-			$output->info('Added index '.self::INDEX.' on '.self::TABLE.' (trigger_object, action)');
+		if ($schema->hasTable('openregister_anonymisation_log') === true) {
+			$log = $schema->getTable('openregister_anonymisation_log');
+			if ($log->hasColumn('steps') === false) {
+				$log->addColumn('steps', Types::TEXT, ['notnull' => false]);
+				$output->info('Added steps to openregister_anonymisation_log');
+			}
 		}
 
 		return $schema;
-	}//end changeSchema()
+
+	}//end changeTargetedSchema()
 }//end class

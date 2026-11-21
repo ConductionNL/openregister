@@ -255,6 +255,24 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
+	 * `x-openregister-required-when` is published, so the form and any other
+	 * client can discover the rule the server enforces.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	public function testTheRequiredWhenKeyIsPublished(): void {
+		$this->assertContains(needle: 'x-openregister-required-when', haystack: $this->vocabulary->keys());
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'x-openregister-required-when' => ['field' => 'requestType', 'op' => 'eq', 'value' => 'Klacht']],
+				path: '/complaintCategory'
+			)
+		);
+	}
+
+	/**
 	 * A vendor extension whose meaning nobody has defined still saves.
 	 *
 	 * The half of the old test that has NOT changed, kept deliberately: an
@@ -418,13 +436,40 @@ class PropertyVocabularyTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheKeysTheFleetAlreadyWritesAreHeld(): void {
-		foreach (['authorization', 'table', 'widget', 'defaultBehavior'] as $key) {
+		foreach (['authorization', 'table', 'widget', 'defaultBehavior', 'columns', 'totals', 'addFrom'] as $key) {
 			$this->assertTrue(
 				condition: $this->vocabulary->hasKey(key: $key),
 				message: "'{$key}' is written in shipped schemas across the fleet and the vocabulary drops it"
 			);
 		}
 	}//end testTheKeysTheFleetAlreadyWritesAreHeld()
+
+	/**
+	 * The lines of a quote save with the table keys the child-records field reads.
+	 *
+	 * nextcloud-vue's CnChildRecordsField reads `columns`, `totals` and
+	 * `addFrom` off an inverse-relation property. Pipelinq ships them on
+	 * `salesQuote.lines` and `lead.lines`; refusing them dropped both schemas
+	 * from the register at import.
+	 *
+	 * @return void
+	 */
+	public function testAnInlineEditedRelationTableSaves(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: [
+					'type' => 'array',
+					'items' => ['$ref' => 'salesQuoteLine'],
+					'inversedBy' => 'quote',
+					'columns' => ['description', 'quantity', 'unitPrice'],
+					'totals' => [['key' => 'subtotal', 'label' => 'Subtotal', 'sum' => 'total']],
+					'addFrom' => ['schema' => 'product', 'register' => 'pipelinq', 'map' => ['name' => 'name']],
+				],
+				path: '/lines'
+			),
+			message: 'the child-records table keys are refused at schema save'
+		);
+	}//end testAnInlineEditedRelationTableSaves()
 
 	/**
 	 * The labels the export renderer reads beside an enum save.

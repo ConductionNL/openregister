@@ -189,7 +189,7 @@ final class ValidationErrorMessages {
 	 *
 	 * @return string The message.
 	 *
-	 * @spec openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md#REQ-MSR-002
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function requiredMessage(array $args, string $path='root'): string {
 		$missing = ($args['missing'] ?? []);

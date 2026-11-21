@@ -23,7 +23,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ScheduleManifest::fromManifest is its named constructor.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleFlowSync {
 	/**
@@ -65,7 +65,7 @@ class ScheduleFlowSync {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function apply(ScheduleRelease $release): void {
 		if ($release->refusal !== null) {

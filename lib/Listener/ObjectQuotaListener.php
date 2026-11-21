@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaRefusal;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -59,14 +60,14 @@ class ObjectQuotaListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE = 'object-quota-exceeded';
+	public const ERROR_CODE = ObjectQuotaRefusal::ERROR_CODE;
 
 	/**
 	 * The error code of a create refused because the quota could not be checked.
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE_UNCHECKED = 'object-quota-unchecked';
+	public const ERROR_CODE_UNCHECKED = ObjectQuotaRefusal::ERROR_CODE_UNCHECKED;
 
 	/**
 	 * Constructor.
@@ -207,10 +208,7 @@ class ObjectQuotaListener implements IEventListener {
 
 		return [
 			'code' => self::ERROR_CODE_UNCHECKED,
-			'message' => sprintf(
-				'Schema "%s" limits how many objects one organisation holds, and that limit could not be checked just now, so nothing was created. Try again.',
-				$scope['schema']
-			),
+			'message' => self::uncheckedMessage(schema: $scope['schema']),
 		];
 	}//end uncheckedRefusal()
 
@@ -225,16 +223,39 @@ class ObjectQuotaListener implements IEventListener {
 	private static function exceededRefusal(array $scope, Schema $schema): array {
 		return [
 			'code' => self::ERROR_CODE,
-			'message' => sprintf(
-				'This organisation already holds %d of at most %d objects of schema "%s".',
-				$scope['count'],
-				$scope['limit'],
-				(string)$schema->getSlug()
-			),
+			'message' => self::exceededMessage(count: $scope['count'], limit: $scope['limit'], schema: (string)$schema->getSlug()),
 			'schema' => (string)$schema->getSlug(),
 			'organisation' => $scope['organisation'],
 			'count' => $scope['count'],
 			'limit' => $scope['limit'],
 		];
 	}//end exceededRefusal()
+
+	/**
+	 * The refusal message of a create past the cap, shared with the bulk path.
+	 *
+	 * @param int    $count  How many the organisation holds.
+	 * @param int    $limit  The cap.
+	 * @param string $schema The schema slug.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	public static function exceededMessage(int $count, int $limit, string $schema): string {
+		return (new ObjectQuotaRefusal(schema: $schema, held: $count, limit: $limit))->message();
+	}//end exceededMessage()
+
+	/**
+	 * The refusal message of a create whose quota could not be checked, shared with the bulk path.
+	 *
+	 * @param string $schema The schema reference.
+	 *
+	 * @return string The message.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	public static function uncheckedMessage(string $schema): string {
+		return (new ObjectQuotaRefusal(schema: $schema))->message();
+	}//end uncheckedMessage()
 }//end class

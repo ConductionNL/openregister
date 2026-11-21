@@ -30,8 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -46,14 +44,12 @@ use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use RuntimeException;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Service for referential integrity enforcement on object deletion.
@@ -315,8 +311,8 @@ class ReferentialIntegrityService {
 	/**
 	 * Split cascade targets into the ones that may be deleted and the ones the law keeps.
 	 *
-	 * Asks {@see ArchivalRetentionGuard}, which asks
-	 * {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}. That is the
+	 * Asks the cascade retention check {@see IntegrityCascadeControls} holds,
+	 * which asks {@see \OCA\OpenRegister\Db\Schema::hasArchivalAnnotation()}. That is the
 	 * single definition of "is archival" and the four HTTP delete doors read the
 	 * same one, so the cascade cannot quietly disagree with them.
 	 *
@@ -1820,7 +1816,7 @@ class ReferentialIntegrityService {
 	/**
 	 * Log a referential integrity action to the audit trail.
 	 *
-	 * Creates an AuditTrail entry recording what integrity action was taken,
+	 * Creates an audit trail entry recording what integrity action was taken,
 	 * on which object, triggered by what, and by whom. Failures are caught
 	 * and logged as warnings to avoid blocking the integrity action.
 	 *
@@ -1842,114 +1838,21 @@ class ReferentialIntegrityService {
 	}//end logIntegrityAction()
 
 	/**
-	 * Build and store the audit row of an integrity action.
+	 * Store the audit row of an integrity action, through the audit trail.
 	 *
 	 * Expiry follows the retention of the object the row describes, not a flat
 	 * 30 days (or#4101): a cleared reference or a cascade on a record kept for
-	 * years must stay explainable for as long.
+	 * years must stay explainable for as long. So the object is looked up here
+	 * when the caller did not pass it.
 	 *
 	 * @param IntegrityAuditEntry $entry What happened to which object.
 	 *
 	 * @return void
 	 */
 	private function storeIntegrityRow(IntegrityAuditEntry $entry): void {
-		$auditTrail = self::integrityAuditRow(entry: $entry);
-		$this->controls->auditTrailMapper->applyRetentionExpiry(
-			auditTrail: $auditTrail,
-			objectEntity: ($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid))
-		);
-		self::keepUntil(auditTrail: $auditTrail, until: $entry->expiresNoEarlierThan);
-		$this->controls->auditTrailMapper->insert($auditTrail);
+		$entry->about($entry->object ?? $this->findIntegrityAuditObject(objectUuid: $entry->objectUuid));
+		$this->controls->auditTrailMapper->recordIntegrityAction(entry: $entry);
 	}//end storeIntegrityRow()
-
-	/**
-	 * Push a finite expiry out to the given moment, so the evidence of a cleared
-	 * reference outlives the recovery window of the delete that cleared it.
-	 *
-	 * An entry retained indefinitely (null expiry) stays so, and an expiry
-	 * already later than the floor is left as it is: the floor only lengthens.
-	 * Set before the row is sealed, as every expiry is.
-	 *
-	 * @param AuditTrail              $auditTrail The entry being written.
-	 * @param \DateTimeImmutable|null $until      The earliest expiry, or null for no floor.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
-	 */
-	private static function keepUntil(AuditTrail $auditTrail, ?\DateTimeImmutable $until): void {
-		$expires = $auditTrail->getExpires();
-		if ($until === null || $expires === null) {
-			return;
-		}
-
-		if ($expires->getTimestamp() < $until->getTimestamp()) {
-			$auditTrail->setExpires(DateTime::createFromImmutable($until));
-		}
-	}//end keepUntil()
-
-	/**
-	 * The uuid of the deleted object an integrity entry acted for, for the indexed `trigger_object` column.
-	 *
-	 * `set_null` and `set_default` entries carry it in `changed` (see
-	 * {@see self::triggerOf()}); a RESTRICT block carries none and stays null.
-	 *
-	 * @param array $changed The entry's change payload.
-	 *
-	 * @return string|null The triggering object's uuid, or null.
-	 *
-	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
-	 */
-	private static function triggerObjectOf(array $changed): ?string {
-		$trigger = ($changed['triggerObject'] ?? null);
-		if (is_string($trigger) === false || trim($trigger) === '') {
-			return null;
-		}
-
-		return $trigger;
-	}//end triggerObjectOf()
-
-	/**
-	 * The audit row of an integrity action.
-	 *
-	 * @param IntegrityAuditEntry $entry What happened to which object.
-	 *
-	 * @return AuditTrail The row, not yet stored.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private static function integrityAuditRow(IntegrityAuditEntry $entry): AuditTrail {
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setObjectUuid($entry->objectUuid);
-		$auditTrail->setAction($entry->action);
-		$auditTrail->setChanged($entry->changed);
-		$auditTrail->setTriggerObject(self::triggerObjectOf(changed: $entry->changed));
-		$auditTrail->setUser($entry->userId);
-		$auditTrail->setCreated(new DateTime());
-
-		return self::scopedAuditRow(auditTrail: $auditTrail, entry: $entry);
-	}//end integrityAuditRow()
-
-	/**
-	 * Set the schema and register an integrity audit row is scoped to, when the entry names them.
-	 *
-	 * @param AuditTrail          $auditTrail The row.
-	 * @param IntegrityAuditEntry $entry      What happened to which object.
-	 *
-	 * @return AuditTrail The row.
-	 */
-	private static function scopedAuditRow(AuditTrail $auditTrail, IntegrityAuditEntry $entry): AuditTrail {
-		if ($entry->schemaId !== null) {
-			$auditTrail->setSchema((int)$entry->schemaId);
-		}
-
-		if ($entry->registerId !== null) {
-			$auditTrail->setRegister((int)$entry->registerId);
-		}
-
-		return $auditTrail;
-	}//end scopedAuditRow()
 
 	/**
 	 * The object an integrity audit row describes, for its retention.

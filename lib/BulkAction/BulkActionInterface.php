@@ -32,6 +32,13 @@ namespace OCA\OpenRegister\BulkAction;
 
 /**
  * The contract every bulk action implements.
+ *
+ * This base declares no `apply()`, so an action written for either published
+ * signature loads. Implement {@see StepBulkActionInterface} (one `BulkStep`)
+ * for new actions; actions that still take
+ * `(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null)`
+ * keep working and may say so with {@see LegacyBulkActionInterface}. The job
+ * executor calls either form through {@see BulkActionInvoker}.
  */
 interface BulkActionInterface {
 
@@ -90,17 +97,4 @@ interface BulkActionInterface {
 	 * @throws \InvalidArgumentException When the parameters do not make sense.
 	 */
 	public function validateParameters(array $parameters): void;
-
-	/**
-	 * What the action would do, or does, to one object.
-	 *
-	 * The preview and the commit call this same method, differing only in
-	 * the step's `commit`. A second implementation for the rehearsal would be
-	 * a promise rather than a rehearsal (D-1).
-	 *
-	 * @param BulkStep $step The object, the job's parameters, rehearsal or commit, and the actor.
-	 *
-	 * @return BulkActionResult What happened, or what would happen.
-	 */
-	public function apply(BulkStep $step): BulkActionResult;
 }//end interface

@@ -35,6 +35,9 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -51,23 +54,19 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
@@ -87,6 +86,10 @@ use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
+use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
+use OCA\OpenRegister\Service\Object\SampleValidationErrors;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderRequest;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
@@ -146,7 +149,6 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -514,13 +516,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the mappers bundle.
      *
-     * @var ViewMapperInterface
-     */
-    private readonly ViewMapperInterface $viewMapper;
-
-    /**
-     * Collaborator taken from the mappers bundle.
-     *
      * @var MagicMapperInterface
      */
     private readonly MagicMapperInterface $objectMapper;
@@ -528,9 +523,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the storage bundle.
      *
-     * @var FileFolderServiceInterface
+     * @var ObjectFolderAccessInterface
      */
-    private readonly FileFolderServiceInterface $fileService;
+    private readonly ObjectFolderAccessInterface $fileService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -538,13 +533,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var IUserSession
      */
     private readonly IUserSession $userSession;
-
-    /**
-     * Collaborator taken from the storage bundle.
-     *
-     * @var SearchTrailService
-     */
-    private readonly SearchTrailService $searchTrailService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -612,9 +600,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the history bundle.
      *
-     * @var AutoTransitionPass|null
+     * @var SaveBoundaryInterface|null
      */
-    private readonly ?AutoTransitionPass $autoTransitions;
+    private readonly ?SaveBoundaryInterface $autoTransitions;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -664,11 +652,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->migrationHandler = $write->removal->migrationHandler;
         $this->registerMapper = $platform->mappers->registerMapper;
         $this->schemaMapper = $platform->mappers->schemaMapper;
-        $this->viewMapper = $platform->mappers->viewMapper;
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;
-        $this->searchTrailService = $platform->storage->searchTrailService;
         $this->groupManager = $access->caller->groupManager;
         $this->userManager = $access->caller->userManager;
         $this->organisationService = $access->authorisation->organisationService;
@@ -1472,6 +1458,105 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end setObject()
 
     /**
+     * Whether a sample record would be accepted, without saving it.
+     *
+     * Runs what a save runs before it writes: the save defaults, the declared
+     * bounds, the schema validation (when the schema validates hard, or the
+     * sample is a draft), the read-only and lens rules, and then every
+     * {@see ObjectSaveCheck} (coded values, concept shapes, dependent
+     * values). Writes nothing and dispatches no object event. With an id the
+     * sample is merged onto that stored object and checked as an update.
+     *
+     * The service's current register, schema and object are restored after,
+     * so a validate call leaves no state behind.
+     *
+     * @param array                  $object   The sample record.
+     * @param Register|string|int    $register The register (id, uuid or slug).
+     * @param Schema|string|int      $schema   The schema (id, uuid or slug).
+     * @param string|null            $id       The object the sample updates, or null for a create.
+     *
+     * @return ObjectValidationVerdict The verdict, one error per refused property.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object to update does not exist.
+     *
+     * @spec openspec/changes/records-validate-without-saving/specs/objects-crud/spec.md#requirement-a-record-can-be-validated-without-saving-it
+     */
+    public function validateObject(
+        array $object,
+        Register | string | int $register,
+        Schema | string | int $schema,
+        ?string $id=null
+    ): ObjectValidationVerdict {
+        $previous = [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject];
+        try {
+            $this->setRegister(register: $register);
+            $this->setSchema(schema: $schema);
+            return $this->sampleVerdict(object: $object, existing: $this->sampleTarget(id: $id));
+        } finally {
+            [$this->currentRegister, $this->currentSchema, $this->currentSchemaRef, $this->currentObject] = $previous;
+        }
+    }//end validateObject()
+
+    /**
+     * The stored object a sample updates, or null for a create.
+     *
+     * @param string|null $id The object's id, uuid or slug.
+     *
+     * @return ObjectEntity|null
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When it does not exist.
+     */
+    private function sampleTarget(?string $id): ?ObjectEntity
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        return $this->objectMapper->find(
+            $id,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: false,
+            _multitenancy: false
+        );
+    }//end sampleTarget()
+
+    /**
+     * The verdict on a sample against the current register and schema.
+     *
+     * @param array             $object   The sample.
+     * @param ObjectEntity|null $existing The stored object on an update.
+     *
+     * @return ObjectValidationVerdict
+     */
+    private function sampleVerdict(array $object, ?ObjectEntity $existing): ObjectValidationVerdict
+    {
+        $data = $object;
+        if ($existing !== null) {
+            $data = array_merge(($existing->getObject() ?? []), $object);
+        }
+
+        $errors = [];
+        try {
+            $data = $this->prepareObjectForSave(
+                object: $data,
+                write: ['uuid' => $existing?->getUuid(), 'isCreate' => $existing === null]
+            );
+        } catch (ValidationException $refused) {
+            $errors = SampleValidationErrors::fromValidation(exception: $refused);
+        } catch (CustomValidationException $refused) {
+            $errors = SampleValidationErrors::fromCustom(exception: $refused);
+        }
+
+        if ($this->currentSchema !== null) {
+            $checks = $this->container->get(ObjectSaveChecks::class);
+            $errors = array_merge($errors, $checks->violations(object: $data, schema: $this->currentSchema, existing: $existing));
+        }
+
+        return new ObjectValidationVerdict(errors: $errors);
+    }//end sampleVerdict()
+
+    /**
      * Get the current object context.
      *
      * @return ObjectEntity|null The current object entity or null if not set.
@@ -1925,7 +2010,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // which delegates to ProcessingLogService unchanged: same opt-in,
         // same storage, same retention, same readers.
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+            $this->container->get(ProcessingReadsInterface::class)
                 ->registerProcessingRead(object: $object);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks or slows the read path.
@@ -1954,8 +2039,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
+            $this->container->get(ProcessingReadsInterface::class)
+                ->registerQueriedRead(objects: $objects, query: $query);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(
@@ -4880,7 +4965,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws ReadOnlyTypeException When the current schema is view-backed.
      *
-     * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
      */
     private function rejectIfViewBacked(string $operation): void
     {
@@ -6075,6 +6160,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lockObject()
+
+    /**
+     * Claim a lock for an explicit owner, atomically, without a session.
+     *
+     * For background jobs and workers that have no signed-in user. Succeeds
+     * when the object is unlocked, its lock expired, or the same owner (and
+     * run) already holds it; of two racing claimers only one gets true. No
+     * RBAC check runs, as there is no user to check: locks taken for a person
+     * keep going through lockObject().
+     *
+     * @param LockRequest $request The object, process, duration and flow run step of the lock.
+     * @param string      $ownerId The owner the lock is taken for.
+     *
+     * @return bool True when the caller now holds the lock; false when another holder has it.
+     *
+     * @throws \InvalidArgumentException When the owner id is empty.
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
+     */
+    public function claimObject(LockRequest $request, string $ownerId): bool
+    {
+        return $this->lockHandler->claim(request: $request, ownerId: $ownerId);
+    }//end claimObject()
 
     /**
      * Unlock an object
@@ -7463,11 +7571,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array
     {
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
             table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
-            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: SchemaTeardownInterface::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7477,8 +7585,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Empties every magic table of every schema the register lists, in one
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
-     * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsOfTable() gives.
+     * any of those schemas is archival. The work lives in SchemaDeletionService
+     * (Compliance), reached through SchemaTeardownInterface and resolved lazily.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -7499,7 +7607,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
         $register = $this->registerMapper->find(id: $registerId);
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,

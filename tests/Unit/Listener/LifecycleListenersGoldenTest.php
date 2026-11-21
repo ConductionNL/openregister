@@ -473,11 +473,11 @@ class LifecycleListenersGoldenTest extends TestCase {
 				],
 			]
 		);
+		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 		$this->executor->expects($this->once())->method('run')
-			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft']))
+			->with($actions, new TransitionPayload('submit', ['id' => 'obj-1', 'status' => 'sent'], ['id' => 'obj-1', 'status' => 'draft'], $event->getNewObject()))
 			->willReturn(['id' => 'obj-1', 'status' => 'sent', 'stamped' => true]);
 
-		$event = $this->update(['status' => 'draft'], ['status' => 'sent']);
 		$this->actionListener()->handle($event);
 
 		$this->assertSame(['status' => 'sent', 'stamped' => true], $this->data($event->getNewObject()));

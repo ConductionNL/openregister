@@ -83,7 +83,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 	}
@@ -286,7 +287,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -312,7 +314,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -344,7 +347,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -381,6 +385,7 @@ class AnonymisationBackendServiceTest extends TestCase {
 				fileSettingsHandler: $this->fileSettingsHandler,
 				logger: $this->logger,
 				connectionReporter: $reporter,
+				patterns: new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion(),
 			)
 		);
 	}

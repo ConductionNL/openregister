@@ -538,6 +538,8 @@
                 "actor": "text-actor",
                 "acknowledgedBy": "text-acknowledgedBy",
                 "acknowledgedAt": "2026-02-03T04:05:06+00:00",
+                "noticeSentTo": 7,
+                "noticeSentAt": "2026-02-03T04:05:06+00:00",
                 "created": "2026-02-03T04:05:06+00:00"
             },
             "updated": [
@@ -548,6 +550,8 @@
                 "actor",
                 "acknowledgedBy",
                 "acknowledgedAt",
+                "noticeSentTo",
+                "noticeSentAt",
                 "created"
             ]
         },
@@ -564,6 +568,8 @@
                 "actor": "text-actor",
                 "acknowledgedBy": "text-acknowledgedBy",
                 "acknowledgedAt": "2026-02-03T04:05:06+00:00",
+                "noticeSentTo": 7,
+                "noticeSentAt": "2026-02-03T04:05:06+00:00",
                 "created": "2026-02-03T04:05:06+00:00"
             },
             "updated": [
@@ -575,6 +581,8 @@
                 "actor",
                 "acknowledgedBy",
                 "acknowledgedAt",
+                "noticeSentTo",
+                "noticeSentAt",
                 "created"
             ]
         }

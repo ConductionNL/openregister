@@ -80,7 +80,7 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	 * @phpstan-return IUser
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getUser(): IUser {
 		$openRegisterUser = $this->userManager->get(self::APP_USER);

@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
  *
  * @psalm-immutable
  *
- * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 final class PlaceholderValues {
 	/**
