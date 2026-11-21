@@ -29,14 +29,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `openregister_flow_moments`.
  *
  * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
  */
-class Version1Date20261114170000 extends SimpleMigrationStep {
+class Version1Date20261114170000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -52,17 +51,17 @@ class Version1Date20261114170000 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure Returns the schema.
 	 * @param array   $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null
+	 * @return ISchemaWrapper|null The schema, unchanged when the table already exists.
 	 *
 	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->createTable(self::TABLE);
@@ -83,5 +82,5 @@ class Version1Date20261114170000 extends SimpleMigrationStep {
 		$output->info('Created ' . self::TABLE . ' for calendar flow triggers.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
