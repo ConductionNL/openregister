@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Repair\CredentialOnboarding;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
 use OCA\OpenRegister\AppHost\Service\GenericSettingsService;
 use OCP\App\IAppManager;
@@ -84,7 +85,7 @@ class GenericInitializeSettingsDescriptionTest extends TestCase {
 			'demoapp',
 			$this->createMock(GenericSettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$appManager
+			new CredentialOnboarding(appManager: $appManager)
 		);
 
 		$method = new \ReflectionMethod(GenericInitializeSettings::class, 'manifestDescription');
@@ -96,7 +97,7 @@ class GenericInitializeSettingsDescriptionTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->willThrowException(new \RuntimeException('no app'));
 
-		$step   = new GenericInitializeSettings('demoapp', $this->createMock(GenericSettingsService::class), $this->createMock(LoggerInterface::class), $appManager);
+		$step   = new GenericInitializeSettings('demoapp', $this->createMock(GenericSettingsService::class), $this->createMock(LoggerInterface::class), new CredentialOnboarding(appManager: $appManager));
 		$method = new \ReflectionMethod(GenericInitializeSettings::class, 'manifestDescription');
 		$method->setAccessible(true);
 		$this->assertNull($method->invoke($step));
