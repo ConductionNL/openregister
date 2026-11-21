@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
-use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\ProcessDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -72,7 +72,7 @@ final class CalculationAnnotationCheck {
 	 */
 	public function check(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: self::ANNOTATION);
-		$forwarding = SchemaDeclarationValidators::propertyCalculations();
+		$forwarding = ProcessDeclarationValidators::propertyCalculations();
 		$forwarded = $forwarding->fromProperties(properties: $schema->getProperties());
 		if ($annotation->block() === [] && $forwarded === []) {
 			return;
@@ -100,7 +100,7 @@ final class CalculationAnnotationCheck {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function errors(SchemaAnnotation $annotation, array $properties): array {
-		$forwarding = SchemaDeclarationValidators::propertyCalculations();
+		$forwarding = ProcessDeclarationValidators::propertyCalculations();
 		$merged = $forwarding->merge(annotation: $annotation->block(), properties: $properties);
 		$duplicates = array_map(
 			static fn (string $duplicate): array => [
@@ -113,7 +113,7 @@ final class CalculationAnnotationCheck {
 			array_values($forwarding->duplicates(annotation: $annotation->block(), properties: $properties))
 		);
 
-		return array_merge($duplicates, SchemaDeclarationValidators::calculation()->validate($this->shape(annotation: $annotation, merged: $merged)));
+		return array_merge($duplicates, ProcessDeclarationValidators::calculation()->validate($this->shape(annotation: $annotation, merged: $merged)));
 	}//end errors()
 
 	/**

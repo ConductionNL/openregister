@@ -21,7 +21,6 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -31,6 +30,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Controller\Support\GitHubTokenFailure;
 use OCA\OpenRegister\Controller\Support\UserSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Class UserSettingsController
@@ -74,7 +74,7 @@ class UserSettingsController extends Controller {
 		IRequest $request,
 		UserSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->gitHubService = $services->gitHubService;
 		$this->userSession = $services->userSession;

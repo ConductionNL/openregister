@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -26,7 +27,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
@@ -79,7 +79,7 @@ class RelationHandler {
 	 * @param RelationHandlerStores $stores Objects, schemas, registers and relation names.
 	 * @param RelatedRowRbacInterface $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param PurposeGuard|null $purposeGuard The doelbinding guard the referrer tables are read under.
+	 * @param ReadPurposeGuardInterface|null $purposeGuard The doelbinding guard the referrer tables are read under.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
@@ -88,7 +88,7 @@ class RelationHandler {
 		private readonly RelationHandlerStores $stores,
 		private readonly RelatedRowRbacInterface $rbacHandler,
 		private readonly LoggerInterface $logger,
-		private readonly ?PurposeGuard $purposeGuard = null,
+		private readonly ?ReadPurposeGuardInterface $purposeGuard = null,
 	) {
 	}//end __construct()
 

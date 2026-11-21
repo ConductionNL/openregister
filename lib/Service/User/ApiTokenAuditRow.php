@@ -24,13 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\User;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
+use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
 use OCP\IUser;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Builds the audit row that names a token, its owner and the actor.
+ * Builds the audit entry that names a token, its owner and the actor.
  *
  * Only the token's id, name and lifetime are copied from the stored entry, by
  * name: the value, its hash and its last four characters never reach the row,
@@ -55,35 +55,34 @@ final class ApiTokenAuditRow {
 	public const REVOKED = 'api-token.revoked';
 
 	/**
-	 * The audit row.
+	 * The audit entry, which the audit trail turns into its row.
 	 *
 	 * @param string               $action  CREATED or REVOKED.
 	 * @param array<string, mixed> $token   The stored token entry (id, name, expires, ...).
 	 * @param string               $ownerId The user the token belongs to.
 	 * @param IUser|null           $actor   Who acted; null reads as the system.
 	 *
-	 * @return AuditTrail The unsealed row.
+	 * @return AuditEntry The entry, unsealed; the trail seals it.
 	 *
 	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
 	 */
-	public function row(string $action, array $token, string $ownerId, ?IUser $actor): AuditTrail {
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction($action);
-		$row->setUser($actor?->getUID() ?? 'system');
-		$row->setUserName($actor?->getDisplayName() ?? 'System');
-		$row->setChanged(
-			[
-				'token' => [
-					'id' => (string)($token['id'] ?? ''),
-					'name' => (string)($token['name'] ?? ''),
-					'expires' => $token['expires'] ?? null,
-				],
-				'owner' => $ownerId,
-			]
-		);
-		$row->setCreated(new DateTime());
+	public function row(string $action, array $token, string $ownerId, ?IUser $actor): AuditEntry {
+		$changed = [
+			'token' => [
+				'id' => (string)($token['id'] ?? ''),
+				'name' => (string)($token['name'] ?? ''),
+				'expires' => $token['expires'] ?? null,
+			],
+			'owner' => $ownerId,
+		];
 
-		return $row;
+		return new AuditEntry(
+			uuid: Uuid::v4()->toRfc4122(),
+			action: $action,
+			user: $actor?->getUID() ?? 'system',
+			userName: $actor?->getDisplayName() ?? 'System',
+			changed: $changed,
+			created: new DateTimeImmutable(),
+		);
 	}//end row()
 }//end class
