@@ -46,7 +46,6 @@ use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
-use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
@@ -62,6 +61,8 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowRegistrar;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -130,8 +131,8 @@ final class D9InterfaceBindingsTest extends TestCase {
 		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
-			AppHostRegistrar::class,
-			[],
+			FlowRegistrar::class,
+			['lib/Service/Flow/FlowWiring.php'],
 		],
 		ScheduleManifestLoader::class => [
 			ScheduleManifestLoaderInterface::class,
@@ -165,8 +166,8 @@ final class D9InterfaceBindingsTest extends TestCase {
 		],
 		WebhookInterceptionCache::class => [
 			WebhookInterceptionCacheInterface::class,
-			NotificationsRegistrar::class,
-			[],
+			IntegrationRegistrar::class,
+			['lib/Service/Integration/IntegrationWiring.php'],
 		],
 	];
 

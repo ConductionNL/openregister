@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCP\IDBConnection;
@@ -29,6 +29,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\ProcessingLogMapper
  * @uses   \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class ProcessingLogMapperFindBySubjectTest extends TestCase {
 	use RecordingQueryBuilderTrait;

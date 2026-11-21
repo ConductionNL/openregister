@@ -1,0 +1,273 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditActivityDialog.onSave (golden) saves a new activity, accepted 1`] = `
+{
+  "calls": [
+    [
+      "create",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [
+    [
+      "saved",
+    ],
+  ],
+  "error": null,
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves a new activity, failedWithoutMessage 1`] = `
+{
+  "calls": [
+    [
+      "create",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Save failed",
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves a new activity, refused 1`] = `
+{
+  "calls": [
+    [
+      "create",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Forbidden",
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves a new activity, refusedWithStoreError 1`] = `
+{
+  "calls": [
+    [
+      "create",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Store says no",
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves an existing activity, accepted 1`] = `
+{
+  "calls": [
+    [
+      "update",
+      "act-1",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [
+    [
+      "saved",
+    ],
+  ],
+  "error": null,
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves an existing activity, failedWithoutMessage 1`] = `
+{
+  "calls": [
+    [
+      "update",
+      "act-1",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Save failed",
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves an existing activity, refused 1`] = `
+{
+  "calls": [
+    [
+      "update",
+      "act-1",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Forbidden",
+  "saving": false,
+}
+`;
+
+exports[`EditActivityDialog.onSave (golden) saves an existing activity, refusedWithStoreError 1`] = `
+{
+  "calls": [
+    [
+      "update",
+      "act-1",
+      {
+        "name": "Payroll",
+        "status": "active",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Store says no",
+  "saving": false,
+}
+`;
+
+exports[`RedactionDialog.onSubmit (golden) applies a redaction, accepted 1`] = `
+{
+  "calls": [
+    [
+      "case-1",
+      {
+        "after": "[redacted]",
+        "field": "email",
+        "ground": "art-10",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [
+    [
+      "redacted",
+    ],
+  ],
+  "error": null,
+  "saving": false,
+}
+`;
+
+exports[`RedactionDialog.onSubmit (golden) applies a redaction, failedWithoutMessage 1`] = `
+{
+  "calls": [
+    [
+      "case-1",
+      {
+        "after": "[redacted]",
+        "field": "email",
+        "ground": "art-10",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Redaction failed",
+  "saving": false,
+}
+`;
+
+exports[`RedactionDialog.onSubmit (golden) applies a redaction, refused 1`] = `
+{
+  "calls": [
+    [
+      "case-1",
+      {
+        "after": "[redacted]",
+        "field": "email",
+        "ground": "art-10",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Forbidden",
+  "saving": false,
+}
+`;
+
+exports[`RedactionDialog.onSubmit (golden) applies a redaction, refusedWithStoreError 1`] = `
+{
+  "calls": [
+    [
+      "case-1",
+      {
+        "after": "[redacted]",
+        "field": "email",
+        "ground": "art-10",
+      },
+    ],
+  ],
+  "during": {
+    "error": null,
+    "saving": true,
+  },
+  "emitted": [],
+  "error": "Store says no",
+  "saving": false,
+}
+`;

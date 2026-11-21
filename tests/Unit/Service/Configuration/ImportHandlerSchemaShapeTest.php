@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
@@ -51,6 +52,12 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Oas\DynamicAnchorScan
  */
 class ImportHandlerSchemaShapeTest extends TestCase {
 
@@ -61,16 +68,22 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 	 */
 	private function handler(): ImportHandler {
 		return new ImportHandler(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(
+				shapeValidator: new OasRequestValidator()
+			),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			objectService: $this->createMock(ObjectService::class),
-			schemaShapeValidator: new OasRequestValidator()
+			objectService: $this->createMock(ObjectService::class)
 		);
 	}//end handler()
 
@@ -84,7 +97,7 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectExceptionMessage('imported schema fails OAS-shape validation: ');
 
 		$this->handler()->importSchema(
-			data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => 'not a map'],
+			definition: new ImportedSchemaLookup(data: ['slug' => 'demo', 'title' => 'Demo', 'properties' => 'not a map']),
 			slugsAndIdsMap: []
 		);
 	}//end testAPropertiesListIsRefused()
@@ -98,7 +111,10 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('imported schema fails OAS-shape validation');
 
-		$this->handler()->importSchema(data: ['slug' => 'demo', 'title' => 'Demo'], slugsAndIdsMap: []);
+		$this->handler()->importSchema(
+			definition: new ImportedSchemaLookup(data: ['slug' => 'demo', 'title' => 'Demo']),
+			slugsAndIdsMap: []
+		);
 	}//end testAMissingPropertiesMapIsRefused()
 
 	/**
@@ -111,7 +127,7 @@ class ImportHandlerSchemaShapeTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler()->importSchema(
-			data: ['title' => 'Demo', 'properties' => ['name' => ['type' => 'string']]],
+			definition: new ImportedSchemaLookup(data: ['title' => 'Demo', 'properties' => ['name' => ['type' => 'string']]]),
 			slugsAndIdsMap: []
 		);
 	}//end testAWellShapedSchemaReachesTheSlugCheck()

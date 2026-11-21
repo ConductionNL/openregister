@@ -49,9 +49,10 @@ namespace OCA\OpenRegister\Service;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCP\BackgroundJob\IJob;
@@ -107,7 +108,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	public const OBSERVED_JOBS = [JobHandles::BULK_JOB_RUNNER];
+	public const OBSERVED_JOBS = [ProcessesJobHandlesInterface::BULK_JOB_RUNNER];
 
 	/**
 	 * The job-list page the console reads.
@@ -290,10 +291,8 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function jobs(?string $state = null, int $limit = 50): array {
-		$jobs = $this->jobs->bulkJobs->findAllJobs(
-			state: $state,
-			limit: max(1, min($limit, self::MAX_ROWS)),
-			offset: 0
+		$jobs = $this->jobs->bulkJobs->findJobs(
+			query: new ListQuery(limit: max(1, min($limit, self::MAX_ROWS)), offset: 0, filters: ['state' => $state])
 		);
 
 		$inventory = $this->backgroundJobs();

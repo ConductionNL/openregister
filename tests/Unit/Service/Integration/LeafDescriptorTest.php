@@ -28,7 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
+use OCA\OpenRegister\Service\Integration\LeafRendering;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -43,15 +46,10 @@ class LeafDescriptorTest extends TestCase {
 	 */
 	public function testAccessorsRoundTripMetadata(): void {
 		$descriptor = new LeafDescriptor(
-			id: 'acme-notes',
-			label: 'Notes',
-			icon: 'NoteText',
+			identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText', group: 'comms'),
 			kinds: [LeafDescriptor::KIND_DATA_PROVIDER, LeafDescriptor::KIND_RENDER_SURFACE],
-			requiredApp: 'acme',
-			group: 'comms',
-			surfaces: ['detail-page'],
-			referenceType: 'acme-note',
-			requiresPermission: 'acme.read',
+			availability: new LeafAvailability(requiredApp: 'acme', requiresPermission: 'acme.read'),
+			rendering: new LeafRendering(surfaces: ['detail-page'], referenceType: 'acme-note'),
 		);
 
 		$this->assertSame('acme-notes', $descriptor->getId());
@@ -66,15 +64,59 @@ class LeafDescriptorTest extends TestCase {
 	}//end testAccessorsRoundTripMetadata()
 
 	/**
+	 * The value objects keep their defaults, and the descriptor reads through them.
+	 *
+	 * @return void
+	 */
+	public function testValueObjectDefaultsAndReadThrough(): void {
+		$availability = new LeafAvailability();
+		$rendering    = new LeafRendering();
+
+		$this->assertNull($availability->requiredApp);
+		$this->assertNull($availability->requiresPermission);
+		$this->assertSame([], $rendering->surfaces);
+		$this->assertNull($rendering->referenceType);
+		$this->assertSame(LeafDescriptor::RENDER_MODE_COMPONENT, $rendering->renderMode);
+		$this->assertNull($rendering->loadStrategy);
+
+		$descriptor = new LeafDescriptor(
+			identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube', group: 'g'),
+			kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+			rendering: new LeafRendering(
+				surfaces: ['detail-page'],
+				renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+				loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY,
+			),
+		);
+
+		$this->assertSame('g', $descriptor->getGroup());
+		$this->assertSame(LeafDescriptor::LOADS_VIA_SHARED_ENTRY, $descriptor->getLoadStrategy());
+		$this->assertTrue($descriptor->claimsSharedEntry());
+		$this->assertNull($descriptor->getRequiredApp());
+		$this->assertSame(
+			[
+				'id'          => 'acme-tab',
+				'label'       => 'Tab',
+				'icon'        => 'Cube',
+				'requiredApp' => null,
+				'group'       => 'g',
+				'surfaces'    => ['detail-page'],
+				'kinds'       => [LeafDescriptor::KIND_RENDER_SURFACE],
+				'renderMode'  => 'mount',
+			],
+			$descriptor->toArray()
+		);
+
+	}//end testValueObjectDefaultsAndReadThrough()
+
+	/**
 	 * Kinds are reported and hasKind answers correctly.
 	 *
 	 * @return void
 	 */
 	public function testKindsAreReported(): void {
 		$descriptor = new LeafDescriptor(
-			id: 'acme-notes',
-			label: 'Notes',
-			icon: 'NoteText',
+			identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 			kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
 		);
 
@@ -92,9 +134,7 @@ class LeafDescriptorTest extends TestCase {
 	 */
 	public function testOptionalMetadataDefaults(): void {
 		$descriptor = new LeafDescriptor(
-			id: 'acme-tab',
-			label: 'Tab',
-			icon: 'Cube',
+			identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 			kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
 		);
 
@@ -117,12 +157,12 @@ class LeafDescriptorTest extends TestCase {
 	 */
 	public function testRenderModeMountIsRoundTripped(): void {
 		$descriptor = new LeafDescriptor(
-			id: 'hermiq-agent',
-			label: 'Agent',
-			icon: 'Robot',
+			identity: new LeafIdentity(id: 'hermiq-agent', label: 'Agent', icon: 'Robot'),
 			kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-			surfaces: ['single-entity'],
-			renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+			rendering: new LeafRendering(
+				surfaces: ['single-entity'],
+				renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+			),
 		);
 
 		$this->assertSame('mount', $descriptor->getRenderMode());
@@ -137,12 +177,10 @@ class LeafDescriptorTest extends TestCase {
 	 */
 	public function testToArrayCarriesMetadataNotComponents(): void {
 		$descriptor = new LeafDescriptor(
-			id: 'acme-notes',
-			label: 'Notes',
-			icon: 'NoteText',
+			identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 			kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-			requiredApp: 'acme',
-			surfaces: ['detail-page'],
+			availability: new LeafAvailability(requiredApp: 'acme'),
+			rendering: new LeafRendering(surfaces: ['detail-page']),
 		);
 
 		$array = $descriptor->toArray();

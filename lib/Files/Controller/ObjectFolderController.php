@@ -16,7 +16,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
@@ -34,6 +33,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderPath;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Controller;
@@ -58,7 +58,7 @@ use Throwable;
  * Signed-in callers only: none of these is a public page, so Nextcloud refuses
  * an anonymous call before it gets here.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-a-reader-can-browse-an-objects-folder-without-a-share-that-outlives-the-read-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderController extends Controller {
 	/**
@@ -101,7 +101,7 @@ class ObjectFolderController extends Controller {
 		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectFileAccess = $services->objectFileAccess;
 		$this->browser = $services->browser;
@@ -123,7 +123,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-listing-an-objects-folder-and-its-subfolders-follows-the-objects-read-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -163,7 +163,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id): JSONResponse {
@@ -195,7 +195,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function upload(string $register, string $schema, string $id): JSONResponse {
@@ -240,7 +240,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function rename(string $register, string $schema, string $id, int $nodeId): JSONResponse {
@@ -265,7 +265,7 @@ class ObjectFolderController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, int $nodeId): JSONResponse {
@@ -341,7 +341,7 @@ class ObjectFolderController extends Controller {
 	 * @throws ObjectFileAccessDeniedException With 404 when they may not read it.
 	 */
 	private function ensureReadable(ObjectRef $ref): ObjectEntity {
-		return $this->objectFileAccess->readable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		return $this->objectFileAccess->readable(ref: $ref);
 	}//end ensureReadable()
 
 	/**
@@ -357,7 +357,7 @@ class ObjectFolderController extends Controller {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
 	private function ensureChangeable(ObjectRef $ref): ObjectEntity {
-		$object = $this->objectFileAccess->changeable(register: (string) $ref->register, schema: (string) $ref->schema, id: $ref->id);
+		$object = $this->objectFileAccess->changeable(ref: $ref);
 
 		// Asked after the access rule, so a caller without access still gets
 		// 404 or 403 and learns nothing of the state; the same order the files

@@ -90,7 +90,7 @@ class DoriathCredentialStore implements CredentialStore, DoriathCredentialKeys {
 	 *
 	 * @var string
 	 */
-	private const SECRET_SERVICE = 'Service\\SecretService';
+	private const VAULT_SERVICE_CLASS = 'Service\\SecretService';
 
 	/**
 	 * Canonical (new) id of the credential app, for {@see FleetAppId}.
@@ -157,7 +157,7 @@ class DoriathCredentialStore implements CredentialStore, DoriathCredentialKeys {
 
 		$row = $this->lookupRow(uuid: $uuid, applicationId: $applicationId);
 
-		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::VAULT_SERVICE_CLASS);
 		if ($row === null) {
 			$secretService->createByApplication(['name' => $uuid, 'key' => $ciphertext], $applicationId);
 			return;
@@ -243,7 +243,7 @@ class DoriathCredentialStore implements CredentialStore, DoriathCredentialKeys {
 			return;
 		}
 
-		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::VAULT_SERVICE_CLASS);
 
 		$row = $this->lookupRow(uuid: $uuid, applicationId: $applicationId);
 		if ($row === null) {
@@ -350,7 +350,7 @@ class DoriathCredentialStore implements CredentialStore, DoriathCredentialKeys {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function lookupRow(string $uuid, string $applicationId): ?object {
-		$secretService = $this->requireDoriathService(relativeClass: self::SECRET_SERVICE);
+		$secretService = $this->requireDoriathService(relativeClass: self::VAULT_SERVICE_CLASS);
 
 		$row = $secretService->getByNameForApplication($uuid, $applicationId);
 		if (is_object($row) === false) {

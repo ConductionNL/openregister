@@ -27,7 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCP\BackgroundJob\IJobList;
 
@@ -64,7 +66,9 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
 	 */
 	public function page(AuditTrailQuery $query, int $limit, int $cursor): array {
-		$page = $this->source->pageQuery->page(filters: $query->filters, search: $query->search, limit: $limit, beforeId: $cursor);
+		$page = $this->source->pageQuery->page(
+			request: new AuditPageRequest(criteria: new AuditTrailCriteria(filters: $query->filters, search: $query->search), limit: $limit, beforeId: $cursor)
+		);
 
 		return [
 			'results' => $page['results'],
@@ -104,14 +108,13 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	private function exportRows(AuditTrailExport $export): array {
 		$query = $export->query;
 		$collected = $this->source->pageQuery->collect(
-			filters: $query->filters,
-			search: $query->search,
-			ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT
+			criteria: new AuditTrailCriteria(filters: $query->filters, search: $query->search),
+			ceiling: ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT
 		);
 
 		if ($collected['truncated'] === true) {
 			$this->jobList->add(
-				JobHandles::AUDIT_TRAIL_EXPORT,
+				ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT,
 				[
 					'actor' => $export->actor,
 					'filters' => $query->filters,

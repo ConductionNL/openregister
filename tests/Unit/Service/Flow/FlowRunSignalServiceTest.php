@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
@@ -109,7 +110,7 @@ class FlowRunSignalServiceTest extends TestCase {
 			->with($run, ['decision' => 'approved'])
 			->willReturn($run);
 
-		$signalled = $this->seam()->signalRunAs(run: $run, payload: ['decision' => 'approved'], actorUid: 'alice');
+		$signalled = $this->seam()->answer(run: $run, signal: new RunSignal(payload: ['decision' => 'approved'], actorUid: 'alice'));
 
 		$this->assertSame($run, $signalled);
 	}//end testTheRecordedAssigneeMayAnswer()
@@ -127,7 +128,7 @@ class FlowRunSignalServiceTest extends TestCase {
 
 		$this->runner->expects($this->once())->method('signal')->willReturn($run);
 
-		$this->seam(groups: $groups)->signalRunAs(run: $run, payload: [], actorUid: 'carol');
+		$this->seam(groups: $groups)->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'carol'));
 	}//end testAGroupMemberMayAnswerAGroupAssignedStep()
 
 	/**
@@ -141,7 +142,10 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->expects($this->never())->method('signal');
 
 		try {
-			$this->seam()->signalRunAs(run: $run, payload: ['decision' => 'approved'], actorUid: 'mallory');
+			$this->seam()->answer(
+				run: $run,
+				signal: new RunSignal(payload: ['decision' => 'approved'], actorUid: 'mallory')
+			);
 			$this->fail('Expected the signal to be refused.');
 		} catch (FlowSignalRefused $refused) {
 			$this->assertSame(FlowSignalRefused::NOT_ASSIGNEE, $refused->getReason());
@@ -161,7 +165,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning');
 
 		$this->expectException(FlowSignalRefused::class);
-		$this->seam()->signalRunAs(run: $run, payload: [], actorUid: 'mallory');
+		$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'mallory'));
 	}//end testARefusalIsAudited()
 
 	public function testAnAnonymousActorIsRefusedOnAnAssignedStep(): void {
@@ -170,7 +174,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->expects($this->never())->method('signal');
 
 		try {
-			$this->seam()->signalRunAs(run: $run, payload: [], actorUid: null);
+			$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: null));
 			$this->fail('Expected the signal to be refused.');
 		} catch (FlowSignalRefused $refused) {
 			$this->assertSame(FlowSignalRefused::NOT_ASSIGNEE, $refused->getReason());
@@ -188,7 +192,7 @@ class FlowRunSignalServiceTest extends TestCase {
 
 		$this->runner->expects($this->once())->method('signal')->willReturn($run);
 
-		$this->seam()->signalRunAs(run: $run, payload: [], actorUid: 'anyone');
+		$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'anyone'));
 	}//end testAnUnassignedStepIsAnswerableByAnyone()
 
 	/**
@@ -204,7 +208,7 @@ class FlowRunSignalServiceTest extends TestCase {
 
 		$this->runner->expects($this->once())->method('signal')->willReturn($run);
 
-		$this->seam()->signalRunAs(run: $run, payload: [], actorUid: 'bob', nodeId: 'ask-b');
+		$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'bob', nodeId: 'ask-b'));
 	}//end testAddressingANodeChecksThatNodesAssignee()
 
 	/**
@@ -217,7 +221,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->expects($this->never())->method('signal');
 
 		$this->expectException(FlowSignalRefused::class);
-		$this->seam()->signalRunAs(run: $run, payload: [], actorUid: 'mallory', nodeId: 'never-asked');
+		$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'mallory', nodeId: 'never-asked'));
 	}//end testAddressingASilentNodeCannotLoosenTheGuard()
 
 	public function testANonSuspendedRunRefusesWithItsOwnReason(): void {
@@ -228,7 +232,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->method('signal')->willReturn(null);
 
 		try {
-			$this->seam()->signalRunAs(run: $run, payload: [], actorUid: 'alice');
+			$this->seam()->answer(run: $run, signal: new RunSignal(payload: [], actorUid: 'alice'));
 			$this->fail('Expected the signal to be refused.');
 		} catch (FlowSignalRefused $refused) {
 			$this->assertSame(FlowSignalRefused::NOT_SUSPENDED, $refused->getReason());
@@ -241,7 +245,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->mapper->method('findByUuid')->with('run-1')->willReturn($run);
 		$this->runner->expects($this->once())->method('signal')->willReturn($run);
 
-		$signalled = $this->seam()->signalAs(runUuid: 'run-1', payload: ['ok' => true], actorUid: 'alice');
+		$signalled = $this->seam()->answerByUuid(runUuid: 'run-1', signal: new RunSignal(payload: ['ok' => true], actorUid: 'alice'));
 
 		$this->assertSame($run, $signalled);
 	}//end testSignalAsResolvesTheRunByUuid()
@@ -251,7 +255,7 @@ class FlowRunSignalServiceTest extends TestCase {
 		$this->runner->expects($this->never())->method('signal');
 
 		try {
-			$this->seam()->signalAs(runUuid: 'ghost', payload: [], actorUid: 'alice');
+			$this->seam()->answerByUuid(runUuid: 'ghost', signal: new RunSignal(payload: [], actorUid: 'alice'));
 			$this->fail('Expected the signal to be refused.');
 		} catch (FlowSignalRefused $refused) {
 			$this->assertSame(FlowSignalRefused::RUN_NOT_FOUND, $refused->getReason());

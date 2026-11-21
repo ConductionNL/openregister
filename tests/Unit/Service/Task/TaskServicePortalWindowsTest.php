@@ -45,7 +45,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * Tests for {@see TaskService::openFor()}, {@see TaskService::record()} and
@@ -56,6 +56,15 @@ use OCA\OpenRegister\Service\Flow\TaskAuditEntry;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskCompletion
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
  */
 class TaskServicePortalWindowsTest extends TestCase {
 
@@ -147,7 +156,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 		$this->authorization->expects($this->once())->method('assertMay')->with(new TaskAct(verb: 'complete', actor: 'party:bsn-1'), $task);
 
-		$this->assertSame($task, $this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1'));
+		$this->assertSame($task, $this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-1'), uuid: 't-1'));
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());
 	}//end testOpenForReturnsTheOpenAuthorizedTask()
 
@@ -172,7 +181,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		);
 
 		try {
-			$this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-2');
+			$this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-2'), uuid: 't-1');
 			$this->fail('The denial was swallowed.');
 		} catch (TaskAccessDeniedException) {
 			$this->addToAssertionCount(1);
@@ -197,7 +206,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$this->tasks->method('findByUuid')->willReturn($task);
 
 		$this->expectException(TaskConflictException::class);
-		$this->service->openFor(verb: 'complete', uuid: 't-1', actor: 'party:bsn-1');
+		$this->service->openFor(act: new TaskAct(verb: 'complete', actor: 'party:bsn-1'), uuid: 't-1');
 	}//end testOpenForConflictsOnATerminalTask()
 
 	/**
@@ -218,7 +227,9 @@ class TaskServicePortalWindowsTest extends TestCase {
 			}
 		);
 
-		$returned = $this->service->record(uuid: 't-1', action: 'match', actor: 'caseworker', reason: "Matched role 'initiator' to 'party:bsn-1'.");
+		$returned = $this->service->record(
+			entry: new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: "Matched role 'initiator' to 'party:bsn-1'."),
+		);
 		$this->assertSame($task, $returned);
 		$this->assertSame(Task::STATE_ACTIVE, $task->getState());
 		$this->assertSame('match', $audited->getAction());
@@ -271,7 +282,7 @@ class TaskServicePortalWindowsTest extends TestCase {
 		$tasks = $this->createMock(TaskService::class);
 		$tasks->expects($this->once())
 			->method('record')
-			->with('t-1', 'match', 'caseworker', 'the reason')
+			->with(new TaskAuditEntry(uuid: 't-1', action: 'match', actor: 'caseworker', reason: 'the reason'))
 			->willReturn($this->task());
 
 		$bridge = new FlowTaskBridge(

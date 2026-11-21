@@ -47,6 +47,9 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\PollLinkService
  * @uses   \OCA\OpenRegister\Db\PollLink
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\PollIdentity
  */
 class PollLinkServiceReadGoldenTest extends TestCase {
 

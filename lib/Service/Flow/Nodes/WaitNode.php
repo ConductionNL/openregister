@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+ * @spec openspec/specs/flow-expressions/spec.md
  */
 
 declare(strict_types=1);
@@ -35,9 +35,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use UnexpectedValueException;
@@ -45,7 +47,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 	/**
 	 * The step type.
 	 *
@@ -87,11 +89,35 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['for', 'until'];
 	}//end configKeys()
+
+	/**
+	 * How long to wait, or until when.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'for',
+				'label' => $this->l10n->t('Wait for'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A duration like "30 minutes" or "2 days"; a bare number is seconds. Fill this or "Wait until".'),
+			],
+			[
+				'key' => 'until',
+				'label' => $this->l10n->t('Wait until'),
+				'type' => 'text',
+				'help' => $this->l10n->t('A moment like "2027-01-31 09:00" or "next monday 09:00". When both are set, this one wins.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a wait that names no time.
@@ -137,9 +163,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 * nonsense) also passes through: that beats suspending forever on a time
 	 * that will never arrive.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, unchanged, once the wait is over.
 	 *
@@ -150,7 +174,10 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *                        nothing to wait for, and pausing on it would pause
 	 *                        every other branch of the run with it.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		if ($items === [] || $this->waitIsOver(context: $context) === true) {
 			return $items;
 		}
@@ -243,7 +270,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The resume time, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function resolve(array $config): ?DateTime {
 		$until = trim((string)($config['until'] ?? ''));
@@ -264,7 +291,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The moment, or null when the duration cannot be read.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function momentAfter(string $duration): ?DateTime {
 		if ($duration === '') {
@@ -285,7 +312,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 *
 	 * @return DateTime|null The moment.
 	 *
-	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	private function momentAt(int|false $timestamp): ?DateTime {
 		if ($timestamp === false) {

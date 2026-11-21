@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -43,7 +46,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->auditTrailMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
@@ -141,7 +144,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockEmptyBlockers(): void {
@@ -153,7 +156,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 		$this->auditTrailMapper->expects($this->once())
 			->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', null, $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: null, userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -165,10 +168,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 
 		$result = $this->service->applyDeletionActions(
 			$analysis,
-			'admin',
-			'root-uuid',
-			'org-1',
-			'my-schema'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: 'my-schema', organisationId: 'org-1')
 		);
 
 		$this->assertSame(['retained' => []], $result);

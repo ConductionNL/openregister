@@ -244,42 +244,9 @@ export default {
 		linkedItemCards() {
 			const item = applicationStore.applicationItem
 			return [
-				{
-					key: 'configurations',
-					icon: Cog,
-					title: this.t('openregister', 'Configurations'),
-					unit: this.t('openregister', 'configuration(s)'),
-					empty: this.t(
-						'openregister',
-						'No configurations found for this application.',
-					),
-
-					items: item.configurations,
-				},
-				{
-					key: 'registers',
-					icon: Database,
-					title: this.t('openregister', 'Registers'),
-					unit: this.t('openregister', 'register(s)'),
-					empty: this.t(
-						'openregister',
-						'No registers found for this application.',
-					),
-
-					items: item.registers,
-				},
-				{
-					key: 'schemas',
-					icon: FileOutline,
-					title: this.t('openregister', 'Schemas'),
-					unit: this.t('openregister', 'schema(s)'),
-					empty: this.t(
-						'openregister',
-						'No schemas found for this application.',
-					),
-
-					items: item.schemas,
-				},
+				this.configurationsCard(item.configurations),
+				this.registersCard(item.registers),
+				this.schemasCard(item.schemas),
 			]
 		},
 	},
@@ -293,6 +260,74 @@ export default {
 		if (applicationId) {
 			await applicationStore.getApplication(applicationId)
 		}
+	},
+
+	methods: {
+		/**
+		 * The card counting the application's configurations.
+		 *
+		 * @spec exclude UI display helper — linked-item card layout.
+		 * @param {Array|undefined} items The linked configurations
+		 * @return {object}
+		 */
+		configurationsCard(items) {
+			return {
+				key: 'configurations',
+				icon: Cog,
+				title: this.t('openregister', 'Configurations'),
+				unit: this.t('openregister', 'configuration(s)'),
+				empty: this.t(
+					'openregister',
+					'No configurations found for this application.',
+				),
+
+				items,
+			}
+		},
+
+		/**
+		 * The card counting the application's registers.
+		 *
+		 * @spec exclude UI display helper — linked-item card layout.
+		 * @param {Array|undefined} items The linked registers
+		 * @return {object}
+		 */
+		registersCard(items) {
+			return {
+				key: 'registers',
+				icon: Database,
+				title: this.t('openregister', 'Registers'),
+				unit: this.t('openregister', 'register(s)'),
+				empty: this.t(
+					'openregister',
+					'No registers found for this application.',
+				),
+
+				items,
+			}
+		},
+
+		/**
+		 * The card counting the application's schemas.
+		 *
+		 * @spec exclude UI display helper — linked-item card layout.
+		 * @param {Array|undefined} items The linked schemas
+		 * @return {object}
+		 */
+		schemasCard(items) {
+			return {
+				key: 'schemas',
+				icon: FileOutline,
+				title: this.t('openregister', 'Schemas'),
+				unit: this.t('openregister', 'schema(s)'),
+				empty: this.t(
+					'openregister',
+					'No schemas found for this application.',
+				),
+
+				items,
+			}
+		},
 	},
 }
 </script>

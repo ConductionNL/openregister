@@ -38,9 +38,20 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * @covers \OCA\OpenRegister\WorkflowEngine\RunFlowOperation
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\WorkflowEngine\LifecycleEventObject
+ * @uses \OCA\OpenRegister\WorkflowEngine\RunFlowOperationFlows
  */
 final class RunFlowOperationTest extends TestCase {
 
@@ -81,9 +92,9 @@ final class RunFlowOperationTest extends TestCase {
 		$mapper->method('findAllFlows')->willReturnCallback(fn (): array => $this->flows);
 
 		$runner = $this->createMock(FlowRunServiceInterface::class);
-		$runner->method('queue')->willReturnCallback(
-			function (string $flowId, array $subject = [], string $trigger = 'manual', array $context = [], ?string $user = null) {
-				$this->queued[] = ['flowId' => $flowId, 'subject' => $subject, 'trigger' => $trigger, 'user' => $user];
+		$runner->method('queueRun')->willReturnCallback(
+			function (string $flowId, FlowRunQueueOptions $options) {
+				$this->queued[] = ['flowId' => $flowId, 'subject' => $options->subject, 'trigger' => $options->trigger, 'user' => $options->user];
 
 				return new \OCA\OpenRegister\Db\FlowRun();
 			}

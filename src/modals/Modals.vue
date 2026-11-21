@@ -13,6 +13,7 @@ import { navigationStore } from '../store/store.js'
 	<ImportConfiguration />
 	<ExportConfiguration />
 	<PublishConfiguration />
+	<PublishToGitlab />
 	<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
 	<DeleteSchema />
 	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
@@ -27,6 +28,7 @@ import { navigationStore } from '../store/store.js'
 	<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
 	<DeleteObject />
 	<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
+	<SaveRecordTemplate v-if="navigationStore.dialog === 'saveRecordTemplate'" />
 	<LockObject />
 	<ViewObject />
 	<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
@@ -65,6 +67,7 @@ import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 import EditEndpoint from './endpoint/EditEndpoint.vue'
 import UploadFiles from './file/UploadFiles.vue'
+import PublishToGitlab from './gitlab/PublishToGitlab.vue'
 import CopyObject from './object/CopyObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
@@ -73,6 +76,7 @@ import MassDeleteObject from './object/MassDeleteObject.vue'
 import MassValidateObjects from './object/MassValidateObjects.vue'
 import MergeObject from './object/MergeObject.vue'
 import MigrationObject from './object/MigrationObject.vue'
+import SaveRecordTemplate from './object/SaveRecordTemplate.vue'
 import UploadObject from './object/UploadObject.vue'
 import ViewObject from './object/ViewObject.vue'
 import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
@@ -109,6 +113,7 @@ export default {
 		ImportConfiguration,
 		ExportConfiguration,
 		PublishConfiguration,
+		PublishToGitlab,
 		EditSchema,
 		ExploreSchema,
 		DeleteSchema,
@@ -123,6 +128,7 @@ export default {
 		MigrationObject,
 		DeleteObject,
 		CopyObject,
+		SaveRecordTemplate,
 		UploadObject,
 		ViewObjectAuditTrail,
 		LockObject,

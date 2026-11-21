@@ -242,6 +242,133 @@ def tracked_text_files():
 
 
 
+def index_classes(lib):
+    """Map every class under lib/ to its path, and every namespace to its short names."""
+    all_classes = {}
+    for dirpath, _dirs, names in os.walk(lib):
+        for name in names:
+            if name.endswith('.php'):
+                rel = os.path.relpath(os.path.join(dirpath, name), lib)
+                all_classes[fqcn_of(rel)] = rel
+    by_ns = {}
+    for fqcn in all_classes:
+        ns, short = split_fqcn(fqcn)
+        by_ns.setdefault(ns, {})[short] = fqcn
+    return all_classes, by_ns
+
+
+def neighbour_uses(src, fqcn, own_new_ns, neighbours, new_of, imported):
+    """The new names of former namespace neighbours `src` references without a use line."""
+    needed = set()
+    refs = reference_view(src)
+    for short, neighbour in neighbours.items():
+        if neighbour == fqcn or short in imported:
+            continue
+        target = new_of.get(neighbour, neighbour)
+        if split_fqcn(target)[0] == own_new_ns:
+            continue
+        if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', refs):
+            needed.add(target)
+    return needed
+
+
+def fix_affected_file(lib, fqcn, rel, old_ns, by_ns, new_of, moves, warnings):
+    """Qualify relative names, add use lines and rewrite the namespace of a file in an affected namespace."""
+    path = os.path.join(lib, rel)
+    src = open(path, encoding='utf-8').read()
+    src = expand_group_uses(src, set(new_of))
+    imported = imported_names(src)
+    own_new_ns = split_fqcn(new_of.get(fqcn, fqcn))[0]
+    src = qualify_relative_names(src, old_ns, new_of, imported, moved_only=fqcn not in new_of)
+    needed = neighbour_uses(src, fqcn, own_new_ns, by_ns[old_ns], new_of, imported)
+    clash = {split_fqcn(f)[1] for f in needed} & imported
+    if clash:
+        warnings.append(f'{rel}: short name clash {sorted(clash)}; add the use lines by hand')
+        needed = {f for f in needed if split_fqcn(f)[1] not in clash}
+    src = add_uses(src, needed)
+    if fqcn in new_of:
+        src = re.sub(r'^namespace\s+[^;]+;', lambda _m: f'namespace {own_new_ns};', src, count=1, flags=re.M)
+        src = rebase_dir_paths(src, rel, moves[rel], warnings)
+    open(path, 'w', encoding='utf-8').write(src)
+
+
+def fix_staying_file(lib, rel, old_ns, new_of):
+    """Qualify relative names to moved classes in a file outside every affected namespace."""
+    path = os.path.join(lib, rel)
+    src = open(path, encoding='utf-8').read()
+    fixed = qualify_relative_names(src, old_ns, new_of, imported_names(src), moved_only=True)
+    if fixed != src:
+        open(path, 'w', encoding='utf-8').write(fixed)
+
+
+def fix_namespace_relative(lib, all_classes, by_ns, new_of, moves, affected_ns, warnings):
+    """Steps 1 and 2: per file, namespace-relative fixes before anything moves."""
+    for fqcn, rel in sorted(all_classes.items()):
+        old_ns = split_fqcn(fqcn)[0]
+        if old_ns in affected_ns:
+            fix_affected_file(lib, fqcn, rel, old_ns, by_ns, new_of, moves, warnings)
+        elif fqcn not in new_of:
+            fix_staying_file(lib, rel, old_ns, new_of)
+
+
+def move_files(lib, moves):
+    for old, new in sorted(moves.items()):
+        os.makedirs(os.path.dirname(os.path.join(lib, new)), exist_ok=True)
+        subprocess.run(['git', 'mv', os.path.join(lib, old), os.path.join(lib, new)], check=True)
+
+
+def warn_prefix_concatenation(path, text, affected_ns, warnings):
+    for ns in affected_ns:
+        for sep in ('\\', '\\\\'):
+            if re.search(re.escape(ns.replace('\\', sep) + sep) + r"['\"]\s*\.", text):
+                warnings.append(f'{path}: builds a class name from the prefix {ns}\\')
+
+
+def rewrite_everywhere(moves, new_of, affected_ns, warnings):
+    """Step 3: names and paths in every tracked text file. Returns the number of files rewritten."""
+    path_map = {f'lib/{old}': f'lib/{new}' for old, new in moves.items()}
+    path_re = re.compile('|'.join(re.escape(p) for p in sorted(path_map, key=len, reverse=True)))
+    changed = 0
+    for path in tracked_text_files():
+        if not os.path.isfile(path):
+            continue
+        text = open(path, encoding='utf-8', errors='surrogateescape').read()
+        new_text = path_re.sub(lambda m: path_map[m.group(0)], rewrite_fqcns(text, new_of))
+        if new_text != text:
+            open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new_text)
+            changed += 1
+        warn_prefix_concatenation(path, text, affected_ns, warnings)
+    return changed
+
+
+def warn_vanished_dirs(moves, warnings):
+    old_dirs = {os.path.dirname(f'lib/{old}') for old in moves}
+    old_dirs = {d for d in old_dirs if not os.path.isdir(d)}
+    for path in tracked_text_files():
+        if '/' in path or not path.endswith(('.xml', '.neon')):
+            continue
+        text = open(path, encoding='utf-8', errors='surrogateescape').read()
+        for directory in old_dirs:
+            if re.search(re.escape(directory) + r'/?["<\s]', text):
+                warnings.append(f'{path}: names the directory {directory}/, which no longer exists')
+
+
+def write_aliases(new_of, fleet):
+    """Step 4: alias map."""
+    data = json.load(open(ALIAS_FILE)) if os.path.isfile(ALIAS_FILE) else {'aliases': {}}
+    for old, new in sorted(new_of.items()):
+        data['aliases'][old] = {
+            'class': new,
+            'eager': fleet[old] > 0,
+            # Every moved class is also a container alias: fetching it by its old
+            # name must return the instance the new name returns, not a second one.
+            'service': True,
+        }
+    with open(ALIAS_FILE, 'w') as handle:
+        json.dump(data, handle, indent='\t', sort_keys=False)
+        handle.write('\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--classmap', required=True)
@@ -257,16 +384,7 @@ def main():
     moves = {r['file']: r['target_path'] for r in rows}
     new_of = {fqcn_of(old): fqcn_of(new) for old, new in moves.items()}
     fleet = {fqcn_of(r['file']): int(r.get('fleet_refs') or 0) for r in rows}
-    all_classes = {}
-    for dirpath, _dirs, names in os.walk(lib):
-        for name in names:
-            if name.endswith('.php'):
-                rel = os.path.relpath(os.path.join(dirpath, name), lib)
-                all_classes[fqcn_of(rel)] = rel
-    by_ns = {}
-    for fqcn in all_classes:
-        ns, short = split_fqcn(fqcn)
-        by_ns.setdefault(ns, {})[short] = fqcn
+    all_classes, by_ns = index_classes(lib)
     affected_ns = {split_fqcn(old)[0] for old in new_of}
 
     print(f'{len(moves)} files move to lib/{args.component}/')
@@ -276,91 +394,15 @@ def main():
         return
 
     warnings = []
-    # Steps 1 and 2: per file in an affected namespace, namespace-relative fixes before anything moves.
-    for fqcn, rel in sorted(all_classes.items()):
-        old_ns = split_fqcn(fqcn)[0]
-        if old_ns not in affected_ns:
-            if fqcn not in new_of:
-                path = os.path.join(lib, rel)
-                src = open(path, encoding='utf-8').read()
-                fixed = qualify_relative_names(src, old_ns, new_of, imported_names(src), moved_only=True)
-                if fixed != src:
-                    open(path, 'w', encoding='utf-8').write(fixed)
-            continue
-        path = os.path.join(lib, rel)
-        src = open(path, encoding='utf-8').read()
-        src = expand_group_uses(src, set(new_of))
-        imported = imported_names(src)
-        own_new_ns = split_fqcn(new_of.get(fqcn, fqcn))[0]
-        src = qualify_relative_names(src, old_ns, new_of, imported, moved_only=fqcn not in new_of)
-        needed = set()
-        refs = reference_view(src)
-        for short, neighbour in by_ns[old_ns].items():
-            if neighbour == fqcn or short in imported:
-                continue
-            target = new_of.get(neighbour, neighbour)
-            if split_fqcn(target)[0] == own_new_ns:
-                continue
-            if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', refs):
-                needed.add(target)
-        clash = {split_fqcn(f)[1] for f in needed} & imported
-        if clash:
-            warnings.append(f'{rel}: short name clash {sorted(clash)}; add the use lines by hand')
-            needed = {f for f in needed if split_fqcn(f)[1] not in clash}
-        src = add_uses(src, needed)
-        if fqcn in new_of:
-            src = re.sub(r'^namespace\s+[^;]+;', lambda _m: f'namespace {own_new_ns};', src, count=1, flags=re.M)
-            src = rebase_dir_paths(src, rel, moves[rel], warnings)
-        open(path, 'w', encoding='utf-8').write(src)
-
-    for old, new in sorted(moves.items()):
-        os.makedirs(os.path.dirname(os.path.join(lib, new)), exist_ok=True)
-        subprocess.run(['git', 'mv', os.path.join(lib, old), os.path.join(lib, new)], check=True)
-
-    # Step 3: names and paths everywhere.
-    path_map = {f'lib/{old}': f'lib/{new}' for old, new in moves.items()}
-    path_re = re.compile('|'.join(re.escape(p) for p in sorted(path_map, key=len, reverse=True)))
-    changed = 0
-    for path in tracked_text_files():
-        if not os.path.isfile(path):
-            continue
-        text = open(path, encoding='utf-8', errors='surrogateescape').read()
-        new_text = path_re.sub(lambda m: path_map[m.group(0)], rewrite_fqcns(text, new_of))
-        if new_text != text:
-            open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new_text)
-            changed += 1
-        for ns in affected_ns:
-            for sep in ('\\', '\\\\'):
-                if re.search(re.escape(ns.replace('\\', sep) + sep) + r"['\"]\s*\.", text):
-                    warnings.append(f'{path}: builds a class name from the prefix {ns}\\')
-    old_dirs = {os.path.dirname(f'lib/{old}') for old in moves}
-    old_dirs = {d for d in old_dirs if not os.path.isdir(d)}
-    for path in tracked_text_files():
-        if '/' in path or not path.endswith(('.xml', '.neon')):
-            continue
-        text = open(path, encoding='utf-8', errors='surrogateescape').read()
-        for directory in old_dirs:
-            if re.search(re.escape(directory) + r'/?["<\s]', text):
-                warnings.append(f'{path}: names the directory {directory}/, which no longer exists')
-
-    # Step 4: alias map.
-    data = json.load(open(ALIAS_FILE)) if os.path.isfile(ALIAS_FILE) else {'aliases': {}}
-    for old, new in sorted(new_of.items()):
-        data['aliases'][old] = {
-            'class': new,
-            'eager': fleet[old] > 0,
-            # Every moved class is also a container alias: fetching it by its old
-            # name must return the instance the new name returns, not a second one.
-            'service': True,
-        }
-    with open(ALIAS_FILE, 'w') as handle:
-        json.dump(data, handle, indent='\t', sort_keys=False)
-        handle.write('\n')
+    fix_namespace_relative(lib, all_classes, by_ns, new_of, moves, affected_ns, warnings)
+    move_files(lib, moves)
+    changed = rewrite_everywhere(moves, new_of, affected_ns, warnings)
+    warn_vanished_dirs(moves, warnings)
+    write_aliases(new_of, fleet)
 
     print(f'{changed} files rewritten, {len(new_of)} alias entries')
     for warning in sorted(set(warnings)):
         print('WARNING', warning)
-
 
 if __name__ == '__main__':
     main()

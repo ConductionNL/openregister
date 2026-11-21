@@ -66,6 +66,12 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
  */
 class ExampleSetEngineKindsGoldenTest extends TestCase {
 	/**

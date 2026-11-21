@@ -59,6 +59,9 @@ final class NotificationDedupePruneListener implements IEventListener {
 	 * @param Event $event Dispatched event.
 	 *
 	 * @return void
+	 *
+	 * @listener-placement inline correctness — the prune lets a re-created object with the same uuid re-
+	 *   arm cleanly; a prune landing after a same-uuid re-create would wipe the freshly armed state.
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

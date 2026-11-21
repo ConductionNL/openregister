@@ -134,7 +134,10 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	public function create(array $definition, ?string $ownerUid = null): MigrationPack {
 		$this->assertInsertable(definition: $definition);
 
-		return $this->mapper->insert(entity: $this->newPack(definition: $definition, ownerUid: $ownerUid, builtin: false));
+		$pack = $this->newPack(definition: $definition, ownerUid: $ownerUid);
+		$pack->setBuiltin($this->isDeletedBuiltinSlug(packSlug: $pack->getPackSlug()));
+
+		return $this->mapper->insert(entity: $pack);
 	}//end create()
 
 	/**
@@ -154,7 +157,10 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	public function seedBuiltin(array $definition): MigrationPack {
 		$this->assertInsertable(definition: $definition);
 
-		$stored = $this->mapper->insert(entity: $this->newPack(definition: $definition, ownerUid: null, builtin: true));
+		$pack = $this->newPack(definition: $definition, ownerUid: null);
+		$pack->setBuiltin(true);
+
+		$stored = $this->mapper->insert(entity: $pack);
 
 		// After the insert, so a failed insert leaves the slug locked.
 		$this->forgetDeletedBuiltinSlug(packSlug: (string)$definition['id']);
@@ -182,22 +188,21 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	}//end assertInsertable()
 
 	/**
-	 * An unsaved pack row for a definition.
+	 * An unsaved pack row for a definition; the caller decides whether it is built-in.
 	 *
-	 * A pack under the slug of a deleted built-in pack is built-in again.
+	 * A seed is built-in; a pack an admin creates under the slug of a deleted
+	 * built-in pack is built-in again (see create()).
 	 *
 	 * @param array<string, mixed> $definition The validated pack definition document.
 	 * @param string|null          $ownerUid   The creating admin's uid, or null for a seed.
-	 * @param bool                 $builtin    Whether the caller seeds a built-in pack.
 	 *
 	 * @return MigrationPack The unsaved row.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-slug-of-a-built-in-pack-must-not-change
 	 */
-	private function newPack(array $definition, ?string $ownerUid, bool $builtin): MigrationPack {
+	private function newPack(array $definition, ?string $ownerUid): MigrationPack {
 		$pack = new MigrationPack();
 		$this->applyDefinition(pack: $pack, definition: $definition);
-		$pack->setBuiltin($builtin === true || $this->isDeletedBuiltinSlug(packSlug: $pack->getPackSlug()) === true);
 		$pack->setOwner($ownerUid);
 		$pack->setCreatedAt(new DateTime());
 		$pack->setUpdatedAt(new DateTime());

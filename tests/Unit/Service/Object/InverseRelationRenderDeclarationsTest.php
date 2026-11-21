@@ -37,6 +37,12 @@ use Psr\Log\NullLogger;
  * multi-field inversions on the same schema still match.
  *
  * @covers \OCA\OpenRegister\Service\Object\InverseRelationRender
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
+ * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
+ * @uses \OCA\OpenRegister\Service\Object\InverseSchemaLookups
  */
 class InverseRelationRenderDeclarationsTest extends TestCase {
 

@@ -17,8 +17,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +34,14 @@ use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
  * `send` is anything but boolean true.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyMessage
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyReachGates
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
  */
 class PartyNotificationServiceGoldenTest extends TestCase
 {
@@ -124,7 +133,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
             }
         );
 
-        return new PartyNotificationService($linkMapper, $partyService, $email, new PartyReachGates(indicators: $indicators, optOut: $optOut));
+        return new PartyNotificationService(new PartyRecipients(links: $linkMapper, parties: $partyService, indicators: $indicators), $email, $optOut);
     }
 
     /**
@@ -154,7 +163,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
             'other@example.org'  => ['send' => true, 'code' => 'allowed', 'unsubscribe' => null],
         ];
 
-        $outcome = $this->service($this->everyKindOfParty())->notifyParties('case-9', 'Subject', 'Body', 'aanvrager', 'case-update');
+        $outcome = $this->service($this->everyKindOfParty())->notifyParties(new PartyMessage('case-9', 'Subject', 'Body', 'case-update'), 'aanvrager');
 
         $this->assertSame(
             [
@@ -180,7 +189,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
     {
         $this->decisions = ['other@example.org' => ['send' => true, 'code' => 'allowed', 'unsubscribe' => null]];
 
-        $outcome = $this->service($this->everyKindOfParty())->notifyParties('case-9', 'S', 'B');
+        $outcome = $this->service($this->everyKindOfParty())->notifyParties(new PartyMessage('case-9', 'S', 'B'));
 
         $this->assertSame(OptOutAuthority::DEFAULT_CATEGORY, $this->log[0][2]);
         $this->assertCount(7, $outcome);
@@ -191,7 +200,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
 
     public function testNoAskablePartyStillAsksWithAnEmptyList(): void
     {
-        $outcome = $this->service(['p-indicator' => ['aanvrager', 'ind@example.org', 'Geen post']])->notifyParties('case-1', 'S', 'B');
+        $outcome = $this->service(['p-indicator' => ['aanvrager', 'ind@example.org', 'Geen post']])->notifyParties(new PartyMessage('case-1', 'S', 'B'));
 
         $this->assertSame([['ask', 'email', OptOutAuthority::DEFAULT_CATEGORY, [], 'openregister-parties:case-1']], $this->log);
         $this->assertSame([['party' => 'p-indicator', 'address' => null, 'outcome' => 'refused-by-indicator']], $outcome);

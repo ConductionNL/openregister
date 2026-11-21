@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\Entity;
 
@@ -213,11 +214,18 @@ interface SchemaMapperInterface {
 	 * Searches for schemas matching the given slug with optional
 	 * multi-tenancy and RBAC filtering.
 	 *
-	 * @param string $slug The slug to search for
-	 * @param int $limit Maximum number of results (default: 10)
-	 * @param int $offset Offset for pagination (default: 0)
-	 * @param bool $_rbac Whether to apply RBAC permission checks (default: true)
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+	 * Takes the page as main's ListQuery, or as the limit and offset of the published contract, by
+	 * name or by position (an int in the second slot).
+	 *
+	 * @param string             $slug              The slug to search for
+	 * @param ListQuery|int|null $query             The page: its limit and offset; an int here is the release's positional `$limit`.
+	 * @param bool|int           $_rbac             Whether to apply RBAC permission checks (default: true); an int here is the
+	 *                                              release's positional `$offset`.
+	 * @param bool               $_multitenancy     Whether to apply multi-tenancy filtering (default: true); the release's
+	 *                                              positional `$_rbac` when the call is positional.
+	 * @param bool               $positionalTenancy The release's positional `$_multitenancy`.
+	 * @param int                $limit             The page size.
+	 * @param int                $offset            The offset.
 	 *
 	 * @return Schema[] Array of matching schemas
 	 *
@@ -225,7 +233,15 @@ interface SchemaMapperInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
 	 */
-	public function findBySlug(string $slug, int $limit = 10, int $offset = 0, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findBySlug(
+		string $slug,
+		ListQuery|int|null $query = null,
+		bool|int $_rbac = true,
+		bool $_multitenancy = true,
+		bool $positionalTenancy = true,
+		int $limit = 10,
+		int $offset = 0,
+	): array;
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics
@@ -316,6 +332,15 @@ interface SchemaMapperInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function updateEventCount(int $schemaId): int;
+
+	/**
+	 * The advisory annotations the last schema save logged and ignored, one entry per family.
+	 *
+	 * @return list<array{family: string, schema: string, messages: list<string>}> The ignored annotations.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function discardedAnnotations(): array;
 
 	/**
 	 * From now on a notification url action that cannot be linked to only warns on save.
@@ -488,9 +513,7 @@ interface SchemaMapperInterface {
 	 * Returns an array of schema UUIDs for schemas that reference the given schema
 	 * in their allOf, oneOf, or anyOf composition patterns.
 	 *
-	 * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
@@ -499,7 +522,7 @@ interface SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array;
+	public function findExtendedBy(Schema|int|string $schema): array;
 
 	/**
 	 * Find all schema extension relationships in a single query

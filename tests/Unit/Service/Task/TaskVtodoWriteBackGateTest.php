@@ -47,6 +47,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 class TaskVtodoWriteBackGateTest extends TestCase {
 	private const UUID = TaskCalendarProjectorTest::PROJECTED_UUID;
@@ -267,7 +268,7 @@ class TaskVtodoWriteBackGateTest extends TestCase {
 		$cancelled = TaskCalendarProjectorTest::assignedTask();
 		$cancelled->setState(Task::STATE_TERMINATED);
 		$this->tasks->expects($this->once())->method('cancel')
-			->with(self::UUID, $this->anything(), 'EXAMPLE_APPROVER_USER')
+			->with(new TaskActorRef(uuid: self::UUID, actor: 'EXAMPLE_APPROVER_USER'), $this->anything())
 			->willReturn($cancelled);
 
 		$this->assertSame('RENDERED:terminated', $this->gate()->handleWrite($this->vtodo('CANCELLED'), 'EXAMPLE_APPROVER_USER'));

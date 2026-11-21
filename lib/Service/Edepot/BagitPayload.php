@@ -127,7 +127,25 @@ final class BagitPayload {
 	private function addFile(ZipArchive $zip, array $entry): string {
 		$sourcePath = (string)$entry['filePath'];
 		$dataPath   = 'data/'.$entry['path'];
-		$sha256     = false;
+		$sha256     = self::checksumOf(sourcePath: $sourcePath);
+
+		$zip->addFile($sourcePath, $dataPath);
+		$this->totalBytes += (int)filesize($sourcePath);
+
+		return $sha256;
+	}//end addFile()
+
+	/**
+	 * The SHA-256 of a payload file, refusing one that cannot be read.
+	 *
+	 * @param string $sourcePath The file on disk.
+	 *
+	 * @return string The checksum.
+	 *
+	 * @throws InvalidArgumentException When the file cannot be checksummed.
+	 */
+	private static function checksumOf(string $sourcePath): string {
+		$sha256 = false;
 		if (is_file($sourcePath) === true && is_readable($sourcePath) === true) {
 			$sha256 = hash_file('sha256', $sourcePath);
 		}
@@ -138,9 +156,6 @@ final class BagitPayload {
 			);
 		}
 
-		$zip->addFile($sourcePath, $dataPath);
-		$this->totalBytes += (int)filesize($sourcePath);
-
 		return $sha256;
-	}//end addFile()
+	}//end checksumOf()
 }//end class
