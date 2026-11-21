@@ -36,6 +36,12 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
@@ -52,6 +58,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
@@ -64,7 +72,6 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
 use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
@@ -174,6 +181,9 @@ final class FlowWiring {
 		LinkedFlowOperationsInterface::class => FlowLinkServiceInterface::class,
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		ObjectWatchMarkersInterface::class => WatcherService::class,
+		ObjectUnreadMarkerInterface::class => ReadStateService::class,
+		RunnableActionsInterface::class => ObjectActionList::class,
 		BulkRowRefusalsInterface::class => DecisionTableBulkGuard::class,
 		DependentValueCheckInterface::class => DependentValueListener::class,
 		ContactMatchCacheInterface::class => ContactMatchingService::class,
@@ -182,6 +192,7 @@ final class FlowWiring {
 		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
+		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
 	];
 
 	/**

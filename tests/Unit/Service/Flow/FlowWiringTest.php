@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
 use OCA\OpenRegister\Service\Party\PartyParent;
 use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
 use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
@@ -33,6 +35,9 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
@@ -88,10 +93,12 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\ContactMatchingService;
@@ -330,6 +337,23 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The three Core render ports are answered by the Processes services that keep the state.
+	 *
+	 * @return void
+	 */
+	public function testTheRenderMarkerPortsAreAnsweredByTheInteractionServices(): void {
+		$ports = [
+			ObjectWatchMarkersInterface::class => WatcherService::class,
+			ObjectUnreadMarkerInterface::class => ReadStateService::class,
+			RunnableActionsInterface::class    => ObjectActionList::class,
+		];
+		foreach ($ports as $port => $service) {
+			self::assertSame(expected: $service, actual: ($this->aliases[$port] ?? null));
+			self::assertTrue(condition: is_a($service, $port, true));
+		}
+	}//end testTheRenderMarkerPortsAreAnsweredByTheInteractionServices()
+
+	/**
 	 * The schedule flow store, the current-run port, the sequence service, the node rights map, the calendar link, transition-in-flight,
 	 * write elevation, date events, task row, watcher and run-record ports, the schema rename and form dependents checks, the built-in tool
 	 * providers, the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
@@ -399,6 +423,9 @@ final class FlowWiringTest extends TestCase {
 				LinkedFlowOperationsInterface::class       => FlowLinkServiceInterface::class,
 				LifecycleTransitionInterface::class        => TransitionEngine::class,
 				ExpressionDefaultsInterface::class         => ExpressionDefaults::class,
+				ObjectWatchMarkersInterface::class         => WatcherService::class,
+				ObjectUnreadMarkerInterface::class         => ReadStateService::class,
+				RunnableActionsInterface::class            => ObjectActionList::class,
 				BulkRowRefusalsInterface::class            => DecisionTableBulkGuard::class,
 				DependentValueCheckInterface::class        => DependentValueListener::class,
 				ContactMatchCacheInterface::class          => ContactMatchingService::class,
@@ -407,6 +434,7 @@ final class FlowWiringTest extends TestCase {
 				LifecycleStatesKeeperInterface::class      => LifecycleStatesKeeper::class,
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
+				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
 			],
 			actual: $this->aliases
 		);
@@ -433,6 +461,16 @@ final class FlowWiringTest extends TestCase {
 		self::assertArrayHasKey(key: AutoTransitionPass::class, array: $this->factories);
 		self::assertTrue(condition: is_a(AutoTransitionPass::class, SaveBoundaryInterface::class, true));
 	}//end testTheSaveBoundaryPortIsAnsweredByTheSharedAutoTransitionPass()
+
+	/**
+	 * The audit trail's elevation port is answered by the object-action run, from the frame it opened.
+	 *
+	 * @return void
+	 */
+	public function testTheElevationAttributionPortIsAnsweredByTheActionRun(): void {
+		self::assertSame(expected: ObjectActionElevationAttribution::class, actual: ($this->aliases[ElevationAttributionInterface::class] ?? null));
+		self::assertTrue(condition: is_a(ObjectActionElevationAttribution::class, ElevationAttributionInterface::class, true));
+	}//end testTheElevationAttributionPortIsAnsweredByTheActionRun()
 
 	/**
 	 * The MCP discovery's port for contributed built-in tool providers is answered by the flow tools.
