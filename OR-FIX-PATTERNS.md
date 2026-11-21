@@ -174,3 +174,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Cause: main requires every step after 2.1.0 to extend TargetedMigrationStep (its preSchemaChange/changeSchema/postSchemaChange are final).
 - Fix: extends TargetedMigrationStep, drop the SimpleMigrationStep import, rename changeSchema->changeTargetedSchema / postSchemaChange->afterTargetedSchemaChange / preSchemaChange->beforeTargetedSchemaChange and make them protected; tests calling the public post/changeSchema keep working.
 - Note: ReservedColumnNamesTest errors with an upstream HTTP 404 on MariaDB lex.h are network/environment, not the PR.
+
+## Golden counts and hashes that both sides changed
+- Symptom: conflict on ListenerRegistrationOrderGoldenTest LISTENER_COUNT / SEQUENCE_SHA256 (or a similar pinned count).
+- Fix: take main's values, add the PR's delta to the count, then dump the recorded sequence on the merged branch and on a main worktree (a throwaway subclass test calling recordedSequence() by reflection) and diff: when the diff is exactly the PR's registrations, take the new hash from the failing assertion. Conflicts in the components yaml: resolve scripts/component-map.csv (union of rows), take main's yaml, run `python3 scripts/component-patterns.py`.
