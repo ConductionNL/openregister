@@ -32,9 +32,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,7 +76,7 @@ class OasController extends Controller {
 		IRequest $request,
 		OasControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->oasService = $services->oasService;
 		$this->etagComputer = $services->etagComputer;
 	}//end __construct()

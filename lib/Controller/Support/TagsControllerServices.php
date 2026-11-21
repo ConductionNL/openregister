@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
-use OCA\OpenRegister\Service\FileServiceInterface;
 
 /**
  * The tag sources of the tags API: the file tag catalogue and the object tagging handler.
@@ -32,11 +32,11 @@ final class TagsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FileServiceInterface    $fileService    File service for the system-wide tag list.
-	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags.
+	 * @param FileTagCatalogueInterface $fileService    File tag catalogue for the system-wide tag list.
+	 * @param TaggingHandlerInterface   $taggingHandler Tagging handler for object-level tags.
 	 */
 	public function __construct(
-		public readonly FileServiceInterface $fileService,
+		public readonly FileTagCatalogueInterface $fileService,
 		public readonly TaggingHandlerInterface $taggingHandler,
 	) {
 	}//end __construct()

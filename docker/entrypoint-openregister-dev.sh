@@ -34,7 +34,7 @@ fi
 # Install NPM dependencies and build if needed
 if [ ! -d "node_modules" ]; then
     echo "Installing NPM dependencies..."
-    su -s /bin/bash www-data -c "cd /var/www/html/custom_apps/openregister && npm install --prefer-offline --no-audit" || {
+    su -s /bin/bash www-data -c "cd /var/www/html/custom_apps/openregister && npm ci --prefer-offline --no-audit" || {
         echo "⚠ NPM install failed, but continuing..."
     }
 else
