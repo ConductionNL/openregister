@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 
 /**
  * Where the map overview reads its objects and geometry, and where it declares its widget.
@@ -35,16 +35,16 @@ final class MapsOverviewSources {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface   $objectService Canonical RBAC-scoped object read facade.
-	 * @param GeoFeatureCollectionBuilder $geoBuilder    Extracts geometry from object rows.
-	 * @param PageWidgetRegistryInterface $registry      Registry for the page-widget surface.
+	 * @param ObjectOperationsInterface      $objectService Canonical RBAC-scoped object read facade.
+	 * @param GeoFeatureCollectionBuilder    $geoBuilder    Extracts geometry from object rows.
+	 * @param PageWidgetDeclarationInterface $registry      Registry for the page-widget surface.
 	 *
 	 * @spec openspec/specs/integration-maps-overview/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly GeoFeatureCollectionBuilder $geoBuilder,
-		public readonly PageWidgetRegistryInterface $registry,
+		public readonly PageWidgetDeclarationInterface $registry,
 	) {
 	}//end __construct()
 }//end class

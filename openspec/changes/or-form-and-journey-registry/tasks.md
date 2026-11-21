@@ -70,3 +70,13 @@
 - [ ] 6.1 Add `CAP_EDIT` to `AccessLink::CAPABILITIES` in `lib/Db/AccessLink.php`, accepted only together with a `journey` id whose `mode` is `update` and whose target schema is the link's subject schema.
 - [ ] 6.2 `JourneyRunService::startFromLink()`: prefill the declared fields from the object, refuse answers for undeclared fields, and submit through `ObjectService::saveObject()` as an update; red first in `tests/Unit/Service/Form/JourneyRunServiceTest.php`.
 - [ ] 6.3 Render the journey on the public link page (`AccessLinkPageController`, `AccessLinkPage.vue`) when the link carries `edit`; `tests/e2e/ci/form-update-link.spec.ts` changes a field through the link and reads the audit entry.
+
+### Task 7: Repeating writes, a target per item and a bundle (REQ-FJR-009, REQ-FJR-010)
+- **spec_ref**: `openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-journey-write-may-repeat-per-list-item-each-item-to-its-own-target-req-fjr-009`
+- **files**: `lib/Settings/forms_register.json`, `lib/Service/Form/JourneyAuthoringValidator.php`, `lib/Service/Form/JourneyRunService.php`, `tests/Unit/Service/Form/JourneyRunServiceTest.php`
+- **acceptance_criteria**:
+  - Filed by buildiq `forms-multi-product-request` (REQ-BQMP-001, REQ-BQMP-002, REQ-BQMP-003); buildiq's designer and save check already author and refuse these keys
+  - each item lands on its own value's target, a refused item leaves the earlier items in place, and the response names each item's outcome by index
+  - resubmitting after a refused item writes only that item, asserted by counting objects per target before and after
+- [ ] 7.1 Accept `forEach`, `targetBy`, `targets` and `bundle` on a `writes[]` entry in the `journey` schema of `lib/Settings/forms_register.json`, and refuse at save in `JourneyAuthoringValidator` a `forEach` that is not an earlier list answer, `targets` without `forEach`/`targetBy`, a product value without a target, a repeating bundle, and a mapping property missing on any target schema (naming value and property).
+- [ ] 7.2 Commit a repeating entry once per item in `JourneyRunService` (bundle first, each item all or none on its own, item mapping with `item.<key>` and `{ "$write": "<as>" }` to the bundle), report each item's outcome by index, and stamp each item object with the run's draft reference and index so a resubmit skips written items; red first in `JourneyRunServiceTest` (two products on two targets, a refused second item keeps the first, a resubmit writes one object).

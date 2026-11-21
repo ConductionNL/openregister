@@ -23,13 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * What the task controllers, the task notification listener and job need of TaskInboxService.
  * Bound to TaskInboxService in ContractBindings, so it resolves to the same shared instance.
  */
-interface TaskInboxServiceInterface {
+interface TaskInboxServiceInterface extends TaskRowSourceInterface {
 
 	/**
 	 * One inbox page: rows with subject context and temporal projection,

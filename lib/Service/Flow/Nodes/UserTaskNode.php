@@ -347,6 +347,10 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$resume = $this->resumeSlot(context: $context);
 
+		// A performer named through a field of the item (`{{ employee.0.managerUserId }}`)
+		// is resolved once here, so the task, the resume slot and the suspension agree.
+		$config = UserTaskItemPerformers::resolve(config: $config, items: $items);
+
 		return $this->pass(step: new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId()), resume: $resume);
 	}//end execute()
 

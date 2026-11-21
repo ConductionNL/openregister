@@ -23,7 +23,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Service\Observability\OpenRegisterMetricsProvider;
 use OCA\OpenRegister\Service\Observability\WebhookRetryMetricsProvider;
-use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -41,7 +41,7 @@ final class OpenRegisterMetricsProviderTest extends TestCase {
 	 */
 	public function testPublishesTheTaskThenTheWebhookGauges(): void {
 		$overdue = new MetricSample(name: 'tasks_overdue_total', type: 'gauge', help: 'h', samples: [['labels' => [], 'value' => 2]]);
-		$tasks   = $this->createMock(TaskMetricsProviderInterface::class);
+		$tasks   = $this->createMock(TaskGaugeInterface::class);
 		$tasks->expects($this->once())->method('metrics')->willReturn([$overdue]);
 
 		$time = $this->createMock(ITimeFactory::class);
