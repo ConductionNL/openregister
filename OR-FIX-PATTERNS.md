@@ -361,3 +361,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest (4 cases) TypeError: ObjectsControllerFactory::args() Argument #14 ($eventDispatcher) gets a WebhookService mock.
 - Cause: red on plain main (21 Nov, behind main HEAD at 10493 merge); the test passes positional args that no longer line up with the factory's signature.
 - Fix: none on PR branches: inherited; fix belongs in its own main PR. Confirm by running the test on origin/main.
+
+## CatalogueQueryScopeTest names a PR's information_schema query (or-fix-17)
+- Symptom: tests/Unit/Db/CatalogueQueryScopeTest::testEveryCatalogueQueryNamesItsSchema lists lib/<PR file>:<line> after merging main.
+- Cause: main (5c53389fca4, upgrade-performance) requires every FROM information_schema.* query to be limited to the instance's own database.
+- Fix: append ' AND '.(new CatalogueScope(db: $this->db))->condition() (OCA\OpenRegister\Db\CatalogueScope) to the WHERE, as RegisterService/MagicMapper do; assert 'table_schema = DATABASE()' in the class's test (a mocked IDBConnection is not Postgres). (#10537)
