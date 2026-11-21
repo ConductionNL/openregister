@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -60,6 +61,8 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		// Core binds its own interfaces here; each other area binds its own in its own map.
+		DbRegistrar::bind(context: $context, bindings: CoreServiceBindings::BINDINGS);
 		self::registerRequestScoped(context: $context);
 		self::registerSeams(context: $context);
 		self::registerUserAndOrganisation(context: $context);
