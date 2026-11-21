@@ -52,6 +52,7 @@ use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
 use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
 use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobReversalTest extends TestCase {
 
@@ -184,7 +185,7 @@ final class BulkJobReversalTest extends TestCase {
 
 	private function refusal(BulkJob $original, string $actor = 'fatima'): BulkJobRefusedException {
 		try {
-			$this->reversal()->reverse($original, $actor, 'Verkeerde filter.');
+			$this->reversal()->reverse(new ReversalRequest($original, $actor, 'Verkeerde filter.'));
 		} catch (BulkJobRefusedException $exception) {
 			return $exception;
 		}
@@ -199,7 +200,7 @@ final class BulkJobReversalTest extends TestCase {
 		$this->resolver->method('hydrate')->willReturn([]);
 
 		$original = $this->original();
-		$reversal = $this->reversal()->reverse($original, 'fatima', 'De filter stond verkeerd.');
+		$reversal = $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'De filter stond verkeerd.'));
 
 		$this->assertSame(RestorePriorValuesAction::ID, $this->created[0]['action']);
 		$this->assertSame(
@@ -226,7 +227,7 @@ final class BulkJobReversalTest extends TestCase {
 		$this->resolver->method('idsOf')->willReturn($written);
 		$this->resolver->method('hydrate')->willReturn([]);
 
-		$this->reversal()->reverse($this->original(), 'fatima', 'x');
+		$this->reversal()->reverse(new ReversalRequest($this->original(), 'fatima', 'x'));
 
 		$this->assertSame($written, $this->created[0]['selection']['ids']);
 	}
@@ -276,6 +277,38 @@ final class BulkJobReversalTest extends TestCase {
 		$this->assertStringContainsString('42', $exception->getMessage());
 	}
 
+	public function testEachRefusalCarriesItsExactMessageAndDetails(): void {
+		$running = $this->refusal($this->original(BulkJob::STATE_RUNNING));
+		$this->assertSame(
+			['Only a job that has stopped can be undone. This one is running. Cancel it first, then undo what it managed to write.', ['state' => 'running']],
+			[$running->getMessage(), $running->getDetails()]
+		);
+
+		$never = $this->refusal($this->original(BulkJob::STATE_COMPLETED, null));
+		$this->assertSame(
+			[
+				'The action openregister:set-properties is not reversible, so this job recorded nothing to go back to. Nothing was undone.',
+				['action' => 'openregister:set-properties'],
+			],
+			[$never->getMessage(), $never->getDetails()]
+		);
+
+		$existing = new BulkJob();
+		$existing->setId(42);
+		$existing->setState(BulkJob::STATE_RUNNING);
+		$this->jobMapper->method('find')->willReturn($existing);
+		$original = $this->original();
+		$original->setReversedByJobId(42);
+		$again = $this->refusal($original);
+		$this->assertSame(
+			[
+				'This job is already being undone by job 42. Read that one rather than starting a second reversal over the same objects.',
+				['reversalJobId' => 42, 'state' => BulkJob::STATE_RUNNING],
+			],
+			[$again->getMessage(), $again->getDetails()]
+		);
+	}
+
 	public function testACancelledReversalDoesNotStrandTheJobItWasMeantToUndo(): void {
 		$existing = new BulkJob();
 		$existing->setId(42);
@@ -288,7 +321,7 @@ final class BulkJobReversalTest extends TestCase {
 		$original = $this->original();
 		$original->setReversedByJobId(42);
 
-		$reversal = $this->reversal()->reverse($original, 'fatima', 'Tweede poging.');
+		$reversal = $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'Tweede poging.'));
 
 		$this->assertSame(7, $reversal->getReversesJobId());
 	}
@@ -302,6 +335,6 @@ final class BulkJobReversalTest extends TestCase {
 		$original = $this->original();
 		$original->setReversedByJobId(42);
 
-		$this->assertSame(7, $this->reversal()->reverse($original, 'fatima', 'x')->getReversesJobId());
+		$this->assertSame(7, $this->reversal()->reverse(new ReversalRequest($original, 'fatima', 'x'))->getReversesJobId());
 	}
 }//end class

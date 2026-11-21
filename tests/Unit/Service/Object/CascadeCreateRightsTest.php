@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The acting user is `mallory`, a clerk. Only editors may create notes. `alice` is an editor:
@@ -78,6 +79,52 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
+ * @uses \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class CascadeCreateRightsTest extends TestCase {
 
@@ -164,7 +211,7 @@ class CascadeCreateRightsTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				if (($data['text'] ?? null) === 'boom') {
 					throw new Exception('storage');
 				}
@@ -173,7 +220,7 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
@@ -227,6 +274,49 @@ class CascadeCreateRightsTest extends TestCase {
 			args: [['$ref' => 'note', 'inversedBy' => 'incident'], ['text' => 'new', '@self' => ['owner' => 'alice']]]
 		);
 	}//end cascadeNote()
+
+	/**
+	 * A stored note owned by `alice` whose schema lets only editors update.
+	 *
+	 * @param SaveObject $handler The save handler, whose schema cache receives that schema.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function guardedTarget(SaveObject $handler): ObjectEntity {
+		$guarded = self::note();
+		$guarded->setAuthorization(['update' => ['editors'], 'read' => ['authenticated']]);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['2' => $guarded]);
+
+		$target = new ObjectEntity();
+		$target->setUuid('t-1');
+		$target->setRegister('10');
+		$target->setSchema('2');
+		$target->setOwner('alice');
+
+		return $target;
+	}//end guardedTarget()
+
+	public function testARelatedObjectTheCallerMayNotUpdateIsRefused(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+
+		$this->expectException(NotAuthorizedException::class);
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+	}
+
+	public function testARelatedObjectTheCallerMayUpdatePasses(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions(groups: ['mallory' => ['editors'], 'alice' => ['clerks']]));
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
+
+	public function testAnEnclosingSaveWithRbacOffSkipsTheRelatedUpdateCheck(): void {
+		$handler = $this->saveHandler(permissions: $this->permissions());
+		$handler->enterCascadeScope(_rbac: false);
+
+		$handler->assertMayUpdateRelated(target: self::guardedTarget(handler: $handler));
+		$this->addToAssertionCount(count: 1);
+	}
 
 	public function testANestedObjectTheCallerMayNotCreateIsRefused(): void {
 		$handler = $this->saveHandler(permissions: $this->permissions());
@@ -344,7 +434,7 @@ class CascadeCreateRightsTest extends TestCase {
 		}
 
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($failure): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($failure): ObjectEntity {
 				if ($failure !== null) {
 					throw $failure;
 				}
@@ -353,7 +443,7 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		return new CascadingHandler(

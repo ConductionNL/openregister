@@ -80,7 +80,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 *
 	 * @var string
 	 */
-	private const PSEUDONYM_TOKEN = '[erased]';
+	private const PSEUDONYM_MARKER = '[erased]';
 
 	/**
 	 * The payload key each marker operation writes: art-18 restriction, art-21 objection.
@@ -120,11 +120,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * Returns a list of envelopes:
 	 *   [['object' => <ObjectEntity json>, 'gdprEntities' => [{type,value,category,detectedAt}, ...]], ...]
 	 *
-	 * @param string $subjectId Subject identifier value (email, …).
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $mode `exact` (default) or `ilike`.
-	 * @param bool $rbac Apply RBAC scoping (default true).
-	 * @param bool $multitenancy Apply tenant scoping (default true).
+	 * @param SubjectQuery $query        The subject value, optional GdprEntity type and match mode.
+	 * @param bool         $rbac         Apply RBAC scoping (default true).
+	 * @param bool         $multitenancy Apply tenant scoping (default true).
 	 *
 	 * @return array<int, array{object: array, gdprEntities: array}>
 	 *
@@ -132,26 +130,23 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function findSubjectData(
-		string $subjectId, ?string $type = null, string $mode = 'exact', bool $rbac = true, bool $multitenancy = true
-	): array {
-		$query = new SubjectQuery(subjectId: $subjectId, type: $type, mode: $mode);
-
+	public function findSubjectData(SubjectQuery $query, bool $rbac = true, bool $multitenancy = true): array {
 		return $this->serialiseHits(hits: $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy));
 	}//end findSubjectData()
 
 	/**
 	 * The discovery hits as the HTTP envelope: the object's json and its hits.
 	 *
-	 * @param array<int, array{object: ObjectEntity, gdprEntities: array}> $hits The loaded hits.
+	 * @param array<int, array{object: ObjectEntity, gdprEntities: array, subjectFields: array}> $hits The loaded hits.
 	 *
-	 * @return array<int, array{object: array, gdprEntities: array}>
+	 * @return array<int, array{object: array, gdprEntities: array, subjectFields: array}>
 	 */
 	private function serialiseHits(array $hits): array {
 		return array_map(
 			static fn (array $hit): array => [
 				'object' => $hit['object']->jsonSerialize(),
 				'gdprEntities' => $hit['gdprEntities'],
+				'subjectFields' => ($hit['subjectFields'] ?? []),
 			],
 			$hits
 		);
@@ -171,11 +166,12 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @param bool $rbac Apply RBAC scoping (default true).
 	 * @param bool $multitenancy Apply tenant scoping (default true).
 	 *
-	 * @return array<int, array{object: ObjectEntity, gdprEntities: array}> The loaded hits.
+	 * @return array<int, array{object: ObjectEntity, gdprEntities: array, subjectFields: array}> The loaded hits.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function findSubjectObjects(SubjectQuery $query, bool $rbac = true, bool $multitenancy = true): array {
 		$subjectId = trim($query->subjectId);
@@ -185,15 +181,55 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 
 		$hits = [];
 		$trimmed = new SubjectQuery(subjectId: $subjectId, type: $query->type, mode: $query->mode);
-		foreach ($this->records->index->discover(query: $trimmed) as $entry) {
+		foreach ($this->discover(query: $trimmed, rbac: $rbac, multitenancy: $multitenancy) as $entry) {
 			$object = $this->records->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object !== null) {
-				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities']];
+				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities'], 'subjectFields' => $entry['subjectFields']];
 			}
 		}
 
 		return $hits;
 	}//end findSubjectObjects()
+
+	/**
+	 * Both discovery sources, merged per object.
+	 *
+	 * The entity index finds what the detector recognised in text; the
+	 * declared-field index finds what a schema says is the subject's id. An
+	 * object found by both carries both reasons. The objects are still loaded
+	 * scoped afterwards, so neither source widens what the caller may read.
+	 *
+	 * @param SubjectQuery $query        The trimmed subject, optional type and match mode.
+	 * @param bool         $rbac         Apply RBAC to the declared-field search.
+	 * @param bool         $multitenancy Apply tenant scoping to the declared-field search.
+	 *
+	 * @return array<string, array{object_id: int, object_uuid: string, gdprEntities: array, subjectFields: array}>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md
+	 */
+	private function discover(SubjectQuery $query, bool $rbac, bool $multitenancy): array {
+		$merged = [];
+		foreach ($this->records->index->discover(query: $query) as $key => $entry) {
+			$merged[$key] = $entry + ['subjectFields' => []];
+		}
+
+		if ($this->records->declaredFields === null) {
+			return $merged;
+		}
+
+		foreach ($this->records->declaredFields->discover(query: $query, rbac: $rbac, multitenancy: $multitenancy) as $key => $entry) {
+			if (isset($merged[$key]) === true) {
+				$merged[$key]['subjectFields'] = $entry['subjectFields'];
+				continue;
+			}
+
+			$merged[$key] = $entry + ['gdprEntities' => []];
+		}
+
+		return $merged;
+	}//end discover()
 
 	/**
 	 * Pseudonymise one already-loaded object, through the audited write path.
@@ -233,7 +269,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return array{subject: string, type: string|null, generatedAt: string, objectCount: int, objects: array}
 	 */
 	public function assembleAccessExport(string $subjectId, ?string $type = null): array {
-		$envelopes = $this->findSubjectData(subjectId: $subjectId, type: $type);
+		$envelopes = $this->findSubjectData(query: new SubjectQuery(subjectId: $subjectId, type: $type));
 
 		return [
 			'subject' => trim($subjectId),
@@ -289,26 +325,19 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * what the handler does next. Withholding one record never blocks the rest
 	 * of the request.
 	 *
-	 * @param string $subjectId Subject identifier value.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $eraseMode One of the ERASE_MODE_* constants.
-	 * @param bool $dryRun When true, report matches/holds without mutating.
+	 * The subject is trimmed and an unknown erase mode pseudonymises.
+	 *
+	 * @param ErasureRequest $request The subject, type filter, erase mode and dry-run switch.
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-erasure-honours-legal-hold-and-is-mode-parameterised
 	 */
-	public function erase(
-		string $subjectId,
-		?string $type = null,
-		string $eraseMode = self::ERASE_MODE_PSEUDONYMISE,
-		bool $dryRun = false,
-	): array {
-		$eraseMode = $this->normaliseEraseMode(eraseMode: $eraseMode);
+	public function erase(ErasureRequest $request): array {
+		$eraseMode = $this->normaliseEraseMode(eraseMode: $request->eraseMode);
+		$subjectId = trim($request->subjectId);
 
-		return $this->eraseFor(request: new ErasureRequest(subjectId: trim($subjectId), type: $type, eraseMode: $eraseMode, dryRun: $dryRun));
+		return $this->eraseFor(request: new ErasureRequest(subjectId: $subjectId, type: $request->type, eraseMode: $eraseMode, dryRun: $request->dryRun));
 	}//end erase()
 
 	/**
@@ -319,7 +348,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return array<string, mixed> The summary.
 	 */
 	private function eraseFor(ErasureRequest $request): array {
-		$grouped = $this->records->index->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type));
+		$grouped = $this->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type), rbac: true, multitenancy: true);
 		$run = new ErasureRun(request: $request, matchedCount: count($grouped));
 
 		foreach ($grouped as $entry) {
@@ -583,7 +612,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 			}
 
 			if (is_string($value) === true && in_array(strtolower($value), $needles, true) === true) {
-				$data[$key] = self::PSEUDONYM_TOKEN;
+				$data[$key] = self::PSEUDONYM_MARKER;
 			}
 		}
 

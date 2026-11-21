@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -52,15 +53,15 @@ class _DummyObjectSource implements ObjectSourceProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
 		return null;
 	}//end find()
 
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+	public function findAll(SourcedTable $source, array $query = []): array {
 		return [];
 	}//end findAll()
 
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
+	public function count(SourcedTable $source, array $query = []): int {
 		return 0;
 	}//end count()
 }//end class

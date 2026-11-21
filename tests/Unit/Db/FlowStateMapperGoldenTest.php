@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\FlowStateMapper
+ * @uses \OCA\OpenRegister\Db\FlowState
  */
 class FlowStateMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -36,6 +36,51 @@ interface OrganisationSpecialRightsInterface {
 	public const GRANT_MANAGE = 'grant_manage';
 
 	/**
+	 * The special right to run an agent.
+	 *
+	 * @var string
+	 */
+	public const AGENT_USE = 'agent_use';
+
+	/**
+	 * The special right to have a language model called on one's behalf.
+	 *
+	 * @var string
+	 */
+	public const LLM_USE = 'llm_use';
+
+	/**
+	 * Every special right an organisation carries, in the order the editor shows them.
+	 *
+	 * @var string[]
+	 */
+	public const ALL = [
+		self::AGENT_USE,
+		self::LLM_USE,
+		self::GRANT_MANAGE,
+	];
+
+	/**
+	 * The rights where `*` means every signed-in user, and a missing key means nobody narrowed it.
+	 *
+	 * Not `grant_manage`: a right that decides who reads a record is never given
+	 * to everybody by a wildcard or by leaving it out.
+	 *
+	 * @var string[]
+	 */
+	public const OPEN_BY_DEFAULT = [
+		self::AGENT_USE,
+		self::LLM_USE,
+	];
+
+	/**
+	 * The entry that gives a right to every signed-in user.
+	 *
+	 * @var string
+	 */
+	public const EVERYONE = '*';
+
+	/**
 	 * Whether a caller holds a special right on one record.
 	 *
 	 * The right is read from the organisation the RECORD belongs to, not from
@@ -92,4 +137,35 @@ interface OrganisationSpecialRightsInterface {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function giveInEveryOrganisation(SpecialRightGrant $grant): array;
+
+	/**
+	 * Whether a caller may use something a special right guards, in one organisation.
+	 *
+	 * For the rights in {@see OPEN_BY_DEFAULT}; any other right answers false.
+	 * An administrator may. A key the organisation does not carry is not
+	 * narrowed; a list holding `*` admits every signed-in user; otherwise the
+	 * caller must be in one of the listed groups.
+	 *
+	 * @param string      $right            The special right's key.
+	 * @param string      $userId           The caller.
+	 * @param string|null $organisationUuid The organisation the used thing belongs to, or null.
+	 *
+	 * @return bool True when the caller may.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function mayUse(string $right, string $userId, ?string $organisationUuid): bool;
+
+	/**
+	 * Give every signed-in user a special right in every organisation that does not already.
+	 *
+	 * @param string $right The special right's key, one of {@see OPEN_BY_DEFAULT}.
+	 *
+	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
+	 *
+	 * @throws \InvalidArgumentException When the right may not be given to everybody.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function openToEveryoneInEveryOrganisation(string $right): array;
 }//end interface

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Service\OperationsConsoleJobs;
 use OCA\OpenRegister\Service\OperationsConsoleNotifications;
 use OCA\OpenRegister\Service\OperationsConsoleRules;
@@ -80,9 +80,9 @@ final class OperationsConsoleServiceTest extends TestCase {
 	/**
 	 * The shipped notification texts.
 	 *
-	 * @var NotificationTemplateRegistry
+	 * @var NotificationTemplatesInterface
 	 */
-	private NotificationTemplateRegistry $templates;
+	private NotificationTemplatesInterface $templates;
 
 	/**
 	 * The rules engine's run log.
@@ -105,13 +105,13 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->dispatches = $this->createMock(NotificationHistoryMapper::class);
 		$this->queue = $this->createMock(QueuedNotificationMapper::class);
-		$this->templates = $this->createMock(NotificationTemplateRegistry::class);
+		$this->templates = $this->createMock(NotificationTemplatesInterface::class);
 		$this->ruleRuns = $this->createMock(RuleRunMapper::class);
 		$this->ruleSummaries = $this->createMock(RuleRunSummaryMapper::class);
 
 		// The empty instance, so each test states only what it is about.
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 		$this->jobList->method('getJobsIterator')->willReturn([]);
 		$this->dispatches->method('countByStatus')->willReturn([]);
 		$this->queue->method('findAll')->willReturn([]);
@@ -179,7 +179,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 				'quarantined' => 1,
 			]
 		);
-		$this->bulkJobs->method('findAllJobs')->willReturn([]);
+		$this->bulkJobs->method('findJobs')->willReturn([]);
 
 		$pane = $this->pane($this->service()->panes(), 'jobs');
 
@@ -229,7 +229,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 				'transport-refused' => 1,
 			]
 		);
-		$this->templates = $this->createMock(NotificationTemplateRegistry::class);
+		$this->templates = $this->createMock(NotificationTemplatesInterface::class);
 		$this->templates->method('gaps')->willReturn(['object.merged', 'object.split']);
 
 		$pane = $this->pane($this->service()->panes(), 'notifications');
@@ -283,7 +283,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 	public function testEachJobRowCarriesTheVerbsItsStateAllows(): void {
 		$this->bulkJobs = $this->createMock(BulkJobMapper::class);
 		$this->bulkJobs->method('countByState')->willReturn([]);
-		$this->bulkJobs->method('findAllJobs')->willReturn(
+		$this->bulkJobs->method('findJobs')->willReturn(
 			[$this->bulkJob(BulkJob::STATE_RUNNING), $this->bulkJob(BulkJob::STATE_PAUSED), $this->bulkJob(BulkJob::STATE_FAILED)]
 		);
 

@@ -29,18 +29,18 @@ final class ErasureRequest {
 	/**
 	 * Hold the request.
 	 *
-	 * @param string      $subjectId Trimmed subject value.
+	 * @param string      $subjectId Subject value.
 	 * @param string|null $type      GdprEntity type filter.
-	 * @param string      $eraseMode Normalised erase mode (one of the ERASE_MODE_* constants).
+	 * @param string      $eraseMode Erase mode (one of the ERASE_MODE_* constants).
 	 * @param bool        $dryRun    Whether nothing is written.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-erasure-honours-legal-hold-and-is-mode-parameterised
 	 */
 	public function __construct(
 		public readonly string $subjectId,
-		public readonly ?string $type,
-		public readonly string $eraseMode,
-		public readonly bool $dryRun,
+		public readonly ?string $type = null,
+		public readonly string $eraseMode = DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE,
+		public readonly bool $dryRun = false,
 	) {
 	}//end __construct()
 }//end class

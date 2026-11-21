@@ -36,14 +36,15 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Controller\Support\TermExplanationRequest;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -96,7 +97,7 @@ class FlowTimerDiagnosticController extends Controller {
 		IRequest $request,
 		FlowTimerDiagnosticControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->diagnostic = $services->diagnostic;
@@ -121,7 +122,7 @@ class FlowTimerDiagnosticController extends Controller {
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function explain(array $calendar = [], string $anchorAt = '', array $sla = [], array $ladder = []): JSONResponse {
 		return $this->explainAsAdmin(term: new TermExplanationRequest(calendar: $calendar, anchorAt: $anchorAt, sla: $sla, ladder: $ladder));
 	}//end explain()
@@ -219,18 +220,8 @@ class FlowTimerDiagnosticController extends Controller {
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: the term diagnostic reads calendars that may not be yours'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: the term diagnostic reads calendars that may not be yours');
 	}//end requireAdmin()
 }//end class

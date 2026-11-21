@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -221,13 +222,15 @@ class FlowTaskMootness {
 
 		$tasks->terminateAsMoot(
 			uuid: $taskUuid,
-			reason: sprintf(
-				"Branch decision at '%s' in run '%s' made node '%s' unreachable; its task can no longer be used.",
-				$run->byTransition,
-				$taskRun,
-				$nodeId
-			),
-			source: FlowTaskBridge::ACTOR_PREFIX . $taskRun
+			trigger: new TaskTrigger(
+				source: FlowTaskBridge::ACTOR_PREFIX . $taskRun,
+				reason: sprintf(
+					"Branch decision at '%s' in run '%s' made node '%s' unreachable; its task can no longer be used.",
+					$run->byTransition,
+					$taskRun,
+					$nodeId
+				)
+			)
 		);
 
 		return true;

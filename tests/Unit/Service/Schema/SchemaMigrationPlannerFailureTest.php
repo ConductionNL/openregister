@@ -32,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner
+ * @uses \OCA\OpenRegister\Service\Schema\MigrationPlanResult
+ * @uses \OCA\OpenRegister\Service\Schema\CastTarget
  */
 class SchemaMigrationPlannerFailureTest extends TestCase {
 

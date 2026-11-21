@@ -36,6 +36,10 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Listener\ConceptDeleteGuardListener
  * @uses \OCA\OpenRegister\Event\ObjectLeavingEvent
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\WriteVetoState
  */
 final class ConceptDeleteGuardListenerLeavingTest extends TestCase {
 

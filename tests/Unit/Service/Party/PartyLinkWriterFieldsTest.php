@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,6 +40,15 @@ use PHPUnit\Framework\TestCase;
  * Display name and e-mail resolution, in their order of preference.
  *
  * @covers \OCA\OpenRegister\Service\Party\PartyLinkWriter
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
+ * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkRequest
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkTarget
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
  */
 class PartyLinkWriterFieldsTest extends TestCase {
 
@@ -57,7 +67,7 @@ class PartyLinkWriterFieldsTest extends TestCase {
 		$parties->method('find')->with('party-a')->willReturn($party);
 		$parties->expects($this->never())->method('findUnscoped');
 		$parties->method('definitionFor')->willReturn($definition);
-		$parties->method('addressesOfKind')->with($party, 'correspondence', $definition)->willReturn($correspondence);
+		$parties->method('addressesOfKind')->with($party, new PartyAddressSelection('correspondence', $definition))->willReturn($correspondence);
 		$parties->method('addresses')->willReturn($all);
 
 		$links = $this->createMock(ContactLinkMapperInterface::class);

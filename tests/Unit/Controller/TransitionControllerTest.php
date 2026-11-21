@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\TransitionController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
@@ -343,4 +344,72 @@ class TransitionControllerTest extends TestCase {
 		$this->assertArrayNotHasKey('actions', $body);
 		$this->assertStringContainsString('is not registered', (string)($body['error'] ?? ''));
 	}//end testAvailableActionsReturns502WhenTheProviderCannotAnswer()
+	/**
+	 * Characterisation: every engine failure maps to its own status and exact body.
+	 *
+	 * @return void
+	 */
+	public function testTransitionMapsEachEngineFailureToItsAnswer(): void {
+		$cases = [
+			[new InvalidTransitionInputException('bad input', ['x']), Http::STATUS_BAD_REQUEST, ['error' => 'bad input', 'fields' => ['x']]],
+			[new NotAuthorizedException(message: 'no'), Http::STATUS_FORBIDDEN, ['error' => 'no']],
+			[new HookStoppedException('stopped'), Http::STATUS_UNPROCESSABLE_ENTITY, ['error' => 'stopped']],
+			[new LifecycleSubjectNotFoundException('gone'), Http::STATUS_NOT_FOUND, ['error' => 'gone']],
+			[new LifecycleProviderException('upstream'), Http::STATUS_BAD_GATEWAY, ['error' => 'upstream']],
+			[new RuntimeException('refused'), Http::STATUS_UNPROCESSABLE_ENTITY, ['error' => 'refused']],
+		];
+		$this->stubParams(['action' => 'open']);
+		$current = null;
+		$this->engine->method('transition')->willReturnCallback(
+			static function () use (&$current) {
+				throw $current;
+			}
+		);
+
+		foreach ($cases as [$exception, $status, $body]) {
+			$current = $exception;
+			$response = $this->controller->transition('obj-1');
+			$this->assertSame($status, $response->getStatus(), get_class($exception));
+			$this->assertSame($body, $response->getData(), get_class($exception));
+		}
+	}//end testTransitionMapsEachEngineFailureToItsAnswer()
+
+	/**
+	 * Characterisation: an exception outside the mapped set is not swallowed.
+	 *
+	 * @return void
+	 */
+	public function testTransitionLetsAnUnmappedExceptionThrough(): void {
+		$this->stubParams(['action' => 'open']);
+		$this->engine->method('transition')->willThrowException(new \LogicException('bug'));
+
+		$this->expectException(\LogicException::class);
+		$this->controller->transition('obj-1');
+	}//end testTransitionLetsAnUnmappedExceptionThrough()
+
+	/**
+	 * Characterisation: the two request refusals answer exact bodies, without calling the engine.
+	 *
+	 * @return void
+	 */
+	public function testTransitionRefusesMalformedRequestsExactly(): void {
+		$this->engine->expects($this->never())->method('transition');
+		$this->stubParams(['action' => 'open', 'data' => 'text']);
+		$response = $this->controller->transition('obj-1');
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['error' => 'Field "data" must be an object of input values.'], $response->getData());
+	}//end testTransitionRefusesMalformedRequestsExactly()
+
+	/**
+	 * Characterisation: a missing action is refused with its exact body.
+	 *
+	 * @return void
+	 */
+	public function testTransitionRefusesAMissingActionExactly(): void {
+		$this->engine->expects($this->never())->method('transition');
+		$this->stubParams(['data' => 'text']);
+		$response = $this->controller->transition('obj-1');
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['error' => 'Missing required field "action".'], $response->getData());
+	}//end testTransitionRefusesAMissingActionExactly()
 }//end class

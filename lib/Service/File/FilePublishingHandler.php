@@ -24,9 +24,9 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
@@ -95,29 +95,31 @@ class FilePublishingHandler {
 	 * @param FileMapperInterface $fileMapper File mapper for share operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
+	 * @param PublishedDigestService $publishedDigests Records and seals the digest of a file made public.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectEntityMapper,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IServerContainer $container,
+		private readonly PublishedDigestService $publishedDigests,
 	) {
 	}//end __construct()
 
 	/**
-	 * The party indicator guard, resolved at the act rather than injected.
+	 * The publication refusal (the party indicators), resolved at the act rather than injected.
 	 *
 	 * Deliberately NOT wrapped in a try/catch that degrades to "no guard". A
 	 * control that cannot run must stop the act, not wave it through: an
 	 * indicator whose effect is refuse publication exists precisely for the
 	 * case where publishing is the harm.
 	 *
-	 * @return PartyIndicatorGuard The guard.
+	 * @return PublicationRefusalInterface The refusal.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
-	private function partyIndicatorGuard(): PartyIndicatorGuard {
-		return $this->container->get(PartyIndicatorGuard::class);
+	private function partyIndicatorGuard(): PublicationRefusalInterface {
+		return $this->container->get(PublicationRefusalInterface::class);
 	}//end partyIndicatorGuard()
 
 	/**
@@ -148,6 +150,7 @@ class FilePublishingHandler {
 	 * @psalm-return   File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
 	 */
 	public function publishFile(ObjectEntity|string $object, string|int $file): File {
 		$object = $this->objectOf(object: $object);
@@ -170,7 +173,19 @@ class FilePublishingHandler {
 		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
 
 		$this->assertNotRestricted(fileNode: $fileNode);
-		$this->createPublicShare(fileNode: $fileNode);
+
+		// NO SEAL, NO PUBLICATION. The share is created inside the unit of work
+		// that records the file's digest and writes the `file.published` audit
+		// row, as its last step: when the digest or the audit row cannot be
+		// written the share is never created, and when the share cannot be
+		// created the digest and the audit row are rolled back with it.
+		$this->publishedDigests->publishSealed(
+			object: $object,
+			file: $fileNode,
+			makePublic: function () use ($fileNode): void {
+				$this->createPublicShare(fileNode: $fileNode);
+			}
+		);
 		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
 		return $fileNode;
 	}//end publishFile()
@@ -188,7 +203,7 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function assertNotRestricted(File $fileNode): void {
-		if ($this->container->get(FileRestrictionGuardInterface::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
+		if ($this->container->get(FileReadRestrictionInterface::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
 			throw new Exception('A restricted file cannot be published');
 		}
 	}//end assertNotRestricted()
@@ -275,6 +290,7 @@ class FilePublishingHandler {
 	 * @psalm-return   File
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-files-digest-is-recorded-and-sealed-when-it-becomes-public-req-pfd-001
 	 */
 	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): File {
 		$object = $this->objectOf(object: $object);
@@ -284,6 +300,7 @@ class FilePublishingHandler {
 
 		$this->debug(message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath());
 		$this->removePublicShares(file: $file);
+		$this->publishedDigests->closePublication(fileId: (int)$file->getId());
 		$this->debug(message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName());
 		return $file;
 	}//end unpublishFile()
@@ -382,7 +399,7 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function zipFiles(ObjectEntity $object): array {
-		$files = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $this->fileService->getFiles($object));
+		$files = $this->container->get(FileReadRestrictionInterface::class)->readableNodes(nodes: $this->fileService->getFiles($object));
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');
 		}

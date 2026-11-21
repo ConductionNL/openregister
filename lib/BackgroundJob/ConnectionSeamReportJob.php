@@ -23,19 +23,19 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Container\ContainerInterface;
@@ -56,13 +56,6 @@ class ConnectionSeamReportJob extends TimedJob {
 	 * @var integer
 	 */
 	private const INTERVAL_SECONDS = 21600;
-
-	/**
-	 * The identifier IdentityTranslationProvider reports.
-	 *
-	 * @var string
-	 */
-	private const IDENTITY_TRANSLATION = 'identity';
 
 	/**
 	 * Constructor.
@@ -89,45 +82,20 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	protected function run($argument): void {
-		$this->reportSeam(key: 'translation', describe: fn (): array => $this->describeTranslation());
+		$this->reportSeam(key: 'translation', describe: fn (): array => $this->container->get(TranslationBindingInterface::class)->describe());
 		$this->reportSeam(key: 'dsar-identity', describe: fn (): array => $this->describeIdentity());
 		$this->reportSeam(key: 'dsar-regulator', describe: fn (): array => $this->describeRegulator());
 	}//end run()
-
-	/**
-	 * What answers behind the translation seam.
-	 *
-	 * @return array{0: string, 1: string} The status and the message.
-	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
-	 */
-	private function describeTranslation(): array {
-		/*
-		 * @var TranslationProviderInterface $provider
-		 */
-
-		$provider = $this->container->get(TranslationProviderInterface::class);
-		$identifier = $provider->getIdentifier();
-
-		if ($identifier === self::IDENTITY_TRANSLATION) {
-			return [
-				'simulated',
-				'The identity provider is bound. A translation returns the source text unchanged. Bind a real TranslationProviderInterface to translate.',
-			];
-		}
-
-		return ['configured', 'Translation provider "' . $identifier . '" is bound. Not tested.'];
-	}//end describeTranslation()
 
 	/**
 	 * What answers behind the DSAR identity-verify seam.
 	 *
 	 * @return array{0: string, 1: string} The status and the message.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function describeIdentity(): array {
 		/*
@@ -155,7 +123,7 @@ class ConnectionSeamReportJob extends TimedJob {
 	 *
 	 * @return array{0: string, 1: string} The status and the message.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function describeRegulator(): array {
 		/*

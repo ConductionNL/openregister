@@ -249,41 +249,36 @@ final class ToolGrantSet {
 	/**
 	 * Whether one tool id is granted, without re-deriving anything.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
+	 * @param ToolGrantCoordinates $at The app, subject and action.
 	 *
 	 * @return bool True when granted.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
-	public function has(string $app, string $subject, string $action): bool {
-		return isset($this->grants[$app][$subject][$action]);
+	public function has(ToolGrantCoordinates $at): bool {
+		return isset($this->grants[$at->app][$at->subject][$at->action]);
 	}//end has()
 
 	/**
-	 * Add one grant at explicit coordinates.
+	 * Add one unconstrained grant at explicit coordinates.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
-	 * @param string $toolId  The tool id dispatch uses.
-	 * @param array<string, mixed> $args Optional argument constraints.
+	 * @param ToolGrantCoordinates $at     The app, subject and action.
+	 * @param string               $toolId The tool id dispatch uses.
 	 *
 	 * @return self A new set including this grant.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#scenario-two-constrained-grants-for-one-tool-both-survive
 	 */
-	public function with(string $app, string $subject, string $action, string $toolId, array $args = []): self {
+	public function with(ToolGrantCoordinates $at, string $toolId): self {
 		$grants = $this->grants;
-		$entry = ToolGrantCodec::entryFor(id: $toolId, args: $args);
+		$entry = ToolGrantCodec::entryFor(id: $toolId, args: []);
 
-		$existing = ($grants[$app][$subject][$action] ?? []);
+		$existing = ($grants[$at->app][$at->subject][$at->action] ?? []);
 		if (in_array($entry, $existing, true) === false) {
 			$existing[] = $entry;
 		}
 
-		$grants[$app][$subject][$action] = $existing;
+		$grants[$at->app][$at->subject][$at->action] = $existing;
 
 		return new self($grants);
 	}//end with()
@@ -291,23 +286,22 @@ final class ToolGrantSet {
 	/**
 	 * Remove one grant.
 	 *
-	 * @param string $app     The owning app.
-	 * @param string $subject The thing acted on.
-	 * @param string $action  The verb.
+	 * @param ToolGrantCoordinates $at The app, subject and action.
 	 *
 	 * @return self A new set without this grant.
 	 *
 	 * @spec openspec/specs/structured-tool-grants/spec.md#requirement-tool-grants-are-a-structure-in-the-domain-and-a-list-in-storage
 	 */
-	public function without(string $app, string $subject, string $action): self {
+	public function without(ToolGrantCoordinates $at): self {
 		$grants = $this->grants;
-		unset($grants[$app][$subject][$action]);
+		$app = $at->app;
+		unset($grants[$app][$at->subject][$at->action]);
 
 		// Prune empties, so an agent that had its last grant removed reads as
 		// unconfigured rather than as a map of empty maps — which `isEmpty()`
 		// would otherwise report as configured-with-nothing.
-		if (($grants[$app][$subject] ?? null) === []) {
-			unset($grants[$app][$subject]);
+		if (($grants[$app][$at->subject] ?? null) === []) {
+			unset($grants[$app][$at->subject]);
 		}
 
 		if (($grants[$app] ?? null) === []) {
@@ -329,20 +323,44 @@ final class ToolGrantSet {
 		foreach ($this->grants as $subjects) {
 			foreach ($subjects as $actions) {
 				foreach ($actions as $entries) {
-					foreach ($entries as $entry) {
-						if (is_array($entry) === true) {
-							$ids[] = (string)($entry['id'] ?? '');
-							continue;
-						}
-
-						$ids[] = (string)$entry;
-					}
+					array_push($ids, ...self::entryIds(entries: $entries));
 				}
 			}
 		}
 
 		return array_values(array_filter(array_unique($ids)));
 	}//end toolIds()
+
+	/**
+	 * The tool id of each entry of one action, in order.
+	 *
+	 * @param array<mixed> $entries The action's entries.
+	 *
+	 * @return array<int, string> The ids, one per entry.
+	 */
+	private static function entryIds(array $entries): array {
+		$ids = [];
+		foreach ($entries as $entry) {
+			$ids[] = self::entryId(entry: $entry);
+		}
+
+		return $ids;
+	}//end entryIds()
+
+	/**
+	 * The tool id one entry carries: a bare id, or the `id` of a constrained one.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string The id.
+	 */
+	private static function entryId(mixed $entry): string {
+		if (is_array($entry) === true) {
+			return (string)($entry['id'] ?? '');
+		}
+
+		return (string)$entry;
+	}//end entryId()
 
 
 
@@ -365,20 +383,37 @@ final class ToolGrantSet {
 				continue;
 			}
 
-			foreach ($subjects as $subject => $actions) {
-				if (self::isUsableLevel(key: $subject, value: $actions) === false) {
-					continue;
-				}
-
-				$kept = self::sanitiseActions(actions: $actions);
-				if ($kept !== []) {
-					$clean[$app][$subject] = $kept;
-				}
+			$kept = self::sanitiseSubjects(subjects: $subjects);
+			if ($kept !== []) {
+				$clean[$app] = $kept;
 			}
 		}
 
 		return $clean;
 	}//end sanitise()
+
+	/**
+	 * The usable subjects of one app, each with its usable actions.
+	 *
+	 * @param array<mixed> $subjects The stored subjects for one app.
+	 *
+	 * @return array<string, array<string, array<int, string|array<string, mixed>>>> The clean subjects.
+	 */
+	private static function sanitiseSubjects(array $subjects): array {
+		$clean = [];
+		foreach ($subjects as $subject => $actions) {
+			if (self::isUsableLevel(key: $subject, value: $actions) === false) {
+				continue;
+			}
+
+			$kept = self::sanitiseActions(actions: $actions);
+			if ($kept !== []) {
+				$clean[$subject] = $kept;
+			}
+		}
+
+		return $clean;
+	}//end sanitiseSubjects()
 
 	/**
 	 * Whether one level of the stored structure is worth descending into.
@@ -411,23 +446,7 @@ final class ToolGrantSet {
 				continue;
 			}
 
-			// An action holds a LIST of entries, but a single unconstrained grant
-			// may be written as the bare id — that is the common case, and
-			// spelling every one of them `["id"]` in stored JSON would bury the
-			// few that genuinely carry constraints.
-			$candidates = $entry;
-			if (is_array($entry) === false || array_is_list($entry) === false) {
-				$candidates = [$entry];
-			}
-
-			$kept = [];
-			foreach ($candidates as $candidate) {
-				$one = ToolGrantCodec::sanitiseEntry(entry: $candidate);
-				if ($one !== null) {
-					$kept[] = $one;
-				}
-			}
-
+			$kept = self::sanitiseEntries(candidates: self::candidatesOf(entry: $entry));
 			if ($kept !== []) {
 				$clean[$action] = $kept;
 			}
@@ -435,5 +454,44 @@ final class ToolGrantSet {
 
 		return $clean;
 	}//end sanitiseActions()
+
+	/**
+	 * The entries one stored action holds, as a list.
+	 *
+	 * An action holds a LIST of entries, but a single unconstrained grant may be
+	 * written as the bare id — that is the common case, and spelling every one of
+	 * them `["id"]` in stored JSON would bury the few that genuinely carry
+	 * constraints. A single constrained entry (a map) is wrapped the same way.
+	 *
+	 * @param mixed $entry The stored action value.
+	 *
+	 * @return array<mixed> The candidate entries.
+	 */
+	private static function candidatesOf(mixed $entry): array {
+		if (is_array($entry) === false || array_is_list($entry) === false) {
+			return [$entry];
+		}
+
+		return $entry;
+	}//end candidatesOf()
+
+	/**
+	 * The usable entries among one action's candidates, in order.
+	 *
+	 * @param array<mixed> $candidates The candidate entries.
+	 *
+	 * @return array<int, string|array<string, mixed>> The clean entries.
+	 */
+	private static function sanitiseEntries(array $candidates): array {
+		$kept = [];
+		foreach ($candidates as $candidate) {
+			$one = ToolGrantCodec::sanitiseEntry(entry: $candidate);
+			if ($one !== null) {
+				$kept[] = $one;
+			}
+		}
+
+		return $kept;
+	}//end sanitiseEntries()
 
 }//end class

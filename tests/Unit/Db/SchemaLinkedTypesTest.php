@@ -53,6 +53,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Schema\LinkedTypesRule::validateLinkedTypesValue
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 class SchemaLinkedTypesTest extends TestCase {
 

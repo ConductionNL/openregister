@@ -18,6 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -106,7 +108,10 @@ class TalkChatExporterTest extends TestCase {
 		$objectService->method('getObject')->willReturn($object);
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->once())->method('addFile')
-			->with($object, $this->stringStartsWith('Overleg-'), $this->stringContains('Anna: Hallo'))
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === $object),
+				$this->callback(fn (FileUpload $upload): bool => $this->stringStartsWith('Overleg-')->evaluate($upload->fileName, '', true) && $this->stringContains('Anna: Hallo')->evaluate($upload->content, '', true))
+			)
 			->willReturn($this->createMock(File::class));
 		$fileService->method('formatFile')->willReturn(['title' => 'Overleg.txt']);
 

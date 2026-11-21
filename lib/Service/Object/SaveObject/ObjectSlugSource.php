@@ -167,7 +167,8 @@ class ObjectSlugSource {
 
 		[$fieldPath, $prefix] = $path;
 		$data = $this->businessData(objectData: $objectData);
-		$value = $this->hydrator->extractMetadataValue(data: $data, fieldPath: $fieldPath, schemaProperties: ($schema->getProperties() ?? []));
+		$source = new TemplateSource(data: $data, schemaProperties: ($schema->getProperties() ?? []));
+		$value = $this->hydrator->metadataText(fieldPath: $fieldPath, source: $source);
 		$name = $this->nameSlug(value: $value);
 		if ($name === '') {
 			return null;

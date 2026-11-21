@@ -99,17 +99,29 @@ final class ServiceHoursFrame {
 		}
 
 		$minutes = (new ServiceHoursWalk(calendar: $this->calendar, windows: $this->windows))->minutesBetween(start: $start, end: $end)
-			?? throw new FlowTimerValidationException(
-				message: sprintf(
-					'Measuring service hours between %s and %s exceeds %d calendar days.',
-					$from->format('c'),
-					$to->format('c'),
-					ServiceHoursClock::MAX_WALK_DAYS
-				)
-			);
+			?? throw self::walkTooLong(from: $from, to: $to);
 
 		return round(($minutes / 60), 4);
 	}//end elapsed()
+
+	/**
+	 * The refusal of a measurement that would walk more calendar days than allowed.
+	 *
+	 * @param DateTimeInterface $from The start of the measurement.
+	 * @param DateTimeInterface $to   Its end.
+	 *
+	 * @return FlowTimerValidationException The refusal.
+	 */
+	private static function walkTooLong(DateTimeInterface $from, DateTimeInterface $to): FlowTimerValidationException {
+		return new FlowTimerValidationException(
+			message: sprintf(
+				'Measuring service hours between %s and %s exceeds %d calendar days.',
+				$from->format('c'),
+				$to->format('c'),
+				ServiceHoursClock::MAX_WALK_DAYS
+			)
+		);
+	}//end walkTooLong()
 
 	/**
 	 * The same instant, in the calendar's zone.

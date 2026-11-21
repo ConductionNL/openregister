@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -84,7 +84,7 @@ class CacheSettingsController extends Controller {
 		IRequest $request,
 		CacheSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 		$this->appConfig = $services->appConfig;
@@ -118,8 +118,6 @@ class CacheSettingsController extends Controller {
 	 * This method supports clearing different types of caches: 'all', 'object', 'schema', 'facet', 'distributed', 'names'.
 	 * It accepts a JSON body with 'type' parameter to specify which cache to clear.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with clear cache result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -141,8 +139,6 @@ class CacheSettingsController extends Controller {
 	 *
 	 * This method triggers manual cache warmup for object names to improve performance
 	 * after system maintenance or during off-peak hours.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with warmup result or error
 	 *
@@ -201,8 +197,6 @@ class CacheSettingsController extends Controller {
 	 *
 	 * Accepts an interval in seconds. Use 0 to disable the warmup job.
 	 * Minimum non-zero value is 300 seconds (5 minutes).
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated interval config
 	 *
@@ -290,8 +284,6 @@ class CacheSettingsController extends Controller {
 	 * - categories.json: App categories
 	 * - discover.json: Featured/discover section
 	 * - all: All app store cache files
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with invalidation result
 	 *

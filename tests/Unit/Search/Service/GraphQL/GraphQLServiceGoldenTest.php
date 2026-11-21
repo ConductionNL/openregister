@@ -54,6 +54,14 @@ use ReflectionNamedType;
  * of the collaborators below, so the pin survives regrouping them.
  *
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\GraphQLService
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLAccessServices
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLContextFactory
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLDataServices
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequest
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLRequestGuard
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\GraphQLSchemaServices
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class GraphQLServiceGoldenTest extends TestCase {
 

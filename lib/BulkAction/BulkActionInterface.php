@@ -29,11 +29,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BulkAction;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IUser;
 
 /**
  * The contract every bulk action implements.
+ *
+ * This base declares no `apply()`, so an action written for either published
+ * signature loads. Implement {@see StepBulkActionInterface} (one `BulkStep`)
+ * for new actions; actions that still take
+ * `(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null)`
+ * keep working and may say so with {@see LegacyBulkActionInterface}. The job
+ * executor calls either form through {@see BulkActionInvoker}.
  */
 interface BulkActionInterface {
 
@@ -92,23 +97,4 @@ interface BulkActionInterface {
 	 * @throws \InvalidArgumentException When the parameters do not make sense.
 	 */
 	public function validateParameters(array $parameters): void;
-
-	/**
-	 * What the action would do, or does, to one object.
-	 *
-	 * The preview and the commit call this same method, differing only in
-	 * `$commit`. A second implementation for the rehearsal would be a promise
-	 * rather than a rehearsal (D-1).
-	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
-	 *
-	 * @return BulkActionResult What happened, or what would happen.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
-	 * rehearsal and the commit is the design property of D-1.
-	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult;
 }//end interface

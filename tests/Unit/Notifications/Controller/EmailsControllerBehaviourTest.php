@@ -46,7 +46,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 #[CoversClass(EmailsController::class)]
@@ -57,6 +57,9 @@ use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 #[UsesClass(EmailLink::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ListQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ObjectRef::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Service\EmailLinkRequest::class)]
 class EmailsControllerBehaviourTest extends TestCase {
 
 	private EmailService&MockObject $emails;

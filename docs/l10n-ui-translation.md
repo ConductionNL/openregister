@@ -261,7 +261,7 @@ harvested. The failures are not typos — they are correct translations of a
 Recurring offenders, all confirmed in this app:
 
 - **`Right`** — a permissions-table header (`EditOrganisation.vue`, the "Special
-  Rights" table listing `object_publish`). Sibling apps use the same English word
+  Rights" table listing `agent_use`). Sibling apps use the same English word
   for text alignment, so the harvest yields "right-aligned" (`ru` "По правому
   краю", `nl` "Rechts"). Needs the *legal/permission* sense: `Recht`, `Право`,
   `Uprawnienie`, `Právo`.

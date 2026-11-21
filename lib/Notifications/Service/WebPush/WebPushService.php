@@ -36,8 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\WebPush;
 
+use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
+use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -128,11 +130,7 @@ class WebPushService {
 	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function deliver(string $uid, array $payload): int {
-		if ($this->isConfigured() === false) {
-			$this->logger->warning(
-				'[WebPushService] No VAPID keypair configured — skipping web-push delivery. '
-				. 'Run `occ openregister:web-push:generate-vapid`.'
-			);
+		if ($this->isReadyToPush() === false) {
 			return 0;
 		}
 
@@ -141,6 +139,35 @@ class WebPushService {
 			return 0;
 		}
 
+		return $this->pushTo(subscriptions: $subscriptions, payload: $payload);
+	}//end deliver()
+
+	/**
+	 * Whether a VAPID keypair is configured, logging how to create one when it is not.
+	 *
+	 * @return bool True when pushes can be signed.
+	 */
+	private function isReadyToPush(): bool {
+		if ($this->isConfigured() === false) {
+			$this->logger->warning(
+				'[WebPushService] No VAPID keypair configured — skipping web-push delivery. '
+				. 'Run `occ openregister:web-push:generate-vapid`.'
+			);
+			return false;
+		}
+
+		return true;
+	}//end isReadyToPush()
+
+	/**
+	 * Queue the payload for every subscription, send it and count the deliveries.
+	 *
+	 * @param array<int, PushSubscription> $subscriptions The recipient's subscriptions.
+	 * @param array<string, mixed>         $payload       The notification payload.
+	 *
+	 * @return int The number of endpoints successfully delivered to.
+	 */
+	private function pushTo(array $subscriptions, array $payload): int {
 		$webPush = $this->buildWebPush();
 		$json = json_encode($payload);
 		if ($json === false) {
@@ -149,18 +176,39 @@ class WebPushService {
 		}
 
 		foreach ($subscriptions as $subscription) {
-			$sub = Subscription::create(
-				[
-					'endpoint' => (string)$subscription->getEndpoint(),
-					'keys' => [
-						'p256dh' => (string)$subscription->getP256dh(),
-						'auth' => (string)$subscription->getAuth(),
-					],
-				]
-			);
-			$webPush->queueNotification(subscription: $sub, payload: $json);
+			$webPush->queueNotification(subscription: $this->toPushTarget(subscription: $subscription), payload: $json);
 		}
 
+		return $this->countDelivered(webPush: $webPush);
+	}//end pushTo()
+
+	/**
+	 * The library subscription for a stored subscription.
+	 *
+	 * @param PushSubscription $subscription The stored subscription.
+	 *
+	 * @return Subscription The endpoint and keys to encrypt for.
+	 */
+	private function toPushTarget(PushSubscription $subscription): Subscription {
+		return Subscription::create(
+			[
+				'endpoint' => (string)$subscription->getEndpoint(),
+				'keys' => [
+					'p256dh' => (string)$subscription->getP256dh(),
+					'auth' => (string)$subscription->getAuth(),
+				],
+			]
+		);
+	}//end toPushTarget()
+
+	/**
+	 * Send the queued messages and count the successful ones; handle the failed ones.
+	 *
+	 * @param WebPush $webPush The client with the queued messages.
+	 *
+	 * @return int The number of endpoints successfully delivered to.
+	 */
+	private function countDelivered(WebPush $webPush): int {
 		$delivered = 0;
 		foreach ($webPush->flush() as $report) {
 			if ($report->isSuccess() === true) {
@@ -168,32 +216,67 @@ class WebPushService {
 				continue;
 			}
 
-			// Prune endpoints the push service reports gone (404 / 410).
-			$statusCode = 0;
-			$response = $report->getResponse();
-			if ($response !== null) {
-				$statusCode = $response->getStatusCode();
-			}
-
-			if ($report->isSubscriptionExpired() === true || $statusCode === 404 || $statusCode === 410) {
-				$pruned = $this->subscriptionMapper->deleteByEndpoint($report->getEndpoint());
-				$this->logger->info(
-					sprintf(
-						'[WebPushService] Pruned %d gone subscription(s) for endpoint (status %d).',
-						$pruned,
-						$statusCode
-					)
-				);
-				continue;
-			}
-
-			$this->logger->warning(
-				sprintf('[WebPushService] Push delivery failed (status %d): %s', $statusCode, $report->getReason())
-			);
-		}//end foreach
+			$this->handleFailedPush(report: $report);
+		}
 
 		return $delivered;
-	}//end deliver()
+	}//end countDelivered()
+
+	/**
+	 * Prune a subscription the push service reports gone; log any other failure.
+	 *
+	 * @param MessageSentReport $report The failed delivery.
+	 *
+	 * @return void
+	 */
+	private function handleFailedPush(MessageSentReport $report): void {
+		// Prune endpoints the push service reports gone (404 / 410).
+		$statusCode = $this->statusCodeOf(report: $report);
+		if ($report->isSubscriptionExpired() === true || $statusCode === 404 || $statusCode === 410) {
+			$this->pruneGone(report: $report, statusCode: $statusCode);
+			return;
+		}
+
+		$this->logger->warning(
+			sprintf('[WebPushService] Push delivery failed (status %d): %s', $statusCode, $report->getReason())
+		);
+	}//end handleFailedPush()
+
+	/**
+	 * The HTTP status of a delivery, or 0 when there was no response.
+	 *
+	 * @param MessageSentReport $report The delivery.
+	 *
+	 * @return int The status code.
+	 */
+	private function statusCodeOf(MessageSentReport $report): int {
+		$statusCode = 0;
+		$response = $report->getResponse();
+		if ($response !== null) {
+			$statusCode = $response->getStatusCode();
+		}
+
+		return $statusCode;
+	}//end statusCodeOf()
+
+	/**
+	 * Delete the subscriptions of a gone endpoint and log how many went.
+	 *
+	 * @param MessageSentReport $report     The delivery the push service refused as gone.
+	 * @param int               $statusCode Its HTTP status.
+	 *
+	 * @return void
+	 */
+	private function pruneGone(MessageSentReport $report, int $statusCode): void {
+		$pruned = $this->subscriptionMapper->deleteByEndpoint($report->getEndpoint());
+		$this->logger->info(
+			sprintf(
+				'[WebPushService] Pruned %d gone subscription(s) for endpoint (status %d).',
+				$pruned,
+				$statusCode
+			)
+		);
+	}//end pruneGone()
 
 	/**
 	 * Build a configured WebPush client from the stored VAPID keypair.

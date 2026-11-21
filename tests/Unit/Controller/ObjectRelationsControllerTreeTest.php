@@ -53,6 +53,19 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphService
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsReachability
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeQuery
+ * @uses \OCA\OpenRegister\Service\Export\SpreadsheetCell
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ObjectRelationsControllerTreeTest extends TestCase {
 
@@ -169,7 +182,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$root = $this->object();
 		$this->access->method('readable')->willReturn($root);
 		$this->trees->expects($this->once())->method('tree')
-			->with($root, new ObjectTreeQuery('both', 2, ['kvkNumber', 'tradeName']))
+			->with(new ObjectTreeQuery($root, 'both', 2, ['kvkNumber', 'tradeName']))
 			->willReturn(['nodes' => []]);
 
 		$response = $controller->tree(register: 'r', schema: 's', id: 'x');
@@ -217,7 +230,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$controller = $this->controller(params: []);
 		$this->access->method('readable')->willReturn($this->object());
 		$this->trees->expects($this->once())->method('tree')
-			->with($this->anything(), new ObjectTreeQuery('descendants', null, []))
+			->with($this->callback(static fn (ObjectTreeQuery $query): bool => [$query->direction, $query->depth, $query->fields] === ['descendants', null, []]))
 			->willReturn([]);
 
 		$controller->tree(register: 'r', schema: 's', id: 'x');
