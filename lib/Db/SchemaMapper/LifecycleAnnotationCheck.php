@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\ProcessDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -108,7 +108,7 @@ final class LifecycleAnnotationCheck {
 			return;
 		}
 
-		$errors = SchemaDeclarationValidators::lifecycle()->validate($annotation->shape());
+		$errors = ProcessDeclarationValidators::lifecycle()->validate($annotation->shape());
 		if (count($errors) === 0) {
 			return;
 		}

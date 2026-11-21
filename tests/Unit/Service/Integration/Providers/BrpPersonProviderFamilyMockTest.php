@@ -35,6 +35,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\BrpMockRegister
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Exception\ProviderUnavailableException
+ * @uses   \OCA\OpenRegister\Service\Integration\UpstreamRequest
  */
 class BrpPersonProviderFamilyMockTest extends TestCase {
 

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -48,7 +48,7 @@ final class F06FlowVersionInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		FlowVersionMapper::class => [FlowVersionMapperInterface::class, DbRegistrar::class],
+		FlowVersionMapper::class => [FlowVersionMapperInterface::class, ProcessesMapperRegistrar::class],
 	];
 
 	/**
