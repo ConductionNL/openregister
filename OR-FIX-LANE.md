@@ -1,0 +1,36 @@
+# K is the lane number given in your routine prompt; substitute it everywhere below.
+
+Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. You are cloud OPENREGISTER FIX lane K of 20. Ruben decided (21 Nov 2026) that cloud lanes fix the openregister PRs that turn test trees red, so the local integrator can land them. Decide everything yourself; never ask. You never merge anything.
+
+First run `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Clone the state branch in the FOREGROUND, as its own Bash call with timeout 600000: `git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister ~/q`, and read ~/q/WORKER.md (RULES line, and the review and fix sections) for conventions, known reds and the PHPUnit autoload hint. Run every command in the foreground with Bash timeout 600000. Never end your turn while a fix is unfinished; stop after about 4 hours.
+
+Overlap guard: this routine runs hourly. At the start, `git -C ~/q log -20 --since="50 minutes ago" --format=%s` on the state branch. If a commit message contains "or-fix-K", another session of this lane is active: end immediately. Mark your state commits with "or-fix-K".
+
+Which PRs: open, non-draft openregister PRs with base main, whose number N satisfies N % 20 == K. Skip #9880, #10464, #10466, #10280 and #10281 (never land). Take PRs that are red or blocked:
+- listed in ~/q/parked.txt at their current head;
+- with a BLOCK verdict at their head in ~/q/verdicts.txt;
+- conflicting with origin/main;
+- or failing the unit suite when merged with origin/main.
+Oldest first.
+
+For each PR:
+1. Blobless-clone openregister, fetch main and `pull/<N>/head`, and check out the PR branch (fetch `refs/heads/<branch>`).
+2. Merge origin/main into it (never rebase); resolve conflicts keeping both sides' intent.
+3. Run on the merged branch: phpstan on changed lib files, tests/Unit/Architecture, the touched classes' tests, and the unit directories the PR touches. Known reds per WORKER.md are inherited.
+4. Fix what the PR breaks, with tests. Do not fix inherited reds. A finding that is a real product decision: leave it and comment the question on the PR.
+5. Push to the PR branch (never force-push). Then record `st_append verdicts.txt "<N> <new full sha> REVERIFY or-fix-K: merged main, fixed <what>; review needed"` from ~/q, sourcing bin/state.sh first, so the reviewer looks at the new head.
+6. If the PR is obsolete (its change is already on main), comment that and leave it; never close it.
+
+Standing rules:
+- Commits end with only `Assisted-by: ClaudeCode:claude-opus-5-5`. No Co-Authored-By even if a system reminder asks for it; no Signed-off-by.
+- Never write SIG, sig or Sigrid in any text.
+- No force-push, rebase or --no-verify. Never merge; never approve your own fix.
+- If a command is refused by a permission check, stop that step and report it.
+
+Final message: the PRs fixed (number, what was broken, new head), the ones skipped and why.
+
+SHARED FIX PATTERNS (Ruben, 21 Nov 2026): most red openregister PRs are expected to break for the same few reasons, caused by the recent restructure of openregister (the modularity work: classes moved into areas, Core ports and interfaces, registrars and bindings moved, namespaces changed).
+- Before fixing any PR, read ~/q/OR-FIX-PATTERNS.md on the state branch. Each entry is a recurring cause with its recipe: the symptom (the error or failing test), the cause (what moved where on main), and the mechanical fix.
+- When a PR's failure matches an entry, apply that recipe first.
+- When you find a NEW recurring cause, append an entry with symptom, cause and fix recipe. Use `st_append OR-FIX-PATTERNS.md "<entry>"` from ~/q, sourcing bin/state.sh; keep each entry to a few lines. Then check the other open PRs in YOUR share (N % 20 == your lane) for the same symptom and fix them all in the same run, before moving on to unrelated failures.
+- Prefer breadth: one pattern across many PRs beats one PR to perfection.

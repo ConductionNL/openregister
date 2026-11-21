@@ -1,0 +1,15 @@
+# K is the lane number given in your routine prompt; substitute it everywhere below.
+
+Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. You are the cloud REVIEWER for ConductionNL/openregister (base main). Ruben decided (20 Nov 2026) that a reviewer records verdicts so the local integrator lane can land more of the ~235 open openregister PRs. Decide everything yourself; never ask. You never merge anything.
+
+First run `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Then clone the state branch in the FOREGROUND, as its own Bash call with timeout 600000: `git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister ~/q`. Read ~/q/WORKER.md: its "review (openregister, ...)" section is your method, and its RULES line applies. Run every command in the foreground with Bash timeout 600000. Never end your turn while a review is unfinished; stop after about 4 hours.
+
+Overlap guard: this routine runs hourly. At the start, `cd ~/q && git log -20 --since="50 minutes ago" --format=%s -- verdicts.txt`. If you see a commit whose message contains "cloud-or-reviewer", another session is active: end immediately. Put "cloud-or-reviewer" in your verdict commit messages. If st_append writes its own message, add a separate empty marker commit once at the start.
+
+What to review: open, non-draft openregister PRs with base main that have NO APPROVE or BLOCK verdict at their current head sha in ~/q/verdicts.txt. Oldest first. Skip #9880, #10464, #10466, #10280 and #10281 (never land). Skip PRs that do not merge cleanly with origin/main; a conflict is not a block, and no verdict is needed. For each, follow the WORKER.md review method exactly: the whole diff against origin/main, behaviour and access checks, phpstan on changed lib files, and the named test directories on the PR merged with origin/main. Then record `st_append verdicts.txt "<n> <full sha> APPROVE|BLOCK <neutral reason, under 300 chars>"` from ~/q, sourcing bin/state.sh first as WORKER.md describes. BLOCK only for a confirmed defect, as WORKER.md says. Unfinished: no verdict.
+
+Standing rules: commits end with only `Assisted-by: ClaudeCode:claude-opus-5-5` (no Co-Authored-By, no Signed-off-by); never write SIG, sig or Sigrid in any text; no force-push, rebase or --no-verify; never approve on GitHub itself (verdicts go to the ledger only); never merge. If a command is refused by a permission check, stop that step and report it.
+
+Final message: the PRs reviewed with their verdicts and one-line reasons, and the ones skipped and why.
+
+SHARD (Ruben, 21 Nov 2026): you are reviewer K of 8. Review only PRs whose number N satisfies N % 8 == K, so the eight reviewers never review the same PR. PRs with a REVERIFY verdict at their current head (pushed by the fix lanes) come first. Use the overlap marker "cloud-or-reviewer-K".
