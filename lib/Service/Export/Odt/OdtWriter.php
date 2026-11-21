@@ -30,7 +30,8 @@ use ZipArchive;
 
 /**
  * Writes an A4 ODT, landscape or portrait, with 1.2 cm margins, a "Page n / N"
- * footer and the first heading as document title. An office server converts
+ * footer, the house style's logo in the header when there is one, and the
+ * first heading as document title. An office server converts
  * the result to PDF.
  *
  * @spec openspec/specs/export-pdf-format/spec.md
@@ -49,6 +50,12 @@ class OdtWriter implements OdtWriterInterface {
 		. 'xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" '
 		. 'xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" '
 		. 'office:version="1.3"';
+
+	/**
+	 * The namespaces the header logo adds to the styles part, only when there is one.
+	 */
+	private const LOGO_NAMESPACES = ' xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"'
+		. ' xmlns:xlink="http://www.w3.org/1999/xlink"';
 
 	/**
 	 * Paragraph styles: name => [paragraph properties, text properties].
@@ -135,8 +142,12 @@ class OdtWriter implements OdtWriterInterface {
 				. '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>'
 				. '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>'
 				. '<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>'
+				. $this->logoManifestEntry(logo: $houseStyle?->logo)
 				. '</manifest:manifest>',
 		];
+		if ($houseStyle?->logo !== null) {
+			$parts[$houseStyle->logo->packagePath()] = $houseStyle->logo->bytes;
+		}
 
 		return $this->package(parts: $parts);
 	}//end fromHtml()
@@ -184,7 +195,8 @@ class OdtWriter implements OdtWriterInterface {
 	/**
 	 * The styles part: default font, A4 page layout and the page-number footer.
 	 *
-	 * A house style's footer lines are printed on every page above the page number.
+	 * A house style's footer lines are printed on every page above the page number,
+	 * and its logo in the header of every page.
 	 *
 	 * @param bool               $landscape  Landscape or portrait.
 	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
@@ -208,7 +220,13 @@ class OdtWriter implements OdtWriterInterface {
 			$size = 'fo:page-width="29.7cm" fo:page-height="21cm" style:print-orientation="landscape"';
 		}
 
-		return '<?xml version="1.0" encoding="UTF-8"?><office:document-styles ' . self::NAMESPACES . '>'
+		$logo = $houseStyle?->logo;
+		$namespaces = self::NAMESPACES;
+		if ($logo !== null) {
+			$namespaces .= self::LOGO_NAMESPACES;
+		}
+
+		return '<?xml version="1.0" encoding="UTF-8"?><office:document-styles ' . $namespaces . '>'
 			. self::FONT_FACES . '<office:styles>'
 			. '<style:default-style style:family="paragraph">'
 			. '<style:text-properties style:font-name="Liberation Sans" fo:font-size="9pt" fo:color="#1a1a1a"/></style:default-style>'
@@ -219,13 +237,64 @@ class OdtWriter implements OdtWriterInterface {
 			. '</office:styles>'
 			. '<office:automatic-styles><style:page-layout style:name="OR_Page"><style:page-layout-properties ' . $size
 			. ' fo:margin-top="1.2cm" fo:margin-bottom="0.8cm" fo:margin-left="1.2cm" fo:margin-right="1.2cm"/>'
+			. $this->headerStyle(logo: $logo)
 			. '<style:footer-style><style:header-footer-properties fo:min-height="0.4cm" fo:margin-top="0.2cm"/></style:footer-style>'
 			. '</style:page-layout></office:automatic-styles>'
 			. '<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="OR_Page">'
+			. $this->header(logo: $logo)
 			. '<style:footer>' . $footerLines . '<text:p text:style-name="OR_Footer">'
 			. 'Page <text:page-number text:select-page="current"/> / <text:page-count/></text:p></style:footer>'
 			. '</style:master-page></office:master-styles></office:document-styles>';
 	}//end styles()
+
+	/**
+	 * The header area of the page layout, only when a logo is printed.
+	 *
+	 * @param OdtLogo|null $logo The logo, or null.
+	 *
+	 * @return string
+	 */
+	private function headerStyle(?OdtLogo $logo): string {
+		if ($logo === null) {
+			return '';
+		}
+
+		return '<style:header-style><style:header-footer-properties fo:min-height="0cm" fo:margin-bottom="0.3cm"/></style:header-style>';
+	}//end headerStyle()
+
+	/**
+	 * The page header with the logo at the left, only when there is one.
+	 *
+	 * @param OdtLogo|null $logo The logo, or null.
+	 *
+	 * @return string
+	 */
+	private function header(?OdtLogo $logo): string {
+		if ($logo === null) {
+			return '';
+		}
+
+		return '<style:header><text:p text:style-name="Standard">'
+			. '<draw:frame draw:name="Logo" text:anchor-type="as-char" draw:z-index="0"'
+			. ' svg:width="' . sprintf('%.3F', $logo->widthCm) . 'cm" svg:height="' . sprintf('%.3F', $logo->heightCm) . 'cm">'
+			. '<draw:image xlink:href="' . $logo->packagePath() . '" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"'
+			. ' draw:mime-type="' . $logo->mime . '"/></draw:frame></text:p></style:header>';
+	}//end header()
+
+	/**
+	 * The manifest entry of the logo, only when there is one.
+	 *
+	 * @param OdtLogo|null $logo The logo, or null.
+	 *
+	 * @return string
+	 */
+	private function logoManifestEntry(?OdtLogo $logo): string {
+		if ($logo === null) {
+			return '';
+		}
+
+		return '<manifest:file-entry manifest:full-path="' . $logo->packagePath() . '" manifest:media-type="' . $logo->mime . '"/>';
+	}//end logoManifestEntry()
 
 	/**
 	 * The paragraph style of a house-style footer line, only when one is printed.

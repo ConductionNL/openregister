@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export\Odt;
 
 /**
- * The table header colours and footer lines of a house style.
+ * The table header colours, footer lines and header logo of a house style.
  *
  * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
  */
@@ -54,13 +54,40 @@ final class OdtHouseStyle {
 	 * @param string|null  $headBackground The table header background as `#rrggbb`, or null for the default.
 	 * @param string|null  $headText       The table header text colour as `#rrggbb`, or null for the default.
 	 * @param list<string> $footerLines    The footer lines printed above the page number.
+	 * @param OdtLogo|null $logo           The logo in the page header, or null for none.
 	 */
 	public function __construct(
 		public readonly ?string $headBackground = null,
 		public readonly ?string $headText = null,
 		public readonly array $footerLines = [],
+		public readonly ?OdtLogo $logo = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * A style with the logo added, or the style unchanged when there is no logo.
+	 *
+	 * A logo alone is a house style: the result is null only when both are null.
+	 *
+	 * @param self|null    $style The style read from the profile, or null.
+	 * @param OdtLogo|null $logo  The logo, or null.
+	 *
+	 * @return self|null
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	public static function withLogo(?self $style, ?OdtLogo $logo): ?self {
+		if ($logo === null) {
+			return $style;
+		}
+
+		return new self(
+			headBackground: $style?->headBackground,
+			headText: $style?->headText,
+			footerLines: ($style->footerLines ?? []),
+			logo: $logo
+		);
+	}//end withLogo()
 
 	/**
 	 * The house style of a profile, or null when it carries nothing to apply.
