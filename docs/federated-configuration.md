@@ -68,7 +68,8 @@ with a credential they did not choose.
 > empty, any signed-in user may install, and with the setting on that includes
 > bundles nothing vouches for.
 
-An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
+An administrator manages trust under **Administration settings → Open Register →
+Shared configuration trust**, or through the API at `GET`/`PUT /api/federated-config/trust`:
 
 - **`sourceAllowlist`** — comma-separated GitHub sources you install from. Empty
   means "not yet enforced"; once set, an install from a source not on the list is
@@ -86,7 +87,11 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
   / install. Empty means any signed-in user; admins are always allowed.
 
 Share this instance's public key (`GET /api/federated-config/public-key`) with
-organisations that want to trust the configuration you publish.
+organisations that want to trust the configuration you publish. The settings section
+shows it with a copy button.
+
+For a step-by-step walkthrough for users, see
+[Share a configuration](tutorials/user/09-share-a-configuration.md).
 
 ## Configuration sets and installable apps
 

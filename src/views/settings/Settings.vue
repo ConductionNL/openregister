@@ -79,6 +79,9 @@
 
 		<EdepotHostKeyConfiguration />
 
+		<!-- Federated configuration sharing: sources, trusted keys, publish/install groups -->
+		<FederatedTrustConfiguration />
+
 		<!-- Dialogs -->
 		<Dialogs />
 	</CnAdminSettingsShell>
@@ -93,6 +96,7 @@ import Dialogs from '../../dialogs/Dialogs.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
+import FederatedTrustConfiguration from './sections/FederatedTrustConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import FlowConfiguration from './sections/FlowConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
@@ -142,6 +146,7 @@ export default {
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
+		FederatedTrustConfiguration,
 		Dialogs,
 	},
 
