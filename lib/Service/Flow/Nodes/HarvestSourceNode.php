@@ -91,7 +91,7 @@ class HarvestSourceNode implements ICallFlowNode, IFlowNodeConfigKeys, IFlowNode
 	/**
 	 * Constructor.
 	 *
-	 * @param SourceMapperInterface           $sources  The sources.
+	 * @param SourceMapperInterface<Source>           $sources  The sources.
 	 * @param SourceFetcherLookupInterface    $fetchers The fetcher per source type.
 	 * @param HarvestPipelineServiceInterface $pipeline The harvest pipeline.
 	 * @param ILockingProvider                $locks    Nextcloud's locking provider, shared by every process.

@@ -57,7 +57,7 @@ class SyncRecordsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                  $request  The request.
-	 * @param SourceMapperInterface     $sources  The sources, scoped to the caller's organisation.
+	 * @param SourceMapperInterface<Source>     $sources  The sources, scoped to the caller's organisation.
 	 * @param SyncRecordMapperInterface $records  The sync records.
 	 * @param SyncRecordResolver        $resolver The queue and the resolutions.
 	 * @param ControllerSession         $session  The caller and the admin check.

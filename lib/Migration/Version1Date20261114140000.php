@@ -33,12 +33,11 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the harvest-for-apps columns.
  */
-class Version1Date20261114140000 extends SimpleMigrationStep {
+class Version1Date20261114140000 extends TargetedMigrationStep {
 
 	/**
 	 * New columns per table: name, type, options.
@@ -78,7 +77,7 @@ class Version1Date20261114140000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -102,7 +101,7 @@ class Version1Date20261114140000 extends SimpleMigrationStep {
 		$this->addIndexes(schema: $schema);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Index the flow id (the job skips sources that have one) and the tombstone flag.

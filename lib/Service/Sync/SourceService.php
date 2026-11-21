@@ -58,7 +58,7 @@ class SourceService {
 	/**
 	 * Constructor.
 	 *
-	 * @param SourceMapperInterface        $sources   The source table.
+	 * @param SourceMapperInterface<Source>        $sources   The source table.
 	 * @param SourceFetcherLookupInterface $fetchers  The fetcher per type, with its config schema.
 	 * @param IUserManager                 $users     Resolves `runAs`.
 	 * @param IUserSession                 $session   The user saving, who owns the source's flow.
