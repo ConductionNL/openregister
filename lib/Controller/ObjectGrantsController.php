@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Rbac\GrantRowsQuery;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
@@ -74,23 +75,27 @@ class ObjectGrantsController extends Controller {
 	private readonly ObjectGrantsReportInterface $report;
 
 	/**
+	 * Records why the rows could not be assembled.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string             $appName       Application identifier.
-	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectGrantsControllerServices $services The services, bundled.
-	 * @param LoggerInterface    $logger        Records why the rows could not be assembled.
+	 * @param IRequest                       $request  Active HTTP request.
+	 * @param ObjectGrantsControllerServices $services The services and the logger, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ObjectGrantsControllerServices $services,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->gate = $services->gate;
 		$this->report = $services->report;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

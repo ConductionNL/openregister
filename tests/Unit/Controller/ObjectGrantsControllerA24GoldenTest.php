@@ -85,7 +85,6 @@ class ObjectGrantsControllerA24GoldenTest extends TestCase {
 		$objects->method('getSchema')->willReturn(7);
 
 		return ObjectGrantsControllerFactory::create(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objects,
 			gate: $gate,

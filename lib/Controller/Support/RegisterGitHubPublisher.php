@@ -38,17 +38,15 @@ use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
  */
 final class RegisterGitHubPublisher {
 	/**
-	 * Keep the request, session and services the publisher reads.
+	 * Keep the request and services the publisher reads.
 	 *
 	 * @param IRequest                    $request  The request naming the target.
-	 * @param ControllerSession           $session  The session, for the logger.
-	 * @param RegistersControllerServices $services The controller's services.
+	 * @param RegistersControllerServices $services The controller's services, with the session for the logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ControllerSession $session,
 		private readonly RegistersControllerServices $services,
 	) {
 	}//end __construct()
@@ -90,7 +88,7 @@ final class RegisterGitHubPublisher {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
 	public function registerMissing(int $id): JSONResponse {
-		$this->session->logger->error(
+		$this->services->session->logger->error(
 			message: '[RegistersController] Register not found for publishing',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id]
 		);
@@ -107,7 +105,7 @@ final class RegisterGitHubPublisher {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
 	public function failure(Exception $error): JSONResponse {
-		$this->session->logger->error(
+		$this->services->session->logger->error(
 			message: '[RegistersController] Failed to publish register OAS to GitHub: ' . $error->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
@@ -147,7 +145,7 @@ final class RegisterGitHubPublisher {
 	 * @return void
 	 */
 	private function logStart(Register $register, array $target): void {
-		$this->session->logger->info(
+		$this->services->session->logger->info(
 			message: '[RegistersController] Publishing register OAS to GitHub',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $register->getId(), 'register_slug' => $register->getSlug()]
 				+ array_intersect_key($target, array_flip(['owner', 'repo', 'path', 'branch']))
@@ -163,7 +161,7 @@ final class RegisterGitHubPublisher {
 	 * @return void
 	 */
 	private function logPushed(Register $register, array $target): void {
-		$this->session->logger->info(
+		$this->services->session->logger->info(
 			message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
 			context: ['file' => __FILE__, 'line' => __LINE__] + array_intersect_key($target, array_flip(['owner', 'repo', 'branch', 'path', 'file_url']))
 		);
@@ -206,7 +204,7 @@ final class RegisterGitHubPublisher {
 			$client = $this->services->integrations->githubService;
 			return $client->getFileSha(location: self::targetFile(target: $target));
 		} catch (Exception $e) {
-			$this->session->logger->debug(
+			$this->services->session->logger->debug(
 				message: '[RegistersController] File does not exist, will create new file',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $target['path']]
 			);
@@ -237,7 +235,7 @@ final class RegisterGitHubPublisher {
 			$repoInfo = $this->services->integrations->githubService->getRepositoryInfo(owner: $target['owner'], repo: $target['repo']);
 			return $repoInfo['default_branch'] ?? 'main';
 		} catch (Exception $e) {
-			$this->session->logger->warning(
+			$this->services->session->logger->warning(
 				message: '[RegistersController] Could not fetch repository default branch',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo'], 'error' => $e->getMessage()]
 			);

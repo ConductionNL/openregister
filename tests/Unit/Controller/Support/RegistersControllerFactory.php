@@ -18,7 +18,6 @@ final class RegistersControllerFactory {
 	/**
 	 * The constructor arguments of RegistersController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param RegisterService $registerService Constructor argument.
 	 * @param MagicMapper $objectEntityMapper Constructor argument.
@@ -43,7 +42,6 @@ final class RegistersControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\RegisterService $registerService,
 		\OCA\OpenRegister\Db\MagicMapper $objectEntityMapper,
@@ -66,14 +64,13 @@ final class RegistersControllerFactory {
 		\OCA\OpenRegister\Service\MigrationPackService $migrationPackService,
 	): array {
 		return [
-			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession(
-				userSession: $userSession,
-				groupManager: $groupManager,
-				logger: $logger ?? new \Psr\Log\NullLogger(),
-			),
 			new \OCA\OpenRegister\Controller\Support\RegistersControllerServices(
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $userSession,
+					groupManager: $groupManager,
+					logger: $logger ?? new \Psr\Log\NullLogger(),
+				),
 				mappers: new \OCA\OpenRegister\Controller\Support\RegisterMappers(
 					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
 						registers: $registerMapper,

@@ -134,7 +134,6 @@ class RegistersControllerTest extends TestCase {
 		});
 
 		$this->controller = RegistersControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->registerService,
 			$this->objectMapper,
