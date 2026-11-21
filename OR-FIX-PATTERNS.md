@@ -145,3 +145,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: 'Call to undefined method MockObject_PartyIndicatorGuard_...::isRestricted()' in a PR test of FilePublishingHandler; or conflicts in its use block / FileServicePlatform (ShareUrlBuilderInterface).
 - Cause: main reads Kernel\Contracts\Core\FileReadRestrictionInterface (was Files FileRestrictionGuardInterface), PublicationRefusalInterface (was PartyIndicatorGuard) and ShareLinkUrlInterface from the container; PipelineSteps lost 'implementedBy' to Files\Service\File\PipelineStepImplementers.
 - Fix: keep main's imports plus the PR's own; in tests key the container match on the Core interfaces and mock them; a new pipeline step gets its class in PipelineStepImplementers::IMPLEMENTED_BY and in PipelineStepImplementersTest. (#10451 fd1b51db)
+
+## Main adds callers of a signature the PR changed (or-fix-3)
+- Symptom: after merging main: phpstan argument.unknown/argument.missing, 'Unknown named parameter $x', 'Parameter count ... is too low', or callback doubles with the old parameter list failing.
+- Cause: the PR moved a method to a value-object parameter (SearchOptions, RegisterSchemaRef, ExampleSetInstallInput...) while main added new callers/tests on the old form.
+- Fix: phpstan on all of lib (about 1 min) diffed against main's output finds every lib caller; the whole unit suite runs in about 3 min per top dir with xargs -P4 (Architecture about 8 min) and finds the doubles. Migrate them to the PR's form, keep main's booleans and semantics.
