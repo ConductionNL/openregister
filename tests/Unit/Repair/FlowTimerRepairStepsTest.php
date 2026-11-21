@@ -43,6 +43,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Repair\AppRegisterDescriptor
+ * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 class FlowTimerRepairStepsTest extends TestCase {
 
@@ -63,7 +66,7 @@ class FlowTimerRepairStepsTest extends TestCase {
 				// already holds the register, and administrator edits survive.
 				// The commit moved the constant and left this expectation
 				// behind, which is the one test this branch broke.
-				'1.2.0',
+				'1.4.0',
 				false
 			)
 			->willReturn([]);

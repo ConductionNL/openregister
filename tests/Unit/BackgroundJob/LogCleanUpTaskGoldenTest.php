@@ -39,6 +39,7 @@ use OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\LogCleanUpTask
+ * @uses \OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails
  */
 class LogCleanUpTaskGoldenTest extends TestCase {
 	private AuditTrailMapperInterface&MockObject $audit;

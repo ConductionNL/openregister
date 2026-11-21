@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskTemporalProjection
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class TaskTemporalProjectionTest extends TestCase {
 

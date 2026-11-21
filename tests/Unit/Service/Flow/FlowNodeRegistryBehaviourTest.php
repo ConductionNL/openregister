@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeLogActions;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IURLGenerator;
@@ -179,6 +180,7 @@ class FlowNodeRegistryBehaviourTest extends TestCase {
 					'kind'        => 'serviceTask',
 					'category'    => 'other',
 					'aliases'     => ['openregister.stop'],
+					'requiresRight' => null,
 					'configKeys'  => ['reason'],
 					'configForm'  => [['key' => 'reason']],
 				],
@@ -186,6 +188,25 @@ class FlowNodeRegistryBehaviourTest extends TestCase {
 			$registry->palette()
 		);
 	}//end testAPaletteEntryCarriesTheDeclarations()
+
+	/**
+	 * A node that needs a right says which in its palette entry, as placed with no configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function testAPaletteEntryCarriesTheRightTheNodeRequires(): void {
+		$mail = $this->node(id: 'openregister.send-email', interfaces: [IFlowNodeRequiresRight::class]);
+		$mail->expects($this->once())->method('requiredRight')->with([])->willReturn('flow.node.send-email');
+		$registry = $this->registry();
+		$registry->register(node: $mail);
+		$registry->register(node: $this->node(id: 'openregister.set-fields'));
+
+		$rights = array_column($registry->palette(), 'requiresRight', 'id');
+
+		$this->assertSame(['openregister.send-email' => 'flow.node.send-email', 'openregister.set-fields' => null], $rights);
+	}//end testAPaletteEntryCarriesTheRightTheNodeRequires()
 
 	/**
 	 * A node whose icon is missing is served the app icon and logged; without a url generator the icon is null.

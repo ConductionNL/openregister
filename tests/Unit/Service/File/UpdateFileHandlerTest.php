@@ -17,7 +17,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileOverwrite;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Service\File\FileChecksum;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -62,7 +63,7 @@ class UpdateFileHandlerTest extends TestCase {
 	private $fileValidHandler;
 
 	/**
-	 * @var FileOwnershipHandler&MockObject
+	 * @var FileAccountInterface&MockObject
 	 */
 	private $fileOwnershipHandler;
 
@@ -99,7 +100,7 @@ class UpdateFileHandlerTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->folderMgmtHandler = $this->createMock(FolderManagementHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
-		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
+		$this->fileOwnershipHandler = $this->createMock(FileAccountInterface::class);
 		$this->readFileHandler = $this->createMock(ReadFileHandler::class);
 		$this->systemTagManager = $this->createMock(ISystemTagManager::class);
 		$this->systemTagMapper = $this->createMock(ISystemTagObjectMapper::class);
@@ -137,6 +138,57 @@ class UpdateFileHandlerTest extends TestCase {
 
 		return $file;
 	}//end fileResolvedById()
+
+	/**
+	 * The handler with a checksum recorder, sharing this test's collaborators.
+	 *
+	 * @param FileChecksum $checksum The recorder.
+	 *
+	 * @return UpdateFileHandler
+	 */
+	private function handlerRecording(FileChecksum $checksum): UpdateFileHandler {
+		return new UpdateFileHandler(
+			new UpdateFileLocator($this->folderMgmtHandler, $this->readFileHandler),
+			new UpdateFileGuards($this->fileValidHandler, $this->fileOwnershipHandler),
+			$this->logger,
+			checksum: $checksum
+		);
+	}//end handlerRecording()
+
+	// =========================================================================
+	// updateFile - checksum of replaced content (capability-rows-stated-requirements 3.1)
+	// =========================================================================
+
+	public function testReplacedContentGetsItsChecksumRecordedAfterTheWrite(): void {
+		$file = $this->fileResolvedById(updateable: true);
+		$order = [];
+		$file->method('putContent')->willReturnCallback(static function () use (&$order): void {
+			$order[] = 'write';
+		});
+		$checksum = $this->createMock(FileChecksum::class);
+		$checksum->expects($this->once())->method('record')->with($file)->willReturnCallback(static function () use (&$order): bool {
+			$order[] = 'checksum';
+			return true;
+		});
+
+		$this->handlerRecording(checksum: $checksum)->updateFile(
+			overwrite: new FileOverwrite(filePath: 42, content: 'dGVzdGNvbnRlbnQ=', tags: [], object: $this->createMock(ObjectEntity::class))
+		);
+
+		$this->assertSame(['write', 'checksum'], $order);
+	}//end testReplacedContentGetsItsChecksumRecordedAfterTheWrite()
+
+	public function testARefusedReplaceRecordsNoChecksum(): void {
+		$this->fileResolvedById(updateable: false);
+		$checksum = $this->createMock(FileChecksum::class);
+		$checksum->expects($this->never())->method('record');
+
+		$this->expectException(Exception::class);
+
+		$this->handlerRecording(checksum: $checksum)->updateFile(
+			overwrite: new FileOverwrite(filePath: 42, content: 'dGVzdGNvbnRlbnQ=', tags: [], object: $this->createMock(ObjectEntity::class))
+		);
+	}//end testARefusedReplaceRecordsNoChecksum()
 
 	// =========================================================================
 	// updateFile - write-permission gate

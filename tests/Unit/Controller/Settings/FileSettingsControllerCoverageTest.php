@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Exception\UnknownMaskFormException;
+use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Service\SettingsService;
@@ -111,6 +113,38 @@ class FileSettingsControllerCoverageTest extends TestCase {
 
 		$result = $this->controller->updateFileSettings();
 		$this->assertEquals(200, $result->getStatus());
+	}
+
+	/**
+	 * An unknown jurisdiction pattern set is answered 400 naming the code, not 500.
+	 *
+	 * @spec openspec/changes/detection-dutch-licence-plates/specs/pii-entity-detection/spec.md
+	 */
+	public function testAnUnknownPatternSetIsA400NamingTheCode(): void {
+		$this->request->method('getParams')->willReturn(['entityPatternSets' => ['xx']]);
+		$this->settingsService->method('updateFileSettingsOnly')
+			->willThrowException(new UnknownPatternSetException('Unknown pattern set: xx. Known: nl.'));
+
+		$result = $this->controller->updateFileSettings();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString('xx', $result->getData()['error']);
+	}
+
+	/**
+	 * A refused mask form answers 400 naming the entity type (REQ-PIS-010).
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function testAnUnknownMaskFormIsA400NamingTheType(): void {
+		$this->request->method('getParams')->willReturn(['anonymisation' => ['maskForms' => ['IBAN' => ['form' => 'middle']]]]);
+		$this->settingsService->method('updateFileSettingsOnly')
+			->willThrowException(new UnknownMaskFormException('anonymisation.maskForms.IBAN names an unknown mask form.'));
+
+		$result = $this->controller->updateFileSettings();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString('IBAN', $result->getData()['error']);
 	}
 
 	public function testUpdateFileSettingsWithStringProviderPassesThrough(): void {

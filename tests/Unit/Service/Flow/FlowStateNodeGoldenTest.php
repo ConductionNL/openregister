@@ -36,6 +36,14 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateHandle
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowStateSlots
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowStateStep
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 class FlowStateNodeGoldenTest extends TestCase {
 

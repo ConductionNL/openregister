@@ -44,6 +44,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
@@ -374,7 +375,8 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object, ?array $extend, $register, $schema, $uuid) use (&$capturedUuid, &$capturedBody, $savedEntity) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUuid, &$capturedBody, $savedEntity) {
+					$uuid = $options->uuid;
 					$capturedUuid = $uuid;
 					$capturedBody = $object;
 					return $savedEntity;
@@ -417,7 +419,8 @@ class ImportServiceMigrationPackTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (array $object, ?array $extend, $register, $schema, $uuid) use (&$capturedUuid, $savedEntity) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedUuid, $savedEntity) {
+					$uuid = $options->uuid;
 					$capturedUuid = $uuid;
 					return $savedEntity;
 				}

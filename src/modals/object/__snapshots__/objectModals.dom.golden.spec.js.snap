@@ -1,0 +1,225 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`single-action object modals (markup golden) renders CopyObject in its form, success and error states: error 1`] = `
+"<x-ncdialog name="Copy Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Close"></x-closecancelbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>it broke</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders CopyObject in its form, success and error states: form 1`] = `
+"<x-ncdialog name="Copy Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel"></x-closecancelbutton>
+    <x-ncbutton disabled="true" variant="primary">
+      <slot-default> Copy </slot-default>
+      <slot-icon>
+        <!--v-if-->
+        <x-contentcopy size="20"></x-contentcopy>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <p> Create a copy of <b>Contract</b></p>
+      <div class="form-group"><label for="copyName">Name for the copy:</label>
+        <x-nctextfield id="copyName" modelvalue="" placeholder="Copy of Contract" disabled="false"></x-nctextfield>
+      </div>
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders CopyObject in its form, success and error states: success 1`] = `
+"<x-ncdialog name="Copy Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Close"></x-closecancelbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Object successfully copied as ""</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders DeleteObject in its form, success and error states: error 1`] = `
+"<x-confirmdialogframe name="Delete Contract" error="false" loading="false" showconfirm="true" successtext="Object successfully deleted" closelabel="Cancel" confirmlabel="Delete">
+  <slot-default>
+    <p> Do you want to permanently delete
+      <!--v-if--><b>Contract</b>? This action cannot be undone.
+    </p>
+  </slot-default>
+</x-confirmdialogframe>"
+`;
+
+exports[`single-action object modals (markup golden) renders DeleteObject in its form, success and error states: form 1`] = `
+"<x-confirmdialogframe name="Delete Contract" error="false" loading="false" showconfirm="true" successtext="Object successfully deleted" closelabel="Cancel" confirmlabel="Delete">
+  <slot-default>
+    <p> Do you want to permanently delete
+      <!--v-if--><b>Contract</b>? This action cannot be undone.
+    </p>
+  </slot-default>
+</x-confirmdialogframe>"
+`;
+
+exports[`single-action object modals (markup golden) renders DeleteObject in its form, success and error states: success 1`] = `
+"<x-confirmdialogframe name="Delete Contract" error="false" loading="false" showconfirm="true" successtext="Object successfully deleted" closelabel="Cancel" confirmlabel="Delete">
+  <slot-default>
+    <p> Do you want to permanently delete
+      <!--v-if--><b>Contract</b>? This action cannot be undone.
+    </p>
+  </slot-default>
+</x-confirmdialogframe>"
+`;
+
+exports[`single-action object modals (markup golden) renders DownloadObject in its form, success and error states: error 1`] = `
+"<x-ncdialog name="Download Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel"></x-closecancelbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>it broke</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <div class="json-editor"><label>Object (JSON)</label>
+        <div class="codeMirrorContainer light">
+          <x-codemirror modelvalue="{}" basic="true" placeholder="{ &quot;key&quot;: &quot;value&quot; }" dark="false" linter="() => []" lang="[object Object]" tabsize="2"></x-codemirror>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders DownloadObject in its form, success and error states: form 1`] = `
+"<x-ncdialog name="Download Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel"></x-closecancelbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="formContainer">
+      <div class="json-editor"><label>Object (JSON)</label>
+        <div class="codeMirrorContainer light">
+          <x-codemirror modelvalue="{}" basic="true" placeholder="{ &quot;key&quot;: &quot;value&quot; }" dark="false" linter="() => []" lang="[object Object]" tabsize="2"></x-codemirror>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders DownloadObject in its form, success and error states: success 1`] = `
+"<x-ncdialog name="Download Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Close"></x-closecancelbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Object successfully downloaded</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders LockObject in its form, success and error states: error 1`] = `
+"<x-ncdialog name="Lock Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel"></x-closecancelbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> Lock </slot-default>
+      <slot-icon>
+        <x-lockoutline size="20"></x-lockoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>it broke</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" label="Process Name (optional)" disabled="false"></x-nctextfield>
+      <x-nctextfield modelvalue="3600" type="number" label="Duration in seconds (optional)" disabled="false"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders LockObject in its form, success and error states: form 1`] = `
+"<x-ncdialog name="Lock Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Cancel"></x-closecancelbutton>
+    <x-ncbutton variant="primary">
+      <slot-default> Lock </slot-default>
+      <slot-icon>
+        <x-lockoutline size="20"></x-lockoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to lock <b>Contract</b>? Locking an object prevents other users from modifying it until it is unlocked. You can specify an optional process name to indicate why it's locked and a duration after which it will automatically unlock. Only the user who locked the object or an administrator can unlock it before the duration expires. </p>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" label="Process Name (optional)" disabled="false"></x-nctextfield>
+      <x-nctextfield modelvalue="3600" type="number" label="Duration in seconds (optional)" disabled="false"></x-nctextfield>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`single-action object modals (markup golden) renders LockObject in its form, success and error states: success 1`] = `
+"<x-ncdialog name="Lock Contract" size="normal" noclose="">
+  <slot-actions>
+    <x-closecancelbutton label="Close"></x-closecancelbutton>
+    <x-ncbutton disabled="true" variant="primary">
+      <slot-default> Lock </slot-default>
+      <slot-icon>
+        <x-lockoutline size="20"></x-lockoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Object successfully locked</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;

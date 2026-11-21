@@ -87,7 +87,7 @@ describe('DeleteSchemaObjects.confirmDeletion', () => {
 				'/index.php/apps/openregister/api/bulk/2/5/delete-schema',
 				{
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 					body: '{"hardDelete":true}',
 				},
 			],
@@ -145,7 +145,7 @@ describe('ValidateSchema.startValidation', () => {
 		expect(global.fetch.mock.calls).toEqual([
 			[
 				'/index.php/apps/openregister/api/bulk/schema/5/validate',
-				{ method: 'POST', headers: { 'Content-Type': 'application/json' } },
+				{ method: 'POST', headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' } },
 			],
 		])
 		expect(Object.keys(global.fetch.mock.calls[0][1])).toEqual([

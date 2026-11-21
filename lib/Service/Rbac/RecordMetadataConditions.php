@@ -140,6 +140,11 @@ class RecordMetadataConditions {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function columnKey(string $key): string {
+		// `@self.id` and `_id` both hold the uuid on a record, so both read the uuid column.
+		if ($key === '_id') {
+			return '_uuid';
+		}
+
 		if (str_starts_with($key, self::SELF_PREFIX) === false) {
 			return $key;
 		}

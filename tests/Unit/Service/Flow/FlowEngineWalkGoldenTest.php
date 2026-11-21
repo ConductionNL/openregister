@@ -122,6 +122,7 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowErrorPolicy
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
@@ -149,6 +150,23 @@ class GoldenWalkLogger extends AbstractLogger {
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
+ * @uses \OCA\OpenRegister\Service\Flow\EdgeArrival
+ * @uses \OCA\OpenRegister\Service\Flow\FlowEngineServices
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExitChoice
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeExits
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutput
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTokenWithdrawal
+ * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
+ * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
+ * @uses \OCA\OpenRegister\Service\Flow\PlacesPruning
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateDelta
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionOperators
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 

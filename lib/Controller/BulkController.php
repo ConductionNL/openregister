@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
 use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
@@ -49,6 +48,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
@@ -62,6 +62,8 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -151,7 +153,7 @@ class BulkController extends Controller {
 		IRequest $request,
 		BulkControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;
@@ -314,7 +316,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk delete result
 	 *
@@ -622,12 +623,13 @@ class BulkController extends Controller {
 
 		$savedObjects = $this->objectService->saveObjects(
 			objects: $batch->objects,
-			register: $batch->register,
-			schema: $batch->schema,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $batch->register, schema: $batch->schema),
+				validation: true,
+				events: false
+			),
 			_rbac: true,
-			_multitenancy: true,
-			validation: true,
-			events: false
+			_multitenancy: true
 		);
 
 		$statistics = ($savedObjects['statistics'] ?? []);
@@ -711,7 +713,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk save operation results
 	 *
@@ -841,7 +842,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with schema delete result
 	 *
@@ -987,7 +987,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier (ID or slug).
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with deletion result.
 	 *
@@ -1056,7 +1055,6 @@ class BulkController extends Controller {
 	 * @param string $register The register identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with register delete result
 	 *
@@ -1128,7 +1126,6 @@ class BulkController extends Controller {
 	 * @param string $schema The schema identifier
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with validation result
 	 *

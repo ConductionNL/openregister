@@ -51,11 +51,16 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * SchemaDerivedToolProvider
@@ -219,7 +224,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
-	 *         idempotentHint?: bool, scope?: string}>
+	 *         idempotentHint?: bool, scope?: string, reach?: string}>
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
@@ -623,8 +628,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $arguments['id'],
-			register: $register,
-			schema: $schema
+			options: new ObjectFindOptions(register: $register, schema: $schema)
 		));
 
 		return $object->jsonSerialize();
@@ -647,8 +651,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $arguments,
-			register: $register,
-			schema: $schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		return $object->jsonSerialize();
@@ -676,9 +679,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $data,
-			register: $register,
-			schema: $schema,
-			uuid: $id
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
 		);
 
 		return $object->jsonSerialize();
@@ -707,9 +708,10 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$id = $arguments['id'];
 		$this->objectService->deleteObject(
-			uuid: $id,
-			register: $register,
-			schema: $schema
+			deletion: new ObjectDeletion(
+				uuid: $id,
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
 		);
 
 		return ['deleted' => true, 'id' => $id];
@@ -740,7 +742,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         app: string, subject: string, action: string,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
-	 *         idempotentHint?: bool, scope?: string}
+	 *         idempotentHint?: bool, scope?: string, reach?: string}
 	 */
 	private function buildDescriptor(DerivedToolDefinition $tool): array {
 		$slug = $tool->slug;
@@ -790,6 +792,14 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		// (REQ-DERIVED-005), and nothing in this class reads `scope` back.
 		if (isset($verbConfig['scope']) === true) {
 			$descriptor['scope'] = $verbConfig['scope'];
+		}
+
+		// The verb's declared `reach` (validated against ToolReachLevels::ORDER
+		// at save time), carried under the key ToolReachResolver reads, so a
+		// declared reach replaces the one inferred from the verb. Omitted when
+		// not declared, like `scope`: advisory, never an invoke-time gate.
+		if (isset($verbConfig[ToolReachLevels::REACH_KEY]) === true) {
+			$descriptor[ToolReachLevels::REACH_KEY] = $verbConfig[ToolReachLevels::REACH_KEY];
 		}
 
 		return $descriptor;

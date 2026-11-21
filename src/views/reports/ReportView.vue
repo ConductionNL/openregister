@@ -224,6 +224,7 @@ import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
 import Printer from 'vue-material-design-icons/Printer.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { saveBlob } from '../../services/saveFile.js'
 import { reportsStore } from '../../store/store.js'
 
 const ICON_MAP = {
@@ -248,22 +249,6 @@ function requestRender(id, format) {
 		null,
 		{ params: { format }, responseType: 'blob' },
 	)
-}
-
-/**
- * Let the browser save a blob under a file name.
- *
- * @param {Blob} blob The file
- * @param {string} filename The name to offer
- * @return {void}
- */
-function saveBlob(blob, filename) {
-	const url = URL.createObjectURL(blob)
-	const a = document.createElement('a')
-	a.href = url
-	a.download = filename
-	a.click()
-	URL.revokeObjectURL(url)
 }
 
 /**

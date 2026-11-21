@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\AppHost\SchemaScopedProvider;
 use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectPreviewInterface;
 use OCP\Collaboration\Reference\ADiscoverableReferenceProvider;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\ISearchableReferenceProvider;
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  * A concrete subclass implements only {@see self::getRegisterSlug()} and
  * {@see self::getSchemaSlug()} — no id, title, icon, or constructor
  * boilerplate. Everything else (URL parsing, RBAC-safe resolution, rich
- * preview formatting) is reused from {@see ObjectPreviewFormatterInterface}, the
+ * preview formatting) is reused from {@see ObjectPreviewInterface}, the
  * same service the generic `ObjectReferenceProvider` delegates to.
  *
  * Gated by the schema's `smartPickerEnabled` flag: when `false`,
@@ -93,7 +93,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	/**
 	 * Constructor for AbstractSchemaReferenceProvider.
 	 *
-	 * @param ObjectPreviewFormatterInterface $formatter Shared preview-formatting/URL-parsing service
+	 * @param ObjectPreviewInterface $formatter Shared preview-formatting/URL-parsing service
 	 * @param SchemaScopeLookups $lookups The register and schema mappers and the logger
 	 * @param string|null $userId Current user ID (nullable for public/anonymous access)
 	 *
@@ -102,7 +102,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2
 	 */
 	public function __construct(
-		private readonly ObjectPreviewFormatterInterface $formatter,
+		private readonly ObjectPreviewInterface $formatter,
 		SchemaScopeLookups $lookups,
 		private readonly ?string $userId,
 	) {
@@ -133,7 +133,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return string Provider ID
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getId(): string {
 		return 'openregister-ref-' . $this->getRegisterSlug() . '-' . $this->getSchemaSlug();
@@ -147,7 +147,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return string[] List of search provider IDs
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getSupportedSearchProviderIds(): array {
 		return ['openregister_objects_' . $this->getRegisterSlug() . '_' . $this->getSchemaSlug()];
@@ -161,7 +161,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return string The schema's current title, or its slug as fallback
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getTitle(): string {
 		return $this->schemaTitle();
@@ -173,7 +173,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return int Order value (lower = higher priority)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function getOrder(): int {
 		return 10;
@@ -187,7 +187,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return string URL to the resolved icon
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getIconUrl(): string {
 		$schemaId = $this->resolveSchemaId();
@@ -214,7 +214,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @return bool True only when the URL matches this provider's own schema
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function matchReference(string $referenceText): bool {
 		if ($this->isSmartPickerEnabled() === false) {
@@ -240,7 +240,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *                         does not match this provider's schema, the
 	 *                         flag is off, or resolution otherwise fails
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function resolveReference(string $referenceText): ?IReference {
 		if ($this->matchReference(referenceText: $referenceText) === false) {
@@ -261,7 +261,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 * @return string Cache prefix based on register/schema/uuid, or the
 	 *                original text when it does not match this provider
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function getCachePrefix(string $referenceId): string {
 		if ($this->matchReference(referenceText: $referenceId) === false) {
@@ -282,7 +282,7 @@ abstract class AbstractSchemaReferenceProvider extends ADiscoverableReferencePro
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function getCacheKey(string $referenceId): ?string {
 		return $this->userId ?? '';

@@ -50,6 +50,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses   \OCA\OpenRegister\Event\ObjectTransitionedEvent
  * @uses   \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionActor
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class AnnotationNotificationListenerGoldenTest extends TestCase {
 

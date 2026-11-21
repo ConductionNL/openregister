@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -112,7 +112,7 @@ class EmailsController extends Controller {
 		IRequest $request,
 		EmailsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->emailService = $services->domain->emailService;
 		$this->emailLinkService = $services->domain->emailLinkService;
@@ -151,7 +151,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse JSON response with the created email link
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -170,7 +169,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
@@ -482,7 +480,6 @@ class EmailsController extends Controller {
 	 * @return JSONResponse The answer.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: ReplyThreadService keeps only objects the
 	 *   caller can read through ObjectService::find() with RBAC and multitenancy on.

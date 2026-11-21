@@ -90,7 +90,7 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @see MagicRbacHandler::buildRbacPredicateForAlias()
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string;
 }//end interface

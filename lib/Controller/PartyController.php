@@ -27,11 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Controller\Support\PartyObjectAccess;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyHolding;
@@ -100,7 +100,7 @@ class PartyController extends Controller {
 		IRequest $request,
 		PartyControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objectAccess = new PartyObjectAccess(objects: $services->domain->objects, permissions: $services->search->permissions);
 		$this->roles = $services->domain->roles;
 		$this->parties = $services->domain->parties;
@@ -152,7 +152,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse The link as stored, or the refusal naming the kind.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
@@ -184,7 +183,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse The new primary link.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
@@ -217,7 +215,6 @@ class PartyController extends Controller {
 	 * @return JSONResponse How many roles went.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */

@@ -44,6 +44,12 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowMessagingService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowEmailAnnouncer
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingChannels
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingOverrides
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingPlatform
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingRecipients
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRecipientAddresses
  */
 final class FlowMessagingServiceOptOutRequiredTest extends TestCase {
 

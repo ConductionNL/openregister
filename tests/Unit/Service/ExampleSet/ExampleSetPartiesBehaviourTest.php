@@ -45,6 +45,12 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
  * @uses   \OCA\OpenRegister\Db\ContactLink
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape
+ * @uses \OCA\OpenRegister\Service\Party\PartyHolding
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
+ * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape
+ * @uses   \OCA\OpenRegister\Service\Party\PartyHolding
+ * @uses   \OCA\OpenRegister\Service\PersonLinkRef
  */
 class ExampleSetPartiesBehaviourTest extends TestCase {
 

@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Throwable;
  * 409 when Office is not available, 415 when the file type does not open in
  * Office, 403 when the Office settings do not let this person use it.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 class OfficeOpenRefusedException extends Exception {
 
