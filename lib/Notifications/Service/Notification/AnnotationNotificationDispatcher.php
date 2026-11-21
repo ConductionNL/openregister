@@ -39,6 +39,8 @@ use OCA\OpenRegister\Notifications\Db\HistoryNotice;
 use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRun;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -47,7 +49,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -227,7 +228,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->lazyActionLinks ??= new ActionLinkResolver(
 			routes: $routes,
 			tasks: new TaskActionLinks(
-				isRejecting: static fn (string $outcome): bool => TaskStateRules::isRejectingOutcome(outcome: $outcome),
+				isRejecting: static fn (string $outcome): bool => in_array(strtolower(trim($outcome)), TaskInterface::REJECTING_OUTCOMES, true),
 				urlGenerator: $this->urlGenerator
 			),
 			objects: new ObjectDetailLinks(
@@ -360,10 +361,74 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				context: $event->context,
 				subjectKey: $subjectKey
 			);
-			$this->fireRule(firing: $firing, trigger: $event->trigger);
+			$this->fireAndRecord(firing: $firing, trigger: $event->trigger);
 		}
 
 	}//end fireRules()
+
+	/**
+	 * Fire one rule and leave its automation run record: one per evaluation,
+	 * aggregated per channel, skipped with the gate that stopped it. A rule
+	 * whose trigger or organisation gate does not match was not evaluated and
+	 * leaves none. An error is recorded as `failed` and still thrown.
+	 *
+	 * @param RuleFiring $firing  The rule and the event.
+	 * @param string     $trigger The trigger.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable Whatever the dispatch throws, after recording it.
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/notificatie-engine/spec.md
+	 */
+	private function fireAndRecord(RuleFiring $firing, string $trigger): void {
+		try {
+			$this->fireRule(firing: $firing, trigger: $trigger);
+		} catch (\Throwable $e) {
+			$this->recordRun(firing: $firing, failure: $e->getMessage());
+			throw $e;
+		}
+
+		if ($firing->eventId !== '' || $firing->tally->reason() === NotificationRunTally::REASON_DUPLICATE) {
+			$this->recordRun(firing: $firing);
+		}
+	}//end fireAndRecord()
+
+	/**
+	 * Write the automation run record of one evaluation. Recipients are counted, never named.
+	 *
+	 * @param RuleFiring  $firing  The evaluated rule.
+	 * @param string|null $failure The error that stopped it, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/notificatie-engine/spec.md
+	 */
+	private function recordRun(RuleFiring $firing, ?string $failure = null): void {
+		if ($this->ledger->runRecords === null) {
+			return;
+		}
+
+		$outcome = $firing->tally->outcome();
+		$reason  = $firing->tally->reason();
+		if ($failure !== null) {
+			$outcome = NotificationRunTally::FAILED;
+			$reason  = null;
+		}
+
+		$this->ledger->runRecords->recordNotificationRun(
+			new NotificationRun(
+				key: ($firing->spec['key'] ?? null),
+				name: $firing->ruleId,
+				object: $firing->object,
+				eventId: self::storedId(value: $firing->eventId),
+				outcome: $outcome,
+				reason: $reason,
+				message: $failure,
+				channels: (string)json_encode($firing->tally->counts())
+			)
+		);
+	}//end recordRun()
 
 	/**
 	 * Run one rule through its gates and channels.
@@ -390,11 +455,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		// bail: a rule addressed only to them resolves no account at all.
 		$addressesReached  = $this->dispatchToParties(firing: $firing);
 		$addressesReached += $this->dispatchToAddresses(firing: $firing);
+		for ($reached = 0; $reached < $addressesReached; $reached++) {
+			$firing->tally->delivery(channel: 'address', delivered: true);
+		}
 
 		if (count($firing->recipients) === 0) {
 			// Only when the parties path reached nobody either: a rule
 			// addressed to parties has no account recipients by design.
 			if ($addressesReached === 0) {
+				$firing->tally->skip(reason: NotificationRunTally::REASON_NO_RECIPIENTS);
 				$this->reachRecorder->reachedNobody(
 					ruleId: $firing->ruleId,
 					objectUuid: (string)($firing->object->getUuid() ?? '')
@@ -471,6 +540,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->logger->info(
 			sprintf('[AnnotationNotificationDispatcher] deduplicated rule="%s" key="%s"', $firing->ruleId, $key)
 		);
+		$firing->tally->skip(reason: NotificationRunTally::REASON_DUPLICATE);
 		return false;
 
 	}//end idempotencyAllows()
@@ -620,6 +690,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	private function deliverToRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		if ($this->gates->throttle->rateAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'rate-limited';
+			$firing->tally->held(gate: NotificationRunTally::REASON_RATE_LIMIT);
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
@@ -628,17 +699,20 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		if ($this->gates->throttle->coalesceAllows(firing: $firing, recipient: $delivery->uid) === false) {
 			$delivery->status = 'coalesced';
+			$firing->tally->held(gate: 'coalesced');
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
 
 		if ($this->applyPreference(firing: $firing, delivery: $delivery) === false) {
 			$delivery->status = 'preference-off';
+			$firing->tally->held(gate: 'preference');
 			$this->recordSkippedDelivery(firing: $firing, delivery: $delivery);
 			return;
 		}
 
 		if ($this->deliveryWindowOrDigestSuppresses(firing: $firing, delivery: $delivery) === true) {
+			$firing->tally->held(gate: NotificationRunTally::REASON_QUIET_HOURS);
 			return;
 		}
 
@@ -726,7 +800,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				// The shared channel units, the same classes the flow messaging
 				// service invokes; the declarative path stays best-effort, so
 				// their outcomes are not escalated here.
-				$this->ncSender()->notify(
+				$outcome = $this->ncSender()->notify(
 					notice: new InAppNotice(
 						uid: $delivery->uid,
 						object: $firing->object,
@@ -745,10 +819,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 					)
 				);
 			} elseif ($channel === 'email') {
-				$this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
+				$outcome = $this->emailSender()->send(uid: $delivery->uid, subject: $subject, body: $subject);
 			} else {
 				$this->emitActivity(origin: $origin, record: $record);
+				$outcome = NcNotificationSender::OUTCOME_DISPATCHED;
 			}
+
+			$firing->tally->delivery(channel: $channel, delivered: $outcome === NcNotificationSender::OUTCOME_DISPATCHED);
 
 			$this->recordHistory(origin: $origin, record: $record);
 		}//end foreach
@@ -1731,21 +1808,35 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * POST the firing to a declared, non-persistent webhook with a valid URL.
 	 *
-	 * The URL must be http or https. The call goes through Nextcloud's HTTP client,
-	 * which pins the address it resolves and refuses local and private addresses at
-	 * connect time, so the address checked is the address called; redirects are not
-	 * followed.
+	 * The URL is the rule's `webhook.url`, or, when the rule names a
+	 * `webhook.urlField`, the value of that property on the object that fired, so
+	 * each object can carry its own callback. The URL must be http or https. The
+	 * call goes through Nextcloud's HTTP client, which pins the address it
+	 * resolves and refuses local and private addresses at connect time, so the
+	 * address checked is the address called; redirects are not followed.
 	 *
 	 * @param array<string, mixed> $hook   The rule's `webhook` block.
 	 * @param RuleFiring           $firing The rule, the object, its recipients and the default-locale subject.
 	 *
 	 * @return string|null Why the call did not land, or null when it did.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
 	 */
 	private function postWebhook(array $hook, RuleFiring $firing): ?string {
-		$url = (string)($hook['url'] ?? '');
+		$url = $this->webhookUrl(hook: $hook, firing: $firing);
 		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			return 'webhook url missing or malformed';
+			$reason = 'webhook url missing or malformed';
+			if ($this->webhookUrlField(hook: $hook) !== '') {
+				$reason = sprintf('webhook url field %s missing or malformed on the object', $this->webhookUrlField(hook: $hook));
+				$this->logger->info(
+					sprintf('[AnnotationNotificationDispatcher] rule %s: %s, nothing sent', $firing->ruleId, $reason)
+				);
+			}
+
+			return $reason;
 		}
+
+		$hook['url'] = $url;
 
 		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
 		if ($scheme !== 'http' && $scheme !== 'https') {
@@ -1754,6 +1845,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return $this->sendWebhook(hook: $hook, options: $this->webhookOptions(hook: $hook, firing: $firing));
 	}//end postWebhook()
+
+	/**
+	 * The URL a webhook call goes to: the object's `webhook.urlField` property
+	 * when the rule names one, else the rule's own `webhook.url`.
+	 *
+	 * @param array<string, mixed> $hook   The rule's `webhook` block.
+	 * @param RuleFiring           $firing The rule and the object that fired.
+	 *
+	 * @return string The URL (the object's value trimmed); '' when there is none.
+	 *
+	 * @spec openspec/changes/webhook-url-from-object-field/specs/notificatie-engine/spec.md#requirement-a-webhook-rule-may-take-its-url-from-the-object-req-nrg-020
+	 */
+	private function webhookUrl(array $hook, RuleFiring $firing): string {
+		$field = $this->webhookUrlField(hook: $hook);
+		if ($field === '') {
+			return (string)($hook['url'] ?? '');
+		}
+
+		$data  = ($firing->object->getObject() ?? []);
+		$value = ($data[$field] ?? null);
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		return trim($value);
+	}//end webhookUrl()
+
+	/**
+	 * The object property a rule takes its webhook URL from, or ''.
+	 *
+	 * @param array<string, mixed> $hook The rule's `webhook` block.
+	 *
+	 * @return string The property name.
+	 */
+	private function webhookUrlField(array $hook): string {
+		$field = ($hook['urlField'] ?? null);
+		if (is_string($field) === false) {
+			return '';
+		}
+
+		return trim($field);
+	}//end webhookUrlField()
 
 	/**
 	 * The request options of a webhook call: the JSON payload, the headers and the timeout.

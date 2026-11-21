@@ -31,13 +31,20 @@
       end warns on save, dead end refuses to run, refusal sets status+message.
       `FlowDeadEndTest` pins the connectivity verdict and the refusal message,
       each with a positive control proving the same graph goes quiet once wired.
-- [ ] Test the schedule/trigger refusal path specifically, with a positive
-      control proving a well-formed scheduled flow still dispatches.
-      **NOT DONE** — needs `FlowRunService` constructed with a mocked container,
-      flow mapper and preflight. The verdict it consumes is covered by
-      `FlowDeadEndTest`; the dispatch wiring itself is not yet pinned.
-- [ ] Test last-run write-back on completion, on failure, and that a queued run
-      does not overwrite it. **NOT DONE** — same harness as above.
+- [x] Test the schedule/trigger refusal path specifically, with a positive
+      control. `FlowRunServiceLastRunTest` pins `recordUnattributed`: a
+      `schedule` refusal marks the flow in error AND disables it (so a dead
+      schedule stops retrying), while a `manual` refusal records the error and
+      leaves the flow enabled — the positive control proving the self-disable is
+      specific to a schedule. The queueRun dispatch wiring remains covered end to
+      end only in CI (it builds its preflight/attribution collaborators from the
+      container inline).
+- [x] Test last-run write-back on completion, on failure, and that a queued run
+      does not overwrite it. `FlowRunServiceLastRunTest` pins `recordLastRun`:
+      every terminal status (completed, failed, stopped, dead_letter) writes the
+      run's uuid, status, message and time onto the flow; a non-terminal status
+      (queued, running, suspended) writes nothing; a blank flow id and a mapper
+      failure are both swallowed.
 
 ## Verification note — why the suite was not run locally
 

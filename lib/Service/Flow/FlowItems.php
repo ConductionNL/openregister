@@ -99,15 +99,34 @@ final class FlowItems {
 	/**
 	 * Build one well-formed item.
 	 *
-	 * @param array           $json    The record.
-	 * @param FlowItemOptions $options File attachments keyed by name, the input item this came from, and the
-	 *                                 output branch this item routes to, each when known.
+	 * Takes a FlowItemOptions (as `$options`, or positionally in place of `$binary`) or the separate
+	 * arguments of the published contract; an options object wins.
+	 *
+	 * @param array                      $json          The record.
+	 * @param array|FlowItemOptions|null $binary        File attachments keyed by name, or the options object.
+	 * @param int|null                   $fromItemIndex The input item this came from, when known.
+	 * @param string|null                $output        The output branch this item routes to, when known.
+	 * @param FlowItemOptions|null       $options       File attachments keyed by name, the input item this came from, and the
+	 *                                                  output branch this item routes to, each when known.
 	 *
 	 * @return array<string, mixed> The item.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public static function item(array $json, FlowItemOptions $options=new FlowItemOptions()): array {
+	public static function item(
+		array $json,
+		array|FlowItemOptions|null $binary = [],
+		?int $fromItemIndex = null,
+		?string $output = null,
+		?FlowItemOptions $options = null,
+	): array {
+		if ($binary instanceof FlowItemOptions) {
+			$options ??= $binary;
+			$binary = [];
+		}
+
+		$options ??= new FlowItemOptions(binary: ($binary ?? []), fromItemIndex: $fromItemIndex, output: $output);
+
 		return FlowItemShape::item(json: $json, options: $options);
 	}//end item()
 
@@ -118,7 +137,7 @@ final class FlowItems {
 	 *
 	 * @return string|null The output branch, or null when the item is unrouted.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public static function outputOf(array $member): ?string {
 		return FlowItemShape::outputOf(member: $member);

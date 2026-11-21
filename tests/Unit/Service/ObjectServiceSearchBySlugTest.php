@@ -330,4 +330,66 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 
 	}//end testSearchObjectsBySlugRefusesWhenRegisterCarriesNoSchemas()
 
+	/**
+	 * REQ: with the linkage repaired, `document`/`anonymizationLink` resolves the
+	 * register's own schema 9177 — not 5084, the same-slug schema the global
+	 * tie-break picks, which has no table under register 6.
+	 *
+	 * The assertion is on the resolved schema id: a successful call alone was
+	 * also the pre-fix behaviour, it just searched the wrong schema.
+	 *
+	 * @spec openspec/changes/register-scoped-slug-resolution/specs/objects-crud/spec.md
+	 *
+	 * @return void
+	 */
+	public function testDocumentRegisterResolvesItsOwnAnonymizationLinkSchema(): void {
+		$register = new Register();
+		$register->setId(6);
+		$register->setSlug('document');
+		$register->setSchemas([9173, 9174, 9177]);
+
+		$own = new Schema();
+		$own->setId(9177);
+		$own->setSlug('anonymizationLink');
+
+		$foreign = new Schema();
+		$foreign->setId(5084);
+		$foreign->setSlug('anonymizationLink');
+
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(value: 'document'))
+			->willReturn($register);
+
+		$this->schemaMapper
+			->expects($this->once())
+			->method('findBySlugInIds')
+			->with($this->equalTo(value: 'anonymizationLink'), $this->equalTo(value: [9173, 9174, 9177]))
+			->willReturn($own);
+
+		// The global resolver would answer 5084; it must not be asked.
+		$this->schemaMapper->method('find')->willReturn($foreign);
+		$this->schemaMapper->expects($this->never())->method('find');
+
+		$searched = null;
+		$this->queryHandler
+			->expects($this->once())
+			->method('searchObjects')
+			->willReturnCallback(
+				static function (array $query) use (&$searched): array {
+					$searched = $query['@self'] ?? null;
+					return [];
+				}
+			);
+
+		$this->service->searchObjectsBySlug('document', 'anonymizationLink', []);
+
+		$this->assertSame(
+			expected: ['register' => 6, 'schema' => 9177],
+			actual: array_intersect_key(($searched ?? []), ['register' => true, 'schema' => true])
+		);
+
+	}//end testDocumentRegisterResolvesItsOwnAnonymizationLinkSchema()
+
 }//end class

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\AppHost\Store\Source;
 /**
  * What a store search asks a discovery source for: the free text and the kind filter.
  *
- * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
  */
 final class StoreSearch {
 	/**

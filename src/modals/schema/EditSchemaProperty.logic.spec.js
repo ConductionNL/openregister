@@ -66,6 +66,21 @@ afterEach(() => {
 })
 
 describe('EditSchemaProperty option lookups', () => {
+	it('offers geometry formats for an object property and disables the format for other non-string types', () => {
+		const vm = form()
+		vm.properties.type = 'object'
+		expect(vm.propertyFormatOptions.options).toContain('geo:multipolygon')
+		expect(vm.formatDisabled).toBe(false)
+
+		vm.properties.type = 'string'
+		expect(vm.propertyFormatOptions.options).toContain('email')
+		expect(vm.propertyFormatOptions.options).not.toContain('geo:point')
+		expect(vm.formatDisabled).toBe(false)
+
+		vm.properties.type = 'number'
+		expect(vm.formatDisabled).toBe(true)
+	})
+
 	it('falls back to the first or a fixed option when the value is unknown', () => {
 		const vm = form()
 		expect(vm.codedStoreOption).toBe(vm.codedStoreOptions[0])
@@ -458,5 +473,66 @@ describe('EditSchemaProperty relation pickers', () => {
 		const target = {}
 		form().setField(target, 'a', 1)
 		expect(target).toEqual({ a: 1 })
+	})
+})
+
+describe('names per language (modelling-field-names-per-language, task 2.2)', () => {
+	it('adds a Dutch name to the property titles and clears it again', () => {
+		const vm = form({ properties: { title: 'End date' } })
+
+		vm.addTitleRow()
+		expect(vm.titleRows).toEqual([{ language: '', name: '' }])
+		vm.titleRows[0].language = ' nl '
+		vm.titleRows[0].name = ' Einddatum '
+		vm.applyTitleRows()
+		expect(vm.properties.titles).toEqual({ nl: 'Einddatum' })
+
+		vm.titleRows[0].name = ''
+		vm.applyTitleRows()
+		expect('titles' in vm.properties).toBe(false)
+	})
+
+	it('removes a row, and skips a row without a language or a name', () => {
+		const vm = form({ properties: {} })
+		vm.addTitleRow()
+		vm.addTitleRow()
+		vm.addTitleRow()
+		Object.assign(vm.titleRows[0], { language: 'nl', name: 'Einddatum' })
+		Object.assign(vm.titleRows[1], { language: 'en', name: '' })
+		Object.assign(vm.titleRows[2], { language: 'de', name: 'Enddatum' })
+
+		vm.removeTitleRow(2)
+		vm.applyTitleRows()
+
+		expect(vm.titleRows).toHaveLength(2)
+		expect(vm.properties.titles).toEqual({ nl: 'Einddatum' })
+	})
+
+	it('loads stored names into rows, and none for a property without them', () => {
+		const vm = form({})
+		vm.hydrateTitleRows({ nl: 'Einddatum', en: 'End date' })
+		expect(vm.titleRows).toEqual([
+			{ language: 'nl', name: 'Einddatum' },
+			{ language: 'en', name: 'End date' },
+		])
+
+		vm.hydrateTitleRows(undefined)
+		expect(vm.titleRows).toEqual([])
+		vm.hydrateTitleRows(['not', 'a', 'map'])
+		expect(vm.titleRows).toEqual([])
+	})
+
+	it('writes the names into the property before it is saved', () => {
+		const vm = form({ properties: { title: 'End date' } })
+		vm.hydrateTitleRows({ nl: 'Einddatum' })
+		vm.applyTitleRows = jest.fn(methods.applyTitleRows.bind(vm))
+		schemaStore.schemaItem = { id: 1, properties: {} }
+		try {
+			vm.addSchemaProperty()
+		} catch {
+			// What the save does after the titles is not under test here.
+		}
+		expect(vm.applyTitleRows).toHaveBeenCalledTimes(1)
+		expect(vm.properties.titles).toEqual({ nl: 'Einddatum' })
 	})
 })

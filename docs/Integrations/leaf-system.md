@@ -297,6 +297,41 @@ option and does not exist today.
 See the openspec change `leaf-reference-provider-convergence` for the full
 capability comparison and rationale.
 
+### Render modes — `component` and `mount`
+
+A render-surface leaf declares how it renders through `renderMode` on its
+`LeafRendering` (`LeafDescriptor::RENDER_MODE_COMPONENT` or
+`LeafDescriptor::RENDER_MODE_MOUNT`):
+
+| `renderMode` | The leaf ships | Use it when |
+|---|---|---|
+| `component` (default) | an SFC `tab` + `widget`, interpreted by the host's Vue runtime | the leaf is built against the same Vue major as the host, or is a built-in |
+| `mount` | a `mount(el, props)` + `unmount(el)` pair; the host hands it a bare container element and the leaf renders into it with its own framework | the leaf is built against a different Vue major than the host (a Vue 3 app on a Vue 2.7 host page) |
+
+An SFC compiled by one Vue major cannot be rendered by another, so a cross-major
+leaf must use `mount`. The two functions travel as a pair: `unmount(el)` must
+release the leaf's framework instance and listeners, because the host calls it
+on hide, on teardown and before re-mounting when the object changes.
+
+```php
+rendering: new LeafRendering(
+    surfaces: ['detail-page'],
+    renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+),
+```
+
+The JS registration under the same id must declare the same `renderMode`. The
+integration parity gate in `@conduction/nextcloud-vue` reads the JS side;
+`LeafRenderModeParity` compares it with the server side: given the JS render
+modes keyed by leaf id, `mismatches()` lists every render-surface leaf whose two
+values differ, and `violations()` gives one report line per mismatch. A JS
+registration that states no `renderMode` counts as `component`, and a leaf known
+to one layer only is left to the tab/widget half of parity. An unknown `renderMode` is rejected
+at registration and only that leaf is skipped. `renderMode` is reported per leaf
+on `openregister.integrations.leaves`, so a manifest app or admin UI can see how
+a leaf renders without loading its JS. A mount leaf is still render-and-read
+only: it invokes no command in the host (ADR-041).
+
 ## What to read next
 
 - **[xWiki leaf](./xwiki.md)** — the worked external example (OpenConnector-backed).

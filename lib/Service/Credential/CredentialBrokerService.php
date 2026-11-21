@@ -153,6 +153,13 @@ class CredentialBrokerService {
 	private const KIND_OAUTH2_SET = 'oauth2-token-set';
 
 	/**
+	 * Credential kind: the login of an outside vault. Never proxied, never resolved app-side.
+	 *
+	 * @var string
+	 */
+	private const KIND_OUTSIDE_VAULT = OutsideCustody::KIND;
+
+	/**
 	 * True only inside {@see requestForBackgroundUser()}: the guards then see no session.
 	 *
 	 * @var boolean
@@ -240,6 +247,12 @@ class CredentialBrokerService {
 
 		// Guard 3 + 4 — provider resolution, allow-rules, host-lock.
 		$provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+
+		// A vault connection's secret is the vault's own login: it serves outside
+		// credentials inside the broker and is never sent anywhere else.
+		if ($this->kindOf(provider: $provider) === self::KIND_OUTSIDE_VAULT) {
+			$this->deny(reason: 'an outside-vault connection is never proxied', credentialId: $credentialId);
+		}
 
 		// An inject-only provider carries no baseUrl/allowRules and MUST NEVER be proxied
 		// (an unbounded host is exactly what the constrained proxy exists to prevent). Its
@@ -470,8 +483,18 @@ class CredentialBrokerService {
 			return null;
 		}
 
+		if ($this->kindOf(provider: $provider) === self::KIND_OUTSIDE_VAULT) {
+			$this->deny(reason: 'an outside-vault connection is never resolved app-side', credentialId: $credentialId);
+		}
+
 		if ($this->isInjectOnly(provider: $provider) === false) {
 			return null;
+		}
+
+		// Both guards ran in resolveInjectableFor() before this point, so an app
+		// they refuse never makes the broker contact an outside vault.
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			return $this->outsideSecret(data: $data, credentialId: $credentialId);
 		}
 
 		$secret = $this->sources->credentialStore->get($credentialId, $this->scopeOf(data: $data));
@@ -481,6 +504,28 @@ class CredentialBrokerService {
 
 		return (string)$secret;
 	}//end injectableSecret()
+
+	/**
+	 * The secret of an admitted outside credential, read from its vault now.
+	 *
+	 * @param array<string, mixed> $data         The admitted credential's data.
+	 * @param string               $credentialId The credential uuid.
+	 *
+	 * @return string The secret, held only for this call.
+	 *
+	 * @throws CredentialAccessDeniedException When no reader is available or the reference is not usable.
+	 * @throws CredentialUpstreamException When the vault cannot give the secret.
+	 *
+	 * @spec openspec/changes/credential-outside-vault-reference/specs/credential-broker/spec.md#requirement-authorization-is-decided-before-an-outside-secret-is-read
+	 */
+	private function outsideSecret(array $data, string $credentialId): string {
+		$custody = $this->outbound->outsideCustody;
+		if ($custody === null) {
+			$this->deny(reason: 'outside vault reader is unavailable', credentialId: $credentialId);
+		}
+
+		return $custody->secretFor(data: $data, credentialId: $credentialId);
+	}//end outsideSecret()
 
 	/**
 	 * Mint a credential: persist its metadata object and store its secret to the vault.
@@ -536,6 +581,16 @@ class CredentialBrokerService {
 		// to '', which the empty-secret branch below already treats as
 		// "metadata only, no vault write".
 		$secret = $this->trimmedSecret(secret: $options->secret());
+
+		// An outside credential holds no secret here, and must name a vault connection
+		// of its own organisation or owner (credential-outside-vault-reference 1.2).
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			if ($this->outbound->outsideCustody === null) {
+				throw new InvalidArgumentException(message: 'Outside vault credentials are not available on this instance');
+			}
+
+			$this->outbound->outsideCustody->assertMintable(data: $data, secret: $secret);
+		}
 
 		// Persist the credential-metadata object in system context. Mint is a trusted,
 		// caller-authorized operation ("authorization is the caller's" — the controller
@@ -649,7 +704,22 @@ class CredentialBrokerService {
 	 */
 	public static function connectionMetadata(array $metadata): array {
 		$accepted = [];
-		$allowed = ['kind', 'status', 'scopes', 'account', 'expiresAt', 'lastRefreshedAt', 'lastError', 'clientId', 'clientCredentialRef'];
+		$allowed = [
+			'kind',
+			'status',
+			'scopes',
+			'account',
+			'expiresAt',
+			'lastRefreshedAt',
+			'lastError',
+			'clientId',
+			'clientCredentialRef',
+			'custody',
+			'vaultRef',
+			'vaultAuthMethod',
+			'vaultRoleId',
+			'vaultMount',
+		];
 		foreach ($allowed as $key) {
 			if (array_key_exists($key, $metadata) === true) {
 				$accepted[$key] = $metadata[$key];
@@ -706,7 +776,7 @@ class CredentialBrokerService {
 	 *
 	 * @return string|null The trimmed secret, or null unchanged.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
 	 */
 	private function trimmedSecret(#[\SensitiveParameter] ?string $secret): ?string {
 		if ($secret === null) {
@@ -1264,26 +1334,72 @@ class CredentialBrokerService {
 	}//end assertAppAllowed()
 
 	/**
-	 * Resolve the credential's provider from the read-only catalogue.
+	 * Resolve the credential's provider: the read-only catalogue first, then an admitted declaration.
+	 *
+	 * The reviewed catalogue always wins: its identifiers carry no colon, and it is
+	 * consulted before the declaration layer is reached. Anything not admitted denies.
 	 *
 	 * @param array<string, mixed> $data The credential's serialised data.
 	 * @param string $credentialId The credential UUID (for logging).
 	 *
 	 * @return array<string, mixed> The catalogue provider entry.
 	 *
-	 * @throws CredentialAccessDeniedException When the provider is unknown.
+	 * @throws CredentialAccessDeniedException When the provider is unknown or not admitted.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/credential-broker/spec.md
 	 */
 	private function resolveProvider(array $data, string $credentialId): array {
 		$providerId = (string)($data['provider'] ?? '');
 		$provider = $this->sources->catalogue->get($providerId);
-		if ($provider === null) {
+		if ($provider !== null) {
+			return $provider;
+		}
+
+		$declared = $this->sources->declared;
+		if ($declared === null || $declared->isDeclaredIdentifier(identifier: $providerId) === false) {
 			$this->deny(reason: 'unknown provider "' . $providerId . '"', credentialId: $credentialId);
 		}
 
-		return $provider;
+		return $this->admittedDeclaredProvider(declared: $declared, data: $data, credentialId: $credentialId);
 	}//end resolveProvider()
+
+	/**
+	 * The entry of an admitted declared provider, for a credential scoped to the declaring app only.
+	 *
+	 * The credential must allow exactly the declaring app. Guard 2 has already checked the
+	 * calling app is in `allowedApps`, so together they keep a declared provider usable by
+	 * the app that declared it and nobody else, whatever path minted the credential.
+	 *
+	 * @param DeclaredProviderResolver $declared     The declaration admission.
+	 * @param array<string, mixed>     $data         The credential's serialised data.
+	 * @param string                   $credentialId The credential UUID (for logging).
+	 *
+	 * @return array<string, mixed> The admitted entry.
+	 *
+	 * @throws CredentialAccessDeniedException When the declaration is not admitted or the credential is shared wider.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	private function admittedDeclaredProvider(DeclaredProviderResolver $declared, array $data, string $credentialId): array {
+		$providerId = (string)($data['provider'] ?? '');
+		$state = $declared->resolve(identifier: $providerId);
+		if ($state['entry'] === null) {
+			$this->deny(
+				reason: 'declared provider "' . $providerId . '" is not admitted (' . $state['status'] . ')',
+				credentialId: $credentialId
+			);
+		}
+
+		if (($data['allowedApps'] ?? null) !== [$state['origin']]) {
+			$this->deny(
+				reason: 'declared provider "' . $providerId . '" is usable only by its declaring app',
+				credentialId: $credentialId
+			);
+		}
+
+		return $state['entry'];
+	}//end admittedDeclaredProvider()
 
 	/**
 	 * Resolve the value the provider's auth template is substituted with.
@@ -1316,6 +1432,15 @@ class CredentialBrokerService {
 		string $scope,
 		?string $actingUserId,
 	): string {
+		if (OutsideCustody::isOutside(data: $data) === true) {
+			// Only a plain secret can live outside; a token set is rotated by the broker.
+			if ($this->kindOf(provider: $provider) !== self::KIND_SECRET) {
+				$this->deny(reason: 'only a secret-kind credential can be held in an outside vault', credentialId: $credentialId);
+			}
+
+			return $this->outsideSecret(data: $data, credentialId: $credentialId);
+		}
+
 		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_SET) {
 			$secret = $this->sources->credentialStore->get($credentialId, $scope);
 			if ($secret === null) {
@@ -1358,6 +1483,10 @@ class CredentialBrokerService {
 
 		if ($kind === self::KIND_OAUTH2_SET) {
 			return self::KIND_OAUTH2_SET;
+		}
+
+		if ($kind === self::KIND_OUTSIDE_VAULT) {
+			return self::KIND_OUTSIDE_VAULT;
 		}
 
 		return self::KIND_SECRET;
@@ -1516,7 +1645,7 @@ class CredentialBrokerService {
 	 *
 	 * @throws CredentialUpstreamException When the call fails at the transport level.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
 	private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId, string $secret): array {
 		$options = [
@@ -1581,7 +1710,7 @@ class CredentialBrokerService {
 	 *
 	 * @return string A secret-redacted `ClassName: message` description.
 	 *
-	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-upstream-transport-failures-carry-a-secret-free-real-reason
 	 */
 	private function describeUpstreamFailure(Throwable $exception, string $secret): string {
 		$message = $exception->getMessage();

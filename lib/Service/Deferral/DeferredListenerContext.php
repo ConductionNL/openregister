@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deferral;
 
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\WriteCause;
+
 /**
  * Value object carrying the captured acting context of a deferred listener.
  *
@@ -47,6 +50,8 @@ final class DeferredListenerContext {
 	 * @param string|null $userId Acting user id at dispatch time (null = session-less origin).
 	 * @param string|null $orgUuid Active organisation uuid at dispatch time (drift detection only).
 	 * @param array<int, array<string, mixed>> $entries Per-object entries for the job to process.
+	 * @param CauseFrame|null $cause The write cause at deferral time, when it was not a person acting directly
+	 *                              (runs-recorded-and-causes-named REQ-RCN-002); null keeps the job a person's.
 	 *
 	 * @return void
 	 */
@@ -54,8 +59,20 @@ final class DeferredListenerContext {
 		private readonly ?string $userId,
 		private readonly ?string $orgUuid,
 		private readonly array $entries,
+		private readonly ?CauseFrame $cause = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The write cause captured at deferral time, or null for a person acting directly.
+	 *
+	 * @return CauseFrame|null The cause and its run.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
+	 */
+	public function getCause(): ?CauseFrame {
+		return $this->cause;
+	}//end getCause()
 
 	/**
 	 * The acting user id captured at dispatch time.
@@ -98,11 +115,20 @@ final class DeferredListenerContext {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function toJobArguments(): array {
-		return [
+		$arguments = [
 			'userId' => $this->userId,
 			'organisationUuid' => $this->orgUuid,
 			'entries' => array_values($this->entries),
 		];
+
+		// Only a cause other than a person's is written, so a job argument for
+		// a person's write is byte-for-byte what it was before causes travelled.
+		if ($this->cause !== null) {
+			$arguments['cause'] = $this->cause->cause;
+			$arguments['causeRun'] = $this->cause->run;
+		}
+
+		return $arguments;
 	}//end toJobArguments()
 
 	/**
@@ -127,9 +153,34 @@ final class DeferredListenerContext {
 		return new self(
 			userId: self::nonEmptyString(value: ($argument['userId'] ?? null)),
 			orgUuid: self::nonEmptyString(value: ($argument['organisationUuid'] ?? null)),
-			entries: self::arrayEntries(list: ($argument['entries'] ?? []))
+			entries: self::arrayEntries(list: ($argument['entries'] ?? [])),
+			cause: self::causeOf(argument: $argument)
 		);
 	}//end fromJobArguments()
+
+	/**
+	 * The cause a job argument carries, or null when it carries none or a person's.
+	 *
+	 * The word is normalised against the closed vocabulary: an unknown word
+	 * reads as a person's, never as a cause somebody could filter away.
+	 *
+	 * @param array<string, mixed> $argument The decoded job argument.
+	 *
+	 * @return CauseFrame|null The cause and its run.
+	 */
+	private static function causeOf(array $argument): ?CauseFrame {
+		$word = self::nonEmptyString(value: ($argument['cause'] ?? null));
+		if ($word === null) {
+			return null;
+		}
+
+		$cause = WriteCause::normalise(cause: $word);
+		if ($cause === WriteCause::PERSON) {
+			return null;
+		}
+
+		return new CauseFrame(cause: $cause, run: self::nonEmptyString(value: ($argument['causeRun'] ?? null)));
+	}//end causeOf()
 
 	/**
 	 * A job-argument value as a non-empty string, or null.
