@@ -43,45 +43,65 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
 
 ## 2. The move (REQ-RDS-004)
 
-- [ ] 2.1 `lib/Service/File/DocumentReferenceMap.php`: every OpenRegister place that holds a Nextcloud file or folder
+- [x] 2.1 `lib/Service/File/DocumentReferenceMap.php`: every OpenRegister place that holds a Nextcloud file or folder
   id (register `folder`, object `folder`, file-typed object properties, `openregister_file_texts.file_id`,
   `openregister_chunks`, `openregister_anonymisation_log.file_id`, `openregister_entity_relations`, export runs,
   scheduled reports; confirm each against `lib/Migration/` and `lib/Db/`).
   - **fails today**: `tests/Unit/Service/File/DocumentReferenceMapTest.php::testEveryFileIdColumnIsMapped` reads the
     migrations for `file_id`, `fileid`, `folder` and `node_id` columns and fails on one that is neither mapped nor
     listed as not a file id with a reason.
-- [ ] 2.2 Migration and entity for `openregister_document_moves` (`register_id`, `old_id`, `new_id`, `kind` file or
+  - Built: eleven mapped columns (chunks only where `source_type` is `file`), six id-shaped columns that hold
+    flow graph node ids or a path listed with the reason, and the shapes a file-typed object property takes
+    (`objectFileIds()`, `rewriteObject()`). Export runs and scheduled reports were confirmed against the migrations:
+    export runs hold a file id; scheduled reports hold a delivery path, not an id.
+- [x] 2.2 Migration and entity for `openregister_document_moves` (`register_id`, `old_id`, `new_id`, `kind` file or
   folder or version, `sha256`, `state` copied, verified, switched or refused, `reason`, `moved_at`), with its mapper.
   - unit `DocumentMoveMapperTest::testAMappingRoundTrips`; the migration runs in the CI PHPUnit job.
-- [ ] 2.3 `lib/Service/File/DocumentStoreMove.php::copyRegister()`: copy folders and files into the target root,
+  - Built: `Version1Date20261114100000`, `DocumentMove`, `DocumentMoveMapper` (`forRegister()`, `switchRegister()`,
+    `switchedOldIds()`). One extra column, `version_time`, holds an earlier version's original time, which 2.3 asks the
+    mapping to record.
+- [x] 2.3 `lib/Service/File/DocumentStoreMove.php::copyRegister()`: copy folders and files into the target root,
   replay earlier versions oldest first (read each version through the versions API Nextcloud exposes for the node;
   record the original version times in the mapping), compute SHA-256 of source and copy through `fopen()` streams,
   and record `verified` or `refused`. Refuse a target on the same storage id.
   - **fails today**: `tests/Unit/Service/File/DocumentStoreMoveTest.php::testAFailedCopySwitchesNothing`,
     `testVersionsAreCarriedOldestFirst`, `testATargetWithoutVersionsRefusesAVersionedRegister`,
     `testWithoutEarlierVersionsIsRecordedPerFile`, `testTheSameStorageIsRefused`.
-- [ ] 2.4 `DocumentStoreMove::rewriteReferences()`: for a register whose every copy verified, rewrite each place in
+  - Built: versions are read through `DocumentVersions` (the versions app's manager, reached by name because the app is
+    optional); the copy's own versions are checked against the source's by SHA-256, oldest first. Whether a target
+    keeps versions is whether the version manager has a backend for its storage.
+- [x] 2.4 `DocumentStoreMove::rewriteReferences()`: for a register whose every copy verified, rewrite each place in
   `DocumentReferenceMap` from old to new id in one transaction per register, object properties through the object
   save path in system context with one audit trail entry per object (`action: document-store-move`).
   - **fails today**: `DocumentStoreMoveTest::testEveryReferenceFollowsTheFile`,
     `testAnUnverifiedRegisterKeepsItsReferences`, `testEachChangedObjectGetsOneAuditEntry`.
-- [ ] 2.5 `DocumentStoreMove::recreateShares()` and tags: user, group and link shares through `OCP\Share\IManager`
+  - Built: columns through the query builder, objects through `DocumentStoreObjects` (every row of every schema in
+    system context, stored through the object mapper with the old state, one audit entry per changed object), all in
+    one transaction. `testEachChangedObjectGetsOneAuditEntry` lives in `DocumentStoreObjectsTest`.
+- [x] 2.5 `DocumentStoreMove::recreateShares()` and tags: user, group and link shares through `OCP\Share\IManager`
   with the same token (`IShare::setToken()`), permissions, expiry and label; system tags through
   `ISystemTagObjectMapper`. A password-protected link share, or a share the manager refuses, marks the register
   `refused` before any reference is rewritten.
   - **fails today**: `DocumentStoreMoveTest::testALinkShareKeepsItsToken`, `testAPasswordProtectedShareStopsTheRegister`,
     `testTagsAreCopied`.
-- [ ] 2.6 Refuse uploads into a register while it moves: a flag per register in app config set by the move and
+  - Built: every share is read before any is created, so a password-protected link refuses the register first. A
+    share is created on the copy, the old one removed, and a link share's token set back with `updateShare()`; a link
+    that cannot keep its token refuses the register and names the token it now has. The shares move before the
+    references, so a register refused after that point has its links already on its (verified, identical) copies.
+- [x] 2.6 Refuse uploads into a register while it moves: a flag per register in app config set by the move and
   checked by `FilesController::create()`, `save()`, `createMultipart()`, `update()` and `FilePropertyHandler`'s file
   write, answering 503 `{error: "document-store-move"}` and writing nothing; reads are not checked.
   - **fails today**: `tests/Unit/Controller/FilesControllerMoveGuardTest.php::testAnUploadDuringAMoveIs503`,
     `testAReadDuringAMoveStillWorks`, and `testEveryUploadPathChecksTheFlag` enumerating the write paths.
-- [ ] 2.7 Switch and purge: when every register is switched, set `document_store_root` to the target and rename the
+  - Built: `DocumentStoreMoveGuard` (app config `document_store_moving_<register id>`), `DocumentStoreMoving`
+    (503 `document-store-move`). `create()`, `save()`, `createMultipart()` and `update()` take their object through
+    `writableObject()`; `FilePropertyHandler` checks before it adds a file. Also `FilePropertyMoveGuardTest`.
+- [x] 2.7 Switch and purge: when every register is switched, set `document_store_root` to the target and rename the
   old root to `<root> (moved <YYYY-MM-DD>)`; `--purge-source` deletes the renamed tree only when every file in it has
   a `switched` mapping, else deletes nothing and names the files.
   - **fails today**: `DocumentStoreMoveTest::testTheRootSwitchesOnlyWhenEveryRegisterDid`,
     `testPurgeDeletesNothingWithAnUnmappedFile`, `testPurgeDeletesAFullyMappedTree`.
-- [ ] 2.8 `occ openregister:document-store:move --to <path> [--register <id>] [--dry-run] [--without-earlier-versions] [--purge-source]`
+- [x] 2.8 `occ openregister:document-store:move --to <path> [--register <id>] [--dry-run] [--without-earlier-versions] [--purge-source]`
   (`lib/Command/DocumentStoreMoveCommand.php`, registered in `appinfo/info.xml`), printing per register the counts and
   refusals; exit 1 when any register was refused.
   - **fails today**: `tests/Unit/Command/DocumentStoreMoveCommandTest.php::testDryRunChangesNothing`,
@@ -95,9 +115,12 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   file, one earlier version, a tag and a public link; move; read through `FilesController` and through the public
   share URL; upload again). It must not call `markTestSkipped()` (unlike `RuntimeSchemaReloadTest`): without Nextcloud it fails. Quote its line from the
   CI log in the PR body to show it ran.
-- [ ] 3.2 Newman: add `GET /api/settings/files` asserting the `documentStore` keys and types to the file settings
+- [x] 3.2 Newman: add `GET /api/settings/files` asserting the `documentStore` keys and types to the file settings
   collection in `tests/newman/`.
-- [ ] 3.3 Administrator documentation `docs/Installation/separate-document-store.md`: mount a store with the External
+  - Built: "GET file settings as admin: the document store" in
+    `tests/integration/openregister-api-filesettings-anonymisationbackend.postman_collection.json`, the file settings
+    collection `tests/newman/run-all.sh` runs; it asserts every `documentStore` key and its type.
+- [x] 3.3 Administrator documentation `docs/Installation/separate-document-store.md`: mount a store with the External
   storage app for the `openregister` account, set the root on a fresh installation, move an existing corpus
   (dry run, move, check status, purge), and what stops a register. Load the hydra `writing` skill first.
 

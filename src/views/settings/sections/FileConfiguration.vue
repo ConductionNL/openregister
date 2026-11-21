@@ -53,6 +53,9 @@
 			</NcActions>
 		</template>
 
+		<!-- Where the bytes of managed files live (read-only) -->
+		<DocumentStoreStatus />
+
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -793,6 +796,7 @@ import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import DocumentStoreStatus from './DocumentStoreStatus.vue'
 import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import SettingsTextField from './SettingsTextField.vue'
@@ -1273,6 +1277,7 @@ export default {
 		AlertCircleIcon,
 		AnonymisationPipelineList,
 		ConnectionTestIcon,
+		DocumentStoreStatus,
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
