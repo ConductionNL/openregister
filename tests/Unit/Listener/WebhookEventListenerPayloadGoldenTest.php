@@ -95,7 +95,8 @@ class WebhookEventListenerPayloadGoldenTest extends TestCase {
 		$this->calls = [];
 
 		$service = $this->createMock(WebhookService::class);
-		$service->method('dispatchEvent')->willReturnCallback(function ($event, string $eventName, array $payload) {
+		$service->method('hasWebhooksFor')->willReturn(true);
+		$service->method('dispatchEvent')->willReturnCallback(function (string $eventName, array $payload) {
 			$this->calls[] = ['dispatch', $this->className(class: $eventName), $this->normalise(value: $payload)];
 		});
 

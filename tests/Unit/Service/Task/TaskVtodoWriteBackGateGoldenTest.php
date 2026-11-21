@@ -55,6 +55,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Every branch of handleWrite(), request() and isProjected(), pinned.
@@ -69,6 +70,17 @@ use Throwable;
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskVtodoStatusMapping
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjector
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskAdapterOptions
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapters
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskPayloadOptions
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice
  */
 final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
@@ -126,7 +138,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 			)
 		);
 		$tasks->method('cancel')->willReturnCallback(
-			static fn (string $uuid, ?string $reason, ?string $actor): Task => $answer(['cancel', $uuid, $reason, $actor])
+			static fn (TaskActorRef $ref, ?string $reason): Task => $answer(['cancel', $ref->uuid, $reason, $ref->actor])
 		);
 
 		return $tasks;

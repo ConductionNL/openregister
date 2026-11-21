@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use Psr\Log\LoggerInterface;
@@ -81,7 +82,7 @@ class ActivityFeedService {
 	 * @return array{rows:array<int,array<string,mixed>>,nextCursor:?int,counts:array<string,int>,degraded:array<int,string>}
 	 *         The page, plus the sources that could not be read.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	public function page(ActivityFeedObject $object, ActivityFeedOptions $options = new ActivityFeedOptions()): array {
 		$sources = $this->handedInSources(handedIn: $options->handedIn);
@@ -166,9 +167,7 @@ class ActivityFeedService {
 	private function activitySource(ActivityFeedObject $object): ?array {
 		try {
 			return $this->activity->list(
-				register: $object->register,
-				schema: $object->schema,
-				objectId: $object->id,
+				ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 				filters: []
 			);
 		} catch (Throwable $e) {
@@ -196,13 +195,11 @@ class ActivityFeedService {
 	 *
 	 * @throws \OCA\OpenRegister\Service\Audit\PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	private function auditRows(ActivityFeedObject $object, int $bound): array {
 		$page = $this->history->page(
-			register: $object->register,
-			schema: $object->schema,
-			id: $object->id,
+			ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 			params: ['limit' => $bound]
 		);
 		if ($page === null) {
@@ -250,7 +247,7 @@ class ActivityFeedService {
 	 *
 	 * @return string The line.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	private function summaryOf(string $action, ?array $changed): string {
 		if (is_array($changed) === false || $changed === []) {

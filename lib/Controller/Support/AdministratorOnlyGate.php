@@ -27,9 +27,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 
 /**
- * The in-body administrator check of the register-descriptor and
- * working-calendar admin endpoints: a JSON 401 without a user, a JSON 403
- * for a non-administrator.
+ * The in-body administrator check of the admin-only controllers: a JSON 401
+ * without a user, a JSON 403 for a non-administrator.
  *
  * @spec openspec/specs/register-descriptor-admin/spec.md
  */

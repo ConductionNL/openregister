@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * The bridge: provenance on creation, and the advance budget on completion.
@@ -167,7 +169,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->method('import')->willReturn($this->terminalTask());
 		$this->tasks->expects($this->once())
 			->method('offer')
-			->with('t-1', ['routingStrategy' => 'or-set', 'routingFallback' => 'carol'], 'owner')
+			->with(new TaskActorRef(uuid: 't-1', actor: 'owner'), ['routingStrategy' => 'or-set', 'routingFallback' => 'carol'])
 			->willReturn($this->terminalTask());
 
 		$this->bridge->createTask(
@@ -392,8 +394,8 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('record')
 			->willReturnCallback(
-				function (string $uuid, string $action, ?string $actor, string $reason) use (&$seen, $task): Task {
-					$seen = ['uuid' => $uuid, 'action' => $action, 'actor' => $actor, 'reason' => $reason];
+				function (TaskAuditEntry $entry) use (&$seen, $task): Task {
+					$seen = ['uuid' => $entry->uuid, 'action' => $entry->action, 'actor' => $entry->actor, 'reason' => $entry->reason];
 
 					return $task;
 				}
@@ -453,8 +455,8 @@ class FlowTaskBridgeTest extends TestCase {
 		$this->tasks->expects($this->once())
 			->method('record')
 			->willReturnCallback(
-				function (string $uuid, string $action, ?string $seenActor, string $reason) use (&$actor, $task): Task {
-					$actor = $seenActor;
+				function (TaskAuditEntry $entry) use (&$actor, $task): Task {
+					$actor = $entry->actor;
 
 					return $task;
 				}

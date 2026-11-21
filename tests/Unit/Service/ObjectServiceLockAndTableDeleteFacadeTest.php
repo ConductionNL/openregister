@@ -25,11 +25,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\LockHandler;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -57,7 +57,7 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 		return $service;
 	}
 
-	public function testLockObjectForwardsAllSixArguments(): void {
+	public function testLockObjectForwardsTheRequestAndTheAdvisoryFlag(): void {
 		$lock = $this->createMock(LockHandler::class);
 		$lock->expects($this->once())->method('lock')
 			->with(
@@ -67,7 +67,10 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 			->willReturn(['locked' => true]);
 
 		$result = $this->service($lock, $this->createMock(IAppContainer::class))
-			->lockObject('obj-1', 'import', 600, true, 'run-1', 'node-1');
+			->lockObject(
+				request: new LockRequest(identifier: 'obj-1', process: 'import', duration: 600, runStep: new LockRunStep(runUuid: 'run-1', nodeId: 'node-1')),
+				advisory: true
+			);
 
 		$this->assertSame(['locked' => true], $result);
 	}
@@ -81,30 +84,30 @@ class ObjectServiceLockAndTableDeleteFacadeTest extends TestCase {
 			)
 			->willReturn([]);
 
-		$this->service($lock, $this->createMock(IAppContainer::class))->lockObject('obj-1');
+		$this->service($lock, $this->createMock(IAppContainer::class))->lockObject(request: new LockRequest(identifier: 'obj-1'));
 	}
 
 	public function testDeleteObjectsBySchemaForwardsIdsAndHardDeleteAsBulkDelete(): void {
-		$deletion = $this->createMock(SchemaDeletionService::class);
+		$deletion = $this->createMock(SchemaTeardownInterface::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(true, SchemaDeletionService::TRIGGER_BULK_DELETE))
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(true, SchemaTeardownInterface::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->with(SchemaDeletionService::class)->willReturn($deletion);
+		$container->method('get')->with(SchemaTeardownInterface::class)->willReturn($deletion);
 
-		$result = $this->service($this->createMock(LockHandler::class), $container)->deleteObjectsBySchema(7, 42, true);
+		$result = $this->service($this->createMock(LockHandler::class), $container)->deleteObjectsOfTable(new RegisterSchemaRef(7, 42), true);
 
 		$this->assertSame(['deleted_count' => 1, 'deleted_uuids' => ['u'], 'schema_id' => 42], $result);
 	}
 
 	public function testDeleteObjectsBySchemaIsSoftByDefault(): void {
-		$deletion = $this->createMock(SchemaDeletionService::class);
+		$deletion = $this->createMock(SchemaTeardownInterface::class);
 		$deletion->expects($this->once())->method('deleteObjectsBySchema')
-			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(false, SchemaDeletionService::TRIGGER_BULK_DELETE))
+			->with(new RegisterSchemaRef(7, 42), new TableDeletionOptions(false, SchemaTeardownInterface::TRIGGER_BULK_DELETE))
 			->willReturn(['deleted_count' => 0, 'deleted_uuids' => [], 'schema_id' => 42]);
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturn($deletion);
 
-		$this->service($this->createMock(LockHandler::class), $container)->deleteObjectsBySchema(7, 42);
+		$this->service($this->createMock(LockHandler::class), $container)->deleteObjectsOfTable(new RegisterSchemaRef(7, 42));
 	}
 }

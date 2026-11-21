@@ -51,12 +51,12 @@ class NullFilterTest extends TestCase {
 	public function testAdmitNullOrsTheAndedConditionsWithIsNull(): void {
 		$this->assertSame(
 			['(((a > 1) AND (a < 5)) OR a IS NULL)'],
-			NullFilter::admitNull(conditions: ['a > 1', 'a < 5'], column: 'a', orNull: true)
+			NullFilter::admitNull(conditions: ['a > 1', 'a < 5'], column: 'a')
 		);
 	}
 
 	public function testAdmitNullLeavesTheConditionsAloneWhenNotAsked(): void {
-		$this->assertSame(['a <> 1'], NullFilter::admitNull(conditions: ['a <> 1'], column: 'a', orNull: false));
-		$this->assertSame([], NullFilter::admitNull(conditions: [], column: 'a', orNull: true));
+		$this->assertSame(['a <> 1'], NullFilter::conditionsFor(criterion: ['ne' => 1], column: 'a', build: static fn (mixed $criterion): array => ['a <> 1']));
+		$this->assertSame([], NullFilter::admitNull(conditions: [], column: 'a'));
 	}
 }

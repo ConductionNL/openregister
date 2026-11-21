@@ -28,7 +28,7 @@ use OCP\IUser;
 /**
  * One PATCH of an entity relation: the row id the route named, the row, and who acts.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final readonly class EntityRelationPatch {
 	/**
@@ -38,7 +38,7 @@ final readonly class EntityRelationPatch {
 	 * @param EntityRelation $relation The relation row.
 	 * @param IUser          $user     The acting user.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public int $id,

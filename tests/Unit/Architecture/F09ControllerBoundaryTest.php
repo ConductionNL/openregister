@@ -11,8 +11,8 @@
  * place, and that no outside file names them again.
  *
  * MaintenanceModeMiddleware (lib/Middleware) named OperationsConsoleController
- * in its always-reachable list; that list now lives in
- * MaintenanceReachableControllersInterface, next to the controller.
+ * in its always-reachable list; the reachable controllers now carry the
+ * Configuration marker MaintenanceReachableInterface, which the middleware asks for.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -30,13 +30,14 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
-use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -104,15 +105,14 @@ final class F09ControllerBoundaryTest extends TestCase {
 	}//end testTheIntegrationRegistrarStillRegistersBothControllers()
 
 	/**
-	 * The operations console and the maintenance verbs are the controllers maintenance mode never closes.
+	 * The operations console, the maintenance verbs and the consistency check are the controllers maintenance mode never closes.
 	 *
 	 * @return void
 	 */
 	public function testTheOperationsConsoleStaysAlwaysReachable(): void {
-		$this->assertSame(
-			expected: [OperationsConsoleController::class, OperationsMaintenanceController::class],
-			actual: MaintenanceReachableControllersInterface::ALWAYS_REACHABLE
-		);
+		foreach ([OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class] as $class) {
+			$this->assertTrue(condition: is_subclass_of($class, MaintenanceReachableInterface::class), message: $class.' must carry the maintenance-reachable marker.');
+		}
 	}//end testTheOperationsConsoleStaysAlwaysReachable()
 
 	/**

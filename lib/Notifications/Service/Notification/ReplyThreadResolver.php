@@ -109,6 +109,33 @@ class ReplyThreadResolver {
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
 	public function resolve(array $headers, callable $lookup): array {
+		$found = $this->collectHits(headers: $headers, lookup: $lookup);
+
+		if (count($found['objects']) > 1) {
+			// Two objects in one chain. Picking either is a coin flip with a
+			// disclosure on one side: the reply would be filed on a case its
+			// author has nothing to do with, and read by that case's handler.
+			return $this->unthreadable(state: self::AMBIGUOUS, candidates: array_keys($found['objects']));
+		}
+
+		if ($found['firstMatch'] !== null) {
+			return $this->threaded(hit: $found['firstMatch']);
+		}
+
+		// Named, never empty: the reply is real and somebody has to see it.
+		return $this->unthreadable(state: self::UNTHREADED, candidates: []);
+	}//end resolve()
+
+	/**
+	 * Fold the headers' hits in header order, stopping as soon as the answer is decided.
+	 *
+	 * @param array<string,mixed> $headers The reply's headers.
+	 * @param callable            $lookup  `fn(string $messageId): ?array`.
+	 *
+	 * @return array{objects: array<string, true>, firstMatch: ?array{objectUuid:string,matchedOn:string,messageId:string}}
+	 *         Every object hit so far, and the earliest hit.
+	 */
+	private function collectHits(array $headers, callable $lookup): array {
 		$objects = [];
 		$firstMatch = null;
 
@@ -122,7 +149,7 @@ class ReplyThreadResolver {
 			// there is the answer and `References` is not consulted. Walking
 			// on would only add ancestors that can disagree with it.
 			if (count($objects) === 1 && $firstMatch !== null && $firstMatch['matchedOn'] === $header) {
-				return $this->threaded(hit: $firstMatch);
+				break;
 			}
 
 			if (count($objects) > 1) {
@@ -130,32 +157,26 @@ class ReplyThreadResolver {
 			}
 		}
 
-		if (count($objects) > 1) {
-			// Two objects in one chain. Picking either is a coin flip with a
-			// disclosure on one side: the reply would be filed on a case its
-			// author has nothing to do with, and read by that case's handler.
-			return [
-				'state' => self::AMBIGUOUS,
-				'objectUuid' => '',
-				'matchedOn' => '',
-				'messageId' => '',
-				'candidates' => array_keys($objects),
-			];
-		}
+		return ['objects' => $objects, 'firstMatch' => $firstMatch];
+	}//end collectHits()
 
-		if ($firstMatch !== null) {
-			return $this->threaded(hit: $firstMatch);
-		}
-
-		// Named, never empty: the reply is real and somebody has to see it.
+	/**
+	 * The answer for a reply that threads onto no object.
+	 *
+	 * @param string            $state      AMBIGUOUS or UNTHREADED.
+	 * @param array<int,string> $candidates The objects in play (empty when none was found).
+	 *
+	 * @return array{state:string,objectUuid:string,matchedOn:string,messageId:string,candidates:array<int,string>}
+	 */
+	private function unthreadable(string $state, array $candidates): array {
 		return [
-			'state' => self::UNTHREADED,
+			'state' => $state,
 			'objectUuid' => '',
 			'matchedOn' => '',
 			'messageId' => '',
-			'candidates' => [],
+			'candidates' => $candidates,
 		];
-	}//end resolve()
+	}//end unthreadable()
 
 	/**
 	 * Walk each header's references in HEADER_ORDER, listing the objects they point at.

@@ -34,6 +34,9 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationSpecEntry
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\JoinClause
  */
 class AggregationJoinAnnotationGoldenTest extends TestCase {
 

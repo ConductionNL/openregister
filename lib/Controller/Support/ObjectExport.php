@@ -38,9 +38,12 @@ final class ObjectExport {
 	 */
 	private const FILE_TYPES = [
 		'csv'   => ['csv', 'text/csv'],
+		'tsv'   => ['tsv', 'text/tab-separated-values; charset=utf-8'],
 		'json'  => ['json', 'application/json'],
+		'xml'   => ['xml', 'application/xml; charset=utf-8'],
 		'pdf'   => ['pdf', 'application/pdf'],
 		'excel' => ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+		'ods'   => ['ods', 'application/vnd.oasis.opendocument.spreadsheet'],
 	];
 
 	/**

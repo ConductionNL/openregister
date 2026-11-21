@@ -37,7 +37,8 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCP\IUserSession;
 use Throwable;
 
@@ -126,7 +127,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		// is "what did this person still have on the day they left".
 		$this->log->logger->warning(
 			message: '[ReachRevocation] A principal\'s whole reach was revoked in one act',
-            context: array_merge(['event_type' => AuthorizationAuditService::EVENT_TYPE], $record)
+            context: array_merge(['event_type' => SchemaAccessChangeLogInterface::EVENT_TYPE], $record)
 		);
 
 		return $record;
@@ -159,11 +160,13 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 			try {
 				$schema->setAuthorization($after);
 				$this->sources->schemaMapper->update($schema);
-				$this->log->audit->logSchemaAuthorizationChange(
-					schemaId: (int)$schema->getId(),
-					schemaTitle: (string)$schema->getTitle(),
-					oldAuthorization: $before,
-					newAuthorization: $after
+				$this->log->audit->recordSchemaChange(
+					change: new AuthorizationChange(
+						entityId: (int)$schema->getId(),
+						entityTitle: (string)$schema->getTitle(),
+						before: $before,
+						after: $after
+					)
 				);
 
 				$record['removed'][] = [
@@ -226,7 +229,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	 */
 	private function namesPrincipal(mixed $entry, string $principal): bool {
 		if (is_string($entry) === true) {
-			return ($entry === $principal || $entry === ('user:' . $principal));
+			return self::isPrincipalName(value: $entry, principal: $principal);
 		}
 
 		if (is_array($entry) === false) {
@@ -234,16 +237,25 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		}
 
 		foreach (['name', 'principal', 'id', 'user'] as $key) {
-			$value = ($entry[$key] ?? null);
-			if (is_string($value) === true
-				&& ($value === $principal || $value === ('user:' . $principal))
-			) {
+			if (self::isPrincipalName(value: ($entry[$key] ?? null), principal: $principal) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end namesPrincipal()
+
+	/**
+	 * Whether a value is the account's name, bare or in its `user:` form.
+	 *
+	 * @param mixed  $value     The value as written.
+	 * @param string $principal The account.
+	 *
+	 * @return bool True when the value names the account.
+	 */
+	private static function isPrincipalName(mixed $value, string $principal): bool {
+		return (is_string($value) === true && ($value === $principal || $value === ('user:' . $principal)));
+	}//end isPrincipalName()
 
 	/**
 	 * Forget the grants derived from this account's sign-in claims.

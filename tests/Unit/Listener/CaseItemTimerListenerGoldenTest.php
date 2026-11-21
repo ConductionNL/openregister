@@ -32,6 +32,7 @@ use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Listener\CaseItemTimerListener;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 
@@ -113,7 +114,7 @@ class CaseItemTimerListenerGoldenTest extends TestCase {
 		$timer = new FlowTimer();
 		$timer->setUuid($uuid);
 
-		return new FlowTimerFiredEvent($timer, FlowTimerFiredEvent::KIND_EXPIRY, 'expiry', null, [], null, null);
+		return new FlowTimerFiredEvent(timer: $timer, firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_EXPIRY, transition: 'expiry'));
 	}//end fired()
 
 	/**

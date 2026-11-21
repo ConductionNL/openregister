@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Service\Flow\FlowMessagePreview;
 use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\RecipientLookup;
@@ -28,6 +29,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowMessagePreview
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
+ * @uses \OCA\OpenRegister\Service\Flow\MessageSend
+ * @uses \OCA\OpenRegister\Service\Flow\RecipientLookup
  */
 class FlowMessagePreviewTest extends TestCase {
 
@@ -53,8 +57,8 @@ class FlowMessagePreviewTest extends TestCase {
 	protected function setUp(): void {
 		$this->addresses = $this->createMock(FlowRecipientAddresses::class);
 		$templating      = $this->createMock(NotificationTemplatingInterface::class);
-		$templating->method('interpolate')->willReturnCallback(
-			static fn (string $template, array $data, array $context) => str_replace('{name}', (string) ($data['name'] ?? ''), $template).($context['tag'] ?? '')
+		$templating->method('render')->willReturnCallback(
+			static fn (string $template, PlaceholderValues $values) => str_replace('{name}', (string) ($values->data['name'] ?? ''), $template).($values->context['tag'] ?? '')
 		);
 		$this->preview = new FlowMessagePreview($this->addresses, $templating);
 	}

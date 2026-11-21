@@ -49,6 +49,7 @@ final class AdhocAggregationRun {
 	 * @param Schema           $schema        The schema being aggregated.
 	 * @param AggregationQuery $query         The caller's query.
 	 * @param AggregationQuery $resolvedQuery The query with filter placeholders resolved.
+	 * @param bool             $bypassRbac    Internal-system mode: the caller's read rule does not narrow the rows.
 	 *
 	 * @return void
 	 *
@@ -59,6 +60,7 @@ final class AdhocAggregationRun {
 		public readonly Schema $schema,
 		public readonly AggregationQuery $query,
 		public readonly AggregationQuery $resolvedQuery,
+		public readonly bool $bypassRbac=false,
 	) {
 	}//end __construct()
 }//end class

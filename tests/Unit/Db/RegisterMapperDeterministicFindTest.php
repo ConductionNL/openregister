@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * Env churn can leave several `openregister_registers` rows sharing a slug.
@@ -77,13 +78,15 @@ class RegisterMapperDeterministicFindTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturnCallback(fn () => $this->makeQueryBuilder());
 
 		$this->mapper = new RegisterMapper(
-			$this->db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->db,
+			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 

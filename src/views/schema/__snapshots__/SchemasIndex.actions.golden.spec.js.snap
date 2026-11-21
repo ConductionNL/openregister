@@ -1,0 +1,76 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SchemasIndex.schemaActions leaves edit and delete open for a free, empty schema 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+]
+`;
+
+exports[`SchemasIndex.schemaActions leaves edit open for a locally managed schema 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+]
+`;
+
+exports[`SchemasIndex.schemaActions locks delete while objects are attached 1`] = `
+[
+  {
+    "disabled": false,
+    "label": "Edit",
+    "title": "",
+  },
+  {
+    "disabled": true,
+    "label": "Delete",
+    "title": "Cannot delete: objects are still attached",
+  },
+]
+`;
+
+exports[`SchemasIndex.schemaActions locks edit for an externally managed schema and names the configuration 1`] = `
+[
+  {
+    "disabled": true,
+    "label": "Edit",
+    "title": "Cannot edit: This schema is managed by external configuration Remote config",
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+]
+`;
+
+exports[`SchemasIndex.schemaActions names no configuration when the managing one has no title 1`] = `
+[
+  {
+    "disabled": true,
+    "label": "Edit",
+    "title": "Cannot edit: This schema is managed by external configuration ",
+  },
+  {
+    "disabled": false,
+    "label": "Delete",
+    "title": "",
+  },
+]
+`;

@@ -20,18 +20,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
+use OCP\IUser;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -158,6 +160,66 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 
 		return $this->findEntities(query: $qb);
 	}//end findByFileId()
+
+	/**
+	 * One page of the ids of the files that hold detected entities, ascending.
+	 *
+	 * For callers that report across every file with entities, such as a
+	 * personal data overview: they read page after page with the last file id
+	 * they saw until a page comes back shorter than the limit. Ids only: the
+	 * caller decides per file whether its reader may see it.
+	 *
+	 * @param int $afterFileId Only files with an id above this one.
+	 * @param int $limit       The page size, 1 to 1000.
+	 *
+	 * @return int[] The distinct file ids, lowest first.
+	 */
+	public function findFileIdsWithEntities(int $afterFileId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('file_id')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('file_id'))
+			->andWhere($qb->expr()->gt('file_id', $qb->createNamedParameter($afterFileId, IQueryBuilder::PARAM_INT)))
+			->orderBy('file_id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		$result = $qb->executeQuery();
+		$rows   = $result->fetchAll();
+		$result->closeCursor();
+
+		$ids = [];
+		foreach ($rows as $row) {
+			$ids[] = (int) ($row['file_id'] ?? 0);
+		}
+
+		return $ids;
+	}//end findFileIdsWithEntities()
+
+	/**
+	 * One page of the entity relations that carry bases, in id order.
+	 *
+	 * For callers that walk every recorded basis once, such as an upgrade
+	 * step that re-points stored grounds to new codes: they read page after
+	 * page with the last id they saw until a page comes back empty.
+	 *
+	 * @param int $afterId Only relations with an id above this one.
+	 * @param int $limit   The page size, 1 to 1000.
+	 *
+	 * @return EntityRelation[] The relations, lowest id first.
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function findWithBases(int $afterId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('bases'))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		return $this->findEntities(query: $qb);
+	}//end findWithBases()
 
 	/**
 	 * Find entity relations by entity ID.
@@ -631,10 +693,16 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 *
 	 * @param int $fileId The file ID.
 	 *
+	 * Each row also carries the relation's `bases`, the exception grounds the
+	 * placeholder prints (REQ-PIS-011).
+	 *
 	 * @return array<int, array<string, mixed>> Array of entity rows joined with their Entity record.
+	 *
+	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-the-placeholder-carries-the-exception-ground-where-it-applies-req-pis-011
 	 */
 	public function findEntitiesForAnonymization(int $fileId): array {
 		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->addSelect('r.bases');
 		$qb->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->orderBy('r.position_start', 'ASC');
 
@@ -719,27 +787,49 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param EntityRelation $relation Pre-loaded relation row (callers handle find/404).
-	 * @param array $fields Subset of whitelist keys with new values.
-	 * @param IUser|null $actingUser Optional explicit acting user; falls back
-	 *                               to the session user. If null and no
-	 *                               session user, the audit entry records the
-	 *                               actor as 'system'.
+	 * Takes main's DecisionMetadataEdit, or the release's relation, fields and acting user, by name or
+	 * by position (a relation in the first slot); an edit wins.
+	 *
+	 * @param DecisionMetadataEdit|EntityRelation|null $edit       The pre-loaded relation row (callers handle find/404), the fields and the acting
+	 *                                                             user; a relation here is the release's positional `$relation`.
+	 * @param array|null                               $fields     The decision fields to change.
+	 * @param IUser|null                               $actingUser The user making the change.
+	 * @param EntityRelation|null                      $relation   The pre-loaded relation row.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
+	 *
+	 * @throws InvalidArgumentException When neither an edit nor a relation and fields is given.
 	 */
-	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
-		self::assertDecisionFieldsValid(fields: $fields);
-		$changedFields = self::applyDecisionChanges(relation: $relation, fields: $fields);
-		if (count($changedFields) === 0) {
-			return $relation;
+	public function updateDecisionMetadata(
+		DecisionMetadataEdit|EntityRelation|null $edit = null,
+		array|null $fields = null,
+		IUser|null $actingUser = null,
+		EntityRelation|null $relation = null,
+	): EntityRelation {
+		if ($edit instanceof EntityRelation) {
+			$relation ??= $edit;
+			$edit       = null;
 		}
 
-		$actingUser = ($actingUser ?? $this->userSession->getUser());
-		$change     = new DecisionMetadataChange(relation: $relation, changedFields: $changedFields, actingUser: $actingUser);
+		if ($edit === null) {
+			if ($relation === null || $fields === null) {
+				throw new InvalidArgumentException('updateDecisionMetadata() needs a relation and fields, or a DecisionMetadataEdit.');
+			}
+
+			$edit = new DecisionMetadataEdit(relation: $relation, fields: $fields, actingUser: $actingUser);
+		}
+
+		self::assertDecisionFieldsValid(fields: $edit->fields);
+		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
+		if (count($changedFields) === 0) {
+			return $edit->relation;
+		}
+
+		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
+		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
 		return $this->recordDecisionChange(change: $change);
 	}//end updateDecisionMetadata()
 
@@ -791,9 +881,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	private function notifyDecisionUpdated(EntityRelation $relation, DecisionMetadataChange $change): void {
 		try {
 			$this->entityEvents->entityRelationDecisionUpdated(
-				relation: $relation,
-				changedFields: $change->changedFields,
-				actingUser: $change->actingUser
+				update: new RelationDecisionUpdate(relation: $relation, changedFields: $change->changedFields, actingUser: $change->actingUser)
 			);
 		} catch (\Throwable $dispatchError) {
 			$message = '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent';

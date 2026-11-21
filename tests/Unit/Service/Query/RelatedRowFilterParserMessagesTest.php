@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
  */
 class RelatedRowFilterParserMessagesTest extends TestCase {
 
@@ -66,6 +67,10 @@ class RelatedRowFilterParserMessagesTest extends TestCase {
 			'unknown operator' => [
 				['_related' => ['pd' => ['case' => ['x' => ['nope' => '1']]]]],
 				"The condition _related[pd][case][x] uses operator 'nope'. It must be one of: ",
+			],
+			'blank field' => [
+				['_related' => ['pd' => ['case' => [' ' => '1']]]],
+				'A condition in _related[pd][case] names no field.',
 			],
 		];
 	}//end refusals()

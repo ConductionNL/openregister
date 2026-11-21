@@ -68,6 +68,42 @@ class ShareGrantAttributes {
 	public const INHERITABLE_ATTRIBUTE_KEY = 'inheritable';
 
 	/**
+	 * The attribute key marking a share as a sharer's view of an object folder.
+	 *
+	 * Such a share gives a user who may share the object a view of its folder,
+	 * which core requires of whoever creates a share. It grants nothing.
+	 *
+	 * @var string
+	 */
+	public const SHARER_ACCESS_KEY = 'sharerAccess';
+
+	/**
+	 * Whether a share is a sharer's view of an object folder rather than a grant.
+	 *
+	 * Only a user share made by the folder's own account counts, so the mark on
+	 * a share anybody else made cannot take that share out of the grants.
+	 *
+	 * @param IShare $share The share to inspect.
+	 *
+	 * @return bool True when the share is a marked view from the folder's account.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function isSharerAccess(IShare $share): bool {
+		try {
+			if ($share->getShareType() !== IShare::TYPE_USER || $share->getSharedBy() !== $share->getShareOwner()) {
+				return false;
+			}
+
+			$raw = $share->getAttributes()?->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::SHARER_ACCESS_KEY);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $raw === true;
+	}//end isSharerAccess()
+
+	/**
 	 * Whether a grant travels to the object's descendants.
 	 *
 	 * Rides in the same attribute bag as the extension verbs, for the same
@@ -91,26 +127,33 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function inheritableOf(IShare $share): bool {
+		$raw = self::verbScopeAttribute(share: $share, key: self::INHERITABLE_ATTRIBUTE_KEY);
+
+		// Only an explicit, recognisable FALSE marks a grant local.
+		return in_array($raw, [false, 0, '0', 'false'], true) === false;
+	}//end inheritableOf()
+
+	/**
+	 * One attribute of the share's verb scope, or null when the share carries
+	 * no attributes or they cannot be read.
+	 *
+	 * @param IShare $share The share.
+	 * @param string $key   The attribute key.
+	 *
+	 * @return mixed The raw attribute value.
+	 */
+	private static function verbScopeAttribute(IShare $share, string $key): mixed {
 		try {
 			$attributes = $share->getAttributes();
 			if ($attributes === null) {
-				return true;
+				return null;
 			}
 
-			$raw = $attributes->getAttribute(
-				self::VERB_ATTRIBUTE_SCOPE,
-				self::INHERITABLE_ATTRIBUTE_KEY
-			);
+			return $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, $key);
 		} catch (Throwable $e) {
-			return true;
+			return null;
 		}
-
-		if ($raw === false || $raw === 0 || $raw === '0' || $raw === 'false') {
-			return false;
-		}
-
-		return true;
-	}//end inheritableOf()
+	}//end verbScopeAttribute()
 
 	/**
 	 * The extension verbs one share carries.
@@ -122,17 +165,7 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function verbsOf(IShare $share): array {
-		try {
-			$attributes = $share->getAttributes();
-			if ($attributes === null) {
-				return [];
-			}
-
-			$raw = $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::VERB_ATTRIBUTE_KEY);
-		} catch (Throwable $e) {
-			return [];
-		}
-
+		$raw = self::verbScopeAttribute(share: $share, key: self::VERB_ATTRIBUTE_KEY);
 		if (is_string($raw) === true) {
 			$raw = json_decode($raw, true);
 		}
@@ -147,12 +180,13 @@ class ShareGrantAttributes {
 	}//end verbsOf()
 
 	/**
-	 * The object UUID a share grants, or null when it grants no object.
+	 * The object UUID a share's folder name names, or null when it names none.
 	 *
 	 * An object's folder is named after its UUID — the convention
 	 * `FolderManagementHandler` creates and `FileMapper::findOwningObjectUuid()`
 	 * already relies on. A share on a FILE inside that folder is a file share
-	 * and grants no object.
+	 * and grants no object. The name is only a candidate: the share grants the
+	 * object only when its node is the folder stored for that object.
 	 *
 	 * @param IShare $share The share to inspect.
 	 *
@@ -161,6 +195,10 @@ class ShareGrantAttributes {
 	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md
 	 */
 	public function objectUuidOf(IShare $share): ?string {
+		if ($this->isSharerAccess(share: $share) === true) {
+			return null;
+		}
+
 		try {
 			if ($share->getNodeType() !== 'folder') {
 				return null;

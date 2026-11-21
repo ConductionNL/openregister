@@ -57,6 +57,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 require_once __DIR__ . '/FiltersFlowLevelFindings.php';
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -110,6 +111,11 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPreflightStep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowTaxonomyVocabulary
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeBase
  */
 class FlowNodeConfigVocabularyTest extends TestCase {
 	use FiltersFlowLevelFindings;
@@ -560,7 +566,8 @@ class FlowNodeConfigVocabularyTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};

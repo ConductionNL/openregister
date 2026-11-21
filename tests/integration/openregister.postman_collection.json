@@ -28,6 +28,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
           "// Fresh test run — clear runtime-schema-api scoped variables.",
           "const initFlag = pm.collectionVariables.get('_rt_initialized');",
           "if (!initFlag) {",

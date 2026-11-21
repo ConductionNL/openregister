@@ -27,7 +27,6 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\ConfigurationAction;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConfigurationImport;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -35,10 +34,11 @@ use OCA\OpenRegister\Controller\Support\GitHubPublishRun;
 use OCA\OpenRegister\Controller\Support\RepositoryCallFailure;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
-use OCA\OpenRegister\Service\Configuration\RepositorySearchPage;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
@@ -48,6 +48,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Class ConfigurationController
@@ -180,7 +182,7 @@ class ConfigurationController extends Controller {
 		IRequest $request,
 		ConfigurationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
@@ -377,15 +379,13 @@ class ConfigurationController extends Controller {
 			return null;
 		}
 
-		return $this->githubHandler->enrichConfigurationDetails(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+		return $this->githubHandler->enrichConfigurationDetails(location: self::githubFile(meta: $meta));
 	}//end detailsFrom()
 
 	/**
 	 * Create a new configuration.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with created configuration
 	 *
@@ -451,8 +451,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id The configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated configuration
 	 *
@@ -522,8 +520,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function destroy(int $id): JSONResponse {
@@ -561,8 +557,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id The configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with version comparison
 	 *
@@ -650,8 +644,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -721,15 +713,16 @@ class ConfigurationController extends Controller {
 	}//end export()
 
 	/**
-	 * Export a configuration; its objects only when `includeObjects` is
-	 * exactly true.
+	 * Export a configuration; its objects only when `includeObjects` is true,
+	 * as a boolean or as the query string `true` the export modal sends.
 	 *
 	 * @param Configuration $configuration The configuration
 	 *
 	 * @return JSONResponse The export data, for download
 	 */
 	private function exported(Configuration $configuration): JSONResponse {
-		$includeObjects = ($this->request->getParams()['includeObjects'] ?? false) === true;
+		$flag           = ($this->request->getParams()['includeObjects'] ?? false);
+		$includeObjects = ($flag === true || $flag === 'true');
 		$exportData     = $this->configurationService->exportConfig(input: $configuration, includeObjects: $includeObjects);
 
 		return new JSONResponse(data: $exportData, statusCode: 200);
@@ -833,7 +826,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitHub(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitHub search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->githubHandler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitHub search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -1021,7 +1014,7 @@ class ConfigurationController extends Controller {
 			message: '[ConfigurationController] Fetching GitHub configurations',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $owner, 'repo' => $repo, 'branch' => $branch]
 		);
-		$files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
+		$files = $this->githubHandler->listConfigurationFiles(directory: new GitHubFileLocation(owner: $owner, repo: $repo, path: '', branch: $branch));
 
 		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitHubConfigurations()
@@ -1137,7 +1130,7 @@ class ConfigurationController extends Controller {
 		}
 
 		return [
-			'configData' => $this->githubHandler->getFileContent(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']),
+			'configData' => $this->githubHandler->getFileContent(location: self::githubFile(meta: $meta)),
 			'sourceUrl' => "https://github.com/{$meta['owner']}/{$meta['repo']}/blob/{$meta['branch']}/{$meta['path']}",
 			'metadata' => $meta,
 		];
@@ -1620,8 +1613,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1645,8 +1636,6 @@ class ConfigurationController extends Controller {
 	 * @since 0.2.10
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with import result
 	 *
@@ -1672,8 +1661,6 @@ class ConfigurationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with import result
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
@@ -1698,8 +1685,6 @@ class ConfigurationController extends Controller {
 	 * @param int $id Configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-suppress InvalidReturnType
 	 * @psalm-suppress InvalidReturnStatement
@@ -1730,6 +1715,118 @@ class ConfigurationController extends Controller {
 			return $this->handlePublishingError(exception: $e);
 		}
 	}//end publishToGitHub()
+
+	/**
+	 * Publish a local configuration to GitLab
+	 *
+	 * Exports the configuration and writes it to the given project, branch and
+	 * path; a second publish to the same path updates that file. Records the
+	 * GitLab file as the configuration's source URL, in the form a GitLab
+	 * import and the sync job read.
+	 *
+	 * @param int $id Configuration ID
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return JSONResponse JSON response with publish result
+	 *
+	 * @spec openspec/changes/capability-rows-verified-b/specs/data-import-export/spec.md
+	 */
+	public function publishToGitLab(int $id): JSONResponse {
+		// Authorization: like publishToGitHub, this writes with the shared
+		// app-level `gitlab_api_token`, so it is restricted to administrators.
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators may publish configurations to GitLab'], statusCode: 403);
+		}
+
+		try {
+			$configuration      = $this->configurationMapper->find($id);
+			$validationResponse = $this->validateConfigurationForPublishing(configuration: $configuration);
+			if ($validationResponse !== null) {
+				return $validationResponse;
+			}
+
+			return $this->publishGitLab(configuration: $configuration);
+		} catch (Exception $e) {
+			return $this->handlePublishingError(exception: $e, host: 'GitLab');
+		}
+	}//end publishToGitLab()
+
+	/**
+	 * Publish a local configuration to the requested GitLab file and record
+	 * that file as its source URL.
+	 *
+	 * @param Configuration $configuration The configuration
+	 *
+	 * @return JSONResponse The success response, or 400 without namespace and project
+	 *
+	 * @throws Exception When the project lookup, export or publish fails
+	 */
+	private function publishGitLab(Configuration $configuration): JSONResponse {
+		$params = $this->paramsWithDefaults(
+			params: $this->request->getParams(),
+			defaults: [
+				'namespace' => '', 'project' => '', 'path' => '', 'branch' => 'main',
+				'commitMessage' => "Update configuration: {$configuration->getTitle()}",
+			]
+		);
+		if ($this->anyEmpty(values: $params, keys: ['namespace', 'project']) === true) {
+			return new JSONResponse(data: ['error' => 'Namespace and project parameters are required'], statusCode: 400);
+		}
+
+		$params['path'] = $this->publishPath(path: $params['path'], configuration: $configuration);
+		$projectId      = $this->gitlabHandler->getProjectByPath(namespace: $params['namespace'], project: $params['project'])['id'];
+		$result         = $this->gitlabHandler->publishFile(
+			project: new GitLabProjectRef(projectId: (int) $projectId, ref: $params['branch']),
+			path: $params['path'],
+			content: $this->prepareConfigurationForGitLab(configuration: $configuration, params: $params),
+			commitMessage: $params['commitMessage']
+		);
+
+		$webBase   = str_replace('/api/v4', '', $this->gitlabHandler->getApiBase());
+		$sourceUrl = "{$webBase}/{$params['namespace']}/{$params['project']}/-/blob/{$params['branch']}/{$params['path']}";
+		// Like a GitHub publish, the configuration stays local but now has a published source.
+		$configuration->setSourceUrl($sourceUrl);
+		$this->configurationMapper->update($configuration);
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Configuration published successfully to GitLab',
+				'configurationId' => $configuration->getId(),
+				'branch' => $params['branch'],
+				'path' => $params['path'],
+				'file_url' => $sourceUrl,
+				'is_update' => $result['is_update'],
+			],
+			statusCode: 200
+		);
+	}//end publishGitLab()
+
+	/**
+	 * The exported configuration as JSON, with the local source dropped and
+	 * the OpenRegister version and the GitLab location added.
+	 *
+	 * @param Configuration         $configuration The configuration
+	 * @param array<string, string> $params        The namespace, project, branch and path
+	 *
+	 * @return false|string JSON content ready for GitLab.
+	 */
+	private function prepareConfigurationForGitLab(Configuration $configuration, array $params): string|false {
+		$configData = $this->configurationService->exportConfig(input: $configuration, includeObjects: false);
+
+		$metadata = $configData['x-openregister'] ?? [];
+		unset($metadata['sourceType'], $metadata['sourceUrl']);
+		$metadata['openregister']     = $this->appManager->getAppVersion('openregister');
+		$metadata['gitlab']           = [
+			'project' => "{$params['namespace']}/{$params['project']}",
+			'branch' => $params['branch'],
+			'path' => $params['path'],
+		];
+		$configData['x-openregister'] = $metadata;
+
+		return json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	}//end prepareConfigurationForGitLab()
 
 	/**
 	 * Publish a local configuration to the requested GitHub location and
@@ -1884,7 +1981,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function getExistingFileSha(array $params): ?string {
 		try {
-			return $this->githubHandler->getFileSha(owner: $params['owner'], repo: $params['repo'], path: $params['path'], branch: $params['branch']);
+			return $this->githubHandler->getFileSha(location: self::githubFile(meta: $params));
 		} catch (Exception $e) {
 			// File doesn't exist, which is fine for new files.
 			$this->logger->debug(
@@ -1912,15 +2009,21 @@ class ConfigurationController extends Controller {
 		$fileSha = $this->getExistingFileSha(params: $params);
 
 		return $this->githubHandler->publishConfiguration(
-			owner: $params['owner'],
-			repo: $params['repo'],
-			path: $params['path'],
-			branch: $params['branch'],
-			content: $content,
-			commitMessage: $params['commitMessage'],
-			fileSha: $fileSha
+			location: self::githubFile(meta: $params),
+			write: new GitHubFileWrite(content: $content, commitMessage: $params['commitMessage'], fileSha: $fileSha)
 		);
 	}//end publishConfigurationToGitHub()
+
+	/**
+	 * The GitHub file named by a request's owner, repo, path and branch.
+	 *
+	 * @param array{owner: string, repo: string, path: string, branch: string} $meta The request fields.
+	 *
+	 * @return GitHubFileLocation
+	 */
+	private static function githubFile(array $meta): GitHubFileLocation {
+		return new GitHubFileLocation(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+	}//end githubFile()
 
 	/**
 	 * Update configuration with GitHub information
@@ -2039,12 +2142,13 @@ class ConfigurationController extends Controller {
 	 * Logs error and returns error response.
 	 *
 	 * @param Exception $exception The exception that occurred.
+	 * @param string    $host      The repository host published to, for the log.
 	 *
 	 * @return JSONResponse JSON response with error message
 	 */
-	private function handlePublishingError(Exception $exception): JSONResponse {
+	private function handlePublishingError(Exception $exception, string $host='GitHub'): JSONResponse {
 		$this->logger->error(
-			message: '[ConfigurationController] Failed to publish to GitHub: ' . $exception->getMessage(),
+			message: "[ConfigurationController] Failed to publish to {$host}: " . $exception->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 

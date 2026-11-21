@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderPath;
 use OCA\OpenRegister\Service\Object\RenderPreloads;
 use OCA\OpenRegister\Service\Object\RenderRun;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -74,6 +74,42 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation
  * @uses   \OCA\OpenRegister\Service\Object\LanguageMetaSubject
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Db\TranslationSlot
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses   \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses   \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses   \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses   \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses   \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses   \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses   \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses   \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses   \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
  */
 class RenderObjectLanguageMetaGoldenTest extends TestCase {
 
@@ -92,7 +128,7 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$this->translations = $this->createMock(TranslationHandler::class);
 		$this->translations->method('resolveTranslationsForRender')
 			->willReturnCallback(static fn (array $objectData): array => $objectData + ['resolved' => true]);
-		$this->mapper = $this->createMock(TranslationMapper::class);
+		$this->mapper = $this->createPartialMock(TranslationMapper::class, ['findOne']);
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$languages = $this->createMock(LanguageService::class);
@@ -103,9 +139,7 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$this->render = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->createMock(MagicMapperInterface::class),
-					registerMapper: $this->registers,
-					schemaMapper: $this->createMock(SchemaMapperInterface::class),
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)),
 					objectCacheService: $this->createMock(CacheHandlerInterface::class)
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(

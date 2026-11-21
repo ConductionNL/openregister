@@ -86,13 +86,24 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function run(IOutput $output): void {
-		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			$this->logger->info('[MarkImplicitCrossOrganisationReadRules] Could not list schemas, skipping: ' . $e->getMessage());
+		$schemas = (new SchemaListing(schemaMapper: $this->schemaMapper, logger: $this->logger))->allOrSkip(step: 'MarkImplicitCrossOrganisationReadRules');
+		if ($schemas === null) {
 			return;
 		}
 
+		$output->info(self::summary(counts: $this->repairAll(schemas: $schemas)));
+	}//end run()
+
+	/**
+	 * Repair every schema and count the outcomes.
+	 *
+	 * @param array $schemas The listed schemas (entries that are not schemas are skipped).
+	 *
+	 * @return array<string, int> Schemas marked, failed and unchanged, and read rules that narrow.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function repairAll(array $schemas): array {
 		$counts = ['marked' => 0, 'failed' => 0, 'unchanged' => 0, 'narrowed' => 0];
 		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema === false) {
@@ -104,16 +115,27 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 			$counts['narrowed'] += $outcome['narrowed'];
 		}
 
-		$output->info(
-			sprintf(
-				'Marked crossOrganisation on the read rules of %d schema(s), %d could not be written. '
-				. '%d other read rule(s) now keep the caller\'s organisation filter (listed in the log).',
-				$counts['marked'],
-				$counts['failed'],
-				$counts['narrowed']
-			)
+		return $counts;
+	}//end repairAll()
+
+	/**
+	 * The closing line: schemas marked, writes refused, and read rules that now narrow.
+	 *
+	 * @param array<string, int> $counts The run's counts.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private static function summary(array $counts): string {
+		return sprintf(
+			'Marked crossOrganisation on the read rules of %d schema(s), %d could not be written. '
+			. '%d other read rule(s) now keep the caller\'s organisation filter (listed in the log).',
+			$counts['marked'],
+			$counts['failed'],
+			$counts['narrowed']
 		);
-	}//end run()
+	}//end summary()
 
 	/**
 	 * Mark one schema's implicit crossing read rules and log the rules that narrow.
@@ -121,6 +143,8 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 	 * @param Schema $schema The schema to walk.
 	 *
 	 * @return array{state: string, narrowed: int} `state` is marked, failed or unchanged.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	private function repairSchema(Schema $schema): array {
 		$authorization = ($schema->getAuthorization() ?? []);
@@ -129,6 +153,27 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 			return ['state' => 'unchanged', 'narrowed' => 0];
 		}
 
+		$tally = $this->markRules(read: $read);
+		$this->logNarrowed(schema: $schema, narrowed: $tally['narrowed']);
+
+		if ($tally['marked'] === 0) {
+			return ['state' => 'unchanged', 'narrowed' => $tally['narrowed']];
+		}
+
+		$authorization['read'] = $tally['read'];
+		return ['state' => $this->write(schema: $schema, authorization: $authorization), 'narrowed' => $tally['narrowed']];
+	}//end repairSchema()
+
+	/**
+	 * Mark the read rules that cross implicitly, and count those and the rules that narrow.
+	 *
+	 * @param array $read The read rules as written.
+	 *
+	 * @return array{read: array, marked: int, narrowed: int} The marked rules and the two counts.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function markRules(array $read): array {
 		$marked = 0;
 		$narrowed = 0;
 		foreach ($read as $index => $rule) {
@@ -141,6 +186,20 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 			$narrowed += (int)$this->narrows(rule: $rule);
 		}
 
+		return ['read' => $read, 'marked' => $marked, 'narrowed' => $narrowed];
+	}//end markRules()
+
+	/**
+	 * Log the read rules of a schema that now keep the caller's organisation filter, when there are any.
+	 *
+	 * @param Schema $schema   The schema.
+	 * @param int    $narrowed How many of its read rules narrow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function logNarrowed(Schema $schema, int $narrowed): void {
 		if ($narrowed > 0) {
 			$this->logger->info(
 				'[MarkImplicitCrossOrganisationReadRules] Schema ' . (string)$schema->getId()
@@ -148,14 +207,7 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 				. ' add crossOrganisation: true to those meant to read other organisations\' rows.'
 			);
 		}
-
-		if ($marked === 0) {
-			return ['state' => 'unchanged', 'narrowed' => $narrowed];
-		}
-
-		$authorization['read'] = $read;
-		return ['state' => $this->write(schema: $schema, authorization: $authorization), 'narrowed' => $narrowed];
-	}//end repairSchema()
+	}//end logNarrowed()
 
 	/**
 	 * Whether a rule crossed organisations by binding a field to the caller's
@@ -211,10 +263,7 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 			$schema->setAuthorization($authorization);
 			$this->schemaMapper->update($schema);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[MarkImplicitCrossOrganisationReadRules] Could not mark the read rules of schema '
-				. (string)$schema->getId() . ': ' . $e->getMessage()
-			);
+			$this->logRefusedWrite(schema: $schema, error: $e);
 			return 'failed';
 		}
 
@@ -224,4 +273,21 @@ class MarkImplicitCrossOrganisationReadRules implements IRepairStep {
 		);
 		return 'marked';
 	}//end write()
+
+	/**
+	 * Log a schema whose marked read rules could not be written.
+	 *
+	 * @param Schema    $schema The schema.
+	 * @param Throwable $error  Why the write was refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function logRefusedWrite(Schema $schema, Throwable $error): void {
+		$this->logger->warning(
+			'[MarkImplicitCrossOrganisationReadRules] Could not mark the read rules of schema '
+			. (string)$schema->getId() . ': ' . $error->getMessage()
+		);
+	}//end logRefusedWrite()
 }//end class

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Files\Service\File\UserShareGrant;
  *
  * @covers \OCA\OpenRegister\Files\Service\File\FileSharingHandler
  * @covers \OCA\OpenRegister\Files\Service\File\FileSharingAccounts
+ * @uses \OCA\OpenRegister\Files\Service\File\UserShareGrant
  */
 final class FileSharingHandlerUserShareTest extends TestCase {
 

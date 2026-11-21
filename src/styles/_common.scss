@@ -17,6 +17,14 @@
 	}
 }
 
+@mixin config-badge-sync-idle {
+	.configBadge--sync-pending,
+	.configBadge--sync-never {
+		background-color: var(--color-background-dark);
+		color: var(--color-text-lighter);
+	}
+}
+
 @mixin config-badge-update {
 	.configBadge--update {
 		background-color: var(--color-warning);

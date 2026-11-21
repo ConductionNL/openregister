@@ -36,6 +36,12 @@ use OCA\OpenRegister\Search\Service\ViewEdit;
  * and which fields update() leaves untouched when given null.
  *
  * @covers \OCA\OpenRegister\Search\Service\ViewService
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Search\Service\PresentationCheck
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
  */
 final class ViewServiceSaveGoldenTest extends TestCase {
 
@@ -154,7 +160,7 @@ final class ViewServiceSaveGoldenTest extends TestCase {
 	public function testPresentationValidation(?array $presentation, string $expected): void {
 		$service = $this->service(self::stored(false));
 		try {
-			$view = $service->create(new ViewDefinition('N', 'D', ['schemas' => ['s1']], $presentation), new ViewAudience('alice', false, false));
+			$view = $service->create(new ViewEdit(definition: new ViewDefinition('N', 'D', ['schemas' => ['s1']], $presentation), audience: new ViewAudience('alice', false, false)));
 			$outcome = 'ok';
 			$this->assertSame($presentation, $view->getPresentation());
 		} catch (InvalidArgumentException $e) {

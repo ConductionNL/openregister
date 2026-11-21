@@ -33,19 +33,18 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	/**
 	 * The vector row of a chunk: its source, its embedding and its place among its source's chunks.
 	 *
-	 * @param ChunkVectorSourceInterface $source        The chunk's source, place and text.
-	 * @param array<string, mixed> $embeddingData Its embedding, model and dimensions.
-	 * @param int                  $totalChunks   How many chunks its source has.
+	 * @param ChunkVectorSourceInterface $source        The chunk's source, place, text and its source's chunk count.
+	 * @param array<string, mixed>       $embeddingData Its embedding, model and dimensions.
 	 *
 	 * @return StoredVector
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function forChunk(ChunkVectorSourceInterface $source, array $embeddingData, int $totalChunks): StoredVector {
+	public function forChunk(ChunkVectorSourceInterface $source, array $embeddingData): StoredVector {
 		return new StoredVector(
 			subject: new VectorSubject(entityType: (string)$source->sourceType(), entityId: (string)$source->sourceId()),
 			payload: $this->payload(embeddingData: $embeddingData),
-			position: $this->position(source: $source, totalChunks: $totalChunks),
+			position: $this->position(source: $source),
 			metadata: $this->provenance(source: $source)
 		);
 	}//end forChunk()
@@ -68,15 +67,14 @@ final class ChunkVectorFactory implements ChunkVectorFactoryInterface {
 	/**
 	 * A chunk's place among its source's chunks, with the first 500 characters of its text.
 	 *
-	 * @param ChunkVectorSourceInterface $source      The chunk's source, place and text.
-	 * @param int                        $totalChunks How many chunks its source has; at least one is counted.
+	 * @param ChunkVectorSourceInterface $source The chunk's source, place, text and its source's chunk count; at least one is counted.
 	 *
 	 * @return VectorChunkPosition
 	 */
-	private function position(ChunkVectorSourceInterface $source, int $totalChunks): VectorChunkPosition {
+	private function position(ChunkVectorSourceInterface $source): VectorChunkPosition {
 		return new VectorChunkPosition(
 			chunkIndex: $source->chunkIndex(),
-			totalChunks: max(1, $totalChunks),
+			totalChunks: max(1, $source->totalChunks()),
 			chunkText: substr($source->text(), 0, 500)
 		);
 	}//end position()
