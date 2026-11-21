@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Virtual ObjectEntity over a task row plus its derived read projection.
@@ -46,7 +46,7 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * Build the adapter.
 	 *
-	 * @param Task|null $task The task row; null only for the bare construction
+	 * @param TaskInterface|null $task The task row; null only for the bare construction
 	 *                        the Entity base class performs.
 	 * @param array<string, mixed> $row The task's inbox row: the row carries
 	 *                                  `displayTitle`, `subject` and the
@@ -61,7 +61,7 @@ class TaskObjectAdapter extends ObjectEntity {
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public function __construct(?Task $task = null, array $row = [], array $extra = []) {
+	public function __construct(?TaskInterface $task = null, array $row = [], array $extra = []) {
 		parent::__construct();
 
 		$this->schema = TaskNotificationRules::SLUG;
@@ -74,12 +74,12 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * Take the task's uuid, title and payload.
 	 *
-	 * @param Task               $task    The task row.
+	 * @param TaskInterface      $task    The task row.
 	 * @param TaskPayloadOptions $options The inbox row and the event-scoped fields.
 	 *
 	 * @return void
 	 */
-	private function present(Task $task, TaskPayloadOptions $options): void {
+	private function present(TaskInterface $task, TaskPayloadOptions $options): void {
 		$this->uuid = (string)$task->getUuid();
 
 		$payload = self::payload(task: $task, options: $options);
@@ -90,7 +90,7 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * The flat payload a rule's recipients, filters and templates read.
 	 *
-	 * @param Task                    $task    The task row.
+	 * @param TaskInterface           $task    The task row.
 	 * @param TaskPayloadOptions|null $options The inbox row (display title, subject, derived fields)
 	 *                                         and the event-scoped fields; null for neither.
 	 *
@@ -98,7 +98,7 @@ class TaskObjectAdapter extends ObjectEntity {
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public static function payload(Task $task, ?TaskPayloadOptions $options = null): array {
+	public static function payload(TaskInterface $task, ?TaskPayloadOptions $options = null): array {
 		$row = ($options->row ?? []);
 		$payload = array_merge(
 			self::stateFields(task: $task, row: $row),
@@ -113,12 +113,12 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * The task's identity, title and lifecycle state.
 	 *
-	 * @param Task                 $task The task row.
+	 * @param TaskInterface        $task The task row.
 	 * @param array<string, mixed> $row  The inbox row.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function stateFields(Task $task, array $row): array {
+	private static function stateFields(TaskInterface $task, array $row): array {
 		return [
 			'taskUuid' => (string)$task->getUuid(),
 			'title' => self::title(task: $task, row: $row),
@@ -134,11 +134,11 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * Who performs, may claim, asked for and watches the task.
 	 *
-	 * @param Task $task The task row.
+	 * @param TaskInterface $task The task row.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function peopleFields(Task $task): array {
+	private static function peopleFields(TaskInterface $task): array {
 		return [
 			'performerType' => $task->getPerformerType(),
 			'assignee' => $task->getAssignee(),
@@ -154,12 +154,12 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * The task's dates, and the derived temporal fields from the inbox row.
 	 *
-	 * @param Task                 $task The task row.
+	 * @param TaskInterface        $task The task row.
 	 * @param array<string, mixed> $row  The inbox row.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function timeFields(Task $task, array $row): array {
+	private static function timeFields(TaskInterface $task, array $row): array {
 		return [
 			'startAt' => $task->getStartAt()?->format('c'),
 			'dueAt' => $task->getDueAt()?->format('c'),
@@ -173,12 +173,12 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * Where the task comes from: its object, app, run and completion.
 	 *
-	 * @param Task                 $task The task row.
+	 * @param TaskInterface        $task The task row.
 	 * @param array<string, mixed> $row  The inbox row.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function originFields(Task $task, array $row): array {
+	private static function originFields(TaskInterface $task, array $row): array {
 		return [
 			'objectUuid' => $task->getObjectUuid(),
 			'registerId' => $task->getRegisterId(),
@@ -195,12 +195,12 @@ class TaskObjectAdapter extends ObjectEntity {
 	/**
 	 * The row's display title, else the task title, else the task uuid.
 	 *
-	 * @param Task                 $task The task row.
+	 * @param TaskInterface        $task The task row.
 	 * @param array<string, mixed> $row  The inbox row.
 	 *
 	 * @return string
 	 */
-	private static function title(Task $task, array $row): string {
+	private static function title(TaskInterface $task, array $row): string {
 		$title = trim((string)($row['displayTitle'] ?? ''));
 		if ($title === '') {
 			$title = trim((string)$task->getTitle());

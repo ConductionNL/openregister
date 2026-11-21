@@ -27,10 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\SetupControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http;
@@ -112,7 +111,7 @@ class SetupController extends Controller {
 		IRequest $request,
 		SetupControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->appConfig = $services->appConfig;
 		$this->logger = $services->logger;
 		$this->demoDataService = $services->demoDataService;
@@ -129,7 +128,7 @@ class SetupController extends Controller {
 	 *
 	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function status(): JSONResponse {
 		$demoDecided = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DEMO_DECIDED_KEY, '') !== '';
 		$picked      = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
@@ -180,7 +179,7 @@ class SetupController extends Controller {
 	 *
 	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
-	#[AuthorizedAdminSetting(OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function saveConfig(): JSONResponse {
 		// 🔴 ONE NAMED KEY, NEVER A CALLER-SUPPLIED ONE. The body arrives from
 		// the browser and this app's own settings share the appconfig namespace,
@@ -237,7 +236,7 @@ class SetupController extends Controller {
 	 *
 	 * @spec exclude Setup action dispatch; ADR-042 contract, no per-app behavioural spec.
 	 */
-	#[AuthorizedAdminSetting(OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function runAction(string $actionId): JSONResponse {
 		// `install-demo-data` is the id the step used before it asked WHICH
 		// dataset, and it still means "import the one this app ships". Kept so

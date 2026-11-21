@@ -52,6 +52,7 @@ use Stringable;
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
 * @uses \OCA\OpenRegister\Db\JsonArrayColumn
 * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
 * @uses \OCA\OpenRegister\Db\ObjectEntity

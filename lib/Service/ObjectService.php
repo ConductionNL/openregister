@@ -35,6 +35,9 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -51,23 +54,19 @@ use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\DraftCaller;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeleteRowRules;
@@ -150,7 +149,6 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -518,13 +516,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the mappers bundle.
      *
-     * @var ViewMapperInterface
-     */
-    private readonly ViewMapperInterface $viewMapper;
-
-    /**
-     * Collaborator taken from the mappers bundle.
-     *
      * @var MagicMapperInterface
      */
     private readonly MagicMapperInterface $objectMapper;
@@ -532,9 +523,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the storage bundle.
      *
-     * @var FileFolderServiceInterface
+     * @var ObjectFolderAccessInterface
      */
-    private readonly FileFolderServiceInterface $fileService;
+    private readonly ObjectFolderAccessInterface $fileService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -542,13 +533,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var IUserSession
      */
     private readonly IUserSession $userSession;
-
-    /**
-     * Collaborator taken from the storage bundle.
-     *
-     * @var SearchTrailService
-     */
-    private readonly SearchTrailService $searchTrailService;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -616,9 +600,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Collaborator taken from the history bundle.
      *
-     * @var AutoTransitionPass|null
+     * @var SaveBoundaryInterface|null
      */
-    private readonly ?AutoTransitionPass $autoTransitions;
+    private readonly ?SaveBoundaryInterface $autoTransitions;
 
     /**
      * Collaborator taken from the caller bundle.
@@ -668,11 +652,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->migrationHandler = $write->removal->migrationHandler;
         $this->registerMapper = $platform->mappers->registerMapper;
         $this->schemaMapper = $platform->mappers->schemaMapper;
-        $this->viewMapper = $platform->mappers->viewMapper;
         $this->objectMapper = $platform->mappers->objectMapper;
         $this->fileService = $platform->storage->fileService;
         $this->userSession = $access->caller->userSession;
-        $this->searchTrailService = $platform->storage->searchTrailService;
         $this->groupManager = $access->caller->groupManager;
         $this->userManager = $access->caller->userManager;
         $this->organisationService = $access->authorisation->organisationService;
@@ -2030,7 +2012,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // which delegates to ProcessingLogService unchanged: same opt-in,
         // same storage, same retention, same readers.
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+            $this->container->get(ProcessingReadsInterface::class)
                 ->registerProcessingRead(object: $object);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks or slows the read path.
@@ -2059,8 +2041,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
-                ->registerListRead(objects: $objects, read: new \OCA\OpenRegister\Service\Interaction\ProcessingListRead(query: $query));
+            $this->container->get(ProcessingReadsInterface::class)
+                ->registerQueriedRead(objects: $objects, query: $query);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks the list.
             $this->logger->debug(
@@ -6182,6 +6164,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end lockObject()
 
     /**
+     * Claim a lock for an explicit owner, atomically, without a session.
+     *
+     * For background jobs and workers that have no signed-in user. Succeeds
+     * when the object is unlocked, its lock expired, or the same owner (and
+     * run) already holds it; of two racing claimers only one gets true. No
+     * RBAC check runs, as there is no user to check: locks taken for a person
+     * keep going through lockObject().
+     *
+     * @param LockRequest $request The object, process, duration and flow run step of the lock.
+     * @param string      $ownerId The owner the lock is taken for.
+     *
+     * @return bool True when the caller now holds the lock; false when another holder has it.
+     *
+     * @throws \InvalidArgumentException When the owner id is empty.
+     *
+     * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
+     */
+    public function claimObject(LockRequest $request, string $ownerId): bool
+    {
+        return $this->lockHandler->claim(request: $request, ownerId: $ownerId);
+    }//end claimObject()
+
+    /**
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
@@ -7572,11 +7577,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function deleteObjectsOfTable(RegisterSchemaRef $table, bool $hardDelete=false): array
     {
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsBySchema(
             table: new RegisterSchemaRef(register: (int) $table->register, schema: (int) $table->schema),
-            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE)
+            options: new TableDeletionOptions(hardDelete: $hardDelete, triggeredBy: SchemaTeardownInterface::TRIGGER_BULK_DELETE)
         );
     }//end deleteObjectsOfTable()
 
@@ -7586,8 +7591,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * Empties every magic table of every schema the register lists, in one
      * transaction, snapshotting each object to the audit trail first. Refuses the
      * whole request with ArchivalImmutableException, before touching any row, when
-     * any of those schemas is archival. The work lives in SchemaDeletionService,
-     * resolved lazily for the reason deleteObjectsOfTable() gives.
+     * any of those schemas is archival. The work lives in SchemaDeletionService
+     * (Compliance), reached through SchemaTeardownInterface and resolved lazily.
      *
      * @param int  $registerId The ID of the register whose objects should be deleted
      * @param bool $hardDelete Whether to force hard delete (default: false)
@@ -7608,7 +7613,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function deleteObjectsByRegister(int $registerId, bool $hardDelete=false): array
     {
         $register = $this->registerMapper->find(id: $registerId);
-        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+        $schemaDeletionService = $this->container->get(SchemaTeardownInterface::class);
 
         return $schemaDeletionService->deleteObjectsByRegister(
             register: $register,

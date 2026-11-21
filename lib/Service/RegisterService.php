@@ -26,9 +26,11 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
 use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
@@ -108,9 +110,9 @@ class RegisterService implements RegisterServiceInterface {
 	/**
 	 * File service for file operations.
 	 *
-	 * @var FileFolderServiceInterface
+	 * @var EntityFolderInterface
 	 */
-	private readonly FileFolderServiceInterface $fileService;
+	private readonly EntityFolderInterface $fileService;
 
 	/**
 	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
@@ -884,7 +886,7 @@ class RegisterService implements RegisterServiceInterface {
 		$this->magicTableNames = [];
 
 		$sql  = 'SELECT table_name FROM information_schema.tables';
-		$sql .= ' WHERE table_name LIKE :pattern';
+		$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->bindValue('pattern', '%openregister\_table\_%');
