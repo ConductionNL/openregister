@@ -111,3 +111,18 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: modify/delete conflict on lib/Controller/Support/MaintenanceReachableControllersInterface.php; F09ControllerBoundaryTest or MaintenanceModeMiddlewareTest pin three controllers.
 - Cause: main replaced ALWAYS_REACHABLE with Kernel\Contracts\Configuration\MaintenanceReachableInterface on each controller.
 - Fix: git rm the list file; the PR's new controller `implements MaintenanceReachableInterface`; add it to the F09 loop and the middleware test's expected list. Similarly ObjectsController::export moved to ObjectExportController: move attributes such as #[Sheddable] there and repoint tests.
+
+## Mapper contracts return Kernel entity interfaces (main ce0ef67a1da)
+- Symptom: phpstan on PR files: 'should return OCA\OpenRegister\Db\Source but returns ...Kernel\Contracts\SourceInterface' or argument.type on Source/Application.
+- Cause: SourceMapperInterface and ApplicationMapperInterface now declare Kernel SourceInterface/ApplicationInterface with a covariant template.
+- Fix: type the PR's mapper property/param docblock as SourceMapperInterface<Source> (ApplicationMapperInterface<Application>), as main's callers do; no casts.
+
+## New migration step not targeted
+- Symptom: SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted lists the PR's lib/Migration/VersionX.php.
+- Cause: main requires every new step to extend TargetedMigrationStep.
+- Fix: extends TargetedMigrationStep, rename public changeSchema() to protected changeTargetedSchema(), drop the SimpleMigrationStep import.
+
+## Builders moved out of ServiceRegistrar into area wiring
+- Symptom: merge conflict in lib/Service/ServiceRegistrar.php where main's side is empty.
+- Cause: main moved build*() factories into area classes (Service/Flow/FlowWiring, Service/Integration/IntegrationWiring, ...).
+- Fix: take main's ServiceRegistrar, port the PR's change of that builder into the area wiring file (git grep the builder name on origin/main).
