@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
@@ -53,8 +53,8 @@ final class F09SharingInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		SharePrincipalDeriver::class => [SharePrincipalDeriverInterface::class, ContractBindings::class],
-		AccessLinkActs::class => [AccessLinkActsInterface::class, ContractBindings::class],
+		SharePrincipalDeriver::class => [SharePrincipalDeriverInterface::class, CoreServiceBindings::class],
+		AccessLinkActs::class => [AccessLinkActsInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
