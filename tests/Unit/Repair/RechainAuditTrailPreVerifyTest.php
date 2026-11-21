@@ -30,9 +30,8 @@ namespace Unit\Repair;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution;
-use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCA\OpenRegister\Service\AuditCanonicalV1;
-use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\AuditRechainInterface;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -48,7 +47,6 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution
  * @uses   \OCA\OpenRegister\Repair\V1ChainVerificationRun
- * @uses   \OCA\OpenRegister\Repair\Support\RepairPlatform
  * @uses   \OCA\OpenRegister\Service\AuditCanonicalV1
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  *
@@ -136,7 +134,7 @@ class RechainAuditTrailPreVerifyTest extends TestCase {
 	public function testAnInterruptedReSealRunsAgainFromTheStart(): void {
 		$store = [];
 		$calls = 0;
-		$hashes = $this->createMock(AuditHashService::class);
+		$hashes = $this->createMock(AuditRechainInterface::class);
 		$hashes->expects(self::exactly(2))->method('rechainAll')->willReturnCallback(
 			static function () use (&$calls): array {
 				$calls++;
@@ -149,7 +147,9 @@ class RechainAuditTrailPreVerifyTest extends TestCase {
 		);
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->db(rows: self::chain(count: 3)), $this->config(store: $store), new NullLogger()),
+			$this->db(rows: self::chain(count: 3)),
+			$this->config(store: $store),
+			new NullLogger(),
 			$hashes
 		);
 
@@ -178,11 +178,13 @@ class RechainAuditTrailPreVerifyTest extends TestCase {
 	 */
 	private function verdictOver(array $rows): array {
 		$store = [];
-		$hashes = $this->createMock(AuditHashService::class);
+		$hashes = $this->createMock(AuditRechainInterface::class);
 		$hashes->method('rechainAll')->willReturn(['rechained' => count($rows), 'tombstonesPreserved' => 0]);
 
 		(new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->db(rows: $rows), $this->config(store: $store), new NullLogger()),
+			$this->db(rows: $rows),
+			$this->config(store: $store),
+			new NullLogger(),
 			$hashes
 		))->run($this->createMock(IOutput::class));
 
