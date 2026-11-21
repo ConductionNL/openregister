@@ -1,6 +1,5 @@
 {
  "against_order": [
-  "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsInterface.php",
@@ -2202,7 +2201,6 @@
   "lib/Service/WritePhase.php",
   "lib/Service/XwikiLinkService.php",
   "lib/Service/XwikiLinkServiceInterface.php",
-  "lib/Settings/OpenRegisterAdmin.php",
   "lib/Support/AggregationFilterRequest.php",
   "lib/Support/AppConfigValue.php",
   "lib/Support/ContentDisposition.php",
@@ -2222,7 +2220,7 @@
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1760,
-  "Platform": 61,
+  "Platform": 0,
   "Processes": 27040,
   "Search": 1344
  },
@@ -2688,5 +2686,5 @@
  ],
  "kernel_loc": 10402,
  "total_loc": 462131,
- "violation_degree": 0.0049
+ "violation_degree": 0.0047
 }
