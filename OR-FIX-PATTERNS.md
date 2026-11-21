@@ -178,3 +178,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Golden counts and hashes that both sides changed
 - Symptom: conflict on ListenerRegistrationOrderGoldenTest LISTENER_COUNT / SEQUENCE_SHA256 (or a similar pinned count).
 - Fix: take main's values, add the PR's delta to the count, then dump the recorded sequence on the merged branch and on a main worktree (a throwaway subclass test calling recordedSequence() by reflection) and diff: when the diff is exactly the PR's registrations, take the new hash from the failing assertion. Conflicts in the components yaml: resolve scripts/component-map.csv (union of rows), take main's yaml, run `python3 scripts/component-patterns.py`.
+
+## Test fixture under tests/fixtures matches a .gitignore rule (or-fix-19)
+- Symptom: a PR's test fails on a fresh checkout with 'cannot be read: <file>.csv' (or file not found) while it passed for its author.
+- Cause: .gitignore ignores *.csv (and similar) repo-wide; the author's local fixture was never committed.
+- Fix: git check-ignore -v <path>; recreate the fixture to what the tests assert and commit it with git add -f (see #10139).
