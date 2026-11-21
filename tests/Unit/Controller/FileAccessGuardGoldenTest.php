@@ -71,7 +71,7 @@ final class FileAccessGuardGoldenTest extends TestCase {
 	 * @var array<string, array{string, string, array<string, mixed>}>
 	 */
 	private const ENDPOINTS = [
-		'getFileText'         => ['extractor', 'getExtractedText', ['success' => false, 'message' => 'File not found or access denied', 'file_id' => 43]],
+		'getFileText'         => ['extractor', 'readExtractedText', ['success' => false, 'message' => 'File not found.', 'fileId' => 43, 'file_id' => 43]],
 		'deleteFileText'      => ['none', '', ['success' => false, 'message' => 'File not found or access denied']],
 		'anonymizeFile'       => ['files', 'getFileById', ['success' => false, 'message' => 'File not found or access denied']],
 		'getObjectsForFile'   => ['sidebar', 'getObjectsForFile', ['success' => false, 'error' => 'File not found or access denied']],
@@ -128,6 +128,10 @@ final class FileAccessGuardGoldenTest extends TestCase {
 
 		if (array_key_exists('file_id', $refusal) === true) {
 			$refusal['file_id'] = $fileId;
+		}
+
+		if (array_key_exists('fileId', $refusal) === true) {
+			$refusal['fileId'] = $fileId;
 		}
 
 		if ($mock !== 'none') {

@@ -22,10 +22,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices;
 use OCA\OpenRegister\Controller\Support\LinkRemoval;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\EntityLink;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCP\AppFramework\Controller;
@@ -89,7 +89,7 @@ class LinkedEntityController extends Controller {
 		IRequest $request,
 		LinkedEntityControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->linkedEntityService = $services->linkedEntityService;
 		$this->logger = $services->session->logger;
 		$this->userSession = $services->session->userSession;

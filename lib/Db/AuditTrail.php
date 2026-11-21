@@ -27,6 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailFieldTypes;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -115,7 +116,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class AuditTrail extends Entity implements JsonSerializable {
+class AuditTrail extends Entity implements JsonSerializable, AuditRecordInterface {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
 

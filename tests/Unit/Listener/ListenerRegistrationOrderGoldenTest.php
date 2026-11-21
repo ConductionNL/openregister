@@ -28,12 +28,15 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 253;
+	private const LISTENER_COUNT = 257;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
+	 *
+	 * Last changed when EntityEditAuditListener also took the three organisation events
+	 * (history-schema-and-settings-edits-audited), after the register events.
 	 */
-	private const SEQUENCE_SHA256 = '9f549aa32f5c35140506a174aa67bb1f5cea6bb5b721d30f2b51644215950f53';
+	private const SEQUENCE_SHA256 = '0e20fb74960007a226a786123c8ee4ec919b503de5b0eefbec2d5969ba5692da';
 
 	/**
 	 * The registration calls, in call order, with every argument.
