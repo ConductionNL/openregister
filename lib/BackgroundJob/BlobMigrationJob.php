@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -219,7 +220,8 @@ class BlobMigrationJob extends TimedJob {
 		[$register, $schema] = $pair;
 		$run->magicMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		$objects = array_map(fn (array $row): array => $this->blobRowToObjectArray(row: $row), $group->rows);
-		$saved   = count($run->magicMapper->saveObjectsToRegisterSchemaTable(objects: $objects, register: $register, schema: $schema));
+		$table   = new RegisterSchema(register: $register, schema: $schema);
+		$saved   = count($run->magicMapper->saveObjectsToRegisterSchemaTable(table: $table, objects: $objects));
 
 		$context = ['file' => __FILE__, 'line' => __LINE__] + $group->ids() + ['count' => $saved];
 		$run->logger->info(message: '[BlobMigrationJob] Migrated group to magic table', context: $context);

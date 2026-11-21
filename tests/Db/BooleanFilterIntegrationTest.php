@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -164,7 +165,7 @@ class BooleanFilterIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testListPath(array $filter, array $expected): void {
-		$rows = $this->mapper->searchObjectsInRegisterSchemaTable($filter + self::OPEN, $this->register, $this->schemas[0]);
+		$rows = $this->mapper->searchObjectsInRegisterSchemaTable(new RegisterSchema($this->register, $this->schemas[0]), $filter + self::OPEN);
 
 		$this->assertSame($expected, $this->names($rows));
 	}//end testListPath()

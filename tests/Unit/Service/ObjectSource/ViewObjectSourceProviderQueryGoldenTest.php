@@ -79,7 +79,7 @@ class ViewObjectSourceProviderQueryGoldenTest extends TestCase {
 		$this->received = null;
 		$reader         = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->received = $query;
 				return [];
 			}

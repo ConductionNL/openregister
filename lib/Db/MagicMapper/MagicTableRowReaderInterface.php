@@ -119,9 +119,8 @@ interface MagicTableRowReaderInterface {
 	/**
 	 * Search objects in register+schema-specific table
 	 *
-	 * @param array $query Search query parameters
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
+	 * @param RegisterSchema $table The register and schema whose table to use
+	 * @param array          $query Search query parameters
 	 *
 	 * @throws Exception If search operation fails
 	 *
@@ -129,7 +128,7 @@ interface MagicTableRowReaderInterface {
 	 *
 	 * @psalm-return list<ObjectEntity>
 	 */
-	public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array;
+	public function searchObjectsInRegisterSchemaTable(RegisterSchema $table, array $query): array;
 
 	/**
 	 * Count objects in a register+schema specific table.

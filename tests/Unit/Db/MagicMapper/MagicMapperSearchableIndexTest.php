@@ -27,7 +27,6 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -348,7 +347,6 @@ class MagicMapperSearchableIndexTest extends TestCase {
 
 		$mapper->updateTableIndexes(
 			'openregister_table_1_1',
-			$this->createMock(Register::class),
 			$this->makeSchema(['title' => ['type' => 'string', 'searchable' => true]])
 		);
 
