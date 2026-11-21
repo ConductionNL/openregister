@@ -128,7 +128,7 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 		$this->translations = $this->createMock(TranslationHandler::class);
 		$this->translations->method('resolveTranslationsForRender')
 			->willReturnCallback(static fn (array $objectData): array => $objectData + ['resolved' => true]);
-		$this->mapper = $this->createMock(TranslationMapper::class);
+		$this->mapper = $this->createPartialMock(TranslationMapper::class, ['findOne']);
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$languages = $this->createMock(LanguageService::class);

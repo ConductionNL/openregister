@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -150,7 +150,7 @@ class EntityRecognitionHandler {
 	 * @param EntityRecognitionStores   $stores       Chunk, entity and relation stores plus the DB connection.
 	 * @param EntityRecognitionBackends $backends     Settings, anonymisation backend and the lazy app container.
 	 * @param LoggerInterface           $logger       Logger.
-	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
+	 * @param RedactionSettingsInterface|null $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
 	 * @param OfficialsDirectory|null   $officials   The register of officials a person's capacity is read from (REQ-DKP-001).
 	 * @param PersonRegisterMatcher|null $personRegisters The persons and place registers a person is matched against (REQ-DKP-003).
@@ -159,7 +159,7 @@ class EntityRecognitionHandler {
 		private readonly EntityRecognitionStores $stores,
 		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
-		private readonly ?FileSettingsHandler $fileSettings=null,
+		private readonly ?RedactionSettingsInterface $fileSettings=null,
 		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
 		private readonly ?OfficialsDirectory $officials=null,
 		private readonly ?PersonRegisterMatcher $personRegisters=null,
@@ -181,7 +181,7 @@ class EntityRecognitionHandler {
 		}
 
 		if ($this->fileSettings === null) {
-			return FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD;
+			return RedactionSettingsInterface::DEFAULT_CONFIDENCE_THRESHOLD;
 		}
 
 		return $this->fileSettings->confidenceThreshold();

@@ -25,9 +25,9 @@ use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\PersonRegisterPurposeMissingException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
@@ -124,7 +124,7 @@ class FileSettingsController extends Controller {
 		IRequest $request,
 		FileSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->container = $services->container;
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;

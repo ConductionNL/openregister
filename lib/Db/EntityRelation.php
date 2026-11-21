@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\EntityRelation\EntityRelationFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\EntityRelationInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -93,7 +94,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
-class EntityRelation extends Entity implements JsonSerializable {
+class EntityRelation extends Entity implements JsonSerializable, EntityRelationInterface {
 
 	/**
 	 * Entity ID.
