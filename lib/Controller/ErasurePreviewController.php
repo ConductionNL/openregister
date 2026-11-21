@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
@@ -78,7 +78,7 @@ class ErasurePreviewController extends Controller {
 		IRequest $request,
 		ErasurePreviewControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->previewService = $services->previewService;
 		$this->store = $services->store;
 		$this->runner = $services->runner;

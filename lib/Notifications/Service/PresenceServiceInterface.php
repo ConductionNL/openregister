@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Notifications\Db\ObjectPresence;
 
 /**
@@ -35,7 +36,7 @@ interface PresenceServiceInterface {
 	 *
 	 * @var int
 	 */
-	public const BEAT_SECONDS = 30;
+	public const BEAT_SECONDS = ObjectPresenceInterface::BEAT_SECONDS;
 
 	/**
 	 * Say that a reader is still looking at an object.
