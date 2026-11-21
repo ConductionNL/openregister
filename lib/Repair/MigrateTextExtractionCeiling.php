@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -82,13 +82,13 @@ class MigrateTextExtractionCeiling implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$stored = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+			$stored = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
 			if (is_array($stored) === false || self::holdsLegacyKey(settings: $stored) === false) {
 				return;
 			}
 
 			$migrated = FileSettingsHandler::withCeiling(fileSettings: $stored, source: $stored);
-			$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($migrated));
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'fileManagement', json_encode($migrated));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[MigrateTextExtractionCeiling] Could not migrate the text extraction ceiling',

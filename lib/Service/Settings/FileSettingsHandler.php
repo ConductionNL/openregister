@@ -315,7 +315,7 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-3
 	 */
 	public function uploadSettings(): array {
-		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$settings = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
 		if (is_array($settings) === false) {
 			return self::readableUpload(stored: null);
 		}

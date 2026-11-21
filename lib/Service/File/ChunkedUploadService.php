@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\File;
 use DateInterval;
 use DateTime;
 use DateTimeInterface;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\UploadSession;
 use OCA\OpenRegister\Db\UploadSessionMapper;
@@ -398,7 +398,7 @@ class ChunkedUploadService {
 	 */
 	private function partsFolder(UploadSession $session, bool $create): ?ISimpleFolder {
 		$path = self::FOLDER . '/' . $session->getUploadId();
-		$this->appData ??= $this->appDataFactory->get(Application::APP_ID);
+		$this->appData ??= $this->appDataFactory->get(AppIdentity::APP_ID);
 		try {
 			return $this->appData->getFolder($path);
 		} catch (NotFoundException) {
