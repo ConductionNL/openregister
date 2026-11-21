@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use DateTime;
 use Exception;
+use LogicException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -50,7 +51,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
+use OCA\OpenRegister\Service\Query\ReferenceFilterParser;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\ConditionGroupException;
@@ -58,15 +59,16 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\EncryptedFieldSortException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
+use OCA\OpenRegister\Kernel\Contracts\Core\FollowTableInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
-use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PreservedListLens;
 use OCA\OpenRegister\Service\Object\PreservedListing;
 use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
-use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\Search\SearchTermParserInterface;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompilerInterface;
@@ -78,6 +80,7 @@ use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -348,13 +351,18 @@ class MagicSearchHandler {
 	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for date/date-time property formats
 	 * @param RelatedRowQueryApplier $relatedRows Applies a filter that reaches through a reference into the
 	 *                                            related schema's own rows
-	 * @param LanguageServiceInterface|null $languageService The request's languages, so a translatable property sorts by the
+	 * @param RequestLanguagesInterface|null $languageService The request's languages, so a translatable property sorts by the
 	 *                                              value the response shows
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
 	 * @param ExplicitRevealInterface|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
 	 *                                            property is refused unless the code is trusted
+	 * @param IAppConfig|null $appConfig Holds the administrator's accent folding choice; without it
+	 *                                   accents are folded wherever the database can
+	 * @param PropertySearchProfileInterface|null $searchProfile Search's rules for a property's match type and
+	 *                                                           free-text participation; MagicMapper always
+	 *                                                           passes it
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
@@ -366,9 +374,11 @@ class MagicSearchHandler {
 		private readonly SchemaTypeConverterInterface $schemaTypeConverter,
 		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
 		private readonly RelatedRowQueryApplier $relatedRows,
-		private readonly ?LanguageServiceInterface $languageService = null,
+		private readonly ?RequestLanguagesInterface $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 		private readonly ?ExplicitRevealInterface $explicitReveal = null,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly ?PropertySearchProfileInterface $searchProfile = null,
 	) {
 		$this->termParser = SearchGrammar::termParser();
 		$this->termCompiler = SearchGrammar::termCompiler();
@@ -394,15 +404,17 @@ class MagicSearchHandler {
 	 * The accent folding of a search, or null for the historical comparison.
 	 *
 	 * Folded when the platform can fold (PostgreSQL with `openregister_fold()`,
-	 * MariaDB and MySQL through their accent-insensitive collation) and the
-	 * request did not ask `_accents=exact`. Null otherwise, and when the check
-	 * itself fails, so every caller keeps the SQL it has always produced.
+	 * MariaDB and MySQL through their accent-insensitive collation), the
+	 * administrator has not switched it off, and the request did not ask
+	 * `_accents=exact`. Null otherwise, and when the check itself fails, so
+	 * every caller keeps the SQL it has always produced.
 	 *
 	 * @param array<string, mixed> $query The search query.
 	 *
 	 * @return SearchFolding|null The folding, or null for the exact comparison.
 	 *
 	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
 	 */
 	public function searchFolding(array $query): ?SearchFolding {
 		if (SearchFolding::requestsExact(value: ($query['_accents'] ?? null)) === true) {
@@ -410,6 +422,15 @@ class MagicSearchHandler {
 		}
 
 		try {
+			$wanted = true;
+			if ($this->appConfig !== null) {
+				$wanted = (new AccentFoldingSetting(appConfig: $this->appConfig))->enabled();
+			}
+
+			if ($wanted === false) {
+				return null;
+			}
+
 			$this->unaccentProbe ??= new MagicUnaccentProbe(db: $this->db, logger: $this->logger);
 			$folding = $this->unaccentProbe->folding(wanted: true);
 		} catch (\Throwable $e) {
@@ -511,12 +532,20 @@ class MagicSearchHandler {
 
 		// Add relevance score column when fuzzy search is enabled.
 		// This allows us to return the similarity score as a percentage in @self.relevance.
+		$folding = null;
+		if ($searchTerm !== null) {
+			$folding = $this->searchFolding(query: $query);
+		}
+
 		if ($fuzzyEnabled === true && $searchTerm !== null) {
 			$searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
+			$score = "similarity(t._name::text, {$searchTermParam})";
+			if ($folding !== null) {
+				$score = $folding->score(textExpression: 't._name::text', quotedLiteral: (string)$searchTermParam);
+			}
+
 			$queryBuilder->addSelect(
-				$queryBuilder->createFunction(
-					'ROUND(similarity(t._name::text, ' . "{$searchTermParam}) * 100)::integer AS _relevance"
-				)
+				$queryBuilder->createFunction('ROUND(' . $score . ' * 100)::integer AS _relevance')
 			);
 		}
 
@@ -524,6 +553,7 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$sort = new SortRequest(order: $order, schema: $schema);
 		$sort->searchTerm = $searchTerm;
+		$sort->folding = $folding;
 		$sort->recentViews = ($query['_recentViews'] ?? null);
 		$sort->dateTimeColumns = $tableSearch->dateTimeColumns;
 		$sort->sortLanguages = $this->sortLanguageChain(register: $register);
@@ -893,7 +923,7 @@ class MagicSearchHandler {
 	}//end arrayElementCondition()
 
 	/**
-	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
+	 * Narrow the query by `_related`, `_referenced` and `_ref` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -911,11 +941,15 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(TableFilterRun $run): void {
 		$query      = $run->query;
 		$registerId = $run->table->registerId;
-		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
+		if (array_key_exists('_related', $query) === false
+			&& array_key_exists('_referenced', $query) === false
+			&& array_key_exists(ReferenceFilterParser::KEY, $query) === false
+		) {
 			return;
 		}
 
@@ -938,12 +972,13 @@ class MagicSearchHandler {
 					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
 				)
 			),
-			query: $query
+			query: $query,
+			schema: $run->table->schema
 		);
 	}//end applyRelatedRowFilters()
 
 	/**
-	 * Refuse a query carrying `_related`, `_referenced` or `_element` where it cannot be honoured.
+	 * Refuse a query carrying `_related`, `_referenced`, `_ref` or `_element` where it cannot be honoured.
 	 *
 	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
 	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
@@ -960,7 +995,7 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function refuseRelatedRowFilters(array $query): void {
-		foreach (['_related', '_referenced', ArrayElementFilter::KEY] as $key) {
+		foreach (['_related', '_referenced', ReferenceFilterParser::KEY, ArrayElementFilter::KEY] as $key) {
 			if (array_key_exists($key, $query) === true) {
 				throw new RelatedRowFilterNotSupportedException(
 					message: sprintf(
@@ -1908,15 +1943,13 @@ class MagicSearchHandler {
 	 * @param SearchLeaf $leaf The term in its scope.
 	 *
 	 * @return array<int, string> One condition per searchable column.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and holds no state.
 	 */
 	private function propertyLeafConditions(SearchLeaf $leaf): array {
 		$conditions = [];
 		foreach ($this->searchableProperties(scope: $leaf->scope) as $propName => $propDef) {
 			$quotedCol = $this->searchColumn(scope: $leaf->scope, propName: $propName);
-			$matchType = PropertySearchProfile::matchTypeFor(property: $propDef);
-			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $leaf->scope->isPostgres === true) {
+			$matchType = $this->searchProfile()->matchTypeFor(property: $propDef);
+			if ($matchType === PropertySearchProfileInterface::MATCH_FUZZY && $leaf->scope->isPostgres === true) {
 				$conditions[] = $leaf->similarity(plain: $quotedCol, text: "{$quotedCol}::text");
 				continue;
 			}
@@ -1937,14 +1970,12 @@ class MagicSearchHandler {
 	 * @param SearchLeafScope $scope The search scope.
 	 *
 	 * @return array<string, array> The searchable property definitions, by name.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) PropertySearchProfile reads a property array and holds no state.
 	 */
 	private function searchableProperties(SearchLeafScope $scope): array {
 		$searchable = [];
 		foreach (($scope->schema->getProperties() ?? []) as $propName => $propDef) {
 			if (is_array($propDef) === true
-				&& PropertySearchProfile::participatesInFreeText(property: $propDef) === true
+				&& $this->searchProfile()->participatesInFreeText(property: $propDef) === true
 				&& $scope->hasColumn(columnName: $this->sanitizeColumnName(name: $propName)) === true
 			) {
 				$searchable[$propName] = $propDef;
@@ -1953,6 +1984,21 @@ class MagicSearchHandler {
 
 		return $searchable;
 	}//end searchableProperties()
+
+	/**
+	 * Search's rules for a property's match type and free-text participation.
+	 *
+	 * @return PropertySearchProfileInterface The profile MagicMapper passed in.
+	 *
+	 * @throws LogicException When the handler was built without one; MagicMapper always passes it.
+	 */
+	private function searchProfile(): PropertySearchProfileInterface {
+		if ($this->searchProfile === null) {
+			throw new LogicException('MagicSearchHandler needs the property search profile to search properties.');
+		}
+
+		return $this->searchProfile;
+	}//end searchProfile()
 
 	/**
 	 * The quoted column of a property, so reserved words (e.g. 'case', 'status') stay valid SQL.
@@ -1986,11 +2032,11 @@ class MagicSearchHandler {
 	 *                                      user's `%` exactly as a parsed term does.
 	 */
 	private function patternForMatchType(string $matchType, SearchLeaf $leaf): string {
-		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
+		if ($matchType === PropertySearchProfileInterface::MATCH_EXACT) {
 			return SearchGrammar::likeEscape(value: $leaf->literal);
 		}
 
-		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
+		if ($matchType === PropertySearchProfileInterface::MATCH_PREFIX) {
 			return SearchGrammar::likeEscape(value: $leaf->literal) . '%';
 		}
 
@@ -2534,6 +2580,16 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function rawArrayPropertyConditionSql(RawObjectFieldFilter $field, mixed $value): string {
+		// `contains`: one entry holding every given key and value.
+		if (JsonArrayContainment::applies(value: $value) === true) {
+			$json = JsonArrayContainment::json(value: $value);
+			if ($json === null) {
+				return JsonArrayContainment::NO_MATCH;
+			}
+
+			return JsonArrayContainment::condition(column: $field->quotedCol, json: $field->quote(value: $json), isPostgres: $field->isPostgres);
+		}
+
 		return $this->buildArrayPropertyConditionSql(
 			column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection),
 			value: $value
@@ -4121,6 +4177,17 @@ class MagicSearchHandler {
 	private function jsonArrayCondition(ObjectFieldFilter $field, mixed $value): string|ICompositeExpression {
 		$qb         = $field->qb;
 		$columnName = $field->columnName;
+		// `contains`: one entry holding every given key and value.
+		if (JsonArrayContainment::applies(value: $value) === true) {
+			$json = JsonArrayContainment::json(value: $value);
+			if ($json === null) {
+				return JsonArrayContainment::NO_MATCH;
+			}
+
+			$param = (string) $qb->createNamedParameter($json);
+			return JsonArrayContainment::condition(column: $field->columnRef(), json: $param, isPostgres: $field->isPostgres);
+		}
+
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -4349,7 +4416,7 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	private function applyPersonalLensFilter(IQueryBuilder $qb, mixed $userId): void {
-		$table = WatcherMapperInterface::TABLE;
+		$table = FollowTableInterface::TABLE;
 		if (is_string($userId) === false || $userId === '') {
 			return;
 		}
@@ -4950,8 +5017,8 @@ class MagicSearchHandler {
 		$conditions = [];
 		foreach ($this->searchableProperties(scope: $run->leaf->scope) as $field => $propertyConfig) {
 			$quotedCol = $this->searchColumn(scope: $run->leaf->scope, propName: $field);
-			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
-			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $run->leaf->scope->isPostgres === true) {
+			$matchType = $this->searchProfile()->matchTypeFor(property: $propertyConfig);
+			if ($matchType === PropertySearchProfileInterface::MATCH_FUZZY && $run->leaf->scope->isPostgres === true) {
 				$conditions[] = $this->leafFuzzyConditionQbSql(run: $run, quotedCol: $quotedCol);
 				continue;
 			}
@@ -5014,7 +5081,7 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function leafColumnPatternQbSql(SearchLeafRun $run, string $matchType): string {
-		if ($matchType === PropertySearchProfile::MATCH_FULLTEXT) {
+		if ($matchType === PropertySearchProfileInterface::MATCH_FULLTEXT) {
 			return $run->patternParam;
 		}
 
@@ -5155,6 +5222,7 @@ class MagicSearchHandler {
 	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-object-search-ignores-accents-where-the-database-supports-it
 	 */
 	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
 		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
@@ -5163,6 +5231,10 @@ class MagicSearchHandler {
 
 		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
 		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		if ($sort->folding !== null) {
+			return $qb->createFunction($sort->folding->score(textExpression: 't._name::text', quotedLiteral: (string)$paramName));
+		}
+
 		return $qb->createFunction("similarity(t._name::text, {$paramName})");
 	}//end relevanceSortExpression()
 

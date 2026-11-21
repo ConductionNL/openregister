@@ -68,6 +68,7 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
   "liveKey": "",
   "livePendingKey": "",
   "liveUnwatch": null,
+  "openTaskCount": null,
   "pagination": {
     "auditTrails": {
       "currentPage": 5,
