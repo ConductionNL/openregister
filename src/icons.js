@@ -27,6 +27,7 @@ import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
@@ -70,6 +71,7 @@ export default {
 	DatabaseArrowRightOutline,
 	DatabaseOutline,
 	DeleteRestore,
+	EmailOutline,
 	FileDocumentMultipleOutline,
 	FileDocumentOutline,
 	FileOutline,

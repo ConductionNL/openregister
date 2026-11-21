@@ -21,9 +21,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
@@ -86,7 +89,7 @@ final class ObjectCacheInvalidatorTest extends TestCase {
 	 * @return ObjectCacheInvalidator
 	 */
 	private function invalidator(array $failing = []): ObjectCacheInvalidator {
-		$contacts = $this->createMock(originalClassName: ContactMatchingService::class);
+		$contacts = $this->createMock(originalClassName: ContactMatchCacheInterface::class);
 		$contacts->method('invalidateCacheForObject')->willReturnCallback(
 			function (array $object): void {
 				$this->contactDrops[] = $object;
@@ -102,14 +105,15 @@ final class ObjectCacheInvalidatorTest extends TestCase {
 
 		$urls = $this->createMock(originalClassName: IURLGenerator::class);
 		$urls->method('getAbsoluteURL')->willReturn('https://cloud.example/');
-		$deepLinks = $this->createMock(originalClassName: DeepLinkRegistryService::class);
+		$registry = $this->createMock(originalClassName: DeepLinkRegistryService::class);
+		$deepLinks = $this->createMock(originalClassName: DeepLinkResolverInterface::class);
 		$deepLinks->method('resolveUrl')->willReturn(null);
 		$formatter = new ObjectPreviewFormatter(
 			urlGenerator: $urls,
 			l10n: $this->createMock(originalClassName: IL10N::class),
 			sources: new ObjectPreviewSources(
 				objectService: $this->createMock(originalClassName: ObjectOperationsInterface::class),
-				deepLinkRegistry: $deepLinks,
+				deepLinkRegistry: $registry,
 				schemaMapper: $this->createMock(originalClassName: SchemaMapperInterface::class),
 				registerMapper: $this->createMock(originalClassName: RegisterMapperInterface::class)
 			),
@@ -117,10 +121,10 @@ final class ObjectCacheInvalidatorTest extends TestCase {
 		);
 
 		$services = [
-			ContactMatchingService::class  => $contacts,
-			IReferenceManager::class       => $references,
-			ObjectPreviewFormatter::class  => $formatter,
-			DeepLinkRegistryService::class => $deepLinks,
+			ContactMatchCacheInterface::class  => $contacts,
+			IReferenceManager::class           => $references,
+			ObjectPreviewCacheInterface::class => $formatter,
+			DeepLinkResolverInterface::class   => $deepLinks,
 		];
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
@@ -175,14 +179,14 @@ final class ObjectCacheInvalidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingContactCacheIsLoggedAndThePreviewsStillCleared(): void {
-		$this->invalidator(failing: [ContactMatchingService::class])->afterSave(saved: self::saved());
+		$this->invalidator(failing: [ContactMatchCacheInterface::class])->afterSave(saved: self::saved());
 
 		$this->assertSame(expected: ['3/5/'.self::UUID], actual: $this->cleared);
 		$this->assertCount(expectedCount: 1, haystack: $this->warnings);
 		[$message, $context] = $this->warnings[0];
 		$this->assertSame(expected: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed', actual: $message);
 		$this->assertSame(
-			expected: ['exception' => 'cannot resolve '.ContactMatchingService::class, 'uuid' => self::UUID, 'register' => 3, 'schema' => 5],
+			expected: ['exception' => 'cannot resolve '.ContactMatchCacheInterface::class, 'uuid' => self::UUID, 'register' => 3, 'schema' => 5],
 			actual: array_diff_key($context, ['file' => true, 'line' => true])
 		);
 	}//end testAFailingContactCacheIsLoggedAndThePreviewsStillCleared()
@@ -201,4 +205,15 @@ final class ObjectCacheInvalidatorTest extends TestCase {
 		$this->assertSame(expected: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed', actual: $this->warnings[0][0]);
 		$this->assertSame(expected: self::UUID, actual: $this->warnings[0][1]['uuid']);
 	}//end testAFailingReferenceCacheIsLogged()
+
+	/**
+	 * Each cache is answered by the area that keeps it, through the contract the save path asks for.
+	 *
+	 * @return void
+	 */
+	public function testTheCachesAreTheirAreasImplementationsOfTheCoreContracts(): void {
+		$this->assertTrue(condition: is_a(ContactMatchingService::class, ContactMatchCacheInterface::class, true));
+		$this->assertTrue(condition: is_a(ObjectPreviewFormatter::class, ObjectPreviewCacheInterface::class, true));
+		$this->assertTrue(condition: is_a(DeepLinkRegistryService::class, DeepLinkResolverInterface::class, true));
+	}//end testTheCachesAreTheirAreasImplementationsOfTheCoreContracts()
 }//end class
