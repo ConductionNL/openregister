@@ -33,6 +33,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Fix: in the PR's lib files, swap the import for `use OCA\OpenRegister\Kernel\Contracts\AppIdentity;` and Application::APP_ID for AppIdentity::APP_ID (see #10526 b1ec3389).
 
 ## Merge conflicts in scripts/component-map.csv and the generated components yaml (or-fix-14)
-- Symptom: merging main conflicts in scripts/component-map.csv (rows added next to each other) and in the generated *components.yaml beside sigrid.yaml.
+- Symptom: merging main conflicts in scripts/component-map.csv (rows added next to each other) and in the generated components yaml at the repo root.
 - Cause: every PR adds csv rows for its new lib files; main adds others at the same spots; the yaml is generated from the csv.
 - Fix: union the csv hunks keyed on the first column (main's row wins on the same file), then `git checkout --theirs` the yaml and run `python3 scripts/component-patterns.py`; the yaml diff vs main should only show the PR's own files. Format-list conflicts (PropertyValidatorHandler, property-validate-golden.json): keep both formats in handler order.
