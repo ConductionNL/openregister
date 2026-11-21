@@ -23,39 +23,12 @@
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * How one object save runs: where it goes, which object it updates, what the answer expands,
- * the files that come with it, the save policy and on whose behalf it is written.
+ * The published ObjectSaveOptions, under the name openregister used before it was published.
  *
- * No strict_types: callers pass request values through it as they did to saveObject().
+ * @deprecated Use \OCA\OpenRegister\Contract\ObjectSaveOptions, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class ObjectSaveOptions {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ObjectFindTarget $target        The register and schema the object is saved in.
-	 * @param string|null      $uuid          The UUID of the object to update, null to create or read it from the object.
-	 * @param array|null       $extend        Properties to extend the rendered result with.
-	 * @param array|null       $uploadedFiles Uploaded files from multipart/form-data.
-	 * @param SavePolicy       $policy        Events, validation, insert-only and duplicate-override choices.
-	 * @param SaveActor        $actor         The acting user and the owner the row is stamped with.
-	 *
-	 * @phpstan-param array<array-key, mixed>|null $extend
-	 * @phpstan-param array<array-key, mixed>|null $uploadedFiles
-	 * @psalm-param   array<array-key, mixed>|null $extend
-	 * @psalm-param   array<array-key, mixed>|null $uploadedFiles
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		public readonly ObjectFindTarget $target=new ObjectFindTarget(),
-		public readonly ?string $uuid=null,
-		public readonly ?array $extend=[],
-		public readonly ?array $uploadedFiles=null,
-		public readonly SavePolicy $policy=new SavePolicy(),
-		public readonly SaveActor $actor=new SaveActor(),
-	) {
-	}//end __construct()
+final class ObjectSaveOptions extends \OCA\OpenRegister\Contract\ObjectSaveOptions {
 }//end class
