@@ -2741,6 +2741,7 @@ components:
       - ".*/lib/Notifications/Service/Notification/ScheduledFilterParser[.]php"
       - ".*/lib/Notifications/Service/Notification/ScheduledFilterPosition[.]php"
       - ".*/lib/Notifications/Service/Notification/ScheduledFilterTarget[.]php"
+      - ".*/lib/Notifications/Service/Notification/ScheduledMessageAudit[.]php"
       - ".*/lib/Notifications/Service/Notification/ScheduledMessagePolicy[.]php"
       - ".*/lib/Notifications/Service/Notification/ScheduledMessageRefusal[.]php"
       - ".*/lib/Notifications/Service/Notification/ScheduledMessageScheduler[.]php"
