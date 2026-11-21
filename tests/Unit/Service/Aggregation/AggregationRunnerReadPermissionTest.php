@@ -241,7 +241,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']),
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level'])),
 			bypassRbac: true
 		);
 
@@ -262,7 +262,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$runner->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level'])
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level']))
 		);
 	}//end testAdhocWithoutBypassStillUsesTheCache()
 
