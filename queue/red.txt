@@ -256,3 +256,4 @@
 2026-11-21T11:52:08Z dev=f4cfb99d78 prs=10512,10635,10637,10638,10639,10640,10869,10964 Tests: 63370, Assertions: 221700, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
 2026-11-21T12:01:36Z dev=f4cfb99d78 prs=10519 Tests: 63354, Assertions: 221637, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
 2026-11-21T12:16:31Z dev=f4cfb99d78 prs=10519,10965,10966,10976,10977,10978,10979,10980 Tests: 63399, Assertions: 221826, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=ok
+2026-11-21T12:30:58Z dev=f4cfb99d78 prs=10524 Tests: 63365, Assertions: 221680, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
