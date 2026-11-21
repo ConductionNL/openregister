@@ -1,0 +1,81 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the sidebar schema with byEveryReference merges the properties 1`] = `
+{
+  "merged": {
+    "age": {
+      "type": "integer",
+    },
+    "city": {
+      "order": 1,
+    },
+    "name": {
+      "order": "2",
+      "type": "string",
+    },
+    "own": {
+      "order": 5,
+    },
+    "shared": {
+      "from": "own",
+      "order": "0",
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+    "age",
+    "city",
+    "own",
+  ],
+}
+`;
+
+exports[`the sidebar schema with noAllOf merges the properties 1`] = `
+{
+  "merged": {
+    "own": {
+      "order": "7",
+    },
+  },
+  "order": [
+    "own",
+  ],
+}
+`;
+
+exports[`the sidebar schema with noProperties merges the properties 1`] = `
+{
+  "merged": {
+    "name": {
+      "order": "2",
+      "type": "string",
+    },
+    "shared": {
+      "from": "parent-1",
+    },
+  },
+  "order": [
+    "name",
+    "shared",
+  ],
+}
+`;
+
+exports[`the sidebar schema with none merges the properties 1`] = `
+{
+  "merged": {},
+  "order": [],
+}
+`;
+
+exports[`the sidebar schema with unknownParent merges the properties 1`] = `
+{
+  "merged": {
+    "own": {},
+  },
+  "order": [
+    "own",
+  ],
+}
+`;
