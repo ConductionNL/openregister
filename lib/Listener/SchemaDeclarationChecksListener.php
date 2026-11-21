@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Listener;
 
 use Closure;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationRule;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
@@ -29,9 +31,11 @@ use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PositionedDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ProcessDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -107,6 +111,29 @@ final class SchemaDeclarationChecksListener implements IEventListener {
 			SchemaDeclarationOrder::NAMED_CONDITIONS => static fn (Schema $schema) => (new NamedConditionCheck())->check(schema: $schema),
 			SchemaDeclarationOrder::REVERSIBILITY => static fn (Schema $schema) => $refusals->checkReversibility(schema: $schema),
 			SchemaDeclarationOrder::REVIEW => static fn (Schema $schema) => $refusals->checkReview(schema: $schema),
+			SchemaDeclarationOrder::PARTY => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new AdvisoryAnnotationChecks(
+				logger: $logger,
+				discarded: $discarded
+			))->checkContributed(schema: $schema, rule: self::partyRule()),
 		];
 	}//end checks()
+
+	/**
+	 * The `x-openregister-party` annotation: advisory, validated by the party validator.
+	 *
+	 * It is warned about rather than dropped: the failure a dropped declaration
+	 * causes is a party schema that reads as an ordinary one, and the operator
+	 * needs the field name to fix it.
+	 *
+	 * @return AdvisoryAnnotationRule
+	 *
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 */
+	public static function partyRule(): AdvisoryAnnotationRule {
+		return new AdvisoryAnnotationRule(
+			key: 'x-openregister-party',
+			consequence: 'the schema is not treated as a party schema',
+			errors: static fn (SchemaAnnotation $annotation): array => (new PartyAnnotationValidator())->validate($annotation->shape())
+		);
+	}//end partyRule()
 }//end class
