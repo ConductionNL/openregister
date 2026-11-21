@@ -1652,7 +1652,7 @@
 			"service": true
 		},
 		"OCA\\OpenRegister\\Service\\ChatMessageRequest": {
-			"class": "OCA\\OpenRegister\\Mcp\\Service\\ChatMessageRequest",
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ChatMessageRequest",
 			"eager": false,
 			"service": true
 		},
