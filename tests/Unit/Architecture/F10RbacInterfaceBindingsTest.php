@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuardInterface;
@@ -63,8 +64,8 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
-		OrganisationSpecialRights::class => [OrganisationSpecialRightsInterface::class, ContractBindings::class],
+		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, CoreServiceBindings::class],
+		OrganisationSpecialRights::class => [OrganisationSpecialRightsInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
