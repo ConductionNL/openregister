@@ -29,7 +29,7 @@ use OCP\IUser;
 /**
  * A store action to authorise: the declaring app, the action and the user.
  *
- * @spec openspec/changes/store-plane-action-auth/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-action-posture-must-resolve-against-the-declaring-app
  */
 final class StoreActionCheck {
 	/**

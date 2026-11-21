@@ -159,6 +159,11 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
  */
 class SaveObjectArchiveGuardTest extends TestCase {
 
@@ -377,4 +382,85 @@ class SaveObjectArchiveGuardTest extends TestCase {
 
 		$this->assertFalse($refused);
 	}//end testAnOpenObjectIsNotRefusedByThisGuard()
+
+	/**
+	 * A preserved object is refused a content write when its schema offers the
+	 * preservation regime, and the refusal names the state (REQ-APS-006).
+	 *
+	 * @return void
+	 */
+	public function testWriteToAPreservedObjectIsRefusedWhenTheSchemaOffersTheRegime(): void {
+		$object = $this->storedObject();
+		$object->setTmlo(['archiefstatus' => 'semi_statisch']);
+
+		[$schema, $register] = $this->context();
+		$schema->setConfiguration(['x-openregister-preserve' => ['enabled' => true]]);
+
+		$this->expectException(ObjectStateWriteException::class);
+		$this->expectExceptionMessageMatches('/preservation \(statisch\) regime/');
+
+		try {
+			$this->handler(existing: $object)->saveObject(
+				data: ['title' => 'gewijzigd'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
+			);
+		} finally {
+			$this->assertSame('Bouwvergunning', $object->getObject()['title']);
+		}
+	}//end testWriteToAPreservedObjectIsRefusedWhenTheSchemaOffersTheRegime()
+
+	/**
+	 * A preserved object whose schema does NOT offer the regime is not refused
+	 * by this guard: the regime is opt-in, so existing instances are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAPreservedObjectIsNotRefusedWhenTheSchemaDoesNotOfferTheRegime(): void {
+		$object = $this->storedObject();
+		$object->setTmlo(['archiefstatus' => 'semi_statisch']);
+
+		[$schema, $register] = $this->context();
+
+		$refusedByState = false;
+		try {
+			$this->handler(existing: $object)->saveObject(
+				data: ['title' => 'gewijzigd'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
+			);
+		} catch (ObjectStateWriteException $e) {
+			$refusedByState = true;
+		} catch (\Throwable $e) {
+			$refusedByState = false;
+		}
+
+		$this->assertFalse($refusedByState, 'a schema without the annotation does not enforce preservation');
+	}//end testAPreservedObjectIsNotRefusedWhenTheSchemaDoesNotOfferTheRegime()
+
+	/**
+	 * An object that is not preserved is not refused even when its schema
+	 * offers the regime: only the state refuses, not the annotation.
+	 *
+	 * @return void
+	 */
+	public function testAnActiveObjectIsNotRefusedThoughTheSchemaOffersTheRegime(): void {
+		$object = $this->storedObject();
+		$object->setTmlo(['archiefstatus' => 'actief']);
+
+		[$schema, $register] = $this->context();
+		$schema->setConfiguration(['x-openregister-preserve' => ['enabled' => true]]);
+
+		$refusedByState = false;
+		try {
+			$this->handler(existing: $object)->saveObject(
+				data: ['title' => 'gewijzigd'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
+			);
+		} catch (ObjectStateWriteException $e) {
+			$refusedByState = true;
+		} catch (\Throwable $e) {
+			$refusedByState = false;
+		}
+
+		$this->assertFalse($refusedByState);
+	}//end testAnActiveObjectIsNotRefusedThoughTheSchemaOffersTheRegime()
 }//end class

@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  *   trusted-scope holder (see the class docblock) — the repair step's fixture seed
  *   must run inside it because repair steps execute without a user session.
  *
- * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 class SeedVocabularyRegister implements IRepairStep {
 
@@ -126,7 +126,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function getName(): string {
 		return 'Import OpenRegister vocabulary register and seed bundled TOOI Woo value lists';
@@ -140,7 +140,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$this->importRegisterDescriptor(output: $output);
@@ -210,7 +210,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function importDescriptor(array $data): void {
 		$this->descriptors->configurationService->importFromApp(
@@ -256,7 +256,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private function seedFixture(string $path, IOutput $output): void {
 		if (is_file($path) === false) {
@@ -285,7 +285,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @return string The line.
 	 *
-	 * @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-003
+	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	private static function seededLine(array $report): string {
 		return sprintf(

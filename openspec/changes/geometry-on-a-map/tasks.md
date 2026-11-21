@@ -30,8 +30,10 @@
   - a functional administrator can declare a point, line, polygon, multipolygon or any geometry without editing JSON
   - the record form edits a geometry value
 - [ ] 3.1 Add `geo:point`, `geo:linestring`, `geo:polygon`, `geo:multipolygon` and `geo:geometry` to `formatSelect()` in `src/modals/schema/schemaPropertyForm.js` for type `object`, with translated labels.
+  - Done except the translated labels: `formatSelect('object')` offers the five formats (`GEO_FORMATS`) and the property modal enables the format select for objects. The select shows every format by its id, string formats included, so labels for all of them belong in one l10n pass across the locales.
 - [ ] 3.2 In `src/services/propertyEditor.js` `editorFor()`, route a `geo:*` property to a small map picker (`src/components/geo/GeometryEditor.vue`, Leaflet with the draw control from task 2.1) that writes GeoJSON, with a JSON text fallback.
 - [ ] 3.3 Red first: `src/services/propertyEditor.spec.js` returns the geometry editor for each `geo:*` format; a new `src/modals/schema/schemaPropertyForm.spec.js` lists the five formats.
+  - `schemaPropertyForm.spec.js` (existing file) lists the five formats and `EditSchemaProperty.logic.spec.js` pins the select per type, red before the change. The `propertyEditor.spec.js` half waits on 3.2.
 
 ## Verification
 

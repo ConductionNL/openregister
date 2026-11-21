@@ -283,6 +283,25 @@ When updating schemas from exploration, you can configure comprehensive property
 | `visible` | boolean | Show in user interfaces |
 | `hideOnCollection` | boolean | Hide in list/grid views |
 | `hideOnForm` | boolean | Hide in forms |
+| `titles` | object | The title in other languages, by language tag: `{"nl": "Einddatum contract", "en": "Contract end date"}`. See [Field names per language](#field-names-per-language) |
+
+#### Field names per language
+
+A property can carry its name in each language the organisation uses, beside its `title`:
+
+```json
+"contractEnd": {
+  "type": "string",
+  "format": "date",
+  "title": "Contract end",
+  "titles": { "nl": "Einddatum contract", "en": "Contract end date" }
+}
+```
+
+- Each key is a language tag (`nl`, `en`, `pt-BR`) and each value a non-empty name. A save with anything else is refused with 422, naming the property and the key.
+- `GET /api/schemas/{id}?_lang=en`, or the same read with an `Accept-Language` header, answers each property's `title` from `titles` in that language, then in its base language (`nl` for `nl-BE`), and keeps the stored `title` when neither is there. `titles` itself stays in the response.
+- A read without `_lang` and without `Accept-Language` returns the schema as stored.
+- Configuration export and import carry `titles` with the rest of the property.
 
 #### Behavior Configuration
 | Field | Type | Description |

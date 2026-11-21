@@ -112,7 +112,7 @@ final class ScheduleDescriptor {
 	 *
 	 * @return string|null The declared cron, or the exact one for its interval.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function cronExpression(): ?string {
 		if ($this->cron !== null) {

@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Resolves what a run needs and hands it to the engine.
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	/**
@@ -109,7 +109,7 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function advance(FlowRun $run, bool $rethrow = false): FlowRun {
 		try {

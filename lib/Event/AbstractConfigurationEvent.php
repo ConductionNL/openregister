@@ -22,7 +22,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +33,22 @@ abstract class AbstractConfigurationEvent extends Event {
 	/**
 	 * Constructor for AbstractConfigurationEvent.
 	 *
-	 * @param Configuration $configuration The entity the event is about.
+	 * @param ConfigurationInterface&Entity $configuration The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly Configuration $configuration) {
+	public function __construct(private readonly ConfigurationInterface $configuration) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return Configuration The entity.
+	 * @return ConfigurationInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getConfiguration(): Configuration {
+	public function getConfiguration(): ConfigurationInterface {
 		return $this->configuration;
 	}//end getConfiguration()
 }//end class

@@ -558,3 +558,67 @@ describe('SearchIndex: bulk and merge entry points', () => {
 		expect(mockObjectStore.setSelectedObjects).toHaveBeenCalledWith(['a'])
 	})
 })
+
+describe('SearchIndex — gallery presentation (records-gallery-view)', () => {
+	const schema = {
+		properties: { adres: { type: 'string' }, foto: { type: 'file' } },
+		configuration: { objectImageField: 'plaatje' },
+	}
+
+	beforeEach(() => {
+		Object.assign(mockObjectStore, {
+			searchParams: { _extend: ['@self.can'] },
+			refetchSearchCollection: jest.fn(),
+			updateSearchParams: jest.fn(),
+		})
+	})
+
+	it('presentationType reflects a gallery view', () => {
+		expect(computedCall('presentationType', { activeView: { presentation: { viewType: 'gallery' } } })).toBe('gallery')
+	})
+
+	it('builds the cards, their schema, fields and size class from the view', () => {
+		const ctx = {
+			activeView: { presentation: { viewType: 'gallery', gallery: { coverField: 'foto', titleField: 'adres', cardFields: ['adres'], cardSize: 'large' } } },
+			normalizedObjects: [{ id: 'a', adres: 'Lindelaan 1', foto: { id: 9 } }],
+			normalizedSchema: schema,
+		}
+		ctx.galleryConfig = computedCall('galleryConfig', ctx)
+
+		const cards = computedCall('galleryObjects', ctx)
+		expect(cards).toHaveLength(1)
+		expect(cards[0]._galleryCover).toContain('fileId=9')
+		expect(computedCall('galleryCardSchema', ctx).configuration.objectNameField).toBe('adres')
+		expect(computedCall('galleryFields', ctx)).toEqual(['adres'])
+		expect(computedCall('galleryClass', ctx)).toBe('search-gallery--large')
+		expect(computedCall('galleryConfig', { activeView: null })).toEqual({})
+	})
+
+	it('asks the list to extend a cover field once and refetches', () => {
+		const ctx = { galleryConfig: { coverField: 'foto' }, normalizedSchema: schema }
+
+		methodCall('requestGalleryCover', ctx)
+
+		expect(mockObjectStore.updateSearchParams).toHaveBeenCalledWith({ _extend: ['@self.can', 'foto'] })
+		expect(mockObjectStore.refetchSearchCollection).toHaveBeenCalledTimes(1)
+
+		mockObjectStore.searchParams = { _extend: ['@self.can', 'foto'] }
+		methodCall('requestGalleryCover', ctx)
+		expect(mockObjectStore.refetchSearchCollection).toHaveBeenCalledTimes(1)
+	})
+
+	it('does not extend the schema image field, which renders as @self.image, or a missing cover', () => {
+		for (const coverField of ['plaatje', undefined]) {
+			methodCall('requestGalleryCover', { galleryConfig: { coverField }, normalizedSchema: schema })
+		}
+		expect(mockObjectStore.updateSearchParams).not.toHaveBeenCalled()
+		expect(mockObjectStore.refetchSearchCollection).not.toHaveBeenCalled()
+	})
+
+	it('asks for the cover when a gallery view becomes active', () => {
+		const ctx = { presentationType: 'gallery', requestGalleryCover: jest.fn(), fetchKanbanBoard: jest.fn() }
+		SearchIndex.watch.activeViewId.call(ctx, 'v9')
+		expect(ctx.requestGalleryCover).toHaveBeenCalledTimes(1)
+		expect(ctx.fetchKanbanBoard).not.toHaveBeenCalled()
+	})
+})

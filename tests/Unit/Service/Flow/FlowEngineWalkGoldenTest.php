@@ -122,6 +122,7 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowErrorPolicy
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
  * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
@@ -164,6 +165,8 @@ class GoldenWalkLogger extends AbstractLogger {
  * @uses \OCA\OpenRegister\Service\Flow\ItemFiring
  * @uses \OCA\OpenRegister\Service\Flow\ItemSeed
  * @uses \OCA\OpenRegister\Service\Flow\PlacesPruning
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateDelta
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionOperators
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 

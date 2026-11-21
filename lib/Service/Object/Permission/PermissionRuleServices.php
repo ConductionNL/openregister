@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\Permission;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
@@ -40,6 +41,7 @@ final class PermissionRuleServices {
 	 * @param ?IEventDispatcher    $eventDispatcher     Optional dispatcher for custom-scope events.
 	 * @param ?ObjectScopeResolverInterface $objectScopeResolver Shared object-scope resolver; absent means a fresh one.
 	 * @param ?ObjectGrantResolver $objectGrantResolver Shared per-object grant resolver; absent means a fresh one.
+	 * @param ?WriteElevationInterface $writeElevation  The open elevation of the run in progress; absent, no refused write is elevated.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -48,6 +50,7 @@ final class PermissionRuleServices {
 		public readonly ?IEventDispatcher $eventDispatcher = null,
 		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
 		public readonly ?ObjectGrantResolver $objectGrantResolver = null,
+		public readonly ?WriteElevationInterface $writeElevation = null,
 	) {
 	}//end __construct()
 }//end class
