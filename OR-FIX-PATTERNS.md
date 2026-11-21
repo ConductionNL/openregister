@@ -155,3 +155,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: add/add conflict on lib/Migration/Version1DateXXXX.php, or SchemaReuseHygieneTest (return null / not targeted) red after merging main.
 - Cause: main landed another step with the same class name; main now requires steps after 2.10 to extend TargetedMigrationStep (protected changeTargetedSchema) and every return to be `return $schema;`.
 - Fix: keep main's file, move the PR's step (and its test, tasks.md mention, component-map row) to a new unused Version1Date<today>; extend TargetedMigrationStep, rename changeSchema to protected changeTargetedSchema, turn `return null;` into `return $schema;` and assertNull into assertSame($schema, ...).
+
+## SchemaMapper declaration checks moved to slots
+- Symptom: conflict in lib/Db/SchemaMapper.php checkBehaviourDeclarations / SchemaMapperServices / MapperWiring (objectActions gone on main).
+- Cause: main runs the schema-save checks by slot (SchemaDeclarationOrder), contributed via SchemaDeclarationChecksEvent listeners (Processes: lib/Listener/SchemaDeclarationChecksListener.php).
+- Fix: take main's three files; add a slot constant for each new check next to its neighbour (extend the section's last slot if at an end), contribute it from the owning area's listener (lazy collaborators via container closure), add the name to SchemaDeclarationOrderTest's list (or-fix-9, #10529).
