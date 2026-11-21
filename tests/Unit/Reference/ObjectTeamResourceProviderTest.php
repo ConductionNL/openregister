@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Reference;
 
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
@@ -36,6 +37,8 @@ use OCP\Teams\TeamResource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
+use ReflectionMethod;
 
 /**
  * Tests for ObjectTeamResourceProvider.
@@ -132,7 +135,7 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$this->objects->method('searchObjectsPaginated')->willReturnCallback(
 			function (array $query=[], bool $_rbac=true, bool $_multitenancy=true): array {
 				$this->queries[] = ['query' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
-				$rows = ($this->stored[$query['@self']['schema']] ?? []);
+				$rows = ($this->stored[$query['@self']['schema'][0]] ?? []);
 				return [
 					'results' => array_slice($rows, $query['_offset'], $query['_limit']),
 					'total' => count($rows),
@@ -246,7 +249,7 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$this->assertSame(
 			[[3, 2, 2], [9, 0, 1]],
 			array_map(
-				static fn (array $sent): array => [$sent['query']['@self']['schema'], $sent['query']['_offset'], $sent['query']['_limit']],
+				static fn (array $sent): array => [$sent['query']['@self']['schema'][0], $sent['query']['_offset'], $sent['query']['_limit']],
 				$this->queries
 			)
 		);
@@ -281,11 +284,34 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$this->assertArrayNotHasKey('team', $this->queries[0]['query']);
 		$this->assertSame('wijkteam', $this->queries[1]['query']['team']);
 		foreach ($this->queries as $sent) {
-			$this->assertNotSame(5, $sent['query']['@self']['schema']);
+			$this->assertNotSame([5], $sent['query']['@self']['schema']);
 			$this->assertTrue($sent['rbac']);
 			$this->assertTrue($sent['multitenancy']);
 		}
 	}//end testEachSchemaIsSearchedOnItsPropertyWithAccessApplied()
+
+	/**
+	 * The query a team page sends routes to a search of that schema's table, not to the no-context search.
+	 *
+	 * A schema alone, without its register, names no single table; MagicMapper
+	 * then logs a warning and answers empty. Sent as a list, it is a
+	 * multi-schema search that resolves the owning register itself.
+	 *
+	 * @return void
+	 */
+	public function testTheSentQueryNamesASchemaSetTheMapperCanSearch(): void {
+		$this->provider->listPage(teamId: 'wijkteam');
+
+		$scope = new ReflectionMethod(MagicMapper::class, 'paginatedSearchScope');
+		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
+		foreach ($this->queries as $sent) {
+			$routed = $scope->invoke($mapper, $sent['query']);
+			$this->assertNull($routed['schemaId']);
+			$this->assertSame([$sent['query']['@self']['schema'][0]], $routed['schemaIds']);
+		}
+
+		$this->assertSame([[3], [9]], array_map(static fn (array $sent): array => $sent['query']['@self']['schema'], $this->queries));
+	}//end testTheSentQueryNamesASchemaSetTheMapperCanSearch()
 
 	/**
 	 * Only what the access-applied search returns is listed: an object the reader may not read is absent.
@@ -351,7 +377,7 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsPaginated')->willReturnCallback(
 			static function (array $query=[]): array {
-				if ($query['@self']['schema'] === 3) {
+				if ($query['@self']['schema'] === [3]) {
 					throw new Exception('table missing');
 				}
 

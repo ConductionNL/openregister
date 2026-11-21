@@ -275,9 +275,12 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	 */
 	private function search(int $schemaId, TeamResourceDeclaration $declaration, string $teamId, int $limit, int $offset): array {
 		try {
+			// The schema goes as a one-item list: a schema without its register
+			// resolves no single table, while a schema list is a multi-schema
+			// search that finds the owning register itself.
 			$page = $this->objects->searchObjectsPaginated(
 				query: [
-					'@self' => ['schema' => $schemaId],
+					'@self' => ['schema' => [$schemaId]],
 					$declaration->teamProperty => $teamId,
 					'_limit' => $limit,
 					'_offset' => $offset,
