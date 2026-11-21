@@ -36,12 +36,19 @@ final class ObjectUpdateOptions {
 	 *
 	 * @param bool              $silent    Whether to skip audit trail creation, events and inverse relations.
 	 * @param ObjectEntity|null $oldObject The object before the changes, or null to snapshot the stored row.
+	 * @param string|null       $origin    Where the update comes from when it is not an edit (`revert`):
+	 *                                     the audit row records it as its action. Null is an edit.
+	 * @param array             $marks     Named markers the audit row records with the change
+	 *                                     (a revert: `revertedTo`, `revertedToVersion`).
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		public readonly bool $silent = false,
 		public readonly ?ObjectEntity $oldObject = null,
+		public readonly ?string $origin = null,
+		public readonly array $marks = [],
 	) {
 	}//end __construct()
 }//end class

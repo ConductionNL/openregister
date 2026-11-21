@@ -35,11 +35,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HandoffControllerServices;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
@@ -94,7 +94,7 @@ class HandoffController extends Controller {
 		IRequest $request,
 		HandoffControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->handoffService = $services->handoffService;
 		$this->logger = $services->logger;
 	}//end __construct()
@@ -168,7 +168,6 @@ class HandoffController extends Controller {
 	 *   (Scenario: Successful request-to-case handoff)
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function execute(string $register, string $schema, string $id, string $handoffId): JSONResponse {
 		return $this->executeForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), handoffId: $handoffId);
 	}//end execute()

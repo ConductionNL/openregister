@@ -56,6 +56,11 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Event\ObjectTransitionedEvent
  * @uses   \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses   \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionActor
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
+ * @uses   \OCA\OpenRegister\Service\Deferral\DeferralOptions
  */
 class WrittenObjectOfEventTest extends TestCase {
 

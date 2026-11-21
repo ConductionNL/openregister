@@ -51,7 +51,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -60,6 +60,12 @@ namespace OCA\OpenRegister\Service\Flow;
 
 /**
  * Contract for a contributed flow node type.
+ *
+ * This base declares no `execute()`, so a node written for either published
+ * signature loads. Implement {@see ICallFlowNode} (one `FlowNodeCall`) for new
+ * nodes; nodes that still take `(array $items, array $config, array $context)`
+ * keep working and may say so with {@see ILegacyFlowNode}. The engine calls
+ * either form through {@see FlowNodeInvoker}.
  */
 interface IFlowNode {
 	/**
@@ -71,7 +77,7 @@ interface IFlowNode {
 	 *
 	 * @return string The type identifier.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getId(): string;
 
@@ -80,7 +86,7 @@ interface IFlowNode {
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDisplayName(): string;
 
@@ -89,7 +95,7 @@ interface IFlowNode {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getDescription(): string;
 
@@ -98,7 +104,7 @@ interface IFlowNode {
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function getIcon(): string;
 
@@ -113,7 +119,7 @@ interface IFlowNode {
 	 *
 	 * @return bool Whether it is available.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function isAvailableForScope(int $scope): bool;
 
@@ -130,31 +136,7 @@ interface IFlowNode {
 	 *
 	 * @throws \UnexpectedValueException When the configuration is unusable.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function validateConfig(array $config): void;
-
-	/**
-	 * Do the work: items in, items out.
-	 *
-	 * This is the method `IOperation` has no equivalent of, and the reason
-	 * this interface exists at all.
-	 *
-	 * A node that acts per record acts once per item and returns one item per
-	 * result. A node that filters returns fewer items than it received. An
-	 * empty returned list is meaningful — it ends that branch's data.
-	 *
-	 * Throwing is meaningful: the engine reads the step's `onError` policy to
-	 * decide whether to stop, continue, or dead-letter. Catching here defeats
-	 * that policy and produces a run that reports success while doing nothing.
-	 *
-	 * @param FlowNodeCall $call The input items ({@see FlowItems}), the step's
-	 *                           authored configuration and the run-level
-	 *                           context, which is NOT the data channel.
-	 *
-	 * @return array The output items.
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function execute(FlowNodeCall $call): array;
 }//end interface

@@ -30,6 +30,8 @@ use Psr\Container\ContainerInterface;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
  * @uses   \OCA\OpenRegister\Db\Task
  * @uses   \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  */
 class ExampleSetTaskClaimTest extends TestCase {
 

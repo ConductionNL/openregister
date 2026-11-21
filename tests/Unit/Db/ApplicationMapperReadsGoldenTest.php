@@ -36,6 +36,10 @@ use RuntimeException;
  * Golden single-column reads of ApplicationMapper.
  *
  * @covers \OCA\OpenRegister\Db\ApplicationMapper
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\LinkColumn
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class ApplicationMapperReadsGoldenTest extends TestCase {
 	use RecordsQueries;

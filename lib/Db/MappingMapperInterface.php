@@ -29,7 +29,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 /**
  * The mapping queries and writes that callers outside lib/Db use.
  *
- * Bound to MappingMapper in DbRegistrar.
+ * Bound to MappingMapper in IntegrationsMapperRegistrar.
  */
 interface MappingMapperInterface {
 
@@ -107,4 +107,15 @@ interface MappingMapperInterface {
 	 * @throws \Exception
 	 */
 	public function updateFromArray(int $id, array $data): Mapping;
+
+	/**
+	 * Get all mapping slug to ID mappings
+	 *
+	 * @param bool $includeNullOrg Include mappings with no organisation set
+	 *
+	 * @return array<string,string> Array mapping mapping slugs to their IDs
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function getSlugToIdMap(bool $includeNullOrg = true): array;
 }//end interface

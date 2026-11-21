@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+ * @spec openspec/specs/flow-triggers/spec.md
  */
 
 declare(strict_types=1);
@@ -93,7 +93,11 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @listener-placement inline realtime — FlowTriggerService runs `executionMode: sync` flows inside the
+	 *   triggering request, a published read-after-write contract; async flows already leave the request
+	 *   through FlowRunWorker, and the trigger lookup is an indexed query.
+	 *
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	public function handle(Event $event): void {
 		// A plan item reaching a terminal state (flow-cmmn-case-semantics)
@@ -205,12 +209,27 @@ class FlowTriggerListener implements IEventListener {
 	 * A state change is the one lifecycle event that is *about* a change rather
 	 * than a moment: which action ran and the places it moved between are what a
 	 * flow wired to "an object changes state" needs to branch on, so they are
-	 * put on the run context where the flow's conditions can read them. Every
-	 * other lifecycle event adds nothing beyond its subject.
+	 * put on the run context where the flow's conditions can read them.
+	 *
+	 * A deletion is the one lifecycle event whose SUBJECT CANNOT BE RE-RESOLVED.
+	 * Every run — inline or queued — re-reads its subject by uuid before any
+	 * node executes ({@see \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::advance()}),
+	 * and a deleted object is, by definition, never there to find: the delete
+	 * already happened by the time ANY run reaches it, so a flow wired to
+	 * `object.deleted` failed with "Subject ... no longer exists" on every
+	 * firing, unconditionally — not a bug in the flow, a gap in what the trigger
+	 * handed the run. The object's last-known state travels under `payload`
+	 * instead, the same slot a subjectless trigger (a file, a user) already
+	 * seeds its first item from, so the advancer's existing fallback picks it up
+	 * with no new mechanism.
+	 *
+	 * Every other lifecycle event adds nothing beyond its subject — the object
+	 * still exists, so a flow that needs more than its uuid already has a
+	 * resolvable subject to read it from.
 	 *
 	 * @param Event $event The dispatched event.
 	 *
-	 * @return array<string, string> The extra context, empty for most events.
+	 * @return array<string, mixed> The extra context, empty for most events.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -232,8 +251,50 @@ class FlowTriggerListener implements IEventListener {
 			];
 		}
 
+		if ($event instanceof ObjectDeletedEvent) {
+			return ['payload' => $event->getObject()->jsonSerialize()];
+		}
+
+		if ($event instanceof ObjectUpdatedEvent) {
+			return ['changedFields' => $this->changedFields(event: $event)];
+		}
+
 		return [];
 	}//end contextFor()
+
+	/**
+	 * The top-level properties whose values differ between the old and new object.
+	 *
+	 * `@self` metadata is left out. Without the old object nothing proves a
+	 * field changed, so the list is empty and a watching trigger does not start.
+	 *
+	 * @param ObjectUpdatedEvent $event The update.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	private function changedFields(ObjectUpdatedEvent $event): array {
+		$old = $event->getOldObject();
+		if ($old === null) {
+			return [];
+		}
+
+		$before = ($old->getObject() ?? []);
+		$after = ($event->getNewObject()->getObject() ?? []);
+		$changed = [];
+		foreach (array_keys($before + $after) as $key) {
+			if ((string)$key === '@self') {
+				continue;
+			}
+
+			if (array_key_exists($key, $before) !== array_key_exists($key, $after) || ($before[$key] ?? null) !== ($after[$key] ?? null)) {
+				$changed[] = (string)$key;
+			}
+		}
+
+		return $changed;
+	}//end changedFields()
 
 	/**
 	 * Map an event class to the trigger id flows are wired to.
@@ -242,7 +303,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return string|null The trigger id, or null when this is not an object event.
 	 *
-	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 * @spec openspec/specs/flow-triggers/spec.md
 	 */
 	private function eventIdFor(Event $event): ?string {
 		foreach (self::EVENT_IDS as $class => $eventId) {

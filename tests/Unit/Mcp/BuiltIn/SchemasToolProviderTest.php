@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -41,10 +43,14 @@ class SchemasToolProviderTest extends TestCase {
 
 	private SchemasToolProvider $provider;
 
+	/** @var AuthorizationAuditService&MockObject */
+	private AuthorizationAuditService $audit;
+
 	protected function setUp(): void {
 		parent::setUp();
+		$this->audit = $this->createMock(AuthorizationAuditService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->provider = new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'root'));
+		$this->provider = new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'root'), $this->audit, new \Psr\Log\NullLogger());
 
 	}//end setUp()
 
@@ -69,7 +75,7 @@ class SchemasToolProviderTest extends TestCase {
 	 * @return SchemasToolProvider
 	 */
 	private function providerFor(array $groups = []): SchemasToolProvider {
-		return new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'mallory', groups: $groups));
+		return new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'mallory', groups: $groups), $this->audit, new \Psr\Log\NullLogger());
 	}//end providerFor()
 
 	/**
@@ -377,4 +383,43 @@ class SchemasToolProviderTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->providerFor(groups: [])->invokeTool('schemas', ['action' => 'create', 'data' => ['configuration' => ['orphanCleanup' => true]]]);
 	}
+	public function testAnAuthorizationChangeIsAudited(): void {
+		$stored = $this->storedSchema();
+		$saved = new Schema();
+		$saved->setId(5);
+		$saved->setTitle('Edited');
+		$saved->setAuthorization(['manage' => ['beheer'], 'read' => ['beheer']]);
+		$this->schemaMapper->method('updateFromArray')->willReturn($saved);
+		$this->audit->expects($this->once())->method('recordSchemaChange')->with(
+			$this->callback(static fn (AuthorizationChange $change): bool => $change->entityId === 5
+				&& $change->before === $stored->getAuthorization()
+				&& $change->after === ['manage' => ['beheer'], 'read' => ['beheer']])
+		);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['authorization' => ['manage' => ['beheer'], 'read' => ['beheer']]]]
+		);
+	}//end testAnAuthorizationChangeIsAudited()
+
+	public function testAnUpdateWithoutAuthorizationIsNotAudited(): void {
+		$stored = $this->storedSchema();
+		$this->schemaMapper->method('updateFromArray')->willReturn($stored);
+		$this->audit->expects($this->never())->method('recordSchemaChange');
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited']]);
+	}//end testAnUpdateWithoutAuthorizationIsNotAudited()
+
+	public function testInternalParametersAreNotWritten(): void {
+		$stored = $this->storedSchema();
+		$this->schemaMapper->expects($this->once())
+			->method('updateFromArray')
+			->with(id: 5, object: ['title' => 'Edited'])
+			->willReturn($stored);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited', '_rbac' => false, '_route' => 'x']]
+		);
+	}//end testInternalParametersAreNotWritten()
 }//end class

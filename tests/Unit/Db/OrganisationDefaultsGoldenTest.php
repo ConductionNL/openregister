@@ -89,7 +89,7 @@ final class OrganisationDefaultsGoldenTest extends TestCase {
 	];
 
 	/**
-	 * The default authorization: every right present, granted to nobody.
+	 * The default authorization: every CRUD right and grant_manage granted to nobody, agent_use and llm_use to everyone.
 	 *
 	 * @var array<string, array<mixed>>
 	 */
@@ -136,10 +136,8 @@ final class OrganisationDefaultsGoldenTest extends TestCase {
 			'update' => [],
 			'delete' => [],
 		],
-		'object_publish' => [],
-		'agent_use' => [],
-		'dashboard_view' => [],
-		'llm_use' => [],
+		'agent_use' => ['*'],
+		'llm_use' => ['*'],
 		'grant_manage' => [],
 	];
 
@@ -153,18 +151,18 @@ final class OrganisationDefaultsGoldenTest extends TestCase {
 	}//end testFieldTypesAreRegisteredInOrder()
 
 	/**
-	 * Without rules an organisation grants nothing: every right is present and empty.
+	 * Without rules an organisation grants no CRUD right and no grant_manage; agent_use and llm_use are open to everyone.
 	 *
 	 * @return void
 	 */
-	public function testDefaultAuthorizationGrantsNobody(): void {
+	public function testDefaultAuthorizationOpensOnlyTheUseRights(): void {
 		$organisation = new Organisation();
 
 		$this->assertSame(self::DEFAULT_AUTHORIZATION, $organisation->getAuthorization());
 		$this->assertSame(self::DEFAULT_AUTHORIZATION, $organisation->jsonSerialize()['authorization']);
 		$this->assertSame([], $organisation->getAuthorization()['grant_manage']);
 		$this->assertSame([], $organisation->getAuthorization()['object']['delete']);
-	}//end testDefaultAuthorizationGrantsNobody()
+	}//end testDefaultAuthorizationOpensOnlyTheUseRights()
 
 	/**
 	 * Clearing the rules falls back to the same deny-all default.

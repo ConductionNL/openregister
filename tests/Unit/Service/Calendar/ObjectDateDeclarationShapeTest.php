@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Exception\CalendarDateKindException
  * @uses   \OCA\OpenRegister\Service\Calendar\ObjectDateLayout
  * @uses   \OCA\OpenRegister\Service\Calendar\ObjectDateTerm
+ * @uses \OCA\OpenRegister\Service\Calendar\DateDeclarationRun
  */
 class ObjectDateDeclarationShapeTest extends TestCase
 {

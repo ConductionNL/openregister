@@ -59,6 +59,15 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Exception\TaskSeparationOfDutiesException
  * @uses \OCA\OpenRegister\Exception\TaskValidationException
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswer
+ * @uses \OCA\OpenRegister\Service\Task\TaskAnswerPayload
+ * @uses \OCA\OpenRegister\Service\Task\TaskCommit
+ * @uses \OCA\OpenRegister\Service\Task\TaskCompletion
+ * @uses \OCA\OpenRegister\Service\Task\TaskIntake
+ * @uses \OCA\OpenRegister\Service\Task\TaskLifecycleServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskTables
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
  */
 class TaskSequenceLifecycleVerbsTest extends TestCase {
 

@@ -1008,6 +1008,7 @@ import DenialComposerDialog from '../../dialogs/avg/DenialComposerDialog.vue'
 import EditActivityDialog from '../../dialogs/avg/EditActivityDialog.vue'
 import RedactionDialog from '../../dialogs/avg/RedactionDialog.vue'
 import TableHeadRow from './TableHeadRow.vue'
+import { saveBlob, saveJson } from '../../services/saveFile.js'
 import {
 	CASE_LIFECYCLE_TRANSITIONS,
 	CASE_STATUS_VOCABULARY,
@@ -1072,22 +1073,6 @@ function archiveQuestion() {
 		'openregister',
 		'Archive this processing activity? Audit-trail rows will keep referring to it.',
 	)
-}
-
-/**
- * Let the browser save a file under a name.
- *
- * @param {Blob} blob The file
- * @param {string} filename The name to offer
- * @return {void}
- */
-function saveFile(blob, filename) {
-	const url = URL.createObjectURL(blob)
-	const a = document.createElement('a')
-	a.href = url
-	a.download = filename
-	a.click()
-	URL.revokeObjectURL(url)
 }
 
 export default {
@@ -1633,11 +1618,8 @@ export default {
 			try {
 				const data = await avgStore.runPortability(this.subjectQuery())
 				if (!data) return
-				const blob = new Blob([JSON.stringify(data, null, 2)], {
-					type: 'application/json',
-				})
-				saveFile(
-					blob,
+				saveJson(
+					data,
 					`avg-portability-${this.dsar.subject.replace(/[^a-z0-9]/gi, '-')}.json`,
 				)
 			} catch (e) {
@@ -1976,7 +1958,7 @@ export default {
 					token,
 				)
 				if (!blob) return
-				saveFile(blob, `dsar-case-${this.selectedCaseId}.pdf`)
+				saveBlob(blob, `dsar-case-${this.selectedCaseId}.pdf`)
 				await this.reloadSelectedCase()
 			} catch (e) {
 				// surfaced via store error

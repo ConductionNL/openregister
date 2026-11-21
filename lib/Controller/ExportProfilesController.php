@@ -29,9 +29,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Export\ExportProfileCaller;
 use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
@@ -103,7 +103,7 @@ class ExportProfilesController extends Controller {
 		IRequest $request,
 		ExportProfilesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -149,21 +149,10 @@ class ExportProfilesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
-
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
-
-		return new JSONResponse(data: $profile->jsonSerialize());
+		return $this->withOwnedProfile(
+			id: $id,
+			action: static fn (ExportProfile $profile): JSONResponse => new JSONResponse(data: $profile->jsonSerialize())
+		);
 	}//end show()
 
 	/**
@@ -172,12 +161,10 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The persisted profile.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
@@ -201,31 +188,23 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The persisted profile.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile): JSONResponse {
+				try {
+					$profile = $this->service->update(profile: $profile, data: $this->submitted());
+				} catch (InvalidArgumentException $e) {
+					return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+				}
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
-			$profile = $this->service->update(profile: $profile, data: $this->submitted());
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}
-
-		return new JSONResponse(data: $profile->jsonSerialize());
+				return new JSONResponse(data: $profile->jsonSerialize());
+			}
+		);
 	}//end update()
 
 	/**
@@ -236,29 +215,19 @@ class ExportProfilesController extends Controller {
 	 * @return JSONResponse The outcome.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile): JSONResponse {
+				$this->service->delete(profile: $profile);
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
-			$this->service->delete(profile: $profile);
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
-
-		return new JSONResponse(data: ['deleted' => true]);
+				return new JSONResponse(data: ['deleted' => true]);
+			}
+		);
 	}//end destroy()
 
 	/**
@@ -280,28 +249,20 @@ class ExportProfilesController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function run(int $id): DataDownloadResponse|JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile, string $userId): DataDownloadResponse {
+				$written = $this->service->run(profile: $profile, actorUid: $userId);
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
-			$written = $this->service->run(profile: $profile, actorUid: $userId);
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
+				// Record the run before the bytes leave. This path serves the export
+				// straight to the caller, so there is no file for a sweep to delete
+				// and the retention is null: the row is the record, and it is the
+				// register handing the copy over, which is what the count counts.
+				$this->recordRun(profile: $profile, written: $written);
 
-		// Record the run before the bytes leave. This path serves the export
-		// straight to the caller, so there is no file for a sweep to delete
-		// and the retention is null: the row is the record, and it is the
-		// register handing the copy over, which is what the count counts.
-		$this->recordRun(profile: $profile, written: $written);
-
-		return $this->servedExport(profile: $profile, written: $written);
+				return $this->servedExport(profile: $profile, written: $written);
+			}
+		);
 	}//end run()
 
 	/**
@@ -468,6 +429,35 @@ class ExportProfilesController extends Controller {
 	private function profileCaller(string $userId): ExportProfileCaller {
 		return new ExportProfileCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
 	}//end profileCaller()
+
+	/**
+	 * Run an action on a profile the signed-in caller owns or administers.
+	 *
+	 * Answers 401 without a caller, 404 for a missing profile and the refusal's own
+	 * status when the caller may not touch it; the action never runs in those cases.
+	 *
+	 * @param int                                                                  $id     The profile id.
+	 * @param callable(ExportProfile, string): (JSONResponse|DataDownloadResponse) $action Gets the profile and the caller's uid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The action's answer, or the refusal.
+	 */
+	private function withOwnedProfile(int $id, callable $action): DataDownloadResponse|JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return $this->authRequiredResponse();
+		}
+
+		try {
+			$profile = $this->service->find(id: $id);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
+
+			return $action($profile, $userId);
+		} catch (DoesNotExistException $e) {
+			return $this->notFoundResponse();
+		} catch (ExportRefusedException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
+		}
+	}//end withOwnedProfile()
 
 	/**
 	 * The 401 an anonymous caller gets.

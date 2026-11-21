@@ -29,7 +29,7 @@ use OCP\IConfig;
 /**
  * The app config, server config and encryption manager the object file migration consults.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class ObjectFileMigrationSettings {
 	/**
@@ -39,7 +39,7 @@ final class ObjectFileMigrationSettings {
 	 * @param IEncryptionManager $encryptionManager Tells whether server-side encryption is on.
 	 * @param IConfig            $config            Reads whether an admin set the account's quota.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly IAppConfig $appConfig,

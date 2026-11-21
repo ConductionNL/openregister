@@ -40,6 +40,10 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses   \OCA\OpenRegister\Service\Object\RepeatingGroupValidator
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\PresentationAnnotations
+ * @uses \OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold
  */
 class ObjectServiceSaveGuardWiringTest extends TestCase {
 

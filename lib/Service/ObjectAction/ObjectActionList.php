@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\IL10N;
@@ -45,7 +46,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
  */
-class ObjectActionList implements ObjectActionListInterface {
+class ObjectActionList implements ObjectActionListInterface, RunnableActionsInterface {
 
 	/**
 	 * Constructor.
@@ -146,7 +147,7 @@ class ObjectActionList implements ObjectActionListInterface {
 	 *
 	 * @return array<string, bool> Action key => whether the caller may run it.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function canRun(ObjectEntity $object, Schema $schema): array {
 		$can = [];

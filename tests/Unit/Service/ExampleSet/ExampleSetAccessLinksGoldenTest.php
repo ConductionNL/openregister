@@ -35,6 +35,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FilledRow
  */
 class ExampleSetAccessLinksGoldenTest extends TestCase {
 	/**

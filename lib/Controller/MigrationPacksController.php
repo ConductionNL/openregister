@@ -43,11 +43,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface;
@@ -115,7 +115,7 @@ class MigrationPacksController extends Controller {
 		IRequest $request,
 		MigrationPacksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->session = $services->session;
 		$this->requestReader = $services->requestReader;
@@ -135,6 +135,25 @@ class MigrationPacksController extends Controller {
 
 		return $user->getUID();
 	}//end resolveUserId()
+
+	/**
+	 * The pack a signed-in caller asked for, or the 401 or 404 that answers instead.
+	 *
+	 * @param int $id The migration pack id.
+	 *
+	 * @return MigrationPack|JSONResponse
+	 */
+	private function readablePack(int $id): MigrationPack|JSONResponse {
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
+		}
+
+		try {
+			return $this->service->find(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->errors->notFound();
+		}
+	}//end readablePack()
 
 	/**
 	 * The refusal for a caller who may not change packs, or null for an administrator.
@@ -214,14 +233,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		return new JSONResponse(data: $pack->jsonSerialize());
@@ -250,14 +264,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function export(int $id): JSONResponse|DataDownloadResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		$json = json_encode($pack->getDefinitionArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

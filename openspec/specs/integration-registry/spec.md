@@ -90,6 +90,27 @@ OpenRegister MUST expose `OCA\OpenRegister\Service\Integration\IntegrationProvid
 - THEN `MyServiceProvider::getId()` MUST return a non-empty string
 - AND the string MUST be unique across all registered providers in this OR install
 
+### Requirement: An integration MAY declare extra top-level keys of its list answer
+
+The object-integration list route (`GET /api/objects/{register}/{schema}/{id}/integrations/{integrationId}`) answers the envelope `{items, results, total, nextCursor}`. A provider whose `list()` answer carries further documented top-level keys (for example `appliedLayers` and `withheld`, which explain how a layout answer was composed) MAY implement `OCA\OpenRegister\Service\Integration\DeclaresListExtraKeys` and name them in `listExtraKeys(): array`. The route MUST then pass exactly those keys through, unchanged, next to the envelope. Keys a provider does not declare MUST be dropped, as for a provider that implements no such interface, and a declared key MUST NOT replace one of the envelope's own keys. The interface is optional: a provider without it answers exactly as before.
+
+#### Scenario: A declared extra key reaches the consumer unchanged
+- GIVEN a provider that declares `appliedLayers` and `withheld`
+- AND its `list()` answers `{items: [...], total: 1, nextCursor: null, appliedLayers: [...], withheld: [...], internal: ...}`
+- WHEN a caller lists that integration on an object it may read
+- THEN the answer carries `appliedLayers` and `withheld` with the values the provider returned
+- AND the answer carries no `internal` key
+
+#### Scenario: A declared key cannot override the envelope
+- GIVEN a provider that declares `total`
+- WHEN it lists
+- THEN `total` is the envelope's own total, as for any provider
+
+#### Scenario: A provider that declares nothing is unchanged
+- GIVEN a provider that does not implement `DeclaresListExtraKeys`
+- WHEN its `list()` answer carries extra top-level keys
+- THEN the answer is the envelope alone
+
 ### Requirement: The system MUST expose an `IntegrationRegistry` service
 
 OpenRegister MUST expose `OCA\OpenRegister\Service\Integration\IntegrationRegistry` as a public DI-resolvable service with: `register(IntegrationProvider $p): void`, `listAll(): iterable<IntegrationProvider>`, `listEnabled(): iterable<IntegrationProvider>`, `listIds(): array<string>`, `getById(string $id): ?IntegrationProvider`, `requireById(string $id): IntegrationProvider`. `requireById()` MUST throw `IntegrationNotFoundException` for unknown ids. Any service implementing `IntegrationProvider` and tagged `IntegrationProvider` in the DI container MUST be auto-registered at boot.

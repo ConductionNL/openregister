@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\SequenceMapper
+ * @uses \OCA\OpenRegister\Db\Sequence
+ * @uses \OCA\OpenRegister\Service\SequenceScope
  */
 final class SequenceMapperScopeGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

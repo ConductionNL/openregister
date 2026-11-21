@@ -38,6 +38,8 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Dmn\TableValidationRun
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TableConfigCheck
  */
 class DecisionTableNodeConfigShapeBehaviourTest extends TestCase {
 

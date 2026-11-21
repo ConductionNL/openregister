@@ -37,6 +37,12 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 /**
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses   \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
  */
 class ProviderItemsBelongToObjectTest extends TestCase {
 
@@ -49,7 +55,7 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 		$notes = $this->createMock(NoteService::class);
 		$notes->method('requireNoteOf')->with('uuid-mine', 5)->willThrowException(new Exception('Note not found', 404));
 		$notes->expects($this->never())->method('deleteNote');
-		$notes->expects($this->never())->method('updateNote');
+		$notes->expects($this->never())->method('editNote');
 
 		return new NotesProvider($notes, $this->createMock(IL10N::class));
 	}

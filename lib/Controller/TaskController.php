@@ -44,7 +44,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Controller\Support\TaskInboxRequest;
@@ -62,6 +61,7 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
@@ -77,7 +77,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
@@ -188,7 +187,7 @@ class TaskController extends Controller {
 		IRequest $request,
 		TaskControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->tasks = $services->work->tasks;
 		$this->inbox = $services->work->inbox;
 		$this->authorization = $services->work->authorization;
@@ -239,11 +238,6 @@ class TaskController extends Controller {
 			params: []
 		);
 
-		// The same relaxation the dashboard shell carries: the SPA calls the
-		// API from this page, so the shell's CSP must allow it.
-		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedConnectDomain('*');
-		$response->setContentSecurityPolicy($csp);
 
 		return $response;
 	}//end open()
@@ -461,7 +455,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->enrich(task: $task),
+				$this->inbox->enrich(task: $task, caller: $this->uid()),
 				$this->forms->describe(task: $task)
 			)
 		);
@@ -509,7 +503,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		$response = $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid())
@@ -532,7 +525,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->offer(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), pool: $this->body()),
@@ -550,7 +542,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
@@ -568,7 +559,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
@@ -587,7 +577,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->assign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
@@ -606,7 +595,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->reassign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
@@ -626,7 +614,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->delegate(
@@ -649,7 +636,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->resolve(
@@ -680,7 +666,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function complete(
 		string $uuid,
 		string $outcome = 'done',
@@ -729,7 +714,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->cancel(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), reason: $reason),
@@ -751,7 +735,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function edit(string $uuid): JSONResponse {
 		return $this->respondWith(
 			verb: fn (): TaskInterface => $this->tasks->edit(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), changes: $this->body()),
@@ -772,7 +755,6 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function checkItem(string $uuid, string $itemId, mixed $checked = 'true'): JSONResponse {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
