@@ -86,3 +86,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Test env: OCP\\EventDispatcher\\Event not found in process-isolated tests (e.g. TalkGatewaySetDescriptionTest)
 - Cause: -d auto_prepend_file is not passed to PHPUnit's isolated child processes, so the OCP autoloader is missing there; not a PR defect.
 - Fix: put auto_prepend_file in an ini dir and export PHP_INI_SCAN_DIR=/etc/php/8.3/cli/conf.d:<that dir>; such parked reds pass on the merge.
+
+## Conflict in the generated components yaml
+- Symptom: content conflict in the repo-root *.components.yaml (huge alternation lines).
+- Cause: generated from scripts/component-map.csv; main and the PR both regenerated it.
+- Fix: resolve scripts/component-map.csv (keep both sides' rows), then python3 scripts/component-patterns.py and --check; never hand-merge the yaml (see #10537).
