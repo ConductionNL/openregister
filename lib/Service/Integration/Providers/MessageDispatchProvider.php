@@ -81,13 +81,6 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	public const SOURCE_ID = 'whatsapp-cloud-api';
 
 	/**
-	 * The seeded source the e-mail channel sends through (send-at-on-the-messaging-leaf D-4).
-	 *
-	 * @var string
-	 */
-	public const EMAIL_SOURCE = 'smtp-mail';
-
-	/**
 	 * NC app that must be installed for this integration to function (it
 	 * carries the messaging sources + credentials).
 	 *

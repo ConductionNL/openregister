@@ -52,15 +52,14 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageScheduler;
-use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCA\OpenRegister\Service\Integration\Providers\MessageIdMinter;
 use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
-use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -87,7 +86,7 @@ class MessageDispatchController extends Controller {
 		private readonly ?ScheduledMessageScheduler $scheduler = null,
 		private readonly ?ObjectOperationsInterface $objects = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -176,7 +175,7 @@ class MessageDispatchController extends Controller {
 			body: $composed,
 			headers: [MessageIdMinter::HEADER => $messageId]
 		);
-		$source    = MessageDispatchProvider::EMAIL_SOURCE;
+		$source    = MessageDispatcherInterface::EMAIL_SOURCE;
 
 		if (trim((string)$this->request->getParam('sendAt', '')) !== '') {
 			$response = $this->scheduleSend(channel: 'email', source: $source, path: $message->path, message: $message);
