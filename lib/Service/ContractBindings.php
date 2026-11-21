@@ -1066,7 +1066,6 @@ final class ContractBindings {
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
 		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
 		RunningNumbersInterface::class => RunningNumbers::class,
-		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigCatalogueInterface::class => ShareableConfigCatalogue::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,

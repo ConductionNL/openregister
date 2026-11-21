@@ -873,8 +873,8 @@ Db/SchemaRunMapper.php,60,Db,Service,Service/Db/SchemaRunMapper.php,0,349,Core
 Db/SearchTrail.php,149,Db,Compliance,Compliance/Db/SearchTrail.php,0,,Compliance
 Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0,32,Compliance
 Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Core
-Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Configuration
-Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Configuration
+Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Processes
+Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Processes
 Db/SlugIdLookupTrait.php,51,Db,Db,Db/SlugIdLookupTrait.php,0,,Core
 Db/Source.php,157,Db,Integrations,Integrations/Db/Source.php,0,142,Integrations
 Db/SourceMapper.php,143,Db,Integrations,Integrations/Db/SourceMapper.php,0,184,Integrations
@@ -3220,7 +3220,7 @@ Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchT
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
-Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Configuration
+Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Processes
 Service/Serializer/RegisterSerializer.php,110,Service,Service,Service/Serializer/RegisterSerializer.php,0,,Core
 Service/ServiceRegistrar.php,209,Service,Access,Access/Service/ServiceRegistrar.php,0,,Core
 Service/Settings/CacheSettingsHandler.php,414,Service,Configuration,Configuration/Service/Settings/CacheSettingsHandler.php,0,,Configuration
@@ -3890,7 +3890,7 @@ Repair/FlowNodeTypeRewrite.php,,Repair,,,,,Processes
 Repair/FlowTimerRegisterPathInterface.php,,Repair,,,,,Processes
 Repair/FlowVersionBackfillTally.php,,Repair,,,,,Processes
 Repair/FlowVersionNumbering.php,,Repair,,,,,Processes
-Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Processes
+Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Core
 Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
@@ -4424,6 +4424,8 @@ Controller/Support/WellKnownControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/AnonymisationBackendControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/AuditQueryControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/AuditSinkControllerServices.php,,Controller,,,,,Compliance
+Controller/Support/CalendarEventsControllerServices.php,53,Controller,Flows,Flows/Controller/Support/CalendarEventsControllerServices.php,0,,Processes
+Controller/Support/CaseTokenControllerServices.php,48,Controller,Integrations,Integrations/Controller/Support/CaseTokenControllerServices.php,0,,Integrations
 Controller/Support/ContentReportControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/ErasurePreviewControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/HardeningControllerServices.php,,Controller,,,,,Compliance
@@ -4439,6 +4441,7 @@ Controller/Support/ConfigPublishRequest.php,,Controller,,,,,Configuration
 Controller/Support/ConfigurationImport.php,,Controller,,,,,Configuration
 Controller/Support/ExportProfilesControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/FederatedConfigControllerServices.php,,Controller,,,,,Configuration
+Controller/Support/FormLinksControllerServices.php,53,Controller,Integrations,Integrations/Controller/Support/FormLinksControllerServices.php,0,,Integrations
 Controller/Support/GitHubPublishRun.php,,Controller,,,,,Configuration
 Controller/Support/MigrationPacksControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/OperationsConsistencyControllerServices.php,,Controller,,,,,Configuration
@@ -4550,9 +4553,6 @@ Service/NotificationsServiceRegistrar.php,,Service,,,,,Notifications
 Service/Configuration/RegisterBundles.php,,Service,,,,,Configuration
 Service/MigrationPack/MigrationPackDefinitions.php,,Service,,,,,Configuration
 Service/Resilience/OutboundBreaker.php,,Service,,,,,Platform
-Controller/Support/CalendarEventsControllerServices.php,,Controller,,,,,Processes
-Controller/Support/CaseTokenControllerServices.php,,Controller,,,,,Integrations
-Controller/Support/FormLinksControllerServices.php,,Controller,,,,,Integrations
 Repair/Support/SequenceMigrationRun.php,,Repair,,,,,Processes
 Service/Audit/ObjectTrailReader.php,,Service,,,,,Compliance
 Db/AuditTrail/ActionScope.php,,Db,,,,,Core
