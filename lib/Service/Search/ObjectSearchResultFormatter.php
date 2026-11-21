@@ -303,7 +303,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 			return $subline . ' — ' . $declaredSubline;
 		}
 
-		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
+		$excerpt = (self::snippetText(hit: $hit) ?? $this->buildExcerpt(object: $hit->object(), term: (string)$term));
 		if ($excerpt !== '') {
 			$subline .= ' — ' . $excerpt;
 		}
@@ -332,6 +332,28 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 
 		return implode(' · ', array_map(static fn (array $row): string => $row['label'] . ': ' . $row['value'], $rows));
 	}//end cardSummary()
+
+	/**
+	 * The matched passage the search attached as `@self.snippet`, as plain text, or null.
+	 *
+	 * The snippet was taken under REQ-SDL-002's rules (never a write-only or
+	 * encrypted property); a subline is text, so the marks are dropped and the
+	 * escaping undone.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return string|null The passage, or null when the row carries none.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md#requirement-a-result-shows-the-passage-that-matched-only-from-what-the-reader-may-see-req-sdl-002
+	 */
+	private static function snippetText(ObjectSearchHit $hit): ?string {
+		$text = ($hit->selfData()['snippet']['text'] ?? null);
+		if (is_string($text) === false || $text === '') {
+			return null;
+		}
+
+		return html_entity_decode(strip_tags($text), (ENT_QUOTES | ENT_HTML5), 'UTF-8');
+	}//end snippetText()
 
 	/**
 	 * The owner, register and schema names a hit's subline names.
