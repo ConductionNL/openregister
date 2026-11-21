@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
@@ -205,10 +206,12 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 				metric: $q['metric'],
 				field: ($q['field'] ?? null),
 				filter: ($q['filter'] ?? []),
-				groupBy: ($q['groupBy'] ?? null),
-				dateBucket: ($q['dateBucket'] ?? null),
-				metrics: ($q['metrics'] ?? null),
-				cumulative: ($q['cumulative'] ?? false)
+				layout: new AggregationLayout(
+					groupBy: ($q['groupBy'] ?? null),
+					dateBucket: ($q['dateBucket'] ?? null),
+					metrics: ($q['metrics'] ?? null),
+					cumulative: ($q['cumulative'] ?? false)
+				)
 			);
 			$result = $runner->runAdhoc(register: $register, schema: $schema, query: $query, bypassRbac: $case['bypass']);
 			$outcome = ['result' => $result];

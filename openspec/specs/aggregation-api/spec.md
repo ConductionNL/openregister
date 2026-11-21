@@ -212,11 +212,12 @@ WITHOUT hydrating all rows and aggregating in PHP. The entry point SHALL be
 `AggregationRunner::runAdhocByRef(string $registerRef, string $schemaRef,
 AggregationQuery $query)`.
 
-`AggregationQuery::create(string $metric, ?string $field, array $filter, ?array
-$groupBy, ?array $dateBucket)` SHALL build the request: `metric` one of
+`AggregationQuery::create(string $metric, ?string $field, array $filter,
+?AggregationLayout $layout)` SHALL build the request: `metric` one of
 `count|sum|avg|min|max`; `field` required for non-`count` metrics; `filter` a
-per-field map of scalar-equality or operator sub-maps; `groupBy` an optional
-`{field: <name>}`.
+per-field map of scalar-equality or operator sub-maps; `layout` an optional
+`AggregationLayout(groupBy, dateBucket, metrics, cumulative)` whose `groupBy` is
+an optional `{field: <name>}`.
 
 `runAdhocByRef()` SHALL apply the SAME authorization and tenancy gate as
 `findAll()`: the schema's `list` RBAC verdict for the active user and the
@@ -236,7 +237,7 @@ engine that served the request (`postgres` / `mysql` / `sqlite` / `php-fallback`
 - **GIVEN** a register+schema with objects carrying a numeric `priority` and a
   categorical `taskStatus`, and an authenticated caller with `list` permission
 - **WHEN** the consumer builds `AggregationQuery::create(metric: 'sum', field:
-  'priority', groupBy: ['field' => 'taskStatus'])` and calls
+  'priority', layout: new AggregationLayout(groupBy: ['field' => 'taskStatus']))` and calls
   `runAdhocByRef(registerRef, schemaRef, query)`
 - **THEN** the result SHALL contain `groups`, one bucket per distinct
   `taskStatus`, each `value` equal to the SUM of `priority` over the rows in that

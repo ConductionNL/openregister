@@ -111,50 +111,18 @@ class AggregationQuery {
 	/**
 	 * Construct an aggregation query — fails fast on bad input.
 	 *
-	 * @param string $metric One of METRIC_*.
-	 * @param ?string $field Field for non-count metrics; null for count.
+	 * The grouping, time bucketing, metric list and running-total flag travel together in
+	 * one {@see AggregationLayout}; omit it for a plain single-value aggregation.
+	 *
+	 * @param string               $metric One of METRIC_*.
+	 * @param ?string              $field  Field for non-count metrics; null for count.
 	 * @param array<string, mixed> $filter Filter map.
-	 * @param array<string, mixed>|null $groupBy Optional groupBy. Single-field (`{field: 'x'}`),
-	 *                                           multi-field (`{fields: ['a','b']}`), or a plain
-	 *                                           list (`['a','b']`). Multi-field yields one
-	 *                                           grouped row per distinct field tuple.
-	 * @param array<string, mixed>|null $dateBucket Optional dateBucket spec `{field, start, end, gap}`.
-	 * @param array<int, array{metric: string, field?: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                         (`[{metric: 'count'},
-	 *                                                                         {metric: 'sum', field:
-	 *                                                                         'price'}]`). When supplied
-	 *                                                                         (non-empty), every listed
-	 *                                                                         pair is computed in one
-	 *                                                                         request and the response
-	 *                                                                         carries a `values` map
-	 *                                                                         instead of a single scalar
-	 *                                                                         `value`/per-group `value`.
-	 *                                                                         The legacy
-	 *                                                                         `$metric`/`$field` pair
-	 *                                                                         remains the "primary"
-	 *                                                                         metric (used by callers
-	 *                                                                         that only look at
-	 *                                                                         `->metric`/`->field`) and
-	 *                                                                         SHOULD mirror
-	 *                                                                         `$metrics[0]` when both
-	 *                                                                         are supplied. Mutually
-	 *                                                                         exclusive with
-	 *                                                                         `$dateBucket` (not yet
-	 *                                                                         supported — REQ-AGG-102
-	 *                                                                         covers the categorical
-	 *                                                                         value/grouped paths only).
-	 * @param bool $cumulative Optional running-total
-	 *                         flag (REQ-AGG-103).
-	 *                         Only meaningful —
-	 *                         and only accepted —
-	 *                         alongside a
-	 *                         `$dateBucket` (the
-	 *                         time-bucket
-	 *                         primitive); a
-	 *                         categorical `$groupBy`
-	 *                         has no inherent bucket
-	 *                         ordering to accumulate
-	 *                         over.
+	 * @param ?AggregationLayout   $layout Optional layout: groupBy (single-field `{field: 'x'}`,
+	 *                                     multi-field `{fields: ['a','b']}` or a plain list),
+	 *                                     dateBucket `{field, start, end, gap}`, a multi-metric
+	 *                                     `metrics` list (mutually exclusive with dateBucket) and
+	 *                                     the `cumulative` running-total flag (REQ-AGG-103, only
+	 *                                     accepted alongside a dateBucket).
 	 *
 	 * @return self
 	 *
@@ -167,16 +135,29 @@ class AggregationQuery {
 		string $metric,
 		?string $field = null,
 		array $filter = [],
-		?array $groupBy = null,
-		?array $dateBucket = null,
-		?array $metrics = null,
-		bool $cumulative = false,
+		?AggregationLayout $layout = null,
 	): self {
 		AggregationQueryRules::assertValidMetric(metric: $metric, field: $field);
-		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+		$layout ??= new AggregationLayout();
 		self::assertValidLayout(layout: $layout);
 		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
 	}//end create()
+
+	/**
+	 * The layout this query was created with, for rebuilding an equivalent query.
+	 *
+	 * @return AggregationLayout
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	public function layout(): AggregationLayout {
+		return new AggregationLayout(
+			groupBy: $this->groupBy,
+			dateBucket: $this->dateBucket,
+			metrics: $this->metrics,
+			cumulative: $this->cumulative
+		);
+	}//end layout()
 
 	/**
 	 * Fail fast on a metric list, grouping, time bucketing or running total that cannot run together.

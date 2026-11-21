@@ -6,6 +6,7 @@ namespace Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -233,12 +234,14 @@ class AggregationCacheTest extends TestCase {
 		$cache = $this->makeCache();
 		$query = AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
 			]
+			)
 		);
 
 		$envelope = ['groups' => [['key' => '2026-05-01T00:00:00Z', 'value' => 7]], 'backend' => 'postgres', 'cached' => false];
@@ -306,11 +309,15 @@ class AggregationCacheTest extends TestCase {
 		$cache = $this->makeCache();
 		$dayQ = AggregationQuery::create(
 			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			layout: new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+			)
 		);
 		$hourQ = AggregationQuery::create(
 			metric: 'count',
-			dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+			layout: new AggregationLayout(
+				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+			)
 		);
 
 		$cache->setAdhoc('reg', 'sch', $dayQ, ['value' => 1, 'backend' => 'postgres', 'cached' => false]);

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Search\Service\Aggregation;
  * The grouping, time buckets, metric list and running-total flag of one aggregation request:
  * together they decide whether the answer is one value, a values map, groups or buckets.
  *
- * Built only by AggregationQuery::create(), after the request rules passed.
+ * Passed to AggregationQuery::create(), which validates it before building the query.
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
@@ -38,10 +38,10 @@ final readonly class AggregationLayout {
 	 * @param bool                                                     $cumulative Optional running-total flag (REQ-AGG-103).
 	 */
 	public function __construct(
-		public ?array $groupBy,
-		public ?array $dateBucket,
-		public ?array $metrics,
-		public bool $cumulative,
+		public ?array $groupBy = null,
+		public ?array $dateBucket = null,
+		public ?array $metrics = null,
+		public bool $cumulative = false,
 	) {
 	}//end __construct()
 }//end class

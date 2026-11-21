@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
@@ -377,7 +378,9 @@ class AggregationRunnerIntegrationTest extends TestCase {
 			metric: 'sum',
 			field: 'priority',
 			filter: [],
-			groupBy: ['field' => 'taskStatus']
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'taskStatus']
+			)
 		);
 
 		$result = $this->runner->runAdhocByRef(
