@@ -207,3 +207,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError in a test file the PR never touched (e.g. 'Argument #4 must be of type ?X, MockObject_Y given').
 - Cause: main added a test after the PR branched, calling the old positional constructor.
 - Fix: update that main test to the PR's new signature (grep tests/ for 'new <Class>('), in the PR branch after the main merge. (or-fix-4, #9824)
+
+## ComponentDefinitionTest: class matches no component / yaml is stale (or-fix-3)
+- Symptom: ComponentDefinitionTest::testYamlIsTheGeneratorsOutput (or 3 cases) red: a new lib class has a component-map.csv row but the components yaml lacks it, or a moved file still has a pattern.
+- Cause: the PR (or the main merge) added/moved lib files without rerunning the generator.
+- Fix: python3 scripts/component-patterns.py, commit the regenerated yaml (on a yaml merge conflict: take main's copy, then regenerate). 'stale row' lines are warnings only.
