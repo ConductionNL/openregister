@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
-use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
-use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
@@ -74,15 +72,6 @@ final class SchemaDeclarationValidators {
 	public static function relationTypes(): RelationTypeResolverInterface {
 		return new RelationTypeResolver();
 	}//end relationTypes()
-
-	/**
-	 * A fresh widget annotation validator.
-	 *
-	 * @return WidgetAnnotationValidatorInterface
-	 */
-	public static function widgets(): WidgetAnnotationValidatorInterface {
-		return new WidgetAnnotationValidator();
-	}//end widgets()
 
 	/**
 	 * A fresh external-link annotation validator.
