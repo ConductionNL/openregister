@@ -27,14 +27,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * A nullable column: rows written before it name no zone and carry no local dates.
  *
  * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
  */
-class Version1Date20261114180000 extends SimpleMigrationStep {
+class Version1Date20261114180000 extends TargetedMigrationStep {
 
 	/**
 	 * The ledger table.
@@ -52,7 +51,7 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -70,5 +69,5 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 		$output->info('Added time_zone to '.self::TABLE_EVENTS);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
