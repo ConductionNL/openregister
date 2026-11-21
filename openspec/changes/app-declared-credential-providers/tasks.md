@@ -15,8 +15,8 @@
 
 ## 3. Approval plane
 
-- [ ] 3.1 Add an approval service writing `credentialProviderApproval` objects through `ObjectService::saveObject()` (entity/array first arg) recording `decidedBy`, `decidedAt`, `declarationDigest`, `baseUrl` and `allowRulesSnapshot`.
-- [ ] 3.2 Add admin-only approve / reject / revoke routes on `CredentialController` (or a dedicated controller) with the correct Nextcloud auth attributes and registered entries in `appinfo/routes.php`.
+- [x] 3.1 Add an approval service writing `credentialProviderApproval` objects through `ObjectService::saveObject()` (entity/array first arg) recording `decidedBy`, `decidedAt`, `declarationDigest`, `baseUrl` and `allowRulesSnapshot`. Built: `DeclaredProviderDecisions` (one new record per decision, pinned to the current digest; refuses unknown, invalid and narrowing declarations and transitions that mean nothing).
+- [x] 3.2 Add admin-only approve / reject / revoke routes on `CredentialController` (or a dedicated controller) with the correct Nextcloud auth attributes and registered entries in `appinfo/routes.php`. Built: `CredentialProviderApprovalController` (`AuthorizedAdminSetting` plus the in-body `AdministratorOnlyGate`), `POST /api/credentials/providers/{identifier}/approve|reject|revoke`.
 - [x] 3.3 Keep approval records on app disable/uninstall and re-apply a kept approval on re-enable only when the digest still matches.
 
 ## 4. Broker and controller wiring

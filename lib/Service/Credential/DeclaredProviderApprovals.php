@@ -83,6 +83,20 @@ class DeclaredProviderApprovals {
 	}//end decisionsFor()
 
 	/**
+	 * Forget what was read for an identifier, so a decision recorded in this
+	 * request is read back rather than the cached state before it.
+	 *
+	 * @param string $identifier The `<appId>:<localId>` identifier.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
+	 */
+	public function forget(string $identifier): void {
+		unset($this->cache[$identifier]);
+	}//end forget()
+
+	/**
 	 * Read the decisions from the register.
 	 *
 	 * @param string $identifier The provider identifier.
