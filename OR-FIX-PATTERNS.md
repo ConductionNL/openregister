@@ -389,3 +389,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Service/Flow/FlowEngineOversightTest (5 cases) Error: Class "Unit\Service\Flow\FlowSubject" not found.
 - Cause: red on plain main e158c36ac (21 Nov); the test's namespace is Unit\Service\Flow (no OCA\OpenRegister\Tests prefix) and it names FlowSubject unqualified. Also red on main then: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce, AnonymousEnvelopeReadPathsTest (4).
 - Fix: none on PR branches: inherited; confirm on origin/main.
+
+## Inherited red on main: FlowEngineOversightTest (or-fix-9)
+- Symptom: tests/Unit/Service/Flow/FlowEngineOversightTest (5 cases) Error: Class "Unit\Service\Flow\FlowSubject" not found.
+- Cause: red on plain main e158c36ac (21 Nov); the test resolves FlowSubject in its own (non-OCA) namespace. Not a PR defect.
+- Fix: none on PR branches: inherited; confirm on origin/main. Also still red on main: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce, AnonymousEnvelopeReadPathsTest.
