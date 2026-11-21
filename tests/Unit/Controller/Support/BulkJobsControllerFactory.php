@@ -51,7 +51,6 @@ final class BulkJobsControllerFactory {
 				platform: new \OCA\OpenRegister\Controller\Support\AuditTrailPlatform(
 					userSession: $userSession,
 					groupManager: $groupManager,
-					logger: new \Psr\Log\NullLogger(),
 				),
 			),
 		];
