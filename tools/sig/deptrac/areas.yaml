@@ -47,11 +47,15 @@ deptrac:
             - type: directory
               value: 'lib/Db/Schema/TopLevelAnnotationFold[.]php$'
             - type: directory
-              value: 'lib/Dto/[^/]*$'
+              value: 'lib/Dto/DeepLinkRegistration[.]php$'
             - type: directory
-              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractDecisionRequestEvent|AbstractObjectEntityEvent|AbstractObjectFileEvent|AbstractOrganisationEvent|AbstractPersonLinkEvent|AbstractPreWriteObjectEvent|AbstractReferenceValidationEvent|AbstractRegisterEvent|AbstractRegistrySubscriptionEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractTaskEvent|AbstractTaskSequenceEvent|AbstractViewEvent|ActionEvaluatedEvent|AgentCreatedEvent|AgentDeletedEvent|AgentRunDispatch|AgentRunInstruction|AgentRunRequestedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|CaseItemTransitionedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|CredentialRelinkRequiredEvent|CustomScopeAccessors|CustomScopeEvaluatedEvent|CustomScopeEvaluatingEvent|DecisionChangeRequestedEvent|DecisionVisibilityRequestedEvent|DeepLinkCollectorInterface|DeepLinkRegistrationEvent|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|EntityRelationDecisionUpdatedEvent|EvaluatedSchemaActionAccessors|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|FlowEmailItem|FlowEmailMessage|FlowEmailOrigin|FlowEmailSentEvent|FlowRunTerminalEvent|FlowTimerFiredEvent|FormDestinationDependentsEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|IdentityClaimsCollectingEvent|MatrixRowsRequestedEvent|ObjectActivatedEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectEventSubscription|ObjectLockedEvent|ObjectNoteAddedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|OrganisationCreatedEvent|OrganisationDeletedEvent|OrganisationUpdatedEvent|PermissionVerb|PermissionsDeclaringEvent|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|ReferenceValidatedEvent|ReferenceValidationFailedEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterFlowTriggersEvent|RegisterUpdatedEvent|RegistrySubscriptionEndedEvent|RegistrySubscriptionRequestedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskTerminalEvent|UserProfileUpdatedEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
+              value: 'lib/Dto/DeletionAnalysis[.]php$'
             - type: directory
-              value: 'lib/Exception/(ActionParameterTypeException|AnalyzeRequestRejectedException|AppendOnlyException|ArchivalImmutableException|ArchiveNotOfferedException|AuthenticationException|AuthorizationBlockException|AuthorizationUnresolvableException|BpmnImportRefused|BpmnSchemaInvalid|BreakingSchemaChangeException|BrokenReference|BuiltinPackSlugLockedException|BulkJobRefusedException|CalendarDateKindException|CaseAccessDeniedException|CaseCascadeBoundException|CasePlanExistsException|CaseTransitionException|CaseValidationException|ChunkMatcherException|CircularReferenceException|CodedValueException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|ConsistencyCheckWouldWriteException|CorrectionRefusedException|CustomValidationException|DatabaseConstraintException|DatabaseConstraintMessages|DatabaseErrorChain|DecisionConflictException|DraftActivationRefusedException|DraftAlreadyLeftException|DuplicateBlockedException|EmlParseException|EncryptedFieldFilterException|EncryptedFieldSortException|ExplicitRevealQueryException|ExportTooLargeException|FieldDecryptionException|FlowRunExpired|FlowRunRefused|FlowSignalRefused|FlowTimerStateException|FlowTimerValidationException|FolderAccessDeniedException|FormSubmitRefusedException|GrantExceedsGranterException|HandoffException|HookStoppedException|InvalidAuthorizationRuleException|InvalidNoteParentException|InvalidPackDefinitionException|InvalidTransitionInputException|InvalidViewAlertException|JobRunRefusedException|LifecycleProviderException|LifecycleSubjectNotFoundException|LockedException|ManualEntityException|MergeDecisionException|MergeNotFullyReadableException|MigrationPackRefusedException|MigrationPackRequestException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|OasValidationException|ObjectExistsException|ObjectFileAccessDeniedException|ObjectFolderConflictException|ObjectLookupFailedException|ObjectStateMarker|ObjectStateWriteException|OfficeOpenRefusedException|OfficeServerRequiredException|OrganisationSlugConflictException|PackChangedException|PackSlugExistsException|PdfAnonymisationException|PortalPartyNotFoundException|PortalSubjectException|PropertyAlreadySetException|ProviderUnavailableException|ReadOnlyTypeException|RecordTemplateRefused|ReferenceCycle|ReferenceValidationException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RepairRefusedException|RuleRefusedException|SanitizationException|SchemaImportException|SchemaNotFoundException|SchemaNotInRegisterException|SchemaRunConcurrencyException|SearchTermSyntaxException|SharedMasterDataWriteException|SlugBackfillWriteException|SystemContextUnavailableException|TaskAccessDeniedException|TaskCompleteViaAppException|TaskConflictException|TaskFormRefusedException|TaskSeparationOfDutiesException|TaskSubjectNotFoundException|TaskSubjectWriteRefusedException|TaskValidationException|TranslationTargetConflictException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException|ViewAlertRecipientException)[.]php$'
+              value: 'lib/Dto/DeletionEffects[.]php$'
+            - type: directory
+              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractDecisionRequestEvent|AbstractObjectEntityEvent|AbstractObjectFileEvent|AbstractPersonLinkEvent|AbstractPreWriteObjectEvent|AbstractRegisterEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractTaskEvent|AbstractTaskSequenceEvent|AbstractViewEvent|AgentCreatedEvent|AgentDeletedEvent|AgentRunDispatch|AgentRunInstruction|AgentRunRequestedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|CaseItemTransitionedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|CredentialRelinkRequiredEvent|DecisionChangeRequestedEvent|DecisionVisibilityRequestedEvent|DeepLinkCollectorInterface|DeepLinkRegistrationEvent|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|FlowEmailItem|FlowEmailMessage|FlowEmailOrigin|FlowEmailSentEvent|FlowRunTerminalEvent|FlowTimerFiredEvent|FormDestinationDependentsEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectLockedEvent|ObjectNoteAddedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|PermissionVerb|PermissionsDeclaringEvent|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterFlowTriggersEvent|RegisterUpdatedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskTerminalEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
+            - type: directory
+              value: 'lib/Exception/(ActionParameterTypeException|AnalyzeRequestRejectedException|ArchivalImmutableException|AuthenticationException|AuthorizationUnresolvableException|BpmnImportRefused|BpmnSchemaInvalid|BuiltinPackSlugLockedException|BulkJobRefusedException|CalendarDateKindException|CaseAccessDeniedException|CaseCascadeBoundException|CasePlanExistsException|CaseTransitionException|CaseValidationException|ChunkMatcherException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|ConsistencyCheckWouldWriteException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EmlParseException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunExpired|FlowRunRefused|FlowSignalRefused|FlowTimerStateException|FlowTimerValidationException|FolderAccessDeniedException|FormSubmitRefusedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidPackDefinitionException|InvalidTransitionInputException|InvalidViewAlertException|JobRunRefusedException|LifecycleProviderException|LifecycleSubjectNotFoundException|LockedException|ManualEntityException|MergeDecisionException|MergeNotFullyReadableException|MigrationPackRefusedException|MigrationPackRequestException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectFileAccessDeniedException|ObjectFolderConflictException|ObjectStateMarker|ObjectStateWriteException|OfficeOpenRefusedException|OfficeServerRequiredException|PackChangedException|PackSlugExistsException|PdfAnonymisationException|PortalPartyNotFoundException|PortalSubjectException|PropertyAlreadySetException|ProviderUnavailableException|RecordTemplateRefused|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RepairRefusedException|RuleRefusedException|SanitizationException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskCompleteViaAppException|TaskConflictException|TaskFormRefusedException|TaskSeparationOfDutiesException|TaskSubjectNotFoundException|TaskSubjectWriteRefusedException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
             - type: directory
               value: 'lib/Formats/[^/]*$'
             - type: directory
@@ -76,8 +80,6 @@ deptrac:
               value: 'lib/Service/Lifecycle/TransitionActor[.]php$'
             - type: directory
               value: 'lib/Service/Lifecycle/TransitionMove[.]php$'
-            - type: directory
-              value: 'lib/Service/Oas/OasValidationReportInterface[.]php$'
             - type: directory
               value: 'lib/Service/Object/BatchOperationStatusInterface[.]php$'
             - type: directory
@@ -680,7 +682,19 @@ deptrac:
         - type: directory
           value: 'lib/Db/Translation/[^/]*$'
         - type: directory
-          value: 'lib/Event/(ObjectLeavingEvent|ObjectWriteRequestEvent)[.]php$'
+          value: 'lib/Dto/BulkRowCount[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcome[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcomeInterface[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcomes[.]php$'
+        - type: directory
+          value: 'lib/Dto/StreamedRowCount[.]php$'
+        - type: directory
+          value: 'lib/Event/(AbstractOrganisationEvent|AbstractReferenceValidationEvent|AbstractRegistrySubscriptionEvent|ActionEvaluatedEvent|CustomScopeAccessors|CustomScopeEvaluatedEvent|CustomScopeEvaluatingEvent|EntityRelationDecisionUpdatedEvent|EvaluatedSchemaActionAccessors|IdentityClaimsCollectingEvent|MatrixRowsRequestedEvent|ObjectActivatedEvent|ObjectEventSubscription|ObjectLeavingEvent|ObjectWriteRequestEvent|OrganisationCreatedEvent|OrganisationDeletedEvent|OrganisationUpdatedEvent|ReferenceValidatedEvent|ReferenceValidationFailedEvent|RegistrySubscriptionEndedEvent|RegistrySubscriptionRequestedEvent|UserProfileUpdatedEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(AppendOnlyException|ArchiveNotOfferedException|AuthorizationBlockException|BreakingSchemaChangeException|BrokenReference|CircularReferenceException|CodedValueException|DatabaseConstraintException|DatabaseConstraintMessages|DraftActivationRefusedException|EncryptedFieldSortException|FieldDecryptionException|GrantExceedsGranterException|InvalidAuthorizationRuleException|OasValidationException|ObjectLookupFailedException|OrganisationSlugConflictException|ReadOnlyTypeException|ReferenceCycle|ReferenceValidationException|SchemaImportException|SchemaNotFoundException|SchemaRunConcurrencyException|SearchTermSyntaxException|SharedMasterDataWriteException|SlugBackfillWriteException|SystemContextUnavailableException|TranslationTargetConflictException|ViewAlertRecipientException)[.]php$'
         - type: directory
           value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|CoreListenerRegistrar|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
         - type: directory
@@ -814,53 +828,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Merge/[^/]*$'
         - type: directory
-          value: 'lib/Service/Oas/DynamicAnchorScan[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovConformance[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDateTimeRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDocumentInfoRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDocumentRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovErrorRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovFindings[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovMarker[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovRuleCatalogue[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasETagComputer[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasETagComputerInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasExtendedTypes[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasIssue[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasNames[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasPropertySanitizer[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRbacAnnotator[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasReferenceRepair[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRequestValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRequestValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasValidationReport[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDescription[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDetailsBuilder[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDetailsBuilderInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemStatement[.]php$'
+          value: 'lib/Service/Oas/[^/]*$'
         - type: directory
           value: 'lib/Service/Object/AccessFlags[.]php$'
         - type: directory
