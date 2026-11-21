@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Repair\CredentialOnboarding;
 use OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
@@ -151,9 +152,11 @@ class GenericInitializeSettingsCredentialTest extends TestCase {
 			self::APP_ID,
 			$settingsService,
 			$this->createMock(LoggerInterface::class),
-			$appManager,
-			$tokenService,
-			($registrar ?? $this->createMock(DoriathApplicationRegistrar::class))
+			new CredentialOnboarding(
+				appManager: $appManager,
+				tokenService: $tokenService,
+				applicationRegistrar: ($registrar ?? $this->createMock(DoriathApplicationRegistrar::class))
+			)
 		);
 
 		$step->run($this->createMock(IOutput::class));
