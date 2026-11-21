@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\FacetLookups;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
@@ -79,7 +80,8 @@ final class FacetHandlerSchemaSlugScopeTest extends TestCase {
 		$handler = new FacetHandler(
 			lookups: new FacetLookups($this->createMock(MagicMapper::class), $this->schemas, $registers),
 			responseCache: $this->createMock(FacetResponseCache::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			searchProfile: new PropertySearchProfile()
 		);
 
 		return (new ReflectionMethod(FacetHandler::class, 'getSchemasForQuery'))->invoke($handler, $query);
