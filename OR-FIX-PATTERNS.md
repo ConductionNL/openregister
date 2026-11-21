@@ -286,3 +286,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: content conflict in lib/Service/ServiceRegistrar.php and ServiceRegistrarTest's expected list; main's side drops seams such as EmailLinkReaderInterface, CredentialStore, SourceFetcherRegistry.
 - Cause: main moved non-Core seams to area wirings (e.g. Service/Integration/IntegrationWiring::registerSeams); ServiceRegistrar only names Core classes.
 - Fix: take main's ServiceRegistrar and its test; add the PR's registerService beside its sibling seam in the area wiring and add the interface to that wiring's order test (IntegrationRegistrarTest) (see #10539).
+
+## ContractBindings use-block conflict with an empty main side (or-fix-2)
+- Symptom: CONFLICT in lib/Service/ContractBindings.php use block; main's side of the hunk is empty, HEAD lists ExternalLink/Federation/FieldEncryption imports plus the PR's new ones.
+- Cause: main moved those bindings to area registrars and dropped their imports; the PR's import lines sit inside the same hunk.
+- Fix: take main's (empty) side and re-add only the PR's own use lines; the PR's binding rows auto-merge. php -l, phpstan, Architecture (see #10182 de9d4f8b).
