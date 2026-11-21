@@ -272,21 +272,21 @@ class ExampleSetPeople {
 			return;
 		}
 
-		$password = $run->install->terms->password;
-		$generated = '';
-		if ($password === '') {
-			$generated = $this->accounts->newPassword();
-			$password  = $generated;
-		}
+		$this->installNewUser(run: $run, person: $person);
+	}//end installUser()
 
-		$error = $this->accounts->createAccount(
-			account: new ExampleSetNewAccount(
-				uid: $uid,
-				displayName: (string) ($person['displayName'] ?? $uid),
-				email: (string) ($person['email'] ?? ''),
-				password: $password
-			)
-		);
+	/**
+	 * Create the account for a cast person that does not exist yet, and report it.
+	 *
+	 * @param ExampleSetPeopleRun  $run    The install in progress.
+	 * @param array<string, mixed> $person The cast person, its uid not yet taken.
+	 *
+	 * @return void
+	 */
+	private function installNewUser(ExampleSetPeopleRun $run, array $person): void {
+		$uid = (string) $person['uid'];
+		$generated = $this->generatedPassword(run: $run);
+		$error = $this->createAccount(person: $person, password: $this->passwordOf(run: $run, generated: $generated));
 		if ($error !== '') {
 			$run->report['dropped'][] = 'account '.$uid.': '.$error;
 			return;
@@ -296,7 +296,59 @@ class ExampleSetPeople {
 		if ($generated !== '') {
 			$run->report['passwords'][$uid] = $generated;
 		}
-	}//end installUser()
+	}//end installNewUser()
+
+	/**
+	 * A fresh password when the install terms name none, else the empty string.
+	 *
+	 * @param ExampleSetPeopleRun $run The install in progress.
+	 *
+	 * @return string The generated password, or ''.
+	 */
+	private function generatedPassword(ExampleSetPeopleRun $run): string {
+		if ($run->install->terms->password === '') {
+			return $this->accounts->newPassword();
+		}
+
+		return '';
+	}//end generatedPassword()
+
+	/**
+	 * The password a new account gets: the generated one, or else the one the terms name.
+	 *
+	 * @param ExampleSetPeopleRun $run       The install in progress.
+	 * @param string              $generated The generated password, or ''.
+	 *
+	 * @return string The password.
+	 */
+	private function passwordOf(ExampleSetPeopleRun $run, string $generated): string {
+		if ($generated !== '') {
+			return $generated;
+		}
+
+		return $run->install->terms->password;
+	}//end passwordOf()
+
+	/**
+	 * Create one account for a cast person.
+	 *
+	 * @param array<string, mixed> $person   The cast person.
+	 * @param string               $password Its password.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createAccount(array $person, string $password): string {
+		$uid = (string) $person['uid'];
+
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: $uid,
+				displayName: (string) ($person['displayName'] ?? $uid),
+				email: (string) ($person['email'] ?? ''),
+				password: $password
+			)
+		);
+	}//end createAccount()
 
 	/**
 	 * An account that is there: kept, or adopted when the record does not hold it and the administrator lets the set
@@ -395,14 +447,20 @@ class ExampleSetPeople {
 			return;
 		}
 
-		$error = $this->accounts->createAccount(
-			account: new ExampleSetNewAccount(
-				uid: $uid,
-				displayName: (string) $account['displayName'],
-				email: '',
-				password: $this->accounts->newPassword().$this->accounts->newPassword()
-			)
-		);
+		$this->installNewServiceUser(run: $run, account: $account);
+	}//end installServiceUser()
+
+	/**
+	 * Create a declared service account that does not exist yet, adopting one another writer made meanwhile.
+	 *
+	 * @param ExampleSetPeopleRun  $run     The install in progress.
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return void
+	 */
+	private function installNewServiceUser(ExampleSetPeopleRun $run, array $account): void {
+		$uid = (string) $account['uid'];
+		$error = $this->createServiceAccount(account: $account);
 		if ($error === ExampleSetAccounts::ALREADY_EXISTS && isset($run->record['users'][$uid]) === false) {
 			// Another writer made the declared account in between: the set adopts it, so remove leaves it.
 			$this->adopted(run: $run, uid: $uid);
@@ -415,7 +473,25 @@ class ExampleSetPeople {
 		}
 
 		$this->created(run: $run, uid: $uid);
-	}//end installServiceUser()
+	}//end installNewServiceUser()
+
+	/**
+	 * Create one service account: no address, and a password nobody is given.
+	 *
+	 * @param array<string, mixed> $account The declared service account.
+	 *
+	 * @return string The error, or '' when it was created.
+	 */
+	private function createServiceAccount(array $account): string {
+		return $this->accounts->createAccount(
+			account: new ExampleSetNewAccount(
+				uid: (string) $account['uid'],
+				displayName: (string) $account['displayName'],
+				email: '',
+				password: $this->accounts->newPassword().$this->accounts->newPassword()
+			)
+		);
+	}//end createServiceAccount()
 
 	/**
 	 * What the cast refuses: a BSN that fails the eleven test, a group or member
@@ -584,6 +660,23 @@ class ExampleSetPeople {
 	 * @return array<int, array{0: string, 1: string}>
 	 */
 	private function declaredMemberships(array $plan): array {
+		$pairs = array_merge(
+			$this->castMemberships(plan: $plan),
+			$this->fragmentMemberships(plan: $plan),
+			$this->serviceAccountMemberships(plan: $plan)
+		);
+
+		return array_values(array_unique($pairs, SORT_REGULAR));
+	}//end declaredMemberships()
+
+	/**
+	 * The memberships the cast's people declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function castMemberships(array $plan): array {
 		$pairs = [];
 		foreach ($plan['cast']['people'] as $person) {
 			$uid = (string) ($person['uid'] ?? '');
@@ -593,6 +686,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end castMemberships()
+
+	/**
+	 * The memberships the fragments' groups declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function fragmentMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($plan['fragments'] as $fragment) {
 			foreach ($fragment['groups'] as $group) {
 				foreach ((array) ($group['members'] ?? []) as $member) {
@@ -601,14 +706,26 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $pairs;
+	}//end fragmentMemberships()
+
+	/**
+	 * The memberships the service accounts declare, as [gid, uid] pairs.
+	 *
+	 * @param array<string, mixed> $plan The resolved plan.
+	 *
+	 * @return array<int, array{0: string, 1: string}> The pairs.
+	 */
+	private function serviceAccountMemberships(array $plan): array {
+		$pairs = [];
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
 			foreach ($account['groups'] as $gid) {
 				$pairs[] = [$gid, $account['uid']];
 			}
 		}
 
-		return array_values(array_unique($pairs, SORT_REGULAR));
-	}//end declaredMemberships()
+		return $pairs;
+	}//end serviceAccountMemberships()
 
 	/**
 	 * The recorded accounts, groups and memberships that are not on the instance.
@@ -620,6 +737,20 @@ class ExampleSetPeople {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function missing(array $record): array {
+		return array_merge(
+			$this->missingAccountsAndGroups(record: $record),
+			$this->missingMembershipsAndSubAdmins(record: $record)
+		);
+	}//end missing()
+
+	/**
+	 * The recorded accounts and groups that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, accounts first.
+	 */
+	private function missingAccountsAndGroups(array $record): array {
 		$missing = [];
 		foreach (array_keys($record['users']) as $uid) {
 			if ($this->accounts->userExists(uid: $uid) === false) {
@@ -633,6 +764,18 @@ class ExampleSetPeople {
 			}
 		}
 
+		return $missing;
+	}//end missingAccountsAndGroups()
+
+	/**
+	 * The recorded memberships and sub-admin rights that are not on the instance.
+	 *
+	 * @param array<string, mixed> $record The record as written.
+	 *
+	 * @return array<int, string> What is missing, memberships first.
+	 */
+	private function missingMembershipsAndSubAdmins(array $record): array {
+		$missing = [];
 		foreach ($record['memberships'] as [$gid, $uid]) {
 			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === false) {
 				$missing[] = 'membership '.$gid.' / '.$uid;
@@ -646,7 +789,7 @@ class ExampleSetPeople {
 		}
 
 		return $missing;
-	}//end missing()
+	}//end missingMembershipsAndSubAdmins()
 
 	/**
 	 * Every service account the fragments declare.

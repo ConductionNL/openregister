@@ -22,6 +22,8 @@ use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
@@ -62,14 +64,14 @@ class MetricsEngineTest extends TestCase {
 		$config->method('getSystemValueString')->willReturn('33.0.0');
 
 		return new MetricsEngine(
-			$this->objectSource,
-			$this->tableSource,
-			$this->appConfigSource,
-			$this->providerSource,
+			new MetricSources(
+				$this->objectSource,
+				$this->tableSource,
+				$this->appConfigSource,
+				$this->providerSource
+			),
 			new PrometheusRenderer(),
-			$this->manifestLoader,
-			$this->cacheFactory,
-			$config,
+			new MetricsRuntime($this->manifestLoader, $this->cacheFactory, $config),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

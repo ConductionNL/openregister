@@ -60,6 +60,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use PDO;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests that the register cascade admits org-less rows only, and that hasPermission() reads it.
@@ -138,13 +141,19 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 
 	}//end setUp()
@@ -471,6 +480,29 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		$this->assertSame(expected: [], actual: $this->visibleRows(schema: $schema));
 
 	}//end testSchemaOwnBlockStillRefusesTheRegistersGroup()
+
+	/**
+	 * On a schema whose own read rule is only `authenticated`, a non-admin sees
+	 * the rows of the active organisation alone: `authenticated` never lifts the
+	 * organisation filter and never admits rows with no organisation. Those rows
+	 * are for admins only; giving them an organisation is the data fix.
+	 *
+	 * @return void
+	 */
+	public function testSchemaOwnAuthenticatedRuleHidesOrganisationlessRows(): void {
+		$this->wireLearniqRegister();
+		$schema = $this->createSchema(authorization: ['read' => ['authenticated']]);
+		$this->mockUser(uid: 'juf-01', groups: ['teachers']);
+
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+		$this->assertFalse(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
+		);
+		$this->assertSame(expected: ['own-org'], actual: $this->visibleRows(schema: $schema));
+
+	}//end testSchemaOwnAuthenticatedRuleHidesOrganisationlessRows()
 
 	/**
 	 * A register rule that only matches `_organisation` admits nothing extra.

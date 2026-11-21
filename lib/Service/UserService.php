@@ -32,8 +32,11 @@ use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Service\Rbac\AuditEntryRecorder;
 use OCA\OpenRegister\Service\User\AccountPropertyChange;
 use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenAuditRow;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\User\AvatarUpload;
 use OCA\OpenRegister\Service\User\PasswordChange;
@@ -156,6 +159,7 @@ class UserService implements UserServiceInterface {
 	 * @param ISecureRandom $secureRandom Secure random generator
 	 * @param IDBConnection $db Database connection for direct queries
 	 * @param IFactory $l10nFactory L10N factory for language detection
+	 * @param AuditEntryWriterInterface $auditEntries The audit trail, which seals the API token entries it stores
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Service requires many Nextcloud dependencies
 	 */
@@ -173,6 +177,7 @@ class UserService implements UserServiceInterface {
 		private readonly ISecureRandom $secureRandom,
 		private readonly IDBConnection $db,
 		private readonly IFactory $l10nFactory,
+		private readonly AuditEntryWriterInterface $auditEntries,
 	) {
 	}//end __construct()
 
@@ -1334,21 +1339,32 @@ class UserService implements UserServiceInterface {
 
 		foreach (self::DEFAULT_NOTIFICATION_PREFS as $key => $defaultValue) {
 			$stored = $this->config->getUserValue($userId, self::APP_NAME, 'notification_' . $key, '');
-
-			if ($stored === '') {
-				$prefs[$key] = $defaultValue;
-				continue;
-			}
-
-			// Convert string booleans.
-			$prefs[$key] = $stored;
-			if ($defaultValue === true || $defaultValue === false) {
-				$prefs[$key] = ($stored === 'true' || $stored === '1');
-			}
+			$prefs[$key] = $this->preferenceFromStored(stored: $stored, defaultValue: $defaultValue);
 		}
 
 		return $prefs;
 	}//end getNotificationPreferences()
+
+	/**
+	 * One preference from its stored string: the default when unset, a boolean for a boolean default.
+	 *
+	 * @param string $stored       The stored value, '' when unset.
+	 * @param mixed  $defaultValue The preference's default.
+	 *
+	 * @return mixed The preference value.
+	 */
+	private function preferenceFromStored(string $stored, mixed $defaultValue): mixed {
+		if ($stored === '') {
+			return $defaultValue;
+		}
+
+		// Convert string booleans.
+		if ($defaultValue === true || $defaultValue === false) {
+			return ($stored === 'true' || $stored === '1');
+		}
+
+		return $stored;
+	}//end preferenceFromStored()
 
 	/**
 	 * Update notification preferences for the current user
@@ -1366,37 +1382,58 @@ class UserService implements UserServiceInterface {
 	 */
 	public function setNotificationPreferences(IUser $user, array $prefs): array {
 		$userId = $user->getUID();
-
-		// Validate emailDigest if provided.
-		if (isset($prefs['emailDigest']) === true) {
-			if (in_array($prefs['emailDigest'], self::VALID_DIGEST_FREQUENCIES, true) === false) {
-				throw new InvalidArgumentException(
-					'Invalid emailDigest value. Allowed: none, daily, weekly'
-				);
-			}
-		}
+		$this->assertValidEmailDigest(prefs: $prefs);
 
 		// Store provided preferences.
 		foreach ($prefs as $key => $value) {
-			if (array_key_exists($key, self::DEFAULT_NOTIFICATION_PREFS) === false) {
-				continue;
+			if (array_key_exists($key, self::DEFAULT_NOTIFICATION_PREFS) === true) {
+				$this->config->setUserValue($userId, self::APP_NAME, 'notification_' . $key, $this->preferenceToStore(value: $value));
 			}
-
-			$storeValue = (string)$value;
-			if ($value === true) {
-				$storeValue = 'true';
-			}
-
-			if ($value === false) {
-				$storeValue = 'false';
-			}
-
-			$this->config->setUserValue($userId, self::APP_NAME, 'notification_' . $key, $storeValue);
 		}
 
 		// Return complete preferences.
 		return $this->getNotificationPreferences(user: $user);
 	}//end setNotificationPreferences()
+
+	/**
+	 * Refuse an emailDigest that is not one of the valid frequencies.
+	 *
+	 * @param array $prefs The preference values to update.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the digest frequency is invalid.
+	 */
+	private function assertValidEmailDigest(array $prefs): void {
+		if (isset($prefs['emailDigest']) === false) {
+			return;
+		}
+
+		if (in_array($prefs['emailDigest'], self::VALID_DIGEST_FREQUENCIES, true) === false) {
+			throw new InvalidArgumentException(
+				'Invalid emailDigest value. Allowed: none, daily, weekly'
+			);
+		}
+	}//end assertValidEmailDigest()
+
+	/**
+	 * A preference value as it is stored: booleans as 'true'/'false', anything else as a string.
+	 *
+	 * @param mixed $value The preference value.
+	 *
+	 * @return string The stored form.
+	 */
+	private function preferenceToStore(mixed $value): string {
+		if ($value === true) {
+			return 'true';
+		}
+
+		if ($value === false) {
+			return 'false';
+		}
+
+		return (string)$value;
+	}//end preferenceToStore()
 
 	/**
 	 * Get one page of a user's activity.
@@ -1472,6 +1509,7 @@ class UserService implements UserServiceInterface {
 			'expires' => $expires,
 		];
 		$this->storeTokens(userId: $userId, tokens: $tokens);
+		$this->auditToken(action: ApiTokenAuditRow::CREATED, token: $tokens[$tokenId], ownerId: $userId);
 
 		return ['id' => $tokenId, 'name' => $request->name, 'token' => $tokenValue, 'created' => $now, 'expires' => $expires];
 	}//end issueApiToken()
@@ -1517,6 +1555,19 @@ class UserService implements UserServiceInterface {
 			return null;
 		}
 
+		return $this->validExpiry(expiresIn: $expiresIn);
+	}//end requestedExpiry()
+
+	/**
+	 * The ISO 8601 expiry of a lifetime, refusing a malformed one.
+	 *
+	 * @param string $expiresIn The requested lifetime (e.g. "90d").
+	 *
+	 * @return string The ISO 8601 expiry.
+	 *
+	 * @throws InvalidArgumentException If the lifetime is malformed
+	 */
+	private function validExpiry(string $expiresIn): string {
 		$expires = $this->parseExpiration(expiresIn: $expiresIn);
 		if ($expires === null) {
 			throw new InvalidArgumentException(
@@ -1525,7 +1576,7 @@ class UserService implements UserServiceInterface {
 		}
 
 		return $expires;
-	}//end requestedExpiry()
+	}//end validExpiry()
 
 	/**
 	 * List API tokens for the user (masked values)
@@ -1576,14 +1627,36 @@ class UserService implements UserServiceInterface {
 			throw new RuntimeException('Token not found', 404);
 		}
 
+		$revoked = $tokens[$tokenId];
 		unset($tokens[$tokenId]);
 		$this->storeTokens(userId: $userId, tokens: $tokens);
+		$this->auditToken(action: ApiTokenAuditRow::REVOKED, token: $revoked, ownerId: $userId);
 
 		return [
 			'success' => true,
 			'message' => 'Token revoked',
 		];
 	}//end revokeApiToken()
+
+	/**
+	 * Put a minted or revoked token on the audit trail: its id and name, its
+	 * owner and the actor, never its value. A failed write is logged and never
+	 * fails the token change, which has already been stored.
+	 *
+	 * @param string               $action  ApiTokenAuditRow::CREATED or ::REVOKED.
+	 * @param array<string, mixed> $token   The stored token entry.
+	 * @param string               $ownerId The token's owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
+	 */
+	private function auditToken(string $action, array $token, string $ownerId): void {
+		(new AuditEntryRecorder(trail: $this->auditEntries, logger: $this->logger))->record(
+			entries: [(new ApiTokenAuditRow())->row(action: $action, token: $token, ownerId: $ownerId, actor: $this->userSession->getUser())],
+			failure: '[UserService] Could not record an API token change; the token change itself was stored'
+		);
+	}//end auditToken()
 
 	/**
 	 * Request account deactivation

@@ -48,13 +48,19 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
+use OCA\OpenRegister\Event\HandoffExecutedSource;
+use OCA\OpenRegister\Event\HandoffExecutedTarget;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Execute declared semantic-object handoffs on top of SemanticTypeResolver.
@@ -147,7 +153,10 @@ class HandoffService implements HandoffServiceInterface {
 	 * @throws \Exception       When the object cannot be read by the caller.
 	 */
 	private function loadSource(HandoffSourceRef $ref): ObjectEntity {
-		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema));
+		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(
+			id: $ref->id,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema)
+		));
 		if ($source === null) {
 			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}
@@ -313,8 +322,7 @@ class HandoffService implements HandoffServiceInterface {
 		// target, no relation, no handoff audit row, and no source mutation.
 		$target = $this->objects->objectService->saveObject(
 			object: $targetData,
-			register: $targetRegister,
-			schema: $provider
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $targetRegister, schema: $provider))
 		);
 
 		$handoff = new HandoffRun(plan: $plan, target: new HandoffTarget(object: $target, register: $targetRegister, schema: $provider));
@@ -440,18 +448,24 @@ class HandoffService implements HandoffServiceInterface {
 		$source = $plan->source;
 		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
-				sourceApp: (string)($plan->sourceSchema->getApplication() ?? ''),
-				sourceRegister: (int)$source->getRegister(),
-				sourceSchema: (int)$source->getSchema(),
-				sourceObjectUuid: (string)$source->getUuid(),
-				subjectLabel: $source->getName(),
-				targetSemanticType: $plan->kindUri(),
-				targetRegister: (int)$target->getRegister(),
-				targetSchema: (int)$target->getSchema(),
-				targetObjectUuid: (string)$target->getUuid(),
-				handoffId: $plan->request->handoffId,
-				correlationId: $plan->request->correlationId,
-				deferred: $plan->request->deferred
+				source: new HandoffExecutedSource(
+					app: (string)($plan->sourceSchema->getApplication() ?? ''),
+					object: new ObjectRef(
+						register: (int)$source->getRegister(),
+						schema: (int)$source->getSchema(),
+						id: (string)$source->getUuid()
+					),
+					label: $source->getName()
+				),
+				target: new HandoffExecutedTarget(
+					semanticType: $plan->kindUri(),
+					object: new ObjectRef(
+						register: (int)$target->getRegister(),
+						schema: (int)$target->getSchema(),
+						id: (string)$target->getUuid()
+					)
+				),
+				request: $plan->request
 			)
 		);
 	}//end dispatchExecuted()
@@ -823,9 +837,10 @@ class HandoffService implements HandoffServiceInterface {
 		try {
 			$this->objects->objectService->saveObject(
 				object: $restore->snapshot,
-				register: $restore->registerRef,
-				schema: $restore->schemaRef,
-				uuid: (string)$restore->source->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $restore->registerRef, schema: $restore->schemaRef),
+					uuid: (string)$restore->source->getUuid()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->ledger->logger->error(
@@ -866,9 +881,10 @@ class HandoffService implements HandoffServiceInterface {
 		$data = array_merge($plan->source->getObject(), $set);
 		$this->objects->objectService->saveObject(
 			object: $data,
-			register: $plan->request->source->register,
-			schema: $plan->request->source->schema,
-			uuid: (string)$plan->source->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->request->source->register, schema: $plan->request->source->schema),
+				uuid: (string)$plan->source->getUuid()
+			)
 		);
 
 	}//end applyOnSuccess()

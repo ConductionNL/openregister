@@ -19,14 +19,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\EndpointLogScope;
-use OCA\OpenRegister\Db\ListQuery;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\EndpointLogMapper
  * @uses   \OCA\OpenRegister\Db\EndpointLog
+ * @uses \OCA\OpenRegister\Db\EndpointLogScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class EndpointLogMapperFindByEndpointsTest extends TestCase {
 	use RecordingQueryBuilderTrait;

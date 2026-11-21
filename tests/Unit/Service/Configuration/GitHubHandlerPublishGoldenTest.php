@@ -44,6 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
  * @covers \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite
  */
 class GitHubHandlerPublishGoldenTest extends TestCase {
 

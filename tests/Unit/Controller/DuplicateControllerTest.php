@@ -205,7 +205,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->assertNotFalse($doc);
 		$this->assertStringContainsString('@NoAdminRequired', $doc);
-		$this->assertStringContainsString('@NoCSRFRequired', $doc);
+		$this->assertStringNotContainsString('@NoCSRFRequired', $doc);
 		$this->assertStringNotContainsString('@PublicPage', $doc);
 	}//end testCheckCarriesAuthAnnotations()
 

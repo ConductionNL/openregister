@@ -35,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 class ApplyRuleActionOutcomeTest extends TestCase {
 
@@ -129,7 +130,8 @@ class ApplyRuleActionOutcomeTest extends TestCase {
 		$actor = $this->createMock(IUser::class);
 		$seen = [];
 		$this->objects->expects($this->once())->method('patchObject')->willReturnCallback(
-			function (...$args) use (&$seen): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
+				$args = [$patch->objectId, $patch->data, $patch->target->register, $patch->target->schema, $_rbac, $_multitenancy, $patch->currentUser];
 				$seen = $args;
 				return new ObjectEntity();
 			}

@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\StateHistoryMapper
+ * @uses \OCA\OpenRegister\Db\StateHistory\TrackedProperty
  */
 final class StateHistoryCloseGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

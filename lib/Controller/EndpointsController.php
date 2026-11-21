@@ -24,14 +24,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -130,7 +130,7 @@ class EndpointsController extends Controller {
 		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->endpointMapper = $services->endpointMapper;
@@ -225,8 +225,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created endpoint or error
 	 *
 	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Endpoint,
@@ -236,7 +234,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -263,8 +260,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated endpoint or error
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Endpoint,
@@ -274,7 +269,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -325,12 +319,10 @@ class EndpointsController extends Controller {
 	 * @return JSONResponse JSON response containing patched endpoint.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function patch(int $id): JSONResponse {
 		return $this->update(id: $id);
 	}//end patch()
@@ -345,7 +337,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
 		// SECURITY (H7): endpoint writes are admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
@@ -374,8 +365,6 @@ class EndpointsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-suppress InvalidReturnType
 	 * @psalm-suppress InvalidReturnStatement
 	 * @psalm-suppress InvalidTemplateParam The status code is the int echoed back from the
@@ -394,7 +383,6 @@ class EndpointsController extends Controller {
 	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function test(int $id): JSONResponse {
 		try {
 			$endpoint = $this->endpointMapper->find($id);

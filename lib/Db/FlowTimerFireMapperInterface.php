@@ -41,7 +41,7 @@ interface FlowTimerFireMapperInterface {
 	 *
 	 * @throws DbException On any failure other than the unique-constraint violation.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function claim(FlowTimerFire $fire): ?FlowTimerFire;
 
@@ -52,7 +52,7 @@ interface FlowTimerFireMapperInterface {
 	 *
 	 * @return array<int, FlowTimerFire> The fire rows.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function findByTimer(string $timerUuid): array;
 }//end interface

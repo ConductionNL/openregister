@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeBase
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class LoopNodeBehaviourTest extends TestCase {
 

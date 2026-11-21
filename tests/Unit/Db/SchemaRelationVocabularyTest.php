@@ -29,6 +29,9 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
  */
 class SchemaRelationVocabularyTest extends TestCase {
 	/**

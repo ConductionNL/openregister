@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -113,8 +112,26 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-avg-verwerkingsregister/tasks.md#task-1
 	 */
 	public function findUnannotatedSchemasWithPii(): array {
+		$issues = [];
+		foreach ($this->piiRowsBySchema() as $row) {
+			$issue = $this->unannotatedIssue(row: $row);
+			if ($issue !== null) {
+				$issues[] = $issue;
+			}
+		}
+
+		return $issues;
+	}//end findUnannotatedSchemasWithPii()
+
+
+	/**
+	 * The PII rows aggregated per (register, schema) pair; none when the aggregation fails.
+	 *
+	 * @return array<int, array<string, mixed>> The aggregated rows.
+	 */
+	private function piiRowsBySchema(): array {
 		try {
-			$rows = $this->aggregatePiiBySchema();
+			return $this->aggregatePiiBySchema();
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[AVG compliance] Failed to aggregate PII by schema',
@@ -122,41 +139,54 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 			);
 			return [];
 		}
+	}//end piiRowsBySchema()
 
-		if ($rows === []) {
-			return [];
+	/**
+	 * The issue for one aggregated row, when neither its register nor its schema is annotated.
+	 *
+	 * @param array<string, mixed> $row The aggregated row.
+	 *
+	 * @return array<string, mixed>|null The issue, or null when the row is attributed or cannot be attributed.
+	 */
+	private function unannotatedIssue(array $row): ?array {
+		$registerId = (string)($row['register_id'] ?? '');
+		$schemaId = (string)($row['schema_id'] ?? '');
+		if ($registerId === '' || $schemaId === '') {
+			// Legacy entity_relations row predating the
+			// disambiguation migration — can't be definitively
+			// attributed to a (register, schema) pair so we skip.
+			return null;
 		}
 
-		$issues = [];
-		foreach ($rows as $row) {
-			$registerId = (string)($row['register_id'] ?? '');
-			$schemaId = (string)($row['schema_id'] ?? '');
-			if ($registerId === '' || $schemaId === '') {
-				// Legacy entity_relations row predating the
-				// disambiguation migration — can't be definitively
-				// attributed to a (register, schema) pair so we skip.
-				continue;
-			}
+		$registerHas = $this->registerHasAnnotation(registerId: $registerId);
+		$schemaHas = $this->schemaHasAnnotation(schemaId: $schemaId);
+		if ($schemaHas === true || $registerHas === true) {
+			return null;
+		}
 
-			$registerHas = $this->registerHasAnnotation(registerId: $registerId);
-			$schemaHas = $this->schemaHasAnnotation(schemaId: $schemaId);
+		return $this->issueRow(row: $row);
+	}//end unannotatedIssue()
 
-			if ($schemaHas === true || $registerHas === true) {
-				continue;
-			}
+	/**
+	 * The issue row for an aggregated row whose register and schema are both unannotated.
+	 *
+	 * @param array<string, mixed> $row The aggregated row.
+	 *
+	 * @return array<string, mixed> The issue.
+	 */
+	private function issueRow(array $row): array {
+		$schemaId = (string)($row['schema_id'] ?? '');
 
-			$issues[] = [
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'schemaTitle' => $this->resolveSchemaTitle(schemaId: $schemaId),
-				'piiCount' => (int)($row['pii_count'] ?? 0),
-				'registerHasAnnotation' => $registerHas,
-				'schemaHasAnnotation' => $schemaHas,
-			];
-		}//end foreach
-
-		return $issues;
-	}//end findUnannotatedSchemasWithPii()
+		return [
+			'registerId' => (string)($row['register_id'] ?? ''),
+			'schemaId' => $schemaId,
+			'schemaTitle' => $this->resolveSchemaTitle(schemaId: $schemaId),
+			'piiCount' => (int)($row['pii_count'] ?? 0),
+			// Only rows with neither annotation are issues.
+			'registerHasAnnotation' => false,
+			'schemaHasAnnotation' => false,
+		];
+	}//end issueRow()
 
 	/**
 	 * Run every check in sequence and return the aggregate envelope.
@@ -249,18 +279,12 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-		} catch (DoesNotExistException $e) {
-			return false;
 		} catch (\Throwable $e) {
+			// Missing (DoesNotExistException) or unreadable: not annotated.
 			return false;
 		}
 
-		$config = $register->getConfiguration();
-		if (is_array($config) === false) {
-			return false;
-		}
-
-		return $this->configHasAttribution(config: $config);
+		return $this->configurationHasAttribution(config: $register->getConfiguration());
 	}//end registerHasAnnotation()
 
 	/**
@@ -277,19 +301,29 @@ class AvgComplianceService implements AvgComplianceServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-		} catch (DoesNotExistException $e) {
-			return false;
 		} catch (\Throwable $e) {
+			// Missing (DoesNotExistException) or unreadable: not annotated.
 			return false;
 		}
 
-		$config = $schema->getConfiguration();
+		return $this->configurationHasAttribution(config: $schema->getConfiguration());
+	}//end schemaHasAnnotation()
+
+
+	/**
+	 * Whether a stored configuration is an array that satisfies the attribution requirement.
+	 *
+	 * @param mixed $config The configuration column.
+	 *
+	 * @return bool
+	 */
+	private function configurationHasAttribution(mixed $config): bool {
 		if (is_array($config) === false) {
 			return false;
 		}
 
 		return $this->configHasAttribution(config: $config);
-	}//end schemaHasAnnotation()
+	}//end configurationHasAttribution()
 
 	/**
 	 * Whether a configuration array satisfies the attribution

@@ -48,6 +48,14 @@ use OCA\OpenRegister\Service\EntityLink;
  * Allowed and refused outcomes of the linked-entity write paths.
  *
  * @covers \OCA\OpenRegister\Service\LinkedEntityService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\LinkedEntityIntegrations
+ * @uses \OCA\OpenRegister\Service\LinkedEntityMappers
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\Register
  */
 class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 
@@ -174,7 +182,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->expectUpdateCheck(object: $object, allow: true);
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
-		$this->assertSame(['n-2'], $this->service->removeLink('o-1', 'notes', 'n-1'));
+		$this->assertSame(['n-2'], $this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-1')));
 		$this->assertSame(['n-2'], $object->getNotes());
 	}//end testRemoveLinkAllowedWritesAfterTheCheck()
 
@@ -184,7 +192,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('update');
 
 		try {
-			$this->service->removeLink('o-1', 'notes', 'n-1');
+			$this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-1'));
 			$this->fail('A refused write must throw.');
 		} catch (NotAuthorizedException $e) {
 			$this->assertSame('denied', $e->getMessage());
@@ -198,7 +206,7 @@ class LinkedEntityServiceWriteAccessGoldenTest extends TestCase {
 		$this->expectUpdateCheck(object: $object, allow: true);
 		$this->magicMapper->expects($this->once())->method('update');
 
-		$this->assertSame(['n-2'], $this->service->removeLink('o-1', 'notes', 'n-9'));
+		$this->assertSame(['n-2'], $this->service->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-9')));
 	}//end testRemoveLinkOfAbsentIdStillChecksAndWrites()
 
 	public function testAddLinkToRegisterAppendsOnceAndNotFoundThrows(): void {

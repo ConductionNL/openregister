@@ -51,6 +51,20 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
 const IBAN_RE = /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,8}\b/g
 const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/gi
 // Phone: optional +/00 country code, then 9–13 digits with spaces/dashes/parens.
+/**
+ * Fetch the body of a mail message.
+ *
+ * @param {number|string} messageId The message id
+ * @return {Promise<object>} The message envelope
+ */
+async function fetchMessageBody(messageId) {
+	const url = generateUrl('/apps/mail/api/messages/{id}/body', {
+		id: messageId,
+	})
+	const response = await axios.get(url, { timeout: 10000 })
+	return response.data?.data || response.data || {}
+}
+
 const PHONE_RE = /(?:(?:\+|00)\d{1,3}[\s-]?)?(?:\(0\)|0)?(?:[\s-]?\d){8,12}\d/g
 
 export default {
@@ -113,18 +127,24 @@ export default {
 
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/mail/api/messages/{id}/body', {
-					id: this.messageId,
-				})
-				const response = await axios.get(url, { timeout: 10000 })
-				const envelope = response.data?.data || response.data || {}
+				const envelope = await fetchMessageBody(this.messageId)
 				this.entities = this.extractEntities(envelope)
 			} catch (err) {
-				console.error('[EntitiesTab] Load failed:', err)
-				this.entities = []
+				this.showLoadFailure(err)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Log a failed load and show no entities.
+		 *
+		 * @param {Error} err What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(err) {
+			console.error('[EntitiesTab] Load failed:', err)
+			this.entities = []
 		},
 
 		/**

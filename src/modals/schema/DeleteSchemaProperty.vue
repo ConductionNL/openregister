@@ -99,16 +99,27 @@ export default {
 						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
 					)
 				) {
-					await refreshSchemaObjects(reg)
-					if (objectStore.getCollection(objectStore.currentType).length) {
-						for (const obj of objectStore.getCollection(
-							objectStore.currentType,
-						)) {
-							if (obj[schemaStore.schemaPropertyKey]) {
-								this.objects.push(obj)
-							}
-						}
-					}
+					await this.collectPropertyUsers(reg)
+				}
+			}
+		},
+
+		/**
+		 * Load the schema's objects in one register and keep those that carry
+		 * a value for the property.
+		 *
+		 * @spec exclude Scans registers/objects for usage of the property to populate the warning list; UI form-loading plumbing.
+		 * @param {object} reg The register
+		 * @return {Promise<void>}
+		 */
+		async collectPropertyUsers(reg) {
+			await refreshSchemaObjects(reg)
+			if (!objectStore.getCollection(objectStore.currentType).length) {
+				return
+			}
+			for (const obj of objectStore.getCollection(objectStore.currentType)) {
+				if (obj[schemaStore.schemaPropertyKey]) {
+					this.objects.push(obj)
 				}
 			}
 		},

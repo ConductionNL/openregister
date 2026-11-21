@@ -21,10 +21,14 @@ OpenRegister provides a comprehensive import/export pipeline for bulk data opera
 | Format | Handler | Notes |
 |--------|---------|-------|
 | CSV | `ExportService.exportToCsv()` | RBAC-aware column selection |
+| TSV | `ExportService.exportToTsv()` | Tab-separated, UTF-8 with BOM; a value holding a tab, line break or quote is quoted |
 | Excel (XLSX) | `ExportService.exportToExcel()` | Multi-schema export as multiple sheets |
-| JSON | Planned | JSON array export |
-| XML | Planned | XML export with configurable root element |
+| JSON | `ExportService.exportToJson()` | JSON array export |
+| XML | `ExportService.exportToXml()` | Root `<objects>`, one `<object id="...">` per record; an invalid element name becomes `<property name="...">`, null is `xsi:nil="true"` |
+| PDF | `ExportService.exportToPdf()` | Rendered table, row-limited |
 | JSONL | Planned | Newline-delimited JSON for streaming |
+
+The export dialog on the register page offers Excel, CSV, TSV, JSON and XML.
 
 ### Configuration Export/Import
 
@@ -101,6 +105,53 @@ GET /api/objects/{register}/{schema}/export?format=xlsx&_search=actief
 
 Export respects all query parameters (filtering, sorting) — you export exactly what you see in the UI.
 
+### Public download
+
+The export route is reachable without an account. A visitor may export a
+schema only when its effective **export** grant names `public`: the schema's
+`export` list when it declares one, otherwise its `read` list.
+
+| Situation | Answer |
+|-----------|--------|
+| The export grant names `public` | 200 with the file |
+| It does not (for example `read: ["public"]` with `export: ["redactie"]`) | 401, rule `not-public` |
+| `format` is `pdf`, `excel` or `ods` | 406, naming `csv`, `tsv`, `json` and `xml` |
+
+An anonymous export holds only the rows and columns the public may read through
+the list endpoint, without the administration `@self` columns. Every anonymous
+export, served or refused, is written to the audit trail with actor `anonymous`,
+its format and its row count.
+
+**Paging.** An anonymous export returns at most 10,000 rows per response and
+honours `_page` (default 1). The response carries:
+
+| Header | Value |
+|--------|-------|
+| `X-Total-Count` | rows matching the export over all pages |
+| `X-Page` | this page |
+| `X-Pages` | the number of pages |
+| `Link` | `<...&_page=N+1>; rel="next"`, only while a later page exists |
+
+Anonymous callers are limited to 10 exports per minute per address. A signed-in
+export keeps its current behaviour: unpaged, no paging headers.
+
+```bash
+# A public schema as TSV, filtered on one field
+curl -OJ 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=tsv&thema=milieu'
+
+# The same as XML, second page
+curl -OJ 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=xml&_page=2'
+
+# Read the paging headers only
+curl -sD - -o /dev/null 'https://example.org/index.php/apps/openregister/api/objects/publicaties/besluit/export?format=csv'
+```
+
+> **Release note.** On an instance that ran the repair step granting `export`
+> wherever `read` was granted, every schema whose `read` included `public` now
+> has `public` in `export` too, and so becomes downloadable without an account.
+> To keep a schema out of the public download, remove `public` from its
+> `export` list.
+
 ### Configuration Export
 
 Export a complete register configuration (schemas, hooks, RBAC, etc.) for environment promotion:
@@ -145,6 +196,30 @@ Idempotent: importing the same configuration twice produces the same result (no 
   ]
 }
 ```
+
+## Seeding from a Mounted Directory
+
+An installation can be seeded at start-up from the operator's own data files, without anyone opening the admin. Name the directory in Nextcloud's `config.php`, typically a volume mounted into the container:
+
+```php
+'openregister.seed_directory' => '/seed',
+```
+
+Every `*.json` file directly in that directory (not in sub-directories) is imported in lexical order, so `10-registers.json` imports before `20-objects.json`. Each file is a configuration in the same format the configuration import takes (`components.registers`, `components.schemas`, and objects under `components.objects` or a top-level `objects`), and it goes through the same import. Writes carry the audit cause `seed`.
+
+The import runs on three occasions:
+
+- on install and after every upgrade (a repair step);
+- every five minutes from a background job, but only when the SHA-256 over the directory's file names and contents changed since the last run;
+- on demand with `occ openregister:seed:import`, which exits `0` on success, `2` on a partial run and `1` on a failed run or when no directory is configured.
+
+Imports are idempotent: registers, schemas and objects are matched by slug or uuid and updated or skipped, never duplicated. A register or schema is updated when its `version` is raised, as in any configuration import; seed objects follow their file's content.
+
+Safety: a file that resolves outside the directory (a symlink leading out) or is larger than 50 MB is refused and named without being read. A file that does not parse is named and the other files still import. A relative or unreadable directory is reported and nothing is imported.
+
+### The seed report
+
+Every run stores a report: the directory, its digest, the moment, and per file the counts of imported, skipped and failed registers, schemas and objects, with each failure named (file, entity, slug, reason). The run is `success` only when nothing failed, `failed` when something failed and nothing imported (or the directory could not be read), and `partial` otherwise. The last report is returned by `GET /api/settings/seed` (administrators only), written to the log and printed by the occ command.
 
 ## Solr Index Warmup
 

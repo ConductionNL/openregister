@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use InvalidArgumentException;
 use LogicException;
 use OCA\OpenRegister\Db\CaseItem;
@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\CaseItem
  * @covers \OCA\OpenRegister\Db\CaseItemAudit
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class CaseItemMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

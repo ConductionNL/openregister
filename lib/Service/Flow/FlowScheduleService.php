@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use Cron\CronExpression;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -122,23 +123,13 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
 	 */
 	private function fireIfDue(array $candidate, DateTimeInterface $now): bool {
-		$cron = $this->scheduleOf(candidate: $candidate);
-		if ($cron === null) {
+		if ($this->isDue(candidate: $candidate, now: $now) === false) {
 			return false;
 		}
 
 		// The registry guarantees a non-empty id — a candidate without one
 		// is dropped there, so every id here is one a resolver can load.
 		$uuid = $candidate['id'];
-		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
-		if ($baseline === null) {
-			return false;
-		}
-
-		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline);
-		if ($next === null || $next > $now) {
-			return false;
-		}
 
 		// SINGLETON: never overlap a flow with itself.
 		//
@@ -158,15 +149,7 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// The last-fire marker is deliberately NOT advanced when we skip:
 		// the flow stays due, so it starts on the first tick after the
 		// previous run finishes rather than waiting a whole extra interval.
-		if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
-			$this->logger->info(
-				message: '[FlowSchedule] Skipping due flow — previous run has not finished',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $uuid,
-				]
-			);
+		if ($this->previousRunActive(uuid: $uuid) === true) {
 			return false;
 		}
 
@@ -184,6 +167,56 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// working" rather than as a fault in a specific flow.
 		return $this->tryFire(uuid: $uuid, now: $now);
 	}//end fireIfDue()
+
+	/**
+	 * Whether a candidate is a schedule whose next run after its baseline has come.
+	 *
+	 * @param array<string, mixed> $candidate The candidate flow.
+	 * @param DateTimeInterface    $now       The tick.
+	 *
+	 * @return bool True when the flow is due.
+	 */
+	private function isDue(array $candidate, DateTimeInterface $now): bool {
+		$cron = $this->scheduleOf(candidate: $candidate);
+		if ($cron === null) {
+			return false;
+		}
+
+		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
+		if ($baseline === null) {
+			return false;
+		}
+
+		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline, timezone: $this->timezoneOf(candidate: $candidate));
+		if ($next === null || $next > $now) {
+			return false;
+		}
+
+		return true;
+	}//end isDue()
+
+	/**
+	 * Whether the flow's previous run is still going; a skip is logged.
+	 *
+	 * @param string $uuid The flow id.
+	 *
+	 * @return bool True when the due flow must be skipped.
+	 */
+	private function previousRunActive(string $uuid): bool {
+		if ($this->runs->hasActiveRun(flowId: $uuid) === false) {
+			return false;
+		}
+
+		$this->logger->info(
+			message: '[FlowSchedule] Skipping due flow — previous run has not finished',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $uuid,
+			]
+		);
+		return true;
+	}//end previousRunActive()
 
 	/**
 	 * Fire one due flow; a flow that refuses is reported and skipped, never fatal to the tick.
@@ -333,18 +366,51 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	/**
 	 * The first cron occurrence after a flow's baseline, or null when the cron or the baseline cannot be read.
 	 *
-	 * @param string $cron     The cron expression.
-	 * @param string $baseline The last fire, or the moment the flow was scheduled from.
+	 * With a timezone the cron's fields are read in it ("0 7 * * *" is 07:00 in
+	 * Europe/Amsterdam, summer and winter); without one, in the server's.
+	 *
+	 * @param string            $cron     The cron expression.
+	 * @param string            $baseline The last fire, or the moment the flow was scheduled from.
+	 * @param DateTimeZone|null $timezone The timezone the cron is read in, or null for the server's.
 	 *
 	 * @return DateTimeInterface|null The next run date.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
-	private function nextRunAfter(string $cron, string $baseline): ?DateTimeInterface {
+	private function nextRunAfter(string $cron, string $baseline, ?DateTimeZone $timezone = null): ?DateTimeInterface {
 		try {
-			return (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
+			$from = new DateTimeImmutable($baseline);
+			if ($timezone === null) {
+				return (new CronExpression($cron))->getNextRunDate($from);
+			}
+
+			return (new CronExpression($cron))->getNextRunDate($from->setTimezone($timezone), 0, false, $timezone->getName());
 		} catch (Throwable $e) {
 			return null;
 		}
 	}//end nextRunAfter()
+
+	/**
+	 * The timezone a candidate's cron is read in, or null for the server's.
+	 *
+	 * An identifier PHP does not know reads as the server's timezone: the
+	 * trigger node refuses one on save, so only a candidate a source wrote by
+	 * hand can carry it, and refusing to schedule it would stop the flow.
+	 *
+	 * @param array<string, mixed> $candidate The candidate flow.
+	 *
+	 * @return DateTimeZone|null The timezone, or null.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	private function timezoneOf(array $candidate): ?DateTimeZone {
+		$name = trim((string)($candidate['timezone'] ?? ''));
+		if ($name === '' || in_array(needle: $name, haystack: DateTimeZone::listIdentifiers(), strict: true) === false) {
+			return null;
+		}
+
+		return new DateTimeZone($name);
+	}//end timezoneOf()
 
 	/**
 	 * The moment a flow's next occurrence is measured from.
