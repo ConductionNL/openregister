@@ -4424,6 +4424,8 @@ Controller/Support/WellKnownControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/AnonymisationBackendControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/AuditQueryControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/AuditSinkControllerServices.php,,Controller,,,,,Compliance
+Controller/Support/CalendarEventsControllerServices.php,53,Controller,Flows,Flows/Controller/Support/CalendarEventsControllerServices.php,0,,Processes
+Controller/Support/CaseTokenControllerServices.php,48,Controller,Integrations,Integrations/Controller/Support/CaseTokenControllerServices.php,0,,Integrations
 Controller/Support/ContentReportControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/ErasurePreviewControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/HardeningControllerServices.php,,Controller,,,,,Compliance
@@ -4439,6 +4441,7 @@ Controller/Support/ConfigPublishRequest.php,,Controller,,,,,Configuration
 Controller/Support/ConfigurationImport.php,,Controller,,,,,Configuration
 Controller/Support/ExportProfilesControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/FederatedConfigControllerServices.php,,Controller,,,,,Configuration
+Controller/Support/FormLinksControllerServices.php,53,Controller,Integrations,Integrations/Controller/Support/FormLinksControllerServices.php,0,,Integrations
 Controller/Support/GitHubPublishRun.php,,Controller,,,,,Configuration
 Controller/Support/MigrationPacksControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/OperationsConsistencyControllerServices.php,,Controller,,,,,Configuration
@@ -4550,9 +4553,6 @@ Service/NotificationsServiceRegistrar.php,,Service,,,,,Notifications
 Service/Configuration/RegisterBundles.php,,Service,,,,,Configuration
 Service/MigrationPack/MigrationPackDefinitions.php,,Service,,,,,Configuration
 Service/Resilience/OutboundBreaker.php,,Service,,,,,Platform
-Controller/Support/CalendarEventsControllerServices.php,,Controller,,,,,Processes
-Controller/Support/CaseTokenControllerServices.php,,Controller,,,,,Integrations
-Controller/Support/FormLinksControllerServices.php,,Controller,,,,,Integrations
 Repair/Support/SequenceMigrationRun.php,,Repair,,,,,Processes
 Service/Audit/ObjectTrailReader.php,,Service,,,,,Compliance
 Db/AuditTrail/ActionScope.php,,Db,,,,,Core
