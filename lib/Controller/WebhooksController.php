@@ -1600,6 +1600,7 @@ class WebhooksController extends Controller {
 	 * @return JSONResponse The retry result, or 400 for a successful delivery
 	 *
 	 * @throws DoesNotExistException When no log entry has this id; retry() answers 404.
+	 * @throws \Exception When reading or redelivering the log fails; retry() answers 500.
 	 */
 	private function retryLog(int $logId, bool $isAdmin=true): JSONResponse {
 		$log = $this->webhookLogMapper->find($logId);
