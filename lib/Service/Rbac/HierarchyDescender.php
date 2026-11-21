@@ -203,8 +203,6 @@ class HierarchyDescender {
 	 * @return array<string, mixed>|null The entry, or null.
 	 */
 	private function tableIn(object $register, array $declaration): array|null {
-		$schemaId = $declaration['schemaId'];
-		$parentColumn = $declaration['parentColumn'];
 			// 🔴 THE TABLE IS THE AUTHORITY, NOT THE REGISTER'S `schemas`
 			// LIST. That list is only filled by the paths that attach a
 			// schema to a register explicitly; a register created over the
@@ -220,36 +218,60 @@ class HierarchyDescender {
 			// carrying the parent column says the same thing the list was
 			// being asked to say, and says it from the storage rather than
 			// from bookkeeping beside it.
-		$table = MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
-		if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
-			// Only worth saying when the register DOES claim the
-			// schema: a table that is simply not there is the ordinary
-			// case for every other register on the instance.
-			if ($this->registerHolds(register: $register, schemaId: $schemaId) === true) {
-				$this->logger->warning(
-					message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $schemaId,
-						'property' => $declaration['parent'],
-						'column' => $parentColumn,
-						'table' => $table,
-					]
-				);
-			}
-
+		$table = self::tableNameOf(register: $register, schemaId: $declaration['schemaId']);
+		if ($this->tableHasColumn(table: $table, column: $declaration['parentColumn']) === false) {
+			$this->warnMissingParentColumn(register: $register, declaration: $declaration);
 			return null;
 		}
 
 		return [
 			'table' => $table,
-			'parentColumn' => $parentColumn,
+			'parentColumn' => $declaration['parentColumn'],
 			'maxDepth' => $declaration['maxDepth'],
 			'verbs' => $declaration['verbs'],
-			'schemaId' => $schemaId,
+			'schemaId' => $declaration['schemaId'],
 		];
 	}//end tableIn()
+
+	/**
+	 * The magic table of one register for one schema.
+	 *
+	 * @param object $register The register.
+	 * @param mixed  $schemaId The schema id.
+	 *
+	 * @return string The table name.
+	 */
+	private static function tableNameOf(object $register, mixed $schemaId): string {
+		return MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
+	}//end tableNameOf()
+
+	/**
+	 * Say that a register's table lacks the declared parent column, when the register claims the schema.
+	 *
+	 * Only worth saying when the register DOES claim the schema: a table that
+	 * is simply not there is the ordinary case for every other register on the
+	 * instance.
+	 *
+	 * @param object               $register    The register.
+	 * @param array<string, mixed> $declaration The schema's hierarchy declaration.
+	 *
+	 * @return void
+	 */
+	private function warnMissingParentColumn(object $register, array $declaration): void {
+		if ($this->registerHolds(register: $register, schemaId: $declaration['schemaId']) === true) {
+			$this->logger->warning(
+				message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $declaration['schemaId'],
+					'property' => $declaration['parent'],
+					'column' => $declaration['parentColumn'],
+					'table' => self::tableNameOf(register: $register, schemaId: $declaration['schemaId']),
+				]
+			);
+		}
+	}//end warnMissingParentColumn()
 
 	/**
 	 * The children of a set of parents, as child uuid => parent uuid.
@@ -320,30 +342,55 @@ class HierarchyDescender {
 	 * @return array<string, string> Child UUID => parent UUID.
 	 */
 	private function childrenInChunk(ChildrenRead $read, array $parents): array {
-		$parentColumn = $read->parentColumn;
-		$limit = $read->remaining();
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('_uuid', $parentColumn)
-			->from($read->table)
-			->where(
-				$qb->expr()->in(
-					$parentColumn,
-					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		if ($limit !== null) {
-			$qb->andWhere($qb->expr()->neq('_uuid', $parentColumn));
-			$qb->setMaxResults($limit);
-		}
-
-		$result = $qb->executeQuery();
-		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $parentColumn);
+		$result = $this->childrenQuery(read: $read, parents: $parents)->executeQuery();
+		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $read->parentColumn);
 
 		$result->closeCursor();
 
 		return $children;
 	}//end childrenInChunk()
+
+	/**
+	 * The query for one chunk's children, bounded when the read has a remaining budget.
+	 *
+	 * A bounded read also leaves out a row that names itself as its parent, so a
+	 * self-loop cannot spend the budget.
+	 *
+	 * @param ChildrenRead       $read    The table, the parent column and the remaining budget.
+	 * @param array<int, string> $parents The parent uuids of this chunk.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function childrenQuery(ChildrenRead $read, array $parents): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('_uuid', $read->parentColumn)
+			->from($read->table)
+			->where(
+				$qb->expr()->in(
+					$read->parentColumn,
+					$qb->createNamedParameter($parents, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			);
+		self::boundByBudget(qb: $qb, read: $read);
+
+		return $qb;
+	}//end childrenQuery()
+
+	/**
+	 * Bound a children query by the read's remaining budget, leaving out self-parented rows; unbounded reads are left alone.
+	 *
+	 * @param IQueryBuilder $qb   The children query.
+	 * @param ChildrenRead  $read The read, for its budget and parent column.
+	 *
+	 * @return void
+	 */
+	private static function boundByBudget(IQueryBuilder $qb, ChildrenRead $read): void {
+		$limit = $read->remaining();
+		if ($limit !== null) {
+			$qb->andWhere($qb->expr()->neq('_uuid', $read->parentColumn));
+			$qb->setMaxResults($limit);
+		}
+	}//end boundByBudget()
 
 	/**
 	 * Child uuid => parent uuid from fetched rows, dropping blanks and self-parents.
@@ -478,38 +525,57 @@ class HierarchyDescender {
 	 * @return string|null The parent UUID, or null.
 	 */
 	private function parentOf(array $hierarchy, string $uuid): ?string {
-		$table = $hierarchy['table'];
-		$parentColumn = $hierarchy['parentColumn'];
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($parentColumn)
-				->from($table)
-				->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($uuid)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			if (is_array($row) === false) {
-				return null;
-			}
-
-			return (string)($row[$parentColumn] ?? '');
+			return $this->readParent(hierarchy: $hierarchy, uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[HierarchyDescender] Could not read an object\'s parent; the walk up stops here',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'table' => $table,
-					'object' => $uuid,
-					'exception' => $e->getMessage(),
-				]
+				context: self::failureContext(where: ['table' => $hierarchy['table'], 'object' => $uuid], error: $e)
 			);
 			return null;
 		}
 	}//end parentOf()
+
+	/**
+	 * Read the uuid one row names as its parent.
+	 *
+	 * @param array<string, mixed> $hierarchy The row's hierarchy entry: its table and parent column.
+	 * @param string               $uuid      The row.
+	 *
+	 * @return string|null The parent UUID, '' when the row names none, null when there is no such row.
+	 *
+	 * @throws Throwable When the table cannot be read.
+	 */
+	private function readParent(array $hierarchy, string $uuid): ?string {
+		$parentColumn = $hierarchy['parentColumn'];
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($parentColumn)
+			->from($hierarchy['table'])
+			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($uuid)))
+			->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return (string)($row[$parentColumn] ?? '');
+	}//end readParent()
+
+	/**
+	 * The context of a warning about a failed read: where it was called, what it read, and why it failed.
+	 *
+	 * @param array<string, string> $where What was being read.
+	 * @param Throwable             $error Why it failed.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private static function failureContext(array $where, Throwable $error): array {
+		return array_merge(['file' => __FILE__, 'line' => __LINE__], $where, ['exception' => $error->getMessage()]);
+	}//end failureContext()
 
 	/**
 	 * The column a property is stored in, by the rule the table writer uses.
@@ -635,27 +701,35 @@ class HierarchyDescender {
 			return $this->tables;
 		}
 
-		$this->tables = [];
-
 		try {
-			foreach ($this->db->createSchema()->getTables() as $candidate) {
-				$this->tables[(string)$candidate->getName()] = array_map(
-					static fn (object $c): string => strtolower((string)$c->getName()),
-					$candidate->getColumns()
-				);
-			}
+			$this->tables = $this->readTables();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[HierarchyDescender] Could not read the instance\'s tables; nothing is inherited this request',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
+				context: self::failureContext(where: [], error: $e)
 			);
 			$this->tables = [];
 		}
 
 		return $this->tables;
 	}//end everyTable()
+
+	/**
+	 * Every table on the instance with its lower-cased column names, from one schema introspection.
+	 *
+	 * @return array<string, string[]> Table name => lower-cased column names.
+	 *
+	 * @throws Throwable When the database cannot be introspected.
+	 */
+	private function readTables(): array {
+		$tables = [];
+		foreach ($this->db->createSchema()->getTables() as $candidate) {
+			$tables[(string)$candidate->getName()] = array_map(
+				static fn (object $c): string => strtolower((string)$c->getName()),
+				$candidate->getColumns()
+			);
+		}
+
+		return $tables;
+	}//end readTables()
 }//end class

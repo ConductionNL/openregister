@@ -34,12 +34,14 @@ final class ChunkAsVectorSource implements ChunkVectorSourceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param Chunk $chunk The stored chunk.
+	 * @param Chunk $chunk       The stored chunk.
+	 * @param int   $totalChunks How many chunks the chunk's source has.
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function __construct(
 		private readonly Chunk $chunk,
+		private readonly int $totalChunks,
 	) {
 	}//end __construct()
 
@@ -108,4 +110,15 @@ final class ChunkAsVectorSource implements ChunkVectorSourceInterface {
 	public function endOffset(): int {
 		return $this->chunk->getEndOffset();
 	}//end endOffset()
+
+	/**
+	 * How many chunks the chunk's source has.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function totalChunks(): int {
+		return $this->totalChunks;
+	}//end totalChunks()
 }//end class

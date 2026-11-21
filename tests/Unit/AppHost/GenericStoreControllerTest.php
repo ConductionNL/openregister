@@ -43,6 +43,7 @@ use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -67,6 +68,17 @@ use RuntimeException;
  *
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform
+ * @uses \OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
  */
 class GenericStoreControllerTest extends TestCase {
 	/** @var ManifestLoader&MockObject */
@@ -113,11 +125,11 @@ class GenericStoreControllerTest extends TestCase {
 		$this->installer = $this->getMockBuilder(GenericStoreInstaller::class)
 			->disableOriginalConstructor()->onlyMethods(['install'])->getMock();
 		$this->catalog = $this->getMockBuilder(FederatedStoreCatalog::class)
-			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['search', 'resolve', 'install', 'ownedTypes'])->getMock();
 		$this->gitHubSource = $this->getMockBuilder(GitHubStoreSource::class)
 			->disableOriginalConstructor()->onlyMethods(['search', 'sourceId'])->getMock();
 		$this->actionAuthorizer = $this->getMockBuilder(StoreActionAuthorizer::class)
-			->disableOriginalConstructor()->onlyMethods(['can', 'canPublish'])->getMock();
+			->disableOriginalConstructor()->onlyMethods(['permits', 'canPublish'])->getMock();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -357,6 +369,77 @@ class GenericStoreControllerTest extends TestCase {
 			$response->getData()['kinds']
 		);
 	}//end testFederatedKindsFallBackToTheDeclaredTypes()
+
+	/**
+	 * A declared type no installed app owns is neither a filter nor searched.
+	 *
+	 * `nldesign.theme` is registered by an optional app; while that app is
+	 * disabled the registry does not hold it, so the page must not offer it.
+	 *
+	 * @return void
+	 */
+	public function testAnUnownedDeclaredTypeIsNotOffered(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(
+				appId: 'openregister',
+				manifest: ['store' => ['types' => ['openregister.configset', 'nldesign.theme']]]
+			)
+		);
+		$this->catalog->method('ownedTypes')
+			->with(['openregister.configset', 'nldesign.theme'])
+			->willReturn(['openregister.configset']);
+		$searched = null;
+		$this->catalog->expects($this->once())
+			->method('search')
+			->willReturnCallback(function ($descriptor) use (&$searched) {
+				$searched = $descriptor->types;
+				return ['outcome' => 'ok', 'cards' => []];
+			});
+
+		$response = $this->controller(appId: 'openregister')->search();
+
+		$this->assertSame(['openregister.configset'], $response->getData()['kinds']);
+		$this->assertSame(['openregister.configset'], $searched);
+	}//end testAnUnownedDeclaredTypeIsNotOffered()
+
+	/**
+	 * An owned optional type is offered beside the others.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnedOptionalTypeIsOffered(): void {
+		$this->signIn();
+		$declared = ['openregister.configset', 'openregister.flows', 'nldesign.theme'];
+		$this->manifestLoader->method('loadStore')->willReturn(
+			StoreManifest::fromManifest(appId: 'openregister', manifest: ['store' => ['types' => $declared]])
+		);
+		$this->catalog->method('ownedTypes')->willReturn($declared);
+		$this->catalog->method('search')->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller(appId: 'openregister')->search();
+
+		$this->assertSame($declared, $response->getData()['kinds']);
+	}//end testAnOwnedOptionalTypeIsOffered()
+
+	/**
+	 * A store that owns none of its declared types keeps them, so it stays on
+	 * the configuration path rather than falling back to the objects API.
+	 *
+	 * @return void
+	 */
+	public function testAStoreOwningNoDeclaredTypeKeepsTheConfigurationPath(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->catalog->method('ownedTypes')->willReturn([]);
+		$this->storeService->expects($this->never())->method('search');
+		$this->catalog->expects($this->once())->method('search')
+			->willReturn(['outcome' => 'ok', 'cards' => []]);
+
+		$response = $this->controller(appId: 'decidiq')->search();
+
+		$this->assertSame(['openregister.configset', 'openregister.flows'], $response->getData()['kinds']);
+	}//end testAStoreOwningNoDeclaredTypeKeepsTheConfigurationPath()
 
 	/**
 	 * A federated install runs through the catalogue, not the object installer.
@@ -666,8 +749,8 @@ class GenericStoreControllerTest extends TestCase {
 		$this->signIn(isAdmin: false);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
 		$this->actionAuthorizer->expects($this->once())
-			->method('can')
-			->with('demo', 'catalog.instantiate', $this->anything())
+			->method('permits')
+			->with($this->callback(static fn (StoreActionCheck $check): bool => $check->appId === 'demo' && $check->action === 'catalog.instantiate'))
 			->willReturn(true);
 		$this->storeService->method('resolve')->willReturn(['slug' => 'vth', 'components' => []]);
 		$this->installer->expects($this->once())
@@ -688,7 +771,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnActionPostureRefusesWhenTheLeafMatrixDeclines(): void {
 		$this->signIn(isAdmin: false);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->method('can')->willReturn(false);
+		$this->actionAuthorizer->method('permits')->willReturn(false);
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
@@ -709,7 +792,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnAdministratorStillGoesThroughTheActionMatrix(): void {
 		$this->signIn(isAdmin: true);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->expects($this->once())->method('can')->willReturn(false);
+		$this->actionAuthorizer->expects($this->once())->method('permits')->willReturn(false);
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
@@ -727,7 +810,7 @@ class GenericStoreControllerTest extends TestCase {
 	public function testAnActionPostureRefusesAnonymousWithoutAsking(): void {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->manifestLoader->method('loadStore')->willReturn($this->actionStore());
-		$this->actionAuthorizer->expects($this->never())->method('can');
+		$this->actionAuthorizer->expects($this->never())->method('permits');
 		$this->installer->expects($this->never())->method('install');
 
 		$this->assertSame(
@@ -876,4 +959,27 @@ class GenericStoreControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertTrue($response->getData()['success']);
 	}//end testInstallHandsTheDeclaredStoreToTheInstaller()
+
+	/**
+	 * A store that declares no types keeps the objects API: neither its search
+	 * nor its install makes a discovery call or touches the configuration
+	 * catalogue (store-over-federated-config 2.3 and 3.1).
+	 *
+	 * @return void
+	 */
+	public function testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue(): void {
+		$this->signIn(isAdmin: true);
+		$store = $this->enabledStore();
+		$this->assertSame([], $store->declaredTypes());
+		$this->manifestLoader->method('loadStore')->willReturn($store);
+		$this->catalog->expects($this->never())->method('search');
+		$this->catalog->expects($this->never())->method('resolve');
+		$this->catalog->expects($this->never())->method('install');
+		$this->storeService->expects($this->once())->method('search')->willReturn(['outcome' => 'ok', 'cards' => [['slug' => 'vth']]]);
+		$this->storeService->expects($this->once())->method('resolve')->willReturn(['components' => []]);
+		$this->installer->expects($this->once())->method('install')->willReturn(['success' => true, 'components' => []]);
+
+		$this->assertSame([['slug' => 'vth']], $this->controller()->search()->getData()['cards']);
+		$this->assertTrue($this->controller()->install(slug: 'vth')->getData()['success']);
+	}//end testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue()
 }//end class

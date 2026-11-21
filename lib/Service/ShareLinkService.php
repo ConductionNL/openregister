@@ -53,10 +53,10 @@ use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Service\Sharing\ObjectShareLookup;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
-use OCP\Server;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -70,31 +70,23 @@ use Throwable;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Service references IManager, IShare, Folder, Node,
- * IL10N, LoggerInterface, ContainerInterface, DateTime, DateTimeInterface, OCP\Server, and Throwable —
+ * IL10N, LoggerInterface, ContainerInterface, ObjectShareLookup, DateTimeInterface, and Throwable —
  * every type is required for the share list/create/revoke contract or the lazy-resolution policy.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Service exposes
  * getLinkedShares/createShare/revokeShare/getShareableFiles plus internal resolution helpers
- * (getShareManager, resolveObjectFolder, resolveNodeInFolder, normaliseShare, shareIsInFolder,
- * resolveCurrentUserId, resolveObjectEntity, lookup, resolveContainer); each is a required step
+ * (getShareManager, resolveNodeInFolder, normaliseShare, shareIsInFolder); each is a required step
  * of a distinct public flow.
  */
 class ShareLinkService implements ShareLinkServiceInterface {
 
 	/**
-	 * Share types the service surfaces when listing. Mirrors
-	 * {@see SharesProvider::SHARE_TYPES} so the registry tab and this
-	 * service agree on which shares belong to the object.
+	 * Share types the service surfaces when listing: the
+	 * {@see ObjectShareLookup::SHARE_TYPES} the registry tab lists too, so
+	 * both agree on which shares belong to the object.
 	 *
 	 * @var int[]
 	 */
-	private const SHARE_TYPES = [
-		IShare::TYPE_USER,
-		IShare::TYPE_GROUP,
-		IShare::TYPE_LINK,
-		IShare::TYPE_EMAIL,
-		IShare::TYPE_REMOTE,
-		IShare::TYPE_REMOTE_GROUP,
-	];
+	private const SHARE_TYPES = ObjectShareLookup::SHARE_TYPES;
 
 	/**
 	 * Maximum nodes inside the object's folder to walk when listing or
@@ -103,15 +95,14 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 *
 	 * @var int
 	 */
-	private const MAX_NODES = 50;
+	private const MAX_NODES = ObjectShareLookup::MAX_NODES;
 
 	/**
-	 * Optional server-container override (tests only). Production uses
-	 * NC's global `\OCP\Server` container via {@see resolveContainer()}.
+	 * Container-backed lookups of the share manager, object folder, entity and user.
 	 *
-	 * @var ContainerInterface|null
+	 * @var ObjectShareLookup
 	 */
-	private ?ContainerInterface $container;
+	private readonly ObjectShareLookup $shares;
 
 	/**
 	 * Constructor.
@@ -125,7 +116,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 		private readonly LoggerInterface $logger,
 		?ContainerInterface $container = null,
 	) {
-		$this->container = $container;
+		$this->shares = new ObjectShareLookup(container: $container);
 	}//end __construct()
 
 	/**
@@ -148,12 +139,12 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 */
 	public function getLinkedShares(string $objectUuid): array {
 		$shareManager = $this->getShareManager();
-		$userId = $this->resolveCurrentUserId();
+		$userId = $this->shares->currentUserId();
 		if ($userId === null) {
 			throw new Exception('No user logged in', 401);
 		}
 
-		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
+		$folder = $this->shares->objectFolder(objectUuid: $objectUuid);
 		if ($folder === null) {
 			return [];
 		}
@@ -189,7 +180,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	private function sharersOf(string $userId, string $objectUuid): array {
 		$sharers = [$userId];
 		$systemUserId = $this->systemUserId();
-		if ($systemUserId !== null && $this->mayUpdateObject(entity: $this->resolveObjectEntity(objectUuid: $objectUuid)) === true) {
+		if ($systemUserId !== null && $this->mayUpdateObject(entity: $this->shares->objectEntity(objectUuid: $objectUuid)) === true) {
 			$sharers[] = $systemUserId;
 		}
 
@@ -255,7 +246,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 */
 	private function systemUserId(): ?string {
 		try {
-			return $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\FileService')?->getUser()->getUID();
+			return $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\FileService')?->getUser()->getUID();
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -269,7 +260,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @return bool True when they do; false too when it cannot be asked.
 	 */
 	private function mayUpdateObject(?object $entity): bool {
-		$permissions = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface');
+		$permissions = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface');
 		if (($entity instanceof ObjectEntity) === false || $permissions === null) {
 			return false;
 		}
@@ -288,7 +279,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @return bool True when the caller holds the right.
 	 */
 	private function askUpdateRight(object $permissions, ObjectEntity $entity): bool {
-		$schemas = $this->lookup(serviceName: 'OCA\\OpenRegister\\Db\\SchemaMapper');
+		$schemas = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Db\\SchemaMapper');
 		if ($schemas === null) {
 			return false;
 		}
@@ -350,7 +341,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @return object|null The auditor, only for an ObjectEntity.
 	 */
 	private function auditorFor(?object $entity): ?object {
-		$auditor = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor');
+		$auditor = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor');
 		if (($entity instanceof ObjectEntity) === false) {
 			return null;
 		}
@@ -411,14 +402,14 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 */
 	public function createShare(string $objectUuid, ShareDraft $draft): IShare {
 		$shareManager = $this->getShareManager();
-		$userId = $this->resolveCurrentUserId();
+		$userId = $this->shares->currentUserId();
 		if ($userId === null) {
 			throw new Exception('No user logged in', 401);
 		}
 
 		$target = $this->shareTarget(objectUuid: $objectUuid, draft: $draft);
 
-		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		$entity = $this->shares->objectEntity(objectUuid: $objectUuid);
 		if ($this->mayUpdateObject(entity: $entity) === false) {
 			throw new Exception('You may not change this object, so you cannot share its files.', 403);
 		}
@@ -554,14 +545,14 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 */
 	public function revokeShare(string $objectUuid, string $shareId): void {
 		$shareManager = $this->getShareManager();
-		$userId = $this->resolveCurrentUserId();
+		$userId = $this->shares->currentUserId();
 		if ($userId === null) {
 			throw new Exception('No user logged in', 401);
 		}
 
 		$share = $this->shareInObjectFolder(objectUuid: $objectUuid, shareId: $shareId);
 
-		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		$entity = $this->shares->objectEntity(objectUuid: $objectUuid);
 		if ($this->mayRevoke(share: $share, entity: $entity) === false) {
 			throw new Exception('Share not found', 404);
 		}
@@ -587,7 +578,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 			throw new Exception('Share not found', 404);
 		}
 
-		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
+		$folder = $this->shares->objectFolder(objectUuid: $objectUuid);
 		if ($folder === null || $this->shareIsInFolder(share: $share, folder: $folder) === false) {
 			throw new Exception('Share not found', 404);
 		}
@@ -606,7 +597,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @return bool True when the caller may revoke it.
 	 */
 	private function mayRevoke(IShare $share, ?object $entity): bool {
-		$userId    = $this->resolveCurrentUserId();
+		$userId    = $this->shares->currentUserId();
 		$isCallers = ($share->getSharedBy() === $userId || $share->getShareOwner() === $userId);
 		$isManaged = ($share->getSharedBy() === $this->systemUserId() && $this->mayUpdateObject(entity: $entity) === true);
 
@@ -624,7 +615,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 *              the integration-shares / generic-integrations capability.
 	 */
 	public function getShareableFiles(string $objectUuid): array {
-		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
+		$folder = $this->shares->objectFolder(objectUuid: $objectUuid);
 		if ($folder === null) {
 			return [];
 		}
@@ -661,7 +652,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @throws Exception When the share subsystem is unreachable (503).
 	 */
 	private function getShareManager(): IManager {
-		$manager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
+		$manager = $this->shares->lookup(serviceName: 'OCP\\Share\\IManager');
 		if (($manager instanceof IManager) === false) {
 			throw new Exception('NC share manager is unreachable', 503);
 		}
@@ -681,44 +672,13 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function readableChildren(Folder $folder): array {
-		$guard = $this->lookup(serviceName: FileRestrictionGuardInterface::class);
+		$guard = $this->shares->lookup(serviceName: FileRestrictionGuardInterface::class);
 		if ($guard === null) {
 			return [];
 		}
 
 		return $guard->readableNodes(nodes: $folder->getDirectoryListing());
 	}//end readableChildren()
-
-	/**
-	 * Resolve the object's NC folder via FileService,
-	 * passing the resolved ObjectEntity so the handler uses its
-	 * entity-input branch (the H-1 fix — string input throws "no
-	 * objectEntity or registerId given").
-	 *
-	 * @param string $objectUuid Owning object uuid.
-	 *
-	 * @return Folder|null
-	 */
-	private function resolveObjectFolder(string $objectUuid): ?Folder {
-		try {
-			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
-			);
-			if ($handler === null) {
-				return null;
-			}
-
-			$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
-			$folder = $handler->getObjectFolder($entity ?? $objectUuid);
-			if (($folder instanceof Folder) === true) {
-				return $folder;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveObjectFolder()
 
 	/**
 	 * Resolve a file node inside the object's folder by file id.
@@ -729,7 +689,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @return Node|null Node when present in the folder, else null.
 	 */
 	private function resolveNodeInFolder(string $objectUuid, int $fileId): ?Node {
-		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
+		$folder = $this->shares->objectFolder(objectUuid: $objectUuid);
 		if ($folder === null) {
 			return null;
 		}
@@ -784,56 +744,6 @@ class ShareLinkService implements ShareLinkServiceInterface {
 		$nodeId = (int)$node->getId();
 		return $this->firstNodeWithId(nodes: $folder->getDirectoryListing(), nodeId: $nodeId) !== null;
 	}//end shareIsInFolder()
-
-	/**
-	 * Look up an ObjectEntity by uuid via the lazy container.
-	 *
-	 * @param string $objectUuid Object uuid.
-	 *
-	 * @return object|null
-	 */
-	private function resolveObjectEntity(string $objectUuid): ?object {
-		try {
-			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
-			);
-			if ($mapper === null) {
-				return null;
-			}
-
-			$entity = $mapper->find($objectUuid);
-			if (is_object($entity) === true) {
-				return $entity;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveObjectEntity()
-
-	/**
-	 * Resolve the current user's UID via IUserSession.
-	 *
-	 * @return string|null
-	 */
-	private function resolveCurrentUserId(): ?string {
-		try {
-			$session = $this->lookup(serviceName: 'OCP\\IUserSession');
-			if ($session === null) {
-				return null;
-			}
-
-			$user = $session->getUser();
-			if ($user === null) {
-				return null;
-			}
-
-			return $user->getUID();
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end resolveCurrentUserId()
 
 	/**
 	 * Normalise an `IShare` into the leaf-row contract.
@@ -894,77 +804,4 @@ class ShareLinkService implements ShareLinkServiceInterface {
 		return $date->format(DateTimeInterface::ATOM);
 	}//end atomOrNull()
 
-	/**
-	 * Resolve a service from the container.
-	 *
-	 * @param string $serviceName Fully qualified class name to resolve.
-	 *
-	 * @return object|null
-	 */
-	private function lookup(string $serviceName): ?object {
-		try {
-			$container = $this->resolveContainer();
-			$service = $container->get($serviceName);
-			if (is_object($service) === true) {
-				return $service;
-			}
-
-			return null;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end lookup()
-
-	/**
-	 * Resolve the active container — the test override if injected,
-	 * otherwise NC's global server container.
-	 *
-	 * @return ContainerInterface
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Server::get() is the Nextcloud-prescribed static
-	 * service-locator for optional late-bound dependencies; no injectable alternative exists for the
-	 * lazy-resolution policy (constructor injection would fail when optional services are absent).
-	 */
-	private function resolveContainer(): ContainerInterface {
-		if ($this->container !== null) {
-			return $this->container;
-		}
-
-		// Thin PSR-11 adapter around `\OCP\Server::get()` so the rest
-		// of the service can treat container lookups uniformly.
-		return new class implements ContainerInterface {
-			/**
-			 * Resolve a service from the NC server container.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return object
-			 *
-			 * @spec exclude Plumbing: PSR-11 adapter method around Server::get() on an inline anonymous container; no standalone behavioral contract.
-			 */
-			public function get(string $id): object {
-				// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
-				return Server::get($id);
-			}//end get()
-
-			/**
-			 * Whether the NC server container can resolve a service.
-			 *
-			 * @param string $id Service id.
-			 *
-			 * @return bool
-			 *
-			 * @spec exclude Plumbing: PSR-11 adapter method around Server::get() on an inline anonymous container; no standalone behavioral contract.
-			 */
-			public function has(string $id): bool {
-				try {
-					// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- PSR-11 adapter shim: this IS the container being handed to a collaborator, so there is no container to inject into it.
-					Server::get($id);
-					return true;
-				} catch (Throwable $e) {
-					return false;
-				}
-			}//end has()
-		};
-	}//end resolveContainer()
 }//end class

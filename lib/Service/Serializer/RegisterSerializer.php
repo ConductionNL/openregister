@@ -100,26 +100,6 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 	/**
 	 * Serialize a collection of Register entities.
 	 *
-	 * Kept for RegisterService::findAllSerialized(), whose call an open change rewrites;
-	 * builds the extension and delegates to {@see self::serializePage()}.
-	 *
-	 * @param Register[] $registers Registers to serialize.
-	 * @param array $extend Extension keys to apply.
-	 * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
-	 *                                                                             (registerId → schemaId →
-	 *                                                                             ['total' => int]).
-	 *
-	 * @return array<int,array> Serialized payload for each register.
-	 *
-	 * @spec openspec/specs/register-service-extensions/spec.md
-	 */
-	public function serializeMany(array $registers, array $extend = [], ?array $schemaStatsByRegisterId = null): array {
-		return $this->serializePage(registers: $registers, extension: new RegisterListExtension(extend: $extend, schemaStatsByRegisterId: $schemaStatsByRegisterId));
-	}//end serializeMany()
-
-	/**
-	 * Serialize a collection of Register entities.
-	 *
 	 * @param Register[]            $registers Registers to serialize.
 	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
 	 *
@@ -277,27 +257,50 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 			return;
 		}
 
-		$ids = [];
-		foreach ($registers as $register) {
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				if (is_numeric($schemaId) === false) {
-					continue;
-				}
-
-				if (isset($this->schemaCache[(string)$schemaId]) === true) {
-					continue;
-				}
-
-				$ids[(int)$schemaId] = true;
-			}
-		}
-
+		$ids = $this->uncachedSchemaIds(registers: $registers);
 		if (empty($ids) === true) {
 			return;
 		}
 
-		foreach ($this->schemaMapper->findMultipleOptimized(ids: array_keys($ids)) as $id => $schema) {
+		foreach ($this->schemaMapper->findMultipleOptimized(ids: $ids) as $id => $schema) {
 			$this->schemaCache[(string)$id] = $schema;
 		}
 	}//end warmSchemaCache()
+
+	/**
+	 * The numeric schema ids of a page that are not cached yet, each once, in first-seen order.
+	 *
+	 * @param Register[] $registers The registers about to be serialized.
+	 *
+	 * @return int[] The ids to fetch.
+	 *
+	 * @spec exclude batched warm-up of the request-scoped cache; no behaviour change
+	 */
+	private function uncachedSchemaIds(array $registers): array {
+		$ids = [];
+		foreach ($registers as $register) {
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				if ($this->needsSchemaFetch(schemaId: $schemaId) === true) {
+					$ids[(int)$schemaId] = true;
+				}
+			}
+		}
+
+		return array_keys($ids);
+	}//end uncachedSchemaIds()
+
+	/**
+	 * Whether a schema id is one the warm-up fetches: numeric and not cached yet.
+	 *
+	 * A uuid or slug is left to findSchemaCached(), which falls back to find().
+	 *
+	 * @param mixed $schemaId The schema id as the register lists it.
+	 *
+	 * @return bool True when the id is fetched in the batch.
+	 *
+	 * @spec exclude batched warm-up of the request-scoped cache; no behaviour change
+	 */
+	private function needsSchemaFetch(mixed $schemaId): bool {
+		return is_numeric($schemaId) === true && isset($this->schemaCache[(string)$schemaId]) === false;
+	}//end needsSchemaFetch()
 }//end class

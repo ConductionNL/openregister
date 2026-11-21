@@ -27,12 +27,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
  */
 class ExampleSetValuesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-values-golden.json';
@@ -42,11 +47,11 @@ class ExampleSetValuesGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->fills() as $name => $declared) {
 			$gaps          = ['earlier'];
-			$filled        = $values->fill($declared, $this->context(), $gaps);
+			$filled        = $values->fill($declared, new ExampleSetFillScope($this->context(), $gaps));
 			$actual[$name] = ['filled' => $filled, 'gaps' => $gaps];
 		}
 
-		$actual['no today'] = $values->fill(['{{date:+1}}', 'a {{datetime:0 09:00}}'], ['cast' => []], $gaps);
+		$actual['no today'] = $values->fill(['{{date:+1}}', 'a {{datetime:0 09:00}}'], new ExampleSetFillScope(['cast' => []], $gaps));
 		foreach ($this->owners() as $name => $object) {
 			$actual['owner '.$name] = $values->ownerOf($object, $this->context());
 		}
@@ -54,12 +59,10 @@ class ExampleSetValuesGoldenTest extends TestCase {
 		$gaps = [];
 		$actual['fillObject'] = [
 			$values->fillObject(
-				['data' => ['a' => '{{cast:anna.uid}}', 'tpl' => 'Hi {{zaakNummer}}', 'b' => '{{cast:x.y}}'], 'verbatimFields' => ['tpl', 5]],
-				$this->context(),
-				$gaps
+				['data' => ['a' => '{{cast:anna.uid}}', 'tpl' => 'Hi {{zaakNummer}}', 'b' => '{{cast:x.y}}'], 'verbatimFields' => ['tpl', 5]], new ExampleSetFillScope($this->context(), $gaps)
 			),
 			$gaps,
-			$values->fillObject([], $this->context(), $gaps),
+			$values->fillObject([], new ExampleSetFillScope($this->context(), $gaps)),
 		];
 		foreach ([null, $this->record()] as $index => $record) {
 			$actual['fragment rows '.$index] = [

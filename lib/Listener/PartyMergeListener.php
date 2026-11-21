@@ -43,10 +43,13 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\Support\PartyCarryOver;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Carries party roles and addresses across a merge, and back on a reversal.
@@ -190,9 +193,11 @@ class PartyMergeListener implements IEventListener {
 	 */
 	private function carryLink(ContactLink $link, PartyCarryOver $step): void {
 		$held = $this->links->findByObjectContactAndRole(
-			objectUuid: (string)($link->getObjectUuid() ?? ''),
-			contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
-			role: $link->getRole()
+			ref: new PersonLinkRef(
+				objectUuid: (string)($link->getObjectUuid() ?? ''),
+				contactUid: ContactLink::partyUid(partyUuid: $step->survivorUuid),
+				role: $link->getRole()
+			)
 		);
 
 		if ($held !== null) {
@@ -334,9 +339,10 @@ class PartyMergeListener implements IEventListener {
 		$data[$run->step->definition->addressesProperty()] = $united;
 		$this->objects->saveObject(
 			object: $data,
-			register: $survivor->getRegister(),
-			schema: $survivor->getSchema(),
-			uuid: $run->step->survivorUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $survivor->getRegister(), schema: $survivor->getSchema()),
+				uuid: $run->step->survivorUuid
+			)
 		);
 	}//end saveUnion()
 

@@ -52,6 +52,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Creates the node's task, reads it back, and continues the run it parked.
@@ -200,12 +202,11 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 		}
 
 		return $this->tasks->offer(
-			uuid: (string)$task->getUuid(),
+			ref: new TaskActorRef(uuid: (string)$task->getUuid(), actor: $request->actor),
 			pool: [
 				'routingStrategy' => $strategy,
 				'routingFallback' => ($request->data['routingFallback'] ?? null),
 			],
-			actor: $request->actor
 		);
 	}//end routed()
 
@@ -222,7 +223,7 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-matched-party-comes-from-the-case-and-is-frozen-at-creation
 	 */
 	public function record(TaskAuditEntry $entry): void {
-		$this->tasks->record(uuid: $entry->uuid, action: $entry->action, actor: $entry->actor, reason: $entry->reason);
+		$this->tasks->record(entry: $entry);
 	}//end record()
 
 	/**
@@ -250,12 +251,14 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 	public function recordHeartbeatRecovery(Task $task): void {
 		try {
 			$this->tasks->record(
-				uuid: (string)$task->getUuid(),
-				action: 'heartbeat-recovered',
-				actor: $task->getCompletedBy(),
-				reason: sprintf(
-					'The completion signal never reached run %s; the heartbeat re-read this task and applied its outcome.',
-					(string)$task->getRunUuid()
+				entry: new TaskAuditEntry(
+					uuid: (string)$task->getUuid(),
+					action: 'heartbeat-recovered',
+					actor: $task->getCompletedBy(),
+					reason: sprintf(
+						'The completion signal never reached run %s; the heartbeat re-read this task and applied its outcome.',
+						(string)$task->getRunUuid()
+					)
 				)
 			);
 

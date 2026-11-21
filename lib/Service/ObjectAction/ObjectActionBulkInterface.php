@@ -36,13 +36,12 @@ interface ObjectActionBulkInterface {
 	 * Preview a bulk job running an action over a selection.
 	 *
 	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
-	 * @param string                $action    The action key.
-	 * @param array<string, mixed>  $inputs    The inputs.
+	 * @param ObjectActionRequest   $request   The action key and the inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
 	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
 	 * @throws InvalidArgumentException When nobody is signed in to run it as.
 	 */
-	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob;
+	public function start(ObjectActionSelection $selection, ObjectActionRequest $request): BulkJob;
 }//end interface

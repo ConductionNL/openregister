@@ -1278,7 +1278,7 @@ The notification `{{prop}}` interpolation SHALL resolve a UUID-shaped field valu
 
 ### Requirement: Dispatcher resolves action targets to deeplinks
 
-For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute `http`, `https` or `mailto` URL verbatim.
+For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (URL-encoded) from object fields; `url` → the absolute `http`, `https` or `mailto` URL verbatim.
 
 #### Scenario: object-detail deeplinks to the triggering object
 
@@ -1293,7 +1293,7 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 #### Scenario: route target interpolates fields
 
 - **WHEN** an action declares `target: { "kind": "route", "app": "pipelinq", "route": "/clients/{{clientId}}" }`
-- **THEN** the dispatcher interpolates `{{clientId}}` from the object's fields (HTML-escaped) and builds the named app route link
+- **THEN** the dispatcher interpolates `{{clientId}}` from the object's fields (URL-encoded) and builds the named app route link
 
 #### Scenario: url target passthrough
 

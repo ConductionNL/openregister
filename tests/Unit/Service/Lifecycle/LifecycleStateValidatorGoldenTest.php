@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionValidator
  * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionSite
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleScope
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateDeclarationScope
  */
 class LifecycleStateValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/lifecycle-states-golden.json';
@@ -56,6 +57,8 @@ class LifecycleStateValidatorGoldenTest extends TestCase {
 			'numeric state key' => ['annotation' => ['states' => [5 => ['fields' => ['hidden' => ['x']]]]], 'enumSet' => null],
 			'state block scalar' => ['annotation' => ['states' => ['open' => 'yes']]],
 			'state without fields' => ['annotation' => ['states' => ['open' => []]]],
+			'freezesObject true' => ['annotation' => ['states' => ['open' => ['freezesObject' => true]]]],
+			'freezesObject string' => ['annotation' => ['states' => ['open' => ['freezesObject' => 'true']]]],
 			'fields scalar' => ['annotation' => ['states' => ['open' => ['fields' => 'title']]]],
 			'fields empty' => ['annotation' => ['states' => ['open' => ['fields' => []]]]],
 			'unknown kind' => ['annotation' => ['states' => ['open' => ['fields' => ['frozen' => [['fields' => ['title']]]]]]]],

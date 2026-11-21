@@ -50,6 +50,7 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 class FilePublishingHandlerZipGoldenTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	private const FIXTURE = __DIR__ . '/fixtures/file-publishing-zip-golden.json';
 
@@ -167,7 +168,8 @@ class FilePublishingHandlerZipGoldenTest extends TestCase {
 			objectEntityMapper: $mapper,
 			fileMapper: $this->createMock(FileMapper::class),
 			logger: $logger,
-			container: $container
+			container: $container,
+			publishedDigests: $this->passThroughDigests()
 		);
 		$handler->setFileService($fileService);
 

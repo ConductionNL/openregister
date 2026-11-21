@@ -150,4 +150,59 @@ class AnnotationNotificationDispatchJobTest extends TestCase {
 
 		$this->assertSame([], $this->dispatched);
 	}
+
+	/**
+	 * A failing dispatch is logged with the entry it was for, and the next entry is still dispatched.
+	 *
+	 * @return void
+	 */
+	public function testAFailedDispatchIsLoggedAndTheChunkCarriesOn(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$warnings = [];
+		$logger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, $context];
+			}
+		);
+		$dispatcher = $this->createMock(AnnotationNotificationDispatcher::class);
+		$dispatched = [];
+		$dispatcher->method('dispatch')->willReturnCallback(
+			static function (ObjectEntity $object, string $trigger) use (&$dispatched): void {
+				if ($object->getUuid() === 'u1') {
+					throw new \RuntimeException('mail down');
+				}
+
+				$dispatched[] = [(string) $object->getUuid(), $trigger];
+			}
+		);
+		$this->resolver->method('resolve')->willReturnCallback(
+			fn (array $entry): ObjectEntity => $this->liveObject((string) $entry['uuid'])
+		);
+		$this->job = new AnnotationNotificationDispatchJob(
+			time: $this->createMock(ITimeFactory::class),
+			actor: new ActorForwardingServices(
+				userSession: $this->createMock(IUserSession::class),
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $logger,
+			),
+			resolver: $this->resolver,
+			dispatcher: $dispatcher,
+		);
+
+		$this->runJob([
+			['uuid' => 'u1', 'register' => 'r', 'schema' => 's', 'trigger' => 'created'],
+			['uuid' => 'u2', 'register' => 'r', 'schema' => 's', 'trigger' => 'created'],
+		]);
+
+		$this->assertSame([['u2', 'created']], $dispatched);
+		$failures = array_values(array_filter(
+			$warnings,
+			static fn (array $w): bool => $w[0] === '[AnnotationNotificationDispatchJob] Dispatch failed for entry'
+		));
+		$this->assertCount(1, $failures);
+		$this->assertSame('u1', $failures[0][1]['uuid']);
+		$this->assertSame('created', $failures[0][1]['trigger']);
+		$this->assertSame('mail down', $failures[0][1]['error']);
+	}
 }

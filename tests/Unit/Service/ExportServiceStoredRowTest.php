@@ -27,10 +27,20 @@ use OCP\IUserManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 #[CoversClass(ExportService::class)]
 #[UsesClass(StoredEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Export\ExportRequest::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SaveActor::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy::class)]
 class ExportServiceStoredRowTest extends TestCase {
 
 	/**
@@ -64,7 +74,7 @@ class ExportServiceStoredRowTest extends TestCase {
 		$this->expectException(exception: InvalidArgumentException::class);
 		$this->expectExceptionMessage(message: 'Only a stored Schema row is accepted here.');
 
-		$this->service->exportToJson(schema: $this->createMock(originalClassName: SchemaInterface::class));
+		$this->service->exportToJson(request: new ObjectExportRequest(schema: $this->createMock(originalClassName: SchemaInterface::class)));
 	}//end testJsonExportRefusesAForeignSchema()
 
 	/**
@@ -77,8 +87,7 @@ class ExportServiceStoredRowTest extends TestCase {
 		$this->expectExceptionMessage(message: 'Only a stored Register row is accepted here.');
 
 		$this->service->exportToJson(
-			register: $this->createMock(originalClassName: RegisterInterface::class),
-			schema: new Schema()
+			request: new ObjectExportRequest(register: $this->createMock(originalClassName: RegisterInterface::class), schema: new Schema()),
 		);
 	}//end testJsonExportRefusesAForeignRegister()
 
@@ -92,8 +101,7 @@ class ExportServiceStoredRowTest extends TestCase {
 		$this->expectExceptionMessage(message: 'Only a stored Schema row is accepted here.');
 
 		$this->service->buildTemplateSpreadsheet(
-			register: null,
-			schema: $this->createMock(originalClassName: SchemaInterface::class)
+			request: new ObjectExportRequest(schema: $this->createMock(originalClassName: SchemaInterface::class)),
 		);
 	}//end testTemplateSpreadsheetRefusesAForeignSchema()
 
@@ -107,8 +115,7 @@ class ExportServiceStoredRowTest extends TestCase {
 		$this->expectExceptionMessage(message: 'Only a stored Schema row is accepted here.');
 
 		$this->service->buildTemplateCsv(
-			register: null,
-			schema: $this->createMock(originalClassName: SchemaInterface::class)
+			request: new ObjectExportRequest(schema: $this->createMock(originalClassName: SchemaInterface::class)),
 		);
 	}//end testTemplateCsvRefusesAForeignSchema()
 }//end class

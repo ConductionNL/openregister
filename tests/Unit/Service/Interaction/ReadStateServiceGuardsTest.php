@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -38,6 +39,10 @@ use RuntimeException;
  * The anonymous, uuid-less and failing-mapper branches ReadStateServiceTest leaves open.
  *
  * @covers \OCA\OpenRegister\Service\Interaction\ReadStateService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Service\Interaction\UnreadCountCalculator
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class ReadStateServiceGuardsTest extends TestCase {
 
@@ -129,7 +134,7 @@ class ReadStateServiceGuardsTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 		$this->expectExceptionMessage('A read state needs a signed-in user');
 
-		$this->serviceAs('')->markRead($this->objectWith('uuid-1'));
+		$this->serviceAs('')->markRead(new AddressedObject(object: $this->objectWith('uuid-1')));
 
 	}//end testAnEmptyUidCannotMarkRead()
 
@@ -168,7 +173,7 @@ class ReadStateServiceGuardsTest extends TestCase {
 			)
 			->willReturnArgument(0);
 
-		$this->serviceAs('alice')->markRead($this->objectWith('uuid-1'), 'r', 's', '');
+		$this->serviceAs('alice')->markRead(new AddressedObject(object: $this->objectWith('uuid-1'), register: 'r', schema: 's'), '');
 
 	}//end testAnEmptySubResourceRecordsNoSubSeen()
 

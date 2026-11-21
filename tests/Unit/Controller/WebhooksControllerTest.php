@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WebhooksController;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -238,6 +238,25 @@ class WebhooksControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertArrayHasKey('results', $data);
 		$this->assertArrayHasKey('total', $data);
+	}
+
+	public function testIndexPassesThePageAndFiltersAsListQueries(): void {
+		$this->request->method('getParams')->willReturn([
+			'_limit' => '10',
+			'_page' => '3',
+			'filters' => ['enabled' => true],
+		]);
+		$queries = [];
+		$this->webhookMapper->method('findAll')->willReturnCallback(
+			function (ListQuery $query) use (&$queries): array {
+				$queries[] = [$query->limitOrNull(), $query->offset, $query->filters];
+				return [];
+			}
+		);
+
+		$this->controller->index();
+
+		$this->assertSame([[10, 20, ['enabled' => true]], [null, null, ['enabled' => true]]], $queries);
 	}
 
 	public function testIndexWithStringExtend(): void {

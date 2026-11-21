@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
@@ -113,6 +114,27 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleS
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function refusal(array $data, array $users): string {
+		$fields = $this->fieldsRefusal(data: $data);
+		if ($fields !== '') {
+			return $fields;
+		}
+
+		$shape = $this->shapeRefusal(data: $data, users: $users);
+		if ($shape !== '') {
+			return $shape;
+		}
+
+		return $this->momentRefusal(data: $data);
+	}//end refusal()
+
+	/**
+	 * Why the row's field names cannot be written, '' when they can: an unknown field, or a required one missing.
+	 *
+	 * @param array<string, mixed> $data The row's fields.
+	 *
+	 * @return string
+	 */
+	private function fieldsRefusal(array $data): string {
 		$unknown = array_diff(array_keys($data), self::FIELDS);
 		if ($unknown !== []) {
 			return 'field "'.implode('", "', $unknown).'" is not a timeline entry field a set may write';
@@ -125,11 +147,17 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleS
 			}
 		}
 
-		$shape = $this->shapeRefusal(data: $data, users: $users);
-		if ($shape !== '') {
-			return $shape;
-		}
+		return '';
+	}//end fieldsRefusal()
 
+	/**
+	 * Why the row's moment cannot be written, '' when it can.
+	 *
+	 * @param array<string, mixed> $data The row's fields.
+	 *
+	 * @return string
+	 */
+	private function momentRefusal(array $data): string {
 		try {
 			new DateTime((string) $data['at']);
 		} catch (Throwable) {
@@ -137,7 +165,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleS
 		}
 
 		return '';
-	}//end refusal()
+	}//end momentRefusal()
 
 	/**
 	 * Why the author or the fields cannot be written, '' when they can.
@@ -170,48 +198,127 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows implements ExampleS
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-timeline-entries-by-named-people
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
-		$key = $row->key;
-		$data = $row->data;
-		$objectUuid = (string) $data['object'];
+		$objectUuid = (string) $row->data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to give the entry', 'entry' => null];
 		}
 
-		$source = 'example-set:'.$app.'/'.$key;
+		return $this->writeOnObject(row: $row, object: $object);
+	}//end write()
+
+	/**
+	 * Find the entry an earlier install wrote for the row, or write it on the object.
+	 *
+	 * @param ExampleSetRow $row    The row.
+	 * @param ObjectEntity  $object The object the entry is on.
+	 *
+	 * @return array{error: string, entry: array{uuid: string, object: string}|null} The record entry, or why the
+	 *                                                                                write failed.
+	 */
+	private function writeOnObject(ExampleSetRow $row, ObjectEntity $object): array {
 		$mapper = $this->mapper();
 		try {
-			foreach ($mapper->findForObject($objectUuid, null, 500) as $earlier) {
-				if ($earlier->getRawSource() === $source) {
-					return ['error' => '', 'entry' => ['uuid' => (string) $earlier->getUuid(), 'object' => $objectUuid]];
-				}
+			$earlierUuid = $this->earlierEntryUuid(row: $row, mapper: $mapper);
+			if ($earlierUuid !== null) {
+				return $this->recordEntry(uuid: $earlierUuid, objectUuid: (string) $row->data['object']);
 			}
 
-			$kind   = (string) $data['kind'];
-			$moment = new DateTime((string) $data['at']);
-			$fields = $this->container->get(TimelineKindService::class)->validateFields(kindSlug: $kind, fields: (array) ($data['fields'] ?? []));
-			$entry  = new TimelineEntry();
-			$entry->setUuid((string) Uuid::v4());
-			$entry->setObjectUuid($objectUuid);
-			$entry->setRegister((string) $object->getRegister());
-			$entry->setSchema((string) $object->getSchema());
-			$entry->setKind($kind);
-			$entry->setAuthor($this->author(data: $data));
-			$entry->setVisibility((string) ($data['visibility'] ?? 'internal'));
-			$entry->setMessage((string) $data['message']);
-			$entry->setFields($fields);
-			$entry->setPinned(false);
-			$entry->setRawSource($source);
-			$entry->setCreated($moment);
-			$entry->setUpdated($moment);
-			$written = $mapper->insert($entry);
+			$written = $mapper->insert($this->newEntry(row: $row, object: $object));
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['uuid' => (string) $written->getUuid(), 'object' => $objectUuid]];
-	}//end write()
+		return $this->recordEntry(uuid: (string) $written->getUuid(), objectUuid: (string) $row->data['object']);
+	}//end writeOnObject()
+
+	/**
+	 * The raw source an entry of this row carries, so a later install finds it.
+	 *
+	 * @param ExampleSetRow $row The row.
+	 *
+	 * @return string `example-set:<app>/<key>`.
+	 */
+	private function sourceOf(ExampleSetRow $row): string {
+		return 'example-set:'.$row->app.'/'.$row->key;
+	}//end sourceOf()
+
+	/**
+	 * The uuid of the entry an earlier install wrote for this row, if any.
+	 *
+	 * @param ExampleSetRow       $row    The row.
+	 * @param TimelineEntryMapper $mapper The entry mapper.
+	 *
+	 * @return string|null The earlier entry's uuid, or null.
+	 */
+	private function earlierEntryUuid(ExampleSetRow $row, TimelineEntryMapper $mapper): ?string {
+		$source = $this->sourceOf(row: $row);
+		foreach ($mapper->findForObject((string) $row->data['object'], null, 500) as $earlier) {
+			if ($earlier->getRawSource() === $source) {
+				return (string) $earlier->getUuid();
+			}
+		}
+
+		return null;
+	}//end earlierEntryUuid()
+
+	/**
+	 * A new, unsaved entry for the row, its fields checked against its kind.
+	 *
+	 * @param ExampleSetRow $row    The row.
+	 * @param ObjectEntity  $object The object the entry is on.
+	 *
+	 * @return TimelineEntry
+	 */
+	private function newEntry(ExampleSetRow $row, ObjectEntity $object): TimelineEntry {
+		$data   = $row->data;
+		$kind   = (string) $data['kind'];
+		$moment = new DateTime((string) $data['at']);
+		$fields = $this->container->get(TimelineKindService::class)->validateFields(kindSlug: $kind, fields: (array) ($data['fields'] ?? []));
+		$entry  = $this->placedEntry(row: $row, object: $object);
+		$entry->setFields($fields);
+		$entry->setPinned(false);
+		$entry->setRawSource($this->sourceOf(row: $row));
+		$entry->setCreated($moment);
+		$entry->setUpdated($moment);
+
+		return $entry;
+	}//end newEntry()
+
+	/**
+	 * A new entry placed on the object, with its kind, author, visibility and message.
+	 *
+	 * @param ExampleSetRow $row    The row.
+	 * @param ObjectEntity  $object The object the entry is on.
+	 *
+	 * @return TimelineEntry
+	 */
+	private function placedEntry(ExampleSetRow $row, ObjectEntity $object): TimelineEntry {
+		$data  = $row->data;
+		$entry = new TimelineEntry();
+		$entry->setUuid((string) Uuid::v4());
+		$entry->setObjectUuid((string) $data['object']);
+		$entry->setRegister((string) $object->getRegister());
+		$entry->setSchema((string) $object->getSchema());
+		$entry->setKind((string) $data['kind']);
+		$entry->setAuthor($this->author(data: $data));
+		$entry->setVisibility((string) ($data['visibility'] ?? 'internal'));
+		$entry->setMessage((string) $data['message']);
+
+		return $entry;
+	}//end placedEntry()
+
+	/**
+	 * The record entry of a written (or earlier) timeline entry.
+	 *
+	 * @param string $uuid       The entry's uuid.
+	 * @param string $objectUuid The object it is on.
+	 *
+	 * @return array{error: string, entry: array{uuid: string, object: string}}
+	 */
+	private function recordEntry(string $uuid, string $objectUuid): array {
+		return ['error' => '', 'entry' => ['uuid' => $uuid, 'object' => $objectUuid]];
+	}//end recordEntry()
 
 	/**
 	 * Whether a written entry is gone.

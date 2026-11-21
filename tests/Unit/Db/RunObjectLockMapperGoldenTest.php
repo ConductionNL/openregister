@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\RunObjectLockMapper
+ * @uses \OCA\OpenRegister\Db\RunObjectLock
  */
 class RunObjectLockMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait {

@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRowPropertyAuthorization;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -82,7 +83,7 @@ class BulkRowPropertyAuthorizationTest extends TestCase {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('collectOmittedProtectedProperties')->willReturn(['secret']);
 		$rbac->expects($this->once())->method('restoreWriteOnlyValues')
-			->with(['title' => 'new'], $stored->getObject(), ['secret'])
+			->with(['title' => 'new'], new OmittedWriteOnly($stored->getObject(), ['secret']))
 			->willReturn(['title' => 'new', 'secret' => 's3cret']);
 
 		$check = new BulkRowPropertyAuthorization(propertyRbac: $rbac, schema: new Schema(), existing: $stored);
