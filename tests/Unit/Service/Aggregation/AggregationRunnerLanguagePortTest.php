@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\PlatformServiceBindings;
 use PHPUnit\Framework\TestCase;
@@ -56,7 +56,7 @@ final class AggregationRunnerLanguagePortTest extends TestCase {
 	}
 
 	public function testThePortResolvesToTheSharedLanguageService(): void {
-		$this->assertSame(LanguageService::class, ContractBindings::BINDINGS[RequestLanguagesInterface::class]);
+		$this->assertSame(LanguageService::class, CoreServiceBindings::BINDINGS[RequestLanguagesInterface::class]);
 		$this->assertArrayNotHasKey(RequestLanguagesInterface::class, PlatformServiceBindings::BINDINGS);
 	}
 
