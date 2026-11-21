@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -103,6 +104,15 @@ class RegisterFolderRecorderTest extends TestCase {
 
 		return (string)$argument;
 	}//end render()
+
+	/**
+	 * The recorder answers the Core port the folder handler asks.
+	 *
+	 * @return void
+	 */
+	public function testItAnswersTheCorePort(): void {
+		$this->assertContains(RegisterFolderRecordsInterface::class, class_implements(RegisterFolderRecorder::class));
+	}//end testItAnswersTheCorePort()
 
 	/**
 	 * The write sets the folder column of one register, only while it is empty or still what was read.
