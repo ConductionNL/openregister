@@ -351,3 +351,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: unit suite green after the main merge, but php scripts/check-migration-version-bump.php --base=origin/main exits 1 on a PR that once bumped info.xml.
 - Cause: main later moved <version> to the same value the PR had picked, so after the merge the PR adds migrations at main's version.
 - Fix: bump <version> one past main's in its own commit after the merge and rerun the check (#5968, #10568). Run the check on every migration PR even when tests are green.
+
+## Version bump silently undone by a clean main merge (or-fix-14)
+- Symptom: merge-tree with main is clean and every unit suite is green, but check-migration-version-bump.php exits 1: '<version>: 2.2.0-dev.3 at the merge base, 2.2.0-dev.3 here'.
+- Cause: the PR bumped info.xml to 2.2.0-dev.3 earlier and main has since bumped to the same value, so the merge leaves no version move relative to main.
+- Fix: run the check after EVERY main merge, even a clean one; bump one step past main (2.2.0-dev.4) in its own commit (#10154, #10314, #10494).
