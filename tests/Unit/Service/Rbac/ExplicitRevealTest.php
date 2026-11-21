@@ -76,6 +76,35 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealMaskRun
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryRedactionRun
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
+ * @uses \OCA\OpenRegister\Service\Rbac\MaskedWrite
+ * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -283,6 +312,32 @@ class ExplicitRevealTest extends TestCase {
 		$reveal->trustedDuring(fn () => $reveal->refuseOracleQuery(query: ['citizenServiceNumber' => self::BSN], schema: $this->schema()));
 		$this->addToAssertionCount(1);
 	}//end testFilterAndSortOnItAreRefused()
+
+	/**
+	 * A key spelling its column another way is refused too: a cross-schema search orders on the column.
+	 *
+	 * @return void
+	 */
+	public function testFilterAndSortOnItsColumnSpellingAreRefused(): void {
+		$reveal = new ExplicitReveal();
+		$queries = [
+			['citizen_service_number' => self::BSN],
+			['_order' => ['citizen_service_number' => 'asc']],
+			['_order' => 'citizen_service_number:desc'],
+			['_order' => ['CitizenServiceNumber' => 'asc']],
+		];
+		foreach ($queries as $query) {
+			try {
+				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
+				$this->fail('refused: ' . json_encode($query));
+			} catch (ExplicitRevealQueryException $refused) {
+				$this->assertStringContainsString('citizenServiceNumber', $refused->getMessage());
+			}
+		}
+
+		$reveal->refuseOracleQuery(query: ['display_name' => 'Sanne', '_order' => ['citizen' => 'asc']], schema: $this->schema());
+		$this->addToAssertionCount(1);
+	}//end testFilterAndSortOnItsColumnSpellingAreRefused()
 
 	/**
 	 * It takes no part in free-text search.

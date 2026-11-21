@@ -11,9 +11,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -127,12 +130,9 @@ class AnnotationNotificationListenerTest extends TestCase {
 		$this->makeListener()->handle(
 			new ObjectTransitionedEvent(
 				object: $object,
-				action: 'approve',
-				from: 'draft',
-				to: 'published',
-				userId: 'alice',
-				register: 'test-register',
-				schema: 'test-schema'
+				move: new TransitionMove(action: 'approve', from: 'draft', to: 'published'),
+				scope: new RegisterSchemaRef(register: 'test-register', schema: 'test-schema'),
+				actor: new TransitionActor(userId: 'alice'),
 			)
 		);
 	}

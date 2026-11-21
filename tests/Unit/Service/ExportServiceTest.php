@@ -954,7 +954,7 @@ class ExportServiceTest extends TestCase {
 		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['status' => 'active']));
 	}
 
-	public function testExportWithMultiFilterFalse(): void {
+	public function testANonAdminExportStaysInsideTheOrganisation(): void {
 		$schema = new Schema();
 		$schema->setSlug('test');
 		$schema->setProperties([
@@ -965,29 +965,37 @@ class ExportServiceTest extends TestCase {
 			->method('canReadProperty')
 			->willReturn(true);
 
+		// `_multi` or `multi` from a caller who is not an administrator no
+		// longer lifts the organisation boundary.
 		$this->objectService
-			->expects($this->once())
+			->expects($this->exactly(2))
 			->method('searchObjects')
 			->with(
 				$this->callback(function ($query) {
-					return $query['_multitenancy_explicit'] === true;
+					return $query['_multitenancy_explicit'] === false;
 				}),
 				true,   // _rbac
-				false,  // _multitenancy should be false
+				true,   // _multitenancy stays on
 				null,
 				null
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['_multi' => 'false']));
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['_multi' => 'false'], currentUser: $this->createMock(IUser::class)));
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['multi' => '0']));
 	}
 
-	public function testExportWithMultiFilterShortName(): void {
+	public function testAnAdminMayLiftTheOrganisationBoundary(): void {
 		$schema = new Schema();
 		$schema->setSlug('test');
 		$schema->setProperties([
 			'title' => ['type' => 'string'],
 		]);
+
+		$adminUser = $this->createMock(IUser::class);
+		$adminGroup = $this->createMock(IGroup::class);
+		$adminGroup->method('inGroup')->with($adminUser)->willReturn(true);
+		$this->groupManager->method('get')->with('admin')->willReturn($adminGroup);
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
@@ -1001,13 +1009,13 @@ class ExportServiceTest extends TestCase {
 					return $query['_multitenancy_explicit'] === true;
 				}),
 				true,   // _rbac
-				false,  // _multitenancy should be false because 'multi' => '0'
+				false,  // _multitenancy lifted by the administrator
 				null,
 				null
 			)
 			->willReturn([]);
 
-		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['multi' => '0']));
+		$this->service->exportToExcel(request: new ObjectExportRequest(schema: $schema, filters: ['_multi' => 'false'], currentUser: $adminUser));
 	}
 
 	// ── getObjectValue: @self. metadata fields ──────────────────────────

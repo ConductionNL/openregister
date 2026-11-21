@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +51,7 @@ class CalendarEventObjectSourceProviderTest extends TestCase {
 	 * @return CalendarEventObjectSourceProvider The provider under test.
 	 */
 	private function provider(array $events, bool $appsThere = true): CalendarEventObjectSourceProvider {
-		$service = $this->createMock(CalendarEventService::class);
+		$service = $this->createMock(UserCalendarEventsInterface::class);
 		$service->method('getAllUserEvents')->willReturn(['results' => $events, 'total' => count($events)]);
 
 		$appManager = $this->createMock(IAppManager::class);

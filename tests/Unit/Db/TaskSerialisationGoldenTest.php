@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Golden field types and serialisation for Task.
  *
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class TaskSerialisationGoldenTest extends TestCase {
 

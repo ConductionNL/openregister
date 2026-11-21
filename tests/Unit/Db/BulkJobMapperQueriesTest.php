@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;

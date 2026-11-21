@@ -9,8 +9,10 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -61,7 +63,7 @@ class AggregationCacheInvalidationListenerTest extends TestCase {
 		$this->cache->expects($this->once())->method('evictForSchema')->with('reg', 'sch');
 
 		(new AggregationCacheInvalidationListener($this->cache))
-			->handle(new ObjectTransitionedEvent($object, 'close', 'open', 'closed', null, 'reg', 'sch'));
+			->handle(new ObjectTransitionedEvent(object: $object, move: new TransitionMove(action: 'close', from: 'open', to: 'closed'), scope: new RegisterSchemaRef(register: 'reg', schema: 'sch')));
 	}
 
 	public function testUnrelatedEventIsIgnored(): void {

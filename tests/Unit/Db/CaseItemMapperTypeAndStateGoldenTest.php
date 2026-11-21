@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the page and the total over the type-and-state predicate, with their parameters.
  *
  * @covers \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class CaseItemMapperTypeAndStateGoldenTest extends TestCase {
 

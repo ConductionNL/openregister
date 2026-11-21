@@ -39,6 +39,10 @@ use UnexpectedValueException;
  * which arguments, the errors set on the event, propagation and the log calls.
  *
  * @covers \OCA\OpenRegister\Listener\FlowNodePreflightListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\WriteVetoState
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  */
 class FlowNodePreflightListenerGoldenTest extends TestCase {
 

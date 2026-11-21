@@ -28,8 +28,12 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -58,7 +62,7 @@ class ReadRegistrationWiringTest extends TestCase {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('find')->willReturn($object);
 
-		$history = $this->createMock(ReadHistoryService::class);
+		$history = $this->createMock(ReadHistoryInterface::class);
 		$history->expects($this->exactly(2))
 			->method('registerAuditRead')
 			->willReturnCallback(
@@ -78,23 +82,23 @@ class ReadRegistrationWiringTest extends TestCase {
 			)
 		);
 
-		$getObject->find(id: 'uuid-a');
-		$getObject->find(id: 'uuid-a', _audit: false);
+		$getObject->find(request: new ObjectFindRequest(id: 'uuid-a', extend: [], files: false, rbac: true, multitenancy: true, audit: true));
+		$getObject->find(request: new ObjectFindRequest(id: 'uuid-a', extend: [], files: false, rbac: true, multitenancy: true, audit: false));
 	}//end testGetObjectRegistersTheReadThroughTheAbstraction()
 
 	/**
-	 * ObjectService's processing-log hook goes through ReadHistoryService.
+	 * ObjectService's processing-log hook goes through the Core processing-reads port.
 	 *
 	 * @return void
 	 */
 	public function testObjectServiceLogsProcessingThroughTheAbstraction(): void {
 		$object = new ObjectEntity();
 
-		$history = $this->createMock(ReadHistoryService::class);
+		$history = $this->createMock(ProcessingReadsInterface::class);
 		$history->expects($this->once())->method('registerProcessingRead')->with($object);
 
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->with(ReadHistoryService::class)->willReturn($history);
+		$container->method('get')->with(ProcessingReadsInterface::class)->willReturn($history);
 
 		$service = (new ReflectionClass(ObjectService::class))->newInstanceWithoutConstructor();
 		$logger = $this->createMock(LoggerInterface::class);

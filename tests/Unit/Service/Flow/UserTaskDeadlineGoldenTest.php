@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
@@ -80,8 +81,8 @@ class UserTaskDeadlineGoldenTest extends TestCase {
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 		$timers = $this->createMock(FlowTimerService::class);
 		$timers->method('arm')->willReturnCallback(
-			function (array $config, ?string $actor=null): FlowTimer {
-				$this->armed[] = [$config, $actor];
+			function (array $config, FlowTimerAct $act): FlowTimer {
+				$this->armed[] = [$config, $act->actor];
 				return new FlowTimer();
 			}
 		);
