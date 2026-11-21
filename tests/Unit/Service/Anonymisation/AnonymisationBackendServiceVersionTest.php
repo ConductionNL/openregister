@@ -47,6 +47,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform
  * @uses   \OCA\OpenRegister\Service\Anonymisation\BackendState
+ * @uses   \OCA\OpenRegister\Service\Anonymisation\BackendStatement
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersion
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersionHistory
  * @uses   \OCA\OpenRegister\Service\Anonymisation\ProbeResult
