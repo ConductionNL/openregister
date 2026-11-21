@@ -26,7 +26,6 @@ use OCP\BackgroundJob\IJobList;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the nullable `direction` column once: `inbound` for a linked mail,
@@ -37,7 +36,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261121190000 extends TargetedMigrationStep {
 
 	/**
 	 * Constructor.
@@ -61,7 +60,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable('openregister_email_links') === false) {
 			return $schema;
@@ -73,7 +72,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Queue the one-shot backfill of the `Message-ID` on existing links.
@@ -87,7 +86,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$this->jobList->add(BackfillEmailLinkMessageIdJob::class);
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 }//end class

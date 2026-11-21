@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
 use OCA\OpenRegister\BackgroundJob\BackfillEmailLinkMessageIdJob;
-use OCA\OpenRegister\Migration\Version1Date20261114100000;
+use OCA\OpenRegister\Migration\Version1Date20261121190000;
 use OCP\BackgroundJob\IJobList;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
@@ -23,9 +23,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * The `direction` column on the email links.
  *
- * @covers \OCA\OpenRegister\Migration\Version1Date20261114100000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261121190000
  */
-class Version1Date20261114100000Test extends TestCase {
+class Version1Date20261121190000Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	private const TABLE = 'openregister_email_links';
@@ -58,11 +58,11 @@ class Version1Date20261114100000Test extends TestCase {
 		$jobs = $this->createMock(IJobList::class);
 		$jobs->expects($this->once())->method('add')->with(BackfillEmailLinkMessageIdJob::class);
 
-		(new Version1Date20261114100000($jobs))->postSchemaChange($this->createMock(IOutput::class), static fn () => $this->createMock(ISchemaWrapper::class), []);
+		(new Version1Date20261121190000($jobs))->postSchemaChange($this->createMock(IOutput::class), static fn () => $this->createMock(ISchemaWrapper::class), []);
 	}
 
 	private function migrate(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261114100000($this->createMock(IJobList::class)))->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
+		return (new Version1Date20261121190000($this->createMock(IJobList::class)))->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
 	}
 
 	private function schema(bool $hasTable, mixed $table): ISchemaWrapper {

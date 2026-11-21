@@ -4370,7 +4370,7 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
-Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
+Migration/Version1Date20261121190000.php,,Migration,,,,,Platform
 BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Notifications
 Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Notifications
 Notifications/Service/Notification/MailObjectBinding.php,,Notifications,,,,,Notifications
