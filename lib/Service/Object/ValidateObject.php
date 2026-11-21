@@ -1382,6 +1382,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function validateObject(
 		array $object,
@@ -2156,15 +2157,10 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return string A meaningful error message.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		// Building a message needs nothing else from this handler; the language is read only when it can be.
-		$language = null;
-		if (isset($this->lookups) === true) {
-			$language = $this->lookups->preferredLanguage();
-		}
-
-		return (new ValidationErrorMessages(language: $language))->forResult(result: $result);
+		return (new ValidationErrorMessages(language: $this->lookups->preferredLanguage()))->forResult(result: $result);
 	}//end generateErrorMessage()
 
 	/**
