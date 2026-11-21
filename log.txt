@@ -3501,3 +3501,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T17:13:38Z session-20261121T163651-92fd0ff8 or-fix-13: 10513 fixed
 2026-11-21T17:15:36Z session-20261121T152239-3d391879 or-fix-2 taking 9404 9824 9860 10343 then 10496 10499 10514; 9053 dropped (or-fix-13 pushed first)
 2026-11-21T17:18:01Z or-fix-17: fixed #9837 #10277 #10497 #10537 #10557 (REVERIFY rows in verdicts.txt); #10977 merges clean and is green; 2 patterns added
+2026-11-21T17:20:10Z session-20261121T171934-5ee6c0e4 or-fix-1 duplicate session ended: another or-fix-1 session is active (its verdicts at 17:07-17:16 UTC); this one recorded 9921 REVERIFY at 9055ed7c before noticing
