@@ -3506,3 +3506,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T17:23:42Z session-20261121T160224-c3fbb79c or-fix-0 done: fixed 10300 10520 10540; 10640 10980 not red
 2026-11-21T17:25:40Z integrator-20261111T115842-a749432d RED tree 4f71f3430a prs 8 front=ok: Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Db\AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce
 2026-11-21T17:30:18Z session-20261121T160816-89eafa0d or-fix-15 done: fixed 10075 9915 10395 10515 10535; 9835 taken by or-fix-1; 10595 10635 green
+2026-11-21T17:33:00Z session-20261121T163651-92fd0ff8 or-fix-13: 10533 fixed
