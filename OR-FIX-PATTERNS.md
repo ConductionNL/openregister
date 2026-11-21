@@ -47,3 +47,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Cause: main kept adding callers and test doubles of the old signature (e.g. #9053 hasPermission(PermissionAsk): 10 new lib callers, ~22 tests).
 - Fix: phpstan the files that grep the method name (container->get() callers are mixed-typed: also grep `method(name:`); convert each to the PR's form with the same arguments; closures take the new value object; ->with(...) becomes one $this->callback() over its fields. Then diff the unit failures against a main worktree with its OWN vendor copy (a symlinked vendor autoloads the other checkout's lib/).
 - Also seen: Db\ListQuery moved to Kernel\Contracts\ListQuery on main; a use-line union then imports both and php -l fails on the duplicate alias: keep the Kernel one.
+
+## New lib file without a component-map row
+- Symptom: Architecture ComponentDefinitionTest::testEveryFileMatchesExactlyOneComponent / testEveryFileHasACsvRowAndTheYamlAgrees name a lib file that 'matches no component'.
+- Cause: main now checks every lib file against scripts/component-map.csv; PRs older than that check add files without a row.
+- Fix: append `<path under lib>,,<area>,,,,,<component>` (component as its siblings' rows), run `python3 scripts/component-patterns.py`, commit csv + generated yaml (or-fix-9, #9869).
