@@ -52,6 +52,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		'lib/Controller/ObjectsController.php' => ['foundForShow'],
 		'lib/Controller/TmloController.php' => ['exportSingle'],
 		'lib/Controller/ObjectShareLinkController.php' => ['show'],
+		'lib/Controller/RecordPdfController.php' => ['show'],
 		'lib/Service/CaseTokenService.php' => ['resolve'],
 		'lib/Service/ObjectServiceMapperAdapter.php' => ['find'],
 	];
