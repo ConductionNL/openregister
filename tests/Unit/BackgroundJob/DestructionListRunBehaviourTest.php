@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -216,7 +216,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
-		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
+		$settingsReader = $this->createMock(ArchivalSettingsInterface::class);
 		$settingsReader->method('getArchivalSettingsOnly')->willReturn($settings);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
@@ -290,7 +290,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$services = [
 			RetentionServiceInterface::class       => $retention,
-			ArchivalSettingsReaderInterface::class => $settingsReader,
+			ArchivalSettingsInterface::class => $settingsReader,
 			MagicMapperInterface::class            => $mapper,
 			AuditTrailMapperInterface::class       => $audit,
 			DeleteObject::class                    => $delete,

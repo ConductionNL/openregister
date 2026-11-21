@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccount;
@@ -77,7 +78,8 @@ class UserServiceCoverageTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(ISecureRandom::class),
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			$this->createMock(IFactory::class),
+			$this->createMock(AuditEntryWriterInterface::class)
 		);
 	}
 
