@@ -42,25 +42,22 @@ final class SearchResponseReports {
 	];
 
 	/**
-	 * What the history filter, the dictionary and the `_recent` lens did, for `@self`.
+	 * What the dictionary and the `_recent` lens did, for `@self`.
 	 *
 	 * A filter that did not read says so instead of quietly doing nothing, and an
 	 * expansion is reported because it returns rows the searcher did not ask for.
 	 *
-	 * @param array                                                     $query            The search query
-	 * @param HistoryPredicate                                          $historyPredicate The parsed history predicate
-	 * @param DictionaryExpansion|null $expansion        The expansion, if any
+	 * The history predicate's report comes first, from historyReport().
+	 *
+	 * @param array                    $query     The search query
+	 * @param DictionaryExpansion|null $expansion The expansion, if any
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function searchReports(
-		array $query,
-		HistoryPredicate $historyPredicate,
-		?DictionaryExpansion $expansion
-	): array {
-		$reports = $this->historyReport(historyPredicate: $historyPredicate);
+	public function searchReports(array $query, ?DictionaryExpansion $expansion): array {
+		$reports = [];
 		if ($expansion !== null && $expansion->isReportable() === true) {
 			$reports['dictionary'] = $expansion->jsonSerialize();
 		}
@@ -73,13 +70,15 @@ final class SearchResponseReports {
 	}//end searchReports()
 
 	/**
-	 * The report of a history predicate that narrowed or could not be read.
+	 * What the history filter did, for `@self`: the predicate when it narrowed or could not be read.
 	 *
 	 * @param HistoryPredicate $historyPredicate The predicate.
 	 *
 	 * @return array<string, mixed> The report, empty when it has nothing to say.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	private function historyReport(HistoryPredicate $historyPredicate): array {
+	public function historyReport(HistoryPredicate $historyPredicate): array {
 		if ($historyPredicate->narrows() === true || $historyPredicate->unparsed() !== []) {
 			return ['history' => $historyPredicate->jsonSerialize()];
 		}
