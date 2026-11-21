@@ -29,7 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\IL10N;
@@ -37,7 +41,7 @@ use OCP\IL10N;
 /**
  * Notes integration provider — delegates CRUD to NoteService.
  */
-class NotesProvider extends AbstractIntegrationProvider {
+class NotesProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -80,24 +84,6 @@ class NotesProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -105,15 +91,6 @@ class NotesProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'link-table';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List notes linked to the given OR object.
@@ -140,7 +117,9 @@ class NotesProvider extends AbstractIntegrationProvider {
 	private function notesPage(string $objectId, array $filters): array {
 		$limit = (int)($filters['_limit'] ?? 50);
 		$offset = (int)($filters['_page'] ?? 0) * $limit;
-		return $this->noteService->getNotesForObject(objectUuid: $objectId, limit: $limit, offset: max(0, $offset));
+		return $this->noteService->listNotes(
+			query: new ObjectNotesQuery(objectUuid: $objectId, page: new ListQuery(limit: $limit, offset: max(0, $offset)))
+		);
 	}//end notesPage()
 
 	/**
@@ -162,7 +141,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 */
 	public function create(ObjectRef $ref, array $payload): array {
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->createNote(objectUuid: $ref->id, message: $message);
+		return $this->noteService->createNote(draft: new NoteDraft(objectUuid: $ref->id, message: $message));
 	}//end create()
 
 	/**
@@ -179,7 +158,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		$this->noteService->requireNoteOf(objectUuid: $ref->id, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
-		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
+		return $this->noteService->editNote(noteId: (int)$entityId, edit: new NoteEdit(message: $message));
 	}//end update()
 
 	/**

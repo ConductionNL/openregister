@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -98,14 +99,9 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 			return 0;
 		}
 
-		$count = 0;
 		$this->db->beginTransaction();
 		try {
-			foreach ($entries as $entry) {
-				$this->insert(entity: $entry);
-				$count++;
-			}
-
+			$count = $this->insertEach(entries: $entries);
 			$this->db->commit();
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
@@ -114,6 +110,23 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 
 		return $count;
 	}//end insertBatch()
+
+	/**
+	 * Insert entries one by one.
+	 *
+	 * @param ProcessingLogEntry[] $entries The entries.
+	 *
+	 * @return int How many were inserted.
+	 */
+	private function insertEach(array $entries): int {
+		$count = 0;
+		foreach ($entries as $entry) {
+			$this->insert(entity: $entry);
+			$count++;
+		}
+
+		return $count;
+	}//end insertEach()
 
 	/**
 	 * Find entries by data-subject identifier within a read scope.
@@ -158,28 +171,57 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 * @return ICompositeExpression The expression.
 	 */
 	private function subjectMatch(IQueryBuilder $qb, ProcessingLogSubject $subject): ICompositeExpression {
-		$idType = $subject->type;
-		$idValue = $subject->value;
-		$columns = [];
-		$element = '';
-		if ($idType !== null) {
-			$columns[] = $qb->expr()->eq('subject_id_type', $qb->createNamedParameter($idType));
-			$element = substr((string)json_encode(['type' => $idType]), 0, -1) . ',';
-		}
-
-		if ($idValue !== null) {
-			$columns[] = $qb->expr()->eq('subject_id_value', $qb->createNamedParameter($idValue));
-			$element .= substr((string)json_encode(['value' => $idValue]), 1);
-		}
+		$columns = $this->subjectColumns(qb: $qb, subject: $subject);
 
 		return $qb->expr()->orX(
 			$qb->expr()->andX(...$columns),
 			$qb->expr()->like(
 				'subject_ids',
-				$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($element) . '%')
+				$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($this->subjectListElement(subject: $subject)) . '%')
 			)
 		);
 	}//end subjectMatch()
+
+	/**
+	 * The single-read conditions: the id type and the id value, each when given.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param ProcessingLogSubject $subject The subject.
+	 *
+	 * @return array<int, string> The conditions.
+	 */
+	private function subjectColumns(IQueryBuilder $qb, ProcessingLogSubject $subject): array {
+		$columns = [];
+		if ($subject->type !== null) {
+			$columns[] = $qb->expr()->eq('subject_id_type', $qb->createNamedParameter($subject->type));
+		}
+
+		if ($subject->value !== null) {
+			$columns[] = $qb->expr()->eq('subject_id_value', $qb->createNamedParameter($subject->value));
+		}
+
+		return $columns;
+	}//end subjectColumns()
+
+	/**
+	 * The JSON text a list read's `subject_ids` holds for the subject's given parts.
+	 *
+	 * @param ProcessingLogSubject $subject The subject.
+	 *
+	 * @return string The element text, unescaped.
+	 */
+	private function subjectListElement(ProcessingLogSubject $subject): string {
+		$element = '';
+		if ($subject->type !== null) {
+			$element = substr((string)json_encode(['type' => $subject->type]), 0, -1) . ',';
+		}
+
+		if ($subject->value !== null) {
+			$element .= substr((string)json_encode(['value' => $subject->value]), 1);
+		}
+
+		return $element;
+	}//end subjectListElement()
 
 	/**
 	 * Reduce a list entry to what concerns one subject.

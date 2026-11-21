@@ -24,16 +24,16 @@ namespace OCA\OpenRegister\Controller\Support;
 
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Psr\Log\LoggerInterface;
 
 /**
  * What a version conflict reads from an object's trail and writes to it.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+ * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
  */
 final class ConflictTrail {
 	/**
@@ -44,7 +44,7 @@ final class ConflictTrail {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrail,
@@ -57,9 +57,9 @@ final class ConflictTrail {
 	 *
 	 * @param VersionMismatch $mismatch The versions that disagree.
 	 *
-	 * @return array<int, AuditTrail> The entries.
+	 * @return array<int, AuditRecordInterface> The entries.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	public function interveningChanges(VersionMismatch $mismatch): array {
 		try {
@@ -84,7 +84,7 @@ final class ConflictTrail {
 	 * @return bool True for a dated entry after that moment.
 	 */
 	private function isAfter(mixed $entry, DateTime $read): bool {
-		if (($entry instanceof AuditTrail) === false) {
+		if (($entry instanceof AuditRecordInterface) === false) {
 			return false;
 		}
 
@@ -106,7 +106,7 @@ final class ConflictTrail {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function recordRefusal(VersionMismatch $mismatch, array $body): void {
 		try {

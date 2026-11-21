@@ -30,14 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\MigrationStart;
 use OCA\OpenRegister\Controller\Support\PropertyConversionChange;
 use OCA\OpenRegister\Controller\Support\RetentionPlatform;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationDomain;
 use OCA\OpenRegister\Controller\Support\SchemaMigrationMappers;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\Schema;
@@ -88,7 +88,7 @@ class SchemaMigrationController extends Controller {
 		IRequest $request,
 		SchemaMigrationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->mappers = $services->mappers;
 		$this->domain = $services->domain;
 		$this->platform = $services->platform;
@@ -131,8 +131,6 @@ class SchemaMigrationController extends Controller {
 	 * @param int $id The schema id.
 	 *
 	 * @return JSONResponse The preview, or a refusal with its reason.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
@@ -232,8 +230,6 @@ class SchemaMigrationController extends Controller {
 	 *
 	 * @return JSONResponse The created run, or an error.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function revalidate(int $id): JSONResponse {
@@ -327,8 +323,6 @@ class SchemaMigrationController extends Controller {
 	 *
 	 * @return JSONResponse Before/after pairs, or a plan-validation error.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function previewMigration(int $id): JSONResponse {
@@ -357,8 +351,6 @@ class SchemaMigrationController extends Controller {
 	 * @param int $id The schema id.
 	 *
 	 * @return JSONResponse The created run, or an error.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
@@ -428,8 +420,6 @@ class SchemaMigrationController extends Controller {
 	 * @param int $run The migration run id.
 	 *
 	 * @return JSONResponse The rolled-back run, or an error.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */

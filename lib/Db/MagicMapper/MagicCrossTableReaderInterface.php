@@ -35,36 +35,6 @@ use RuntimeException;
  */
 interface MagicCrossTableReaderInterface {
 	/**
-	 * Find an object across all magic tables without knowing register/schema upfront.
-	 *
-	 * This method searches all existing magic tables for an object by its identifier.
-	 * It's useful for operations like lock/unlock where the caller doesn't know
-	 * which storage backend contains the object.
-	 *
-	 * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
-	 * @param bool $includeDeleted Whether to include deleted objects.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param int|null $registerIdScope Restrict the scan to one register's tables.
-	 *                                  A caller that named a register has already
-	 *                                  said where the object lives; widening the
-	 *                                  search past it is never a correct answer,
-	 *                                  and it is what makes this method cost
-	 *                                  seconds. Null keeps the historic
-	 *                                  everything-everywhere behaviour.
-	 *
-	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
-	 *                                                                                   The found object with its register and schema context.
-	 *
-	 * @throws DoesNotExistException If object not found in any magic table.
-	 *
-	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
-	 */
-	public function findAcrossAllMagicTables(
-		string|int $identifier, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true, ?int $registerIdScope = null
-	): array;
-
-	/**
 	 * Find multiple objects by UUIDs across ALL magic tables.
 	 *
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
@@ -111,12 +81,19 @@ interface MagicCrossTableReaderInterface {
 	 * @param int|null $offset Rows to skip (pagination).
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter Only this register, schema and deletion window; null reads the whole bin.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findDeletedAcrossAllMagicTables(?int $limit = null, ?int $offset = null, bool $_rbac = true, bool $_multitenancy = true): array;
+	public function findDeletedAcrossAllMagicTables(
+		?int $limit = null,
+		?int $offset = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+		?DeletedFilter $filter = null,
+	): array;
 
 	/**
 	 * Count all soft-deleted objects across ALL magic tables.
@@ -126,12 +103,13 @@ interface MagicCrossTableReaderInterface {
 	 *
 	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
 	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 * @param DeletedFilter|null $filter The same filter the listing applies, so the total matches its rows.
 	 *
 	 * @return int Total soft-deleted object count.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int;
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true, ?DeletedFilter $filter = null): int;
 
 	/**
 	 * Find all objects across ALL magic tables that have the given UUID in their relations.
@@ -164,6 +142,17 @@ interface MagicCrossTableReaderInterface {
 	 * @spec openspec/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array;
+
+	/**
+	 * The stored folder file id of each live object, by uuid.
+	 *
+	 * @param string[] $uuids The object uuids.
+	 *
+	 * @return array<string, int> Uuid => folder file id; objects without a numeric folder are absent.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	public function findFolderIdsByUuids(array $uuids): array;
 
 	/**
 	 * Count an organisation's live objects across the magic tables, of the
@@ -217,4 +206,23 @@ interface MagicCrossTableReaderInterface {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 */
 	public function countAcrossMultipleTables(array $query, array $registerSchemaPairs): int;
+
+	/**
+	 * Find an object across all magic tables without knowing register/schema upfront.
+	 *
+	 * This method searches all existing magic tables for an object by its identifier.
+	 * It's useful for operations like lock/unlock where the caller doesn't know
+	 * which storage backend contains the object.
+	 *
+	 * @param MagicIdentifierFind $find          The identifier, whether deleted objects count, and the register
+	 *                                           to narrow to: a caller that named a register has already said
+	 *                                           where the object lives, and null keeps the scan over every table.
+	 * @param bool                $_rbac         Whether to apply RBAC checks.
+	 * @param bool                $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+	 * @throws DoesNotExistException If the object is in no magic table.
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findAcross(MagicIdentifierFind $find, bool $_rbac=true, bool $_multitenancy=true): array;
 }//end interface

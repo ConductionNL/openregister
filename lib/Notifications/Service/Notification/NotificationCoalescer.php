@@ -204,14 +204,25 @@ class NotificationCoalescer {
 			return null;
 		}
 
+		return $this->storedState(bucket: new CoalesceBucket(ruleId: $ruleId, recipient: $recipient));
+	}//end inspect()
+
+	/**
+	 * The bucket's stored state as it is, null when absent, undecodable or unreadable.
+	 *
+	 * @param CoalesceBucket $bucket The (rule, recipient) bucket.
+	 *
+	 * @return array{count:int,opened:int}|null
+	 */
+	private function storedState(CoalesceBucket $bucket): ?array {
 		try {
-			$state = $this->cache->get((new CoalesceBucket(ruleId: $ruleId, recipient: $recipient))->key());
+			$state = $this->cache?->get($bucket->key());
 		} catch (\Throwable $e) {
 			return null;
 		}//end try
 
 		return $this->decodeState(state: $state);
-	}//end inspect()
+	}//end storedState()
 
 	/**
 	 * The stored state of a bucket; a fresh state when absent or malformed, null when the read fails.

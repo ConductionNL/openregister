@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
+use OCP\Calendar\ICalendar;
 use OCP\Calendar\ICalendarProvider;
 
 /**
@@ -54,10 +55,14 @@ class RegisterCalendarProvider implements ICalendarProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterCalendarSources $sources Schema/register/object lookup, transformer and logger
+	 * @param RegisterCalendarSources $sources       Schema/register/object lookup, transformer and logger
+	 * @param DeclaredDateCalendars   $declaredDates The calendars of declared object dates and saved calendar views
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
 	 */
 	public function __construct(
 		private readonly RegisterCalendarSources $sources,
+		private readonly DeclaredDateCalendars $declaredDates,
 	) {
 	}//end __construct()
 
@@ -82,40 +87,84 @@ class RegisterCalendarProvider implements ICalendarProvider {
 				return [];
 			}
 
-			$enabledSchemas = $this->getCalendarEnabledSchemas();
-
-			if (empty($enabledSchemas) === true) {
-				return [];
-			}
-
-			$calendars = [];
-
-			foreach ($enabledSchemas as $schemaData) {
-				$schema = $schemaData['schema'];
-				$config = $schemaData['config'];
-				$calendarUri = 'openregister-schema-' . $schema->getId();
-
-				// Filter by requested URIs if provided.
-				if (empty($calendarUris) === false && in_array($calendarUri, $calendarUris, true) === false) {
-					continue;
-				}
-
-				$calendars[] = new RegisterCalendar(
-					definition: new CalendarDefinition(schema: $schema, config: $config),
-					principalUri: $principalUri,
-					sources: $this->sources
-				);
-			}
-
-			return $calendars;
+			return $this->calendarsFor(principalUri: $principalUri, calendarUris: $calendarUris);
 		} catch (\Exception $e) {
-			$this->sources->logger->warning(
-				'[RegisterCalendarProvider] Failed to load calendars: ' . $e->getMessage(),
-				['exception' => $e]
-			);
+			$this->logLoadFailure(what: 'calendars', exception: $e);
 			return [];
 		}//end try
 	}//end getCalendars()
+
+	/**
+	 * The calendars of every calendar-enabled schema and every saved calendar view, narrowed to the requested URIs.
+	 *
+	 * @param string             $principalUri The user principal
+	 * @param array<int, string> $calendarUris The requested calendar URIs; empty for all
+	 *
+	 * @return array<int, ICalendar> The calendars
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
+	 */
+	private function calendarsFor(string $principalUri, array $calendarUris): array {
+		$calendars = [];
+
+		foreach ($this->getCalendarEnabledSchemas() as $schemaData) {
+			$calendarUri = 'openregister-schema-' . $schemaData['schema']->getId();
+			if ($this->isRequested(calendarUri: $calendarUri, calendarUris: $calendarUris) === false) {
+				continue;
+			}
+
+			$calendars[] = $this->calendarFor(schemaData: $schemaData, principalUri: $principalUri);
+		}
+
+		foreach ($this->declaredDates->viewCalendars(principalUri: $principalUri) as $viewCalendar) {
+			if ($this->isRequested(calendarUri: $viewCalendar->getUri(), calendarUris: $calendarUris) === true) {
+				$calendars[] = $viewCalendar;
+			}
+		}
+
+		return $calendars;
+	}//end calendarsFor()
+
+	/**
+	 * Whether a calendar is among the requested URIs (every calendar is, when none are requested).
+	 *
+	 * @param string             $calendarUri  The calendar's URI
+	 * @param array<int, string> $calendarUris The requested calendar URIs; empty for all
+	 *
+	 * @return bool True when the calendar is requested
+	 */
+	private function isRequested(string $calendarUri, array $calendarUris): bool {
+		return empty($calendarUris) === true || in_array($calendarUri, $calendarUris, true) === true;
+	}//end isRequested()
+
+	/**
+	 * The calendar of one calendar-enabled schema for a principal.
+	 *
+	 * A schema that declares date kinds renders through the feed's event
+	 * generator; one that declares none keeps today's virtual calendar.
+	 *
+	 * @param array{schema: \OCA\OpenRegister\Db\Schema, config: array} $schemaData   The schema and its calendar configuration
+	 * @param string                               $principalUri The user principal
+	 *
+	 * @return ICalendar The calendar
+	 *
+	 * @spec openspec/changes/platform-caldav-backend/specs/calendar-provider/spec.md#requirement-declared-object-dates-appear-as-platform-calendars-req-pcb-001
+	 */
+	private function calendarFor(array $schemaData, string $principalUri): ICalendar {
+		if ($this->declaredDates->declaresDates(schema: $schemaData['schema'], config: $schemaData['config']) === true) {
+			return $this->declaredDates->schemaCalendar(
+				schema: $schemaData['schema'],
+				config: $schemaData['config'],
+				principalUri: $principalUri
+			);
+		}
+
+		return new RegisterCalendar(
+			definition: new CalendarDefinition(schema: $schemaData['schema'], config: $schemaData['config']),
+			principalUri: $principalUri,
+			sources: $this->sources
+		);
+	}//end calendarFor()
 
 	/**
 	 * Get all schemas that have calendar provider enabled
@@ -131,8 +180,6 @@ class RegisterCalendarProvider implements ICalendarProvider {
 			return $this->enabledSchemasCache;
 		}
 
-		$this->enabledSchemasCache = [];
-
 		try {
 			// Bypass multi-tenancy: a user with read access to a schema's
 			// objects (which is checked downstream when each calendar event
@@ -142,29 +189,54 @@ class RegisterCalendarProvider implements ICalendarProvider {
 			$allSchemas = $this->sources->catalog->schemas()->findAll(
 				_multitenancy: false
 			);
-
-			foreach ($allSchemas as $schema) {
-				$calendarConfig = $schema->getCalendarProviderConfig();
-
-				if ($calendarConfig === null) {
-					continue;
-				}
-
-				$this->enabledSchemasCache[] = [
-					'schema' => $schema,
-					'config' => $calendarConfig,
-				];
-			}
+			$this->enabledSchemasCache = $this->calendarEnabled(schemas: $allSchemas);
 		} catch (\Exception $e) {
-			$this->sources->logger->warning(
-				'[RegisterCalendarProvider] Failed to load schemas: ' . $e->getMessage(),
-				['exception' => $e]
-			);
+			$this->logLoadFailure(what: 'schemas', exception: $e);
 			$this->enabledSchemasCache = [];
-		}//end try
+		}
 
 		return $this->enabledSchemasCache;
 	}//end getCalendarEnabledSchemas()
+
+	/**
+	 * The schemas that carry a calendar provider configuration, with that configuration.
+	 *
+	 * @param array<int, \OCA\OpenRegister\Db\Schema> $schemas The schemas
+	 *
+	 * @return array<int, array{schema: \OCA\OpenRegister\Db\Schema, config: array}> The calendar-enabled schemas
+	 */
+	private function calendarEnabled(array $schemas): array {
+		$enabled = [];
+		foreach ($schemas as $schema) {
+			$calendarConfig = $schema->getCalendarProviderConfig();
+
+			if ($calendarConfig === null) {
+				continue;
+			}
+
+			$enabled[] = [
+				'schema' => $schema,
+				'config' => $calendarConfig,
+			];
+		}
+
+		return $enabled;
+	}//end calendarEnabled()
+
+	/**
+	 * Log a failure to load calendars or schemas; the provider then answers none.
+	 *
+	 * @param string     $what      What failed to load
+	 * @param \Exception $exception The failure
+	 *
+	 * @return void
+	 */
+	private function logLoadFailure(string $what, \Exception $exception): void {
+		$this->sources->logger->warning(
+			'[RegisterCalendarProvider] Failed to load ' . $what . ': ' . $exception->getMessage(),
+			['exception' => $exception]
+		);
+	}//end logLoadFailure()
 
 	/**
 	 * Check if a principal URI represents a valid authenticated user

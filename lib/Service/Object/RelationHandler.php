@@ -19,14 +19,14 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use Psr\Log\LoggerInterface;
@@ -79,7 +79,7 @@ class RelationHandler {
 	 * @param RelationHandlerStores $stores Objects, schemas, registers and relation names.
 	 * @param RelatedRowRbacInterface $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param PurposeGuard|null $purposeGuard The doelbinding guard the referrer tables are read under.
+	 * @param ReadPurposeGuardInterface|null $purposeGuard The doelbinding guard the referrer tables are read under.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
@@ -88,7 +88,7 @@ class RelationHandler {
 		private readonly RelationHandlerStores $stores,
 		private readonly RelatedRowRbacInterface $rbacHandler,
 		private readonly LoggerInterface $logger,
-		private readonly ?PurposeGuard $purposeGuard = null,
+		private readonly ?ReadPurposeGuardInterface $purposeGuard = null,
 	) {
 	}//end __construct()
 
@@ -421,6 +421,8 @@ class RelationHandler {
 	/**
 	 * One page of the items, with the total and the limit and offset as requested.
 	 *
+	 * A limit or offset that is not a number pages with its default.
+	 *
 	 * @param array<int, mixed>    $items The items.
 	 * @param array<string, mixed> $query The request's paging parameters.
 	 *
@@ -432,12 +434,28 @@ class RelationHandler {
 		$limit = $query['_limit'] ?? 30;
 		$offset = $query['_offset'] ?? 0;
 		return [
-			'results' => array_slice($items, $offset, $limit),
+			'results' => array_slice($items, self::pagingNumber(value: $offset, default: 0), self::pagingNumber(value: $limit, default: 30)),
 			'total' => count($items),
 			'limit' => $limit,
 			'offset' => $offset,
 		];
 	}//end paged()
+
+	/**
+	 * A paging parameter as a non-negative integer, or the default when it is not a number.
+	 *
+	 * @param mixed $value   The parameter as requested.
+	 * @param int   $default The value used when it is missing or not numeric.
+	 *
+	 * @return int The number.
+	 */
+	private static function pagingNumber(mixed $value, int $default): int {
+		if (is_int($value) === false && (is_string($value) === false || is_numeric($value) === false)) {
+			return $default;
+		}
+
+		return max(0, (int) $value);
+	}//end pagingNumber()
 
 	/**
 	 * Load the related objects: locate them in one UNION query, then read each table.

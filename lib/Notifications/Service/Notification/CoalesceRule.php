@@ -85,14 +85,30 @@ final class CoalesceRule {
 	 * @return integer|null
 	 */
 	private function positiveInt(mixed $value): ?int {
-		if (is_string($value) === true && ctype_digit($value) === true) {
-			$value = (int)$value;
-		}
-
-		if (is_int($value) === true && $value > 0) {
-			return $value;
+		$number = $this->wholeNumber(value: $value);
+		if ($number !== null && $number > 0) {
+			return $number;
 		}
 
 		return null;
 	}//end positiveInt()
+
+	/**
+	 * An integer, or a string of digits read as one; null otherwise.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return integer|null
+	 */
+	private function wholeNumber(mixed $value): ?int {
+		if (is_int($value) === true) {
+			return $value;
+		}
+
+		if (is_string($value) === true && ctype_digit($value) === true) {
+			return (int)$value;
+		}
+
+		return null;
+	}//end wholeNumber()
 }//end class

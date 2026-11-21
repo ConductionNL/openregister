@@ -30,8 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
 use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
@@ -43,7 +43,7 @@ use OCP\SystemTag\ISystemTagObjectMapper;
  * routes for now (the legacy path remains the authoritative writer
  * until the umbrella's controller refactor in tasks 18-22).
  */
-class TagsProvider extends AbstractIntegrationProvider {
+class TagsProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -88,24 +88,6 @@ class TagsProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping (or null).
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -113,15 +95,6 @@ class TagsProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'link-table';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List tags attached to the given OR object.

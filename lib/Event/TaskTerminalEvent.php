@@ -42,7 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Carries the task as it was persisted in its terminal state.
@@ -59,12 +59,12 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Task $task      The task, already persisted in a terminal state.
-	 * @param bool $committed TRUE when the terminal write's transaction has
-	 *                        closed; FALSE when dispatched inside it.
+	 * @param TaskInterface $task      The task, already persisted in a terminal state.
+	 * @param bool          $committed TRUE when the terminal write's transaction has
+	 *                                 closed; FALSE when dispatched inside it.
 	 */
 	public function __construct(
-		Task $task,
+		TaskInterface $task,
 		private readonly bool $committed = true,
 	) {
 		parent::__construct(task: $task);
@@ -77,7 +77,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 * @return bool TRUE after commit (TaskService), FALSE inside the
 	 *              transaction (TaskMapper).
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function isCommitted(): bool {
 		return $this->committed;
@@ -88,7 +88,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *
 	 * @return string The uuid.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getTaskUuid(): string {
 		return (string)$this->getTask()->getUuid();
@@ -97,9 +97,9 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	/**
 	 * The terminal state.
 	 *
-	 * @return string One of Task::TERMINAL_STATES.
+	 * @return string One of the task's terminal states.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getState(): string {
 		return (string)$this->getTask()->getState();
@@ -110,7 +110,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	 *
 	 * @return string|null The outcome.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getOutcome(): ?string {
 		return $this->getTask()->getOutcome();

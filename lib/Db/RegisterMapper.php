@@ -29,6 +29,7 @@ use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Rbac\GrantDeclaration;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -138,6 +139,13 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	private readonly \Psr\Container\ContainerInterface $container;
 
 	/**
+	 * Structured logger for the resolution diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Organisation mapper for multi-tenancy (from trait)
 	 *
 	 * Used to get active organisation and apply organisation filters.
@@ -171,13 +179,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Initializes mapper with database connection and required dependencies
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
-	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param TenancyServices $tenancy The organisation mapper, user session and group manager the tenancy and RBAC checks read
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
+	 * @param IDBConnection          $db        Database connection for queries
+	 * @param TenancyServices        $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
+	 * @param IAppConfig             $appConfig App configuration for multitenancy settings
+	 * @param RegisterMapperServices $services  The schema mapper, the container, the event dispatcher and the logger
 	 *
 	 * This class carried four `if (isset($this->logger))` logging sites, plus the
 	 * ones it inherits from {@see MultiTenancyTrait}, and never declared or
@@ -191,26 +196,25 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * "Register not found: '19'", and the error-level line that would have said
 	 * WHY — "Register not found after filters", carrying `existsBeforeFilter`,
 	 * i.e. "the row matched, then a filter removed it" — silently did not fire.
-	 * openregister#2820.
+	 * A register that does not exist at all is logged as
+	 * "Register does not exist" at debug, not as an error. openregister#2820.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapperInterface $schemaMapper,
-		IEventDispatcher $eventDispatcher,
-		\Psr\Container\ContainerInterface $container,
 		TenancyServices $tenancy,
 		IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		RegisterMapperServices $services,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->schemaMapper = $schemaMapper;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->container = $container;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->eventDispatcher = $services->eventDispatcher;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
@@ -260,7 +264,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Run one uncached register lookup through the organisation filter.
 	 *
 	 * Logs the attempt, probes whether the row exists before the filters (for
-	 * the miss diagnostics), then reads the oldest matching row.
+	 * the miss diagnostics), then reads the oldest matching row. A miss where
+	 * the row existed before the filters (a filter removed it) is logged at
+	 * error level; a miss where no such register exists is an ordinary miss,
+	 * logged at debug level.
 	 *
 	 * @param RegisterLookup $lookup The identifier and filter flags.
 	 *
@@ -304,6 +311,28 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			// `existsBeforeFilter` separates "no such row" from "the row matched
 			// and then a filter removed it": a bad identifier versus a scoping bug.
+			// Only the scoping bug is an error. A register that does not exist is an
+			// ordinary miss: callers such as ExternalIntegrationRouter probe several
+			// spellings of a register slug and catch this exception, and the probe
+			// above has already logged the absence at warning level, so this line is
+			// debug to avoid reporting the same miss twice.
+			if ($existsBeforeFilter === false) {
+				$this->logger->debug(
+					message: '[RegisterMapper] Register does not exist',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'identifier' => $lookup->id,
+						'existsBeforeFilter' => $existsBeforeFilter,
+						'multiEnabled' => $lookup->multitenancy,
+						'rbacEnabled' => $lookup->rbac,
+						'error' => $e->getMessage(),
+					]
+				);
+
+				throw $e;
+			}
+
 			$this->logger->error(
 				message: '[RegisterMapper] Register not found after filters',
 				context: [

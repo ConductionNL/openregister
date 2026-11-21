@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { withRequestToken } from '../../services/requestToken.js'
 
 const apiEndpoint = '/index.php/apps/openregister/api/endpoints'
 
@@ -17,7 +18,13 @@ const SAVES = {
 	},
 }
 
-export const useEndpointStore = defineStore('endpoint', () => {
+/**
+ * The endpoint store's state: the active item, the list and the view mode,
+ * with their setters and getters.
+ *
+ * @return The state refs, setters and getters
+ */
+function useEndpointState() {
 	// state.
 	const endpointItem = ref<TEndpointItem | null>(null)
 	const endpointList = ref<TEndpointItem[]>([])
@@ -85,6 +92,26 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 */
 	const getEndpointList = () => endpointList.value
 
+	return {
+		endpointItem,
+		endpointList,
+		viewMode,
+		setEndpointItem,
+		getEndpointItem,
+		setEndpointList,
+		getEndpointList,
+	}
+}
+
+type TEndpointState = ReturnType<typeof useEndpointState>
+
+/**
+ * The endpoint store's reads: the list refresh and the test run.
+ *
+ * @param state - The endpoint state
+ * @return The read actions
+ */
+function useEndpointReads(state: TEndpointState) {
 	// ################################
 	// ||          Actions           ||
 	// ################################
@@ -98,7 +125,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 		})
 			.then((response) => {
 				response.json().then((data) => {
-					setEndpointList(data.results)
+					state.setEndpointList(data.results)
 				})
 			})
 			.catch((err) => {
@@ -106,6 +133,58 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			})
 	}
 
+	/**
+	 * Test an endpoint by executing it
+	 *
+	 * @param item - The endpoint item to test
+	 * @param testData - Optional test data to send
+	 */
+	const testEndpoint = (item: TEndpointItem, testData = {}) => {
+		if (!item.id) {
+			throw new Error('Endpoint ID is required for testing')
+		}
+
+		return fetch(`${apiEndpoint}/${item.id}/test`, withRequestToken({
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ data: testData }),
+		}))
+			.then((response) => {
+				return response.json().then((data) => {
+					if (!response.ok) {
+						throw new Error(
+							data.error || data.message || 'Failed to test endpoint',
+						)
+					}
+					return data
+				})
+			})
+			.then((data) => {
+				return data
+			})
+			.catch((err) => {
+				console.error('Error testing endpoint:', err)
+				throw err
+			})
+	}
+
+	return { refreshEndpointList, testEndpoint }
+}
+
+/**
+ * The endpoint store's writes: create, update and delete, each refreshing
+ * the list afterwards.
+ *
+ * @param state - The endpoint state
+ * @param refreshEndpointList - The list refresh
+ * @return The write actions
+ */
+function useEndpointWrites(
+	state: TEndpointState,
+	refreshEndpointList: () => void,
+) {
 	/**
 	 * Send an endpoint to the API, then make the answer the active item and
 	 * refresh the list.
@@ -117,13 +196,13 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	 */
 	const saveEndpoint = (method: keyof typeof SAVES, item: TEndpointItem) => {
 		const save = SAVES[method]
-		return fetch(save.url(item), {
+		return fetch(save.url(item), withRequestToken({
 			method,
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(item),
-		})
+		}))
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error(`Failed to ${save.verb} endpoint`)
@@ -131,7 +210,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 				return response.json()
 			})
 			.then((data) => {
-				setEndpointItem(data)
+				state.setEndpointItem(data)
 				refreshEndpointList()
 				return data
 			})
@@ -173,16 +252,16 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			throw new Error('Endpoint ID is required for deletion')
 		}
 
-		return fetch(`${apiEndpoint}/${item.id}`, {
+		return fetch(`${apiEndpoint}/${item.id}`, withRequestToken({
 			method: 'DELETE',
-		})
+		}))
 			.then((response) => {
 				if (!response.ok) {
 					throw new Error('Failed to delete endpoint')
 				}
 				// Clear the active item if it was the deleted one.
-				if (endpointItem.value && endpointItem.value.id === item.id) {
-					setEndpointItem(null)
+				if (state.endpointItem.value && state.endpointItem.value.id === item.id) {
+					state.setEndpointItem(null)
 				}
 				refreshEndpointList()
 			})
@@ -192,58 +271,18 @@ export const useEndpointStore = defineStore('endpoint', () => {
 			})
 	}
 
-	/**
-	 * Test an endpoint by executing it
-	 *
-	 * @param item - The endpoint item to test
-	 * @param testData - Optional test data to send
-	 */
-	const testEndpoint = (item: TEndpointItem, testData = {}) => {
-		if (!item.id) {
-			throw new Error('Endpoint ID is required for testing')
-		}
+	return { createEndpoint, updateEndpoint, deleteEndpoint }
+}
 
-		return fetch(`${apiEndpoint}/${item.id}/test`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ data: testData }),
-		})
-			.then((response) => {
-				return response.json().then((data) => {
-					if (!response.ok) {
-						throw new Error(
-							data.error || data.message || 'Failed to test endpoint',
-						)
-					}
-					return data
-				})
-			})
-			.then((data) => {
-				return data
-			})
-			.catch((err) => {
-				console.error('Error testing endpoint:', err)
-				throw err
-			})
-	}
-
+export const useEndpointStore = defineStore('endpoint', () => {
+	const state = useEndpointState()
+	const { refreshEndpointList, testEndpoint } = useEndpointReads(state)
 	return {
-		// State.
-		endpointItem,
-		endpointList,
-		viewMode,
-		// Getters/Setters.
-		setEndpointItem,
-		getEndpointItem,
-		setEndpointList,
-		getEndpointList,
+		// State, getters and setters.
+		...state,
 		// Actions.
 		refreshEndpointList,
-		createEndpoint,
-		updateEndpoint,
-		deleteEndpoint,
+		...useEndpointWrites(state, refreshEndpointList),
 		testEndpoint,
 	}
 })

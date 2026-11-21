@@ -576,14 +576,8 @@ export default {
 				)
 				// Check if tokens exist and are not empty strings
 				// The backend returns masked tokens, so we just check if they exist
-				this.hasGithubToken = !!(
-					response.data.github_token
-					&& response.data.github_token.length > 0
-				)
-				this.hasGitlabToken = !!(
-					response.data.gitlab_token
-					&& response.data.gitlab_token.length > 0
-				)
+				this.hasGithubToken = isSetToken(response.data.github_token)
+				this.hasGitlabToken = isSetToken(response.data.gitlab_token)
 
 				// Debug logging removed for production
 			} catch {
@@ -638,26 +632,10 @@ export default {
 		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
 		 */
 		resetForm() {
-			this.loading = false
-			this.success = false
-			this.successMessage = ''
-			this.error = null
-			this.searchQuery = ''
-			this.searchResults = []
-			this.searchError = null
-			this.hasSearched = false
-			this.repoOwner = ''
-			this.repoNamespace = ''
-			this.repoName = ''
-			this.branches = []
-			this.selectedBranch = null
-			this.configFiles = []
-			this.selectedFile = null
-			this.importUrl = ''
-			this.urlError = null
-			this.selectedUploadFile = null
-			this.isDragging = false
-			this.fileError = null
+			clearOutcome(this)
+			clearSearch(this)
+			clearRepository(this)
+			clearUrlAndUpload(this)
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
@@ -678,11 +656,7 @@ export default {
 					this.searchQuery,
 				)
 			} catch (error) {
-				// Set search-specific error for contextual display in the Discover tab
-				this.searchError = error.message || 'Failed to search configurations'
-				// Also set general error for top-level display
-				this.error = error.message || 'Failed to search configurations'
-				console.error('Search error:', error)
+				showSearchFailure(this, error)
 			} finally {
 				this.searchLoading = false
 			}
@@ -990,19 +964,8 @@ export default {
 		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
 		 */
 		async importFromFile() {
-			const formData = new FormData()
-			formData.append('file', this.selectedUploadFile)
-			formData.append('force', 'true')
-			formData.append('appId', 'uploaded-config')
-
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/configurations/import'),
-				formData,
-				{
-					headers: {
-						'Content-Type': 'multipart/form-data',
-					},
-				},
+			const response = await postUploadedConfiguration(
+				uploadFormData(this.selectedUploadFile),
 			)
 
 			if (response.data.error) {
@@ -1012,6 +975,121 @@ export default {
 			return response.data
 		},
 	},
+}
+
+/**
+ * Whether the settings hold a token: the backend returns masked tokens, so
+ * only their presence is checked.
+ *
+ * @param {string|undefined} token The masked token
+ * @return {boolean} True when set
+ */
+function isSetToken(token) {
+	return !!(token && token.length > 0)
+}
+
+/**
+ * Clear the modal's outcome: not loading, no success or error.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearOutcome(modal) {
+	modal.loading = false
+	modal.success = false
+	modal.successMessage = ''
+	modal.error = null
+}
+
+/**
+ * Clear the discovery search.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearSearch(modal) {
+	modal.searchQuery = ''
+	modal.searchResults = []
+	modal.searchError = null
+	modal.hasSearched = false
+}
+
+/**
+ * Clear the chosen repository, branch and file.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearRepository(modal) {
+	modal.repoOwner = ''
+	modal.repoNamespace = ''
+	modal.repoName = ''
+	modal.branches = []
+	modal.selectedBranch = null
+	modal.configFiles = []
+	modal.selectedFile = null
+}
+
+/**
+ * Clear the import URL and the uploaded file.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearUrlAndUpload(modal) {
+	modal.importUrl = ''
+	modal.urlError = null
+	modal.selectedUploadFile = null
+	modal.isDragging = false
+	modal.fileError = null
+}
+
+/**
+ * Show why the discovery search failed, in the Discover tab and at the top.
+ *
+ * @param {object} modal The modal
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function showSearchFailure(modal, error) {
+	// Set search-specific error for contextual display in the Discover tab
+	modal.searchError = error.message || 'Failed to search configurations'
+	// Also set general error for top-level display
+	modal.error = error.message || 'Failed to search configurations'
+	console.error('Search error:', error)
+}
+
+/**
+ * The form an uploaded configuration file is imported with: forced, under
+ * the uploaded-config app id.
+ *
+ * @param {File} file The file
+ * @return {FormData} The form
+ */
+function uploadFormData(file) {
+	const formData = new FormData()
+	formData.append('file', file)
+	formData.append('force', 'true')
+	formData.append('appId', 'uploaded-config')
+	return formData
+}
+
+/**
+ * Import an uploaded configuration file.
+ *
+ * @param {FormData} formData The upload form
+ * @return {Promise<object>} The axios response
+ */
+function postUploadedConfiguration(formData) {
+	return axios.post(
+		generateUrl('/apps/openregister/api/configurations/import'),
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		},
+	)
 }
 </script>
 
