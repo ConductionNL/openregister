@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Service\Interaction;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -58,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * and one is the memo reset the write path needs. Splitting them would put the single
  * permission rule in more than one class, which is the drift this class prevents.
  */
-class ReadStateService implements ReadStateServiceInterface {
+class ReadStateService implements ReadStateServiceInterface, ObjectUnreadMarkerInterface {
 
 	/**
 	 * The uuids the current user has already seen, loaded once per request.

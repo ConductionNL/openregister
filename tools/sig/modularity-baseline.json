@@ -25,7 +25,6 @@
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/AggregationSlot.php",
   "lib/Service/Aggregation/AggregationRunner.php -> lib/Search/Service/Aggregation/CrossSchemaTarget.php",
   "lib/Service/Aggregation/AggregationRunnerInterface.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
-  "lib/Service/Audit/AuditTrailCollaborators.php -> lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/File/FolderAccessDenial.php -> lib/Db/AuditTrail.php",
   "lib/Service/File/FolderManagementHandler.php -> lib/Service/FileHandlerSupportInterface.php",
   "lib/Service/GraphQL/ListAggregations.php -> lib/Search/Service/Aggregation/AggregationQuery.php",
@@ -33,18 +32,12 @@
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
-  "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/WatcherService.php",
-  "lib/Service/Object/RenderObject.php -> lib/Service/ObjectAction/ObjectActionList.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
-  "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
-  "lib/Service/ObjectSource/ViewSourceMappers.php -> lib/Search/Db/ViewMapperInterface.php",
-  "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
-  "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php"
+  "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -593,7 +586,6 @@
   "lib/Files/Service/File/FileOwnershipHandlerInterface.php",
   "lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Files/Service/File/MaskForm.php",
-  "lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Files/Service/File/Pdf/Fallback/NcOfficeConverterInterface.php",
   "lib/Files/Service/File/RegisterFolderProvisionerInterface.php",
   "lib/Files/Service/RiskLevelServiceInterface.php",
@@ -625,6 +617,7 @@
   "lib/Kernel/Contracts/Compliance/AuditProcessContextInterface.php",
   "lib/Kernel/Contracts/Compliance/ConnectionStatusReporterInterface.php",
   "lib/Kernel/Contracts/Compliance/DetectionPatternsVersionInterface.php",
+  "lib/Kernel/Contracts/Compliance/ElevationAttributionInterface.php",
   "lib/Kernel/Contracts/Compliance/LifecycleFinalStatesInterface.php",
   "lib/Kernel/Contracts/Compliance/LifecycleTransitionInterface.php",
   "lib/Kernel/Contracts/Compliance/TransitionInFlightInterface.php",
@@ -683,6 +676,7 @@
   "lib/Kernel/Contracts/Core/ObjectArchivalMetadataInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFileRightsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFilesArchiveInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderAccessInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
@@ -692,6 +686,8 @@
   "lib/Kernel/Contracts/Core/ObjectQuotaRefusal.php",
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
   "lib/Kernel/Contracts/Core/ObjectTrailReaderInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectUnreadMarkerInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectWatchMarkersInterface.php",
   "lib/Kernel/Contracts/Core/PartyParentInterface.php",
   "lib/Kernel/Contracts/Core/PlacedAuditEntry.php",
   "lib/Kernel/Contracts/Core/PreviewDimensionsInterface.php",
@@ -714,6 +710,7 @@
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
+  "lib/Kernel/Contracts/Core/RunnableActionsInterface.php",
   "lib/Kernel/Contracts/Core/RunningNumbersInterface.php",
   "lib/Kernel/Contracts/Core/SaveBoundaryInterface.php",
   "lib/Kernel/Contracts/Core/SchemaAccessChangeLogInterface.php",
@@ -734,6 +731,7 @@
   "lib/Kernel/Contracts/Core/TwigFunctionsInstallerInterface.php",
   "lib/Kernel/Contracts/Core/UnreadCountsInterface.php",
   "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
+  "lib/Kernel/Contracts/Core/ViewFinderInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -1788,7 +1786,6 @@
   "lib/Service/ObjectAction/ObjectActionDefinitionInterface.php",
   "lib/Service/ObjectAction/ObjectActionDefinitions.php",
   "lib/Service/ObjectAction/ObjectActionDefinitionsInterface.php",
-  "lib/Service/ObjectAction/ObjectActionElevationScope.php",
   "lib/Service/ObjectAction/ObjectActionHistory.php",
   "lib/Service/ObjectAction/ObjectActionHistoryInterface.php",
   "lib/Service/ObjectAction/ObjectActionList.php",
@@ -2218,16 +2215,16 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14297,
+  "Compliance": 14300,
   "Configuration": 874,
-  "Core": 57274,
-  "Files": 1459,
+  "Core": 57319,
+  "Files": 1263,
   "Integrations": 17733,
   "Kernel": 8464,
-  "Notifications": 1759,
+  "Notifications": 1760,
   "Platform": 61,
-  "Processes": 27092,
-  "Search": 1343
+  "Processes": 27040,
+  "Search": 1344
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2690,6 +2687,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462045,
- "violation_degree": 0.0057
+ "total_loc": 462131,
+ "violation_degree": 0.0049
 }

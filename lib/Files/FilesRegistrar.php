@@ -44,6 +44,7 @@ use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\ObjectFilesArchive;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
@@ -64,6 +65,7 @@ use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
@@ -112,6 +114,7 @@ final class FilesRegistrar
         FileTagCatalogueInterface::class          => FileServiceInterface::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        ObjectFileRightsInterface::class          => ObjectFileAccess::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
         ObjectFilesArchiveInterface::class        => ObjectFilesArchive::class,
         ReadableFileHitsInterface::class          => FileReadScope::class,
