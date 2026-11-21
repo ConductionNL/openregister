@@ -316,3 +316,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: php scripts/check-migration-version-bump.php --base=origin/main exits 1 ('adds N migration(s) but does not move the app version'); no unit test catches it.
 - Cause: build PRs add a lib/Migration/Version*.php and leave appinfo/info.xml <version> at main's value, so occ upgrade would never run the step.
 - Fix: after merging main, bump <version> one step past main's (e.g. 2.2.0-dev.3 -> 2.2.0-dev.4) in its own commit, rerun the check (see #10398, #10518). Two PRs bumping to the same value conflict on info.xml later: take the higher and bump once more.
+
+## component-map-merge.py prints 'duplicate rows' after a csv union (or-fix-3)
+- Symptom: the helper reports e.g. duplicate rows: ['Service/OwnedWebhookView.php']; the yaml then moves that file to the PR's component.
+- Cause: the PR's conflict hunk carries a row for a file main maps elsewhere in the csv (outside the hunk), so the per-hunk union keeps both.
+- Fix: delete the PR's copy (main's row wins), rerun python3 scripts/component-patterns.py; the yaml diff vs main must show only the PR's own files (#10523).
