@@ -141,9 +141,11 @@ class ObjectArchivalAnnotation {
 			}
 
 			return $this->evaluator->evaluate(
-				annotation: $annotation,
-				row: $row,
-				createdAt: ($object->getCreated() ?? new DateTimeImmutable())
+				subject: new AnnotatedRow(
+					annotation: $annotation,
+					row: $row,
+					createdAt: ($object->getCreated() ?? new DateTimeImmutable())
+				)
 			);
 		} catch (Throwable $e) {
 			$this->lookup->logger->debug(

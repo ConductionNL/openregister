@@ -63,7 +63,9 @@ final class RecordArchivalReading implements RecordArchivalReadingInterface {
 			$row = [];
 		}
 
-		return (new RetentionEvaluator(logger: $this->logger))->evaluate(annotation: $annotation, row: $row, createdAt: $createdAt);
+		return (new RetentionEvaluator(logger: $this->logger))->evaluate(
+			subject: new AnnotatedRow(annotation: $annotation, row: $row, createdAt: $createdAt)
+		);
 	}//end retentionAnnotation()
 
 	/**
