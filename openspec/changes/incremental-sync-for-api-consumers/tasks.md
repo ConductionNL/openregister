@@ -8,7 +8,8 @@
       > 2026-11-13: `MagicMapper::restoreObject()` (the path behind `restore` and `restoreMultiple`) sets `_updated` in the UPDATE that clears `_deleted`, and on the entity.
 - [x] 1.3 Unit tests: after a soft delete `getUpdated()` equals `deleted.deletedAt`; after a restore it is the restore time.
       > 2026-11-13: `DeleteObjectTest::testASoftDeleteMovesUpdatedToTheDeletionMoment`, `MagicMapperDeletedRestoreTest::testARestoreMovesUpdatedToTheRestoreMoment`.
-- [ ] 1.4 Integration test: object list with `@self[updated][gte]` and `_includeDeleted=true` returns an object deleted after the cut-off and not one deleted before it.
+- [x] 1.4 Integration test: object list with `@self[updated][gte]` and `_includeDeleted=true` returns an object deleted after the cut-off and not one deleted before it.
+      > 2026-11-14: `18a4` (deleted after the cut-off: returned) and `18a5` (cut-off after the deletion: left out) in `tests/integration/openregister-crud.postman_collection.json`, with `18a6`/`18a7` for the tombstones; not run here (needs a live instance).
 
 ## 2. Filters on the deleted list (REQ-SYNC-002, D-2)
 
@@ -23,18 +24,26 @@
 
 ## 3. Tombstones for destroyed objects (REQ-SYNC-003, D-3)
 
-- [ ] 3.1 `lib/Db/AuditTrailMapper.php`: read destruction entries (`DestructionScope::DESTRUCTION_ACTION`) by register, schema and created-since, paginated.
-- [ ] 3.2 `DeletedController::index`: with `_includeDestroyed=true` and `deletedSince`, append tombstones `{id, register, schema, destroyedAt, tombstone: true}` passed through `readableDestructionRecords`; refuse `_includeDestroyed` without `deletedSince` with 400.
-- [ ] 3.3 Add `destroyedCoverageFrom` (oldest destruction entry held) to the envelope.
-- [ ] 3.4 Tests: a tombstone carries no object data; a tombstone outside the caller's scope is withheld; the refusal.
+- [x] 3.1 `lib/Db/AuditTrailMapper.php`: read destruction entries (`DestructionScope::DESTRUCTION_ACTION`) by register, schema and created-since, paginated.
+      > 2026-11-14: `findDestructions()` / `countDestructions()` over a `DestructionQuery` (since, register, schema, actor, page), oldest first on `created` then `id`; the moment is compared in UTC.
+- [x] 3.2 `DeletedController::index`: with `_includeDestroyed=true` and `deletedSince`, append tombstones `{id, register, schema, destroyedAt, tombstone: true}` passed through `readableDestructionRecords`; refuse `_includeDestroyed` without `deletedSince` with 400.
+      > 2026-11-14: `Controller\Support\DestroyedTombstones`. Tombstones follow the bin rows in one list (`total` counts both; a page is filled from the tombstones once the bin is used up). A non-admin's query is narrowed to the entries they wrote, the same line `userMayReadDestructionRecord` draws, so `total` is exact; the rows still pass `readableDestructionRecords`.
+- [x] 3.3 Add `destroyedCoverageFrom` (oldest destruction entry held) to the envelope.
+      > 2026-11-14: `AuditTrailMapper::oldestDestruction()`; present when `_includeDestroyed=true`, null when no destruction is held.
+- [x] 3.4 Tests: a tombstone carries no object data; a tombstone outside the caller's scope is withheld; the refusal.
+      > 2026-11-14: `DestroyedTombstonesTest`, `AuditTrailMapperDestructionsTest` (SQL on the migrated table), `DeletedControllerSyncFilterTest::testDestroyedTombstones*` / `::testAnAdministratorReadsEveryDestruction*`.
 
 ## 4. Watermark (REQ-SYNC-004, D-4)
 
-- [ ] 4.1 `ObjectsController` list and `DeletedController::index`: take the server time before the query and return it as `syncWatermark`.
-- [ ] 4.2 Test: the watermark is earlier than or equal to the `updated` of an object written during the read (simulate with a mapper stub that writes mid-query).
+- [x] 4.1 `ObjectsController` list and `DeletedController::index`: take the server time before the query and return it as `syncWatermark`.
+      > 2026-11-14: `Controller\Support\SyncWatermark`, taken first thing in both `index()` methods (single-table, magic-table and cross-table listings); UTC ISO 8601 truncated to the second, which only moves it earlier. Only a 200 envelope with `results` is stamped: a refusal is not a read to resume from, and a JSON-LD collection keeps its own shape.
+- [x] 4.2 Test: the watermark is earlier than or equal to the `updated` of an object written during the read (simulate with a mapper stub that writes mid-query).
+      > 2026-11-14: `DeletedControllerSyncFilterTest::testTheWatermarkIsNotLaterThanAWriteDuringTheRead` (the stub writes, then runs past the next second, so a watermark taken after the query fails it); `SyncWatermarkTest`.
 
 ## 5. Docs and links
 
-- [ ] 5.1 Document the sync recipe (changed-since read, deleted list, tombstones, watermark) in the API docs under `docs/`.
+- [x] 5.1 Document the sync recipe (changed-since read, deleted list, tombstones, watermark) in the API docs under `docs/`.
+      > 2026-11-14: `docs/api/incremental-sync.md`.
 - [ ] 5.2 Set `built.state` of row `int-incremental-sync` in `openspec/parity/capabilities.json` once shipped; tell planninq so its row can follow.
-- [ ] 5.3 `@spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md` on every touched method.
+- [x] 5.3 `@spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md` on every touched method.
+      > 2026-11-14: on every method this change added or changed.
