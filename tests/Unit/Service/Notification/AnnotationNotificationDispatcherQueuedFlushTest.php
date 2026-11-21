@@ -38,6 +38,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager as IActivityManager;
@@ -287,9 +288,20 @@ class AnnotationNotificationDispatcherQueuedFlushTest extends TestCase {
 		);
 
 		$ncSender = $this->createMock(NcNotificationSender::class);
-		$ncSender->method('send')->willReturnCallback(
-			function (...$args): string {
-				$this->record(what: 'nc.send', args: $args);
+		$ncSender->method('notify')->willReturnCallback(
+			function (InAppNotice $notice): string {
+				$this->record(what: 'nc.send', args: [
+					$notice->uid,
+					$notice->object,
+					$notice->content->subjectKey,
+					$notice->rule->name,
+					$notice->content->subject,
+					$notice->content->message,
+					$notice->content->context,
+					$notice->rule->originApp,
+					$notice->rule->actions,
+					$notice->rule->webPushActive,
+				]);
 				return 'dispatched';
 			}
 		);

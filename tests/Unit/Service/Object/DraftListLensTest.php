@@ -24,6 +24,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\DraftListing
  */
 class DraftListLensTest extends TestCase {
 

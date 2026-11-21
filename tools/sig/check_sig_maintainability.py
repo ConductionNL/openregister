@@ -1460,54 +1460,60 @@ def changed_paths(app, base):
     return paths
 
 
-def cmd_ratchet(args, lizard, jscpd_exe):
-    app = args.app
-    rc, mb = git(app, "merge-base", args.base_ref, "HEAD")
-    if rc != 0 or not mb.strip():
-        print(f"{GATE}: the base '{args.base_ref}' has no merge base with HEAD, so no change could be isolated")
-        return 3
-    mb = mb.strip()
-    scope = Scope(app)
+def ratchet_changed_files(app, mb, scope):
+    """Measured source files this change touches: {new path: (language, old path)}."""
     changed = {}
     for new, old in changed_paths(app, mb).items():
         lang = scope.language(new)
         if lang and os.path.isfile(os.path.join(app, new)):
             changed[new] = (lang, old)
-    if not changed:
-        print(f"{GATE}: this change touches no measured source file (php, js, ts, vue, py outside tests and Sigrid's default excludes)")
-        return 4
+    return changed
 
-    reader = UnitReader(lizard)
-    new_findings, inherited = [], []
+
+def base_units_of(app, mb, old, lang, reader):
+    """The units of `old` at the merge base, by name (first one wins)."""
+    base_units = {}
+    if old:
+        rc, base_src = git(app, "show", f"{mb}:{old}")
+        if rc == 0:
+            for u in reader.units(old, lang, base_src):
+                base_units.setdefault(u["name"], u)
+    return base_units
+
+
+def unit_findings(rel, u, before, touched, new_findings, inherited):
+    """Sort each ratchet bound `u` exceeds into new (made worse by this change) or inherited."""
+    for key, bound in RATCHET.items():
+        if u[key] <= bound:
+            continue
+        f = {"file": rel, "line": u["start"], "unit": u["name"], "metric": key,
+             "value": u[key], "rule": RATCHET_LABEL[key],
+             "before": before[key] if before else None}
+        if not touched:
+            inherited.append(f)
+        elif before is None or before[key] <= bound or u[key] > before[key]:
+            new_findings.append(f)
+        else:
+            inherited.append(f)
+
+
+def ratchet_units(app, mb, changed, reader, new_findings, inherited):
+    """Measure every unit of the changed files. Returns (touched unit count, added lines per file)."""
     touched_units = 0
     added = {}
     for rel, (lang, old) in sorted(changed.items()):
         added[rel] = added_lines(app, mb, rel, old)
         head_units = reader.units(rel, lang, read_text(os.path.join(app, rel)))
-        base_units = {}
-        if old:
-            rc, base_src = git(app, "show", f"{mb}:{old}")
-            if rc == 0:
-                for u in reader.units(old, lang, base_src):
-                    base_units.setdefault(u["name"], u)
+        base_units = base_units_of(app, mb, old, lang, reader)
         for u in head_units:
             touched = any(u["start"] <= n <= u["end"] for n in added[rel])
             touched_units += touched
-            before = base_units.get(u["name"])
-            for key, bound in RATCHET.items():
-                if u[key] <= bound:
-                    continue
-                f = {"file": rel, "line": u["start"], "unit": u["name"], "metric": key,
-                     "value": u[key], "rule": RATCHET_LABEL[key],
-                     "before": before[key] if before else None}
-                if not touched:
-                    inherited.append(f)
-                elif before is None or before[key] <= bound or u[key] > before[key]:
-                    new_findings.append(f)
-                else:
-                    inherited.append(f)
+            unit_findings(rel, u, base_units.get(u["name"]), touched, new_findings, inherited)
+    return touched_units, added
 
-    # Duplication: clones among every measured file of the languages this change touches.
+
+def ratchet_duplication(app, jscpd_exe, scope, changed, added, new_findings):
+    """Clones among every measured file of the languages this change touches. Returns the count added."""
     langs = {lang for lang, _old in changed.values()}
     corpus = sorted(f for f, lg in production_files(app, scope).items() if lg in langs)
     if not any(len(lines) >= DUP_MIN_LINES for lines in added.values()):
@@ -1526,7 +1532,10 @@ def cmd_ratchet(args, lizard, jscpd_exe):
                                  "value": c["lines"], "rule": f"duplicated fragment of {DUP_MIN_LINES}+ lines",
                                  "before": None, "other": f"{other[0]}:{other[1]}-{other[2]}"})
             dup_new += 1
+    return dup_new
 
+
+def print_ratchet_findings(reader, new_findings, inherited):
     for s in reader.skipped:
         print(f"  unverified (lizard could not read it): {s['file']}: {s['reason']}")
     for f in new_findings:
@@ -1538,6 +1547,27 @@ def cmd_ratchet(args, lizard, jscpd_exe):
               f"or did not make worse")
         for f in inherited[:10]:
             print(f"    {f['file']}:{f['line']} {f['unit']}: {f['rule']}: {f['value']}")
+
+
+def cmd_ratchet(args, lizard, jscpd_exe):
+    app = args.app
+    rc, mb = git(app, "merge-base", args.base_ref, "HEAD")
+    if rc != 0 or not mb.strip():
+        print(f"{GATE}: the base '{args.base_ref}' has no merge base with HEAD, so no change could be isolated")
+        return 3
+    mb = mb.strip()
+    scope = Scope(app)
+    changed = ratchet_changed_files(app, mb, scope)
+    if not changed:
+        print(f"{GATE}: this change touches no measured source file (php, js, ts, vue, py outside tests and Sigrid's default excludes)")
+        return 4
+
+    reader = UnitReader(lizard)
+    new_findings, inherited = [], []
+    touched_units, added = ratchet_units(app, mb, changed, reader, new_findings, inherited)
+    dup_new = ratchet_duplication(app, jscpd_exe, scope, changed, added, new_findings)
+
+    print_ratchet_findings(reader, new_findings, inherited)
     tail = (f"lizard {LIZARD_VERSION}, jscpd {JSCPD_VERSION}; {len(inherited)} inherited"
             + (f"; {len(reader.skipped)} file(s) NOT measured" if reader.skipped else ""))
     if new_findings:
@@ -1546,7 +1576,6 @@ def cmd_ratchet(args, lizard, jscpd_exe):
         return 1
     print(f"{GATE}: checked {touched_units} changed unit(s) in {len(changed)} file(s), 0 finding(s); {tail}")
     return 0
-
 
 # --------------------------------------------------------------------------
 

@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 /**
  * The WOPI access token of an Office session, its expiry and whether it may save.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class OfficeSessionToken {
 	/**
@@ -35,7 +35,7 @@ final class OfficeSessionToken {
 	 * @param int    $tokenTtl The token expiry, as a unix timestamp in milliseconds.
 	 * @param bool   $readOnly Whether the token may not save.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly string $token,

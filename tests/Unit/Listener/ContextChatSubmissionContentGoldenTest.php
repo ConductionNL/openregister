@@ -40,6 +40,13 @@ use Psr\Log\LoggerInterface;
  * Golden ContentItem of ContextChatSubmissionListener::submitIfEligible().
  *
  * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatCandidate
+ * @uses \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionServices
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class ContextChatSubmissionContentGoldenTest extends TestCase {
 

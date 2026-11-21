@@ -60,18 +60,18 @@ final class ExampleSetRowInstall {
 	/**
 	 * Write the rows of one fragment that the record does not hold, refresh or keep the held ones.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on; `refresh` asks for a refresh.
-	 * @param array<string, mixed> $report   The report; gains the outcomes under the part and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the rows written under the part.
+	 * @param ExampleSetFragmentWrite $write  The fragment and the context placeholders draw on; `refresh` asks for a refresh.
+	 * @param RecordLedger            $ledger The report (gains the outcomes under the part and `dropped`) and the record
+	 *                                        (gains the rows written under the part).
 	 *
 	 * @return bool Whether the record changed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	public function fragment(array $fragment, array $context, array &$report, array &$record): bool {
+	public function fragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
+		$context = $write->context;
 		$refresh = (($context['refresh'] ?? false) === true && in_array($this->rows->part(), ExampleSetEngineRows::REFRESHED, true) === true);
-		$run     = new RowInstallRun(fragment: $fragment, context: $context, refresh: $refresh, ledger: new RecordLedger(report: $report, record: $record));
+		$run     = new RowInstallRun(fragment: $write->fragment, context: $context, refresh: $refresh, ledger: $ledger);
 		return $this->entries(run: $run);
 	}//end fragment()
 

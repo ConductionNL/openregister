@@ -183,26 +183,48 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$search = (string)($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? '');
-		$limit = (int)($query['limit'] ?? 200);
-		$offset = (int)($query['offset'] ?? 0);
+		$page = new DirectoryPage(query: $query);
 
 		try {
-			// A plain user only ever sees their own account.
-			if ($this->isAdmin(user: $acting) === false) {
-				if ($search !== '' && str_contains(strtolower($acting->getUID()), strtolower($search)) === false) {
-					return [];
-				}
-
-				return [$acting];
-			}
-
-			return array_values($this->userManager->search($search, $limit, $offset));
+			return $this->visibleUsers(acting: $acting, page: $page);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:user-directory-source] could not list users: ' . $e->getMessage());
 			return [];
 		}
 	}//end readUsers()
+
+	/**
+	 * The users an acting user sees: the directory for an admin, their own account otherwise.
+	 *
+	 * @param IUser         $acting The acting user.
+	 * @param DirectoryPage $page   The search term and page.
+	 *
+	 * @return array<int, IUser> The visible users.
+	 */
+	private function visibleUsers(IUser $acting, DirectoryPage $page): array {
+		// A plain user only ever sees their own account.
+		if ($this->isAdmin(user: $acting) === false) {
+			return $this->ownAccountMatching(acting: $acting, search: $page->search);
+		}
+
+		return array_values($this->userManager->search($page->search, $page->limit, $page->offset));
+	}//end visibleUsers()
+
+	/**
+	 * The acting user's own account, when its uid contains the search term.
+	 *
+	 * @param IUser  $acting The acting user.
+	 * @param string $search The search term, '' for any.
+	 *
+	 * @return array<int, IUser> The account, or nothing.
+	 */
+	private function ownAccountMatching(IUser $acting, string $search): array {
+		if ($search !== '' && str_contains(strtolower($acting->getUID()), strtolower($search)) === false) {
+			return [];
+		}
+
+		return [$acting];
+	}//end ownAccountMatching()
 
 	/**
 	 * Whether the acting user may read the given user's projection.

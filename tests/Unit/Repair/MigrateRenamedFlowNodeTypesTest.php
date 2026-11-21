@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\Migration\IOutput;

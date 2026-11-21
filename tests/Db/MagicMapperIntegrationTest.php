@@ -13,7 +13,8 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -930,7 +931,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$entity->setObject(['name' => 'CrossTableFind', 'age' => 44]);
 		$this->mapper->insertObjectEntity($entity, $register, $schema, false);
 
-		$result = $this->mapper->findAcrossAllMagicTables($uuid);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 		$this->assertArrayHasKey('register', $result);
@@ -941,7 +942,7 @@ class MagicMapperIntegrationTest extends TestCase {
 
 	public function testFindAcrossAllMagicTablesNotFound(): void {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-		$this->mapper->findAcrossAllMagicTables('nonexistent-uuid-' . uniqid());
+		$this->mapper->findAcross(find: new MagicIdentifierFind(identifier: 'nonexistent-uuid-' . uniqid()));
 	}
 
 	// =========================================================================
@@ -3119,7 +3120,7 @@ class MagicMapperIntegrationTest extends TestCase {
 			],
 		], $register, $schema);
 
-		$result = $this->mapper->findAcrossAllMagicTables($testSlug);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $testSlug));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 		$this->assertInstanceOf(ObjectEntity::class, $result['object']);
@@ -3149,7 +3150,7 @@ class MagicMapperIntegrationTest extends TestCase {
 		$this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
 
 		// Should find with includeDeleted=true even though _deleted is set
-		$result = $this->mapper->findAcrossAllMagicTables($testUuid, true);
+		$result = $this->mapper->findAcross(find: new MagicIdentifierFind(identifier: $testUuid, includeDeleted: true));
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('object', $result);
 	}

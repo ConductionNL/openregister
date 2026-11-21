@@ -35,11 +35,23 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\ShippedRegister
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\ShippedRegister
  */
 class ExampleSetRegistersBehaviourTest extends TestCase {
 
@@ -200,7 +212,8 @@ class ExampleSetRegistersBehaviourTest extends TestCase {
 		$this->audit->method('objectUuidsByImportJobId')->with('job-1')->willReturn(['u1', 'u2']);
 		$deleted = [];
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, mixed $register=null, mixed $schema=null, bool $_rbac=true, bool $_multitenancy=true) use (&$deleted): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = [$uuid, $_rbac, $_multitenancy];
 				return true;
 			}

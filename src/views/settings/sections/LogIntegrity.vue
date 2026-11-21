@@ -243,6 +243,15 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
+/**
+ * Ask the server to verify the audit trail's hash chain.
+ *
+ * @return {Promise<object>} The response; its data is the verification
+ */
+function requestVerification() {
+	return axios.get(generateUrl('/apps/openregister/api/audit-trails/verify'))
+}
+
 export default {
 	name: 'LogIntegrity',
 
@@ -344,20 +353,29 @@ export default {
 			this.verification = null
 
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/audit-trails/verify'),
-				)
+				const response = await requestVerification()
 				this.verification = response.data
 				await this.loadStatus()
 			} catch (error) {
-				console.error('Failed to verify audit chain:', error)
-				this.error = this.t(
-					'openregister',
-					'Verification could not be completed.',
-				)
+				this.showVerifyFailure(error)
 			} finally {
 				this.verifying = false
 			}
+		},
+
+		/**
+		 * Log a verification that could not complete and say so.
+		 *
+		 * @spec exclude UI plumbing — audit chain verification failure message
+		 * @param {Error} error The failure
+		 * @return {void}
+		 */
+		showVerifyFailure(error) {
+			console.error('Failed to verify audit chain:', error)
+			this.error = this.t(
+				'openregister',
+				'Verification could not be completed.',
+			)
 		},
 
 		/**

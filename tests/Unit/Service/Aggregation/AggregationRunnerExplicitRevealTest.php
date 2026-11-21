@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
@@ -66,6 +66,20 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class AggregationRunnerExplicitRevealTest extends TestCase {
 

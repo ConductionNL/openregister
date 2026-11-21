@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * through the container only when the app is enabled, and every missing piece
  * refuses with 409 rather than failing open.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 class OfficeSessionService {
 
@@ -69,6 +69,13 @@ class OfficeSessionService {
 	 * @var string
 	 */
 	private const OWNER = 'openregister';
+
+	/**
+	 * Whether Office opens a MIME type, asked once per type and request.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $opensByMimeType = [];
 
 	/**
 	 * Constructor.
@@ -98,56 +105,21 @@ class OfficeSessionService {
 	 *
 	 * @throws OfficeOpenRefusedException 409, 415 or 403 when the document cannot be opened.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function openSession(OfficeOpenRequest $request): OfficeSession {
 		$services = $this->richdocuments();
 
-		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($request->file->getMimeType());
-		if (is_string($urlSrc) === false || $urlSrc === '') {
-			throw new OfficeOpenRefusedException(
-				httpStatus: OfficeOpenRefusedException::UNSUPPORTED_TYPE,
-				message: 'This file type does not open in Nextcloud Office.'
-			);
-		}
+		$urlSrc = $this->officeUrl(services: $services, request: $request);
+		$this->assertOfficeForUser(services: $services, request: $request);
 
-		$permissions = $services['permissionManager'];
-		if ($permissions->isEnabledForUser($request->editorUid) !== true) {
-			throw new OfficeOpenRefusedException(
-				httpStatus: OfficeOpenRefusedException::NOT_PERMITTED,
-				message: 'You may not use Nextcloud Office on this instance.'
-			);
-		}
-
-		$writable = ($request->canWrite === true && $permissions->userCanEdit($request->editorUid) === true);
-		$fileId = (string)$request->file->getId();
-
-		$guestName = $request->displayName;
-		if ($guestName === '') {
-			$guestName = $request->editorUid;
-		}
-
-		try {
-			$wopi = $services['wopiMapper']->generateFileToken(
-				$fileId,
-				self::OWNER,
-				$request->editorUid,
-				'0',
-				$writable,
-				$this->urlGenerator->getAbsoluteURL('/'),
-				$guestName
-			);
-		} catch (Throwable $e) {
-			throw new OfficeOpenRefusedException(
-				httpStatus: OfficeOpenRefusedException::UNAVAILABLE,
-				message: 'Nextcloud Office could not open this document.',
-				previous: $e
-			);
-		}
+		$writable = ($request->canWrite === true && $services['permissionManager']->userCanEdit($request->editorUid) === true);
+		$grant = new OfficeTokenGrant(request: $request, writable: $writable);
+		$wopi = $this->issueToken(services: $services, grant: $grant);
 
 		return new OfficeSession(
 			urlSrc: $urlSrc,
-			wopiSrc: $this->wopiSrc(fileId: $fileId),
+			wopiSrc: $this->wopiSrc(fileId: $grant->fileId()),
 			access: new OfficeSessionToken(
 				token: (string)$wopi->getToken(),
 				tokenTtl: ((int)$wopi->getExpiry() * 1000),
@@ -157,11 +129,94 @@ class OfficeSessionService {
 	}//end openSession()
 
 	/**
+	 * The Office frame URL for the file's MIME type.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeOpenRequest     $request  The open request.
+	 *
+	 * @return string
+	 *
+	 * @throws OfficeOpenRefusedException 415 when the file type does not open in Office.
+	 */
+	private function officeUrl(array $services, OfficeOpenRequest $request): string {
+		$urlSrc = $services['tokenManager']->getUrlSrcForMimeType($request->file->getMimeType());
+		if (is_string($urlSrc) === false || $urlSrc === '') {
+			throw new OfficeOpenRefusedException(
+				httpStatus: OfficeOpenRefusedException::UNSUPPORTED_TYPE,
+				message: 'This file type does not open in Nextcloud Office.'
+			);
+		}
+
+		return $urlSrc;
+	}//end officeUrl()
+
+	/**
+	 * Refuse an editor Office does not let use it.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeOpenRequest     $request  The open request.
+	 *
+	 * @return void
+	 *
+	 * @throws OfficeOpenRefusedException 403 when Office refuses the editor.
+	 */
+	private function assertOfficeForUser(array $services, OfficeOpenRequest $request): void {
+		if ($services['permissionManager']->isEnabledForUser($request->editorUid) !== true) {
+			throw new OfficeOpenRefusedException(
+				httpStatus: OfficeOpenRefusedException::NOT_PERMITTED,
+				message: 'You may not use Nextcloud Office on this instance.'
+			);
+		}
+	}//end assertOfficeForUser()
+
+	/**
+	 * Issue the WOPI token; a failure is a refusal carrying the cause.
+	 *
+	 * @param array<string, object> $services The richdocuments token manager, permission manager and WOPI mapper.
+	 * @param OfficeTokenGrant      $grant    The request and the token's write right.
+	 *
+	 * @return object The richdocuments Wopi token row.
+	 *
+	 * @throws OfficeOpenRefusedException 503-style when the token cannot be issued.
+	 */
+	private function issueToken(array $services, OfficeTokenGrant $grant): object {
+		try {
+			return $this->generateToken(wopiMapper: $services['wopiMapper'], grant: $grant);
+		} catch (Throwable $e) {
+			throw new OfficeOpenRefusedException(
+				httpStatus: OfficeOpenRefusedException::UNAVAILABLE,
+				message: 'Nextcloud Office could not open this document.',
+				previous: $e
+			);
+		}
+	}//end issueToken()
+
+	/**
+	 * Ask richdocuments for a WOPI token owned by OpenRegister and naming the editor.
+	 *
+	 * @param object           $wopiMapper The richdocuments WOPI mapper.
+	 * @param OfficeTokenGrant $grant      The request and the token's write right.
+	 *
+	 * @return object The richdocuments Wopi token row.
+	 */
+	private function generateToken(object $wopiMapper, OfficeTokenGrant $grant): object {
+		return $wopiMapper->generateFileToken(
+			$grant->fileId(),
+			self::OWNER,
+			$grant->request->editorUid,
+			'0',
+			$grant->writable,
+			$this->urlGenerator->getAbsoluteURL('/'),
+			$grant->guestName()
+		);
+	}//end generateToken()
+
+	/**
 	 * Whether Nextcloud Office is enabled on this instance.
 	 *
 	 * @return bool True when richdocuments is enabled.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isAvailable(): bool {
 		try {
@@ -211,6 +266,71 @@ class OfficeSessionService {
 
 		return $services;
 	}//end richdocuments()
+
+	/**
+	 * The page that opens a file of an object in Nextcloud Office, or null when
+	 * Office does not open its type (or is not available). The page and the
+	 * Office endpoint behind it run the object's read and update checks
+	 * themselves; this is only the address a list offers.
+	 *
+	 * @param string $register The register, as the route names it.
+	 * @param string $schema   The schema, as the route names it.
+	 * @param string $objectId The object's id.
+	 * @param int    $fileId   The file's id.
+	 * @param string $mimeType The file's MIME type.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	public function officePageUrl(string $register, string $schema, string $objectId, int $fileId, string $mimeType): ?string {
+		if ($this->opensInOffice(mimeType: $mimeType) === false) {
+			return null;
+		}
+
+		return $this->urlGenerator->linkToRoute(
+			'openregister.files.officePage',
+			['register' => $register, 'schema' => $schema, 'id' => $objectId, 'fileId' => $fileId]
+		);
+	}//end officePageUrl()
+
+	/**
+	 * Whether Nextcloud Office opens files of this MIME type here.
+	 *
+	 * @param string $mimeType The MIME type.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	public function opensInOffice(string $mimeType): bool {
+		if ($mimeType === '') {
+			return false;
+		}
+
+		if (array_key_exists($mimeType, $this->opensByMimeType) === false) {
+			$this->opensByMimeType[$mimeType] = $this->officeOpens(mimeType: $mimeType);
+		}
+
+		return $this->opensByMimeType[$mimeType];
+	}//end opensInOffice()
+
+	/**
+	 * Ask richdocuments whether it has an editor for the MIME type.
+	 *
+	 * @param string $mimeType The MIME type.
+	 *
+	 * @return bool
+	 */
+	private function officeOpens(string $mimeType): bool {
+		try {
+			$urlSrc = $this->richdocuments()['tokenManager']->getUrlSrcForMimeType($mimeType);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return is_string($urlSrc) === true && $urlSrc !== '';
+	}//end officeOpens()
 
 	/**
 	 * The WOPI source Collabora calls back on, as richdocuments' own viewer builds it.

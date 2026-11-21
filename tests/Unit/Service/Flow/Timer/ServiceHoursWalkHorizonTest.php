@@ -27,6 +27,12 @@ use PHPUnit\Framework\TestCase;
  * A term that does not fit in the horizon, or a span longer than it, has no answer (null) rather than a guess.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursWalk
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class ServiceHoursWalkHorizonTest extends TestCase {
 

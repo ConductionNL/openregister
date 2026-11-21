@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\Entity;
@@ -52,6 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
+ * @implements SourceMapperInterface<Source>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */

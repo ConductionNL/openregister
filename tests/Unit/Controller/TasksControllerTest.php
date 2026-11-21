@@ -173,7 +173,7 @@ class TasksControllerTest extends TestCase {
 		$taskData = ['id' => 'task-new', 'summary' => 'New Task'];
 		$this->taskService
 			->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->willReturn($taskData);
 
 		$result = $this->controller->create('reg', 'schema', '1');
@@ -211,7 +211,7 @@ class TasksControllerTest extends TestCase {
 		$taskData = ['id' => 'task-1', 'summary' => 'Updated'];
 		$this->taskService
 			->expects($this->once())
-			->method('updateTask')
+			->method('changeTask')
 			->willReturn($taskData);
 
 		$result = $this->controller->update('reg', 'schema', '1', 'task-1');
@@ -431,7 +431,7 @@ class TasksControllerTest extends TestCase {
 	public function testCreateRefusesAnEngineTaskIdentity(): void {
 		$this->setupObjectValidation($this->createObjectEntity());
 		$this->request->method('getParams')->willReturn(['summary' => 'Forged', 'X-OPENREGISTER-TASK' => 'some-uuid']);
-		$this->taskService->method('createTask')
+		$this->taskService->method('createObjectTask')
 			->willThrowException(new TaskAccessDeniedException('An engine task cannot be created through the object task endpoint.'));
 
 		$result = $this->controller->create('1', '2', 'test-uuid');

@@ -24,15 +24,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller\Support;
 
-use OC\Security\CSP\ContentSecurityPolicyNonceManager;
-use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
-use OCP\IURLGenerator;
 
 /**
- * The services the GraphQL controller works with: the GraphQL executor, and for
- * the GraphiQL explorer page the endpoint link, the CSP nonce of its inline
- * script and the request token it posts with.
+ * The services the GraphQL controller works with: the GraphQL executor. The
+ * explorer page is a bundled template, so it needs no endpoint link, CSP nonce
+ * or request token from the controller.
  *
  * @spec openspec/specs/graphql-api/spec.md
  */
@@ -40,18 +37,12 @@ final class GraphQLControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param GraphQLService                    $graphQLService GraphQL executor
-	 * @param IURLGenerator                     $urlGenerator   URL generator for route linking
-	 * @param ContentSecurityPolicyNonceManager $nonceManager   CSP nonce provider
-	 * @param CsrfTokenManager                  $csrfManager    CSRF token manager
+	 * @param GraphQLService $graphQLService GraphQL executor
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	public function __construct(
 		public readonly GraphQLService $graphQLService,
-		public readonly IURLGenerator $urlGenerator,
-		public readonly ContentSecurityPolicyNonceManager $nonceManager,
-		public readonly CsrfTokenManager $csrfManager,
 	) {
 	}//end __construct()
 }//end class

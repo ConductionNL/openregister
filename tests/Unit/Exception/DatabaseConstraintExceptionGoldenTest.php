@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * The database-error-to-sentence mapping, case by case.
  *
  * @covers \OCA\OpenRegister\Exception\DatabaseConstraintException
+ * @uses \OCA\OpenRegister\Exception\DatabaseConstraintMessages
  */
 class DatabaseConstraintExceptionGoldenTest extends TestCase {
 	/**

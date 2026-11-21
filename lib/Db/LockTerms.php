@@ -54,12 +54,7 @@ final class LockTerms {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function payloadFor(string $userId, DateTime $now): array {
-		$kind    = ObjectEntity::LOCK_KIND_USER;
-		$runUuid = $this->runUuid;
-		if ($runUuid !== null && trim($runUuid) !== '') {
-			$kind    = ObjectEntity::LOCK_KIND_RUN;
-			$runUuid = trim($runUuid);
-		}
+		[$kind, $runUuid] = $this->holder();
 
 		return [
 			'kind' => $kind,
@@ -70,4 +65,20 @@ final class LockTerms {
 			'duration' => $this->duration,
 		];
 	}//end payloadFor()
+
+	/**
+	 * Who holds the lock: a run, by its trimmed uuid, when one is given; otherwise the user.
+	 *
+	 * A blank run uuid leaves a user lock and is carried as given.
+	 *
+	 * @return array{0: string, 1: string|null} The lock kind and the run uuid.
+	 */
+	private function holder(): array {
+		$runUuid = $this->runUuid;
+		if ($runUuid !== null && trim($runUuid) !== '') {
+			return [ObjectEntity::LOCK_KIND_RUN, trim($runUuid)];
+		}
+
+		return [ObjectEntity::LOCK_KIND_USER, $runUuid];
+	}//end holder()
 }//end class
