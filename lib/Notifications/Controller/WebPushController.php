@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
 use OCA\OpenRegister\Notifications\Controller\Support\WebPushControllerServices;
@@ -97,7 +97,7 @@ class WebPushController extends Controller {
 		IRequest $request,
 		WebPushControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->webPushService = $services->webPushService;
 		$this->subscriptionMapper = $services->subscriptionMapper;

@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Rbac\SettingsChange;
@@ -98,7 +99,7 @@ class SettingsChangeAuditorTest extends TestCase {
 		);
 
 		return new SettingsChangeAuditor(
-			mapper: $this->mapper,
+			trail: new AuditEntryWriter(mapper: $this->mapper),
 			userSession: $this->userSession,
 			logger: $this->logger
 		);
@@ -196,7 +197,7 @@ class SettingsChangeAuditorTest extends TestCase {
 		$this->mapper->expects($this->never())->method('insertAuditTrails');
 
 		$auditor = new SettingsChangeAuditor(
-			mapper: $this->mapper,
+			trail: new AuditEntryWriter(mapper: $this->mapper),
 			userSession: $this->userSession,
 			logger: $this->logger
 		);
@@ -329,7 +330,7 @@ class SettingsChangeAuditorTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('error');
 
 		$auditor = new SettingsChangeAuditor(
-			mapper: $this->mapper,
+			trail: new AuditEntryWriter(mapper: $this->mapper),
 			userSession: $this->userSession,
 			logger: $this->logger
 		);
