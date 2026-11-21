@@ -163,6 +163,8 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\Schema\\SchemaVersioningService',
 				'OCA\\OpenRegister\\Service\\Archival\\SelectionListSeeder',
 				'OCA\\OpenRegister\\Service\\Object\\SaveObject\\ObjectSlugHandler',
+				'OCA\\OpenRegister\\Db\\FlowMapperInterface',
+				'OCA\\OpenRegister\\Service\\Flow\\FlowVersionService',
 			],
 			'OCA\\OpenRegister\\Service\\Configuration\\ExportHandler' => [
 				'OCA\\OpenRegister\\Db\\SchemaMapperInterface',
@@ -170,6 +172,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Db\\MagicMapperInterface',
 				'OCA\\OpenRegister\\Db\\ConfigurationMapper',
 				'OCA\\OpenRegister\\Db\\MappingMapper',
+				'OCA\\OpenRegister\\Db\\FlowMapperInterface',
 				'Psr\\Log\\LoggerInterface',
 				'OCA\\OpenRegister\\Service\\Configuration\\ReadableExportObjects',
 			],

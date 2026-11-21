@@ -547,6 +547,7 @@
                 "mappings": [
                     "OCA\\OpenRegister\\Db\\Mapping:map-one"
                 ],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -556,6 +557,7 @@
                     "schemas": 1,
                     "objects": 2,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {
@@ -1137,6 +1139,7 @@
                 "mappings": [
                     "OCA\\OpenRegister\\Db\\Mapping:map-one"
                 ],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -1146,6 +1149,7 @@
                     "schemas": 1,
                     "objects": 2,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {
@@ -1728,6 +1732,7 @@
                 "mappings": [
                     "OCA\\OpenRegister\\Db\\Mapping:map-one"
                 ],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -1737,6 +1742,7 @@
                     "schemas": 1,
                     "objects": 2,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {
@@ -2319,6 +2325,7 @@
                 "mappings": [
                     "OCA\\OpenRegister\\Db\\Mapping:map-one"
                 ],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -2328,6 +2335,7 @@
                     "schemas": 1,
                     "objects": 2,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {
@@ -2891,6 +2899,7 @@
                 "mappings": [
                     "OCA\\OpenRegister\\Db\\Mapping:map-one"
                 ],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -2900,6 +2909,7 @@
                     "schemas": 1,
                     "objects": 2,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {
@@ -2959,6 +2969,7 @@
                 "endpoints": [],
                 "sources": [],
                 "mappings": [],
+                "flows": [],
                 "jobs": [],
                 "synchronizations": [],
                 "rules": [],
@@ -2968,6 +2979,7 @@
                     "schemas": 0,
                     "objects": 0,
                     "mappings": 0,
+                    "flows": 0,
                     "seedObjects": 0
                 },
                 "unchanged": {

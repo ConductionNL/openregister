@@ -67,6 +67,7 @@ final class ConfigurationSerialisationGoldenTest extends TestCase {
 		'agents' => 'json',
 		'sources' => 'json',
 		'mappings' => 'json',
+		'flows' => 'json',
 		'applications' => 'json',
 		'organisation' => 'string',
 		'owner' => 'string',
@@ -113,6 +114,7 @@ final class ConfigurationSerialisationGoldenTest extends TestCase {
 		'agents' => [],
 		'sources' => [],
 		'mappings' => [],
+		'flows' => [],
 		'applications' => [],
 		'created' => null,
 		'updated' => null,
@@ -172,6 +174,9 @@ final class ConfigurationSerialisationGoldenTest extends TestCase {
 		],
 		'mappings' => [
 			'k' => 'mappings',
+		],
+		'flows' => [
+			'k' => 'flows',
 		],
 		'applications' => [
 			'k' => 'applications',
