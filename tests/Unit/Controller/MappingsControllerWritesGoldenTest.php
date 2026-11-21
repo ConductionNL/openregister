@@ -16,9 +16,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Controller\MappingsController;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\MappingsControllerFactory;
@@ -33,7 +35,7 @@ class MappingsControllerWritesGoldenTest extends TestCase {
 
 	private array $errors = [];
 
-	private function controller(array $params, bool $fails = false): MappingsController {
+	private function controller(array $params, bool|Exception $fails = false): MappingsController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
@@ -50,6 +52,10 @@ class MappingsControllerWritesGoldenTest extends TestCase {
 		$mapper->method('createFromArray')->willReturnCallback(
 			function (array $data) use ($mapping, $fails): Mapping {
 				$this->calls[] = ['create', $data];
+				if ($fails instanceof Exception) {
+					throw $fails;
+				}
+
 				if ($fails === true) {
 					throw new Exception('no db', 7);
 				}
@@ -60,6 +66,10 @@ class MappingsControllerWritesGoldenTest extends TestCase {
 		$mapper->method('updateFromArray')->willReturnCallback(
 			function (int $id, array $data) use ($mapping, $fails): Mapping {
 				$this->calls[] = ['update', $id, $data];
+				if ($fails instanceof Exception) {
+					throw $fails;
+				}
+
 				if ($fails === true) {
 					throw new Exception('no db', 8);
 				}
@@ -113,18 +123,36 @@ class MappingsControllerWritesGoldenTest extends TestCase {
 		);
 	}
 
-	public function testFailedWritesAreLoggedAndAnswer500(): void {
+	public function testFailedWritesAreLoggedAndAnswerAGeneric500(): void {
 		$created = $this->controller(['name' => 'n'], true)->create();
 		$updated = $this->controller(['name' => 'n'], true)->update(4);
 
-		$this->assertSame([500, ['error' => 'no db']], [$created->getStatus(), $created->getData()]);
-		$this->assertSame([500, ['error' => 'no db']], [$updated->getStatus(), $updated->getData()]);
+		// The internal message stays in the server log; the client gets the generic body.
+		$this->assertSame([500, ['error' => 'Internal server error']], [$created->getStatus(), $created->getData()]);
+		$this->assertSame([500, ['error' => 'Internal server error']], [$updated->getStatus(), $updated->getData()]);
 		$this->assertSame(
 			[
-				['[MappingsController] Mapping creation failed', ['error_message' => 'no db', 'error_code' => 7]],
-				['[MappingsController] Mapping update failed', ['mapping_id' => 4, 'error_message' => 'no db', 'error_code' => 8]],
+				'[' . MappingsController::class . '] Mapping creation failed: no db',
+				'[' . MappingsController::class . '] Mapping update failed (mapping 4): no db',
 			],
-			$this->errors
+			array_column($this->errors, 0)
 		);
+		$this->assertSame('no db', $this->errors[0][1]['exception']->getMessage());
+		$this->assertSame(8, $this->errors[1][1]['exception']->getCode());
+	}
+
+	public function testATypedWriteFailureKeepsItsStatusAndMessage(): void {
+		$created = $this->controller(['name' => 'n'], new ValidationException('The name is required'))->create();
+		$updated = $this->controller(['name' => 'n'], new InvalidArgumentException('Bad mapping'))->update(4);
+
+		$this->assertSame(
+			[422, ['message' => 'The name is required', 'error' => 'validation']],
+			[$created->getStatus(), $created->getData()]
+		);
+		$this->assertSame(
+			[400, ['message' => 'Bad mapping', 'error' => 'invalid-argument']],
+			[$updated->getStatus(), $updated->getData()]
+		);
+		$this->assertSame([], $this->errors);
 	}
 }//end class

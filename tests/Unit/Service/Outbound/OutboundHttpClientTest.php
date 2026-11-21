@@ -38,6 +38,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Outbound\OutboundHttpClient
  * @covers \OCA\OpenRegister\Service\Outbound\OutboundClientFactory
  * @uses \OCA\OpenRegister\Service\Outbound\ProxySettings
+ * @uses \OCA\OpenRegister\Support\AppConfigValue
+ * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  */
 class OutboundHttpClientTest extends TestCase {
 

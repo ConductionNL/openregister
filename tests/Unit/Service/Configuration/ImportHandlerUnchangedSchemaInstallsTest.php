@@ -39,6 +39,8 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
@@ -128,7 +130,7 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 
 		return new SchemaImportInstaller(
 			flows: new SchemaFlowImportListener($flows, new NullLogger(), null),
-			notifications: new NotificationsAnnotationInstaller($webhooks, new NullLogger()),
+			notifications: new NotificationsAnnotationInstaller($webhooks, new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
 			logger: new NullLogger()
 		);
 	}//end installer()

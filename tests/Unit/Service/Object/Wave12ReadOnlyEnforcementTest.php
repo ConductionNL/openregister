@@ -33,6 +33,9 @@ use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject::validateReadOnlyConstraints
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Object\ValidateObject
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses \OCA\OpenRegister\Service\Object\WriteConstraintCheck
  */
 class Wave12ReadOnlyEnforcementTest extends TestCase {
 

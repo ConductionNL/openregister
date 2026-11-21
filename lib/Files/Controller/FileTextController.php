@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
@@ -38,6 +37,7 @@ use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -133,7 +133,7 @@ class FileTextController extends Controller {
 		IRequest $request,
 		FileTextControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->fileService = $services->domain->fileService;
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
@@ -188,6 +188,7 @@ class FileTextController extends Controller {
 	 * @return JSONResponse JSON response with file text or error
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
+	 * @spec openspec/changes/search-file-text-and-vector-facade/tasks.md#task-1.1
 	 */
 	public function getFileText(int $fileId): JSONResponse {
 		// IDOR guard: the text of a file is its content, so it is served only
@@ -195,30 +196,36 @@ class FileTextController extends Controller {
 		// does not tell a stranger which file ids exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
 			return new JSONResponse(
-				data: ['success' => false, 'message' => 'File not found or access denied', 'file_id' => $fileId],
+				data: ['success' => false, 'message' => 'File not found.', 'fileId' => $fileId, 'file_id' => $fileId],
 				statusCode: 404
 			);
 		}
 
 		try {
-			$text = $this->textExtractor->getExtractedText(fileId: $fileId);
-			if ($text === null) {
+			$read = $this->textExtractor->readExtractedText(fileId: $fileId);
+			if ($read === null) {
 				return new JSONResponse(
 					data: [
 						'success' => false,
-						'message' => 'No text has been extracted from this file yet. Extract it with POST /api/files/{fileId}/extract.',
+						'message' => 'No text has been extracted from this file yet.',
+						'fileId'  => $fileId,
 						'file_id' => $fileId,
 					],
 					statusCode: 404
 				);
 			}
 
+			// `fileId`, `text`, `chunkCount` and `extractedAt` are the published
+			// shape; `file_id` and `length` stay for callers of the earlier answer.
 			return new JSONResponse(
 				data: [
-					'success' => true,
-					'file_id' => $fileId,
-					'text' => $text,
-					'length' => strlen($text),
+					'success'     => true,
+					'fileId'      => $fileId,
+					'text'        => $read['text'],
+					'chunkCount'  => $read['chunkCount'],
+					'extractedAt' => $read['extractedAt'],
+					'file_id'     => $fileId,
+					'length'      => strlen($read['text']),
 				]
 			);
 		} catch (\Exception $e) {
@@ -230,8 +237,6 @@ class FileTextController extends Controller {
 	 * Bulk extract text from multiple files
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with bulk extraction result
 	 *
@@ -303,8 +308,6 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
@@ -351,8 +354,6 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with anonymization result
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Sequential independent request-param guards
@@ -361,7 +362,7 @@ class FileTextController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
-	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
+	 * @spec openspec/specs/tag-preserving-redaction/spec.md
 	 */
 	public function anonymizeFile(int $fileId): JSONResponse {
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
@@ -692,7 +693,6 @@ class FileTextController extends Controller {
 	 * @return JSONResponse 201 on matches found, 200 on zero matches, 4xx/5xx on failure.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */

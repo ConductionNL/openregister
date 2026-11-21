@@ -233,7 +233,7 @@
             "http.request",
             [
                 "PUT",
-                "https://hook.example.test/in",
+                "https://93.184.215.14/in",
                 {
                     "json": {
                         "notification": "everything",
@@ -266,7 +266,11 @@
                         "Content-Type": "application/json",
                         "X-A": "1"
                     },
-                    "timeout": 5
+                    "timeout": 5,
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],
@@ -3780,7 +3784,7 @@
             "http.request",
             [
                 "POST",
-                "https://fail.example.test/in",
+                "https://93.184.215.14/fail.in",
                 {
                     "json": {
                         "notification": "failing",
@@ -3803,14 +3807,18 @@
                     "headers": {
                         "Content-Type": "application/json"
                     },
-                    "timeout": 5
+                    "timeout": 5,
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],
         [
             "logger.warning",
             [
-                "[AnnotationNotificationDispatcher] webhook https://fail.example.test/in failed: connection refused",
+                "[AnnotationNotificationDispatcher] webhook https://93.184.215.14/fail.in failed: connection refused",
                 []
             ]
         ],

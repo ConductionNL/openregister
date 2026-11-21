@@ -36,10 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -60,7 +59,7 @@ class DerivedGrantsController extends Controller {
 		IRequest $request,
 		private readonly DerivedGrantStoreInterface $store,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -76,7 +75,6 @@ class DerivedGrantsController extends Controller {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function reapply(): JSONResponse {
 		$rules = $this->store->rules();
 

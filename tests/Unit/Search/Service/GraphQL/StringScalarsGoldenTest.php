@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\Scalar\EmailType
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\Scalar\UriType
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\Scalar\FormattedStringType
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 final class StringScalarsGoldenTest extends TestCase {
 

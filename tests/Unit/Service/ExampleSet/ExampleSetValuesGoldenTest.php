@@ -34,6 +34,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
  */
 class ExampleSetValuesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-values-golden.json';

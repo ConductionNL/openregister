@@ -33,6 +33,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt;
  * today's date nor the default timezone matters) and compares the answers.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt
  */
 final class ScheduledMessagePolicyGoldenTest extends TestCase {
 

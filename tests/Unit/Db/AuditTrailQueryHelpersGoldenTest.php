@@ -40,6 +40,11 @@ use stdClass;
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailPageQuery
  * @covers \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrailFilterTerm
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditPageRequest
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class AuditTrailQueryHelpersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

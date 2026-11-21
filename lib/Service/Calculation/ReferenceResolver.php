@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Calculation\Reference\ReferenceQuery;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -242,8 +243,7 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		// boundary is enforced by the guard below instead of by the session.
 		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $id,
-			register: $query->register,
-			schema: $query->schema,
+			options: new ObjectFindOptions(register: $query->register, schema: $query->schema),
 			_rbac: false,
 			_multitenancy: false
 		));

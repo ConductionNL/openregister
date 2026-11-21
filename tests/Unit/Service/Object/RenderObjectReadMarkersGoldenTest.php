@@ -22,7 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderPath;
@@ -44,6 +45,18 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
  */
 class RenderObjectReadMarkersGoldenTest extends TestCase {
 
@@ -170,14 +183,14 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 	 * @return RenderObject
 	 */
 	private function watcherHandler(?string $caller, bool $mayView): RenderObject {
-		$watchers = $this->createMock(WatcherService::class);
+		$watchers = $this->createMock(ObjectWatchMarkersInterface::class);
 		$watchers->method('callerUid')->willReturn($caller);
 		$watchers->method('isWatchedByCaller')->willReturn(true);
 		$watchers->method('notifyForCaller')->willReturn(false);
 		$watchers->method('maySeeWatchers')->willReturn($mayView);
 		$watchers->method('watcherCount')->willReturn(3);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($watchers);
+		$container->method('get')->with(ObjectWatchMarkersInterface::class)->willReturn($watchers);
 
 		return $this->handlerWith(['runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: new NullLogger(), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: $container)]);
 	}
@@ -205,6 +218,46 @@ class RenderObjectReadMarkersGoldenTest extends TestCase {
 		$editor->setUuid('u-3');
 		$this->call($this->watcherHandler('alice', true), 'applyWatcherMarkers', [$editor]);
 		$this->assertSame(3, $editor->getWatcherCount());
+	}
+
+	/**
+	 * A handler whose container answers the unread marker port.
+	 *
+	 * @param string|null $caller The caller's uid.
+	 * @param bool        $unread Whether the object is unread for the caller.
+	 *
+	 * @return RenderObject
+	 */
+	private function unreadHandler(?string $caller, bool $unread): RenderObject {
+		$readState = $this->createMock(ObjectUnreadMarkerInterface::class);
+		$readState->method('callerUid')->willReturn($caller);
+		$readState->method('isUnreadForCaller')->willReturn($unread);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->with(ObjectUnreadMarkerInterface::class)->willReturn($readState);
+
+		return $this->handlerWith(['runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: new NullLogger(), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: $container)]);
+	}
+
+	/**
+	 * The unread marker per reader: nothing for an anonymous reader, the port's verdict otherwise.
+	 *
+	 * @return void
+	 */
+	public function testUnreadMarker(): void {
+		$anonymous = new ObjectEntity();
+		$anonymous->setUuid('u-1');
+		$this->call($this->unreadHandler(null, true), 'applyReadStateMarkers', [$anonymous]);
+		$this->assertNull($anonymous->getUnread());
+
+		$reader = new ObjectEntity();
+		$reader->setUuid('u-2');
+		$this->call($this->unreadHandler('alice', true), 'applyReadStateMarkers', [$reader]);
+		$this->assertTrue($reader->getUnread());
+
+		$seen = new ObjectEntity();
+		$seen->setUuid('u-3');
+		$this->call($this->unreadHandler('alice', false), 'applyReadStateMarkers', [$seen]);
+		$this->assertFalse($seen->getUnread());
 	}
 
 	/**

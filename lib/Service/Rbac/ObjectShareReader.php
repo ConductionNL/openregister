@@ -138,15 +138,25 @@ class ObjectShareReader {
 	 * @throws RuntimeException When the reading is complete and the owner or a share type cannot be read.
 	 */
 	private function sharesIn(FolderShareScan $scan, array $sharers): array {
-		if ($scan->complete === true) {
-			$sharers[] = $this->folderOwner(folder: $scan->folder);
-		}
+		$owner = match ($scan->complete) {
+			true => $this->folderOwner(folder: $scan->folder),
+			false => $this->folderOwnerOrNone(folder: $scan->folder),
+		};
 
-		$sharers = array_values(array_unique(array_filter($sharers, static fn ($uid) => is_string($uid) === true && $uid !== '')));
+		$sharers = array_values(array_unique(array_filter($sharers, static fn ($uid) => is_string($uid) === true && $uid !== '' && $uid !== $owner)));
 
 		$found = [];
 		foreach ($sharers as $sharer) {
-			foreach ($this->sharesBy(scan: $scan, sharer: $sharer) as $fullId => $row) {
+			foreach ($this->sharesBy(scan: $scan, sharer: $sharer, reshares: $scan->complete) as $fullId => $row) {
+				$found[$fullId] = $row;
+			}
+		}
+
+		// Asked as the folder's owner with re-shares, core answers every share on
+		// the folder, so a grant stays listed whoever made it, including one whose
+		// sharer has since lost the object.
+		if ($owner !== '') {
+			foreach ($this->sharesBy(scan: $scan, sharer: $owner, reshares: true) as $fullId => $row) {
 				$found[$fullId] = $row;
 			}
 		}
@@ -157,23 +167,31 @@ class ObjectShareReader {
 	/**
 	 * The shares one sharer created on the folder, for every listable type.
 	 *
-	 * @param FolderShareScan $scan   The folder and the reading.
-	 * @param string          $sharer The uid.
+	 * @param FolderShareScan $scan     The folder and the reading.
+	 * @param string          $sharer   The uid.
+	 * @param bool            $reshares Whether shares made by others on the sharer's node count too.
 	 *
 	 * @return array<string, array{type: string, share: IShare}> The shares with their type label.
 	 *
 	 * @throws RuntimeException When the reading is complete and core cannot read them.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Core's own re-shares flag, passed through.
 	 */
-	private function sharesBy(FolderShareScan $scan, string $sharer): array {
+	private function sharesBy(FolderShareScan $scan, string $sharer, bool $reshares): array {
 		$found = [];
 		foreach (self::LISTABLE_TYPES as $label => $shareType) {
 			try {
-				$shares = $this->shareManager->getSharesBy($sharer, $shareType, $scan->folder, $scan->complete, -1);
+				$shares = $this->shareManager->getSharesBy($sharer, $shareType, $scan->folder, $reshares, -1);
 			} catch (Throwable $e) {
 				$shares = $this->unreadable(scan: $scan, error: $e);
 			}
 
 			foreach ($shares as $share) {
+				// A sharer's view of the folder grants nothing, so it is no grant to list.
+				if ((new ShareGrantAttributes())->isSharerAccess(share: $share) === true) {
+					continue;
+				}
+
 				$found[$share->getFullId()] = ['type' => $label, 'share' => $share];
 			}
 		}
@@ -198,6 +216,21 @@ class ObjectShareReader {
 
 		return [];
 	}//end unreadable()
+
+	/**
+	 * The uid that owns the folder, or an empty string when it cannot be read.
+	 *
+	 * @param Folder $folder The folder.
+	 *
+	 * @return string The owner uid, or ''.
+	 */
+	private function folderOwnerOrNone(Folder $folder): string {
+		try {
+			return $this->folderOwner(folder: $folder);
+		} catch (RuntimeException $e) {
+			return '';
+		}
+	}//end folderOwnerOrNone()
 
 	/**
 	 * The uid that owns the folder.
