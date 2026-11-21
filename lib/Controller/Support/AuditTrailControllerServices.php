@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The service bundles of the audit trail API.
  *
@@ -35,6 +37,7 @@ final class AuditTrailControllerServices {
 	 * @param AuditTrailLog      $log      The log bundle.
 	 * @param AuditTrailReaders  $readers  The readers bundle.
 	 * @param AuditTrailPlatform $platform The platform bundle.
+	 * @param LoggerInterface|null $logger Logs the detail of a failed request (optional for older wiring).
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 */
@@ -43,6 +46,7 @@ final class AuditTrailControllerServices {
 		public readonly AuditTrailLog $log,
 		public readonly AuditTrailReaders $readers,
 		public readonly AuditTrailPlatform $platform,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

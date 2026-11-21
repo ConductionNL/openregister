@@ -727,7 +727,24 @@ class ArchivalControllerTest extends TestCase {
 		$response = $this->controller->releaseLegalHold('obj-1');
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
-		$this->assertStringContainsString('Failed to release legal hold', $response->getData()['error']);
+		$this->assertSame(['error' => 'Failed to release legal hold'], $response->getData());
+	}
+
+	public function testReleaseLegalHoldOfAnUnknownObjectIs404(): void {
+		$this->setUpArchivist();
+
+		$this->request->method('getParams')->willReturn([
+			'reason' => 'Rechtszaak afgerond',
+		]);
+
+		$this->objectMapper
+			->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Object not found'));
+
+		$response = $this->controller->releaseLegalHold('obj-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame(['message' => 'Object not found', 'error' => 'does-not-exist'], $response->getData());
 	}
 
 	// ==================================================================================

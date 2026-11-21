@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of ActivityLinksController, wired by DI autowiring.
@@ -38,6 +39,7 @@ final class ActivityLinksControllerServices {
 	 * @param ActivityFilterServiceInterface $filterService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the feed.
+	 * @param LoggerInterface|null $logger Logs the detail of a failed request (optional for older wiring).
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
@@ -45,6 +47,7 @@ final class ActivityLinksControllerServices {
 		public readonly ActivityFilterServiceInterface $filterService,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly TimelineVisibilityServiceInterface $visibility,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

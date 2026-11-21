@@ -122,7 +122,7 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$response = $this->controller->index();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Failed to fetch conversations', 'message' => 'db'], $response->getData());
+		$this->assertSame(['error' => 'Failed to fetch conversations'], $response->getData());
 	}
 
 	private function expectInsert(callable $check): void {
@@ -183,6 +183,6 @@ class ConversationControllerIndexCreateGoldenTest extends TestCase {
 		$response = $this->controller->create();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Failed to create conversation', 'message' => 'db'], $response->getData());
+		$this->assertSame(['error' => 'Failed to create conversation'], $response->getData());
 	}
 }

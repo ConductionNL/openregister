@@ -38,6 +38,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 
@@ -51,6 +52,8 @@ class DeckControllerCharacterisationTest extends TestCase {
 	private ObjectOperationsInterface&MockObject $objects;
 
 	private IRequest&MockObject $request;
+
+	private LoggerInterface&MockObject $logger;
 
 	/**
 	 * The register, schema and object the controller resolved.
@@ -68,6 +71,7 @@ class DeckControllerCharacterisationTest extends TestCase {
 		$this->objects->method('setSchema')->willReturnCallback(fn ($v) => $this->record($v));
 		$this->objects->method('setObject')->willReturnCallback(fn ($v) => $this->record($v));
 		$this->request = $this->createMock(IRequest::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->request->method('getParams')->willReturn(['cardId' => 7]);
 	}
 
@@ -110,6 +114,7 @@ class DeckControllerCharacterisationTest extends TestCase {
 				IRequest::class => $this->request,
 				DeckCardServiceInterface::class => $this->cards,
 				ObjectOperationsInterface::class => $this->objects,
+				LoggerInterface::class => $this->logger,
 				default => $this->build(class: $name),
 			};
 		}
@@ -172,7 +177,7 @@ class DeckControllerCharacterisationTest extends TestCase {
 
 		$this->assertSame([404, ['error' => 'Object not found']], $this->pair($controller->index('r', 's', 'o')));
 		$this->assertSame([404, ['error' => 'Object not found']], $this->pair($controller->index('r', 's', 'o')));
-		$this->assertSame([500, ['error' => 'db down']], $this->pair($controller->index('r', 's', 'o')));
+		$this->assertSame([500, ['error' => 'Internal server error']], $this->pair($controller->index('r', 's', 'o')));
 	}
 
 	public function testCreatePassesTheObjectItsRegisterAndTheBody(): void {
@@ -217,5 +222,33 @@ class DeckControllerCharacterisationTest extends TestCase {
 		$this->cards->expects($this->never())->method('linkOrCreateCard');
 
 		$this->assertSame([404, ['error' => 'Object not found']], $this->pair($this->controller()->create('r', 's', 'o')));
+	}
+
+	public function testAnUntypedFailureIsLoggedAndAnswersAGenericBody(): void {
+		$this->cards->method('getObjectsForBoard')->willThrowException(new Exception('SQLSTATE secret detail'));
+		$this->logger->expects($this->once())->method('error')->with(
+			$this->stringContains('SQLSTATE secret detail'),
+			$this->anything()
+		);
+
+		$response = $this->controller()->objects('5');
+
+		$this->assertSame([500, ['error' => 'Internal server error']], $this->pair($response));
+	}
+
+	public function testATypedFailureKeepsItsStatusAndMessage(): void {
+		$this->cards->method('getObjectsForBoard')->willThrowException(new \InvalidArgumentException('Board id must be positive'));
+		$this->objects->method('getObject')->willReturn($this->object());
+		$this->cards->method('getCardsForObject')->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('Not your board'));
+		$controller = $this->controller();
+
+		$this->assertSame(
+			[400, ['message' => 'Board id must be positive', 'error' => 'invalid-argument']],
+			$this->pair($controller->objects('-1'))
+		);
+		$this->assertSame(
+			[403, ['message' => 'Not your board', 'error' => 'not-authorized']],
+			$this->pair($controller->index('r', 's', 'o'))
+		);
 	}
 }

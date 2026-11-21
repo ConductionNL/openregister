@@ -27,6 +27,7 @@ use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
 use OCA\OpenRegister\Controller\Support\RelationTypeLookup;
 use OCA\OpenRegister\Controller\Support\RelationsRecords;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -48,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Aggregation of all relation types requires many dependencies
  */
 class RelationsController extends Controller {
+	use HandlesExceptionsTrait;
+
 
 	/**
 	 * The six built-in relation types, in response order. Each entry names the
@@ -283,7 +286,9 @@ class RelationsController extends Controller {
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifier(id: $ref->id);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			// A typed failure keeps its status; anything else is a generic 500,
+			// the message in the server log only.
+			return $this->handleApiException(e: $e, context: 'Failed to list the relations of an object');
 		}//end try
 	}//end indexForObject()
 

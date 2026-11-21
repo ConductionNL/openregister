@@ -214,7 +214,7 @@ final class ArchivalRefusalsGoldenTest extends TestCase {
 			'approveDestructionList' => ['approve destruction list', ['file', 'line', 'id', 'exception'], 'dl-1'],
 			'rejectDestructionList' => ['reject destruction list', ['file', 'line', 'id', 'exception'], 'dl-1'],
 			'createLegalHold' => ['create legal hold', ['file', 'line', 'exception'], null],
-			'releaseLegalHold' => ['release legal hold', null, null],
+			'releaseLegalHold' => ['release legal hold', ['file', 'line', 'id', 'exception'], 'dl-1'],
 		];
 		foreach ($expected as $route => [$action, $keys, $id]) {
 			$this->params = ['reason' => 'kept', 'objectId' => 'o-1'];
@@ -222,13 +222,9 @@ final class ArchivalRefusalsGoldenTest extends TestCase {
 
 			$response = $this->call(controller: $this->controller(), route: $route);
 
-			$this->assertSame([500, ['error' => 'Failed to ' . $action . ': gone']], [$response->getStatus(), $response->getData()], $route);
-			$logged = [];
-			if ($keys !== null) {
-				$logged = [['[ArchivalController] Failed to ' . $action, $keys, $id]];
-			}
-
-			$this->assertSame($logged, $this->errors, $route);
+			// The body names the action only; the cause stays in the log.
+			$this->assertSame([500, ['error' => 'Failed to ' . $action]], [$response->getStatus(), $response->getData()], $route);
+			$this->assertSame([['[ArchivalController] Failed to ' . $action, $keys, $id]], $this->errors, $route);
 		}
 	}//end testAFailingWriteIs500AndLogged()
 

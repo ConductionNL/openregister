@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of DeckController, wired by DI autowiring.
@@ -39,12 +40,14 @@ final class DeckControllerServices {
 	 *
 	 * @param DeckCardServiceInterface $deckCardService Deck card service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param LoggerInterface|null $logger Logs the detail of a failed request (optional for older wiring).
 	 *
 	 * @spec openspec/specs/deck-integration/spec.md#requirement-a-linked-deck-card-carries-its-board-and-list
 	 */
 	public function __construct(
 		public readonly DeckCardServiceInterface $deckCardService,
 		public readonly ObjectOperationsInterface $objectService,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\McpControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
@@ -37,6 +38,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * McpController provides tiered API discovery for AI agents
@@ -47,6 +49,14 @@ use OCP\IRequest;
  * @psalm-suppress UnusedClass - Registered via routes.php
  */
 class McpController extends Controller {
+	use HandlesExceptionsTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * MCP discovery service instance
@@ -75,6 +85,7 @@ class McpController extends Controller {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->mcpDiscoveryService = $services->mcpDiscoveryService;
 		$this->grantableRightsIndex = $services->grantableRightsIndex;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -102,7 +113,7 @@ class McpController extends Controller {
 			$catalog = $this->mcpDiscoveryService->getCatalog();
 			return new JSONResponse(data: $catalog);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to build the discovery catalog');
 		}
 	}//end discover()
 
@@ -143,7 +154,7 @@ class McpController extends Controller {
 
 			return new JSONResponse(data: $detail);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to describe a capability');
 		}
 	}//end discoverCapability()
 
@@ -184,7 +195,7 @@ class McpController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list the grantable rights');
 		}
 	}//end grantableRights()
 }//end class

@@ -67,6 +67,8 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 
 	private IJobList&MockObject $jobList;
 
+	private \Psr\Log\LoggerInterface&MockObject $logger;
+
 	private IUserSession&MockObject $userSession;
 
 	private IGroupManager&MockObject $groupManager;
@@ -83,6 +85,7 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->reader = $this->createMock(SourceRowReader::class);
 		$this->jobList = $this->createMock(IJobList::class);
+		$this->logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
@@ -117,7 +120,8 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 			$this->registerMapper,
 			$this->jobList,
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->logger
 		);
 	}
 
@@ -242,7 +246,7 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$this->assertSame('/staged/p-9', $preview->getSourcePath());
 	}
 
-	public function testAPreviewFailureAnswers400Or500WithItsMessage(): void {
+	public function testAPreviewFailureAnswers400WithItsMessageOrAGeneric500(): void {
 		$this->signIn('alice', false, ['editors']);
 		$this->register(['manage' => ['editors']]);
 		$this->service->method('preview')->willReturnOnConsecutiveCalls(
@@ -254,7 +258,7 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$second = $this->controller()->create();
 
 		$this->assertSame([400, ['error' => 'bad format']], [$first->getStatus(), $first->getData()]);
-		$this->assertSame([500, ['error' => 'disk']], [$second->getStatus(), $second->getData()]);
+		$this->assertSame([500, ['error' => 'Internal server error']], [$second->getStatus(), $second->getData()]);
 	}
 
 	public function testAnAsyncCommitQueuesTheCommitPhaseWithTheUploadedFilesHash(): void {
@@ -293,7 +297,7 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$this->assertSame(['h-sent', null], $seen);
 	}
 
-	public function testACommitFailureAnswers400Or500WithItsMessage(): void {
+	public function testACommitFailureAnswers400WithItsMessageOrAGeneric500(): void {
 		$this->signIn('alice');
 		$this->previewMapper->method('find')->willReturn($this->previewEntity());
 		$this->upload = null;
@@ -306,6 +310,31 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$second = $this->controller()->commit(9);
 
 		$this->assertSame([400, ['error' => 'stale']], [$first->getStatus(), $first->getData()]);
-		$this->assertSame([500, ['error' => 'db']], [$second->getStatus(), $second->getData()]);
+		$this->assertSame([500, ['error' => 'Internal server error']], [$second->getStatus(), $second->getData()]);
+	}
+
+	public function testTheDetailOfAnUntypedFailureIsLoggedNotReturned(): void {
+		$this->signIn('alice');
+		$this->previewMapper->method('find')->willReturn($this->previewEntity());
+		$this->upload = null;
+		$this->service->method('commit')->willThrowException(new RuntimeException('SQLSTATE[08006] host db-2'));
+		$this->logger->expects($this->once())->method('error')->with($this->stringContains('SQLSTATE[08006] host db-2'), $this->anything());
+
+		$response = $this->controller()->commit(9);
+
+		$this->assertSame([500, ['error' => 'Internal server error']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testATypedPreviewFailureKeepsItsStatus(): void {
+		$this->signIn('alice', false, ['editors']);
+		$this->register(['manage' => ['editors']]);
+		$this->service->method('preview')->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('Not allowed on this schema'));
+
+		$response = $this->controller()->create();
+
+		$this->assertSame(
+			[403, ['message' => 'Not allowed on this schema', 'error' => 'not-authorized']],
+			[$response->getStatus(), $response->getData()]
+		);
 	}
 }

@@ -56,7 +56,7 @@
     "mapper fails": {
         "status": 500,
         "data": {
-            "error": "Failed to retrieve webhook logs: db down"
+            "error": "Internal server error"
         },
         "calls": [
             {
@@ -78,7 +78,7 @@
                 ]
             },
             {
-                "log": "[WebhooksController] Error retrieving webhook logs: db down"
+                "log": "[OCA\\OpenRegister\\Controller\\WebhooksController] Webhook log listing failed: db down"
             }
         ]
     },

@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\FormLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormSubmissionRef;
@@ -59,6 +60,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FormLinksController extends Controller {
+	use HandlesExceptionsTrait;
+
 	use ResolvesLinkedObjectTrait;
 
 
@@ -85,11 +88,11 @@ class FormLinksController extends Controller {
 	private readonly IL10N $l10n;
 
 	/**
-	 * Logger.
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
 	 *
 	 * @var LoggerInterface
 	 */
-	private readonly LoggerInterface $logger;
+	protected readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor.
@@ -298,7 +301,8 @@ class FormLinksController extends Controller {
 
 	/**
 	 * The forms linked to an object: 404 when it does not exist; any other
-	 * failure is logged and answered 500 with its message.
+	 * failure answers through handleApiException(): a typed one keeps its
+	 * status, anything else is a generic 500 with the message in the log only.
 	 *
 	 * @param ObjectRef $ref The register, schema and object id.
 	 *
@@ -319,8 +323,7 @@ class FormLinksController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return $this->objectNotFound();
 		} catch (Exception $e) {
-			$this->logger->error('Failed to list linked forms: ' . $e->getMessage());
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list linked forms');
 		}
 	}//end listForms()
 
@@ -506,8 +509,7 @@ class FormLinksController extends Controller {
 
 			return new JSONResponse(['results' => $results, 'total' => count($results)]);
 		} catch (Exception $e) {
-			$this->logger->error('Failed to list available forms: ' . $e->getMessage());
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Failed to list available forms');
 		}
 
 	}//end available()

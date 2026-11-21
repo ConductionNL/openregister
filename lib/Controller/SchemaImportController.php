@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\SchemaImportControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -56,6 +57,8 @@ use Psr\Log\LoggerInterface;
  * Controller for standards-based schema import.
  */
 class SchemaImportController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * Standards import orchestrator.
 	 *
@@ -493,18 +496,28 @@ class SchemaImportController extends Controller {
 	}//end previewPayload()
 
 	/**
-	 * Log and map a persistence failure to a 500 response.
+	 * Answer a persistence failure.
+	 *
+	 * A typed failure answers through handleApiException() with its own
+	 * status. Anything else is logged and answered 500; the exception message
+	 * stays in the server log, never in the response body.
 	 *
 	 * @param \Throwable $e The failure.
 	 *
 	 * @return JSONResponse The error response.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function failPersist(\Throwable $e): JSONResponse {
+		if ($this->exceptionStatus(e: $e) !== null) {
+			return $this->handleApiException(e: $e, context: 'Failed to persist the imported schema');
+		}
+
 		$this->logger->error(
 			'[SchemaImportController] Failed to persist imported schema',
 			['error' => $e->getMessage()]
 		);
-		return new JSONResponse(['error' => 'Failed to persist the imported schema: ' . $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		return new JSONResponse(['error' => 'Failed to persist the imported schema'], Http::STATUS_INTERNAL_SERVER_ERROR);
 	}//end failPersist()
 
 	/**

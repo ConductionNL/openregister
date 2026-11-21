@@ -24,8 +24,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch messages",
-            "message": "access failed"
+            "error": "Failed to fetch messages"
         }
     },
     "messages by another user": {
@@ -192,8 +191,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch messages",
-            "message": "organisation failed"
+            "error": "Failed to fetch messages"
         }
     },
     "messages read failure": {
@@ -228,8 +226,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch messages",
-            "message": "messages failed"
+            "error": "Failed to fetch messages"
         }
     },
     "messages with limit and offset": {
@@ -347,8 +344,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch conversation",
-            "message": "access failed"
+            "error": "Failed to fetch conversation"
         }
     },
     "show by another user": {
@@ -487,8 +483,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch conversation",
-            "message": "count failed"
+            "error": "Failed to fetch conversation"
         }
     },
     "show not found": {
@@ -521,8 +516,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to fetch conversation",
-            "message": "organisation failed"
+            "error": "Failed to fetch conversation"
         }
     },
     "update access check failure": {
@@ -546,8 +540,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to update conversation",
-            "message": "access failed"
+            "error": "Failed to update conversation"
         }
     },
     "update by another user": {
@@ -748,8 +741,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to update conversation",
-            "message": "update failed"
+            "error": "Failed to update conversation"
         }
     },
     "update title and metadata": {

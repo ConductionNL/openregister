@@ -962,7 +962,7 @@
         "result": {
             "status": 500,
             "data": {
-                "error": "not found: list-1"
+                "error": "Internal server error"
             }
         }
     },
@@ -1880,7 +1880,7 @@
         "result": {
             "status": 500,
             "data": {
-                "error": "update failed"
+                "error": "Internal server error"
             }
         }
     },
@@ -2160,7 +2160,7 @@
         "result": {
             "status": 500,
             "data": {
-                "error": "not found: list-1"
+                "error": "Internal server error"
             }
         }
     },
