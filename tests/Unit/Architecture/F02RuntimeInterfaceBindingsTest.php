@@ -66,7 +66,7 @@ final class F02RuntimeInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		DedupCreatePolicy::class => [DedupCreatePolicyInterface::class, SearchRegistrar::class],
-		PlaceholderResolver::class => [PlaceholderResolverInterface::class, SearchRegistrar::class],
+		PlaceholderResolver::class => [PlaceholderResolverInterface::class, CoreServiceBindings::class],
 		SourceFetcherRegistry::class => [SourceFetcherLookupInterface::class, ContractBindings::class],
 		TaskObjectAdapter::class => [ObjectEntity::class, null],
 		TrustTierResolver::class => [TrustTierResolverInterface::class, CoreServiceBindings::class],

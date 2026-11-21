@@ -61,6 +61,7 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -111,7 +112,7 @@ final class D9InterfaceBindingsTest extends TestCase {
 		],
 		PlaceholderResolver::class => [
 			PlaceholderResolverInterface::class,
-			SearchRegistrar::class,
+			CoreServiceBindings::class,
 			[],
 		],
 		RestorePriorValuesAction::class => [
