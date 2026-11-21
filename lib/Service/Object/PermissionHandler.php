@@ -31,13 +31,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
-use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\ClassificationScale;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
@@ -51,7 +57,6 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -79,6 +84,7 @@ use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\Rbac\TokenGrantTarget;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -621,9 +627,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param bool          $verdict The person's own verdict.
 	 * @param PermissionAsk $ask     The question, with the schema, register and verb written to.
 	 *
-	 * @return bool The verdict after elevation.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @return bool The verdict after elevation; without an elevation port the person's own verdict stands.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -632,9 +636,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::permits(
-			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
-		);
+		return ($this->rules->writeElevation?->permits(ask: $ask) ?? false);
 	}//end elevated()
 
 	/**
@@ -899,9 +901,17 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService).
 		$check = $ask->check();
 
-		if ($this->resolveCheckAuthorization(check: $check) === false
-			|| $this->deniedByRule(check: $check) === true
-		) {
+		$undecidable = $this->unresolvedAuthorization(check: $check);
+		if ($undecidable !== null) {
+			return $this->undecidableVerdict(check: $check, error: $undecidable);
+		}
+
+		if ($this->deniedByRule(check: $check) === true) {
+			$this->lastRefusalFinal = true;
+			return false;
+		}
+
+		if ($this->classificationRefuses(ask: $ask) === true) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -911,6 +921,41 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $verdict;
 	}//end evaluatePermission()
+
+	/**
+	 * Whether the schema's classification block refuses this caller this object.
+	 *
+	 * Checked before any grant, so neither a schema rule, a per-object grant nor
+	 * an elevation re-opens it (the refusal is final). Only an ask about one
+	 * object is checked; the list path compiles the same comparison into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| is_array((new SchemaAnnotation(schema: $ask->schema, key: ClassificationScale::ANNOTATION))->value()) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$logger = $this->data->logger;
+		$gate   = new ClassificationReadGate(
+			classification: new ObjectClassification(logger: $logger),
+			clearances: new ClearanceResolver(logger: $logger),
+			logger: $logger
+		);
+
+		return $gate->refusal(
+			schema: $ask->schema,
+			object: $ask->object,
+			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+		) !== null;
+	}//end classificationRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
@@ -951,25 +996,90 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool Whether the authorization was resolved
 	 */
 	private function resolveCheckAuthorization(PermissionCheck $check): bool {
+		$error = $this->unresolvedAuthorization(check: $check);
+		if ($error === null) {
+			return true;
+		}
+
+		$this->logUnresolvableRefusal(check: $check, error: $error);
+		return false;
+	}//end resolveCheckAuthorization()
+
+	/**
+	 * Resolve the effective authorization block onto the check; the reason when it cannot be resolved.
+	 *
+	 * @param PermissionCheck $check The check
+	 *
+	 * @return AuthorizationUnresolvableException|null Why it did not resolve, or null when it did.
+	 */
+	private function unresolvedAuthorization(PermissionCheck $check): ?AuthorizationUnresolvableException {
 		try {
 			$check->authorization = $this->resolveAuthorization(schema: $check->schema, object: $check->object);
+			return null;
 		} catch (AuthorizationUnresolvableException $e) {
-			$this->data->logger->error(
-				message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $check->schema->getId(),
-					'action' => $check->action,
-					'userId' => $check->userId,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $e;
+		}
+	}//end unresolvedAuthorization()
+
+	/**
+	 * Log a refusal because the authorization could not be resolved (fail-closed).
+	 *
+	 * @param PermissionCheck                    $check The check
+	 * @param AuthorizationUnresolvableException $error Why it did not resolve.
+	 *
+	 * @return void
+	 */
+	private function logUnresolvableRefusal(PermissionCheck $check, AuthorizationUnresolvableException $error): void {
+		$this->data->logger->error(
+			message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $check->schema->getId(),
+				'action' => $check->action,
+				'userId' => $check->userId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnresolvableRefusal()
+
+	/**
+	 * The verdict on a question whose authorization could not be resolved: the schema's declared posture.
+	 *
+	 * The posture is read from the schema's OWN block, because the resolved one
+	 * is what failed. `closed` (the default) refuses finally, as before; `open`
+	 * grants, and is logged at warning with the object and what was missing, so
+	 * a schema that chose to serve undecidable questions is never silent about it.
+	 *
+	 * @param PermissionCheck                    $check The check
+	 * @param AuthorizationUnresolvableException $error Why it did not resolve.
+	 *
+	 * @return bool True only when the schema declares `onUndecidable: open`.
+	 *
+	 * @spec openspec/changes/an-app-declares-object-access-rather-than-guarding-it/specs/object-access-contract/spec.md#requirement-a-schema-declares-what-an-undecidable-access-question-means
+	 */
+	private function undecidableVerdict(PermissionCheck $check, AuthorizationUnresolvableException $error): bool {
+		if ((new UndecidablePosture())->admits(authorization: $check->schema->getAuthorization()) === false) {
+			$this->logUnresolvableRefusal(check: $check, error: $error);
+			$this->lastRefusalFinal = true;
 			return false;
 		}
 
+		$this->data->logger->warning(
+			message: '[PermissionHandler] Authorization unresolvable; granting action because the schema declares onUndecidable: open',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $check->schema->getId(),
+				'action' => $check->action,
+				'userId' => $check->userId,
+				'object' => $check->object?->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+		$this->lastRefusalFinal = false;
 		return true;
-	}//end resolveCheckAuthorization()
+	}//end undecidableVerdict()
 
 	/**
 	 * The DENY pass: whether an enforced explicit deny removes the verb.
@@ -2575,6 +2685,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
+			if ($this->readIsOwnerOnly(schema: $schema) === true) {
+				// `read: ["@creator"]` normalises to an empty read list, which alone would read as open.
+				return [];
+			}
+
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {
 			$this->data->logger->error(
@@ -2584,6 +2699,30 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end readerGroupIds()
+
+	/**
+	 * Whether the schema limits read to the record's owner: its read list names the owner
+	 * sentinel and nothing that survives normalisation.
+	 *
+	 * The owner is added by getReadableByUsers() itself, so such a schema has no reader groups
+	 * at all, which is not the same as having no read rule.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when only the owner may read.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved.
+	 *
+	 * @spec openspec/changes/access-owner-and-condition-scopes/specs/authorization-rbac/spec.md#requirement-the-owner-sentinel-limits-an-action-to-the-records-owner
+	 */
+	private function readIsOwnerOnly(Schema $schema): bool {
+		$declared = ($this->resolveAuthorizationRaw(schema: $schema)['read'] ?? null);
+		if (is_array($declared) === false || in_array(AuthorizationBlock::CREATOR, $declared, true) === false) {
+			return false;
+		}
+
+		return (($this->resolveAuthorization(schema: $schema)['read'] ?? null) === []);
+	}//end readIsOwnerOnly()
 
 	/**
 	 * Resolve the list of authorised group IDs from an authorization block.
@@ -2905,7 +3044,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
 			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
@@ -2973,7 +3112,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return ['values' => [], 'scopes' => []];
 		}
 
-		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
 
@@ -3199,8 +3338,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function baselineAuthorization(Schema $schema): ?array {
+		// A block holding only `onUndecidable` has no rules of its own: it still
+		// cascades to the register, and the posture answers when that fails.
 		$schemaAuthorization = $schema->getAuthorization();
-		if (empty($schemaAuthorization) === false) {
+		if (empty((new UndecidablePosture())->rulesOf(authorization: $schemaAuthorization)) === false) {
 			return $this->expandRoles(authorization: $schemaAuthorization, schema: $schema);
 		}
 
