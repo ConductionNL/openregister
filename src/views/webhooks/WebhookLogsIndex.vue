@@ -278,17 +278,9 @@ export default {
 		async loadLogs() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: this.offset,
-				}
-				if (this.selectedWebhookId) {
-					params.webhook_id = this.selectedWebhookId
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/webhooks/logs'),
-					{ params },
+					{ params: this.logParams() },
 				)
 				this.logsList = response.data.results || []
 				this.totalLogs = response.data.total || 0
@@ -297,6 +289,23 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The page of logs to ask for, for one webhook when one is picked.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The query parameters
+		 */
+		logParams() {
+			const params = {
+				limit: this.limit,
+				offset: this.offset,
+			}
+			if (this.selectedWebhookId) {
+				params.webhook_id = this.selectedWebhookId
+			}
+			return params
 		},
 
 		/**

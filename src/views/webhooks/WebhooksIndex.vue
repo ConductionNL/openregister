@@ -143,6 +143,41 @@ import { offsetPaging } from '../offsetPaging.js'
 /**
  * Main view for managing webhooks
  */
+/**
+ * Report a test delivery the server answered: sent, or refused in the
+ * answer's own words.
+ *
+ * @param {object|undefined} data The answer
+ * @return {void}
+ */
+function showTestResult(data) {
+	// Check if the test was successful based on response data.
+	if (data && data.success === true) {
+		showSuccess(t('openregister', 'Test webhook sent successfully'))
+		return
+	}
+	const message =
+		data?.message
+		|| data?.error
+		|| t('openregister', 'Test webhook delivery failed')
+	showError(message)
+}
+
+/**
+ * Log and report a test delivery that failed.
+ *
+ * @param {object} error The failure
+ * @return {void}
+ */
+function showTestFailure(error) {
+	console.error('Failed to test webhook:', error)
+	const errorMessage =
+		error.response?.data?.error
+		|| error.response?.data?.message
+		|| t('openregister', 'Failed to test webhook')
+	showError(errorMessage)
+}
+
 export default {
 	name: 'WebhooksIndex',
 	components: {
@@ -291,6 +326,25 @@ export default {
 		webhookActions(webhook) {
 			return [
 				editAction(() => this.editWebhook(webhook)),
+				...this.deliveryActions(webhook),
+				this.toggleAction(webhook),
+				{
+					label: t('openregister', 'Delete'),
+					icon: DeleteOutline,
+					run: () => this.deleteWebhook(webhook.id),
+				},
+			]
+		},
+
+		/**
+		 * The menu entries that send a test delivery and show the deliveries.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		deliveryActions(webhook) {
+			return [
 				{
 					label: t('openregister', 'Test'),
 					icon: PlayOutline,
@@ -301,20 +355,26 @@ export default {
 					icon: FileDocumentOutline,
 					run: () => this.viewLogs(webhook.id),
 				},
-				{
-					label: webhook.enabled
-						? t('openregister', 'Disable')
-						: t('openregister', 'Enable'),
-
-					icon: webhook.enabled ? PauseCircleOutline : PlayOutline,
-					run: () => this.toggleWebhook(webhook),
-				},
-				{
-					label: t('openregister', 'Delete'),
-					icon: DeleteOutline,
-					run: () => this.deleteWebhook(webhook.id),
-				},
 			]
+		},
+
+		/**
+		 * The menu entry that disables an enabled webhook or enables a
+		 * disabled one.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {object} The ActionMenu entry
+		 */
+		toggleAction(webhook) {
+			return {
+				label: webhook.enabled
+					? t('openregister', 'Disable')
+					: t('openregister', 'Enable'),
+
+				icon: webhook.enabled ? PauseCircleOutline : PlayOutline,
+				run: () => this.toggleWebhook(webhook),
+			}
 		},
 
 		t,
@@ -384,25 +444,11 @@ export default {
 				const response = await axios.post(
 					generateUrl(`/apps/openregister/api/webhooks/${webhookId}/test`),
 				)
-				// Check if the test was successful based on response data.
-				if (response.data && response.data.success === true) {
-					showSuccess(t('openregister', 'Test webhook sent successfully'))
-				} else {
-					const message =
-						response.data?.message
-						|| response.data?.error
-						|| t('openregister', 'Test webhook delivery failed')
-					showError(message)
-				}
+				showTestResult(response.data)
 				// Always refresh webhook list to show updated statistics (last triggered, success rate).
 				this.loadWebhooks()
 			} catch (error) {
-				console.error('Failed to test webhook:', error)
-				const errorMessage =
-					error.response?.data?.error
-					|| error.response?.data?.message
-					|| t('openregister', 'Failed to test webhook')
-				showError(errorMessage)
+				showTestFailure(error)
 				// Refresh even on error to show any partial updates.
 				this.loadWebhooks()
 			}

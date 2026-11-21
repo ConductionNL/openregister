@@ -254,7 +254,7 @@ const PAGES = {
 }
 
 const RECORDED =
-	/^(refresh(?!Action)|retry|show|view|edit|test|toggle(?!Sidebar|Sort)|delete)/
+	/^(refresh(?!Action)|retry|show|view|edit|test|toggle(?!Sidebar|Sort|Action)|delete)/
 const calls = []
 
 /**
