@@ -35,7 +35,6 @@ use DateTime;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -226,7 +225,7 @@ class ExampleSetEmailLinks extends ExampleSetEngineRows {
 	 */
 	public function write(ExampleSetRow $row): array {
 		$data = $row->data;
-		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
+		$object = $this->objectOfRow(container: $this->container, uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to link the mail to', 'entry' => null];
 		}

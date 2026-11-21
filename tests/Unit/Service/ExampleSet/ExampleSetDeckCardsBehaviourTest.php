@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -45,8 +45,8 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 	/** @var ExampleSetDeckStore&MockObject */
 	private ExampleSetDeckStore $store;
 
-	/** @var PartyService&MockObject */
-	private PartyService $parties;
+	/** @var ObjectOperationsInterface&MockObject */
+	private ObjectOperationsInterface $objects;
 
 	/** @var DeckLinkMapperInterface&MockObject */
 	private DeckLinkMapperInterface $links;
@@ -56,7 +56,7 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->store   = $this->createMock(ExampleSetDeckStore::class);
-		$this->parties = $this->createMock(PartyService::class);
+		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->links   = $this->createMock(DeckLinkMapperInterface::class);
 		$this->users   = $this->createMock(IUserManager::class);
 	}//end setUp()
@@ -66,7 +66,7 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 		$container->method('get')->willReturnMap(
 			[
 				[ExampleSetDeckStore::class, $this->store],
-				[PartyService::class, $this->parties],
+				[ObjectOperationsInterface::class, $this->objects],
 				[DeckLinkMapperInterface::class, $this->links],
 				[IUserManager::class, $this->users],
 			]
@@ -83,7 +83,7 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 		$object->setUuid('obj-1');
 		$object->setRegister('4');
 		$object->setSchema('7');
-		$this->parties->method('findUnscoped')->with('obj-1')->willReturn($object);
+		$this->objects->method('find')->with('obj-1', $this->anything(), false, false)->willReturn($object);
 		return $object;
 	}//end objectFound()
 
@@ -117,14 +117,14 @@ class ExampleSetDeckCardsBehaviourTest extends TestCase {
 
 	public function testWriteIsRefusedWhenDeckIsNotInstalled(): void {
 		$this->store->method('available')->willReturn(false);
-		$this->parties->expects($this->never())->method('findUnscoped');
+		$this->objects->expects($this->never())->method('find');
 
 		$this->assertSame(['error' => 'Deck is not installed', 'entry' => null], $this->cards()->write(new ExampleSetRow('app', 'k', self::valid())));
 	}
 
 	public function testWriteIsRefusedWhenTheObjectDoesNotExist(): void {
 		$this->store->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->willReturn(null);
+		$this->objects->method('find')->willReturn(null);
 		$this->store->expects($this->never())->method('board');
 
 		$this->assertSame(

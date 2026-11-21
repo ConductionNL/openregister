@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
@@ -172,7 +171,7 @@ class ExampleSetAuditEntries extends ExampleSetEngineRows {
 	 */
 	public function write(ExampleSetRow $row): array {
 		$objectUuid = (string) $row->data['object'];
-		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
+		$object     = $this->objectOfRow(container: $this->container, uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to give the entry', 'entry' => null];
 		}

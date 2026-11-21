@@ -30,7 +30,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
@@ -235,7 +234,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	public function write(ExampleSetRow $row): array {
 		$data = $row->data;
 		$uuid   = (string) $data['object'];
-		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: $uuid);
+		$object = $this->objectOfRow(container: $this->container, uuid: $uuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$uuid.'" to share', 'entry' => null];
 		}

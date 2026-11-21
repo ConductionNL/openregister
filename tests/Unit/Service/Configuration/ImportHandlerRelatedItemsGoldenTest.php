@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -228,7 +228,7 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 					return [];
 				}
 			);
-			$taskService = $this->createMock(TaskService::class);
+			$taskService = $this->createMock(ObjectCalendarTasksInterface::class);
 			$taskService->method('createObjectTask')->willReturnCallback(
 				function (ObjectRef $ref, LinkedTaskDraft $draft): array {
 					$args = [$ref->register, $ref->schema, $ref->id, $draft->objectTitle, $draft->data];

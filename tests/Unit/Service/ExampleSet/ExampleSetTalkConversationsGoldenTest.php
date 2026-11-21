@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
@@ -105,7 +105,7 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 		$services  = [
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapperInterface::class => $this->linkMapper(),
-			PartyService::class        => $this->parties(),
+			ObjectOperationsInterface::class        => $this->objectLayer(),
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id]);
@@ -202,10 +202,11 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 		];
 	}
 
-	private function parties(): PartyService {
-		$parties = $this->createMock(PartyService::class);
-		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
-			$this->calls[] = ['findUnscoped', $uuid];
+	private function objectLayer(): ObjectOperationsInterface {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('find')->willReturnCallback(function (string $uuid, mixed $options, bool $rbac, bool $multitenancy): ?ObjectEntity {
+			// The read with rbac and multitenancy off is the one the party service's findUnscoped made before.
+			$this->calls[] = [($rbac === false && $multitenancy === false ? 'findUnscoped' : 'find'), $uuid];
 			if ($uuid !== 'obj-1') {
 				return null;
 			}
@@ -216,7 +217,7 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 			return $object;
 		});
 
-		return $parties;
+		return $objects;
 	}
 
 	/**

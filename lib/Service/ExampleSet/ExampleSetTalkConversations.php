@@ -36,7 +36,6 @@ use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
-use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -165,7 +164,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 			return ['error' => 'Talk is not installed', 'object' => null];
 		}
 
-		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
+		$object = $this->objectOfRow(container: $this->container, uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to put the conversation on', 'object' => null];
 		}
