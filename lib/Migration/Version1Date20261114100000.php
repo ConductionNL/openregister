@@ -39,14 +39,13 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\Schema\ITable;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Collapse duplicate calendar link rows, then add the unique index on the triple.
  *
  * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261114100000 extends TargetedMigrationStep {
 
 	/**
 	 * The link table.
@@ -95,7 +94,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function beforeTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		if ($this->needsIndex(schema: $schemaClosure()) === false) {
 			return;
 		}
@@ -120,7 +119,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 		}
 
 		$output->info('Removed ' . count($surplus) . ' duplicate calendar link row(s), keeping the oldest of each.');
-	}//end preSchemaChange()
+	}//end beforeTargetedSchemaChange()
 
 	/**
 	 * Add the unique index on the triple when it is missing.
@@ -133,7 +132,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($this->needsIndex(schema: $schema) === false) {
 			return $schema;
@@ -143,7 +142,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 		$output->info('Added ' . self::INDEX . ' on ' . self::TABLE . '.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Whether the table exists and lacks a unique index over exactly the triple.
