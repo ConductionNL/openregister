@@ -61,6 +61,13 @@ class ComponentDefinitionTest extends TestCase {
 	private const CSV = self::ROOT . '/scripts/component-map.csv';
 
 	/**
+	 * Areas whose contracts in lib/Kernel/Contracts/<Area>/ belong to them (hydra ADR-119 Decision 1).
+	 *
+	 * @var array<int, string>
+	 */
+	private const CONTRACT_OWNERS = ['Core', 'Processes', 'Configuration', 'Compliance', 'Integrations', 'Files', 'Search', 'Notifications', 'Platform'];
+
+	/**
 	 * Paths Sigrid excludes from every component.
 	 *
 	 * @var array<int, string>
@@ -190,7 +197,8 @@ class ComponentDefinitionTest extends TestCase {
 	}//end matching()
 
 	/**
-	 * The component the csv gives a path: its file row, else the deepest directory row.
+	 * The component the csv gives a path: the owning area of a contract under
+	 * lib/Kernel/Contracts/<Area>/, else its file row, else the deepest directory row.
 	 *
 	 * @param string                $path  The `lib/...` path.
 	 * @param array<string, string> $files File rows.
@@ -199,6 +207,12 @@ class ComponentDefinitionTest extends TestCase {
 	 * @return string|null Null when no row covers the path.
 	 */
 	private function csvComponent(string $path, array $files, array $dirs): ?string {
+		if (preg_match('#^lib/Kernel/Contracts/([A-Za-z]+)/.+#', $path, $match) === 1
+			&& in_array($match[1], self::CONTRACT_OWNERS, true) === true
+		) {
+			return $match[1];
+		}
+
 		if (isset($files[$path]) === true) {
 			return $files[$path];
 		}

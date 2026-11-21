@@ -22,7 +22,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Application;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +33,22 @@ abstract class AbstractApplicationEvent extends Event {
 	/**
 	 * Constructor for AbstractApplicationEvent.
 	 *
-	 * @param Application $application The entity the event is about.
+	 * @param ApplicationInterface&Entity $application The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly Application $application) {
+	public function __construct(private readonly ApplicationInterface $application) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return Application The entity.
+	 * @return ApplicationInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getApplication(): Application {
+	public function getApplication(): ApplicationInterface {
 		return $this->application;
 	}//end getApplication()
 }//end class

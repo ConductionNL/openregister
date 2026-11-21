@@ -40,7 +40,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -104,7 +104,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -171,7 +171,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -238,7 +238,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -312,7 +312,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -376,7 +376,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -434,7 +434,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -504,7 +504,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -584,7 +584,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -664,7 +664,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -863,7 +863,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -899,7 +899,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -973,7 +973,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1025,7 +1025,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-000000000000"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-000000000000"
@@ -1101,7 +1101,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1232,7 +1232,7 @@
                 "object": "my-slug"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "my-slug"
@@ -1271,7 +1271,7 @@
                 "object": "my-slug"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "my-slug"
@@ -1384,7 +1384,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "log": "debug",
@@ -1452,7 +1452,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1517,7 +1517,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1579,7 +1579,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1697,7 +1697,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1776,7 +1776,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1810,7 +1810,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"
@@ -1880,7 +1880,7 @@
                 "object": "0b3f2c1a-1111-4222-8333-944455556666"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Service\\Interaction\\ReadHistoryService"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ProcessingReadsInterface"
             },
             {
                 "processingRead": "0b3f2c1a-1111-4222-8333-944455556666"

@@ -8,6 +8,18 @@ register `integriq`. It needs integriq installed. Without integriq the run fails
 "integriq is not installed, so there are no connection rows to report on" instead of
 mailing an empty all clear.
 
+## Switching it on
+
+On the Connections page (**Settings > Connections**), choose **Daily report by e-mail**.
+The dialog shows whether the report is on and when it last ran, and lets an administrator:
+
+- send it to **All administrators**, to other e-mail addresses separated by commas, or both;
+- pick the hour it is sent at, every day;
+- switch on **Only when something needs attention**, the quiet-day option described below;
+- **Save** the report, **Disable** it, or **Send a test now**.
+
+The dialog creates the same scheduled report as the API below.
+
 ## How it is scheduled
 
 The report is a scheduled report of kind `connection-health`. It uses the same life cycle
@@ -38,9 +50,6 @@ Content-Type: application/json
 - `options.onlyWhenAttention` is the quiet-day option. See below.
 
 `POST /api/scheduled-reports/{id}/run-now` sends one at once, for a test.
-
-A dialog on the Connections page to switch the report on is planned. Until it ships,
-use the API above.
 
 ## What needs attention
 

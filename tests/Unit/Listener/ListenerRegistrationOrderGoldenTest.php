@@ -28,12 +28,15 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 251;
+	private const LISTENER_COUNT = 255;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
+	 *
+	 * Last changed when SourceFetcherRegistrationListener was added for
+	 * RegisterSourceFetchersEvent (one listener more; the rest unchanged).
 	 */
-	private const SEQUENCE_SHA256 = '9f057c44d78bb91e8662785ad043c30516cbecd0dbf9d5c255da945c3d295846';
+	private const SEQUENCE_SHA256 = 'e2e21ad636adcefec269f93cb99206aad18956c7f44866a25660031e13ac9c00';
 
 	/**
 	 * The registration calls, in call order, with every argument.
