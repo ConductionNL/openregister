@@ -29,7 +29,7 @@ final class AuditTrailControllerFactory {
 	 * @param AuditTrailPageService $auditPage Constructor argument.
 	 * @param ObjectHistoryForReaders $historyForReaders Constructor argument.
 	 * @param ?ExplicitRevealTrailMasker $revealMasker Constructor argument.
-	 * @param ?\Psr\Log\LoggerInterface $logger Constructor argument.
+	 * @param ?LoggerInterface $logger Constructor argument; a NullLogger when absent.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -58,6 +58,7 @@ final class AuditTrailControllerFactory {
 					auditHashService: $auditHashService,
 					readableLister: $readableLister,
 					auditPage: $auditPage,
+					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
 				readers: new \OCA\OpenRegister\Controller\Support\AuditTrailReaders(
 					historyForReaders: $historyForReaders,
@@ -67,7 +68,6 @@ final class AuditTrailControllerFactory {
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),
-				logger: $logger,
 			),
 		];
 	}
