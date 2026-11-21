@@ -198,3 +198,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 
 ## ComponentDefinitionTest: new lib file matches no component / yaml disagrees
 - Fix: add the scripts/component-map.csv row the message names, then run python3 scripts/component-patterns.py and commit the regenerated yaml.
+- (or-fix-16) TargetedMigrationStep addendum: a step with preSchemaChange()/postSchemaChange() renames them to protected beforeTargetedSchemaChange()/afterTargetedSchemaChange() (the base's are final); tests calling the public hooks keep working.
+## Listener golden after a merge (ListenerRegistrationOrderGoldenTest)
+- Symptom: conflict in LISTENER_COUNT / SEQUENCE_SHA256, or 'actual size N matches expected size M'.
+- Fix: take main's test, dump the registration sequence (patch the test to file_put_contents the calls), check that dropping the PR's listener lines reproduces main's sha, then set count and sha to the merged values.
