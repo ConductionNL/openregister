@@ -29,12 +29,11 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\RedactionNotPublishableException;
 use OCA\OpenRegister\Files\Db\FileMapper;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IFilesMetadata;
@@ -73,14 +72,14 @@ class PublishVerdictGuardTest extends TestCase {
 		$manager->method('getMetadata')->with(7, true)->willReturn($metadata);
 		$verdicts = new RedactionVerdictStore(metadataManager: $manager, logger: $this->createMock(LoggerInterface::class));
 
-		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturn(false);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
-				FileRestrictionGuardInterface::class => $restrictions,
+				FileReadRestrictionInterface::class => $restrictions,
 				RedactionVerdictStore::class => $verdicts,
-				default => $this->createMock(PartyIndicatorGuard::class),
+				default => $this->createMock(PublicationRefusalInterface::class),
 			}
 		);
 

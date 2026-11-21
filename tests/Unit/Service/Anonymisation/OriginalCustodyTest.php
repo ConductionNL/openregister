@@ -33,13 +33,12 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OriginalCustody;
 use OCA\OpenRegister\Db\OriginalCustodyMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\Anonymisation\OriginalCustodyService;
 use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Tests\Unit\Service\File\PassThroughDigestsTrait;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -186,15 +185,15 @@ class OriginalCustodyTest extends TestCase {
 		$manager->method('getMetadata')->willReturn($metadata);
 		$verdicts = new RedactionVerdictStore(metadataManager: $manager, logger: $this->createMock(LoggerInterface::class));
 
-		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturn(false);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
-				FileRestrictionGuardInterface::class => $restrictions,
+				FileReadRestrictionInterface::class => $restrictions,
 				RedactionVerdictStore::class => $verdicts,
 				OriginalCustodyService::class => $custody,
-				default => $this->createMock(PartyIndicatorGuard::class),
+				default => $this->createMock(PublicationRefusalInterface::class),
 			}
 		);
 
