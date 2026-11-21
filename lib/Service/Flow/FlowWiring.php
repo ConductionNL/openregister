@@ -22,13 +22,53 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Listener\DependentValueListener;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\OverdueTaskSourceInterface;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
+use OCA\OpenRegister\Service\AutomationRecordWriter;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
+use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\BuiltInToolProvidersInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
@@ -43,19 +83,31 @@ use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
+use OCA\OpenRegister\Service\SequenceService;
+use OCA\OpenRegister\Service\SequenceServiceInterface;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCP\App\IAppManager;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
+use OCA\OpenRegister\Service\Interaction\UnreadCountCalculator;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -66,9 +118,12 @@ use Psr\Log\LoggerInterface;
  *
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle's answer to property-level access, the store of the flows
+ * compiled from application schedules, the object date events the platform
+ * calendar reads, the party indicators' answer to file publishing, the
+ * lifecycle's request state and the task services that are built by hand.
  * compiled from application schedules, the party indicators' answer to file
- * publishing, the lifecycle's request state and the task services that are
- * built by hand.
+ * publishing, the lifecycle's request state, the task services that are
+ * built by hand and the flow link service.
  *
  * Application::register() calls register() once.
  */
@@ -83,8 +138,27 @@ final class FlowWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		SequenceServiceInterface::class => SequenceService::class,
+		NodeRightsMapInterface::class => FlowNodeRightsGuard::class,
+		ProcessingReadsInterface::class => ReadHistoryService::class,
+		UserCalendarEventsInterface::class => CalendarEventService::class,
+		TaskGaugeInterface::class => TaskMetricsProvider::class,
+		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
+		ReadHistoryInterface::class       => ReadHistoryService::class,
+		TransitionInFlightInterface::class => LifecycleActionContext::class,
+		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
+		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
+		TaskRowSourceInterface::class => TaskInboxService::class,
+		OverdueTaskSourceInterface::class => OverdueOpenTasks::class,
+		ObjectWatchersInterface::class => WatcherService::class,
+		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
+		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
+		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
+		ApprovalPositionFormCheckInterface::class => ApprovalPositionFormGuard::class,
+		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
@@ -97,8 +171,17 @@ final class FlowWiring {
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		LinkedFlowOperationsInterface::class => FlowLinkServiceInterface::class,
+		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
+		BulkRowRefusalsInterface::class => DecisionTableBulkGuard::class,
+		DependentValueCheckInterface::class => DependentValueListener::class,
+		ContactMatchCacheInterface::class => ContactMatchingService::class,
 		ObjectQuotaInterface::class => ObjectQuotaService::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
+		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
+		UnreadCountsInterface::class => UnreadCountCalculator::class,
+		SaveBoundaryInterface::class => AutoTransitionPass::class,
 	];
 
 	/**
@@ -122,6 +205,7 @@ final class FlowWiring {
 
 		self::registerLifecycleState(context: $context);
 		self::registerTaskServices(context: $context);
+		$context->registerService(FlowLinkService::class, self::buildFlowLinkService(...));
 
 		// The flow tasks the searcher would see in their inbox (flow-task-search-provider).
 		$context->registerSearchProvider(FlowTasksProvider::class);
@@ -350,6 +434,28 @@ final class FlowWiring {
 				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
 			);
 	}//end buildTaskInboxService()
+
+	/**
+	 * Build the FlowLinkService with its platform bundle.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return FlowLinkService
+	 *
+	 * @spec openspec/specs/integration-flow/spec.md
+	 */
+	private static function buildFlowLinkService(ContainerInterface $container): FlowLinkService {
+		return new FlowLinkService(
+			platform: new FlowLinkPlatform(
+				flowLinkMapper: $container->get(FlowLinkMapperInterface::class),
+				db: $container->get(IDBConnection::class),
+				appManager: $container->get(IAppManager::class)
+			),
+			userSession: $container->get(IUserSession::class),
+			groupManager: $container->get(IGroupManager::class),
+			logger: $container->get(LoggerInterface::class)
+		);
+	}//end buildFlowLinkService()
 
 	/**
 	 * Build the TaskService service.
