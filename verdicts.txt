@@ -3651,3 +3651,4 @@
 10643 0c052da53200d8398c8edebda69f1b46dfc86c86 REVERIFY or-fix-3: merged main, bumped react to ^19.3.1 alongside react-dom (lockfile: react 19.3.1, loose-envify dropped; all react peers accept 19); npm ci, production build and graphqlExplorer spec green; review needed
 10514 710762ba84a02e007e659be55056b2327da5dae0 REVERIFY or-fix-14: merged main (component map, listener golden now 255 = main's 254 + the PR's PersonalTokenGrantRevokedListener, sequence differs only by that line); no code change; review needed
 10343 9c939a8c916bfab5858c86ffc7ff2fe44af0f6f5 REVERIFY or-fix-3: merged main (clean), regenerated the components yaml (ComponentDefinitionTest green); Architecture, Service/Credential green, phpstan clean; review needed
+10343 9c939a8c916bfab5858c86ffc7ff2fe44af0f6f5 VOID or-fix-3: row above at this sha was recorded in error; push was rejected, the sha is not on the branch; 0cb1f9fd is the head to review
