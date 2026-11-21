@@ -167,13 +167,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	/**
 	 * Why a whole register may not be federated, or null when every schema in it declares it may.
 	 *
-	 * @param FederatedShare $share The register share to create.
+	 * @param FederatedShareInterface $share The register share to create.
 	 *
 	 * @return string|null The refusal.
 	 *
 	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
 	 */
-	private function registerFederationRefusal(FederatedShare $share): ?string {
+	private function registerFederationRefusal(FederatedShareInterface $share): ?string {
 		$schemas = $this->targets->registerSchemas(share: $share);
 		if ($schemas === null) {
 			return 'This register cannot be shared with another instance: it or one of its schemas could not be found';
