@@ -17,6 +17,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Db\MailHeaderMapper;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
@@ -53,6 +54,7 @@ final class TextExtractionServiceFactory {
 	 * @param SpreadsheetExtractor     $spreadsheetExtractor Extractor for spreadsheet documents.
 	 * @param PdfExtractor             $pdfExtractor         Extractor for PDF documents.
 	 * @param WordExtractor            $wordExtractor        Extractor for Word documents.
+	 * @param MailHeaderMapper|null    $mailHeaders          Store for the thread headers of `.eml` files.
 	 *
 	 * @return array<int, object>
 	 */
@@ -72,10 +74,11 @@ final class TextExtractionServiceFactory {
 		SpreadsheetExtractor $spreadsheetExtractor,
 		PdfExtractor $pdfExtractor,
 		WordExtractor $wordExtractor,
+		?MailHeaderMapper $mailHeaders = null,
 	): array {
 		return [
 			new TextExtractionSources(
-				new TextExtractionStorage($fileMapper, $rootFolder, $db),
+				new TextExtractionStorage($fileMapper, $rootFolder, $db, $mailHeaders),
 				new TextExtractionObjects(new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectEntityMapper))
 			),
 			$chunkMapper,

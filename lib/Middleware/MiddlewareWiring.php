@@ -103,6 +103,10 @@ final class MiddlewareWiring {
 		// clear HTTP 400 instead of a silent zero-row result or a bare 500.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
 
+		// A refused `_where` condition tree answers 400 with the node path of
+		// the refused node (list-query-condition-groups).
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ConditionGroupMiddleware::class);
+
 		// Register the UnknownMetadataFieldMiddleware: maps
 		// UnknownMetadataFieldException — thrown when a `@self` filter names a
 		// field that no metadata column corresponds to — onto an HTTP 400 that
@@ -147,6 +151,10 @@ final class MiddlewareWiring {
 		// only refuses a caller an administrator actually bound, and the record
 		// swallows its own failures.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ApiCallerMiddleware::class);
+
+		// Names a breaking change of the last 30 days on that schema's object
+		// read and list responses (schema-breaking-change-notice).
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.

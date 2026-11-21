@@ -34,8 +34,7 @@ use stdClass;
  * Implemented by \OCA\OpenRegister\Db\Schema. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  * hydrate() and validateProperties() stay on the entity (they take a
- * Service validator), and so does getManagedByConfiguration() (it returns a
- * Db\Configuration): a Kernel contract names no Service or Db class.
+ * Service validator): a Kernel contract names no Service or Db class.
  *
  * @method int getId()
  * @method string|null getUuid()
@@ -264,6 +263,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return true True if the authorization structure is valid
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @deprecated Ask the Core `Db\Schema\AuthorizationRulesValidator` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function validateAuthorization(): bool;
 
@@ -383,7 +385,10 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
+	 *
+	 * @deprecated Ask the Core `UniqueConstraintEvaluator::upsertKeys()` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getUpsertKeys(): array;
 
@@ -423,7 +428,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array;
 
@@ -439,7 +444,7 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<string, array{through: string, property: string, label?: string}>
 	 *                                                                                The declared lenses, keyed by property name.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array;
 
@@ -455,7 +460,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @psalm-return array{columns: array<int, array{property: string, label?: string}>, searchFields: array<int, string>}
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array;
 
@@ -469,7 +474,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, array{through: string, label?: string}> The reference properties to collect from.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array;
 
@@ -541,6 +546,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 *
+	 * @deprecated Ask the Core `VocabularyEntries::configuredVocabulary()` with `linkRoles` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getLinkRoles(): array;
 
@@ -553,7 +561,10 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 *
+	 * @deprecated Ask the Core `VocabularyEntries::configuredVocabulary()` with `partyKinds` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getPartyKinds(): array;
 
@@ -562,7 +573,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<string, mixed> The annotation as stored.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
 	public function getPartyAnnotation(): array;
 
@@ -582,6 +593,15 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return bool True if schema objects should be indexed in SOLR
 	 */
 	public function isSearchable(): bool;
+
+	/**
+	 * Whether this schema's objects may be shared with a principal at another instance.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function isFederatable(): bool;
 
 	/**
 	 * Set whether this schema should be searchable in SOLR
@@ -694,7 +714,7 @@ interface SchemaInterface extends JsonSerializable {
 	 *
 	 * @return array<string, string> Reason codes mapped to their labels.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array;
 

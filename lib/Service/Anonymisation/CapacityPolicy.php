@@ -126,6 +126,17 @@ final class CapacityPolicy {
 	}//end fromStored()
 
 	/**
+	 * Every capacity's decision and ground, as stored and read back.
+	 *
+	 * @return array<string, array{decision: string, ground: string|null}>
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function rules(): array {
+		return $this->rules;
+	}//end rules()
+
+	/**
 	 * The suggested decision and ground for a capacity; an unknown capacity reads as `unknown`.
 	 *
 	 * @param string $capacity The capacity.

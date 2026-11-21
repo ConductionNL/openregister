@@ -22,7 +22,7 @@
 
 ## Discovery cluster 41
 
-- [ ] C41.1 A random sequence kind with a declared length and alphabet, under the existing allocation lock (D-C41-1).
+- [x] C41.1 A random sequence kind with a declared length and alphabet, under the existing allocation lock (D-C41-1). (`kind: random`, `length`, `alphabet` on the annotation; the counter number is shown through a keyed permutation, `RandomSequenceCode`, keyed by the instance secret and the sequence name, so uniqueness is the counter's own. Unit tests: `RandomSequenceCodeTest`, `GeneratedIdentifierRandomDeclarationTest`, `GeneratedIdentifierRandomTest`.)
 - [ ] C41.2 Foreign identifiers on an object, each naming its issuer, indexed and exactly resolvable (D-C41-2).
 - [x] C41.3 A second generated identifier beside the first, with its own sequence and format.
 - [x] C41.4 Reserved values and patterns that no sequence issues.

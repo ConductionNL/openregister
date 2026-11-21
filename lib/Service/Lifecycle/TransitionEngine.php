@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
+use OCP\IUser;
 use OCP\IUserSession;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -53,6 +54,7 @@ use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -76,7 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * contract, and live beside `publishedInputs()` for the reason above: one
  * place decides what a client is told a transition asks for.
  */
-class TransitionEngine {
+class TransitionEngine implements LifecycleTransitionInterface {
 	/**
 	 * App-config key opting an instance into the documented slug contract.
 	 *
@@ -385,6 +387,12 @@ class TransitionEngine {
 	 * @param string $objectId Object id/uuid/slug.
 	 * @param string $action Transition action name.
 	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 * @param IUser|null $actor The user the move is made as, for the permission checks, the
+	 *                          lifecycle guards and the audit entry; null for the session user.
+	 *                          A bulk job passes the user who started it, since its worker
+	 *                          may hold no session user or another one. The move runs
+	 *                          through ObjectService::runAs(), so every reader of the session
+	 *                          user agrees on who acts; nothing is granted.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
@@ -402,18 +410,25 @@ class TransitionEngine {
 	 *                          it would refuse any other object write.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
+	public function transition(string $objectId, string $action, array $data = [], ?IUser $actor = null): ObjectEntity {
 		// OPEN THE AUTOMATIC-TRANSITION BOUNDARY around the whole transition,
 		// not around its save: this transition's own `ObjectTransitionedEvent`
 		// is dispatched after the save returns, and a listener must see the
 		// named move before any automatic move that followed from it. Leaving
 		// the OUTERMOST boundary drains, so the entity answered here is the one
 		// the last automatic move produced, when there was one.
-		return $this->writeBoundary->around(
+		$move = fn (): ObjectEntity => $this->writeBoundary->around(
 			write: fn (): ObjectEntity => $this->applyTransition(objectId: $objectId, action: $action, data: $data)
 		);
+		if ($actor === null) {
+			return $move();
+		}
+
+		// The whole move, automatic moves after it included, as the actor
+		// (records-bulk-transition D-1).
+		return $this->objectService->runAs($actor, $move);
 	}//end transition()
 
 	/**
@@ -775,7 +790,7 @@ class TransitionEngine {
 	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyDelegatedTransition(
 		TransitionRequest $request,
@@ -1007,7 +1022,7 @@ class TransitionEngine {
 	 * without losing safety or fidelity.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
@@ -1277,7 +1292,7 @@ class TransitionEngine {
 	 * @return list<array{action:string,to:string,label:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>}>
 	 *
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function deriveGraphActions(ObjectEntity $object, array $graph, string $field): array {
 		return array_map(
@@ -1307,7 +1322,7 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      FK read + sibling fetch + current-state
 	 * location + terminal/frozen/side-move branching are each irreducible steps of the derivation.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
 	 */
 	private function graphCandidates(ObjectEntity $object, array $graph, string $field): array {
@@ -1383,7 +1398,7 @@ class TransitionEngine {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per `allowedMoves` policy, each with its bounds checks.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function graphTargets(array $siblings, int $currentIndex, string $allowed): array {
 		$targets = [];
@@ -1502,7 +1517,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The ordered sibling entities (0-indexed, re-keyed).
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function fetchOrderedSiblings(array $graph, string $parentValue): array {
 		$query = self::siblingQuery(graph: $graph, parentValue: $parentValue);
@@ -1526,7 +1541,7 @@ class TransitionEngine {
 	 *
 	 * @return array<string, mixed>|null The findAll config.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function siblingQuery(array $graph, string $parentValue): array|null {
 		$schemaSlug = (string)($graph['schema'] ?? '');
@@ -1552,7 +1567,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The entities, 0-indexed.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function objectEntitiesOf(array $siblings): array {
 		$entities = [];
@@ -1574,7 +1589,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, ObjectEntity> The sorted siblings.
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private static function sortedByOrder(array $entities, string $orderField): array {
 		usort(
@@ -1603,7 +1618,7 @@ class TransitionEngine {
 	 *
 	 * @return array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}
 	 *
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function buildGraphAction(ObjectEntity $sibling): array {
@@ -1985,7 +2000,6 @@ class TransitionEngine {
 	 * @throws InvalidTransitionInputException When `$data` holds a key the action's form does not name.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(
@@ -2030,15 +2044,21 @@ class TransitionEngine {
 		// explicitly to the save path, mirroring the static-mode contract.
 		$actingUser = $this->userSession->getUser();
 
-		$saved = $this->objectService->saveObject(
-			object: $objectData,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(register: $request->object->getRegister(), schema: $request->object->getSchema()),
-				uuid: $request->object->getUuid(),
-				actor: new SaveActor(currentUser: $actingUser)
-			),
-			_rbac: ($request->asSystem === false),
-			_multitenancy: ($request->asSystem === false)
+		// Name the move for the listeners and the audit trail, so a reopen is
+		// recorded as a reopen rather than as an anonymous status change.
+		$saved = $this->writeBoundary->declaringAction(
+			uuid: (string)$request->object->getUuid(),
+			action: $request->action,
+			write: fn (): ObjectEntity => $this->objectService->saveObject(
+				object: $objectData,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $request->object->getRegister(), schema: $request->object->getSchema()),
+					uuid: $request->object->getUuid(),
+					actor: new SaveActor(currentUser: $actingUser)
+				),
+				_rbac: ($request->asSystem === false),
+				_multitenancy: ($request->asSystem === false)
+			)
 		);
 
 		$this->dispatchTransitioned(

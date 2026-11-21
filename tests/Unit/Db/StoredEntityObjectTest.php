@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Files\Service\NoteService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
+ * @uses \OCA\OpenRegister\Files\Service\NoteLockService
  */
 class StoredEntityObjectTest extends TestCase
 {

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
 use OCP\Constants;
 use OCP\Files\Folder;
 use OCP\IUser;
@@ -75,7 +75,7 @@ class SharerFolderAccess {
 	 * Constructor.
 	 *
 	 * @param IManager         $shareManager Core's share manager.
-	 * @param ObjectFileAccess $fileAccess   What the signed-in user may do with an object's files.
+	 * @param ObjectFileRightsInterface $fileAccess   What the signed-in user may do with an object's files.
 	 * @param GrantManageGuard $grantManage  Who may manage an object's grants.
 	 * @param IUserManager     $userManager  Resolves a view's holder.
 	 * @param IGroupManager    $groupManager The holder's groups.
@@ -84,7 +84,7 @@ class SharerFolderAccess {
 	 */
 	public function __construct(
 		private readonly IManager $shareManager,
-		private readonly ObjectFileAccess $fileAccess,
+		private readonly ObjectFileRightsInterface $fileAccess,
 		private readonly GrantManageGuard $grantManage,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
@@ -283,11 +283,11 @@ class SharerFolderAccess {
 		}
 
 		$held = Constants::PERMISSION_READ;
-		if ($this->fileAccess->mayChangeFiles(object: $object, verb: ObjectFileAccess::ADD_FILES) === true) {
+		if ($this->fileAccess->mayChangeFiles(object: $object, verb: ObjectFileRightsInterface::ADD_FILES) === true) {
 			$held |= (Constants::PERMISSION_UPDATE | Constants::PERMISSION_CREATE);
 		}
 
-		if ($this->fileAccess->mayChangeFiles(object: $object, verb: ObjectFileAccess::DELETE_FILES) === true) {
+		if ($this->fileAccess->mayChangeFiles(object: $object, verb: ObjectFileRightsInterface::DELETE_FILES) === true) {
 			$held |= Constants::PERMISSION_DELETE;
 		}
 

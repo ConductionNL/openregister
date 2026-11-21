@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-sub-flow/specs/flow-sub-flow/spec.md
+ * @spec openspec/specs/flow-sub-flow/spec.md
  */
 
 declare(strict_types=1);
@@ -153,7 +153,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['flow', 'flowId', 'wait', 'fanOut'];
@@ -253,7 +253,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @throws UnexpectedValueException When the flow is already a parent, nested too deeply, or cannot be resolved.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function targetFor(array $config, array $context): ?SubFlowTarget {
 		$flowId = $this->flowIdFrom(config: $config);
@@ -289,7 +289,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return array The sub-flow's output items, or the input items when not waiting.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function dispatch(SubFlowRun $run, array $items): array {
 		if ($run->fansOut() === true) {
@@ -312,7 +312,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return array Everything the children produced, in item order.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function fanOut(SubFlowRun $run, array $items): array {
 		$out = [];
@@ -335,7 +335,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return array What the child produced, or the input when fire-and-forget.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function invoke(SubFlowRun $run, array $items): array {
 		$child = $this->queueChild(run: $run, childContext: $this->childContext(run: $run, items: $items));
@@ -373,7 +373,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return array<string, mixed> The child run's context.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function childContext(SubFlowRun $run, array $items): array {
 		$childCtx = $run->context;
@@ -407,7 +407,7 @@ class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterfa
 	 *
 	 * @return FlowRun The queued child run.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function queueChild(SubFlowRun $run, array $childContext): FlowRun {
 		return $this->runs->queueRun(

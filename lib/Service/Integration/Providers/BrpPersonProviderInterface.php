@@ -66,7 +66,7 @@ interface BrpPersonProviderInterface {
 	 * @return array<string,mixed> `{ results, total, meta, relativesMeta }`, or
 	 *                             `{ unavailable, cause, results, total }`.
 	 *
-	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 * @spec openspec/specs/integration-person-lookup/spec.md
 	 */
 	public function lookupFamily(string $bsn, array $relations=['partner', 'child'], bool $sameAddressOnly=false): array;
 
@@ -79,7 +79,7 @@ interface BrpPersonProviderInterface {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/brp-family-members-lookup/specs/integration-person-lookup/spec.md#requirement-the-brp-provider-answers-a-residents-partner-and-children-minimised-req-brp-fam-001
+	 * @spec openspec/specs/integration-person-lookup/spec.md
 	 */
 	public function resolveFamilyReference(string $bsn, string $reference): ?string;
 }//end interface
