@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
@@ -117,7 +118,7 @@ class SendMessagingNodesTest extends TestCase {
 		];
 
 		foreach ($this->nodes() as $type => $node) {
-			$out = $node->execute(items: $items, config: $config[$type], context: ['runAs' => 'alice']);
+			$out = $node->execute(new FlowNodeCall(items: $items, config: $config[$type], context: ['runAs' => 'alice']));
 			// Sending is a side effect, not a transformation: the three items
 			// come back IDENTICAL for downstream steps.
 			$this->assertSame($items, $out, $type . ' must pass items through unchanged');

@@ -23,13 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * What the task controllers, the task notification listener and job need of TaskInboxService.
  * Bound to TaskInboxService in ContractBindings, so it resolves to the same shared instance.
  */
-interface TaskInboxServiceInterface {
+interface TaskInboxServiceInterface extends TaskRowSourceInterface {
 
 	/**
 	 * One inbox page: rows with subject context and temporal projection,
@@ -46,8 +47,11 @@ interface TaskInboxServiceInterface {
 	 * One task as an API row, with its subject context resolved.
 	 *
 	 * @param TaskInterface $task The task.
+	 * @param string|null   $caller The reader's uid; when given the row carries `can` (record-tasks-tab D-4).
 	 *
 	 * @return array<string, mixed> The row.
+	 *
+	 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md
 	 */
-	public function enrich(TaskInterface $task): array;
+	public function enrich(TaskInterface $task, ?string $caller = null): array;
 }//end interface

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\App\IAppManager;
@@ -46,6 +46,19 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Object\MoveAddress
+ * @uses \OCA\OpenRegister\Service\Object\ObjectMove
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ObjectsControllerMoveRightsTest extends TestCase {
 
@@ -103,7 +116,7 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 	private function moveHolding(array $rights): array {
 		$moved = false;
 		$mover = $this->createMock(MoveObject::class);
-		$mover->method('move')->willReturnCallback(
+		$mover->method('perform')->willReturnCallback(
 			static function () use (&$moved): array {
 				$moved = true;
 				return ['moved' => true, 'uuid' => 'u-1', 'from' => [], 'to' => [], 'errors' => []];
@@ -182,7 +195,7 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);

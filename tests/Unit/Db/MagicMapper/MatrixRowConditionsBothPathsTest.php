@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -60,6 +61,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Both enforcement paths give the same answer for the new row keys.
@@ -213,7 +217,21 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			}
 		);
 
-		$rbac = new MagicRbacHandler($session, $groups, $users, $appConfig, $matcher, $container, new NullLogger());
+		$rbac = new MagicRbacHandler(
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $users
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: $container,
+				logger: new NullLogger()
+			)
+		);
 
 		return [$permissions, $rbac];
 	}//end handlers()
@@ -356,7 +374,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 						return $object;
 					})(), register: null)
 				),
-				$rbac->hasPermission(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status]),
+				$rbac->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status])),
 				'the row-level verdict agrees for ' . $uuid
 			);
 		}

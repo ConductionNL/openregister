@@ -21,10 +21,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
@@ -47,6 +49,25 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\SchemaDeletionService
  * @covers \OCA\OpenRegister\Service\WholeTableRows
  * @covers \OCA\OpenRegister\Service\SchemaTeardownGuard
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\SchemaDeletionStores
+ * @uses \OCA\OpenRegister\Service\TableDeletionOptions
+ * @uses \OCA\OpenRegister\Service\TableDeletionRun
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Exception\LockedException
  */
 final class WholeTableDeleteHoldsRowsTest extends TestCase {
 
@@ -149,7 +170,8 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$this->mapper->method('getTableNameForRegisterSchema')->willReturn(self::TABLE);
 		$this->mapper->method('tableExistsForRegisterSchema')->willReturn(true);
 		$this->mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$this->steps[] = 'read ' . $schema->getId();
 
 				return $this->rows[(int)$schema->getId()] ?? [];

@@ -178,37 +178,47 @@ class FlowRunMigrationValidator {
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
 	private function remapMarking(FlowRun $run, FlowRunMarkingRemap $remap): array {
-		$marking = [];
-		$unmapped = [];
-
+		$remapped = ['marking' => [], 'unmapped' => []];
 		foreach ($this->markingOf(run: $run) as $place => $tokens) {
-			[$nodeId, $suffix] = $this->splitPlace(place: (string)$place);
-			$targetId = ($remap->mapping[$nodeId] ?? $nodeId);
-
-			if (array_key_exists($targetId, $remap->nodes) === false) {
-				$unmapped[] = (string)$place;
+			$target = $this->targetPlace(place: (string)$place, remap: $remap);
+			if ($target === null) {
+				$remapped['unmapped'][] = (string)$place;
 				continue;
 			}
 
-			// THE KIND HAS TO MATCH TOO. A mapping that points a user task at a
-			// gateway would land a token somewhere the engine cannot resume
-			// from, and the run would park forever with nothing saying why.
-			// An UNKNOWN kind on either side is not a mismatch: a graph that
-			// does not declare one has nothing to disagree about.
-			$source = (($remap->sourceNodes ?? [])[$nodeId] ?? []);
-			if ($this->kindsClash(source: $source, target: $remap->nodes[$targetId]) === true) {
-				$unmapped[] = (string)$place;
-				continue;
-			}
-
-			$marking[$targetId . $suffix] = (int)$tokens;
+			$remapped['marking'][$target] = (int)$tokens;
 		}
 
-		return [
-			'marking' => $marking,
-			'unmapped' => $unmapped,
-		];
+		return $remapped;
 	}//end remapMarking()
+
+	/**
+	 * The place a marked place moves to under the remap, or null when it has nowhere to go.
+	 *
+	 * @param string              $place The marked place: a node id and an optional suffix.
+	 * @param FlowRunMarkingRemap $remap The mapping and the target graph's nodes.
+	 *
+	 * @return string|null The target place.
+	 */
+	private function targetPlace(string $place, FlowRunMarkingRemap $remap): ?string {
+		[$nodeId, $suffix] = $this->splitPlace(place: $place);
+		$targetId = ($remap->mapping[$nodeId] ?? $nodeId);
+		if (array_key_exists($targetId, $remap->nodes) === false) {
+			return null;
+		}
+
+		// THE KIND HAS TO MATCH TOO. A mapping that points a user task at a
+		// gateway would land a token somewhere the engine cannot resume
+		// from, and the run would park forever with nothing saying why.
+		// An UNKNOWN kind on either side is not a mismatch: a graph that
+		// does not declare one has nothing to disagree about.
+		$source = (($remap->sourceNodes ?? [])[$nodeId] ?? []);
+		if ($this->kindsClash(source: $source, target: $remap->nodes[$targetId]) === true) {
+			return null;
+		}
+
+		return $targetId . $suffix;
+	}//end targetPlace()
 
 	/**
 	 * Whether a source node and its target declare different kinds; an unknown kind never clashes.

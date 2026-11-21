@@ -431,39 +431,63 @@ export default {
 		async loadEntities() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: (this.currentPage - 1) * this.limit,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.typeFilter) {
-					params.type = this.typeFilter
-				}
-
-				if (this.categoryFilter) {
-					params.category = this.categoryFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/entities'),
-					{ params },
+					{ params: this.entityListParams() },
 				)
 
-				if (response.data.success) {
-					this.entitiesList = response.data.data
-					this.totalEntities =
-						response.data.count || this.entitiesList.length
-				}
+				this.showEntityList(response.data)
 			} catch (error) {
 				console.error('Failed to load entities:', error)
 				showError(t('openregister', 'Failed to load entities'))
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Take the page of entities and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityList(data) {
+			if (data.success) {
+				this.entitiesList = data.data
+				this.totalEntities = data.count || this.entitiesList.length
+			}
+		},
+
+		/**
+		 * The page of entities to ask for, narrowed by the filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The query parameters
+		 */
+		entityListParams() {
+			return {
+				limit: this.limit,
+				offset: (this.currentPage - 1) * this.limit,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, type and category filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				type: this.typeFilter,
+				category: this.categoryFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
 		},
 
 		/**

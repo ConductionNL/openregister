@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Object\PermissionAsk;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\RelationLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ObjectService handler classes
@@ -96,7 +97,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		// Clean up objects first (they reference schemas/registers).
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}

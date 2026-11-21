@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 
 /**
  * The yes/no permission verdict of PermissionHandler, for callers that only ask.
@@ -62,4 +64,20 @@ interface PermissionCheckInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool;
+
+	/**
+	 * Whether an update rule marked `crossOrganisation: true` lets the signed-in caller change a row.
+	 *
+	 * Asked before a row of another organisation is updated: the update rules
+	 * do not look at organisations, so only a rule marked for crossing may
+	 * reach such a row. A schema without a marked update rule answers false.
+	 *
+	 * @param Schema       $schema The row's schema.
+	 * @param ObjectEntity $row    The stored row.
+	 *
+	 * @return bool True when a marked update rule admits the caller.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function updateCrossesOrganisations(Schema $schema, ObjectEntity $row): bool;
 }//end interface

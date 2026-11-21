@@ -36,11 +36,13 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
@@ -1329,7 +1331,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		]);
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema) use ($parentRows, $joinedRows, $expectNoJoinedFetch): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($parentRows, $joinedRows, $expectNoJoinedFetch): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				if ((string)$schema->getSlug() === 'commitment-budget') {
 					if ($expectNoJoinedFetch === true) {
 						$this->fail('the joined schema MUST NOT be read when the RBAC gate refuses the join');
@@ -1409,7 +1412,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		];
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema) use ($parentRows, $joinedRows): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($parentRows, $joinedRows): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				if ((string)$schema->getSlug() === 'commitment-budget') {
 					return $this->entities($joinedRows);
 				}
@@ -1484,7 +1488,8 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		];
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema) use ($parentRows, $joinedRows): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($parentRows, $joinedRows): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				if ((string)$schema->getSlug() === 'commitment-budget') {
 					return $this->entities($joinedRows);
 				}

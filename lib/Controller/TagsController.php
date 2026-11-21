@@ -186,7 +186,6 @@ class TagsController extends Controller {
 	 * @return JSONResponse JSON response with the updated tags
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */
@@ -219,7 +218,6 @@ class TagsController extends Controller {
 	 * @return JSONResponse JSON response with the updated tags
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 */

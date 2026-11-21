@@ -29,12 +29,38 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * PermissionHandler::checkPermission() refuses exactly what hasPermission() answers false, for every caller,
  * owner, object, register and RBAC flag, and lets everything else through.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 
@@ -185,13 +211,10 @@ class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 		}
 
 		return $this->handler($case['session'])->hasPermission(
-			schema: $schema,
-			action: $case['action'],
-			userId: $userId,
-			objectOwner: ($case['extra']['objectOwner'] ?? null),
-			_rbac: $case['rbac'],
-			object: $object,
-			register: ($case['extra']['register'] ?? null)
+			ask: (new PermissionAsk(schema: $schema, action: $case['action']))
+				->askedBy(userId: $userId, objectOwner: ($case['extra']['objectOwner'] ?? null))
+				->about(object: $object, register: ($case['extra']['register'] ?? null)),
+			_rbac: $case['rbac']
 		);
 	}//end answered()
 

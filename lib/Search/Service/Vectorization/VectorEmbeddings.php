@@ -145,11 +145,33 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @psalm-return array<float>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function generateEmbeddingWithCustomConfig(string $text, array $config): array {
+		$this->logCustomConfigStart(text: $text, config: $config);
+
+		try {
+			$normalizedConfig = $this->normalizeCustomConfig(config: $config);
+			$this->assertUsableCustomConfig(normalizedConfig: $normalizedConfig);
+
+			return $this->embedWithCustomConfig(text: $text, normalizedConfig: $normalizedConfig);
+		} catch (Exception $e) {
+			throw $this->customConfigFailure(
+				error: $e->getMessage(),
+				attempt: ['provider' => $config['provider'] ?? 'unknown', 'text_length' => strlen($text)]
+			);
+		}
+	}//end generateEmbeddingWithCustomConfig()
+
+	/**
+	 * Log the start of a custom-config embedding.
+	 *
+	 * @param string $text   Text to embed
+	 * @param array  $config Custom configuration array
+	 *
+	 * @return void
+	 */
+	private function logCustomConfigStart(string $text, array $config): void {
 		$this->logger->debug(
 			message: '[VectorEmbeddings] Generating embedding with custom config',
 			context: [
@@ -160,61 +182,91 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				'model' => $config['model'] ?? 'unknown',
 			]
 		);
+	}//end logCustomConfigStart()
 
-		try {
-			// Normalize config format.
-			$normalizedConfig = [
-				'provider' => $config['provider'],
-				'model' => $config['model'] ?? null,
-				'api_key' => $config['apiKey'] ?? null,
-				'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
-			];
+	/**
+	 * The custom configuration in the generator's format.
+	 *
+	 * @param array $config Custom configuration array
+	 *
+	 * @return array{provider: mixed, model: mixed, api_key: mixed, base_url: mixed} The normalised config.
+	 */
+	private function normalizeCustomConfig(array $config): array {
+		return [
+			'provider' => $config['provider'],
+			'model' => $config['model'] ?? null,
+			'api_key' => $config['apiKey'] ?? null,
+			'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
+		];
+	}//end normalizeCustomConfig()
 
-			// Validate required fields.
-			if (empty($normalizedConfig['provider']) === true) {
-				throw new Exception('Provider is required');
-			}
+	/**
+	 * Refuse a normalised config without a provider, a model, or the API key its provider needs.
+	 *
+	 * @param array $normalizedConfig The normalised config.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a required field is missing.
+	 */
+	private function assertUsableCustomConfig(array $normalizedConfig): void {
+		if (empty($normalizedConfig['provider']) === true) {
+			throw new Exception('Provider is required');
+		}
 
-			if (empty($normalizedConfig['model']) === true) {
-				throw new Exception('Model is required');
-			}
+		if (empty($normalizedConfig['model']) === true) {
+			throw new Exception('Model is required');
+		}
 
-			// Validate API keys for providers that need them.
-			if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
-				&& empty($normalizedConfig['api_key']) === true
-			) {
-				throw new Exception("API key is required for {$normalizedConfig['provider']}");
-			}
+		// Validate API keys for providers that need them.
+		if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
+			&& empty($normalizedConfig['api_key']) === true
+		) {
+			throw new Exception("API key is required for {$normalizedConfig['provider']}");
+		}
+	}//end assertUsableCustomConfig()
 
-			// Create embedding generator and generate.
-			$generator = $this->handlers->generator->getGenerator($normalizedConfig);
-			$embedding = $generator->embedText($text);
+	/**
+	 * Create the embedding generator for a normalised config and embed the text.
+	 *
+	 * @param string $text             Text to embed
+	 * @param array  $normalizedConfig The normalised config.
+	 *
+	 * @return float[] Embedding vector (array of floats)
+	 */
+	private function embedWithCustomConfig(string $text, array $normalizedConfig): array {
+		$generator = $this->handlers->generator->getGenerator($normalizedConfig);
+		$embedding = $generator->embedText($text);
 
-			$this->logger->debug(
-				message: '[VectorEmbeddings] Embedding generated successfully with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'dimensions' => count($embedding),
-					'model' => $normalizedConfig['model'],
-				]
-			);
+		$this->logger->debug(
+			message: '[VectorEmbeddings] Embedding generated successfully with custom config',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'dimensions' => count($embedding),
+				'model' => $normalizedConfig['model'],
+			]
+		);
 
-			return $embedding;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Failed to generate embedding with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'provider' => $config['provider'] ?? 'unknown',
-					'text_length' => strlen($text),
-				]
-			);
-			throw new Exception('Embedding generation failed: ' . $e->getMessage());
-		}//end try
-	}//end generateEmbeddingWithCustomConfig()
+		return $embedding;
+	}//end embedWithCustomConfig()
+
+	/**
+	 * Log a failed custom-config embedding and build the exception that reports it.
+	 *
+	 * @param string $error   The failure message.
+	 * @param array  $attempt The provider and text length of the attempt, as logged.
+	 *
+	 * @return Exception The exception to throw.
+	 */
+	private function customConfigFailure(string $error, array $attempt): Exception {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Failed to generate embedding with custom config',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error] + $attempt
+		);
+
+		return new Exception('Embedding generation failed: ' . $error);
+	}//end customConfigFailure()
 
 	/**
 	 * Test embedding generation with custom configuration

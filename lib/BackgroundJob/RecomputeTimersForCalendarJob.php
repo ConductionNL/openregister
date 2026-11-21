@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
 use OCP\BackgroundJob\QueuedJob;
@@ -131,10 +133,8 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 					// itself has NOT moved, so it is handed back unchanged —
 					// what moved is the calendar under it.
 					$this->service->supersede(
-						uuid: (string)$timer->getUuid(),
-						anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince()),
-						reason: CalendarRecomputeInterface::REASON,
-						actor: CalendarRecomputeInterface::ACTOR
+						move: new TimerAnchorMove(uuid: (string)$timer->getUuid(), anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince())),
+						change: new TimerChange(reason: CalendarRecomputeInterface::REASON, actor: CalendarRecomputeInterface::ACTOR)
 					);
 				}
 			));

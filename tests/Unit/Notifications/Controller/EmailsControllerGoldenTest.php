@@ -30,7 +30,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 
@@ -39,6 +39,16 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
  * for every allowed and refused path.
  *
  * @covers \OCA\OpenRegister\Notifications\Controller\EmailsController
+ * @uses \OCA\OpenRegister\Db\EmailLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\EmailsDomain
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\EmailsObjectAccess
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\EmailsPlatform
+ * @uses \OCA\OpenRegister\Notifications\Service\EmailLinkRequest
  */
 class EmailsControllerGoldenTest extends TestCase
 {

@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -572,7 +572,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		);
 		$rbac->method('collectOmittedProtectedProperties')->willReturn(['secret']);
 		$rbac->method('restoreWriteOnlyValues')->willReturnCallback(
-			static fn (...$args): array => ($args[0] + ['secret' => $args[1]['secret']])
+			static fn (...$args): array => ($args[0] + ['secret' => $args[1]->stored['secret']])
 		);
 
 		return $rbac;

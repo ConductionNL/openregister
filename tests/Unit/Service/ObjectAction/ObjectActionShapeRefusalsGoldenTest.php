@@ -34,6 +34,15 @@ use PHPUnit\Framework\TestCase;
  * Golden pins for the shape refusals of a declared action.
  *
  * @covers \OCA\OpenRegister\Service\ObjectAction\ObjectActionShape
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarationReader
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputSchema
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssignShape
+ * @uses \OCA\OpenRegister\Service\ObjectAction\SchemaRules
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
  */
 class ObjectActionShapeRefusalsGoldenTest extends TestCase {
 

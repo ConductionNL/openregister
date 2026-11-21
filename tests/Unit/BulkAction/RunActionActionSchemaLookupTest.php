@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use OCA\OpenRegister\BulkAction\RunActionAction;
@@ -76,7 +77,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 		);
 		$this->runner->method('rehearse')->willReturn([]);
 
-		$result = $this->action()->apply($this->object(), ['action' => 'close'], false);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: false, actor: null));
 
 		$this->assertSame(['id' => '7', 'rbac' => false, 'multitenancy' => false], $seen);
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
@@ -87,7 +88,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 		$this->runner->expects($this->never())->method('rehearse');
 		$this->runner->expects($this->never())->method('run');
 
-		$result = $this->action()->apply($this->object(), ['action' => 'close'], true);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: true, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		$this->assertSame('no-schema', $result->getReason());
@@ -109,7 +110,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 			->willReturn(['status' => Http::STATUS_CONFLICT, 'body' => ['message' => 'already closed']]);
 		$action = new RunActionAction($this->runner, new BulkObjectAccess($objects, $this->schemas, new NullLogger()));
 
-		$result = $action->apply($this->object(), ['action' => 'close', 'inputs' => ['note' => 'x'], 'register' => 'zaken'], true);
+		$result = $action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close', 'inputs' => ['note' => 'x'], 'register' => 'zaken'], commit: true, actor: null));
 
 		$this->assertSame(['zaken', '7'], $seen);
 		$this->assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
@@ -120,7 +121,7 @@ class RunActionActionSchemaLookupTest extends TestCase {
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->runner->method('rehearse')->willReturn(['refusal' => ['status' => Http::STATUS_FORBIDDEN, 'body' => ['message' => 'nope']]]);
 
-		$result = $this->action()->apply($this->object(), ['action' => 'close'], false);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'close'], commit: false, actor: null));
 
 		$this->assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		$this->assertSame('nope', $result->getReason());

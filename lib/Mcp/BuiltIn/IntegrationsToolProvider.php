@@ -38,8 +38,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 
 /**
  * IntegrationsToolProvider
@@ -193,10 +195,13 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 			$filters = [];
 		}
 
-		$items = $provider->list(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+		$items = (new IntegrationProviderInvoker())->list(
+			$provider,
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$filters
 		);
 
@@ -213,10 +218,13 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 	private function getLinked(array $arguments): array {
 		$provider = $this->resolveProvider(arguments: $arguments);
 
-		return $provider->get(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+		return (new IntegrationProviderInvoker())->get(
+			$provider,
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$this->requireText(arguments: $arguments, param: 'entityId')
 		);
 	}//end getLinked()
@@ -239,10 +247,13 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 			$payload = [];
 		}
 
-		return $provider->create(
-			$this->requireText(arguments: $arguments, param: 'register'),
-			$this->requireText(arguments: $arguments, param: 'schema'),
-			$this->requireText(arguments: $arguments, param: 'objectId'),
+		return (new IntegrationProviderInvoker())->create(
+			$provider,
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$payload
 		);
 	}//end createLinked()

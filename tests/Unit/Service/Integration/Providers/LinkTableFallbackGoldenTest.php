@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
@@ -52,6 +53,12 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @covers \OCA\OpenRegister\Service\Integration\Providers\CospendProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\FormsProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\TimeProvider
+ * @uses   \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Service\FormsAppRows
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\MarkerScan
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\MarkerLookupTrait
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
@@ -59,6 +66,12 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @uses   \OCA\OpenRegister\Db\CospendLink
  * @uses   \OCA\OpenRegister\Db\FormLink
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\FormsAppRows
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\MarkerScan
  */
 class LinkTableFallbackGoldenTest extends TestCase {
 
@@ -325,7 +338,7 @@ class LinkTableFallbackGoldenTest extends TestCase {
 				$this->queries = [];
 				$this->dbMode = $mode;
 				try {
-					$rows = $this->provider($name, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+					$rows = $this->provider($name, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				} catch (\Throwable $e) {
 					$rows = ['thrown' => get_class($e), 'message' => $e->getMessage()];
 				}

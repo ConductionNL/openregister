@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Form;
 
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\IL10N;
 use Throwable;
 
@@ -96,7 +97,7 @@ class FormDefinitionResolver implements FormDefinitionResolverInterface {
 	 */
 	private function bodyOf(string $formId): array {
 		try {
-			$entity = $this->objects->find(id: $formId, _rbac: false, _multitenancy: false, _audit: false);
+			$entity = $this->objects->find(id: $formId, options: new ObjectFindOptions(audit: false), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return [];
 		}

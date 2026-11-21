@@ -69,17 +69,27 @@ class ExampleSetCollectivesStore {
 	private const USER_MEMBER = 1;
 
 	/**
+	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Tells whether the app is installed.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container  Hands out the Collectives and Circles services.
-	 * @param IAppManager        $appManager Tells whether Collectives is installed.
-	 *
-	 * @return void
+	 * @param ExampleSetAppReach $reach Hands out the Collectives and Circles services, tells whether Collectives is installed.
 	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-	) {
+	public function __construct(ExampleSetAppReach $reach) {
+		$this->container  = $reach->container;
+		$this->appManager = $reach->apps;
 	}//end __construct()
 
 	/**

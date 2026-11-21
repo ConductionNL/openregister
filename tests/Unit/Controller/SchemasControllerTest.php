@@ -11,6 +11,7 @@ use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -33,6 +34,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /*
  * Unit tests for SchemasController
@@ -73,7 +75,14 @@ class SchemasControllerTest extends TestCase {
 
 	private \Psr\Container\ContainerInterface&MockObject $container;
 
-	private ?\OCA\OpenRegister\Service\Form\FormDependentsCheck $formCheck = null;
+	/**
+	 * The rename check the container hands out, or null for none.
+	 *
+	 * @var \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface|null
+	 */
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface $renameCheck = null;
+
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface $formCheck = null;
 
 	private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
 
@@ -89,6 +98,14 @@ class SchemasControllerTest extends TestCase {
 	 * Whether the signed-in user of the mocked session is an administrator.
 	 */
 	private bool $currentUserIsAdmin = true;
+
+	/**
+	 * The actions the signed-in user holds on a schema, for the grant ceiling.
+	 * Every CRUD action by default, so tests about other rules keep their grants.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $heldActions = ['create', 'read', 'update', 'delete'];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -126,11 +143,21 @@ class SchemasControllerTest extends TestCase {
 		);
 		$schemaDeletionService = $this->schemaDeletionService;
 
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			fn (PermissionAsk $ask): bool => in_array($ask->action, $this->heldActions, true)
+		);
+		$grantCeiling = new \OCA\OpenRegister\Service\Authorization\GrantCeiling(groups: $groupManager, permissions: $permissions);
+
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(
-			function ($id) use ($userSession, $groupManager, $schemaDeletionService) {
+			function ($id) use ($userSession, $groupManager, $schemaDeletionService, $grantCeiling) {
 				if ($id === \OCP\IUserSession::class) {
 					return $userSession;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Authorization\GrantCeiling::class) {
+					return $grantCeiling;
 				}
 
 				if ($id === \OCP\IGroupManager::class) {
@@ -141,8 +168,12 @@ class SchemasControllerTest extends TestCase {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class) {
 					return $this->formCheck;
+				}
+
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class) {
+					return $this->renameCheck;
 				}
 
 				return null;
@@ -300,6 +331,26 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(201, $result->getStatus());
 	}//end testCreateReturnsCreatedSchema()
 
+	/**
+	 * A create answers with the schema and the advisory annotations its save ignored.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testCreateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Meeting');
+		$discarded = [['family' => 'aggregations', 'schema' => 'meeting', 'messages' => ['Unknown filter field "x".']]];
+		$this->request->method('getParams')->willReturn(['title' => 'Meeting']);
+		$this->schemaMapper->method('createFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+
+		$result = $this->controller->create();
+
+		$this->assertSame(201, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Meeting', $result->getData()['title']);
+		$this->assertSame(1, $result->getData()['id']);
+	}//end testCreateListsTheDiscardedAnnotations()
+
 	public function testCreateRemovesInternalParams(): void {
 		$schema = $this->createRealSchema(1, 'Test');
 
@@ -379,6 +430,95 @@ class SchemasControllerTest extends TestCase {
 	}//end testAManagerMayChangeOtherRulesAndKeepAMarker()
 
 	/**
+	 * A manager who holds read and update cannot give another group delete; nothing is stored.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testASchemaBlockBeyondTheEditorsRightsIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read', 'update'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$schema->setSlug('publicatie');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(
+			['error' => 'grant-exceeds-granter', 'excess' => [['register' => null, 'schema' => 'publicatie', 'action' => 'delete']]],
+			$result->getData()
+		);
+	}//end testASchemaBlockBeyondTheEditorsRightsIsRefused()
+
+	/**
+	 * A manager who is not an administrator cannot hand on manage.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAManagerCannotGrantManage(): void {
+		$this->currentUserIsAdmin = false;
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'redactie'], 'read' => ['redactie']]]);
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('manage', $result->getData()['excess'][0]['action']);
+	}//end testAManagerCannotGrantManage()
+
+	/**
+	 * A grant within the manager's rights is stored as before.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAGrantWithinTheEditorsRightsIsStored(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read', 'update'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie', 'archief'], 'update' => ['redactie']]]);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAGrantWithinTheEditorsRightsIsStored()
+
+	/**
+	 * A manager may save a block that already names a right they lack, as long as the save adds nothing.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnUnchangedGrantTheEditorLacksIsKept(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read'];
+		$schema = $this->createRealSchema(1, 'Existing');
+		$schema->setAuthorization(['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['beheer']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['beheer']], 'title' => 'Renamed']);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnUnchangedGrantTheEditorLacksIsKept()
+
+	/**
+	 * An administrator may grant an action they are not listed for.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnAdministratorMayGrantBeyondTheRules(): void {
+		$this->heldActions = [];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'beheer'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->schemaMapper->expects($this->once())->method('updateFromArray')->willReturn($schema);
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+	}//end testAnAdministratorMayGrantBeyondTheRules()
+
+	/**
 	 * An administrator may add the marker.
 	 *
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
@@ -409,6 +549,28 @@ class SchemasControllerTest extends TestCase {
 
 		$this->assertSame(403, $this->controller->uploadUpdate(1)->getStatus());
 	}//end testAnUploadByAManagerWhoIsNotAnAdminCannotAddTheMarker()
+
+	/**
+	 * An upload over an existing schema cannot give a right the uploader does not hold.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnUploadBeyondTheUploadersRightsIsRefused(): void {
+		$this->currentUserIsAdmin = false;
+		$this->heldActions = ['read'];
+		$schema = $this->managedSchema(read: ['redactie']);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn([]);
+		$this->uploadService->method('getUploadedJson')->willReturn(
+			['title' => 'Existing', 'authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'update' => ['redactie']]]
+		);
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$result = $this->controller->uploadUpdate(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('update', $result->getData()['excess'][0]['action']);
+	}//end testAnUploadBeyondTheUploadersRightsIsRefused()
 
 	/**
 	 * A marker sent as JSON text is judged as the block the entity would store.
@@ -603,7 +765,7 @@ class SchemasControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
 		$assessment = ['refused' => true, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]];
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->expects($this->once())->method('assess')
 			->with($this->callback(static fn (Schema $proposed): bool => $proposed->getRequired() === ['title', 'priority'] && $proposed !== $schema))
 			->willReturn($assessment);
@@ -628,7 +790,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->method('assess')->willReturn(['refused' => false, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]]);
 		$check->expects($this->once())->method('apply')->willReturn([['id' => 'form-a', 'outcome' => 'unpublished']]);
 		$this->formCheck = $check;
@@ -660,6 +822,109 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$this->assertArrayNotHasKey('affectedForms', $result->getData() instanceof Schema ? [] : (array)$result->getData());
 	}//end testAFailingDependentFormCheckIsLogged()
+
+	/**
+	 * A rename that leaves a published trigger watching the old name saves, and the response carries the warning.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testARenameWarnsAboutTheFlowTriggersThatWatchTheOldName(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['description' => ['type' => 'string']], 'acknowledgeBreaking' => true]);
+		$changeSet = new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([['property' => 'summary', 'kind' => 'renamed', 'old' => 'summary', 'new' => 'description']], 'breaking', 'major');
+		$this->schemaVersioningService->method('classify')->willReturn($changeSet);
+		$warning = ['flow' => 'flow-a', 'step' => 'start', 'field' => 'summary', 'renamedTo' => 'description', 'message' => 'Flow "flow-a" step "start" watches "summary".'];
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
+		$check->expects($this->once())->method('warningsFor')->with($schema, $changeSet)->willReturn([$warning]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame('Ticket', $result->getData()['title']);
+		$this->assertSame([$warning], $result->getData()['flowWarnings']);
+	}//end testARenameWarnsAboutTheFlowTriggersThatWatchTheOldName()
+
+	/**
+	 * Without a warning the response is the schema alone, as before.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		// The schema's fields as before, beside an empty list of ignored annotations.
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(array_merge($schema->jsonSerialize(), ['warnings' => []]), $result->getData());
+	}//end testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore()
+
+	/**
+	 * An update lists the advisory annotations its save ignored, read right after the save.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testAnUpdateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$discarded = [
+			['family' => 'calculations', 'schema' => 'ticket', 'messages' => ['Unknown op.']],
+			['family' => 'quality', 'schema' => 'ticket', 'messages' => ['Bad weight.']],
+		];
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Ticket', $result->getData()['title']);
+	}//end testAnUpdateListsTheDiscardedAnnotations()
+
+	/**
+	 * A rename check that throws is logged and never fails the save.
+	 *
+	 * @spec openspec/changes/flow-trigger-transitions-and-changed-fields/specs/flow-engine/spec.md#requirement-an-update-trigger-can-watch-named-fields
+	 */
+	public function testAFailingRenameCheckIsLoggedAndTheSaveStands(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
+		$check->method('warningsFor')->willThrowException(new \RuntimeException('flows unreadable'));
+		$this->renameCheck = $check;
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string|\Stringable $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [(string)$message, $context];
+			}
+		);
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertContains(
+			['[SchemasController] The rename could not be checked against the flow triggers', ['schema_id' => 1, 'error' => 'flows unreadable']],
+			$warnings
+		);
+	}//end testAFailingRenameCheckIsLoggedAndTheSaveStands()
 
 	/**
 	 * Sign in a schema manager who is no administrator, for a schema with the given flag.
@@ -854,7 +1119,7 @@ class SchemasControllerTest extends TestCase {
 			]
 		);
 
-		$this->auditTrailMapper->method('getStatistics')->willReturn(
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(
 			[
 				'total' => 100,
 			]
@@ -1159,7 +1424,7 @@ class SchemasControllerTest extends TestCase {
 				'size' => 5000,
 			]
 		);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 50, 'size' => 200]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 50, 'size' => 200]);
 
 		$result = $this->controller->show(1);
 
@@ -1211,7 +1476,7 @@ class SchemasControllerTest extends TestCase {
 				'size' => 0,
 			]
 		);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0, 'size' => 0]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 0, 'size' => 0]);
 
 		$result = $this->controller->show(1);
 
@@ -2009,7 +2274,7 @@ class SchemasControllerTest extends TestCase {
 
 	public function testANonAdminReadingASchemaIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 
 		$data = $this->showWithLogStats();
 
@@ -2018,8 +2283,8 @@ class SchemasControllerTest extends TestCase {
 	}//end testANonAdminReadingASchemaIsNotGivenTheTrailCount()
 
 	public function testAnAdminReadingASchemaIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(null, 1)->willReturn(['total' => 50, 'size' => 200]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(null, 1))->willReturn(['total' => 50, 'size' => 200]);
 
 		$data = $this->showWithLogStats();
 
@@ -2028,7 +2293,7 @@ class SchemasControllerTest extends TestCase {
 
 	public function testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
 
@@ -2039,8 +2304,8 @@ class SchemasControllerTest extends TestCase {
 	}//end testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount()
 
 	public function testAnAdminAskingForSchemaStatsIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(null, 1)->willReturn(['total' => 9, 'size' => 90]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(null, 1))->willReturn(['total' => 9, 'size' => 90]);
 		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
 

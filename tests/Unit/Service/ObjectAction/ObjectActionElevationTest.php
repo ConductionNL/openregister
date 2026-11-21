@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -250,14 +252,16 @@ class ObjectActionElevationTest extends TestCase {
 	}//end testTheElevationEndsWithTheRunEvenWhenItThrows()
 
 	public function testAnElevatedWriteIsAttributedAndAnOrdinaryOneIsNot(): void {
-		$mapper = (new \ReflectionClass(AuditTrailMapper::class))->newInstanceWithoutConstructor();
+		$mapper = $this->mapperAnsweredBy(attribution: new ObjectActionElevationAttribution());
 		$apply = new ReflectionMethod(AuditTrailMapper::class, 'applyElevation');
 
 		$elevated = new AuditTrail();
+		$elevated->setRegister(4);
 		$elevated->setSchema(9);
 		$elevated->setAction('create');
 		$elevated->setChanged(['title' => 'Besluit']);
 		$ordinary = new AuditTrail();
+		$ordinary->setRegister(4);
 		$ordinary->setSchema(9);
 		$ordinary->setAction('update');
 
@@ -276,6 +280,72 @@ class ObjectActionElevationTest extends TestCase {
 		);
 		$this->assertArrayNotHasKey('elevation', $ordinary->getChanged());
 	}//end testAnElevatedWriteIsAttributedAndAnOrdinaryOneIsNot()
+
+	/**
+	 * A hand-built audit mapper whose container answers the elevation port with the given attribution.
+	 *
+	 * @param ElevationAttributionInterface|null $attribution What answers the port; null for a container that answers nothing.
+	 *
+	 * @return AuditTrailMapper The mapper.
+	 */
+	private function mapperAnsweredBy(?ElevationAttributionInterface $attribution): AuditTrailMapper {
+		$mapper = (new \ReflectionClass(AuditTrailMapper::class))->newInstanceWithoutConstructor();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($attribution): object {
+				if ($id === ElevationAttributionInterface::class && $attribution !== null) {
+					return $attribution;
+				}
+
+				throw new RuntimeException('not bound: ' . $id);
+			}
+		);
+		\Closure::bind(static function (AuditTrailMapper $mapper) use ($container): void {
+			$mapper->container = $container;
+		}, null, AuditTrailMapper::class)($mapper);
+
+		return $mapper;
+	}//end mapperAnsweredBy()
+
+	public function testAnElevatedWriteIsNotAttributedWhenNothingAnswersThePort(): void {
+		$mapper = $this->mapperAnsweredBy(attribution: null);
+		$apply = new ReflectionMethod(AuditTrailMapper::class, 'applyElevation');
+		$elevated = new AuditTrail();
+		$elevated->setRegister(4);
+		$elevated->setSchema(9);
+		$elevated->setAction('create');
+		$elevated->setChanged(['title' => 'Besluit']);
+
+		ObjectActionElevationScope::run(
+			new ActionElevation('publish', 'anna', $this->entries()),
+			function () use ($mapper, $apply, $elevated): void {
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
+				$apply->invoke($mapper, $elevated);
+			}
+		);
+
+		$this->assertSame(['title' => 'Besluit'], $elevated->getChanged());
+	}//end testAnElevatedWriteIsNotAttributedWhenNothingAnswersThePort()
+
+	public function testTheAttributionAnswersTheRowsRegisterSchemaAndVerb(): void {
+		$row = new AuditTrail();
+		$row->setRegister(4);
+		$row->setSchema(9);
+		$row->setAction('create');
+		$attribution = new ObjectActionElevationAttribution();
+
+		$this->assertInstanceOf(ElevationAttributionInterface::class, $attribution);
+		$this->assertNull($attribution->attributionFor(row: $row));
+		$seen = ObjectActionElevationScope::run(
+			new ActionElevation('publish', 'anna', $this->entries()),
+			function () use ($attribution, $row): ?array {
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
+				return $attribution->attributionFor(row: $row);
+			}
+		);
+
+		$this->assertSame(['elevatedBy' => 'publish', 'triggeredBy' => 'anna', 'runAs' => 'system'], $seen);
+	}//end testTheAttributionAnswersTheRowsRegisterSchemaAndVerb()
 
 	public function testEntriesResolveToIdsAndAnUnresolvableOneIsDropped(): void {
 		$registers = $this->createMock(RegisterMapper::class);

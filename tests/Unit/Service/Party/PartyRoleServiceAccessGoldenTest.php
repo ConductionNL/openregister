@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyRoleRecords;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -342,7 +343,7 @@ class PartyRoleServiceAccessGoldenTest extends TestCase {
 	public function testRemovingWithoutARoleRemovesEveryRole(): void {
 		$this->rows = [$this->link('party-a', 'x'), $this->link('party-b', 'x'), $this->link('party-a', 'y')];
 
-		$this->assertSame(2, $this->service()->removeParty('case-1', 'party-a'));
+		$this->assertSame(2, $this->service()->removeParty('case-1', new PartyHolding('party-a')));
 		$this->assertSame(
 			['delete:party-a:x', 'event:PersonUnlinkedEvent', 'delete:party-a:y', 'event:PersonUnlinkedEvent'],
 			$this->calls
@@ -357,12 +358,12 @@ class PartyRoleServiceAccessGoldenTest extends TestCase {
 	public function testRemovingWithARoleRemovesOnlyThatRole(): void {
 		$this->rows = [$this->link('party-a', 'x'), $this->link('party-a', 'y')];
 
-		$this->assertSame(1, $this->service()->removeParty('case-1', 'party-a', 'y'));
+		$this->assertSame(1, $this->service()->removeParty('case-1', new PartyHolding('party-a', 'y')));
 		$this->assertSame(['delete:party-a:y', 'event:PersonUnlinkedEvent'], $this->calls);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 		$this->expectExceptionMessage('Party link not found');
-		$this->service()->removeParty('case-1', 'party-a', 'z');
+		$this->service()->removeParty('case-1', new PartyHolding('party-a', 'z'));
 	}//end testRemovingWithARoleRemovesOnlyThatRole()
 }//end class

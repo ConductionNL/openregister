@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -62,6 +62,13 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateInput
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ShareTargetLookup
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateChange
  */
 class RecordTemplateServiceTest extends TestCase {
 

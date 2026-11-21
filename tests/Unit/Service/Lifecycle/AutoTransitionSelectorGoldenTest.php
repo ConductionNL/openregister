@@ -53,6 +53,14 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ConditionUser
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class AutoTransitionSelectorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/auto-transition-golden.json';
@@ -178,6 +186,6 @@ class AutoTransitionSelectorGoldenTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 		$dialect = new ConditionDialect(new CalculationEvaluator(new PlaceholderResolver($userSession)));
 
-		return new LifecycleConditionEvaluator($userSession, $groupManager, new LifecycleConditionReporting($l10n, $log), $dialect);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $log), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($userSession, $groupManager)));
 	}//end evaluator()
 }//end class

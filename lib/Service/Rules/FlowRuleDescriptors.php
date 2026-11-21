@@ -112,25 +112,47 @@ final class FlowRuleDescriptors {
 	 * @return RuleDescriptor The descriptor.
 	 */
 	private function descriptor(array $flow): RuleDescriptor {
-		$events = array_values(array_unique($flow['events']));
-		sort($events);
-
 		return new RuleDescriptor(
-			origin: new RuleOrigin(
-				kind: RuleVocabulary::KIND_FLOW,
-				schemaSlug: $flow['schema'],
-				key: $flow['uuid'],
-				source: ('openregister_flow_triggers.' . $flow['uuid'])
-			),
+			origin: self::originOf(flow: $flow),
 			label: $flow['uuid'],
-			effect: new RuleEffect(
-				actions: [RuleVocabulary::ACTION_RUN_FLOW],
-				condition: ['events' => $events],
-				scope: $this->scopeOf(flowUuid: $flow['uuid'], schemaSlug: $flow['schema'])
-			),
+			effect: $this->effectOf(flow: $flow),
 			enabled: $flow['enabled']
 		);
 	}//end descriptor()
+
+	/**
+	 * Where a flow rule comes from: its schema and the flow it triggers.
+	 *
+	 * @param array{uuid: string, schema: string, events: array<int, string>, enabled: bool} $flow The flow.
+	 *
+	 * @return RuleOrigin The origin.
+	 */
+	private static function originOf(array $flow): RuleOrigin {
+		return new RuleOrigin(
+			kind: RuleVocabulary::KIND_FLOW,
+			schemaSlug: $flow['schema'],
+			key: $flow['uuid'],
+			source: ('openregister_flow_triggers.' . $flow['uuid'])
+		);
+	}//end originOf()
+
+	/**
+	 * What a flow rule does: run the flow on its events, within its trigger's scope.
+	 *
+	 * @param array{uuid: string, schema: string, events: array<int, string>, enabled: bool} $flow The flow.
+	 *
+	 * @return RuleEffect The effect.
+	 */
+	private function effectOf(array $flow): RuleEffect {
+		$events = array_values(array_unique($flow['events']));
+		sort($events);
+
+		return new RuleEffect(
+			actions: [RuleVocabulary::ACTION_RUN_FLOW],
+			condition: ['events' => $events],
+			scope: $this->scopeOf(flowUuid: $flow['uuid'], schemaSlug: $flow['schema'])
+		);
+	}//end effectOf()
 
 	/**
 	 * The scope of a flow, read from its object trigger node for this schema.

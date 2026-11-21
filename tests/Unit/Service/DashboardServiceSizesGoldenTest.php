@@ -27,11 +27,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -54,6 +56,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Service\DashboardMappers
  */
 class DashboardServiceSizesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/Golden/dashboard-service-sizes.json';
@@ -164,7 +174,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (mixed ...$args): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				$args = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->note('objects.findAllInRegisterSchemaTable', $args);
 				return [$this->entity(ObjectEntity::class, 100), $this->entity(ObjectEntity::class, 666)];
 			}
@@ -211,7 +222,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 				return $log;
 			}
 		);
-		$mapper->method('getStatistics')->willReturn(['total' => 21, 'size' => 22]);
+		$mapper->method('statisticsTotals')->willReturn(['total' => 21, 'size' => 22]);
 		return $mapper;
 	}//end audit()
 

@@ -210,6 +210,24 @@ class FlowRunSubjectRecorder {
 			return [];
 		}
 
+		// Throws, naming the roles the run DOES hold.
+		$subject = $this->subjects->addressed(run: $this->readableRun(context: $context, role: $role), role: $role);
+
+		return $this->anchorOf(subject: $subject);
+
+	}//end anchorFor()
+
+	/**
+	 * The run a step attaches for, or a refusal when it cannot be read.
+	 *
+	 * @param array<string, mixed> $context The step's context.
+	 * @param string               $role    The role the step attaches to, for the refusal.
+	 *
+	 * @return FlowRun The run.
+	 *
+	 * @throws UnexpectedValueException When the run cannot be read.
+	 */
+	private function readableRun(array $context, string $role): FlowRun {
 		$run = $this->runFor(context: $context);
 		if ($run === null) {
 			throw new UnexpectedValueException(
@@ -218,9 +236,17 @@ class FlowRunSubjectRecorder {
 			);
 		}
 
-		// Throws, naming the roles the run DOES hold.
-		$subject = $this->subjects->addressed(run: $run, role: $role);
+		return $run;
+	}//end readableRun()
 
+	/**
+	 * The anchor a subject entry gives: its object, and its register and schema ids when numeric.
+	 *
+	 * @param array<string, mixed> $subject The subject entry.
+	 *
+	 * @return array<string, int|string> The anchor.
+	 */
+	private function anchorOf(array $subject): array {
 		$anchor = ['objectUuid' => trim((string)($subject['uuid'] ?? ''))];
 
 		$register = trim((string)($subject['register'] ?? ''));
@@ -234,6 +260,5 @@ class FlowRunSubjectRecorder {
 		}
 
 		return $anchor;
-
-	}//end anchorFor()
+	}//end anchorOf()
 }//end class

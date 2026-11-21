@@ -266,7 +266,7 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		$this->jobs->method('runs')->willReturnCallback(
 			fn (
 				JobRunFilter $filter,
-				\OCA\OpenRegister\Db\ListQuery $page
+				\OCA\OpenRegister\Kernel\Contracts\ListQuery $page
 			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $page->limit, $page->offset]
 		);
 		$this->assertSame(

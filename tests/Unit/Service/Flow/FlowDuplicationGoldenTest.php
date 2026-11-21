@@ -30,6 +30,10 @@ use stdClass;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunMarkingStore
  * @covers \OCA\OpenRegister\Service\Flow\FlowStepHistory
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunStep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStepOutcome
  */
 final class FlowDuplicationGoldenTest extends TestCase {
 

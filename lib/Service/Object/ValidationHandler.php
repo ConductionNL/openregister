@@ -20,10 +20,16 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Handles validation operations for ObjectService.
@@ -90,12 +96,12 @@ class ValidationHandler {
 	 *
 	 * @param int $schemaId The schema ID to validate objects for.
 	 * @param callable $saveCallback Callback function to save/validate objects
-	 *                               (receives: object, extend, register, schema, uuid, rbac, multi, silent).
+	 *                               (receives: object, options, _rbac, _multitenancy, positionally).
 	 *
 	 * @psalm-param   int $schemaId
-	 * @psalm-param   callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
+	 * @psalm-param   callable(array, ObjectSaveOptions, bool, bool): mixed $saveCallback
 	 * @phpstan-param int $schemaId
-	 * @phpstan-param callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
+	 * @phpstan-param callable(array, ObjectSaveOptions, bool, bool): mixed $saveCallback
 	 *
 	 * @return array Array containing 'valid' and 'invalid' objects with details.
 	 *
@@ -118,7 +124,16 @@ class ValidationHandler {
 			$data = $object->getObject();
 			$error = $this->silentSaveError(
 				object: $object,
-				save: static fn () => $saveCallback($data, [], $object->getRegister(), $schemaId, $object->getUuid(), false, false, true)
+				save: static fn () => $saveCallback(
+					$data,
+					new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $schemaId),
+						uuid: $object->getUuid(),
+						policy: new SavePolicy(silent: true),
+					),
+					false,
+					false
+				)
 			);
 			$entry = ['id' => $object->getId(), 'uuid' => $object->getUuid(), 'name' => $object->getName(), 'data' => $data];
 			if ($error === null) {
@@ -310,7 +325,8 @@ class ValidationHandler {
 	 */
 	private function loadObjectsForValidation(array $loaded, int $schemaId): ?array {
 		try {
-			return $this->catalog->tables()->findAllInRegisterSchemaTable($loaded['register'], $loaded['schema']);
+			$table = new RegisterSchema(register: $loaded['register'], schema: $loaded['schema']);
+			return $this->catalog->tables()->findAllInRegisterSchemaTable(table: $table);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ValidationHandler] Failed to get objects from magic table',
@@ -562,14 +578,13 @@ class ValidationHandler {
 		// Validation and enrichment update metadata like _name; events are off for performance.
 		return $objectService->saveObjects(
 			objects: $objectsData,
-			register: $run->registerId,
-			schema: $run->schemaId,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $run->registerId, schema: $run->schemaId),
+				validation: true,
+				events: false
+			),
 			_rbac: false,
-			_multitenancy: false,
-			validation: true,
-			events: false,
-			deduplicateIds: false,
-			enrich: true
+			_multitenancy: false
 		);
 	}//end bulkSave()
 

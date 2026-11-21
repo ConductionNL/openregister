@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Exception;
 /**
  * A conditional claim found the property already set.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 class PropertyAlreadySetException extends ValidationException {
 }//end class

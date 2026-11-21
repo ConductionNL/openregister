@@ -88,6 +88,8 @@ use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IGroupManager;
 use OCP\IUser;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Bulk object save orchestrator.
@@ -426,12 +428,52 @@ class SaveObjects {
 			return $this->nothingPreparedResult(run: $run);
 		}
 
+		$processedObjects = $this->applyBulkQuota(run: $run, rows: $processedObjects);
+		if (empty($processedObjects) === true) {
+			return $this->allRejectedResult(run: $run);
+		}
+
 		// Update statistics to reflect actual processed objects.
 		$run->result['statistics']['totalProcessed'] = count($processedObjects);
 		$this->saveBulkChunks(run: $run, processedObjects: $processedObjects);
 
 		return $this->finishBulkResult(run: $run, processedCount: count($processedObjects));
 	}//end runBulkSave()
+
+	/**
+	 * Hold the prepared creates to each schema's per-organisation cap (object-quota-per-organisation 4.1).
+	 *
+	 * Runs only where the safeguard screen ran, because only it knows which rows update a stored object.
+	 *
+	 * @param BulkSaveRun                      $run  The bulk save call; refused rows are added to its result.
+	 * @param array<int, array<string, mixed>> $rows The prepared rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows within the cap.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	private function applyBulkQuota(BulkSaveRun $run, array $rows): array {
+		$quota = $this->checks->rowRules?->quota;
+		if ($quota === null || $run->storedUuids === null) {
+			return $rows;
+		}
+
+		[$passed, $refused] = $quota->screen(
+			rows: $rows,
+			storedUuids: $run->storedUuids,
+			schemaOf: fn (string $schemaId): Schema => $this->loadSchemaWithCache(schemaId: $schemaId),
+			registerOf: fn (string $registerId): int => (int)$this->loadRegisterWithCache(registerId: $registerId)->getId()
+		);
+		foreach ($refused as $refusal) {
+			$entry = ['error' => $refusal['error'], 'code' => $refusal['code'], 'index' => null, 'type' => 'ObjectQuotaException'];
+			$run->result['invalid'][] = ['object' => $refusal['object']] + $entry;
+			$run->result['errors'][]  = $entry;
+			$run->result['statistics']['invalid']++;
+			$run->result['statistics']['errors']++;
+		}
+
+		return $passed;
+	}//end applyBulkQuota()
 
 	/**
 	 * The result of a run none of whose rows could be prepared.
@@ -498,6 +540,10 @@ class SaveObjects {
 		);
 		$objects     = $this->applyBulkSafeguards(batch: $batch);
 		$run->result = $batch->result;
+		if ($batch->screened === true) {
+			$run->storedUuids = $batch->storedUuids;
+		}
+
 		$run->safeguardMs = round((microtime(true) - $safeguardStart) * 1000, 2);
 
 		return $objects;
@@ -813,6 +859,8 @@ class SaveObjects {
 			return $batch->objects;
 		}
 
+		$batch->screened = true;
+
 		return $this->screenSafeguardBatch(batch: $batch, run: $this->startBulkSafeguardRun(batch: $batch));
 	}//end applyBulkSafeguards()
 
@@ -830,6 +878,7 @@ class SaveObjects {
 			[$row, $refusal] = $this->screenSafeguardRow(object: $object, run: $run);
 			if ($refusal === null) {
 				$passed[] = $row;
+				self::noteStoredRow(batch: $batch, run: $run);
 				continue;
 			}
 
@@ -841,6 +890,22 @@ class SaveObjects {
 
 		return $passed;
 	}//end screenSafeguardBatch()
+
+	/**
+	 * Note a passed row that updates a stored object, so the bulk quota never counts it.
+	 *
+	 * @param SafeguardBatchRun $batch The batch.
+	 * @param BulkSafeguardRun  $run   The safeguard pass, on the row just screened.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md#requirement-a-create-past-an-organisations-cap-is-refused-req-oqp-002
+	 */
+	private static function noteStoredRow(SafeguardBatchRun $batch, BulkSafeguardRun $run): void {
+		if ($run->rowExisting !== null && (string)$run->rowUuid !== '') {
+			$batch->storedUuids[(string)$run->rowUuid] = true;
+		}
+	}//end noteStoredRow()
 
 	/**
 	 * The caller's own array position of a row, which travels with every rejection (issue #2778).
@@ -1161,8 +1226,7 @@ class SaveObjects {
 		}
 
 		$draftKept = (new DraftCallerRule())->keptFromCaller(
-			object: $run->rowExisting,
-			schema: $run->rowSchema,
+			subject: new DraftSubject(object: $run->rowExisting, schema: $run->rowSchema),
 			caller: new DraftCaller(userId: $run->userId(), isAdmin: $run->isAdmin)
 		);
 		if ($draftKept === false) {
@@ -1197,10 +1261,10 @@ class SaveObjects {
 	 * The stored row was found past the read filters, and the update rule it is
 	 * judged by next does not look at organisations, while the writer upserts the
 	 * row and stamps the caller as its owner and organisation. So a row outside the
-	 * caller's organisation scope is refused unless the caller can read it, the
-	 * same boundary ObjectService::checkSavePermissions keeps for a single write. A
-	 * row the caller reads (a rule that reaches across organisations) is left to the
-	 * update rule. Asked before the appendOnly gate, and answered as a refused
+	 * caller's organisation scope is refused unless the caller can read it and it
+	 * has no organisation or an update rule marked `crossOrganisation: true`
+	 * admits the caller, the same boundary ObjectService keeps for a single
+	 * write. Asked before the appendOnly gate, and answered as a refused
 	 * create, so the row's existence stays unannounced. Skipped when the write does
 	 * not keep to the caller's organisations (an administrator).
 	 *
@@ -1239,9 +1303,29 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function callerMayOverwriteStoredRow(BulkSafeguardRun $run): bool {
-		return $this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true
-			|| $this->callerReadsStoredRow(run: $run) === true;
+		if ($this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true) {
+			return true;
+		}
+
+		return $this->mayCrossToStoredRow(run: $run) === true && $this->callerReadsStoredRow(run: $run) === true;
 	}//end callerMayOverwriteStoredRow()
+
+	/**
+	 * Whether a row outside the caller's organisations may be updated at all: it has no organisation, or a marked update rule reaches it.
+	 *
+	 * The single-object save asks the same in ObjectService::refuseACrossingUpdate().
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass, its stored row set
+	 *
+	 * @return bool
+	 */
+	private function mayCrossToStoredRow(BulkSafeguardRun $run): bool {
+		if (trim((string) $run->rowExisting->getOrganisation()) === '') {
+			return true;
+		}
+
+		return $this->checks->permissionHandler?->updateCrossesOrganisations(schema: $run->rowSchema, row: $run->rowExisting) === true;
+	}//end mayCrossToStoredRow()
 
 	/**
 	 * Whether the caller's own read finds the row the current bulk row updates.
@@ -2642,6 +2726,35 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function persistChunkRows(BulkChunkRun $chunk, array $rows): void {
+		$db = $this->reporting->db;
+		if ($db === null || SystemOperationContext::isActive() === false) {
+			$this->persistChunkRowsNow(chunk: $chunk, rows: $rows);
+			return;
+		}
+
+		// A system operation withholds the lifecycle events, so its audit rows
+		// are its only record: they commit or roll back with the rows.
+		$db->beginTransaction();
+		try {
+			$this->persistChunkRowsNow(chunk: $chunk, rows: $rows);
+			$db->commit();
+		} catch (\Throwable $e) {
+			$db->rollBack();
+			throw $e;
+		}
+	}//end persistChunkRows()
+
+	/**
+	 * Persist a chunk's rows, then write their audit rows and events.
+	 *
+	 * @param BulkChunkRun $chunk The chunk pass.
+	 * @param array        $rows  The rows to write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function persistChunkRowsNow(BulkChunkRun $chunk, array $rows): void {
 		$run = $chunk->run;
 		$chunk->eventTargets = $this->bulkEventTargets(
 			transformedObjects: $rows,
@@ -2658,7 +2771,7 @@ class SaveObjects {
 		$this->timedSideEffects(chunk: $chunk, sideEffects: $sideEffects);
 		// Processing time in the result for transparency and performance monitoring.
 		$chunk->result['statistics']['processingTimeMs'] = round((microtime(true) - $chunk->startTime) * 1000, 2);
-	}//end persistChunkRows()
+	}//end persistChunkRowsNow()
 
 	/**
 	 * STEP 2: persist the rows to the database, timed.
@@ -2728,7 +2841,7 @@ class SaveObjects {
 	 *
 	 * @return array<string, true>
 	 *
-	 * @spec openspec/changes/bulk-writes-fire-save-events/specs/object-lifecycle/spec.md#requirement-a-bulk-write-with-events-on-runs-each-rows-pre-save-event-and-refuses-only-the-stopped-row
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function bulkEventTargets(array $transformedObjects, array $context): array {
 		if ($this->checks->rowRules?->bulkWriteEvents === null || $context['events'] === true) {
@@ -3199,13 +3312,14 @@ class SaveObjects {
 	 *
 	 * `$audit === false` is the bulk mirror of the single-object path's `silent` flag: a caller
 	 * that opts out of auditing per object keeps that choice when it moves to the bulk path.
+	 * Inside a system operation the rows are written regardless, as on the single-object path.
 	 *
 	 * @param bool $audit Whether the caller asked for audit trail rows.
 	 *
 	 * @return bool
 	 */
 	private function writesChunkAudit(bool $audit): bool {
-		return $this->reporting->auditTrailMapper !== null && $audit === true;
+		return $this->reporting->auditTrailMapper !== null && ($audit === true || SystemOperationContext::isActive() === true);
 	}//end writesChunkAudit()
 
 	/**
@@ -3253,7 +3367,8 @@ class SaveObjects {
 	 *
 	 * Every AuditTrail entity embeds an old+new payload diff, so the entries
 	 * are consumed slice by slice and each slice is released once persisted.
-	 * A failed slice is logged and the next slice is still written.
+	 * A failed slice is logged and the next slice is still written, except inside a
+	 * system operation, where the failure is rethrown so the chunk rolls back.
 	 *
 	 * @param array $auditEntries The entries from chunkAuditEntries()
 	 *
@@ -3269,6 +3384,10 @@ class SaveObjects {
 					message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
 					context: ['error' => $e->getMessage(), 'entries' => count($slice)]
 				);
+				// Inside a system operation the rows roll back with their audit rows.
+				if (SystemOperationContext::isActive() === true) {
+					throw $e;
+				}
 			}
 		}
 	}//end insertAuditEntries()

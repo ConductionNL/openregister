@@ -61,6 +61,32 @@ use Throwable;
  */
 class DedupCollidedSchemasCommand extends Command {
 	/**
+	 * Clone a schema row except its identity columns, under a new uuid and owning app.
+	 */
+	private const CLONE_SCHEMA_SQL = 'INSERT INTO *PREFIX*openregister_schemas
+             (uuid, title, slug, description, version, summary, required, properties,
+              application, organisation, owner, created, updated)
+             SELECT :uuid, title, slug, description, version, summary, required, properties,
+                    :app, organisation, owner, NOW(), NOW()
+               FROM *PREFIX*openregister_schemas WHERE id = :sid';
+
+	/**
+	 * Replace the shared schema id with the clone's in one register's schemas array.
+	 *
+	 * Every parameter is CAST explicitly: Postgres cannot infer the type of a
+	 * bare placeholder inside to_jsonb() and fails with "could not determine
+	 * polymorphic type because input has type unknown".
+	 */
+	private const REPOINT_REGISTER_SQL = 'UPDATE *PREFIX*openregister_registers
+                SET schemas = (
+                    SELECT jsonb_agg(
+                        CASE WHEN elem::text IN (CAST(:sidTxt AS text), CAST(:sidQuoted AS text))
+                             THEN to_jsonb(CAST(:newIdTxt AS text))
+                             ELSE elem END)
+                      FROM jsonb_array_elements(schemas::jsonb) AS elem)
+              WHERE id = :rid';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -223,72 +249,90 @@ class DedupCollidedSchemasCommand extends Command {
 	 * @return int The new schema id.
 	 */
 	private function splitOneLocked(array $row): int {
-		$schemaId = (int)$row['schema_id'];
-		$registerId = (int)$row['register_id'];
-		$registerApp = $row['register_app'];
+		$newId = $this->cloneSchema(row: $row);
+		$this->repointRegister(row: $row, newId: $newId);
+		$this->moveTable(row: $row, newId: $newId);
+
+		return $newId;
+	}//end splitOneLocked()
+
+	/**
+	 * Clone every column of the shared schema except the identity ones, owned by the register's app.
+	 *
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing.
+	 *
+	 * @return int The new schema id.
+	 */
+	private function cloneSchema(array $row): int {
 		$newUuid = sprintf(
 			'%s-%s',
 			substr(bin2hex(random_bytes(8)), 0, 8),
 			substr(bin2hex(random_bytes(12)), 0, 24)
 		);
 
-		// 1. Clone every column except the identity ones.
 		$this->db->executeStatement(
-			'INSERT INTO *PREFIX*openregister_schemas
-             (uuid, title, slug, description, version, summary, required, properties,
-              application, organisation, owner, created, updated)
-             SELECT :uuid, title, slug, description, version, summary, required, properties,
-                    :app, organisation, owner, NOW(), NOW()
-               FROM *PREFIX*openregister_schemas WHERE id = :sid',
-			['uuid' => $newUuid, 'app' => $registerApp, 'sid' => $schemaId]
+			self::CLONE_SCHEMA_SQL,
+			['uuid' => $newUuid, 'app' => $row['register_app'], 'sid' => (int)$row['schema_id']]
 		);
 
-		$newId = (int)$this->db->lastInsertId('*PREFIX*openregister_schemas');
+		return (int)$this->db->lastInsertId('*PREFIX*openregister_schemas');
+	}//end cloneSchema()
 
-		// 2. Repoint the register: replace the shared id with the clone, in
-		// whichever shape (string or number) the array happens to use.
+	/**
+	 * Repoint the register: replace the shared id with the clone, in whichever
+	 * shape (string or number) the array happens to use.
+	 *
+	 * @param array<string, mixed> $row   The collision row of the register that must stop sharing.
+	 * @param int                  $newId The clone's schema id.
+	 *
+	 * @return void
+	 */
+	private function repointRegister(array $row, int $newId): void {
+		$schemaId = (int)$row['schema_id'];
 		$this->db->executeStatement(
-			// Every parameter is CAST explicitly: Postgres cannot infer the
-			// type of a bare placeholder inside to_jsonb() and fails with
-			// "could not determine polymorphic type because input has type
-			// unknown".
-			'UPDATE *PREFIX*openregister_registers
-                SET schemas = (
-                    SELECT jsonb_agg(
-                        CASE WHEN elem::text IN (CAST(:sidTxt AS text), CAST(:sidQuoted AS text))
-                             THEN to_jsonb(CAST(:newIdTxt AS text))
-                             ELSE elem END)
-                      FROM jsonb_array_elements(schemas::jsonb) AS elem)
-              WHERE id = :rid',
+			self::REPOINT_REGISTER_SQL,
 			[
 				'sidTxt' => (string)$schemaId,
 				'sidQuoted' => '"' . $schemaId . '"',
 				'newIdTxt' => (string)$newId,
-				'rid' => $registerId,
+				'rid' => (int)$row['register_id'],
 			]
 		);
+	}//end repointRegister()
 
-		// 3. Object storage is already per register+schema, so the rows only
-		// need the table to follow the new schema id — no row migration.
+	/**
+	 * Rename the register's magic table to the clone's id and restamp its rows.
+	 *
+	 * Object storage is already per register+schema, so the rows only need the
+	 * table to follow the new schema id — no row migration.
+	 *
+	 * @param array<string, mixed> $row   The collision row of the register that must stop sharing.
+	 * @param int                  $newId The clone's schema id.
+	 *
+	 * @return void
+	 */
+	private function moveTable(array $row, int $newId): void {
+		$schemaId = (int)$row['schema_id'];
+		$registerId = (int)$row['register_id'];
 		$old = 'openregister_table_' . $registerId . '_' . $schemaId;
 		$new = '*PREFIX*openregister_table_' . $registerId . '_' . $newId;
-		if ($this->db->tableExists($old) === true) {
-			$this->db->executeStatement(sprintf('ALTER TABLE *PREFIX*%s RENAME TO %s', $old, $new));
-
-			// The rename alone is NOT enough: every row still carries the OLD
-			// schema id in its `_schema` column, so anything filtering by
-			// schema (queries, exports, RBAC scoping) would miss them or
-			// attribute them to the register that kept the original. Verified
-			// on the larpingapp split — 139 rows sat at `_schema = 21` inside
-			// `openregister_table_8_5440` until this ran.
-			$this->db->executeStatement(
-				sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $new),
-				['new' => (string)$newId, 'old' => (string)$schemaId]
-			);
+		if ($this->db->tableExists($old) === false) {
+			return;
 		}
 
-		return $newId;
-	}//end splitOneLocked()
+		$this->db->executeStatement(sprintf('ALTER TABLE *PREFIX*%s RENAME TO %s', $old, $new));
+
+		// The rename alone is NOT enough: every row still carries the OLD
+		// schema id in its `_schema` column, so anything filtering by
+		// schema (queries, exports, RBAC scoping) would miss them or
+		// attribute them to the register that kept the original. Verified
+		// on the larpingapp split — 139 rows sat at `_schema = 21` inside
+		// `openregister_table_8_5440` until this ran.
+		$this->db->executeStatement(
+			sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $new),
+			['new' => (string)$newId, 'old' => (string)$schemaId]
+		);
+	}//end moveTable()
 
 	/**
 	 * Execute the command.

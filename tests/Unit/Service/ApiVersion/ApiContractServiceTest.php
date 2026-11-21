@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\ApiVersion\ApiContractService
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiContractServiceTest extends TestCase {
 

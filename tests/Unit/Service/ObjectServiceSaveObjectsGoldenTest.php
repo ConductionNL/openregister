@@ -7,7 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Pins what ObjectService::saveObjects() forwards to the bulk handler and how it invalidates
@@ -25,6 +26,24 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Object\AccessFlags
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
  */
 class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 
@@ -61,7 +80,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 
 		$given = ['saveObjectsHandler' => $bulk, 'cacheHandler' => $cache, 'logger' => $logger];
 		$args = [];
-		foreach ((new ReflectionMethod(ObjectService::class, '__construct'))->getParameters() as $param) {
+		foreach ((new ReflectionMethod(ObjectServiceFactory::class, 'args'))->getParameters() as $param) {
 			$name = $param->getName();
 			if (isset($given[$name]) === true) {
 				$args[$name] = $given[$name];
@@ -69,7 +88,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 				$args[$name] = $this->createMock($param->getType()->getName());
 			}
 		}
-		return new ObjectService(...$args);
+		return new ObjectService(...ObjectServiceFactory::args(...$args));
 	}
 
 	/**
@@ -86,7 +105,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 			'nothing changed' => [['stats' => ['objectsCreated' => 0, 'objectsUpdated' => 0]] + $base],
 			'no statistics' => [['stats' => []] + $base],
 			'invalidation fails' => [['cacheFails' => true] + $base],
-			'all flags' => [['args' => ['_rbac' => false, '_multitenancy' => false, 'validation' => true, 'events' => true, 'deduplicateIds' => false, 'enrich' => false, '_audit' => false]] + $base],
+			'all flags' => [['args' => ['options' => new BulkSaveOptions(validation: true, events: true, audit: false), '_rbac' => false, '_multitenancy' => false]] + $base],
 		];
 	}
 
@@ -94,7 +113,7 @@ class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 	 * @dataProvider scenarios
 	 */
 	public function testSaveObjectsGolden(array $s): void {
-		$result = $this->service($s)->saveObjects([['a' => 1]], ...$s['args']);
+		$result = $this->service($s)->saveObjects(...(['objects' => [['a' => 1]]] + $s['args']));
 		$this->calls[] = ['result', $result];
 
 		$file = __DIR__ . '/fixtures/object-service-save-objects-golden.json';

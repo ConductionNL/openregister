@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ErasurePreview\ErasurePreviewFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -73,6 +74,8 @@ use OCP\AppFramework\Db\Entity;
  */
 class ErasurePreview extends Entity implements JsonSerializable {
 	use HydrateBySettersTrait;
+	// Serialises every registered field in registration order, dates as ISO 8601.
+	use TypedFieldsJsonTrait;
 	/**
 	 * Recorded, not yet approved. An erasure refuses on it.
 	 *
@@ -203,22 +206,9 @@ class ErasurePreview extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'subject', type: 'string');
-		$this->addType(fieldName: 'subjectType', type: 'string');
-		$this->addType(fieldName: 'eraseMode', type: 'string');
-		$this->addType(fieldName: 'requestId', type: 'string');
-		$this->addType(fieldName: 'digest', type: 'string');
-		$this->addType(fieldName: 'report', type: 'json');
-		$this->addType(fieldName: 'outcome', type: 'json');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-		$this->addType(fieldName: 'approvedBy', type: 'string');
-		$this->addType(fieldName: 'approvedAt', type: 'datetime');
-		$this->addType(fieldName: 'consumedAt', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (ErasurePreviewFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -233,29 +223,14 @@ class ErasurePreview extends Entity implements JsonSerializable {
 	}//end isRunnable()
 
 	/**
-	 * JSON serialisation.
+	 * The serialised report and outcome: an unset one is an empty list.
 	 *
-	 * @return array<string, mixed> The serialised preview.
+	 * @return array{report: array, outcome: array}
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'subject' => $this->subject,
-			'subjectType' => $this->subjectType,
-			'eraseMode' => $this->eraseMode,
-			'requestId' => $this->requestId,
-			'digest' => $this->digest,
 			'report' => ($this->report ?? []),
 			'outcome' => ($this->outcome ?? []),
-			'status' => $this->status,
-			'createdBy' => $this->createdBy,
-			'approvedBy' => $this->approvedBy,
-			'approvedAt' => $this->approvedAt?->format(DateTime::ATOM),
-			'consumedAt' => $this->consumedAt?->format(DateTime::ATOM),
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class
