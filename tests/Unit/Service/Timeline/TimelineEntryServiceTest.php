@@ -468,6 +468,21 @@ class TimelineEntryServiceTest extends TestCase {
 		}
 	}
 
+	public function testTheWithdrawalPrecheckTrimsTheReasonAndWritesNothing(): void {
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->entryMapper->expects($this->never())->method('update');
+
+		$this->assertSame('wrongly filed', $this->service->assertMayWithdraw($this->object(), '  wrongly filed '));
+	}
+
+	public function testTheWithdrawalPrecheckRefusesAReader(): void {
+		$this->visibility->method('mayManage')->willReturn(false);
+
+		$this->expectException(TimelinePermissionException::class);
+
+		$this->service->assertMayWithdraw($this->object(), 'reason');
+	}
+
 	public function testTheWorkingTimelineLeavesWithdrawnEntriesOutUnlessAsked(): void {
 		$asked = [];
 		$this->entryMapper->method('findForObject')->willReturnCallback(

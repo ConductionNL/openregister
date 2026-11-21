@@ -1,112 +1,89 @@
 <?php
 
 /**
- * The withdrawal migration: additive, guarded on existence, and a re-run adds nothing.
+ * Unit tests for Version1Date20261113210000: the partial index over unsealed audit rows.
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Migration
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2026 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @link https://OpenRegister.app
+ * @spec openspec/changes/audit-seal-backlog-repair/tasks.md
  */
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
 use OCA\OpenRegister\Migration\Version1Date20261113210000;
-use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
-use OCP\DB\ISchemaWrapper;
-use OCP\DB\Types;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
- * The migration.
+ * The index is created where partial indexes exist, skipped where they do not,
+ * and a refusal never fails the upgrade.
  *
  * @covers \OCA\OpenRegister\Migration\Version1Date20261113210000
  */
 class Version1Date20261113210000Test extends TestCase {
-	use SchemaTableMockTrait;
 
-	/**
-	 * Run the step against a schema.
-	 *
-	 * @param ISchemaWrapper $schema The schema the closure yields.
-	 *
-	 * @return ISchemaWrapper|null What changeSchema() returned.
-	 */
-	private function apply(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261113210000())->changeSchema(
-			output: $this->createMock(IOutput::class),
-			schemaClosure: static fn (): ISchemaWrapper => $schema,
-			options: []
-		);
-	}//end apply()
+	public function testPostgresGetsThePartialIndexOnTheSweepsPredicate(): void {
+		$connection = $this->connection(provider: IDBConnection::PLATFORM_POSTGRES);
+		$connection->expects($this->once())->method('executeStatement')
+			->with('CREATE INDEX IF NOT EXISTS idx_audit_unsealed ON *PREFIX*openregister_audit_trails (id) WHERE hash IS NULL')
+			->willReturn(0);
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('info')->with('Created idx_audit_unsealed (or it was already present).');
 
-	/**
-	 * A schema wrapper that has the timeline entries table, or not.
-	 *
-	 * @param MockObject|null $table The table, or null when the table is absent.
-	 *
-	 * @return ISchemaWrapper&MockObject The wrapper.
-	 */
-	private function schemaWith(?MockObject $table): ISchemaWrapper&MockObject {
-		$schema = $this->createMock(ISchemaWrapper::class);
-		$schema->method('hasTable')->willReturnCallback(
-			static fn (string $name): bool => $table !== null && $name === 'openregister_timeline_entries'
-		);
-		if ($table !== null) {
-			$schema->method('getTable')->with('openregister_timeline_entries')->willReturn($table);
+		(new Version1Date20261113210000($connection))->postSchemaChange($output, static fn () => null, []);
+	}
+
+	public function testSqliteGetsItToo(): void {
+		$connection = $this->connection(provider: IDBConnection::PLATFORM_SQLITE);
+		$connection->expects($this->once())->method('executeStatement')->willReturn(0);
+
+		(new Version1Date20261113210000($connection))->postSchemaChange($this->createMock(IOutput::class), static fn () => null, []);
+	}
+
+	public function testAPlatformWithoutPartialIndexesIsLeftAlone(): void {
+		foreach ([IDBConnection::PLATFORM_MYSQL, IDBConnection::PLATFORM_ORACLE] as $provider) {
+			$connection = $this->connection(provider: $provider);
+			$connection->expects($this->never())->method('executeStatement');
+			$output = $this->createMock(IOutput::class);
+			$output->expects($this->once())->method('info')->with('Skipping idx_audit_unsealed: partial indexes exist on PostgreSQL and SQLite only.');
+
+			(new Version1Date20261113210000($connection))->postSchemaChange($output, static fn () => null, []);
 		}
+	}
 
-		return $schema;
-	}//end schemaWith()
+	public function testARefusedStatementIsReportedNotThrown(): void {
+		$connection = $this->connection(provider: IDBConnection::PLATFORM_POSTGRES);
+		$connection->method('executeStatement')->willThrowException(new RuntimeException('permission denied'));
+		$output = $this->createMock(IOutput::class);
+		$output->expects($this->once())->method('warning')->with('Could not create idx_audit_unsealed: permission denied');
+		$output->expects($this->never())->method('info');
 
-	public function testAddsTheThreeWithdrawalColumnsWhenMissing(): void {
-		$table = $this->createTableMock();
-		$table->method('hasColumn')->willReturn(false);
-		$added = [];
-		$column = $this->createColumnMock();
-		$table->method('addColumn')->willReturnCallback(
-			function (string $name, string $type, array $options) use (&$added, $column) {
-				$added[$name] = [$type, $options];
-				return $column;
-			}
-		);
-		$schema = $this->schemaWith(table: $table);
+		(new Version1Date20261113210000($connection))->postSchemaChange($output, static fn () => null, []);
+	}
 
-		$this->assertSame($schema, $this->apply(schema: $schema));
-		$this->assertSame(
-			[
-				'withdrawn_by' => [Types::STRING, ['notnull' => false, 'length' => 64]],
-				'withdrawn_at' => [Types::DATETIME, ['notnull' => false]],
-				'withdrawn_reason' => [Types::TEXT, ['notnull' => false]],
-			],
-			$added
-		);
-	}//end testAddsTheThreeWithdrawalColumnsWhenMissing()
+	/**
+	 * A connection double on a platform, whose query builder prefixes table names.
+	 *
+	 * @param string $provider The IDBConnection::PLATFORM_* value.
+	 *
+	 * @return IDBConnection&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function connection(string $provider): IDBConnection {
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('getTableName')->willReturnCallback(static fn (string $table): string => '*PREFIX*' . $table);
+		$connection = $this->createMock(IDBConnection::class);
+		$connection->method('getDatabaseProvider')->willReturn($provider);
+		$connection->method('getQueryBuilder')->willReturn($qb);
 
-	public function testARerunChangesNothing(): void {
-		$table = $this->createTableMock();
-		$table->method('hasColumn')->willReturn(true);
-		$table->expects($this->never())->method('addColumn');
-		$schema = $this->schemaWith(table: $table);
-
-		$this->assertSame($schema, $this->apply(schema: $schema));
-	}//end testARerunChangesNothing()
-
-	public function testWithoutTheTableNothingHappens(): void {
-		$schema = $this->schemaWith(table: null);
-		$schema->expects($this->never())->method('getTable');
-
-		$this->assertSame($schema, $this->apply(schema: $schema));
-	}//end testWithoutTheTableNothingHappens()
-}//end class
+		return $connection;
+	}
+}

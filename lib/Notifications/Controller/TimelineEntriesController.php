@@ -31,9 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
@@ -133,7 +133,7 @@ class TimelineEntriesController extends Controller {
 		IRequest $request,
 		TimelineEntriesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->entries = $services->domain->entries;
 		$this->writer = $services->domain->writer;
@@ -455,6 +455,17 @@ class TimelineEntriesController extends Controller {
 	private function applyUpdate(ObjectEntity $object, array $change): TimelineEntry {
 		$entry = $change['entry'];
 		$data = $change['data'];
+		$withdrawal = null;
+		if (array_key_exists('withdrawn', $data) === true) {
+			$withdrawal = '';
+			if (is_array($data['withdrawn']) === true && is_string($data['withdrawn']['reason'] ?? null) === true) {
+				$withdrawal = $data['withdrawn']['reason'];
+			}
+
+			// Refuse before the pin or follow-up is written, so a refused withdrawal changes nothing.
+			$this->entries->assertMayWithdraw(object: $object, reason: $withdrawal);
+		}
+
 		if (array_key_exists('pinned', $data) === true) {
 			$entry = $this->entries->pin(
 				object: $object,
@@ -466,13 +477,8 @@ class TimelineEntriesController extends Controller {
 			$entry = $this->entries->closeFollowUp(entryObject: $object, entry: $entry);
 		}
 
-		if (array_key_exists('withdrawn', $data) === true) {
-			$reason = '';
-			if (is_array($data['withdrawn']) === true && is_string($data['withdrawn']['reason'] ?? null) === true) {
-				$reason = $data['withdrawn']['reason'];
-			}
-
-			$entry = $this->entries->withdraw(object: $object, entry: $entry, reason: $reason);
+		if ($withdrawal !== null) {
+			$entry = $this->entries->withdraw(object: $object, entry: $entry, reason: $withdrawal);
 		}
 
 		return $entry;

@@ -18,7 +18,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -60,7 +60,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -95,7 +95,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -137,7 +137,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch badJson, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -172,7 +172,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, con
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -215,7 +215,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, con
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -251,7 +251,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, con
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -294,7 +294,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch found, con
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -330,7 +330,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -341,7 +341,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "console.error",
-    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can returned 404",
   ],
 ]
 `;
@@ -371,7 +371,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -382,7 +382,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "console.error",
-    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can returned 404",
   ],
 ]
 `;
@@ -405,7 +405,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -416,7 +416,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "console.error",
-    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can returned 404",
   ],
 ]
 `;
@@ -446,7 +446,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -457,7 +457,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch missing, c
   ],
   [
     "console.error",
-    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3 returned 404",
+    "[ObjectsIndex] deep-link fetch /index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can returned 404",
   ],
 ]
 `;
@@ -480,7 +480,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, co
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -522,7 +522,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, co
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -557,7 +557,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, co
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",
@@ -599,7 +599,7 @@ exports[`ObjectsIndex.loadFromRoute (golden) opens a deep link, fetch thrown, co
   ],
   [
     "fetch",
-    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3",
+    "/index.php/apps/openregister/api/objects/r%201/s%2F2/o%3F3?_extend=@self.can",
     {
       "headers": {
         "Accept": "application/json",

@@ -114,7 +114,7 @@ class PublicTimelineTest extends TestCase {
 	public function testBothSourcesAreAskedForThePublicHalf(): void {
 		$this->entries->expects($this->once())
 			->method('listForObject')
-			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === [TimelineVisibilityService::PUBLIC_ENTRY, 50, 0]))
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->filters['withdrawn'] ?? null, $q->limit, $q->offset ?? 0] === [TimelineVisibilityService::PUBLIC_ENTRY, true, 50, 0]))
 			->willReturn([]);
 
 		$this->notes->expects($this->once())
@@ -217,6 +217,45 @@ class PublicTimelineTest extends TestCase {
 		$this->assertCount(1, $entries);
 		$this->assertSame('entry-uuid', $entries[0]['id']);
 	}//end testANoteWithARecordAppearsOnceAsTheRecord()
+
+	/**
+	 * A withdrawn record leaves the public view and takes its note with it.
+	 *
+	 * The note service does not know about withdrawals, so a note whose record
+	 * was withdrawn would come back as a bare note if the record were simply
+	 * left out of the read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function testAWithdrawnRecordHidesItsNoteToo(): void {
+		$this->entries->method('listForObject')->willReturn([
+			$this->record([
+				'id' => 'entry-uuid',
+				'commentId' => 7,
+				'kind' => null,
+				'message' => 'Withdrawn note',
+				'created' => '2026-05-04T09:12:00+02:00',
+				'withdrawn' => ['by' => 'alice', 'at' => '2026-05-05T10:00:00+02:00', 'reason' => 'Wrong case'],
+			]),
+			$this->record([
+				'id' => 'other-uuid',
+				'commentId' => null,
+				'kind' => null,
+				'message' => 'Still here',
+				'created' => '2026-05-04T08:00:00+02:00',
+				'withdrawn' => null,
+			]),
+		]);
+		$this->notes->method('listNotes')->willReturn([
+			['id' => 7, 'message' => 'Withdrawn note', 'createdAt' => '2026-05-04T09:12:00+02:00'],
+		]);
+
+		$entries = $this->timeline->forObject(object: $this->object());
+
+		$this->assertSame(['other-uuid'], array_column($entries, 'id'));
+	}//end testAWithdrawnRecordHidesItsNoteToo()
 
 	/**
 	 * A note written before records existed is still on the public view.

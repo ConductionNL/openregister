@@ -51,7 +51,7 @@ final class F01ListenerInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		DecisionTableValidationListener::class => [DecisionTableValidationListenerInterface::class, ListenerBootstrap::class],
+		DecisionTableValidationListener::class => [DecisionTableValidationListenerInterface::class, ListenerRegistrar::class],
 		NotifyPushListener::class => [PresencePushInterface::class, ListenerBootstrap::class],
 	];
 

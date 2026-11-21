@@ -292,14 +292,27 @@ class TimelineEntriesControllerTest extends TestCase {
 		$this->objectResolves();
 		$this->entries->method('get')->willReturn($this->entry());
 		$this->request->method('getParams')->willReturn(['withdrawn' => true]);
-		$this->entries->expects($this->once())->method('withdraw')
-			->with($this->anything(), $this->anything(), '')
+		$this->entries->expects($this->once())->method('assertMayWithdraw')
+			->with($this->anything(), '')
 			->willThrowException(new TimelineValidationException(['withdrawn.reason' => 'A withdrawal needs a reason']));
+		$this->entries->expects($this->never())->method('withdraw');
 
 		$response = $this->controller->update('zaken', 'zaak', 'case-1', 'entry-a');
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame(['withdrawn.reason' => 'A withdrawal needs a reason'], $response->getData()['errors']);
+	}
+
+	public function testARefusedWithdrawalWritesNoPinAndClosesNoFollowUp(): void {
+		$this->objectResolves();
+		$this->entries->method('get')->willReturn($this->entry());
+		$this->request->method('getParams')->willReturn(['pinned' => true, 'followUp' => 'done', 'withdrawn' => ['reason' => 'x']]);
+		$this->entries->method('assertMayWithdraw')->willThrowException(new TimelinePermissionException('no'));
+		$this->entries->expects($this->never())->method('pin');
+		$this->entries->expects($this->never())->method('closeFollowUp');
+		$this->entries->expects($this->never())->method('withdraw');
+
+		$this->assertSame(403, $this->controller->update('zaken', 'zaak', 'case-1', 'entry-a')->getStatus());
 	}
 
 	public function testARelatedObjectThatCannotBeReachedRefusesBeforeAnythingIsWritten(): void {
