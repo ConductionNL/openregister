@@ -237,3 +237,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main, 'Unknown named parameter $appId' or TypeError 'Argument #1 ($listing) must be of type StoreListing, string given' in tests main added (e.g. GenericStoreServiceFetchGoldenTest); parked as bisect-park.
 - Cause: the PR replaced a flat constructor with part objects (StoreDescriptor(listing:, sharing:)); main kept adding tests on the flat form.
 - Fix: grep 'new <Class>(' across lib and tests, wrap the old arguments in the part object(s), add #[UsesClass] for the parts; keep any new main helper (offeredTypes) inside the PR's form in conflict hunks (#9817).
+
+## ObjectEntity gains a transient @self field: row-to-entity golden breaks (or-fix-19)
+- Symptom: MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity fails for ~79 of 82 data sets; the actual entity has one extra field.
+- Cause: tests/Unit/Db/MagicMapper/fixtures/row-to-entity.php pins every entity property positionally.
+- Fix: re-record by calling the test's public runCase() for each cases() entry and var_export into the fixture (keep its header); the diff must be only the new field (see #10239).
