@@ -222,3 +222,13 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError '... must be of type OCA\OpenRegister\Service\<Area>\<Entity>, OCA\OpenRegister\Db\<Entity> given'; phpstan argument.type naming a class in the file's own namespace.
 - Cause: main retyped the file on Kernel\Contracts\Core\<Entity>Interface and dropped 'use ...\Db\<Entity>'; the PR's new methods still say <Entity>, which now resolves to a non-existent same-namespace class. Auto-merges clean.
 - Fix: type the PR's methods (and @param) on the interface main uses; phpstan on changed lib files finds them all. (#10531 FederatedShare)
+
+## Migration version clash, or a new step not targeted (or-fix-0)
+- Symptom: add/add conflict in lib/Migration/Version1Date<ts>.php, or SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted names the PR's migration.
+- Cause: main took the same version name; and every step after 2.1.0 must extend TargetedMigrationStep (#10612).
+- Fix: keep main's file; move the PR's to a later timestamp (class, test file/class, component-map row, comments); extend TargetedMigrationStep and rename postSchemaChange/preSchemaChange/changeSchema to afterTargetedSchemaChange/beforeTargetedSchemaChange/changeTargetedSchema (protected). Example: #10540.
+
+## MagicSearchHandler needs the property search profile (or-fix-0)
+- Symptom: LogicException 'MagicSearchHandler needs the property search profile to search properties.' in a PR's new test.
+- Cause: main added PropertySearchProfileInterface to MagicSearchHandler; MagicMapper passes it, tests must too.
+- Fix: in the test's constructor call add searchProfile: new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile(). Example: #10540.
