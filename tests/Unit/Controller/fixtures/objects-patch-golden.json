@@ -1183,6 +1183,153 @@
             }
         ]
     },
+    "patch failure property not authorized": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "You are not authorized to modify the following properties: salaris, besluitdatum",
+            "properties": [
+                "salaris",
+                "besluitdatum"
+            ]
+        },
+        "calls": [
+            {
+                "debug": [
+                    "[ObjectsController] PATCH: RBAC/Multitenancy settings",
+                    {
+                        "id": "object-1",
+                        "isAdmin": false,
+                        "rbac": true,
+                        "multi": true
+                    }
+                ]
+            },
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    {
+                        "id": null,
+                        "uuid": null,
+                        "slug": null,
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": null,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "id": "stored-uuid",
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
     "patch failure refused by the rules": {
         "status": 403,
         "headers": {
@@ -5974,6 +6121,143 @@
         },
         "data": {
             "error": "frozen"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    {
+                        "id": null,
+                        "uuid": null,
+                        "slug": null,
+                        "title": null,
+                        "version": null,
+                        "description": null,
+                        "schemas": [],
+                        "source": null,
+                        "tablePrefix": null,
+                        "folder": null,
+                        "updated": null,
+                        "created": null,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "authorization": [],
+                        "sharedWith": [],
+                        "groups": [],
+                        "type": null,
+                        "languages": null,
+                        "configuration": [],
+                        "quota": {
+                            "storage": null,
+                            "bandwidth": null,
+                            "requests": null,
+                            "users": null,
+                            "groups": null
+                        },
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        },
+                        "deleted": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null
+                    },
+                    {
+                        "id": null,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": null,
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null
+                    },
+                    true,
+                    true
+                ]
+            },
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "id": "stored-uuid",
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "postPatch failure property not authorized": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "You are not authorized to modify the following properties: salaris, besluitdatum",
+            "properties": [
+                "salaris",
+                "besluitdatum"
+            ]
         },
         "calls": [
             {
