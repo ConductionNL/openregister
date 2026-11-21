@@ -1654,7 +1654,7 @@
     },
     "resolver calls": [
         "resolveSingle schema 1 [{\"id\":\"x\"}]",
-        "resolveList schema 1 [{\"id\":\"x\"}]",
+        "resolveList schema 1 [{\"id\":\"x\"},[]]",
         "resolveCreate schema 1 [{\"id\":\"x\"}]",
         "resolveUpdate schema 1 [{\"id\":\"x\"}]",
         "resolveDelete schema 1 [{\"id\":\"x\"}]"

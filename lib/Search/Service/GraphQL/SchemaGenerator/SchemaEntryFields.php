@@ -223,7 +223,14 @@ class SchemaEntryFields {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function listResolver(RegisterSchema $schema): callable {
-		return fn ($root, $args) => $this->resolver?->resolveList($schema, $args);
+		return function ($root, $args, $context = null) use ($schema): ?array {
+			$boundedContext = [];
+			if (is_array($context) === true) {
+				$boundedContext = $context;
+			}
+
+			return $this->resolver?->resolveList($schema, $args, $boundedContext);
+		};
 	}//end listResolver()
 
 	/**
