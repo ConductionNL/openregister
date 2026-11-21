@@ -44,6 +44,7 @@ class ContractIsALeafTest extends TestCase {
 		'ObjectServiceInterface.php',
 		'RegisterSlugResolution.php',
 		'RegisterSlugResolverInterface.php',
+		'ToolInvocationRecorderInterface.php',
 	];
 
 	/**

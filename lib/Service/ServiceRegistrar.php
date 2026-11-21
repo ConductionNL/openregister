@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -107,6 +109,15 @@ final class ServiceRegistrar {
 			ObjectFileReaderInterface::class,
 			function ($c) {
 				return $c->get(ObjectFileReader::class);
+			}
+		);
+
+		// The published audit write for an app's own MCP tool provider: the
+		// same hash-chained record the built-in providers write.
+		$context->registerService(
+			ToolInvocationRecorderInterface::class,
+			function ($c) {
+				return $c->get(ToolInvocationRecorder::class);
 			}
 		);
 	}//end registerRequestScoped()
