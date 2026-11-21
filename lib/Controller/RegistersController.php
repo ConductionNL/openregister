@@ -47,6 +47,7 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BundleImport;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EnvelopedDefinitionControllerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
@@ -111,7 +112,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ImportMapping;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class RegistersController extends Controller {
+class RegistersController extends Controller implements EnvelopedDefinitionControllerInterface {
 	use HandlesExceptionsTrait;
 
 

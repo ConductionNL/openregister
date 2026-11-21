@@ -31,6 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
@@ -41,14 +42,19 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\FlowLinkPlatform;
-use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Service\FlowLinkPlatform;
+use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriteElevation;
@@ -88,6 +94,9 @@ use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaults;
+use OCA\OpenRegister\Service\SequenceService;
+use OCA\OpenRegister\Service\SequenceServiceInterface;
+use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -137,6 +146,9 @@ final class FlowWiring {
 		ObjectCalendarLinkInterface::class => CalendarEventService::class,
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
+		SequenceServiceInterface::class => SequenceService::class,
+		NodeRightsMapInterface::class => FlowNodeRightsGuard::class,
+		ProcessingReadsInterface::class => ReadHistoryService::class,
 		UserCalendarEventsInterface::class => CalendarEventService::class,
 		TaskGaugeInterface::class => TaskMetricsProvider::class,
 		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
@@ -150,6 +162,7 @@ final class FlowWiring {
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
 		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
+		ApprovalPositionFormCheckInterface::class => ApprovalPositionFormGuard::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
 		ExpressionEvaluatorInterface::class => CalculationEvaluator::class,
 		\OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface::class => \OCA\OpenRegister\Service\Party\PartyRecipients::class,
@@ -163,6 +176,7 @@ final class FlowWiring {
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
 		PartySearchInterface::class => PartySearchService::class,
 		FlowConsentSweepInterface::class => FlowConsentParking::class,
+		LinkedFlowOperationsInterface::class => FlowLinkServiceInterface::class,
 		LifecycleTransitionInterface::class => TransitionEngine::class,
 		ExpressionDefaultsInterface::class => ExpressionDefaults::class,
 		ObjectWatchMarkersInterface::class => WatcherService::class,
@@ -175,6 +189,7 @@ final class FlowWiring {
 		\OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface::class => \OCA\OpenRegister\Service\Party\PartyParent::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface::class => \OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper::class,
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
+		SaveBoundaryInterface::class => AutoTransitionPass::class,
 	];
 
 	/**
