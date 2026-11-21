@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -66,6 +67,26 @@ class RelationHandlerDeepTest extends TestCase {
 
 	}//end setUp()
 
+	/**
+	 * The cross-table lookup and the per-table read both answer these rows, readable by an admin.
+	 *
+	 * @param ObjectEntity[] $entities The related rows.
+	 *
+	 * @return void
+	 */
+	private function relatedRowsAre(array $entities): void {
+		foreach ($entities as $entity) {
+			$entity->setRegister('1');
+			$entity->setSchema('1');
+		}
+
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($entities);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->rbacHandler->method('isAdmin')->willReturn(true);
+	}//end relatedRowsAre()
+
 	// =========================================================================
 	// extractRelatedData
 	// =========================================================================
@@ -98,7 +119,7 @@ class RelationHandlerDeepTest extends TestCase {
 
 		// The method will cap at 200 and then batch load.
 		// 300 ids are capped at 200, loaded in four batches of 50.
-		$this->objectMapper->expects($this->exactly(4))->method('findAllListed')->willReturn([]);
+		$this->objectMapper->expects($this->exactly(4))->method('findMultipleAcrossAllMagicTables')->willReturn([]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
 		// Should still work (returns empty because mock returns []).
@@ -120,7 +141,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$idProp->setAccessible(true);
 		$idProp->setValue($obj, 1);
 
-		$this->objectMapper->method('findAllListed')->willReturn([$obj]);
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
 		$this->assertArrayHasKey('uuid-1', $result);
@@ -134,7 +155,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testBulkLoadRelationshipsBatchedBatchException(): void {
-		$this->objectMapper->method('findAllListed')
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw — continues past failed batch.
@@ -164,7 +185,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedException(): void {
-		$this->objectMapper->method('findAllListed')
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('Query failed'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -178,11 +199,13 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedReturns(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-		$this->objectMapper->method('findAllListed')->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('uuid-1');
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
 		$this->assertCount(1, $result);
+		$this->assertSame(expected: $obj, actual: $result[0]);
 
 	}//end testLoadRelationshipChunkOptimizedReturns()
 
@@ -302,11 +325,11 @@ class RelationHandlerDeepTest extends TestCase {
 	}//end testFilterByRbacNonObjectEntity()
 
 	/**
-	 * Test filterByRbac passes objects with null schema
+	 * Test filterByRbac drops objects without a schema for a non-admin
 	 *
 	 * @return void
 	 */
-	public function testFilterByRbacNullSchema(): void {
+	public function testFilterByRbacDropsNullSchema(): void {
 		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
@@ -315,9 +338,9 @@ class RelationHandlerDeepTest extends TestCase {
 		// Schema is null by default.
 
 		$result = $filter->admitted(objects: [$obj]);
-		$this->assertCount(1, $result);
+		$this->assertCount(0, $result);
 
-	}//end testFilterByRbacNullSchema()
+	}//end testFilterByRbacDropsNullSchema()
 
 	/**
 	 * Test filterByRbac skips objects when schema not found

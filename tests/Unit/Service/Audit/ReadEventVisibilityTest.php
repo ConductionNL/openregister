@@ -84,4 +84,37 @@ class ReadEventVisibilityTest extends TestCase {
 		$this->assertSame([['action' => 'update']], $this->rule('daan', '[]')->filter($entries));
 		$this->assertSame($entries, $this->rule('admin', '[]', isAdmin: true)->filter($entries));
 	}
+
+	/**
+	 * A field reveal is a read of personal data, so it is a read action
+	 * (sensitive-field-reveal-audit): the processing-activity log reads it as a
+	 * read and it is shown only to the read-event groups.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function testAPropertyRevealIsAReadAction(): void {
+		$rule = $this->rule('daan', '[]');
+
+		$this->assertTrue($rule->isReadAction('property.revealed'));
+		$this->assertTrue($rule->isReadAction('PROPERTY.REVEALED'), 'the match is case-insensitive, as for read');
+		$this->assertTrue($rule->isReadAction('read'));
+		$this->assertFalse($rule->isReadAction('update'));
+		$this->assertFalse($rule->isReadAction(null));
+	}
+
+	/**
+	 * A reveal row is dropped from a caller who may not see read events, and kept for one who may.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function testFilterGatesRevealsLikeReads(): void {
+		$entries = [['action' => 'property.revealed'], ['action' => 'update'], ['action' => 'read']];
+
+		$this->assertSame([['action' => 'update']], $this->rule('daan', '[]')->filter($entries));
+		$this->assertSame($entries, $this->rule('admin', '[]', isAdmin: true)->filter($entries));
+	}
 }

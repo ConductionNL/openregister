@@ -22,6 +22,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Object\ObjectSourceWindow
  * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  */
 class ObjectSourcePagingTest extends TestCase {
 	public function testANegativeOffsetCountsAsZero(): void {

@@ -12,6 +12,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -44,7 +45,7 @@ class BranchDispatcher implements FlowStepDispatcher {
 			foreach ($items as $i => $item) {
 				$json = (array)($item['json'] ?? []);
 				$json[$field] = $value;
-				$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $i);
+				$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $i));
 			}
 			return $out;
 		}

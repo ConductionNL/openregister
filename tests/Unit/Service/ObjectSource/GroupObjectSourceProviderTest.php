@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
@@ -159,7 +161,7 @@ class GroupObjectSourceProviderTest extends TestCase {
 		$admin = $this->actor('admin');
 		$groups = [$this->group('admin', 'admin'), $this->group('users', 'users')];
 
-		$objects = $this->provider($admin, true, $groups)->findAll($register, $schema);
+		$objects = $this->provider($admin, true, $groups)->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(2, $objects);
 		$data = $objects[0]->getObject();
@@ -180,7 +182,7 @@ class GroupObjectSourceProviderTest extends TestCase {
 		$staff = $this->group('staff', 'Staff', $alice);
 		$all = [$this->group('admin', 'admin'), $staff, $this->group('users', 'users')];
 
-		$objects = $this->provider($alice, false, $all, [$staff])->findAll($register, $schema);
+		$objects = $this->provider($alice, false, $all, [$staff])->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(1, $objects);
 		$this->assertSame('staff', $objects[0]->getUuid());
@@ -197,8 +199,8 @@ class GroupObjectSourceProviderTest extends TestCase {
 		$all = [$this->group('admin', 'admin'), $this->group('users', 'Users')];
 
 		$provider = $this->provider($admin, true, $all);
-		$this->assertSame('Users', $provider->find($register, $schema, 'users')?->getObject()['displayName']);
-		$this->assertNull($provider->find($register, $schema, 'ghost'));
+		$this->assertSame('Users', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'users')?->getObject()['displayName']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'ghost'));
 	}//end testFindByGidAsAdmin()
 
 	/**
@@ -213,8 +215,8 @@ class GroupObjectSourceProviderTest extends TestCase {
 		$admin = $this->group('admin', 'admin');
 
 		$provider = $this->provider($alice, false, [$admin, $staff], [$staff]);
-		$this->assertNull($provider->find($register, $schema, 'admin'));
-		$this->assertSame('Staff', $provider->find($register, $schema, 'staff')?->getObject()['displayName']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'admin'));
+		$this->assertSame('Staff', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'staff')?->getObject()['displayName']);
 	}//end testFindDeniedForNonMember()
 
 	/**
@@ -224,6 +226,6 @@ class GroupObjectSourceProviderTest extends TestCase {
 	 */
 	public function testNoActingUserEmptyList(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertCount(0, $this->provider(null, false, [])->findAll($register, $schema));
+		$this->assertCount(0, $this->provider(null, false, [])->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
 	}//end testNoActingUserEmptyList()
 }//end class

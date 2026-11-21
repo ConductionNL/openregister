@@ -203,7 +203,7 @@ class CasePlanStateMachine {
 	 */
 	private static function denialOf(CasePlanMove $attempt): CaseItemAudit {
 		$item = $attempt->item;
-		$entry = $attempt->why->auditFor(item: $item, fromState: (string)$item->getState(), toState: $attempt->to);
+		$entry = $attempt->why->auditFor(item: $item, change: new CaseStateChange(from: (string)$item->getState(), to: $attempt->to));
 		$entry->setAuthorized(false);
 
 		return $entry;
@@ -224,7 +224,7 @@ class CasePlanStateMachine {
 	public function recordCreationOf(CaseItem $item, CaseTransitionCause $why): void {
 		$actor = ($why->actor ?? self::SYSTEM_ACTOR);
 		$why = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: $actor, reason: null);
-		$this->store->audits->insert($why->auditFor(item: $item, fromState: '', toState: (string)$item->getState()));
+		$this->store->audits->insert($why->auditFor(item: $item, change: new CaseStateChange(from: '', to: (string)$item->getState())));
 	}//end recordCreationOf()
 
 	/**
@@ -354,7 +354,7 @@ class CasePlanStateMachine {
 	private function afterUpdate(CasePlanMove $move, string $from): void {
 		$item = $move->item;
 		$why = $move->why;
-		$this->store->audits->insert($why->auditFor(item: $item, fromState: $from, toState: (string)$item->getState()));
+		$this->store->audits->insert($why->auditFor(item: $item, change: new CaseStateChange(from: $from, to: (string)$item->getState())));
 		$this->closeRealisation(item: $item, why: $why);
 		$this->mirrorMilestone(item: $item);
 		$this->pending[] = new CaseItemTransitionedEvent(item: $item, fromState: $from);

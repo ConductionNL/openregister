@@ -114,9 +114,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->createMock(MagicMapper::class),
-					registerMapper: $this->registers,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)),
 					objectCacheService: $this->createMock(CacheHandler::class)
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -142,7 +140,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 			),
 			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
 				logger: $this->logger,
-				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null, lensResolver: $lens, archivalReading: new \OCA\OpenRegister\Service\Archival\RecordArchivalReading(logger: $this->logger)),
 				request: $request,
 				container: $container
 			),

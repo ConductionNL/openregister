@@ -83,8 +83,8 @@ class ProviderMetricSourceTest extends TestCase {
 	}
 
 	public function testOnlyMetricSampleEntriesAreKept(): void {
-		$first  = MetricSample::single('a', 'gauge', 'A', 1);
-		$second = MetricSample::single('b', 'counter', 'B', 2);
+		$first  = new MetricSample('a', 'gauge', 'A', [['labels' => [], 'value' => 1]]);
+		$second = new MetricSample('b', 'counter', 'B', [['labels' => [], 'value' => 2]]);
 		$provider = new class ($first, $second) implements IMetricsProvider {
 			public function __construct(private MetricSample $first, private MetricSample $second) {
 			}

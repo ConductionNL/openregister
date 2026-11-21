@@ -52,6 +52,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Interaction;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
@@ -74,7 +75,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
  * subscription lookup can never take out an object read or a dispatch. Removing a branch
  * here means removing a fail-safe.
  */
-class WatcherService implements WatcherServiceInterface {
+class WatcherService implements WatcherServiceInterface, ObjectWatchMarkersInterface {
 
 	/**
 	 * What the current user follows, loaded once per request: uuid to whether
@@ -272,10 +273,8 @@ class WatcherService implements WatcherServiceInterface {
 	 * mention uses). Public, so an app whose assignment is not an object
 	 * property (a task, a workflow step) can call it.
 	 *
-	 * @param ObjectEntity $object The assigned object.
-	 * @param string $userId The assignee, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The assigned object and how the caller addressed it.
+	 * @param string          $userId The assignee, already checked for read access.
 	 *
 	 * @return Watcher The follow.
 	 *
@@ -283,14 +282,7 @@ class WatcherService implements WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
 	 */
-	public function followAssigned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher {
-		$target = new AddressedObject(object: $object, register: $register, schema: $schema);
-
+	public function followAssigned(AddressedObject $target, string $userId): Watcher {
 		return $this->store->mapper->subscribe(watcher: $this->newFollow(userId: $userId, target: $target), notify: true);
 	}//end followAssigned()
 

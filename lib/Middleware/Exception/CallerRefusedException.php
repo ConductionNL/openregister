@@ -62,25 +62,6 @@ class CallerRefusedException extends Exception {
 	}//end __construct()
 
 	/**
-	 * The refusal for a caller over its ceiling.
-	 *
-	 * @param int $limit The administered ceiling.
-	 * @param int $windowSeconds The window the ceiling applies over.
-	 * @param int $resetAt The unix time the window rolls.
-	 * @param int $now The current unix time.
-	 *
-	 * @return self The refusal.
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
-	 */
-	public static function overLimit(int $limit, int $windowSeconds, int $resetAt, int $now): self {
-		return self::overCeiling(
-			breach: new CeilingBreach(limit: $limit, windowSeconds: $windowSeconds, resetAt: $resetAt, now: $now)
-		);
-
-	}//end overLimit()
-
-	/**
 	 * The refusal for a caller over its ceiling, from the breach the limiter found.
 	 *
 	 * @param CeilingBreach $breach The ceiling, its window, when it rolls and the current time.

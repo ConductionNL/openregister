@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
  * Rows arrive as entities or rendered arrays; both are read, anything else is ignored, and disabled sources drop out.
  *
  * @covers \OCA\OpenRegister\Service\Hinge\IntakeSourceRegistry
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class IntakeSourceRegistryRowsTest extends TestCase {
 

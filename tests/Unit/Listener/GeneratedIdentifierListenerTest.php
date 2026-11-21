@@ -27,6 +27,8 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\SequenceScope;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -79,7 +81,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$this->listener = new GeneratedIdentifierListener(
 			$this->schemaMapper,
-			$this->sequences,
+			new RunningNumbers($this->sequences),
 			$this->createMock(originalClassName: LoggerInterface::class),
 			// The real gate: it decides what a draft is held from, here as after a write.
 			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class))
@@ -185,7 +187,8 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
 			->willReturnCallback(
-				static function (int $registerId, int $schemaId, string $scopeKey) use (&$seenScope): int {
+				static function (SequenceScope $sequence) use (&$seenScope): int {
+					[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 					$seenScope = [$registerId, $schemaId, $scopeKey];
 
 					return 7;
@@ -248,7 +251,7 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		$this->sequences->expects($this->never())->method('reserveNext');
 		$this->sequences->expects($this->once())
 			->method('advanceTo')
-			->with(0, 0, $this->stringContains(string: 'case'), 120);
+			->with($this->callback(static fn (SequenceScope $s): bool => $s->registerId === 0 && $s->schemaId === 0 && str_contains($s->scopeKey, 'case')), 120);
 
 		$object = $this->objectWith(body: ['identifier' => 'Z-2026-00120']);
 

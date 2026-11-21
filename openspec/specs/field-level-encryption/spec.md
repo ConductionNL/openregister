@@ -99,7 +99,10 @@ SHALL be excluded from full-text search scanning, and SHALL be excluded from the
 facetable-fields listing regardless of any `facetable` configuration on the same
 property. A request that filters on an encrypted property SHALL be rejected with a clear,
 typed error (HTTP 400) rather than silently executing against ciphertext and
-returning zero results.
+returning zero results. A request that sorts on an encrypted property SHALL be
+rejected the same way on every search path, a search across several schemas
+included, rather than ordering on the envelope: the order of ciphertext means
+nothing to the caller.
 
 #### Scenario: The column of an encrypted property holds only the envelope
 - **WHEN** a magic table is built for a schema where property `age`, declared
@@ -113,6 +116,22 @@ returning zero results.
 - **THEN** the response is HTTP 400 with a structured body identifying `bsn`
   as not filterable because it is encrypted — never HTTP 200 with an empty
   result set
+
+#### Scenario: Sorting on an encrypted property is rejected
+- **WHEN** a caller issues a list/search request ordered on property `bsn`,
+  which is flagged `x-openregister-encrypted: true`, in any form of `_order`
+- **THEN** the response is HTTP 400 with a structured body identifying `bsn`
+  as not sortable because it is encrypted, and no query runs
+
+#### Scenario: A search across schemas refuses a sort encrypted in one of them
+- **WHEN** a caller searches two schemas ordered on `bsn`, and only one of them
+  flags `bsn` as `x-openregister-encrypted: true`
+- **THEN** the response is HTTP 400 identifying `bsn`, and no rows are returned
+
+#### Scenario: GraphQL refuses a sort on an encrypted property
+- **WHEN** a GraphQL list query sorts on an encrypted property
+- **THEN** the HTTP status is 400, the error names the property and
+  `extensions.code` is `BAD_REQUEST`
 
 #### Scenario: An encrypted property never appears as a facet option
 - **WHEN** a caller requests facetable fields or facet counts for a schema

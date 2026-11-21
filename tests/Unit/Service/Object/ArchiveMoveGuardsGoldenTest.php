@@ -70,7 +70,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
 			function (...$args) use ($allow): void {
-				$this->asked[] = $args[1] . '|' . var_export($args[2], true) . '|' . $args[3];
+				$this->asked[] = $args[1] . '|' . var_export($args[2]->userId, true) . '|' . $args[2]->objectOwner;
 				if ($allow === false) {
 					throw new NotAuthorizedException(message: 'no');
 				}
@@ -159,7 +159,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testMoveSentences(): void {
-		$move = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createMock(IEventDispatcher::class)), $this->createMock(ObjectValidatorInterface::class));
+		$move = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->createMock(MagicMapper::class), $this->createMock(AuditTrailMapper::class), $this->createMock(LoggerInterface::class), $this->createMock(IEventDispatcher::class)), $this->createMock(ObjectValidatorInterface::class), $this->createStub(\OCA\OpenRegister\Service\Object\RelationAddressRewriteInterface::class));
 		$sentence = new ReflectionMethod(MoveObject::class, 'sentenceFor');
 
 		$withPath = new class {

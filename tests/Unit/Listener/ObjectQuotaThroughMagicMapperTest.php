@@ -87,7 +87,7 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 		$schemas->method('find')->willReturn($schema);
 
 		$search = $this->createMock(MagicSearchHandler::class);
-		$search->method('searchObjects')->willReturnCallback(
+		$search->method('searchTable')->willReturnCallback(
 			function (array $query) use ($answer) {
 				$this->queries[] = $query;
 				if ($answer instanceof \Throwable) {

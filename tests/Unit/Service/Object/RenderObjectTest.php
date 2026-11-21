@@ -47,6 +47,11 @@ use ReflectionClass;
 class RenderObjectTest extends TestCase {
 	use InverseRelationAccess;
 
+	/**
+	 * The files the rendered test objects hold in their own folder.
+	 */
+	private const OWN_FILE_IDS = [10 => 10, 20 => 20, 42 => 42, 99 => 99, 123 => 123, 999 => 999];
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -107,9 +112,7 @@ class RenderObjectTest extends TestCase {
 		$this->handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1664,9 +1667,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1714,9 +1715,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -1930,6 +1929,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesHydratesFileId(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -1973,6 +1973,7 @@ class RenderObjectTest extends TestCase {
 	}
 
 	public function testRenderFilePropertiesArrayOfFiles(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'docs' => ['10', '20'],
@@ -2087,7 +2088,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'some-string',
 			['type' => 'file'],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('some-string', $result);
@@ -2097,7 +2098,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'not-array',
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('not-array', $result);
@@ -2122,7 +2123,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -2148,7 +2149,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'99',
 			['type' => 'file'],
-			'document',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -2164,12 +2165,24 @@ class RenderObjectTest extends TestCase {
 	}
 
 	private function renderFilesOf(array $objectData, array $properties): array {
+		$this->holdOwnFiles();
 		$schema = $this->createSchema(1);
 		$schema->setProperties($properties);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $objectData);
 		return $this->invokePrivate('renderFileProperties', [$entity])->getObject();
+	}
+
+	/**
+	 * Let every rendered object's own folder hold the OWN_FILE_IDS files.
+	 *
+	 * @return void
+	 */
+	private function holdOwnFiles(): void {
+		$this->fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, array_values(self::OWN_FILE_IDS))
+		);
 	}
 
 	public function testAFileOverTheCapIsNotEmbedded(): void {
@@ -3143,7 +3156,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			10,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertStringStartsWith('data:text/plain;base64,', $result);
@@ -3160,7 +3173,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10, 20],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3175,7 +3188,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		// Null results are filtered out.
@@ -3200,7 +3213,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3216,7 +3229,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[999],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame([], $result);
@@ -3302,6 +3315,17 @@ class RenderObjectTest extends TestCase {
 		// Items should still have the data.
 		$this->assertIsArray($result['items']);
 		$this->assertCount(2, $result['items']);
+	}
+
+	public function testHandleWildcardExtendsLeavesScalarEntriesAsTheyAre(): void {
+		$uuid = '12345678-1234-1234-1234-123456789012';
+		$objectData = ['items' => [$uuid, ['ref' => 'val']]];
+		$extend = ['items.$.ref'];
+
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
+
+		$this->assertSame($uuid, $result['items'][0]);
+		$this->assertSame('val', $result['items'][1]['ref']);
 	}
 
 	public function testHandleWildcardExtendsWithNonIterableRoot(): void {
@@ -3648,7 +3672,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
 		$extend = ['@self.register', '@self.schema'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -3676,7 +3700,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['ref'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -3704,7 +3728,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['all'];
 
-		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Service\Object\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
 		$run->data = $objectData;
 		$result = $this->invokePrivate('extendObject', [$run]);
 
@@ -4166,6 +4190,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesSkipsUnconfiguredProperties(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -4434,7 +4459,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -4451,7 +4476,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -4641,9 +4666,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -5019,9 +5042,7 @@ class RenderObjectTest extends TestCase {
 		$handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -5358,7 +5379,7 @@ class RenderObjectTest extends TestCase {
 
 	public function testHydrateFilePropertyNonNumericStringUnchanged(): void {
 		$config = ['type' => 'file'];
-		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('not-a-number', $result);
 	}
@@ -5377,7 +5398,7 @@ class RenderObjectTest extends TestCase {
 		$this->fileService->method('getFileById')
 			->willReturn($mockNode);
 
-		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, 'images']);
+		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, self::OWN_FILE_IDS]);
 
 		$this->assertIsArray($result);
 		$this->assertCount(1, $result);
@@ -5391,7 +5412,7 @@ class RenderObjectTest extends TestCase {
 		];
 
 		// Non-array value for array property — should be returned unchanged.
-		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('single-string', $result);
 	}
@@ -6609,9 +6630,7 @@ class RenderObjectTest extends TestCase {
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $registerMapper,
-					schemaMapper: $schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -7135,7 +7154,7 @@ class RenderObjectTest extends TestCase {
 	public function testRenderRowsRendersEveryRowWithTheSelection(): void {
 		$this->setupBasicMocks();
 		$calls = [];
-		$selection = new \OCA\OpenRegister\Service\Object\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
+		$selection = new \OCA\OpenRegister\Kernel\Contracts\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
 		$this->renderEntitySpy($calls)->renderRows([$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')], $selection, false, true);
 
 		$this->assertSame([['owner'], 0, ['a' => 'b'], ['name'], ['secret'], [], [], [], [], false, true], $calls[0]['args']);
@@ -7204,8 +7223,8 @@ class RenderObjectTest extends TestCase {
 		$asked = [];
 		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
 		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
-		$provider->method('find')->willReturnCallback(function ($reg, $schema, string $id, array $config = []) use (&$asked): ?ObjectEntity {
-			$asked[] = [$reg->getId(), $schema->getId(), $id, $config];
+		$provider->method('find')->willReturnCallback(function (\OCA\OpenRegister\Service\ObjectSource\SourcedTable $source, string $id) use (&$asked): ?ObjectEntity {
+			$asked[] = [$source->table->register->getId(), $source->table->schema->getId(), $id, $source->config];
 			if ($id === '9') {
 				return null;
 			}

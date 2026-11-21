@@ -32,27 +32,24 @@ interface GeoFeatureCollectionBuilderInterface {
 	/**
 	 * Build a GeoJSON FeatureCollection from a list of object rows.
 	 *
-	 * @param array         $rows        Object rows (assoc arrays).
-	 * @param ?string       $geoProperty Geo property name; null = auto-detect.
-	 * @param string[]|null $fields      Property allow-list, or null for all.
-	 * @param bool          $includeArea Add `_area_m2` for polygonal geometries.
+	 * @param array        $rows  Object rows (assoc arrays).
+	 * @param FeatureShape $shape The geo property, the property allow-list and whether to add `_area_m2`.
 	 *
 	 * @return array A GeoJSON FeatureCollection.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md
 	 */
-	public function buildFeatureCollection(array $rows, ?string $geoProperty = null, ?array $fields = null, bool $includeArea = false): array;
+	public function buildFeatureCollection(array $rows, FeatureShape $shape=new FeatureShape()): array;
 
 	/**
 	 * Build a WFS GetFeature-compatible response envelope.
 	 *
-	 * @param array    $rows        Object rows (assoc arrays).
-	 * @param ?string  $geoProperty Geo property name; null = auto-detect.
-	 * @param int|null $maxFeatures Optional cap on returned features.
+	 * @param array             $rows    Object rows (assoc arrays).
+	 * @param GetFeatureRequest $request The geo property and the optional cap on returned features.
 	 *
 	 * @return array A WFS-compatible GeoJSON FeatureCollection.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md
 	 */
-	public function buildWfsResponse(array $rows, ?string $geoProperty = null, ?int $maxFeatures = null): array;
+	public function buildWfsResponse(array $rows, GetFeatureRequest $request=new GetFeatureRequest()): array;
 }//end interface

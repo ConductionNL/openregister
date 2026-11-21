@@ -37,10 +37,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -61,7 +70,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
@@ -70,7 +88,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -80,6 +107,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -147,10 +177,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -171,7 +210,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
@@ -180,7 +228,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -190,6 +247,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -254,10 +314,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -278,7 +347,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
@@ -287,7 +365,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -297,6 +384,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -361,10 +451,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -385,7 +484,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
@@ -394,7 +502,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -404,6 +521,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -465,10 +585,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -489,6 +618,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
@@ -501,13 +633,28 @@
             }
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -517,6 +664,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -583,6 +733,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -595,6 +748,12 @@
                 "tableName": "openregister_table_1_2",
                 "error": "refused: _name_trgm_idx"
             }
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -615,6 +774,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
         },
         {
@@ -627,13 +789,28 @@
             }
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -643,6 +820,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -709,10 +889,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
@@ -733,7 +922,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"searchable_name\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"searchable_name\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
@@ -742,7 +940,16 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(\"both_flags\"::text)) gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -752,6 +959,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -909,10 +1119,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_proc WHERE proname = 'openregister_fold'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_foldgin_idx ON oc_openregister_table_1_2 USING GIN ((openregister_fold(_name::text)) gin_trgm_ops)"
         },
         {
             "log": "debug",
@@ -964,6 +1183,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -985,10 +1207,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -998,6 +1229,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1062,6 +1296,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1083,10 +1320,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1096,6 +1342,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1157,6 +1406,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1178,10 +1430,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1191,6 +1452,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1252,6 +1516,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1273,10 +1540,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1286,6 +1562,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1344,6 +1623,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1365,10 +1647,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1378,6 +1669,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1442,6 +1736,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1463,10 +1760,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1476,6 +1782,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1540,6 +1849,9 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
+        },
+        {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
         },
         {
@@ -1561,10 +1873,19 @@
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"facet_field\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
         },
         {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"both_flags\" AS TEXT)))"
+        },
+        {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"untyped\" AS TEXT)))"
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
@@ -1574,6 +1895,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(\"q_uote\" AS TEXT)))"
         },
         {
             "log": "debug",
@@ -1726,6 +2050,9 @@
         },
         {
             "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_lower_idx ON oc_openregister_table_1_2 (LOWER(CAST(_name AS TEXT)))"
         },
         {
             "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"

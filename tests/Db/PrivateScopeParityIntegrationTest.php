@@ -50,6 +50,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
@@ -323,8 +326,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					object: $entity
 				),
 				'hasPermission' => $this->rbacHandler->hasRowPermission(
-					schema: $schema,
-					action: 'read',
+					ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
@@ -637,8 +639,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->rbacHandler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'
@@ -738,7 +739,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			$share->setNode($file);
 			$share->setShareType(IShare::TYPE_USER);
 			$share->setSharedWith($this->testUid);
-			$share->setSharedBy($this->ownerUid);
+			// File shares are made by the account that holds the file.
+			$share->setSharedBy((string)$file->getOwner()?->getUID());
 			$share->setPermissions(1);
 			$this->shareManager()->createShare($share);
 		} finally {
@@ -777,7 +779,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	}//end testAGrantIsScopedToTheObjectItNames()
 
 	/**
-	 * Create a real core share of an object's folder, as its real owner.
+	 * Grant an object to a user through the sharing service, as its real owner.
 	 *
 	 * @param ObjectEntity $entity The object to grant.
 	 * @param string $recipient Uid to grant it to.
@@ -785,23 +787,10 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return IShare The created share.
 	 */
 	private function grantTo(ObjectEntity $entity, string $recipient): IShare {
-		$folder = $this->objectFolderAsOwner($entity);
-		if ($folder === null) {
-			$this->markTestSkipped('could not resolve the object folder');
-		}
-
-		$this->userSession->setUser($this->ownerUser);
-		try {
-			$share = $this->shareManager()->newShare();
-			$share->setNode($folder);
-			$share->setShareType(IShare::TYPE_USER);
-			$share->setSharedWith($recipient);
-			$share->setSharedBy($this->ownerUid);
-			$share->setPermissions(1);
-			$created = $this->shareManager()->createShare($share);
-		} finally {
-			$this->userSession->setUser($this->testUser);
-		}
+		$grant = $this->asOwner(
+			fn () => $this->sharingService()->grant(object: $entity, type: 'user', shareWith: $recipient, permissions: 1)
+		);
+		$created = $this->shareManager()->getShareById((string)$grant['id']);
 
 		// The grant was made after this request's resolver had already answered,
 		// so drop the memoisation — a real next request starts with a fresh one.
@@ -1159,7 +1148,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
@@ -1593,7 +1582,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(
