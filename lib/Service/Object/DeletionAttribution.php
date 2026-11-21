@@ -111,6 +111,34 @@ final class DeletionAttribution {
 	}//end deletedMetadata()
 
 	/**
+	 * When the recovery window of an object of this schema, deleted now, ends.
+	 *
+	 * The end of the window the delete is about to open, computed the same way
+	 * {@see self::deletedMetadata()} states it. A cascade uses it so the
+	 * evidence of a reference it clears outlives the window in which the
+	 * reference can be put back.
+	 *
+	 * @param \OCA\OpenRegister\Db\Schema|null $schema The deleted object's schema.
+	 *
+	 * @return DateTimeImmutable|null The window's end, or null when no window is administered.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public function recoveryWindowEnd(?\OCA\OpenRegister\Db\Schema $schema): ?DateTimeImmutable {
+		if ($this->windowService === null) {
+			return null;
+		}
+
+		$window = $this->windowService->openWindow(schema: $schema, deletedAt: new DateTimeImmutable());
+		$end = DateTimeImmutable::createFromFormat(DATE_ATOM, (string)($window['destroyableFrom'] ?? ''));
+		if ($end === false) {
+			return null;
+		}
+
+		return $end;
+	}//end recoveryWindowEnd()
+
+	/**
 	 * The current user id ('system' without a session user) and the user's active organisation.
 	 *
 	 * @return array{0: string, 1: mixed} [userId, activeOrganisation]

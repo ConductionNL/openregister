@@ -2,8 +2,8 @@
 
 ## 1. Evidence
 
-- [ ] 1.1 Migration adding `trigger_object` and the `(trigger_object, action)` index to `openregister_audit_trails`; written by `buildAuditTrail()` and `logIntegrityAction()`, outside the canonical hash form. Verify: a new `tests/Unit/Db/AuditTrailTriggerObjectTest.php` asserts the column on a cascade row and an unchanged hash for a row without it.
-- [ ] 1.2 `logIntegrityAction()` expiry no earlier than the trigger's `destroyableFrom`. Verify: `tests/Unit/Service/Object/ReferentialIntegrityServiceTest.php` with a 90-day window.
+- [x] 1.1 Migration adding `trigger_object` and the `(trigger_object, action)` index to `openregister_audit_trails`; written by `buildAuditTrail()` and `logIntegrityAction()`, outside the canonical hash form. Verify: a new `tests/Unit/Db/AuditTrailTriggerObjectTest.php` asserts the column on a cascade row and an unchanged hash for a row without it.
+- [x] 1.2 `logIntegrityAction()` expiry no earlier than the trigger's `destroyableFrom`. Verify: `tests/Unit/Service/Object/ReferentialIntegrityServiceTest.php` with a 90-day window.
 
 ## 2. Restore
 
