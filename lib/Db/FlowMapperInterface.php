@@ -95,6 +95,17 @@ interface FlowMapperInterface {
 	public function findScheduled(?string $organisation = null): array;
 
 	/**
+	 * The flows, enabled or not, whose graph holds a node of one type.
+	 *
+	 * @param string $nodeType The node type, e.g. `openregister.trigger-calendar`.
+	 *
+	 * @return array<int, Flow>
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
+	 */
+	public function findWithNodeType(string $nodeType): array;
+
+	/**
 	 * The ids of the flows one user owns.
 	 *
 	 * @param string $uid The owner's Nextcloud uid.

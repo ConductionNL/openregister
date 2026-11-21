@@ -71,6 +71,13 @@ class FlowService implements FlowServiceInterface {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
+	 * The webhook secrets the last save generated, handed out once.
+	 *
+	 * @var array<string, array{address: string, secret: string}>
+	 */
+	private array $issuedWebhookSecrets = [];
+
+	/**
 	 * The client-editable string fields and their setters, in apply order.
 	 *
 	 * Part of the allowlist that IS the security boundary — see
@@ -385,6 +392,11 @@ class FlowService implements FlowServiceInterface {
 
 		$this->applyEditableFields(flow: $flow, data: $data);
 		(new FlowTriggerValidator($this->platform->container, $this->platform->logger))->validate(flow: $flow);
+		// Incoming-webhook triggers (flow-calendar-and-webhook-triggers): a
+		// token on every node, nothing secret in the document, and the
+		// rotation asks taken off before the graph is compared.
+		$webhooks = $this->webhookSecrets();
+		$rotate = ($webhooks?->stamp(flow: $flow) ?? []);
 
 		// A published version is immutable. Only a DEFINITION change is
 		// refused, deliberately: renaming a flow, editing its description or
@@ -404,6 +416,7 @@ class FlowService implements FlowServiceInterface {
 		$flow->setUpdated(new DateTime());
 
 		$stored = $this->persistFlow(flow: $flow, uuid: $uuid);
+		$this->issuedWebhookSecrets = ($webhooks?->provision(flow: $stored, rotate: $rotate) ?? []);
 
 		// 🔑 THE TRIGGER SET FOLLOWS THE PUBLISHED VERSION, NOT THE HEAD. This
 		// used to re-derive from whatever was just saved, which under
@@ -415,6 +428,41 @@ class FlowService implements FlowServiceInterface {
 
 		return $stored;
 	}//end save()
+
+	/**
+	 * The webhook address and secret store, or null where the container has none
+	 * (several tests build this service by hand). Without it a webhook node gets
+	 * no address, so it cannot be called: it fails closed.
+	 *
+	 * @return FlowWebhookSecrets|null
+	 */
+	private function webhookSecrets(): ?FlowWebhookSecrets {
+		try {
+			$secrets = $this->platform->container->get(FlowWebhookSecrets::class);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if ($secrets instanceof FlowWebhookSecrets) {
+			return $secrets;
+		}
+
+		return null;
+	}//end webhookSecrets()
+
+	/**
+	 * The webhook secrets the last save generated, by node id; a second call answers none.
+	 *
+	 * @return array<string, array{address: string, secret: string}>
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#scenario-the-secret-is-shown-once-and-can-be-rotated
+	 */
+	public function issuedWebhookSecrets(): array {
+		$issued = $this->issuedWebhookSecrets;
+		$this->issuedWebhookSecrets = [];
+
+		return $issued;
+	}//end issuedWebhookSecrets()
 
 	/**
 	 * A value that changes exactly when the flow's definition changes.

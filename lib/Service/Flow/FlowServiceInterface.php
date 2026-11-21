@@ -105,6 +105,15 @@ interface FlowServiceInterface {
 	public function save(array $data, ?string $uuid = null): Flow;
 
 	/**
+	 * The webhook secrets the last save generated, by node id; a second call answers none.
+	 *
+	 * @return array<string, array{address: string, secret: string}>
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#scenario-the-secret-is-shown-once-and-can-be-rotated
+	 */
+	public function issuedWebhookSecrets(): array;
+
+	/**
 	 * Delete a flow the caller owns.
 	 *
 	 * @param string $uuid The flow uuid.
