@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateInterval;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCP\IUserManager;
 use Throwable;
@@ -52,14 +52,14 @@ class TriggerCalendarNode extends TriggerNodeBase implements TriggerCalendarNode
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodePresentation $presentation The translator and URL generator.
-	 * @param IUserManager         $userManager  Resolves the acting identity.
-	 * @param SchemaMapper         $schemaMapper Resolves the schema the date lives on.
+	 * @param FlowNodePresentation  $presentation The translator and URL generator.
+	 * @param IUserManager          $userManager  Resolves the acting identity.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the date lives on.
 	 */
 	public function __construct(
 		FlowNodePresentation $presentation,
 		private readonly IUserManager $userManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 		parent::__construct(l10n: $presentation->l10n, urls: $presentation->urls);
 	}//end __construct()
