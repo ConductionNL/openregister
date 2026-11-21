@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -106,7 +106,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -257,7 +257,7 @@ class ObjectsControllerPatchStringTypedJsonTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 
