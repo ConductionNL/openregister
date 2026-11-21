@@ -253,3 +253,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 
 ## Person-link events return ContactLinkInterface on main
 - Fix: same as the organisation entry: instanceof Db\\ContactLink, skip otherwise, add a test with a createMock(ContactLinkInterface).
+
+## Main's newer tests and helpers built for the old shape of what the PR changed
+- Symptom: after the merge, ArgumentCountError in a test main added for a controller the PR gave new constructor params; TypeError "ObjectsControllerFactory::args(): Argument #14 ($eventDispatcher) ... WebhookService given" in the PR's own tests; "Class OCA\OpenRegister\Files\Service\Sharing\AccessLink not found".
+- Cause: main moved AccessLinkReader into Files (it reads AccessLinkInterface constants, so a constant the PR added on Db\AccessLink resolves to a missing class); main dropped WebhookService from ObjectsControllerFactory (14th positional is IEventDispatcher).
+- Fix: pass the new mocks in main's test; give positional factory calls `createMock(IEventDispatcher::class)`; put a new subject constant on Kernel\Contracts\AccessLinkInterface and alias it on Db\AccessLink. component-map.csv conflicts: `python3 ~/q/bin/component-map-merge.py scripts/component-map.csv` (union, main's row wins per file).
