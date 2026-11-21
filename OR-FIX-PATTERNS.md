@@ -281,3 +281,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted (or-fix-3)
 - Symptom: a PR's new migration extends SimpleMigrationStep.
 - Fix: extend TargetedMigrationStep, rename changeSchema() to protected changeTargetedSchema(), drop the SimpleMigrationStep import.
+
+## A binding conflicts in Service/ServiceRegistrar.php (or-fix-19)
+- Symptom: content conflict in lib/Service/ServiceRegistrar.php and ServiceRegistrarTest's expected list; main's side drops seams such as EmailLinkReaderInterface, CredentialStore, SourceFetcherRegistry.
+- Cause: main moved non-Core seams to area wirings (e.g. Service/Integration/IntegrationWiring::registerSeams); ServiceRegistrar only names Core classes.
+- Fix: take main's ServiceRegistrar and its test; add the PR's registerService beside its sibling seam in the area wiring and add the interface to that wiring's order test (IntegrationRegistrarTest) (see #10539).
