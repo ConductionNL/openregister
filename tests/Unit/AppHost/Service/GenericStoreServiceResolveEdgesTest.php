@@ -20,8 +20,10 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Service;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\RegistryCall;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
+use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\Http\Client\IClient;
@@ -40,6 +42,8 @@ use Psr\Log\LoggerInterface;
  */
 #[CoversClass(GenericStoreService::class)]
 #[UsesClass(StoreDescriptor::class)]
+#[UsesClass(StoreListing::class)]
+#[UsesClass(StoreSharing::class)]
 #[UsesClass(StoreRegistryAccess::class)]
 #[UsesClass(RegistryCall::class)]
 #[UsesClass(OutboundAddressGuard::class)]
@@ -130,21 +134,21 @@ class GenericStoreServiceResolveEdgesTest extends TestCase {
 		$this->configure(url: '', register: 'openbuild');
 		$this->clientService->expects($this->never())->method('newClient');
 
-		$this->assertNull($this->service()->resolve(new StoreDescriptor('openbuild', 'application-template', 'openbuild'), 'crm'));
+		$this->assertNull($this->service()->resolve(new StoreDescriptor(new StoreListing('openbuild', 'application-template', 'openbuild')), 'crm'));
 	}//end testAnUnconfiguredStoreResolvesNothingWithoutARequest()
 
 	public function testAFailingStoreResolvesNothing(): void {
 		$this->configure(url: 'https://93.184.216.34/', register: 'openbuild');
 		$this->answer(503, '{"results":[{"slug":"crm"}]}');
 
-		$this->assertNull($this->service()->resolve(new StoreDescriptor('openbuild', 'application-template', 'openbuild'), 'crm'));
+		$this->assertNull($this->service()->resolve(new StoreDescriptor(new StoreListing('openbuild', 'application-template', 'openbuild')), 'crm'));
 	}//end testAFailingStoreResolvesNothing()
 
 	public function testABlankRegisterSettingFallsBackToTheDefaultRegister(): void {
 		$this->configure(url: 'https://93.184.216.34/', register: '   ');
 		$this->answer(200, '{"results":[]}', $url);
 
-		$this->service()->search(descriptor: new StoreDescriptor('openbuild', 'application-template', 'fallback-register'));
+		$this->service()->search(descriptor: new StoreDescriptor(new StoreListing('openbuild', 'application-template', 'fallback-register')));
 
 		$this->assertStringContainsString('/fallback-register/application-template', (string)$url);
 	}//end testABlankRegisterSettingFallsBackToTheDefaultRegister()
