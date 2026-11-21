@@ -59,7 +59,7 @@ class Translation extends Entity implements JsonSerializable {
 	public const STATUS_MACHINE_TRANSLATED = 'machine_translated';
 	public const STATUS_HUMAN_REVIEWED = 'human_reviewed';
 	public const STATUS_APPROVED = 'approved';
-	public const STATUS_OUTDATED = 'outdated';
+	public const STATUS_OUTDATED = TranslationFilter::OUTDATED_STATUS;
 
 	public const ALL_STATUSES = [
 		self::STATUS_DRAFT,

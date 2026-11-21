@@ -84,23 +84,6 @@ final class ServiceHours {
 	}//end none()
 
 	/**
-	 * Read and validate a `serviceHours` declaration.
-	 *
-	 * @param mixed           $value           The declared value.
-	 * @param array<int, int> $workingWeekdays The ISO weekdays the calendar works.
-	 * @param string          $slug            The calendar, for the refusals.
-	 *
-	 * @return self The windows.
-	 *
-	 * @throws FlowTimerValidationException On any refused window, naming the weekday.
-	 *
-	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
-	 */
-	public static function fromArray(mixed $value, array $workingWeekdays, string $slug): self {
-		return self::fromDeclaration(value: $value, declaration: new ServiceHoursDeclaration(slug: $slug, workingWeekdays: $workingWeekdays));
-	}//end fromArray()
-
-	/**
 	 * Read and validate a `serviceHours` declaration against its calendar's working week.
 	 *
 	 * @param mixed                   $value       The declared value.

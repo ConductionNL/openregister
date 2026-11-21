@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use Throwable;
 
 /**
@@ -63,9 +64,11 @@ trait CompanyLookupCalls {
 	private function askRegister(array $query): array {
 		return $this->router->call(
 			provider: $this,
-			method: 'GET',
-			path: self::SEARCH_PATH,
-			options: ['query' => $query, 'headers' => ['Accept' => 'application/json']]
+			request: new UpstreamRequest(
+				method: 'GET',
+				path: self::SEARCH_PATH,
+				options: ['query' => $query, 'headers' => ['Accept' => 'application/json']]
+			)
 		);
 	}//end askRegister()
 

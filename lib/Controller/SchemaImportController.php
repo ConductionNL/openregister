@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -155,8 +156,6 @@ class SchemaImportController extends Controller {
 	 *
 	 * @return JSONResponse The created schema, or a structured error.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function import(string $dialect): JSONResponse {
@@ -209,8 +208,6 @@ class SchemaImportController extends Controller {
 	 * @param int $id The schema id.
 	 *
 	 * @return JSONResponse The classified diff (preview) or the updated schema.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 *
@@ -389,7 +386,7 @@ class SchemaImportController extends Controller {
 	private function classifyMerge(Schema $schema, array $merged): ?SchemaChangeSet {
 		$changeSet = $this->schemaVersioning?->classify(
 			existing: $schema,
-			newDefinition: ['properties' => $merged, 'required' => ($schema->getRequired() ?? [])]
+			incoming: new IncomingDefinition(definition: ['properties' => $merged, 'required' => ($schema->getRequired() ?? [])])
 		);
 		if ($changeSet !== null && $changeSet->hasChanges() === true) {
 			$schema->setVersion($this->schemaVersioning->nextVersion(existing: $schema, changeSet: $changeSet));

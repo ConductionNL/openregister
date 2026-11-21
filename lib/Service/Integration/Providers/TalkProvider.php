@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use DateTime;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -134,9 +135,7 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 *   * `lastActivity`     — unix timestamp from `Room::getLastActivity()`. `null` if unset.
 	 *   * `url`              — deep-link `/index.php/call/{token}`.
 	 *
-	 * @param string              $register Register slug or numeric id (unused).
-	 * @param string              $schema   Schema slug or numeric id (unused).
-	 * @param string              $objectId Object uuid.
+	 * @param ObjectRef              $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters  Optional filters (unused).
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -145,8 +144,8 @@ class TalkProvider extends AbstractIntegrationProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The IntegrationProvider contract fixes the signature.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->rowsForSignedIn(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->rowsForSignedIn(objectId: $ref->id);
 	}//end list()
 
 	/**

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use UnexpectedValueException;
@@ -50,8 +51,14 @@ class SendEmailNode extends MessagingNodeBase implements
 	IFlowNodeConfigKeys,
 	IFlowNodeConfigForm,
 	IFlowNodeTaxonomy,
-	IFlowNodePreview
+	IFlowNodePreview,
+	IFlowNodeRequiresRight
 {
+
+	/**
+	 * The right an author needs to use this step.
+	 */
+	public const RIGHT = 'flow.node.send-email';
 
 	/**
 	 * The step type this node answers to.
@@ -110,7 +117,7 @@ class SendEmailNode extends MessagingNodeBase implements
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
@@ -190,19 +197,20 @@ class SendEmailNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to mail'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(key: 'recipients', label: $this->l10n->t('Who to mail'), type: 'text', help: $this->l10n->t(
 				'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
-			)),
-			$this->formField(key: 'externalRecipients', label: $this->l10n->t('External recipients'), type: 'text', help: $this->l10n->t(
+			))),
+			$this->formField(field: new NodeFormField(
+				key: 'externalRecipients', label: $this->l10n->t('External recipients'), type: 'text', help: $this->l10n->t(
 				'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
-			)),
+			))),
 			$this->messageCategoryField(),
-			$this->formField(key: 'subject', label: $this->l10n->t('Subject'), type: 'text', help: $this->l10n->t(
+			$this->formField(field: new NodeFormField(key: 'subject', label: $this->l10n->t('Subject'), type: 'text', help: $this->l10n->t(
 				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
-			)),
-			$this->requiredField(key: 'body', label: $this->l10n->t('Body'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'body', label: $this->l10n->t('Body'), type: 'textarea', help: $this->l10n->t(
 				'What the email says. Placeholders read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 
@@ -288,4 +296,28 @@ class SendEmailNode extends MessagingNodeBase implements
 	protected function send(MessageSend $step): void {
 		$this->messaging->email(request: $step);
 	}//end send()
+
+	/**
+	 * The right an author needs to put this step in a flow.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return string|null The right, or null.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function requiredRight(array $config): ?string {
+		return self::RIGHT;
+	}//end requiredRight()
+
+	/**
+	 * Every right this step can require, with its description.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function declaredRights(): array {
+		return [self::RIGHT => 'Put a step that sends e-mail in a flow.'];
+	}//end declaredRights()
 }//end class

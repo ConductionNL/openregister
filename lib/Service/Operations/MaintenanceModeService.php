@@ -149,17 +149,8 @@ class MaintenanceModeService implements MaintenanceModeServiceInterface, Mainten
 	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function state(): array {
-		$since = $this->config->getAppValue(self::APP_ID, self::SETTING_SINCE, '');
-
-		$sinceAt = null;
-		if ($since !== '') {
-			$sinceAt = $since;
-		}
-
-		$actor = $this->config->getAppValue(self::APP_ID, self::SETTING_ACTOR, '');
-		if ($actor === '') {
-			$actor = null;
-		}
+		$sinceAt = $this->storedOrNull(key: self::SETTING_SINCE);
+		$actor = $this->storedOrNull(key: self::SETTING_ACTOR);
 
 		return [
 			'holds' => $this->holds(),
@@ -169,6 +160,22 @@ class MaintenanceModeService implements MaintenanceModeServiceInterface, Mainten
 		];
 
 	}//end state()
+
+	/**
+	 * A stored setting, or null when it is not set.
+	 *
+	 * @param string $key The setting key.
+	 *
+	 * @return string|null The value.
+	 */
+	private function storedOrNull(string $key): ?string {
+		$value = $this->config->getAppValue(self::APP_ID, $key, '');
+		if ($value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end storedOrNull()
 
 	/**
 	 * Close the instance.

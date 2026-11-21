@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\JsonArrayContainment
  * @uses   \OCA\OpenRegister\Db\LikeOperator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\ObjectFieldFilter
  * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
@@ -49,6 +50,13 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  * @uses   \OCA\OpenRegister\Support\NullFilter
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\BoundQueryColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\FieldComparison
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses \OCA\OpenRegister\Db\MagicMapper\TypedColumnRef
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 
@@ -106,6 +114,9 @@ class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 			'or null' => ['title' => ['eq' => 'a', 'orNull' => true]],
 			'array' => ['tags' => 'x'],
 			'array list' => ['tags' => ['x', 'y']],
+			'array contains' => ['tags' => ['contains' => ['system' => 'decos', 'identifier' => 'Z-1', 'public' => 'true']]],
+			'array contains list' => ['tags' => ['contains' => ['a', 'b']]],
+			'array contains nested' => ['tags' => ['contains' => ['system' => ['x']]]],
 			'object' => ['owner' => 'abc'],
 			'object list' => ['owner' => ['abc', 'def']],
 			'missing' => ['nope' => 1, 'title' => 'x'],

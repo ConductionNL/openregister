@@ -29,7 +29,7 @@
 						<NcSelect
 							:modelValue="selected[row.right]"
 							:inputLabel="row.inputLabel"
-							:options="groups"
+							:options="options"
 							label="name"
 							trackBy="id"
 							:multiple="true"
@@ -47,7 +47,7 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { NcSelect } from '@nextcloud/vue'
-import { SPECIAL_RIGHTS } from './organisationRights.js'
+import { everyoneOption, SPECIAL_RIGHTS } from './organisationRights.js'
 
 /**
  * The table granting each special right to groups.
@@ -69,6 +69,11 @@ export default {
 		/** @return {Array<object>} The rights offered. */
 		rights() {
 			return SPECIAL_RIGHTS
+		},
+
+		/** @return {Array<object>} Every signed-in user, then the groups. */
+		options() {
+			return [everyoneOption(), ...this.groups]
 		},
 	},
 

@@ -76,10 +76,9 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	/**
 	 * Complete a task, writing its form payload to the subject first.
 	 *
-	 * @param string $uuid The task uuid.
-	 * @param TaskAnswer $answer The completion outcome, result and comment.
-	 * @param array<string, mixed> $data The declared field values; empty for a form-less completion.
-	 * @param string|null $actor The completing identity.
+	 * @param FormCompletionRequest $request The task uuid, the completion outcome, result and comment, and the
+	 *                                       declared field values (empty for a form-less completion).
+	 * @param string|null           $actor   The completing identity.
 	 *
 	 * @return Task The completed task.
 	 *
@@ -89,14 +88,15 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function complete(string $uuid, TaskAnswer $answer, array $data, ?string $actor): Task {
+	public function complete(FormCompletionRequest $request, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
-		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $uuid);
-		$this->submit(submission: new TaskFormSubmission(task: $task, data: $data, actor: $actor));
+		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $request->uuid);
+		$this->submit(submission: new TaskFormSubmission(task: $task, data: $request->data, actor: $actor));
 
+		$answer = $request->answer;
 		return $this->tasks->completeWithAnswer(
-			uuid: $uuid,
+			uuid: $request->uuid,
 			answer: new TaskAnswer(outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment),
 			actor: $actor
 		);

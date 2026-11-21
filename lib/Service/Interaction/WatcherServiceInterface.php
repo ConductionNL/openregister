@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Notifications\Db\Watcher;
  * Declares only what callers outside the component use; the rest of the
  * class stays its own.
  */
-interface WatcherServiceInterface {
+interface WatcherServiceInterface extends ObjectWatchersInterface {
 
 	/**
 	 * Subscribe the calling user to an object they may read.
@@ -132,10 +133,8 @@ interface WatcherServiceInterface {
 	 * mention uses). Public, so an app whose assignment is not an object
 	 * property (a task, a workflow step) can call it.
 	 *
-	 * @param ObjectEntity $object The assigned object.
-	 * @param string $userId The assignee, already checked for read access.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param AddressedObject $target The assigned object and how the caller addressed it.
+	 * @param string          $userId The assignee, already checked for read access.
 	 *
 	 * @return Watcher The follow.
 	 *
@@ -143,12 +142,7 @@ interface WatcherServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
 	 */
-	public function followAssigned(
-		ObjectEntity $object,
-		string $userId,
-		?string $register = null,
-		?string $schema = null,
-	): Watcher;
+	public function followAssigned(AddressedObject $target, string $userId): Watcher;
 
 	/**
 	 * Remove another user's subscription.

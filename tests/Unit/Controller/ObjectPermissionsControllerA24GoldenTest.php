@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\ObjectPermissionsController;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -116,7 +117,7 @@ class ObjectPermissionsControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testIndexOutcomes(): void {
-		$this->report->method('setFor')->with($this->anything(), 1, 7)->willReturnOnConsecutiveCalls(
+		$this->report->method('setFor')->with($this->anything(), new RegisterSchemaRef(1, 7))->willReturnOnConsecutiveCalls(
 			['object' => 'case-1', 'holders' => []],
 			$this->throwException(new \RuntimeException('broken'))
 		);

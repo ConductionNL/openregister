@@ -3,7 +3,7 @@
 /**
  * OpenRegister NlPatternSet
  *
- * The Dutch identifiers: for now the BSN (burgerservicenummer).
+ * The Dutch identifiers: the BSN (burgerservicenummer) and the licence plate (kenteken).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -38,12 +38,29 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
  * {@see EntityRecognitionHandler::ENTITY_TYPE_SSN}, the citizen service number
  * type the risk service rates very high.
  *
- * The licence plate that task 2.2 of the change also names is not part of
- * this set yet.
+ * A licence plate in any of the fourteen sidecodes is found by
+ * {@see NlLicensePlates}, with its false-positive guard, and reported as
+ * {@see EntityRecognitionHandler::ENTITY_TYPE_LICENSE_PLATE}. A span already
+ * claimed by a BSN is not also a plate.
  *
  * @spec openspec/changes/detection-dutch-licence-plates/tasks.md#task-2.2
  */
 class NlPatternSet implements JurisdictionPatternSet {
+	/**
+	 * The version of these patterns. Raise it whenever a pattern, a confidence
+	 * or the false-positive guard changes, and set CHANGED_AT to that day.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 */
+	public const VERSION = '1.0.0';
+
+	/**
+	 * The day these patterns last changed (ISO 8601 date).
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-detector-says-when-it-last-changed-req-adi-004
+	 */
+	public const CHANGED_AT = '2026-11-13';
+
 	/**
 	 * A BSN candidate: nine digits, plain or grouped 4-2-3 or 3-2-4, standing
 	 * alone as a token. Not preceded by a letter, digit, dot or hyphen, and not
@@ -67,12 +84,21 @@ class NlPatternSet implements JurisdictionPatternSet {
 	private readonly Format $bsnFormat;
 
 	/**
+	 * The plate finder.
+	 *
+	 * @var NlLicensePlates
+	 */
+	private readonly NlLicensePlates $plates;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Format|null $bsnFormat The elfproef; the Formats component's BSN check when null.
+	 * @param Format|null          $bsnFormat The elfproef; the Formats component's BSN check when null.
+	 * @param NlLicensePlates|null $plates    The plate finder; the default one when null.
 	 */
-	public function __construct(?Format $bsnFormat=null) {
+	public function __construct(?Format $bsnFormat=null, ?NlLicensePlates $plates=null) {
 		$this->bsnFormat = $bsnFormat ?? IdentifierFormats::bsn();
+		$this->plates    = $plates ?? new NlLicensePlates();
 	}//end __construct()
 
 	/**
@@ -87,7 +113,7 @@ class NlPatternSet implements JurisdictionPatternSet {
 	}//end getCode()
 
 	/**
-	 * Detect BSNs in the text.
+	 * Detect BSNs and licence plates in the text.
 	 *
 	 * @param string $text The text to scan.
 	 *
@@ -96,6 +122,44 @@ class NlPatternSet implements JurisdictionPatternSet {
 	 * @spec openspec/changes/detection-dutch-licence-plates/tasks.md#task-2.2
 	 */
 	public function detect(string $text): array {
+		$bsns = $this->detectBsns(text: $text);
+
+		return array_merge($bsns, $this->platesOutside(plates: $this->plates->detect(text: $text), claimed: $bsns));
+	}//end detect()
+
+	/**
+	 * The plates whose span no claimed entity overlaps.
+	 *
+	 * @param array<int, array<string, mixed>> $plates  The plates.
+	 * @param array<int, array<string, mixed>> $claimed The entities already found.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function platesOutside(array $plates, array $claimed): array {
+		return array_values(
+			array_filter(
+				$plates,
+				static function (array $plate) use ($claimed): bool {
+					foreach ($claimed as $entity) {
+						if ($plate['position_start'] < $entity['position_end'] && $entity['position_start'] < $plate['position_end']) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			)
+		);
+	}//end platesOutside()
+
+	/**
+	 * Detect BSNs in the text.
+	 *
+	 * @param string $text The text to scan.
+	 *
+	 * @return array<int, array{type: string, value: string, category: string, position_start: int, position_end: int, confidence: float}>
+	 */
+	private function detectBsns(string $text): array {
 		if (preg_match_all(self::BSN_CANDIDATE, $text, $matches, PREG_OFFSET_CAPTURE) === 0) {
 			return [];
 		}
@@ -118,5 +182,5 @@ class NlPatternSet implements JurisdictionPatternSet {
 		}
 
 		return $entities;
-	}//end detect()
+	}//end detectBsns()
 }//end class

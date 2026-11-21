@@ -33,30 +33,29 @@ use OCA\OpenRegister\Exception\FlowSignalRefused;
 interface FlowRunSignalInterface {
 
 	/**
-	 * Answer a suspended run by uuid, as a named actor, guarded.
+	 * Answer a suspended run by uuid, guarded.
 	 *
-	 * @param string      $runUuid  The run to answer.
-	 * @param array       $payload  What the signaller wants the run to know.
-	 * @param string|null $actorUid Who is answering; null or '' means anonymous.
-	 * @param string|null $nodeId   The node the answer addresses, when known.
+	 * @param string    $runUuid The run to answer.
+	 * @param RunSignal $signal  What the signaller wants the run to know, who is answering (null or '' means
+	 *                           anonymous) and the node the answer addresses, when known.
 	 *
 	 * @return FlowRun The parked run, due for the worker's next pass.
 	 *
 	 * @throws FlowSignalRefused With reason RUN_NOT_FOUND, NOT_ASSIGNEE or NOT_SUSPENDED.
 	 */
-	public function signalAs(string $runUuid, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun;
+	public function answerByUuid(string $runUuid, RunSignal $signal): FlowRun;
 
 	/**
-	 * Answer an already-resolved run, as a named actor, guarded.
+	 * Answer an already-resolved run, guarded; a refusal touches nothing.
 	 *
-	 * @param FlowRun     $run      The run to answer.
-	 * @param array       $payload  What the signaller wants the run to know.
-	 * @param string|null $actorUid Who is answering; null or '' means anonymous.
-	 * @param string|null $nodeId   The node the answer addresses, when known.
+	 * @param FlowRun   $run    The run to answer.
+	 * @param RunSignal $signal The payload, the actor and the addressed node.
 	 *
 	 * @return FlowRun The parked run, due for the worker's next pass.
 	 *
 	 * @throws FlowSignalRefused With reason NOT_ASSIGNEE or NOT_SUSPENDED.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	public function signalRunAs(FlowRun $run, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun;
+	public function answer(FlowRun $run, RunSignal $signal): FlowRun;
 }//end interface

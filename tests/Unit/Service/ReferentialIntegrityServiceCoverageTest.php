@@ -22,8 +22,11 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -55,7 +58,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->auditTrailMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
@@ -376,7 +379,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockWithEmptyBlockers(): void {
@@ -384,7 +387,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 
-		$this->service->logRestrictBlock('target-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'target-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -398,7 +401,10 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		$this->objectMapper->expects($this->never())->method('findAcrossAllSources');
 		$this->objectMapper->expects($this->never())->method('deleteObjects');
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -417,7 +423,7 @@ class ReferentialIntegrityServiceCoverageTest extends TestCase {
 		]);
 
 		// Should not throw
-		$this->service->logRestrictBlock('uuid', '1', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'uuid', schemaId: '1', userId: 'admin'), $analysis);
 	}
 	/**
 	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.

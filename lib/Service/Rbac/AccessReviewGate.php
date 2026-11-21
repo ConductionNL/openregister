@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
 
@@ -144,7 +145,7 @@ class AccessReviewGate implements AccessReviewGateInterface {
 		}
 
 		$userId = $this->callerUid();
-		if ($this->grantManage->admittedAs(userId: $userId, userGroups: $this->callerGroups(), object: $object) !== null) {
+		if ($this->grantManage->admittedAs(caller: new GrantCaller(userId: $userId, userGroups: $this->callerGroups()), object: $object) !== null) {
 			return true;
 		}
 
@@ -262,12 +263,10 @@ class AccessReviewGate implements AccessReviewGateInterface {
 		$action = (string)array_key_first($ownList);
 		foreach (['authenticated', ...$this->callerGroups()] as $groupId) {
 			if ($run->handler->hasGroupPermission(
-				authorization: $ownList,
-				groupId: (string)$groupId,
-				action: $action,
-				userId: $userId,
-				objectData: $object?->getMatchEnvelope(),
-				objectOrganisation: $object?->getOrganisation()
+				request: (new GroupRuleRequest(authorization: $ownList, action: $action))
+					->forGroup(groupId: (string)$groupId, userGroup: null)
+					->forUser(userId: $userId, objectOwner: null)
+					->onObject(data: $object?->getMatchEnvelope(), organisation: $object?->getOrganisation())
 			) === true
 			) {
 				return true;

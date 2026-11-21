@@ -18,8 +18,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCP\EventDispatcher\Event;
@@ -134,13 +135,9 @@ class PartyNotificationServiceTest extends TestCase {
 		$appConfig->method('getValueString')->willReturnArgument(2);
 
 		$this->service = new PartyNotificationService(
-			$this->links,
-			$this->parties,
+			new PartyRecipients(links: $this->links, parties: $this->parties, indicators: $this->indicators),
 			$this->email,
-			new PartyReachGates(
-				indicators: $this->indicators,
-				optOut: new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
-			)
+			new OptOutAuthority(eventDispatcher: $dispatcher, appConfig: $appConfig, logger: $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -257,11 +254,11 @@ class PartyNotificationServiceTest extends TestCase {
 			]
 		);
 
-		$outcome = $this->service->notifyParties(
+		$outcome = $this->service->notifyParties(message: new PartyMessage(
 			objectUuid: 'case-1',
 			subject: 'Uw melding',
 			body: 'Wij hebben uw melding ontvangen.'
-		);
+		));
 
 		$this->assertCount(1, $this->sent);
 		$this->assertSame('jan@example.org', $this->sent[0]['address']);
@@ -283,7 +280,7 @@ class PartyNotificationServiceTest extends TestCase {
 			indicators: [['key' => 'geen-post', 'label' => 'Geen post', 'effect' => 'refuse-send', 'note' => null]]
 		);
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst'));
 
 		$this->assertSame([], $this->sent);
 		$this->assertSame('refused-by-indicator', $outcome[0]['outcome']);
@@ -304,7 +301,7 @@ class PartyNotificationServiceTest extends TestCase {
 	public function testAPartyWithNoAddressIsReportedNotSkipped(): void {
 		$this->objectHasPartyWith(addresses: []);
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw melding', body: 'Tekst'));
 
 		$this->assertCount(1, $outcome);
 		$this->assertSame(EmailSender::OUTCOME_NO_ADDRESS, $outcome[0]['outcome']);
@@ -337,7 +334,7 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->objectHasTwoParties();
 		$this->optedOut = ['piet@example.org'];
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'Uw zaak', body: 'Nieuwe status', category: 'case-update');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'Uw zaak', body: 'Nieuwe status', category: 'case-update'));
 
 		$this->assertCount(1, $this->sent);
 		$this->assertSame('jan@example.org', $this->sent[0]['address']);
@@ -365,11 +362,11 @@ class PartyNotificationServiceTest extends TestCase {
 		$this->objectHasTwoParties();
 		$this->integriq = 'ignore';
 
-		$refused = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B');
+		$refused = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B'));
 		$this->assertSame([], $this->sent);
 		$this->assertSame(['authority-unavailable', 'authority-unavailable'], array_column($refused, 'outcome'));
 
-		$sent = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B', category: 'besluit');
+		$sent = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B', category: 'besluit'));
 		$this->assertCount(2, $this->sent);
 		$this->assertSame('B', $this->sent[0]['body']);
 		$this->assertNull($this->sent[0]['unsubscribe']);
@@ -390,7 +387,7 @@ class PartyNotificationServiceTest extends TestCase {
 		);
 		$this->optedOut = ['jan@example.org'];
 
-		$outcome = $this->service->notifyParties(objectUuid: 'case-1', subject: 'S', body: 'B');
+		$outcome = $this->service->notifyParties(message: new PartyMessage(objectUuid: 'case-1', subject: 'S', body: 'B'));
 
 		$this->assertSame('refused-by-indicator', $outcome[0]['outcome']);
 		$this->assertSame([], $this->questions);

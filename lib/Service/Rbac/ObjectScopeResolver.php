@@ -84,22 +84,46 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * @return string|null The declared scope, or null when the block declares none.
 	 */
 	public function declaredScope(?array $authorization): ?string {
-		if (is_array($authorization) === false) {
-			return null;
-		}
-
-		$raw = ($authorization[self::SCOPE_KEY] ?? null);
+		$raw = self::blockValue(authorization: $authorization, key: self::SCOPE_KEY);
 		if ($raw === null || $raw === '') {
 			return null;
 		}
 
+		return self::scopeDeclaredBy(raw: $raw);
+	}//end declaredScope()
+
+	/**
+	 * One key of an authorization block, or null when there is no block or no such key.
+	 *
+	 * @param array|null $authorization An authorization block, or null.
+	 * @param string     $key           The key.
+	 *
+	 * @return mixed The raw value.
+	 */
+	private static function blockValue(?array $authorization, string $key): mixed {
+		if (is_array($authorization) === false) {
+			return null;
+		}
+
+		return ($authorization[$key] ?? null);
+	}//end blockValue()
+
+	/**
+	 * The scope a set `scope` value declares: only the exact string `organisation`
+	 * is non-private.
+	 *
+	 * @param mixed $raw The set (non-null, non-empty) value.
+	 *
+	 * @return string One of the SCOPE_* constants.
+	 */
+	private static function scopeDeclaredBy(mixed $raw): string {
 		if (is_string($raw) === true && $raw === self::SCOPE_ORGANISATION) {
 			return self::SCOPE_ORGANISATION;
 		}
 
 		// Present but unrecognised — including a non-string value. Fail closed.
 		return self::SCOPE_PRIVATE;
-	}//end declaredScope()
+	}//end scopeDeclaredBy()
 
 	/**
 	 * Resolve the effective scope for one object.
@@ -235,11 +259,7 @@ class ObjectScopeResolver implements ObjectScopeResolverInterface {
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function ownerGroup(?array $authorization): ?string {
-		if (is_array($authorization) === false) {
-			return null;
-		}
-
-		$raw = ($authorization[self::OWNER_GROUP_KEY] ?? null);
+		$raw = self::blockValue(authorization: $authorization, key: self::OWNER_GROUP_KEY);
 		if (is_string($raw) === false || $raw === '') {
 			return null;
 		}

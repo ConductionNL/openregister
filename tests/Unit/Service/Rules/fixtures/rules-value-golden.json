@@ -79,9 +79,9 @@
             "holdsEmpty": false
         },
         "nested ok": {
-            "wellFormed": false,
-            "valid": false,
-            "holdsA7": false,
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": true,
             "holdsEmpty": false
         },
         "nested bad": {
@@ -121,8 +121,8 @@
             "holdsEmpty": false
         },
         "ast throws": {
-            "wellFormed": false,
-            "valid": false,
+            "wellFormed": true,
+            "valid": true,
             "holdsA7": false,
             "holdsEmpty": false
         },
@@ -648,11 +648,7 @@
         "bad pairs": [
             {
                 "code": "dependent-values-malformed",
-                "message": "Property \"resultaat\": \"a\" must be paired with a non-empty list of allowed values."
-            },
-            {
-                "code": "dependent-values-malformed",
-                "message": "Property \"resultaat\": \"b\" must be paired with a non-empty list of allowed values."
+                "message": "Property \"resultaat\": \"a\" must be paired with a list of allowed values."
             },
             {
                 "code": "dependent-values-unknown-controlling-value",
@@ -698,7 +694,7 @@
             },
             {
                 "code": "dependent-values-malformed",
-                "message": "Property \"resultaat\": \"b\" must be paired with a non-empty list of allowed values."
+                "message": "Property \"resultaat\": \"b\" must be paired with a list of allowed values."
             }
         ],
         "own enum absent": [
@@ -721,7 +717,7 @@
             },
             {
                 "code": "dependent-values-malformed",
-                "message": "Property \"c\": \"b\" must be paired with a non-empty list of allowed values."
+                "message": "Property \"c\": \"b\" must be paired with a list of allowed values."
             }
         ]
     },

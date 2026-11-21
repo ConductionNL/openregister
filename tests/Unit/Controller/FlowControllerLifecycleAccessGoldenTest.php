@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowVersion;
@@ -197,7 +198,8 @@ class FlowControllerLifecycleAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn($this->flow());
 		$this->request->method('getParam')->with('bump')->willReturn('major');
 		$this->versions->expects($this->once())->method('publish')
-			->with($this->anything(), 'bob', 'major')->willReturn($this->versionRow(4));
+			->with($this->anything(), $this->callback(static fn (FlowPublishOptions $options): bool => $options->publishedBy === 'bob' && $options->bump === 'major'))
+			->willReturn($this->versionRow(4));
 
 		$response = $this->controller('bob', ['flow.update'])->publish(id: 'f1');
 

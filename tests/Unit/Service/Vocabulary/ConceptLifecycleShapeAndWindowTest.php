@@ -105,8 +105,8 @@ class ConceptLifecycleShapeAndWindowTest extends TestCase {
 		$at = self::at('2026-01-01T00:00:00');
 
 		$this->assertFalse($lifecycle->isOfferable($deprecated, $at));
-		$this->assertTrue($lifecycle->isOfferable($deprecated, $at, true));
-		$this->assertFalse($lifecycle->isOfferable(['deprecated' => true, 'validUntil' => '2025-01-01'], $at, true));
+		$this->assertTrue($lifecycle->isWithinWindow($deprecated, $at));
+		$this->assertFalse($lifecycle->isWithinWindow(['deprecated' => true, 'validUntil' => '2025-01-01'], $at));
 	}
 
 	public function testWeightsParseNumbersAndNumericStringsAndRollUpSkipsNonConcepts(): void {

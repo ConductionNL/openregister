@@ -164,51 +164,96 @@ class MetricsService implements MetricsRetentionInterface {
 	 */
 	public function recordMetric(MetricRecord $record): void {
 		try {
-			// Get query builder instance for database operations.
-			$qb = $this->db->getQueryBuilder();
-
-			// Build INSERT query for metrics table.
-			// Create named parameters for all values to prevent SQL injection.
-			//
-			// 🔴 `values()` takes a FLAT column => parameter map. Wrapping it in
-			// an extra array (`[[ ... ]]`, as this did) makes each value an array
-			// rather than a parameter, so Doctrine rejected every insert with
-			// "Only strings, Literals and Parameters are allowed" — silently,
-			// because the catch below is fail-soft by design. The result was that
-			// NO metric was ever recorded while an error was logged on every
-			// object write. Every other `->values()` call in this app uses the
-			// flat form; this was the only nested one.
-			$qb->insert('openregister_metrics')
-				->values(
-					values: [
-						'metric_type' => $qb->createNamedParameter($record->metricType),
-						'entity_type' => $qb->createNamedParameter($record->subject->entityType),
-						'entity_id' => $qb->createNamedParameter($record->subject->entityId),
-						'user_id' => $qb->createNamedParameter($record->subject->userId),
-						'status' => $qb->createNamedParameter($record->outcome->status),
-						'duration_ms' => $qb->createNamedParameter($record->outcome->durationMs, IQueryBuilder::PARAM_INT),
-						'metadata' => $qb->createNamedParameter($this->encodeMetadata(metadata: $record->metadata)),
-						'error_message' => $qb->createNamedParameter($record->outcome->errorMessage),
-						'created_at' => $qb->createNamedParameter(time(), IQueryBuilder::PARAM_INT),
-					]
-				);
-
-			// Execute the insert query.
-			$qb->executeStatement();
+			$this->insertMetric(record: $record);
 		} catch (\Exception $e) {
 			// Log errors but don't throw to prevent disrupting main operations.
 			// Metrics recording failures should not break application functionality.
-			$this->logger->error(
-				message: '[MetricsService] Failed to record metric',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'metric_type' => $record->metricType,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logRecordFailure(record: $record, error: $e);
 		}//end try
 	}//end recordMetric()
+
+	/**
+	 * Insert one metric row, timestamped now.
+	 *
+	 * @param MetricRecord $record The metric type, subject, outcome and metadata
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception If the insert fails
+	 *
+	 * @psalm-suppress PossiblyNullArgument
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function insertMetric(MetricRecord $record): void {
+		// Get query builder instance for database operations.
+		$qb = $this->db->getQueryBuilder();
+
+		// Build INSERT query for metrics table.
+		// Create named parameters for all values to prevent SQL injection.
+		//
+		// 🔴 `values()` takes a FLAT column => parameter map. Wrapping it in
+		// an extra array (`[[ ... ]]`, as this did) makes each value an array
+		// rather than a parameter, so Doctrine rejected every insert with
+		// "Only strings, Literals and Parameters are allowed" — silently,
+		// because the catch below is fail-soft by design. The result was that
+		// NO metric was ever recorded while an error was logged on every
+		// object write. Every other `->values()` call in this app uses the
+		// flat form; this was the only nested one.
+		$qb->insert('openregister_metrics')
+			->values(values: $this->metricColumns(qb: $qb, record: $record));
+
+		// Execute the insert query.
+		$qb->executeStatement();
+	}//end insertMetric()
+
+	/**
+	 * The metric row's columns, each a named parameter on the insert.
+	 *
+	 * @param IQueryBuilder $qb     The insert query.
+	 * @param MetricRecord  $record The metric type, subject, outcome and metadata
+	 *
+	 * @return array<string, mixed> Column => parameter, flat.
+	 *
+	 * @psalm-suppress PossiblyNullArgument
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function metricColumns(IQueryBuilder $qb, MetricRecord $record): array {
+		return [
+			'metric_type' => $qb->createNamedParameter($record->metricType),
+			'entity_type' => $qb->createNamedParameter($record->subject->entityType),
+			'entity_id' => $qb->createNamedParameter($record->subject->entityId),
+			'user_id' => $qb->createNamedParameter($record->subject->userId),
+			'status' => $qb->createNamedParameter($record->outcome->status),
+			'duration_ms' => $qb->createNamedParameter($record->outcome->durationMs, IQueryBuilder::PARAM_INT),
+			'metadata' => $qb->createNamedParameter($this->encodeMetadata(metadata: $record->metadata)),
+			'error_message' => $qb->createNamedParameter($record->outcome->errorMessage),
+			'created_at' => $qb->createNamedParameter(time(), IQueryBuilder::PARAM_INT),
+		];
+	}//end metricColumns()
+
+	/**
+	 * Log a metric that could not be recorded.
+	 *
+	 * @param MetricRecord $record The metric that failed.
+	 * @param \Exception   $error  Why it failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function logRecordFailure(MetricRecord $record, \Exception $error): void {
+		$this->logger->error(
+			message: '[MetricsService] Failed to record metric',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'metric_type' => $record->metricType,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logRecordFailure()
 
 	/**
 	 * Get embedding generation success rate
@@ -233,24 +278,10 @@ class MetricsService implements MetricsRetentionInterface {
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
 	public function getEmbeddingStats(int $days = 30): array {
-		// Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
-
 		// Calculate start timestamp (N days ago).
 		$startTime = time() - ($days * 86400);
 
-		// Build query to count total and successful embeddings.
-		// Uses CASE statement to count successful operations (status = 'success').
-		$qb->select($qb->func()->count('*', 'total'))
-			->selectAlias($qb->createFunction('SUM(CASE WHEN status = \'success\' THEN 1 ELSE 0 END)'), 'successful')
-			->from('openregister_metrics')
-			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(self::METRIC_EMBEDDING_GENERATED)))
-			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)));
-
-		// Execute query and fetch single row result.
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
+		$row = $this->embeddingCountsRow(startTime: $startTime);
 
 		// Extract and cast values from database result.
 		$total = (int)($row['total'] ?? 0);
@@ -278,6 +309,35 @@ class MetricsService implements MetricsRetentionInterface {
 			'period_days' => $days,
 		];
 	}//end getEmbeddingStats()
+
+	/**
+	 * Read the total and successful embedding operations since a moment.
+	 *
+	 * Uses CASE statement to count successful operations (status = 'success').
+	 *
+	 * @param int $startTime Unix timestamp the window starts at.
+	 *
+	 * @return array<string, mixed>|false The single result row.
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function embeddingCountsRow(int $startTime): array|false {
+		// Get query builder instance.
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select($qb->func()->count('*', 'total'))
+			->selectAlias($qb->createFunction('SUM(CASE WHEN status = \'success\' THEN 1 ELSE 0 END)'), 'successful')
+			->from('openregister_metrics')
+			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(self::METRIC_EMBEDDING_GENERATED)))
+			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)));
+
+		// Execute query and fetch single row result.
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return $row;
+	}//end embeddingCountsRow()
 
 	/**
 	 * Get search latency statistics
@@ -309,40 +369,71 @@ class MetricsService implements MetricsRetentionInterface {
 
 		// Process each search type separately.
 		foreach ($searchTypes as $searchType) {
-			// Get query builder instance for this iteration.
-			$qb = $this->db->getQueryBuilder();
-
-			// Build query to calculate latency statistics.
-			// Only includes metrics with non-null duration_ms values.
-			$qb->select($qb->func()->count('*', 'count'))
-				->selectAlias($qb->createFunction('AVG(duration_ms)'), 'avg_ms')
-				->selectAlias($qb->func()->min('duration_ms'), 'min_ms')
-				->selectAlias($qb->func()->max('duration_ms'), 'max_ms')
-				->from('openregister_metrics')
-				->where($qb->expr()->eq('metric_type', $qb->createNamedParameter($searchType)))
-				->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)))
-				->andWhere($qb->expr()->isNotNull('duration_ms'));
-
-			// Execute query and fetch single row result.
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
 			// Extract search type name (remove 'search_' prefix).
 			// Example: 'search_keyword' -> 'keyword'.
 			$type = str_replace('search_', '', $searchType);
 
 			// Store statistics for this search type.
-			$stats[$type] = [
-				'count' => (int)($row['count'] ?? 0),
-				'avg_ms' => $this->roundAverageMs(avgMs: $row['avg_ms']),
-				'min_ms' => (int)($row['min_ms'] ?? 0),
-				'max_ms' => (int)($row['max_ms'] ?? 0),
-			];
-		}//end foreach
+			$stats[$type] = $this->latencyStatsFor(searchType: $searchType, startTime: $startTime);
+		}
 
 		return $stats;
 	}//end getSearchLatencyStats()
+
+	/**
+	 * Latency statistics of one search type since a moment.
+	 *
+	 * @param string $searchType The search metric type.
+	 * @param int    $startTime  Unix timestamp the window starts at.
+	 *
+	 * @return array{count: int, avg_ms: float, min_ms: int, max_ms: int}
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function latencyStatsFor(string $searchType, int $startTime): array {
+		$row = $this->latencyRow(searchType: $searchType, startTime: $startTime);
+
+		return [
+			'count' => (int)($row['count'] ?? 0),
+			'avg_ms' => $this->roundAverageMs(avgMs: $row['avg_ms']),
+			'min_ms' => (int)($row['min_ms'] ?? 0),
+			'max_ms' => (int)($row['max_ms'] ?? 0),
+		];
+	}//end latencyStatsFor()
+
+	/**
+	 * Read the count, average, minimum and maximum duration of one search type since a moment.
+	 *
+	 * Only includes metrics with non-null duration_ms values.
+	 *
+	 * @param string $searchType The search metric type.
+	 * @param int    $startTime  Unix timestamp the window starts at.
+	 *
+	 * @return array<string, mixed>|false The single result row.
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function latencyRow(string $searchType, int $startTime): array|false {
+		// Get query builder instance for this iteration.
+		$qb = $this->db->getQueryBuilder();
+
+		// Build query to calculate latency statistics.
+		$qb->select($qb->func()->count('*', 'count'))
+			->selectAlias($qb->createFunction('AVG(duration_ms)'), 'avg_ms')
+			->selectAlias($qb->func()->min('duration_ms'), 'min_ms')
+			->selectAlias($qb->func()->max('duration_ms'), 'max_ms')
+			->from('openregister_metrics')
+			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter($searchType)))
+			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)))
+			->andWhere($qb->expr()->isNotNull('duration_ms'));
+
+		// Execute query and fetch single row result.
+		$result = $qb->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		return $row;
+	}//end latencyRow()
 
 	/**
 	 * Get vector database storage growth
@@ -367,11 +458,61 @@ class MetricsService implements MetricsRetentionInterface {
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
 	public function getStorageGrowth(int $days = 30): array {
-		// Get query builder instance for daily vector counts.
-		$qb = $this->db->getQueryBuilder();
-
 		// Calculate start timestamp (N days ago).
 		$startTime = time() - ($days * 86400);
+
+		$rows = $this->dailyVectorRows(startTime: $startTime);
+
+		// Extract and calculate storage metrics.
+		$totalBytes = $this->totalVectorBytes();
+
+		// Convert bytes to megabytes (1024 * 1024 = 1 MB).
+		$totalMB = $totalBytes / (1024 * 1024);
+
+		// Transform daily counts into associative array [date => count].
+		$growthData = $this->countsByDate(rows: $rows);
+
+		// Return comprehensive storage growth statistics.
+		return [
+			'daily_vectors_added' => $growthData,
+			'current_storage_bytes' => $totalBytes,
+			'current_storage_mb' => round($totalMB, 2),
+			'avg_vectors_per_day' => $this->calculateAverageVectorsPerDay(growthData: $growthData),
+			'period_days' => $days,
+		];
+	}//end getStorageGrowth()
+
+	/**
+	 * Daily vector rows as a [date => count] map.
+	 *
+	 * @param array<int, array<string, mixed>> $rows Rows of `count` and `date`.
+	 *
+	 * @return array<string, int> The count per date.
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function countsByDate(array $rows): array {
+		$growthData = [];
+		foreach ($rows as $row) {
+			// Cast count to integer for type safety.
+			$growthData[$row['date']] = (int)$row['count'];
+		}
+
+		return $growthData;
+	}//end countsByDate()
+
+	/**
+	 * Read the number of vectors added per day since a moment, oldest day first.
+	 *
+	 * @param int $startTime Unix timestamp the window starts at.
+	 *
+	 * @return array<int, array<string, mixed>> Rows of `count` and `date` (Y-m-d).
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function dailyVectorRows(int $startTime): array {
+		// Get query builder instance for daily vector counts.
+		$qb = $this->db->getQueryBuilder();
 
 		// Build query to get daily vector counts grouped by date.
 		// FROM_UNIXTIME converts timestamp to date string for grouping.
@@ -387,8 +528,19 @@ class MetricsService implements MetricsRetentionInterface {
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		// Get current total storage size in bytes.
-		// Uses SUM(LENGTH(embedding)) to calculate total bytes used by all vectors.
+		return $rows;
+	}//end dailyVectorRows()
+
+	/**
+	 * Read the total storage size of every vector embedding, in bytes.
+	 *
+	 * Uses SUM(LENGTH(embedding)) to calculate total bytes used by all vectors.
+	 *
+	 * @return int The total bytes; 0 when there are none.
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function totalVectorBytes(): int {
 		$qb2 = $this->db->getQueryBuilder();
 		$qb2->select($qb2->createFunction('SUM(LENGTH(embedding))'), 'total_bytes')
 			->from('openregister_vectors');
@@ -397,28 +549,8 @@ class MetricsService implements MetricsRetentionInterface {
 		$sizeRow = $result2->fetch();
 		$result2->closeCursor();
 
-		// Extract and calculate storage metrics.
-		$totalBytes = (int)($sizeRow['total_bytes'] ?? 0);
-
-		// Convert bytes to megabytes (1024 * 1024 = 1 MB).
-		$totalMB = $totalBytes / (1024 * 1024);
-
-		// Transform daily counts into associative array [date => count].
-		$growthData = [];
-		foreach ($rows as $row) {
-			// Cast count to integer for type safety.
-			$growthData[$row['date']] = (int)$row['count'];
-		}
-
-		// Return comprehensive storage growth statistics.
-		return [
-			'daily_vectors_added' => $growthData,
-			'current_storage_bytes' => $totalBytes,
-			'current_storage_mb' => round($totalMB, 2),
-			'avg_vectors_per_day' => $this->calculateAverageVectorsPerDay(growthData: $growthData),
-			'period_days' => $days,
-		];
-	}//end getStorageGrowth()
+		return (int)($sizeRow['total_bytes'] ?? 0);
+	}//end totalVectorBytes()
 
 	/**
 	 * Clean old metrics (retention policy)

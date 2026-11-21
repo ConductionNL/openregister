@@ -99,16 +99,47 @@ class RotateTenantKeyCommand extends Command {
 			return 1;
 		}
 
-		if ($input->getOption('create') !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === false) {
-			$output->writeln('<error>Tenant '.$tenant.' has no active key. Check the identifier, or pass --create to create a first key.</error>');
+		$refusal = $this->refusal(input: $input, tenant: $tenant);
+		if ($refusal !== null) {
+			$output->writeln('<error>'.$refusal.'</error>');
 			return 1;
+		}
+
+		return $this->rotate(tenant: $tenant, output: $output);
+	}//end execute()
+
+	/**
+	 * Why the rotation must not run, or null when it may.
+	 *
+	 * A tenant without an active key needs --create; a tenant with one needs the
+	 * explicit acceptance that its earlier signatures stop verifying.
+	 *
+	 * @param InputInterface $input  The console input.
+	 * @param string         $tenant The tenant identifier.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private function refusal(InputInterface $input, string $tenant): ?string {
+		if ($input->getOption('create') !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === false) {
+			return 'Tenant '.$tenant.' has no active key. Check the identifier, or pass --create to create a first key.';
 		}
 
 		if ($input->getOption(self::ACCEPT_OPTION) !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === true) {
-			$output->writeln('<error>'.self::SIGNATURE_WARNING.'</error>');
-			return 1;
+			return self::SIGNATURE_WARNING;
 		}
 
+		return null;
+	}//end refusal()
+
+	/**
+	 * Rotate the tenant's key and print the rotation, or why it did not happen.
+	 *
+	 * @param string          $tenant The tenant identifier.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return int 0 when rotated, 1 otherwise.
+	 */
+	private function rotate(string $tenant, OutputInterface $output): int {
 		try {
 			$rotation = $this->tenantKeys->rotateTenantKey(tenantId: $tenant);
 		} catch (RuntimeException $e) {
@@ -118,7 +149,7 @@ class RotateTenantKeyCommand extends Command {
 
 		$output->writeln($this->describe(rotation: $rotation));
 		return 0;
-	}//end execute()
+	}//end rotate()
 
 	/**
 	 * One line of rotation metadata.

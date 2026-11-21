@@ -93,6 +93,19 @@ class SipPackageBuilder {
 
 		$maxSize  = $this->maxPackageSize(requested: $request->maxPackageSize);
 		$batches  = self::splitIntoBatches(objectsWithFiles: $request->objectsWithFiles, maxSize: $maxSize);
+
+		return $this->buildBatches(request: $request, batches: $batches);
+	}//end package()
+
+	/**
+	 * Build one SIP archive per batch, numbered in order.
+	 *
+	 * @param TransferPackageRequest $request The transfer's id and format.
+	 * @param array<int, array>      $batches The objects of each package.
+	 *
+	 * @return array<int, string> The generated archive paths.
+	 */
+	private function buildBatches(TransferPackageRequest $request, array $batches): array {
 		$sipFiles = [];
 		foreach ($batches as $index => $batch) {
 			$part       = new SipPart(
@@ -105,7 +118,7 @@ class SipPackageBuilder {
 		}
 
 		return $sipFiles;
-	}//end package()
+	}//end buildBatches()
 
 	/**
 	 * Refuse an empty transfer and an unknown format.
