@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use Psr\Container\ContainerInterface;
@@ -36,17 +36,17 @@ final class SaveObjectRuntime {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param CacheHandlerInterface $cacheHandler         Object entity and query cache.
-	 * @param ?ObjectSourceRegistry $objectSourceRegistry Writable object-source provider registry.
-	 * @param ?FlowRunContext       $runContext           The ambient flow-run stack, so the lock guard can tell which run is writing.
-	 * @param ?ContainerInterface   $container            App container, consulted lazily for optional services.
+	 * @param CacheHandlerInterface    $cacheHandler         Object entity and query cache.
+	 * @param ?ObjectSourceRegistry    $objectSourceRegistry Writable object-source provider registry.
+	 * @param ?CurrentFlowRunInterface $runContext           Which flow run is writing, so the lock guard admits the run that took a lock.
+	 * @param ?ContainerInterface      $container            App container, consulted lazily for optional services.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly CacheHandlerInterface $cacheHandler,
 		public readonly ?ObjectSourceRegistry $objectSourceRegistry = null,
-		public readonly ?FlowRunContext $runContext = null,
+		public readonly ?CurrentFlowRunInterface $runContext = null,
 		public readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()

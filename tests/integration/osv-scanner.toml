@@ -1,0 +1,12 @@
+# Known vulnerabilities that have no fix this project can take yet. Each entry
+# says why, and expires so it is looked at again.
+
+[[IgnoredVulns]]
+id = "GHSA-qxc2-j82w-r537"
+ignoreUntil = 2027-05-20
+reason = "@faker-js/faker 5.5.3 is pinned exactly by postman-collection 4.4.0, a dependency of newman 6.2.3, the newest newman. The fix is in faker 10.5.0, five majors on. The test runner only reads this repository's own collections, so no untrusted input reaches helpers.fake."
+
+[[IgnoredVulns]]
+id = "GHSA-8cw4-87c7-c6xx"
+ignoreUntil = 2027-05-20
+reason = "csv-parse 4.16.3 is pinned exactly by newman 6.2.3, the newest newman. The fix is in csv-parse 7.0.2, three majors on. The test runner only parses this repository's own data files."
