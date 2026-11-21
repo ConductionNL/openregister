@@ -137,9 +137,40 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 		$this->options->expects($this->once())->method('options')->with($declaration, new CodedOptionScope(language: 'nl', context: 'a'))->willReturn([['v' => 1]]);
 
 		$this->assertSame(
-			['property' => 'scheme', 'scheme' => 'urn:s', 'language' => 'nl', 'context' => 'a', 'results' => [['v' => 1]], 'total' => 1],
+			['property' => 'scheme', 'scheme' => 'urn:s', 'language' => 'nl', 'context' => 'a', 'results' => [['v' => 1]], 'total' => 1, 'limit' => 200, 'offset' => 0, 'page' => 1, 'pages' => 1, 'searchHint' => false],
 			$this->controller->propertyOptions()->getData()
 		);
+	}
+
+	/**
+	 * The flat options are one page, searched by `q`, with the matching count and a search hint (design D-3).
+	 *
+	 * @spec openspec/changes/property-code-list-from-concept-scheme/specs/skos-concept-registers/spec.md
+	 */
+	public function testTheOptionsAreOnePageWithACountAndASearchHint(): void {
+		$declaration = new CodedPropertyDeclaration(scheme: 'urn:s');
+		$this->resolver->method('resolveDeclaration')->willReturn($declaration);
+		$options = [];
+		for ($i = 1; $i <= 5; $i++) {
+			$options[] = ['value' => 'urn:c' . $i, 'label' => 'Gemeente ' . $i, 'notation' => 'G' . $i];
+		}
+
+		$options[] = ['value' => 'urn:x', 'label' => 'Provincie', 'notation' => 'P1'];
+		$this->options->method('options')->willReturn($options);
+
+		$this->params = ['scheme' => 'urn:s', '_limit' => '2', '_offset' => '2'];
+		$data = $this->controller->propertyOptions()->getData();
+		$this->assertSame(['urn:c3', 'urn:c4'], array_column($data['results'], 'value'));
+		$this->assertSame([6, 2, 2, 2, 3, true], [$data['total'], $data['limit'], $data['offset'], $data['page'], $data['pages'], $data['searchHint']]);
+
+		$this->params = ['scheme' => 'urn:s', 'q' => 'p1'];
+		$data = $this->controller->propertyOptions()->getData();
+		$this->assertSame(['urn:x'], array_column($data['results'], 'value'), 'the search matches the notation, ignoring case');
+		$this->assertSame([1, 200, false], [$data['total'], $data['limit'], $data['searchHint']]);
+
+		$this->params = ['scheme' => 'urn:s', '_limit' => '9999', '_offset' => '-3'];
+		$data = $this->controller->propertyOptions()->getData();
+		$this->assertSame([6, 200, 0], [count($data['results']), $data['limit'], $data['offset']], 'out-of-range paging is brought into range');
 	}
 
 	public function testAnUnresolvedDeclarationIs404AndATreeHasItsOwnShape(): void {
