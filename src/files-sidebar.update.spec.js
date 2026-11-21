@@ -22,6 +22,9 @@ jest.mock('./components/files-sidebar/ExtractionTab.vue', () => ({
 	props: ['fileId'],
 	template: '<p class="extraction">{{ fileId }}</p>',
 }))
+jest.mock('./files/attachAction.js', () => ({
+	registerAttachAction: () => {},
+}))
 jest.mock('./integrations/bootstrap.js', () => ({
 	ensureIntegrationRegistry: jest.fn(),
 }))
