@@ -48,6 +48,13 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\MigrationPack\MappingEngine
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceCodecs
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceRuntime
+ * @uses \OCA\OpenRegister\Service\Import\ImportServiceStores
+ * @uses \OCA\OpenRegister\Service\Import\ImportTarget
+ * @uses \OCA\OpenRegister\Service\Import\RowImportTarget
+ * @uses \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
  */
 class ImportServiceCsvRowGoldenTest extends TestCase {
 	use PassThroughL10nTrait;

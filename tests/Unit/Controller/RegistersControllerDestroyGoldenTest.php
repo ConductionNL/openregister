@@ -63,6 +63,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Exception\ValidationException
  */
 class RegistersControllerDestroyGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-destroy-golden.json';

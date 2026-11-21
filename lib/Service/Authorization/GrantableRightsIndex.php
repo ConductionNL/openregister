@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -123,7 +123,7 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The grantable rights.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getIndex(): array {
 		if ($this->memo !== null) {
@@ -147,7 +147,7 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The grantable rights, or none.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function rebuild(ICache $cache): array {
 		try {
@@ -191,7 +191,7 @@ class GrantableRightsIndex implements GrantableRightsIndexInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function invalidate(): void {
 		$this->memo = null;

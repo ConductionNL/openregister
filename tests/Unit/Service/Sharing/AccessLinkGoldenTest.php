@@ -54,8 +54,10 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
@@ -124,7 +126,7 @@ class AccessLinkGoldenTest extends TestCase {
 	private function service(): AccessLinkService {
 		return new AccessLinkService(
 			mapper: $this->mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->auditTrail), logger: $this->logger),
 			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
 			urlGenerator: $this->urlGenerator
 		);
@@ -496,7 +498,7 @@ class AccessLinkGoldenTest extends TestCase {
 	public function testTheGuardAdmitsAReadableObjectAskedWithTheRulesOn(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->readable());
 
 		$this->assertTrue($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: 'object-uuid'));
@@ -505,7 +507,7 @@ class AccessLinkGoldenTest extends TestCase {
 	public function testTheGuardAdmitsAFileOnlyThroughItsReadableOwner(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->readable());
 
 		$this->assertTrue($this->guard()->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'));

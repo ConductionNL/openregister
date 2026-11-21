@@ -35,6 +35,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
  *
  * @covers \OCA\OpenRegister\Files\Repair\MoveObjectFilesToOpenRegisterAccount
  * @covers \OCA\OpenRegister\Files\Command\MoveObjectFilesCommand
+ * @uses \OCA\OpenRegister\Files\Repair\ObjectFileMoveCounts
  */
 final class MoveObjectFilesReportGoldenTest extends TestCase {
 

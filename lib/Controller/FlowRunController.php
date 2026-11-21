@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeZone;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -42,12 +41,14 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignals;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -169,7 +170,7 @@ class FlowRunController extends Controller {
 		IRequest $request,
 		FlowRunControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->mapper = $services->runs->mapper;
 		$this->runner = $services->runs->runner;
 		$this->resolvers = $services->runs->resolvers;
@@ -195,8 +196,8 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -322,7 +323,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -378,7 +379,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return array<int, string> The flow ids, empty when none were given.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function flowIdsParam(): array {
 		$raw = $this->request->getParam('flowIds');
@@ -416,7 +417,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return DateTime|false|null The moment, null when absent, false when unreadable.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function sinceParam(): DateTime|false|null {
 		$raw = $this->request->getParam('since');
@@ -466,7 +467,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return JSONResponse The refusal naming the parameter.
 	 *
-	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 * @spec openspec/specs/flow-run-summary/spec.md
 	 */
 	private function badSince(): JSONResponse {
 		return new JSONResponse(
@@ -506,7 +507,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
 	#[NoAdminRequired]
@@ -652,7 +653,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string|null The organisation uuid.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function activeOrganisation(): ?string {
 		$uuid = $this->organisationService->getActiveOrganisation()?->getUuid();
@@ -676,7 +677,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return array<string, mixed> The row shape.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function summarise(FlowRun $run): array {
 		$flowId = (string)$run->getFlowId();
@@ -714,7 +715,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string The name, or the id.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function flowName(string $flowId): string {
 		$flow = $this->resolvers->resolveFlow(flowId: $flowId);
@@ -739,7 +740,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return string|null The step name(s), comma-joined.
 	 *
-	 * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+	 * @spec openspec/specs/flow-active-runs/spec.md
 	 */
 	private function currentStep(FlowRun $run): ?string {
 		$marking = $run->getMarking();
@@ -762,7 +763,7 @@ class FlowRunController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -774,7 +775,7 @@ class FlowRunController extends Controller {
 		// caller the contents of anyone's run.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		return new JSONResponse($run->jsonSerialize());
@@ -804,7 +805,7 @@ class FlowRunController extends Controller {
 		// access without anything looking like an access change.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		if ($this->auditTrails === null) {
@@ -917,22 +918,14 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The new run, or a 4xx when the source cannot be retried.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function retry(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$new = $this->runner->retry($run);
@@ -968,22 +961,14 @@ class FlowRunController extends Controller {
 	 * @return JSONResponse The parked run, or a 4xx when it cannot be signalled.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function resume(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$payload = $this->request->getParams();
@@ -993,7 +978,7 @@ class FlowRunController extends Controller {
 		// The guard and the delivery are ONE seam — the same one a PHP consumer
 		// calls — so who may answer is decided in exactly one place.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
 		}
@@ -1026,14 +1011,12 @@ class FlowRunController extends Controller {
 	 *                      ambiguous or not suspended.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/integration/openregister-integrations.postman_collection.json
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function signalByKey(string $key): JSONResponse {
 		$run = $this->soleSuspendedRun(key: $key);
 		if ($run instanceof JSONResponse) {
@@ -1051,7 +1034,7 @@ class FlowRunController extends Controller {
 
 		// Same seam as resume() and as every PHP consumer: one guard.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
 		}
@@ -1089,6 +1072,32 @@ class FlowRunController extends Controller {
 
 		return $matches[0];
 	}//end soleSuspendedRun()
+
+	/**
+	 * Resolve a run the caller may run, or the answer that refuses it.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|JSONResponse The run, a 404 when there is no such run, or the guard's refusal.
+	 */
+	private function runnableRun(string $uuid): FlowRun|JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return $this->noSuchRun();
+		}
+
+		return $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId()) ?? $run;
+	}//end runnableRun()
+
+	/**
+	 * The 404 for a run that does not exist or that the caller cannot see.
+	 *
+	 * @return JSONResponse
+	 */
+	private function noSuchRun(): JSONResponse {
+		return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+	}//end noSuchRun()
 
 	/**
 	 * Translate the seam's typed refusal into this endpoint's HTTP contract.

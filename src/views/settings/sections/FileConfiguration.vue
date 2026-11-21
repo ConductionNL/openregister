@@ -113,42 +113,30 @@
 					v-if="fileSettings.textExtractor.id === 'dolphin'"
 					class="setting-item api-config">
 					<div class="api-fields">
-						<div class="field-group">
-							<label for="dolphin-endpoint"
-								>Dolphin API Endpoint</label
-							>
-							<NcTextField
-								id="dolphin-endpoint"
-								v-model="fileSettings.dolphinApiEndpoint"
-								placeholder="https://api.your-dolphin-instance.com"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your Dolphin API instance
-							</p>
-						</div>
+						<SettingsTextField
+							id="dolphin-endpoint"
+							v-model="fileSettings.dolphinApiEndpoint"
+							label="Dolphin API Endpoint"
+							hint="URL to your Dolphin API instance"
+							placeholder="https://api.your-dolphin-instance.com"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<InformationIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
-						<div class="field-group">
-							<label for="dolphin-key">Dolphin API Key</label>
-							<NcTextField
-								id="dolphin-key"
-								v-model="fileSettings.dolphinApiKey"
-								type="password"
-								:placeholder="
-									t('openregister', 'Enter your API key')
-								"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<KeyIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								Your Dolphin API authentication key
-							</p>
-						</div>
+						<SettingsTextField
+							id="dolphin-key"
+							v-model="fileSettings.dolphinApiKey"
+							label="Dolphin API Key"
+							hint="Your Dolphin API authentication key"
+							type="password"
+							:placeholder="t('openregister', 'Enter your API key')"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<KeyIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
 						<NcButton variant="secondary" @click="testDolphinConnection">
 							<template #icon>
@@ -339,6 +327,24 @@
 					</p>
 				</div>
 
+				<!-- Jurisdiction pattern sets, merged into every method's results -->
+				<div
+					v-if="fileSettings.entityRecognitionEnabled"
+					class="setting-item">
+					<label for="entity-pattern-sets">{{ t('openregister', 'Country-specific identifiers') }}</label>
+					<LabeledSelect
+						:modelValue="selectedPatternSets"
+						inputId="entity-pattern-sets"
+						:inputLabel="t('openregister', 'Country-specific identifiers')"
+						:options="entityPatternSetOptions"
+						:multiple="true"
+						:closeOnSelect="false"
+						@update:modelValue="savePatternSets" />
+					<p class="setting-description">
+						{{ t('openregister', 'Detected with every detection method. The default follows the server\'s default phone region.') }}
+					</p>
+				</div>
+
 				<!-- Backend availability (single source of truth: GET backend-state) -->
 				<div
 					v-if="fileSettings.entityRecognitionEnabled && backendState"
@@ -453,23 +459,17 @@
 					"
 					class="setting-item api-config">
 					<div class="api-fields">
-						<div class="field-group">
-							<label for="presidio-endpoint"
-								>Presidio API Endpoint</label
-							>
-							<NcTextField
-								id="presidio-endpoint"
-								v-model="fileSettings.presidioApiEndpoint"
-								placeholder="http://openregister-presidio-analyzer:3000"
-								@update:modelValue="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your Presidio Analyzer instance
-							</p>
-						</div>
+						<SettingsTextField
+							id="presidio-endpoint"
+							v-model="fileSettings.presidioApiEndpoint"
+							label="Presidio API Endpoint"
+							hint="URL to your Presidio Analyzer instance"
+							placeholder="http://openregister-presidio-analyzer:3000"
+							@update:modelValue="saveSettings">
+							<template #icon>
+								<InformationIcon :size="20" />
+							</template>
+						</SettingsTextField>
 
 						<NcButton
 							variant="secondary"
@@ -558,82 +558,59 @@
 						<div
 							v-if="fileSettings.openAnonymiserSource === 'external'"
 							class="source-detail api-fields">
-							<div class="field-group">
-								<label for="openanonymiser-endpoint">{{
-									t('openregister', 'OpenAnonymiser API endpoint')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-endpoint"
-									v-model="fileSettings.openAnonymiserApiEndpoint"
-									placeholder="http://openregister-openanonymiser:8080"
-									@update:modelValue="saveSettings">
-									<template #trailing-button-icon>
-										<InformationIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'URL to an external OpenAnonymiser instance (Dutch-focused PII detection)',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-endpoint"
+								v-model="fileSettings.openAnonymiserApiEndpoint"
+								:label="t('openregister', 'OpenAnonymiser API endpoint')"
+								:hint="
+									t(
+										'openregister',
+										'URL to an external OpenAnonymiser instance (Dutch-focused PII detection)',
+									)
+								"
+								placeholder="http://openregister-openanonymiser:8080"
+								@update:modelValue="saveSettings">
+								<template #icon>
+									<InformationIcon :size="20" />
+								</template>
+							</SettingsTextField>
 
-							<div class="field-group">
-								<label for="openanonymiser-username">{{
-									t('openregister', 'OpenAnonymiser user name')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-username"
-									v-model="fileSettings.openAnonymiserUsername"
-									autocomplete="off"
-									@update:modelValue="saveSettings" />
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Leave empty when the endpoint does not ask for a login.',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-username"
+								v-model="fileSettings.openAnonymiserUsername"
+								:label="t('openregister', 'OpenAnonymiser user name')"
+								:hint="
+									t(
+										'openregister',
+										'Leave empty when the endpoint does not ask for a login.',
+									)
+								"
+								autocomplete="off"
+								@update:modelValue="saveSettings" />
 
-							<div class="field-group">
-								<label for="openanonymiser-password">{{
-									t('openregister', 'OpenAnonymiser password')
-								}}</label>
-								<NcTextField
-									id="openanonymiser-password"
-									v-model="openAnonymiserPassword"
-									type="password"
-									autocomplete="new-password"
-									:placeholder="
-										fileSettings.openAnonymiserPasswordSet
-											? t(
-													'openregister',
-													'A password is stored',
-												)
-											: ''
-									"
-									@update:modelValue="
-										openAnonymiserPasswordChanged = true
-									"
-									@blur="saveOpenAnonymiserPassword">
-									<template #trailing-button-icon>
-										<KeyIcon :size="20" />
-									</template>
-								</NcTextField>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Stored as a secret and never shown again. Type a new one to replace it.',
-										)
-									}}
-								</p>
-							</div>
+							<SettingsTextField
+								id="openanonymiser-password"
+								v-model="openAnonymiserPassword"
+								:label="t('openregister', 'OpenAnonymiser password')"
+								:hint="
+									t(
+										'openregister',
+										'Stored as a secret and never shown again. Type a new one to replace it.',
+									)
+								"
+								type="password"
+								autocomplete="new-password"
+								:placeholder="
+									fileSettings.openAnonymiserPasswordSet
+										? t('openregister', 'A password is stored')
+										: ''
+								"
+								@update:modelValue="openAnonymiserPasswordChanged = true"
+								@blur="saveOpenAnonymiserPassword">
+								<template #icon>
+									<KeyIcon :size="20" />
+								</template>
+							</SettingsTextField>
 
 							<NcButton
 								variant="secondary"
@@ -648,6 +625,17 @@
 						</div>
 					</fieldset>
 				</div>
+			</div>
+		</SettingsCard>
+
+		<!-- Anonymisation pipeline: every content-altering step and its state (REQ-ADI-006) -->
+		<SettingsCard
+			:title="t('openregister', 'Anonymisation pipeline')"
+			icon="🛡️"
+			:collapsible="true"
+			:defaultCollapsed="true">
+			<div class="settings-group compact">
+				<AnonymisationPipelineList :refreshKey="backendState" />
 			</div>
 		</SettingsCard>
 
@@ -791,7 +779,6 @@ import {
 	NcButton,
 	NcCheckboxRadioSwitch,
 	NcLoadingIcon,
-	NcTextField,
 } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
 import AlertCircleIcon from 'vue-material-design-icons/AlertCircle.vue'
@@ -804,9 +791,11 @@ import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
+import SettingsTextField from './SettingsTextField.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
 import { saveMessageMethods } from './saveMessage.js'
@@ -850,6 +839,12 @@ const BACKEND_LABELS = {
 	openanonymiser: 'OpenAnonymiser',
 	llm: 'LLM',
 	hybrid: 'Hybrid',
+}
+
+// The jurisdiction pattern sets the server knows (JurisdictionPatternSets::SETS),
+// by code, with the label each shows.
+const PATTERN_SET_LABELS = {
+	nl: () => t('openregister', 'Netherlands: licence plates and BSN'),
 }
 
 // The select fields of the file settings: the option list each picks from,
@@ -920,6 +915,34 @@ function applyPlainSettings(fileSettings, settings) {
 	}
 	fileSettings.openAnonymiserPasswordSet =
 		settings.openAnonymiserPasswordSet === true
+}
+
+/**
+ * Take over the stored jurisdiction pattern set codes.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyPatternSets(fileSettings, settings) {
+	if (Array.isArray(settings.entityPatternSets)) {
+		fileSettings.entityPatternSets = settings.entityPatternSets.filter(
+			(code) => typeof code === 'string',
+		)
+	}
+}
+
+/**
+ * The pattern set codes to save: only once the stored ones were loaded, so a
+ * save before the load cannot replace the server's default with none.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function patternSetFields(settings) {
+	return Array.isArray(settings.entityPatternSets)
+		? { entityPatternSets: [...settings.entityPatternSets] }
+		: {}
 }
 
 /**
@@ -1088,6 +1111,8 @@ const INITIAL_STATE = {
 		// HTTP Basic user for the external endpoint; the password is write-only.
 		openAnonymiserUsername: '',
 		openAnonymiserPasswordSet: false,
+		// Enabled jurisdiction pattern set codes; null until loaded.
+		entityPatternSets: null,
 	},
 
 	// A newly typed OpenAnonymiser password, sent once and then cleared.
@@ -1237,7 +1262,6 @@ export default {
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
 		NcButton,
-		NcTextField,
 		NcActions,
 		NcActionButton,
 		FileDocumentIcon,
@@ -1247,10 +1271,12 @@ export default {
 		KeyIcon,
 		CheckIcon,
 		AlertCircleIcon,
+		AnonymisationPipelineList,
 		ConnectionTestIcon,
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
+		SettingsTextField,
 	},
 
 	data() {
@@ -1259,6 +1285,34 @@ export default {
 
 	computed: {
 		...mapStores(useSettingsStore),
+
+		/**
+		 * The jurisdiction pattern sets an admin can switch on.
+		 *
+		 * @return {Array<object>} One option per known set code
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		entityPatternSetOptions() {
+			return Object.entries(PATTERN_SET_LABELS).map(([id, label]) => ({
+				id,
+				label: label(),
+			}))
+		},
+
+		/**
+		 * The options of the enabled pattern set codes; a code this page has no
+		 * label for still shows, under its code.
+		 *
+		 * @return {Array<object>} The selected options
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		selectedPatternSets() {
+			return (this.fileSettings.entityPatternSets || []).map(
+				(code) =>
+					this.entityPatternSetOptions.find((option) => option.id === code)
+					|| { id: code, label: code },
+			)
+		},
 
 		/**
 		 * Check if any file operation is currently running
@@ -1396,6 +1450,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Store the chosen jurisdiction pattern sets and save.
+		 *
+		 * @param {Array<object>|null} options The selected options
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/detection-dutch-licence-plates
+		 */
+		async savePatternSets(options) {
+			this.fileSettings.entityPatternSets = (options || []).map(
+				(option) => option.id,
+			)
+			await this.saveSettings()
+		},
+
 		...saveMessageMethods,
 
 		/**
@@ -1410,6 +1478,7 @@ export default {
 					applySelectedOptions(this, settings)
 					applyPlainSettings(this.fileSettings, settings)
 					applyEnabledFileTypes(this.fileTypes, settings)
+					applyPatternSets(this.fileSettings, settings)
 				}
 				// Load object settings
 				await this.loadObjectSettings()
@@ -1632,6 +1701,7 @@ export default {
 				...extractionFields(this.fileSettings),
 				...recognitionFields(this.fileSettings),
 				...openAnonymiserFields(this.fileSettings),
+				...patternSetFields(this.fileSettings),
 				enabledFileTypes: this.fileTypes
 					.filter((ft) => ft.enabled)
 					.map((ft) => ft.extension),
@@ -2079,8 +2149,6 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 }
-
-@include field-group;
 
 .field-hint {
 	font-size: 12px;

@@ -28,6 +28,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\RuleRunMapper
+ * @uses \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Db\RuleRun
+ * @uses \OCA\OpenRegister\Db\RuleRunFilter
+ * @uses \OCA\OpenRegister\Db\RuleRunSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class RuleRunMapperSelectionTest extends TestCase {
 	use RecordingQueryBuilderTrait;

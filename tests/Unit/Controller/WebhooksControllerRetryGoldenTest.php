@@ -41,6 +41,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @uses \OCA\OpenRegister\Db\Webhook
  * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
  */
 class WebhooksControllerRetryGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-retry-golden.json';

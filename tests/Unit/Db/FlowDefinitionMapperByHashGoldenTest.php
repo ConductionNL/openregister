@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * Golden hash lookup of flow definitions.
  *
  * @covers \OCA\OpenRegister\Db\FlowDefinitionMapper
+ * @uses \OCA\OpenRegister\Db\FlowDefinition
  */
 final class FlowDefinitionMapperByHashGoldenTest extends TestCase {
 	use RecordsQueries;

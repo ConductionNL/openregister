@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  * reorder every enum and every other local list. So the stored definition is
  * kept as it is and only the leaf at the path is replaced or removed.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ShippedBaselineResetService implements ShippedBaselineResetServiceInterface {
 
@@ -47,7 +47,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 *
 	 * @var array<int, string>
 	 */
-	public const GUARDED_KEYS = ['properties', 'required', 'authorization'];
+	public const GUARDED_KEYS = ['properties', 'required', 'authorization', GuardedAnnotations::PART];
 
 	/**
 	 * Constructor.
@@ -70,7 +70,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 * @return array{applicable: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The preview.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function preview(string|int $schema, string $path): array {
 		$path = trim($path);
@@ -99,7 +99,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The outcome.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function reset(string|int $schema, string $path): array {
 		$path = trim($path);
@@ -213,11 +213,7 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	 * @return array<string, mixed> The live definition.
 	 */
 	private function live(Schema $schema): array {
-		return [
-			'properties' => $schema->getProperties(),
-			'required' => $schema->getRequired(),
-			'authorization' => ($schema->getAuthorization() ?? []),
-		];
+		return LiveDescriptor::of(schema: $schema);
 	}//end live()
 
 	/**
@@ -269,6 +265,9 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 		match ($top) {
 			'properties' => $schema->setProperties($value),
 			'required' => $schema->setRequired($value),
+			GuardedAnnotations::PART => $schema->setConfiguration(
+				(new GuardedAnnotations())->intoStored(configuration: $schema->getConfiguration(), guarded: $value)
+			),
 			default => $schema->setAuthorization($value),
 		};
 	}//end writePart()

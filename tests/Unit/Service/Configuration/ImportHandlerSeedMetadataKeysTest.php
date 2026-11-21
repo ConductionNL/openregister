@@ -86,6 +86,19 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClash
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugDecision
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWrite
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
@@ -390,15 +403,20 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $registerMapper,
-			objectEntityMapper:  $plainMapper,
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $appConfig,
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $plainMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
 		$handler->setSlugHandler($this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders));

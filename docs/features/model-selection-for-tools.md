@@ -195,7 +195,7 @@ When creating a tool-oriented agent:
 
 ```bash
 # Test via API
-curl -X POST http://localhost/index.php/apps/openregister/api/chat/send \
+curl -H 'OCS-APIRequest: true' -X POST http://localhost/index.php/apps/openregister/api/chat/send \
   -H 'Content-Type: application/json' \
   -u 'admin:admin' \
   -d '{

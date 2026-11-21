@@ -36,9 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
@@ -100,7 +100,7 @@ class NotificationGroupPreferencesController extends Controller {
 		IRequest $request,
 		NotificationGroupPreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->preferenceService = $services->preferenceService;
 		$this->schemaMapper      = $services->schemaMapper;
@@ -145,7 +145,6 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 */
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();

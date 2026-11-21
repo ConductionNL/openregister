@@ -76,6 +76,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -295,8 +296,7 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 		}
 
 		$organisation = $this->organisationService->createOrganisation(
-			name: $name,
-			description: (string)($data['description'] ?? '')
+			details: new NewOrganisation(name: $name, description: (string)($data['description'] ?? ''))
 		);
 
 		return $this->applyProjectedFields(organisation: $organisation, data: array_diff_key($data, ['name' => true, 'description' => true]));

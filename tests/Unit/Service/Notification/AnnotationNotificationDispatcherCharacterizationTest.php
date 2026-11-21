@@ -50,7 +50,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\OutboundTransportInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\MailingRequest;
@@ -156,7 +158,7 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 						'rateLimit'  => ['max' => 3, 'window' => 60],
 						'coalesce'   => ['window' => 30],
 						'domain'     => 'meldingen',
-						'webhook'    => ['url' => 'https://hook.example.test/in', 'method' => 'put', 'headers' => ['X-A' => '1']],
+						'webhook'    => ['url' => 'https://93.184.215.14/in', 'method' => 'put', 'headers' => ['X-A' => '1']],
 						'talk'       => ['token' => 'tok'],
 						'actions'    => [['label' => 'Open', 'target' => 'https://example.test/x']],
 						'originApp'  => 'dossiq',
@@ -182,7 +184,7 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 						'channels'  => ['webhook', 'talk', 'web-push'],
 						'rateLimit' => ['blockWebhook' => true],
 						'coalesce'  => ['blockTalk' => true],
-						'webhook'   => ['url' => 'https://hook.example.test/in'],
+						'webhook'   => ['url' => 'https://93.184.215.14/in'],
 						'talk'      => ['token' => 'tok'],
 					],
 				],
@@ -190,9 +192,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 			],
 			'webhook-variants'  => [
 				'rules' => [
-					'persistent' => ['trigger' => ['type' => 'created'], 'channels' => ['webhook'], 'webhook' => ['url' => 'https://hook.example.test/in', 'persistent' => true]],
+					'persistent' => ['trigger' => ['type' => 'created'], 'channels' => ['webhook'], 'webhook' => ['url' => 'https://93.184.215.14/in', 'persistent' => true]],
 					'malformed'  => ['trigger' => ['type' => 'created'], 'channels' => ['webhook', 'talk'], 'webhook' => ['url' => 'nope'], 'talk' => ['token' => '']],
-					'failing'    => ['trigger' => ['type' => 'created'], 'channels' => ['webhook'], 'webhook' => ['url' => 'https://fail.example.test/in']],
+					'failing'    => ['trigger' => ['type' => 'created'], 'channels' => ['webhook'], 'webhook' => ['url' => 'https://93.184.215.14/fail.in']],
 					'none'       => ['trigger' => ['type' => 'created'], 'channels' => ['webhook', 'talk']],
 				],
 				'uids' => ['alice'],
@@ -567,9 +569,11 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$preferences = null;
 		if (($case['noPreferences'] ?? false) !== true) {
 			$preferences = $this->createMock(NotificationPreferenceService::class);
-			$preferences->method('resolveEffective')->willReturnCallback(
-				function (array $schemaDefault, string $userId, string $schemaSlug, string $notificationKey, array $scopes = []) use ($prefix): array {
-					$this->record(what: 'preferences.resolveEffective', args: [$userId, $schemaSlug, $notificationKey, $scopes]);
+			$preferences->method('resolve')->willReturnCallback(
+				function (PreferenceResolution $resolution) use ($prefix): array {
+					$userId = $resolution->userId;
+					$topic  = $resolution->topic;
+					$this->record(what: 'preferences.resolve', args: [$userId, $topic->schemaSlug, $topic->notificationKey, $topic->scopes]);
 					if ($prefix($userId, 'off-') === true) {
 						return ['enabled' => false, 'channels' => null];
 					}
@@ -665,9 +669,9 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		);
 
 		$resolver = $this->createMock(NotificationRecipientResolver::class);
-		$resolver->method('resolveWithDiagnostics')->willReturnCallback(
-			function (array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = [], array $roleGroups = []) use ($case): array {
-				$this->record(what: 'resolver.resolveWithDiagnostics', args: [$recipientsSpec, $data, $object, $context, $roleGroups]);
+		$resolver->method('resolveFromSource')->willReturnCallback(
+			function (array $recipientsSpec, RecipientSource $source) use ($case): array {
+				$this->record(what: 'resolver.resolveFromSource', args: [$recipientsSpec, $source->data, $source->object, $source->context, $source->roleGroups]);
 				return ['uids' => ($case['uids'] ?? []), 'unresolved' => ($case['unresolved'] ?? [])];
 			}
 		);

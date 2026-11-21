@@ -41,7 +41,15 @@
 
 ## 3. The administrator's answer
 
-- [ ] 3.1 A read that reports, per recipient and kind, the channel that will be used, the deciding layer and whether it was forced.
+- [x] 3.1 A read that reports, per recipient and kind, the channel that will be used, the deciding layer and whether it was forced.
+      `GET /api/notification-preferences/recipient-answer?user=&schema=&notification=[&scope=]`
+      (`NotificationRecipientAnswerController`, administrators only by the
+      middleware) over `RecipientKindAnswer`, which composes the existing
+      merge (`NotificationPreferenceServiceInterface::resolve()`) with
+      `ForcedChannelPolicy::decide()` for an internal recipient (a user with
+      an account, design D-3). It answers the channels, the deciding layer,
+      `forced` with its `reason`, `internalOnly`, any refusal and the merge's
+      layer trace.
 
 ## 4. Tests
 
@@ -50,6 +58,7 @@
       `tests/Unit/Service/Notification/ForcedChannelPolicyTest.php` (14),
       including one that asserts the rules reach the validator the SAVE calls
       rather than holding only in the policy's own test. The per-recipient
-      read is 3.1 and is not built.
+      read (3.1): `RecipientKindAnswerTest.php` (6) and
+      `NotificationRecipientAnswerControllerTest.php` (6).
 - [ ] 4.2 A Newman request for the per-recipient read.
-- [ ] 4.3 Deduplication check (ADR-012) recorded in the PR body.
+- [x] 4.3 Deduplication check (ADR-012) recorded in the PR body.

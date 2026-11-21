@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\RateLimiter
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TokenBucket
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\BucketReading
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RateLimitSubject
  */
 final class RateLimiterGoldenTest extends TestCase {
 

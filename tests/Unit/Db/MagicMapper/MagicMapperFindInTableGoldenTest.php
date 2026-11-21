@@ -53,6 +53,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
@@ -72,6 +74,20 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableTarget
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperFindInTableGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

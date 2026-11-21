@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
 use OCA\OpenRegister\Service\LinkedEntityMappers;
 use OCA\OpenRegister\Service\LinkedEntityService;
@@ -56,6 +56,9 @@ use OCA\OpenRegister\Service\EntityLink;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LinkedEntityServiceBehaviourTest extends TestCase {
 
