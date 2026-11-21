@@ -80,20 +80,39 @@ interface SyncRecordStatusInterface {
 	public const PERMANENT_ERROR = 'permanent_error';
 
 	/**
+	 * A collision the source's strategy left to the local object (local-wins), or a conflict resolved as keep-local.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public const SHADOWED = 'shadowed';
+
+	/**
+	 * A collision the strategy refused (reject), or a conflict resolved as discard. Never linked.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public const REJECTED = 'rejected';
+
+	/**
 	 * Allowed forward transitions keyed by current status.
 	 *
 	 * @var array<string, list<string>>
 	 */
 	public const TRANSITIONS = [
 		self::PENDING => [self::FETCHED, self::FETCH_ERROR, self::SKIPPED],
-		self::FETCHED => [self::IMPORTED, self::UNCHANGED, self::IMPORT_ERROR, self::CONFLICT, self::SKIPPED],
+		self::FETCHED => [self::IMPORTED, self::UNCHANGED, self::IMPORT_ERROR, self::CONFLICT, self::SKIPPED, self::SHADOWED, self::REJECTED],
 		self::FETCH_ERROR => [self::FETCHED, self::PERMANENT_ERROR, self::SKIPPED],
 		self::IMPORT_ERROR => [self::IMPORTED, self::PERMANENT_ERROR, self::SKIPPED],
-		self::CONFLICT => [self::IMPORTED, self::UNCHANGED, self::SKIPPED],
+		// A conflict is settled by a person's resolution: imported (use-harvested, merge),
+		// shadowed (keep-local) or rejected (discard).
+		self::CONFLICT => [self::IMPORTED, self::UNCHANGED, self::SKIPPED, self::SHADOWED, self::REJECTED],
 		// Terminal states.
 		self::IMPORTED => [],
 		self::UNCHANGED => [],
 		self::SKIPPED => [],
 		self::PERMANENT_ERROR => [],
+		// A changed upstream hash is evaluated afresh on the next run's own record.
+		self::SHADOWED => [],
+		self::REJECTED => [],
 	];
 }//end interface

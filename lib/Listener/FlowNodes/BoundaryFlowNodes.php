@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface;
 
 /**
  * The built-ins at the edges of a flow: the case layer and the entry points.
@@ -37,10 +38,12 @@ final readonly class BoundaryFlowNodes {
 	 *
 	 * @param CaseFlowNodes $cases The steps that touch the case layer.
 	 * @param TriggerFlowNodes $triggers The entry points.
+	 * @param HarvestSourceNodeInterface|null $harvest The step that runs a source's harvest (app-harvest-fetchers-and-flow-node).
 	 */
 	public function __construct(
 		private CaseFlowNodes $cases,
 		private TriggerFlowNodes $triggers,
+		private ?HarvestSourceNodeInterface $harvest = null,
 	) {
 	}//end __construct()
 
@@ -53,7 +56,23 @@ final readonly class BoundaryFlowNodes {
 		return [
 			...$this->cases->nodes(),
 			...$this->triggers->nodes(),
+			...$this->harvestNodes(),
 		];
 
 	}//end nodes()
+
+	/**
+	 * The harvest step, when it is wired.
+	 *
+	 * @return list<IFlowNode>
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	private function harvestNodes(): array {
+		if ($this->harvest === null) {
+			return [];
+		}
+
+		return [$this->harvest];
+	}//end harvestNodes()
 }//end class

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
+use OCA\OpenRegister\Service\Http\OutboundUrlGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -218,45 +219,7 @@ class WebhookService {
 	 * binary "bypass the IP-range checks" decision threaded from the caller.
 	 */
 	private function assertSafeWebhookUri(string $uri, bool $allowPrivate = false): void {
-		$parsed = parse_url($uri);
-		if ($parsed === false) {
-			throw new RuntimeException('Webhook target URL is not parseable');
-		}
-
-		$scheme = strtolower($parsed['scheme'] ?? '');
-		if (in_array($scheme, ['http', 'https'], true) === false) {
-			throw new RuntimeException(
-				'Webhook target URL must use http or https scheme; got "' . $scheme . '"'
-			);
-		}
-
-		$host = strtolower($parsed['host'] ?? '');
-		if ($host === '') {
-			throw new RuntimeException('Webhook target URL is missing a host');
-		}
-
-		// Per-hook opt-in: the admin deliberately allowed private/loopback
-		// targets for this webhook. Scheme + host/parse checks above stay
-		// enforced; only the IP-range checks below are bypassed.
-		if ($allowPrivate === true) {
-			return;
-		}
-
-		// Every A and AAAA record is checked, and a host that does not resolve is
-		// refused: the client resolves again when it connects.
-		$addresses = $this->addressGuard()->addressesOf(host: $host);
-		if (empty($addresses) === true) {
-			throw new RuntimeException('Webhook target URL host could not be resolved');
-		}
-
-		foreach ($addresses as $address) {
-			$reason = $this->blockedAddressReason(address: $address);
-			if ($reason !== null) {
-				throw new RuntimeException(
-					'Webhook target URL resolves to a blocked IP range (' . $reason . ')'
-				);
-			}
-		}
+		$this->urlGuard()->assertSafe(uri: $uri, allowPrivate: $allowPrivate);
 	}//end assertSafeWebhookUri()
 
 	/**
@@ -279,76 +242,11 @@ class WebhookService {
 	 *
 	 * @return string|null Human-readable range label, or null when the address is safe.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential CIDR checks require multiple branches.
+	 * The rules live in {@see OutboundUrlGuard}; this keeps the webhook-facing
+	 * entry point the address-label tests exercise.
 	 */
-	private function blockedIpv6Reason(string $ip): ?string {
-		$bin = @inet_pton($ip);
-		if ($bin === false || strlen($bin) !== 16) {
-			// Not a valid IPv6 address; let caller decide whether to block.
-			return null;
-		}
-
-		// ::1/128 — loopback.
-		if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01") {
-			return 'loopback';
-		}
-
-		// ::/128 — unspecified.
-		if ($bin === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00") {
-			return 'unspecified';
-		}
-
-		// Fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
-		// First byte with mask 0xFE must equal 0xFC.
-		if ((ord($bin[0]) & 0xFE) === 0xFC) {
-			return 'unique-local';
-		}
-
-		// Fe80::/10 — link-local unicast.
-		// First byte 0xFE, second byte upper 6 bits = 0x80 → mask 0xC0.
-		if (ord($bin[0]) === 0xFE && (ord($bin[1]) & 0xC0) === 0x80) {
-			return 'link-local';
-		}
-
-		// 2001:db8::/32 — documentation/example range (RFC 3849).
-		if (substr($bin, 0, 4) === "\x20\x01\x0d\xb8") {
-			return 'documentation';
-		}
-
-		// ::ffff:0:0/96 — IPv4-mapped IPv6.
-		// Bytes 0-9 are zero, bytes 10-11 are 0xFFFF.
-		if (substr($bin, 0, 10) === "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-			&& substr($bin, 10, 2) === "\xff\xff"
-		) {
-			// Extract the embedded IPv4 address (bytes 12-15) and re-validate
-			// it against the IPv4 block list so ::ffff:127.0.0.1 is also caught.
-			$embeddedIpv4 = inet_ntop(substr($bin, 12, 4));
-			if ($embeddedIpv4 !== false) {
-				$longIp = ip2long($embeddedIpv4);
-				if ($longIp !== false) {
-					if (($longIp & 0xFF000000) === 0x7F000000) {
-						return 'IPv4-mapped loopback';
-					}
-
-					if (($longIp & 0xFF000000) === 0x0A000000
-						|| ($longIp & 0xFFF00000) === 0xAC100000
-						|| ($longIp & 0xFFFF0000) === 0xC0A80000
-					) {
-						return 'IPv4-mapped RFC-1918';
-					}
-
-					if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-						return 'IPv4-mapped link-local/metadata';
-					}
-				}
-			}
-
-			// The mapped address is itself a public IPv4 — still block the
-			// IPv4-mapped form to prevent protocol-confusion attacks.
-			return 'IPv4-mapped';
-		}//end if
-
-		return null;
+	protected function blockedIpv6Reason(string $ip): ?string {
+		return $this->urlGuard()->blockedIpv6Reason(ip: $ip);
 	}//end blockedIpv6Reason()
 
 	/**
@@ -366,71 +264,8 @@ class WebhookService {
 	 * @return bool True if the host resolves to a private/loopback/link-local IP.
 	 */
 	private function isPrivateHost(string $host): bool {
-		if ($host === '') {
-			return false;
-		}
-
-		foreach ($this->addressGuard()->addressesOf(host: $host) as $address) {
-			if ($this->blockedAddressReason(address: $address) !== null) {
-				return true;
-			}
-		}
-
-		return false;
+		return $this->urlGuard()->isPrivateHost(host: $host);
 	}//end isPrivateHost()
-
-	/**
-	 * Return the block-list reason for one resolved address, or null if safe.
-	 *
-	 * IPv6 addresses keep their own labels from {@see blockedIpv6Reason()}, IPv4
-	 * addresses from {@see blockedIpv4Reason()}. Anything else that is not
-	 * routable on the open internet, in any notation, is reported as `reserved`.
-	 *
-	 * @param string $address An IPv4 or IPv6 address.
-	 *
-	 * @return string|null Human-readable range label, or null when the address is safe.
-	 */
-	private function blockedAddressReason(string $address): ?string {
-		$reason = $this->blockedIpv4Reason(ip: $address);
-		if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-			$reason = $this->blockedIpv6Reason(ip: $address);
-		}
-
-		if ($reason === null && $this->addressGuard()->isInternal(ipAddress: $address) === true) {
-			$reason = 'reserved';
-		}
-
-		return $reason;
-	}//end blockedAddressReason()
-
-	/**
-	 * Return the block-list reason for an IPv4 address, or null when it is not listed.
-	 *
-	 * @param string $ip IPv4 address string.
-	 *
-	 * @return string|null `loopback`, `RFC-1918` or `link-local/metadata`, or null.
-	 */
-	private function blockedIpv4Reason(string $ip): ?string {
-		$longIp = ip2long($ip);
-		if ($longIp === false) {
-			return null;
-		}
-
-		$ranges = [
-			['loopback', 0xFF000000, 0x7F000000],
-			['RFC-1918', 0xFF000000, 0x0A000000],
-			['RFC-1918', 0xFFF00000, 0xAC100000],
-			['RFC-1918', 0xFFFF0000, 0xC0A80000],
-			['link-local/metadata', 0xFFFF0000, 0xA9FE0000],
-		];
-		foreach ($ranges as [$label, $mask, $network]) {
-			if (($longIp & $mask) === $network) {
-				return $label;
-			}
-		}
-
-		return null;
-	}//end blockedIpv4Reason()
 
 	/**
 	 * The shared outbound address guard, created on first use.
@@ -441,6 +276,18 @@ class WebhookService {
 		$this->addressGuard ??= new OutboundAddressGuard();
 		return $this->addressGuard;
 	}//end addressGuard()
+
+	/**
+	 * The shared outbound URL guard over the current address guard, labelled for webhooks.
+	 *
+	 * Built per call so a replaced address guard (tests resolve hosts through
+	 * one) is the one the rules consult.
+	 *
+	 * @return OutboundUrlGuard The guard.
+	 */
+	private function urlGuard(): OutboundUrlGuard {
+		return new OutboundUrlGuard(addresses: $this->addressGuard(), label: 'Webhook target URL');
+	}//end urlGuard()
 
 	/**
 	 * Truncate a response body for log-context use.

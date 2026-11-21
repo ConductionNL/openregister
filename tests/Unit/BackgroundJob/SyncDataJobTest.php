@@ -87,7 +87,7 @@ class SyncDataJobTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function runJob(): void {
+	private function runJob(?LoggerInterface $logger = null): void {
 		$schedule = $this->createMock(SyncScheduleInterface::class);
 		$schedule->method('selectDueSources')->willReturnCallback(
 			function (array $sources): array {
@@ -97,7 +97,7 @@ class SyncDataJobTest extends TestCase {
 		$job = new SyncDataJob(
 			$this->createMock(ITimeFactory::class),
 			new SyncDataServices($this->sources, $schedule, $this->fetchers, $this->pipeline),
-			$this->createMock(LoggerInterface::class)
+			($logger ?? $this->createMock(LoggerInterface::class))
 		);
 		$method = (new \ReflectionClass($job))->getMethod('run');
 		$method->invoke($job, null);
@@ -143,4 +143,49 @@ class SyncDataJobTest extends TestCase {
 		$this->runJob();
 		$this->assertSame('failed', $this->source->getLastSyncStatus());
 	}//end testPipelineFailureMarksTheSourceFailed()
+
+	/**
+	 * A source with a harvest flow is left to the flow engine; the rest are named in one warning.
+	 *
+	 * @return void
+	 */
+	public function testASourceWithAFlowIsSkippedAndTheRestAreNamed(): void {
+		$flowSource = new Source();
+		$flowSource->setUuid('s-flow');
+		$flowSource->setTitle('DCAT feed');
+		$flowSource->setType('rest');
+		$flowSource->setFlowId('s-flow');
+		$this->source->setTitle('BAG Adressen');
+		$sources = $this->createMock(SourceMapperInterface::class);
+		$sources->method('findBySyncEnabled')->willReturn([$flowSource, $this->source]);
+		$this->sources = $sources;
+
+		$this->fetchers->method('get')->willReturn($this->createMock(SourceFetcherInterface::class));
+		$this->pipeline->expects($this->once())->method('run')
+			->with($this->callback(fn (HarvestRun $h): bool => $h->source === $this->source))
+			->willReturn(['status' => 'success']);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			$this->callback(static fn (string $message): bool => str_contains($message, 'BAG Adressen') && str_contains($message, 'DCAT feed') === false)
+		);
+
+		$this->runJob($logger);
+
+		$this->assertNull($flowSource->getLastSyncStatus());
+		$this->assertSame('success', $this->source->getLastSyncStatus());
+	}//end testASourceWithAFlowIsSkippedAndTheRestAreNamed()
+
+	/**
+	 * With every source on a flow the job harvests nothing and warns about nothing.
+	 *
+	 * @return void
+	 */
+	public function testNoWarningWhenEverySourceHasAFlow(): void {
+		$this->source->setFlowId('s-1');
+		$this->pipeline->expects($this->never())->method('run');
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$this->runJob($logger);
+	}//end testNoWarningWhenEverySourceHasAFlow()
 }//end class

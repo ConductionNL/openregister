@@ -57,6 +57,16 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ * @method string|null getConflictReason()
+ * @method void setConflictReason(?string $conflictReason)
+ * @method bool|null getTombstoned()
+ * @method void setTombstoned(?bool $tombstoned)
+ * @method DateTime|null getTombstonedAt()
+ * @method void setTombstonedAt(?DateTime $tombstonedAt)
+ * @method DateTime|null getLastAppliedAt()
+ * @method void setLastAppliedAt(?DateTime $lastAppliedAt)
+ * @method array|null getResolutions()
+ * @method void setResolutions(?array $resolutions)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -143,6 +153,41 @@ class SyncRecord extends Entity implements JsonSerializable {
 	protected ?string $organisation = null;
 
 	/**
+	 * Why the item collided: local-edited, local-deleted or pre-existing-claim.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $conflictReason = null;
+
+	/**
+	 * Whether a complete run no longer saw this item.
+	 *
+	 * @var bool|null
+	 */
+	protected ?bool $tombstoned = null;
+
+	/**
+	 * When the item was tombstoned.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $tombstonedAt = null;
+
+	/**
+	 * When the harvest (or a resolution) last wrote the linked object.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastAppliedAt = null;
+
+	/**
+	 * Append-only resolution history: {resolvedBy, resolvedAt, action, fields, objectUuid, bulk}.
+	 *
+	 * @var list<array<string, mixed>>|null
+	 */
+	protected ?array $resolutions = null;
+
+	/**
 	 * Last update timestamp.
 	 *
 	 * @var DateTime|null
@@ -171,6 +216,11 @@ class SyncRecord extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'errorMessage', type: 'string');
 		$this->addType(fieldName: 'attempts', type: 'integer');
 		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'conflictReason', type: 'string');
+		$this->addType(fieldName: 'tombstoned', type: 'boolean');
+		$this->addType(fieldName: 'tombstonedAt', type: 'datetime');
+		$this->addType(fieldName: 'lastAppliedAt', type: 'datetime');
+		$this->addType(fieldName: 'resolutions', type: 'json');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}//end __construct()

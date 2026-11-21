@@ -16,7 +16,12 @@
             "rawData": null,
             "errorMessage": null,
             "attempts": 0,
-            "organisation": "org-1"
+            "organisation": "org-1",
+            "conflictReason": null,
+            "tombstoned": null,
+            "tombstonedAt": null,
+            "lastAppliedAt": null,
+            "resolutions": null
         },
         "queries": [
             "#1 insert(openregister_sync_records)",
@@ -58,7 +63,12 @@
             "rawData": null,
             "errorMessage": null,
             "attempts": 0,
-            "organisation": null
+            "organisation": null,
+            "conflictReason": null,
+            "tombstoned": null,
+            "tombstonedAt": null,
+            "lastAppliedAt": null,
+            "resolutions": null
         },
         "queries": [
             "#1 insert(openregister_sync_records)",
@@ -98,7 +108,12 @@
             "rawData": null,
             "errorMessage": null,
             "attempts": null,
-            "organisation": null
+            "organisation": null,
+            "conflictReason": null,
+            "tombstoned": null,
+            "tombstonedAt": null,
+            "lastAppliedAt": null,
+            "resolutions": null
         },
         "queries": [
             "#1 update(openregister_sync_records, NULL)",
@@ -129,7 +144,12 @@
             "rawData": null,
             "errorMessage": "boom",
             "attempts": null,
-            "organisation": null
+            "organisation": null,
+            "conflictReason": null,
+            "tombstoned": null,
+            "tombstonedAt": null,
+            "lastAppliedAt": null,
+            "resolutions": null
         },
         "queries": [
             "#1 update(openregister_sync_records, NULL)",

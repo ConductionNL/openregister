@@ -437,6 +437,14 @@ wait runs out the step fails. It never breaks someone else's lock.
 lock this run holds. Optional: a run releases all its locks when it ends,
 however it ends. This step only releases sooner.
 
+**`openregister.harvest-source`** (Harvest a source). Keys: `sourceId`. Runs the
+source's harvest pipeline once under a per-source lock and emits the run summary
+as its one item. A disabled source, a type with no registered fetcher and a
+source without a mapping fail the run (`source-disabled`, `fetcher-missing`,
+`mapping-missing`); a run that finds the lock held is skipped (`already-running`).
+A source with a schedule and an account gets a flow with this step written for
+it; see [Add a harvest protocol from your app](../development/harvest-protocols.md).
+
 **`openregister.case-open`** (Open a case). Keys: `definition` (the case plan),
 `uuid`. Starts a case plan on the object. If it already has one, the item says
 so (`case.opened: false`) and the flow carries on.

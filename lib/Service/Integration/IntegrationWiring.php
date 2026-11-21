@@ -71,7 +71,6 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
-use OCA\OpenRegister\Service\Sync\RestApiSourceFetcher;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -359,9 +358,9 @@ final class IntegrationWiring {
 			}
 		);
 
-		// The data-sync source-fetcher registry pre-loaded with the built-in
-		// REST/OpenRegister fetcher. Apps can register additional fetchers
-		// (OData, SOAP, CSV) by resolving and extending this service.
+		// The data-sync source-fetcher registry; every fetcher, the built-in
+		// REST/OpenRegister one included, arrives through
+		// RegisterSourceFetchersEvent on first use.
 		$context->registerService(SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
 	}//end registerSeams()
 
@@ -373,9 +372,13 @@ final class IntegrationWiring {
 	 * @return SourceFetcherRegistry
 	 */
 	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
-		$registry = new SourceFetcherRegistry();
-		$registry->register($container->get(RestApiSourceFetcher::class));
-		return $registry;
+		// Every fetcher, OpenRegister's own included, arrives through
+		// RegisterSourceFetchersEvent on first use.
+		return new SourceFetcherRegistry(
+			fetchers: [],
+			dispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+			logger: $container->get(\Psr\Log\LoggerInterface::class)
+		);
 	}//end buildSourceFetcherRegistry()
 
 	/**

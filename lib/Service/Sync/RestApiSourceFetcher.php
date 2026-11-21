@@ -68,13 +68,77 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	 * @param Client $httpClient HTTP client
 	 * @param ICrypto $crypto Credential decryption
 	 * @param LoggerInterface $logger Logger
+	 * @param HarvestHttpClient|null $harvestHttp The guarded harvest client every request goes through
+	 *                                            (null: the bare client, for callers that build this by hand)
 	 */
 	public function __construct(
 		private readonly Client $httpClient,
 		private readonly ICrypto $crypto,
 		private readonly LoggerInterface $logger,
+		private readonly ?HarvestHttpClient $harvestHttp = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The type this fetcher declares.
+	 *
+	 * @return string `rest-api`
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getType(): string {
+		return 'rest-api';
+	}//end getType()
+
+	/**
+	 * The name shown in the source form's type list.
+	 *
+	 * @return string The display name.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getDisplayName(): string {
+		return 'REST API';
+	}//end getDisplayName()
+
+	/**
+	 * The REST fetcher reads its endpoint and credentials from the source's own fields; it takes no config.
+	 *
+	 * @return array<string, mixed> An object schema with no properties.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function getConfigSchema(): array {
+		return ['type' => 'object', 'properties' => new \stdClass()];
+	}//end getConfigSchema()
+
+	/**
+	 * One bounded GET: through the guarded harvest client when there is one.
+	 *
+	 * @param string                $url     The URL.
+	 * @param array<string, string> $headers Request headers.
+	 *
+	 * @return \Psr\Http\Message\ResponseInterface The response.
+	 */
+	private function send(string $url, array $headers): \Psr\Http\Message\ResponseInterface {
+		if ($this->harvestHttp !== null) {
+			$response = $this->harvestHttp->get(url: $url, headers: $headers);
+			// The guarded client hands back error statuses; fail them as the bare client does.
+			if ($response->getStatusCode() >= 400) {
+				throw new RuntimeException(sprintf('HTTP %d from %s', $response->getStatusCode(), $url));
+			}
+
+			return $response;
+		}
+
+		// Bound each request so a hung upstream cannot stall the harvest job
+		// indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
+		return $this->httpClient->request(
+			'GET',
+			$url,
+			['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
+		);
+	}//end send()
 
 	/**
 	 * {@inheritDoc}
@@ -129,11 +193,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	private function gatherPage(ListingGather $run, string $url): ?string {
 		// Bound each request so a hung upstream cannot stall the harvest job
 		// indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
-		$response = $this->httpClient->request(
-			'GET',
-			$url,
-			['headers' => $run->headers, 'timeout' => 30, 'connect_timeout' => 5]
-		);
+		$response = $this->send(url: $url, headers: $run->headers);
 
 		// 304 Not Modified: nothing changed since the checkpoint.
 		if ($response->getStatusCode() === 304) {
@@ -182,11 +242,7 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 		$url = $baseUrl . '/' . rawurlencode($externalId);
 		// Bound the request (harden-harvest-http): a hung upstream must not stall
 		// the harvest job.
-		$response = $this->httpClient->request(
-			'GET',
-			$url,
-			['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
-		);
+		$response = $this->send(url: $url, headers: $headers);
 		$body = json_decode((string)$response->getBody(), true);
 
 		if (is_array($body) === false) {
