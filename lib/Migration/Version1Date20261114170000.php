@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 use Throwable;
 
 /**
@@ -43,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-write-sub-500ms/tasks.md
  */
-class Version1Date20261114170000 extends SimpleMigrationStep {
+class Version1Date20261114170000 extends TargetedMigrationStep {
 
 	/**
 	 * The index name.
@@ -69,11 +68,11 @@ class Version1Date20261114170000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The step signature is fixed by SimpleMigrationStep.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The step signature is fixed by TargetedMigrationStep.
 	 *
 	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$provider = $this->connection->getDatabaseProvider();
 		if ($provider !== IDBConnection::PLATFORM_POSTGRES && $provider !== IDBConnection::PLATFORM_SQLITE) {
 			$output->info('Skipping ' . self::INDEX . ': this expression index is created on PostgreSQL and SQLite only.');
@@ -91,5 +90,5 @@ class Version1Date20261114170000 extends SimpleMigrationStep {
 		}
 
 		$output->info('Created ' . self::INDEX . ' (or it was already present).');
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 }//end class
