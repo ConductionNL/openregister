@@ -1129,6 +1129,7 @@ Files/Command/MoveObjectFilesCommand.php,37,Files,Files,Files/Command/MoveObject
 Files/Controller/FileSearchController.php,131,Files,Files,Files/Controller/FileSearchController.php,0,,Files
 Files/Controller/FileSidebarController.php,94,Files,Files,Files/Controller/FileSidebarController.php,0,,Files
 Files/Controller/FilesController.php,1388,Files,Files,Files/Controller/FilesController.php,0,,Files
+Files/Controller/ObjectFilesArchiveController.php,87,Files,Files,Files/Controller/ObjectFilesArchiveController.php,0,,Files
 Files/Controller/ObjectFolderController.php,117,Files,Files,Files/Controller/ObjectFolderController.php,0,,Files
 Files/Controller/Settings/FileSettingsController.php,248,Files,Files,Files/Controller/Settings/FileSettingsController.php,0,,Files
 Files/Controller/Support/FileEditing.php,12,Files,Files,Files/Controller/Support/FileEditing.php,0,,Files
@@ -4475,6 +4476,7 @@ Service/PlatformServiceRegistrar.php,,Service,,,,,Platform
 Service/Config/ShareableConfigCatalogue.php,,Service,,,,,Configuration
 Service/ComplianceServiceBindings.php,,Service,,,,,Compliance
 Service/ComplianceServiceRegistrar.php,,Service,,,,,Compliance
+Service/CoreServiceBindings.php,,Service,,,,,Core
 Files/Service/File/FileScopeReader.php,,Files,,,,,Files
 Service/Task/OverdueOpenTasks.php,,Service,,,,,Processes
 Event/ObjectWriteRequestEvent.php,,Event,,,,,Core
@@ -4630,3 +4632,4 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
