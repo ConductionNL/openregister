@@ -14,6 +14,7 @@
     "taggingHandler": "taggingHandler",
     "fileFormattingHandler": "fileFormatHandler",
     "documentProcessingHandler": "docProcHandler",
+    "reviewGate": "reviewGate",
     "filePublishingHandler": "filePubHandler",
     "fileVersioningHandler": "fileVerHandler",
     "fileLockHandler": "fileLockHandler",
