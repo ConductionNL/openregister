@@ -72,3 +72,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: FlowsDocumentationTest::testEveryRegisteredNodeIsDocumented, FlowNodeFormSweepTest::testEveryBuiltInPaletteEntryCarriesAForm and/or RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision name the new node.
 - Cause: main's sweeps walk every registered openregister.* node: each needs a paragraph in docs/features/flows.md, an IFlowNodeConfigForm::configForm() (keys = configKeys(), labels via IL10N), and every internal ObjectService find() a decision.
 - Fix: add the doc paragraph next to its siblings; implement IFlowNodeConfigForm; wrap the node's find in WriteCause::asLookup(fn () => ...) as LinkObjectNode does (or pass _audit: false). See #10358.
+
+## phpstan argument.type on AuditRecordInterface records (or-fix-10)
+- Symptom: phpstan 'array_map expects callable(...Kernel\Contracts\Core\AuditRecordInterface)..., Closure(AuditTrail) given' in a PR's new code that consumes DeletedObjectAuthorizer or audit lookups.
+- Cause: main retyped those returns to the Core marker port AuditRecordInterface (no methods).
+- Fix: narrow with array_filter($records, fn (AuditRecordInterface $r): bool => $r instanceof AuditTrail) before mapping; add a test that a non-AuditTrail record is skipped (see #10490 70ae2ae5). DeletedController::1077 has the same error on main: inherited.
