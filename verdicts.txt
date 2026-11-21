@@ -3470,3 +3470,4 @@
 9594 cd8742186ef24444d681700258d222e3c1b51824 REVERIFY or-fix-0: merged main (clean); parked specs (AvgIndex, pageShell, migrationPackTables) and full jest 8690 now green, no code change needed; review needed
 9565 cc100593c90bd49380ce8b89a06de33a3ad2c68e REVERIFY or-fix-1: merged main, fixed listPages golden spec stubbing the new toggleAction (snapshots unchanged); full jest green; review needed
 9277 670a2cb4ea06330a70511b86480cd8d706950da5 REVERIFY or-fix-1: merged main, fixed ActionDateFollowerGoldenTest to main's recordObjectEvent; Service/Archival, Architecture green, phpstan clean; review needed
+8951 ae7b4a459f28b2d00e2981101c62c536fd4dd623 REVERIFY or-fix-2: merged main (clean; new main callers pass no suppliedKeys), nothing to fix; parked red TalkGatewaySetDescriptionTest is red on main too; Controller, Object, Calculation, Command, Architecture green; review needed
