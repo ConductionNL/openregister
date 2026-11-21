@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
  * expressions may read `itemIndex`, `itemCount` and `context`; the item
  * index is set per item with {@see forItem()}.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 class SetFieldsPlan {
 
@@ -103,7 +103,7 @@ class SetFieldsPlan {
 	 *
 	 * @return self The positioned plan.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function forItem(int $itemIndex): self {
 		$plan = clone $this;
@@ -118,7 +118,7 @@ class SetFieldsPlan {
 	 *
 	 * @return int The position, 0 until {@see forItem()} sets it.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function itemIndex(): int {
 		return $this->itemIndex;

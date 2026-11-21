@@ -12,7 +12,9 @@
                 ],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -33,7 +35,9 @@
                 ],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -54,7 +58,9 @@
                 "cc": [],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -73,7 +79,9 @@
                 "cc": [],
                 "subject": "alt",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "plain part",
@@ -95,7 +103,9 @@
                 "cc": [],
                 "subject": "mixed",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "body",
@@ -243,7 +253,9 @@
                 "cc": [],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -269,7 +281,9 @@
                     "timezone_type": 1,
                     "timezone": "+02:00"
                 },
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -292,7 +306,9 @@
                     "timezone_type": 1,
                     "timezone": "+02:00"
                 },
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -315,7 +331,9 @@
                     "timezone_type": 1,
                     "timezone": "+02:00"
                 },
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -338,7 +356,9 @@
                     "timezone_type": 1,
                     "timezone": "+02:00"
                 },
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -357,7 +377,9 @@
                 "cc": [],
                 "subject": "empty",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": null,
@@ -389,7 +411,9 @@
                 "cc": [],
                 "subject": "from file",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "file body\r\n",
@@ -411,7 +435,9 @@
                 "cc": [],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -433,7 +459,9 @@
                 "cc": [],
                 "subject": "Hello",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -457,7 +485,9 @@
                 "cc": [],
                 "subject": null,
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -485,7 +515,9 @@
                     "timezone_type": 1,
                     "timezone": "+02:00"
                 },
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "Body text.\r\n",
@@ -507,7 +539,9 @@
                 "cc": [],
                 "subject": "h",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": null,
@@ -529,7 +563,9 @@
                 "cc": [],
                 "subject": "level 1",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "outer body 1",
@@ -549,7 +585,9 @@
                             "cc": [],
                             "subject": "level 0",
                             "date": null,
-                            "messageId": null
+                            "messageId": null,
+                            "inReplyTo": "",
+                            "references": []
                         },
                         "body": {
                             "plainText": "innermost body\r\n",
@@ -574,7 +612,9 @@
                 "cc": [],
                 "subject": "level 5",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "outer body 5",
@@ -594,7 +634,9 @@
                             "cc": [],
                             "subject": "level 4",
                             "date": null,
-                            "messageId": null
+                            "messageId": null,
+                            "inReplyTo": "",
+                            "references": []
                         },
                         "body": {
                             "plainText": "outer body 4",
@@ -614,7 +656,9 @@
                                         "cc": [],
                                         "subject": "level 3",
                                         "date": null,
-                                        "messageId": null
+                                        "messageId": null,
+                                        "inReplyTo": "",
+                                        "references": []
                                     },
                                     "body": {
                                         "plainText": "outer body 3",
@@ -634,7 +678,9 @@
                                                     "cc": [],
                                                     "subject": "level 2",
                                                     "date": null,
-                                                    "messageId": null
+                                                    "messageId": null,
+                                                    "inReplyTo": "",
+                                                    "references": []
                                                 },
                                                 "body": {
                                                     "plainText": "outer body 2",
@@ -676,7 +722,9 @@
                 "cc": [],
                 "subject": "mixed",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": null,
@@ -707,7 +755,9 @@
                 "cc": [],
                 "subject": "level 2",
                 "date": null,
-                "messageId": null
+                "messageId": null,
+                "inReplyTo": "",
+                "references": []
             },
             "body": {
                 "plainText": "outer body 2",

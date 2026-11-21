@@ -47,10 +47,16 @@
 		<!-- Retention Configuration Section -->
 		<FlowConfiguration />
 
+		<!-- Search: accent-insensitive object search -->
+		<SearchConfiguration />
+
 		<!-- Working calendars: the one clock every deadline is counted against -->
 		<WorkingCalendars />
 
 		<RetentionConfiguration />
+
+		<!-- Who sees who read a record: read entries on the audit trail -->
+		<ReadEventVisibilityConfiguration />
 
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
@@ -61,6 +67,9 @@
 
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
+
+		<!-- AI translation through Nextcloud's Task Processing -->
+		<TranslationConfiguration />
 
 		<!-- File Configuration Section -->
 		<FileConfiguration />
@@ -93,9 +102,12 @@ import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import ReadEventVisibilityConfiguration from './sections/ReadEventVisibilityConfiguration.vue'
 import RegisterDescriptors from './sections/RegisterDescriptors.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
+import SearchConfiguration from './sections/SearchConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
+import TranslationConfiguration from './sections/TranslationConfiguration.vue'
 import WorkingCalendars from './sections/WorkingCalendars.vue'
 import { useSettingsStore } from '../../store/settings.js'
 
@@ -114,6 +126,7 @@ export default {
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
+		SearchConfiguration,
 		PermissionMatrix,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
@@ -121,9 +134,11 @@ export default {
 		WorkingCalendars,
 		RegisterDescriptors,
 		RetentionConfiguration,
+		ReadEventVisibilityConfiguration,
 		LogIntegrity,
 		PushNotificationsConfiguration,
 		LlmConfiguration,
+		TranslationConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,

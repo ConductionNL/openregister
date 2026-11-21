@@ -139,6 +139,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
 	use LinkedItemsTrait;
 
 	/**
@@ -360,9 +361,9 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	protected bool $appendOnly = false;
 
 	/**
-	 * Whether objects of this schema should be indexed in SOLR for searching
+	 * Whether objects of this schema are included in search
 	 *
-	 * When set to false, objects of this schema will be excluded from SOLR indexing,
+	 * When set to false, objects of this schema are excluded from search,
 	 * making them unsearchable through the search functionality but still accessible
 	 * through direct API calls.
 	 *
@@ -657,6 +658,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const ARCHIVE_ANNOTATION = 'x-openregister-archive';
 
 	/**
+	 * Annotation that declares this schema offers the preservation (statisch) state.
+	 *
+	 * @var string
+	 */
+	public const PRESERVE_ANNOTATION = 'x-openregister-preserve';
+
+	/**
 	 * The property-level keyword that makes a value immutable once set.
 	 *
 	 * A property carrying `"immutable": true` accepts its first value and
@@ -790,6 +798,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
+
+	/**
+	 * The hierarchy annotation: the parent edge grants travel along.
+	 *
+	 * @var string
+	 */
+	public const HIERARCHY_ANNOTATION = 'x-openregister-hierarchy';
+
+	/**
+	 * The classification annotation: the scale an object's classification is read on.
+	 *
+	 * @var string
+	 */
+	public const CLASSIFICATION_ANNOTATION = 'x-openregister-classification';
+
+	/**
+	 * The confidentiality annotation: a per-object tier, legal ground and timed release.
+	 *
+	 * @var string
+	 */
+	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -973,9 +1002,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return true True if the authorization structure is valid
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator::validate()},
+	 *             built with {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()}
+	 *             of the schema's configuration, instead; no openregister code calls this method.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function validateAuthorization(): bool {
-		return (new AuthorizationRulesValidator(declaredActions: $this->declaredActionNames()))->validate(
+		return (new AuthorizationRulesValidator(declaredActions: (new DeclaredActions())->names(configuration: $this->configuration)))->validate(
 			authorization: $this->authorization,
 			properties: $this->properties
 		);
@@ -991,7 +1027,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> Declared action keys.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()} with
+	 *             the schema's configuration instead; every openregister caller
+	 *             does. The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function declaredActionNames(): array {
 		return (new DeclaredActions())->names(configuration: $this->configuration);
@@ -1454,17 +1496,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator::upsertKeys()}
+	 *             with the schema's configuration instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getUpsertKeys(): array {
-		$keys = [];
-		foreach ((new UniqueConstraintEvaluator())->constraints(configuration: $this->getConfiguration(), includeLegacy: true) as $constraint) {
-			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
-				$keys[] = $constraint['name'];
-			}
-		}
-
-		return $keys;
+		return (new UniqueConstraintEvaluator())->upsertKeys(configuration: $this->getConfiguration());
 	}//end getUpsertKeys()
 
 	/**
@@ -1541,7 +1582,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
 		return (new ObjectSourceDeclaration())->declared(configuration: $this->getConfiguration());
@@ -1646,6 +1687,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * - 'allowFiles': (bool) Whether this schema allows file attachments
 	 * - 'orphanCleanup': (bool) Soft-delete a child the parent owns through an inverse
 	 *   relation when the parent stops referencing it. Default false: the child stays.
+	 * - 'platformSharing': (bool) Offer this schema's objects for sharing through the
+	 *   platform's own sharing surface. Default false: not offered.
 	 * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
 	 * - 'autoShare': (bool) Create a Nextcloud share for every file uploaded to
 	 *   a file property of this schema, unless the property sets its own.
@@ -1861,6 +1904,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `linkRoles` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getLinkRoles(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'linkRoles');
@@ -1876,6 +1925,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `partyKinds` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getPartyKinds(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'partyKinds');
@@ -1916,18 +1971,32 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getLinkedTypes()
 
 	/**
-	 * Check whether this schema should be searchable in SOLR
+	 * Check whether this schema's objects are included in search
 	 *
-	 * @return bool True if schema objects should be indexed in SOLR
+	 * @return bool True if schema objects are included in search
 	 */
 	public function isSearchable(): bool {
 		return $this->searchable;
 	}//end isSearchable()
 
 	/**
-	 * Set whether this schema should be searchable in SOLR
+	 * Whether this schema's objects may be shared with a principal at another instance.
 	 *
-	 * @param bool $searchable Whether schema objects should be indexed in SOLR
+	 * Declared as `configuration.federatable: true`; a schema that declares
+	 * nothing is not federatable.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function isFederatable(): bool {
+		return (($this->getConfiguration() ?? [])['federatable'] ?? false) === true;
+	}//end isFederatable()
+
+	/**
+	 * Set whether this schema's objects are included in search
+	 *
+	 * @param bool $searchable Whether schema objects are included in search
 	 *
 	 * @return void
 	 */
@@ -2035,6 +2104,33 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return ($annotation['enabled'] ?? false) === true;
 	}//end isArchivingEnabled()
+
+	/**
+	 * Whether this schema offers the preservation (statisch) regime.
+	 *
+	 * The preservation state is distinct from the archive state
+	 * {@see self::isArchivingEnabled()} declares: the archive takes a finished
+	 * object out of the working views while it still has business use; the
+	 * preservation regime is where a dossier enters once that business use ends
+	 * and the Archiefwet clock governs it. A schema may offer the archive state,
+	 * the preservation state, both or neither, so a product can tell "closed"
+	 * from "statisch" (REQ-APS-006). Declared once on the schema (ADR-031), like
+	 * the archive annotation, so no caller re-reads it.
+	 *
+	 * @return bool True when the schema declares `x-openregister-preserve` with `enabled: true`.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md#requirement-a-preservation-regime-sits-between-active-and-transferred-req-aps-006
+	 */
+	public function isPreservationEnabled(): bool {
+		$configuration = ($this->getConfiguration() ?? []);
+		$annotation = ($configuration[self::PRESERVE_ANNOTATION] ?? null);
+
+		if (is_array($annotation) === false) {
+			return false;
+		}
+
+		return ($annotation['enabled'] ?? false) === true;
+	}//end isPreservationEnabled()
 
 	/**
 	 * The reasons this schema accepts for a value that was not supplied.
@@ -2246,58 +2342,11 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end setAnyOf()
 
 	/**
-	 * Check if this schema is managed by any configuration
+	 * The member list a configuration keeps its schemas in, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the schema's ID is present in the schemas array
-	 * of any provided configuration entities.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this schema is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return string
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this schema
-	 *
-	 * Returns the first configuration that has this schema's ID in its schemas array.
-	 * Returns null if the schema is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this schema, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMemberKind(): string {
+		return 'schemas';
+	}//end configurationMemberKind()
 }//end class

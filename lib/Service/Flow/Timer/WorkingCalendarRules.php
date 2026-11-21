@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ final class WorkingCalendarRules {
 	 *
 	 * @throws FlowTimerValidationException On an unknown kind or a malformed rule.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validRules(mixed $value): array {
 		if (is_array($value) === false) {
@@ -218,7 +218,7 @@ final class WorkingCalendarRules {
 	 *
 	 * @throws FlowTimerValidationException On a malformed date.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validExceptions(mixed $value): array {
 		if (is_array($value) === false) {

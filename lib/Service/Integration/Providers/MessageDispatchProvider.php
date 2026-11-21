@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -222,21 +223,44 @@ class MessageDispatchProvider extends AbstractIntegrationProvider implements Mes
 	 * rather than throwing, so a consuming app never fatals on a missing/down
 	 * source (AD-23).
 	 *
-	 * @param string $source The seeded source slug to send through
-	 *                       (MUST be in {@see ALLOWED_SOURCES}).
-	 * @param OutboundMessage $message The path relative to the source base URL
-	 *                                 (e.g. `2010-04-01/Accounts/{SID}/Messages.json`,
-	 *                                 `{PhoneNumberID}/messages`, `message`), the
-	 *                                 provider-shaped body the consuming app composed,
-	 *                                 and optional extra request headers.
+	 * Takes main's OutboundMessage, or the release's body, path and headers, by name or by position
+	 * (a body array in the second slot); a message wins.
+	 *
+	 * @param string                     $source  The seeded source slug to send through.
+	 * @param OutboundMessage|array|null $message The path relative to the source base URL, the body and the headers; an array here is the release's
+	 *                                            positional `$body`.
+	 * @param string|null                $path    The path relative to the source base URL.
+	 * @param array                      $headers Extra request headers.
+	 * @param array|null                 $body    The request body.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or
 	 *                             `{ unavailable: true, cause }` when the source
 	 *                             is unconfigured/down or the slug is rejected.
 	 *
+	 * @throws InvalidArgumentException When neither a message nor a path and body is given.
+	 *
 	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
-	public function dispatch(string $source, OutboundMessage $message): array {
+	public function dispatch(
+		string $source,
+		OutboundMessage|array|null $message = null,
+		string|null $path = null,
+		array $headers = [],
+		array|null $body = null,
+	): array {
+		if (is_array($message) === true) {
+			$body  ??= $message;
+			$message = null;
+		}
+
+		if ($message === null) {
+			if ($path === null || $body === null) {
+				throw new InvalidArgumentException('dispatch() needs a path and a body, or an OutboundMessage.');
+			}
+
+			$message = new OutboundMessage(path: $path, body: $body, headers: $headers);
+		}
+
 		$options = ['body' => $message->body, 'headers' => $this->withJsonAccept(headers: $message->headers)];
 
 		return $this->sendThrough(source: trim($source), send: fn (): array => $this->send(path: $message->path, options: $options));

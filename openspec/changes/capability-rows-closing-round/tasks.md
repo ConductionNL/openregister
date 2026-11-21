@@ -2,7 +2,7 @@
 
 ## 1. Text extraction per format
 
-- [ ] 1.1 Pin the PDF, DOCX and EML scenarios in a test that extracts a fixture of each type through `lib/Files/Service/TextExtractionService.php`. Verify: `tests/Unit/Service/TextExtractionServiceTest.php` or a new fixture test.
+- [x] 1.1 Pin the PDF, DOCX and EML scenarios in a test that extracts a fixture of each type through `lib/Files/Service/TextExtractionService.php`. Verify: `tests/Unit/Service/TextExtractionServiceTest.php` or a new fixture test.
 
 ## 2. A register as one unit
 

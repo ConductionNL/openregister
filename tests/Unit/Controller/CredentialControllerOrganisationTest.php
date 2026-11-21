@@ -76,6 +76,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Service\Credential\BrokerTokenBinding
+ * @uses   \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialControllerOrganisationTest extends TestCase {
 	private const ACTIVE_ORG = 'org-active-uuid';
@@ -329,6 +333,30 @@ class CredentialControllerOrganisationTest extends TestCase {
 		$controller = $this->makeController(uid: 'member-uid', params: []);
 
 		$response = $controller->destroy('cred-uuid');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}
+
+	/**
+	 * Updating (PUT) an organisation credential is behind the same org-admin
+	 * gate as delete: a member who is not an organisation admin is refused
+	 * before any write.
+	 *
+	 * @return void
+	 */
+	public function testUpdateOrganisationCredentialRequiresAdmin(): void {
+		$entity = $this->credential(['scope' => 'organisation', 'organisation' => 'org-target'], 'admin-uid');
+		$entity->setUuid('cred-uuid');
+		$this->objectService->method('find')->willReturn($entity);
+
+		$this->orgService->method('isOrganisationAdmin')
+			->with('org-target', 'member-uid')->willReturn(false);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$controller = $this->makeController(uid: 'member-uid', params: ['title' => 'Renamed']);
+
+		$response = $controller->update('cred-uuid');
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}

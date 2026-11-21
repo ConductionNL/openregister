@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Db;
 /**
  * Request-scoped claims, by object uuid.
  *
- * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+ * @spec openspec/specs/declared-actions/spec.md
  */
 final class EmptyPropertyClaim {
 
@@ -50,7 +50,7 @@ final class EmptyPropertyClaim {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function hold(string $uuid, string $property): void {
 		self::$claims[$uuid] = $property;
@@ -66,7 +66,7 @@ final class EmptyPropertyClaim {
 	 *
 	 * @return string|null The property, or null for an ordinary write.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public static function consume(string $uuid): ?string {
 		$property = (self::$claims[$uuid] ?? null);

@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\FlowRunStepMapper
+ * @uses \OCA\OpenRegister\Db\FlowRunStep
+ * @uses \OCA\OpenRegister\Db\LinkColumn
  */
 class FlowRunStepMapperSequenceTest extends TestCase {
 	use RecordsQueries;
@@ -63,4 +65,45 @@ class FlowRunStepMapperSequenceTest extends TestCase {
 		$this->assertSame(4, (new FlowRunStepMapper($this->recordingConnection()))->deleteByRun('r1'));
 		$this->assertSame(['delete(openregister_flow_steps)', "where(eq(run_uuid, 'r1'))", 'executeStatement'], $this->queries[0]);
 	}//end testDeleteByRunRemovesOnlyThatRunsSteps()
+
+	public function testFindByNodeTypeReadsTheNewestStepsOfThatTypeAndStatus(): void {
+		$this->rowSets = [[['id' => 9, 'run_uuid' => 'r2', 'node_type' => 'openregister.set-fields', 'status' => 'failed']]];
+
+		$steps = (new FlowRunStepMapper($this->recordingConnection()))->findByNodeType('openregister.set-fields', 'failed', 20);
+
+		$this->assertCount(1, $steps);
+		$this->assertSame('r2', $steps[0]->getRunUuid());
+		$this->assertSame(
+			[
+				'select(*)',
+				'from(openregister_flow_steps)',
+				"where(eq(node_type, 'openregister.set-fields'))",
+				"andWhere(eq(status, 'failed'))",
+				'orderBy(id, DESC)',
+				'setMaxResults(20)',
+				'executeQuery',
+			],
+			$this->queries[0]
+		);
+	}//end testFindByNodeTypeReadsTheNewestStepsOfThatTypeAndStatus()
+
+	public function testFindByNodeTypeWithoutAStatusReadsEveryStatus(): void {
+		$this->rowSets = [[]];
+
+		(new FlowRunStepMapper($this->recordingConnection()))->findByNodeType('acme.step');
+
+		$this->assertSame(
+			['select(*)', 'from(openregister_flow_steps)', "where(eq(node_type, 'acme.step'))", 'orderBy(id, DESC)', 'setMaxResults(100)', 'executeQuery'],
+			$this->queries[0]
+		);
+	}//end testFindByNodeTypeWithoutAStatusReadsEveryStatus()
+
+	public function testDeleteOlderThanRemovesStepsCreatedBeforeTheMoment(): void {
+		$this->statementResults = [12];
+
+		$removed = (new FlowRunStepMapper($this->recordingConnection()))->deleteOlderThan(new \DateTimeImmutable('2026-10-13 00:00:00'));
+
+		$this->assertSame(12, $removed);
+		$this->assertSame(['delete(openregister_flow_steps)', "where(lt(created, '2026-10-13 00:00:00'))", 'executeStatement'], $this->queries[0]);
+	}//end testDeleteOlderThanRemovesStepsCreatedBeforeTheMoment()
 }//end class

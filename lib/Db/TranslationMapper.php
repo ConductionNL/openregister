@@ -67,10 +67,53 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 		$entity->setObjectUuid($slot->objectUuid);
 		$entity->setProperty($slot->property);
 		$entity->setLanguage($slot->language);
-		$edit->applyTo(entity: $entity);
+		$this->applyEdit(entity: $entity, edit: $edit);
 		$entity->setUpdated(new DateTime());
 		return $this->persist(entity: $entity, isNew: ($existing === null));
 	}//end upsert()
+
+	/**
+	 * Write an edit into a slot's entity.
+	 *
+	 * A null translator and an empty or null source language leave those columns as they are.
+	 *
+	 * @param Translation     $entity The slot being written.
+	 * @param TranslationEdit $edit   The value, status, translator and source language to write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-i18n/spec.md
+	 */
+	private function applyEdit(Translation $entity, TranslationEdit $edit): void {
+		$entity->setValue($edit->value);
+		$this->applyStatus(entity: $entity, status: $edit->status);
+		if ($edit->translator !== null) {
+			$entity->setTranslator($edit->translator);
+		}
+
+		if (in_array($edit->sourceLanguage, ['', null], true) === false) {
+			$entity->setSourceLanguage($edit->sourceLanguage);
+		}
+	}//end applyEdit()
+
+	/**
+	 * Set the workflow status: the override when given, else draft for a slot without one.
+	 *
+	 * @param Translation $entity The slot being written.
+	 * @param string|null $status The edit's status override.
+	 *
+	 * @return void
+	 */
+	private function applyStatus(Translation $entity, ?string $status): void {
+		if ($status !== null) {
+			$entity->setStatus($status);
+			return;
+		}
+
+		if ($entity->getStatus() === null) {
+			$entity->setStatus(Translation::STATUS_DRAFT);
+		}
+	}//end applyStatus()
 
 	/**
 	 * Insert a new slot or update an existing one.
@@ -106,6 +149,24 @@ class TranslationMapper extends QBMapper implements TranslationMapperInterface, 
 
 		return $this->findOneOrNull(qb: $qb);
 	}//end findOne()
+
+	/**
+	 * The workflow status of the slot's stored translation.
+	 *
+	 * @param TranslationSlot $slot The object, property and language.
+	 *
+	 * @return string|null The row's status (draft when the row has none), or null when there is no row.
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	public function rowStatus(TranslationSlot $slot): ?string {
+		$row = $this->findOne(slot: $slot);
+		if ($row === null) {
+			return null;
+		}
+
+		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+	}//end rowStatus()
 
 	/**
 	 * The one translation the query selects, or null when there is none.

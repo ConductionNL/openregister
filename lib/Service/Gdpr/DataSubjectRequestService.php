@@ -137,15 +137,16 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * The discovery hits as the HTTP envelope: the object's json and its hits.
 	 *
-	 * @param array<int, array{object: ObjectEntity, gdprEntities: array}> $hits The loaded hits.
+	 * @param array<int, array{object: ObjectEntity, gdprEntities: array, subjectFields: array}> $hits The loaded hits.
 	 *
-	 * @return array<int, array{object: array, gdprEntities: array}>
+	 * @return array<int, array{object: array, gdprEntities: array, subjectFields: array}>
 	 */
 	private function serialiseHits(array $hits): array {
 		return array_map(
 			static fn (array $hit): array => [
 				'object' => $hit['object']->jsonSerialize(),
 				'gdprEntities' => $hit['gdprEntities'],
+				'subjectFields' => ($hit['subjectFields'] ?? []),
 			],
 			$hits
 		);
@@ -165,11 +166,12 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @param bool $rbac Apply RBAC scoping (default true).
 	 * @param bool $multitenancy Apply tenant scoping (default true).
 	 *
-	 * @return array<int, array{object: ObjectEntity, gdprEntities: array}> The loaded hits.
+	 * @return array<int, array{object: ObjectEntity, gdprEntities: array, subjectFields: array}> The loaded hits.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function findSubjectObjects(SubjectQuery $query, bool $rbac = true, bool $multitenancy = true): array {
 		$subjectId = trim($query->subjectId);
@@ -179,15 +181,55 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 
 		$hits = [];
 		$trimmed = new SubjectQuery(subjectId: $subjectId, type: $query->type, mode: $query->mode);
-		foreach ($this->records->index->discover(query: $trimmed) as $entry) {
+		foreach ($this->discover(query: $trimmed, rbac: $rbac, multitenancy: $multitenancy) as $entry) {
 			$object = $this->records->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object !== null) {
-				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities']];
+				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities'], 'subjectFields' => $entry['subjectFields']];
 			}
 		}
 
 		return $hits;
 	}//end findSubjectObjects()
+
+	/**
+	 * Both discovery sources, merged per object.
+	 *
+	 * The entity index finds what the detector recognised in text; the
+	 * declared-field index finds what a schema says is the subject's id. An
+	 * object found by both carries both reasons. The objects are still loaded
+	 * scoped afterwards, so neither source widens what the caller may read.
+	 *
+	 * @param SubjectQuery $query        The trimmed subject, optional type and match mode.
+	 * @param bool         $rbac         Apply RBAC to the declared-field search.
+	 * @param bool         $multitenancy Apply tenant scoping to the declared-field search.
+	 *
+	 * @return array<string, array{object_id: int, object_uuid: string, gdprEntities: array, subjectFields: array}>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md
+	 */
+	private function discover(SubjectQuery $query, bool $rbac, bool $multitenancy): array {
+		$merged = [];
+		foreach ($this->records->index->discover(query: $query) as $key => $entry) {
+			$merged[$key] = $entry + ['subjectFields' => []];
+		}
+
+		if ($this->records->declaredFields === null) {
+			return $merged;
+		}
+
+		foreach ($this->records->declaredFields->discover(query: $query, rbac: $rbac, multitenancy: $multitenancy) as $key => $entry) {
+			if (isset($merged[$key]) === true) {
+				$merged[$key]['subjectFields'] = $entry['subjectFields'];
+				continue;
+			}
+
+			$merged[$key] = $entry + ['gdprEntities' => []];
+		}
+
+		return $merged;
+	}//end discover()
 
 	/**
 	 * Pseudonymise one already-loaded object, through the audited write path.
@@ -306,7 +348,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return array<string, mixed> The summary.
 	 */
 	private function eraseFor(ErasureRequest $request): array {
-		$grouped = $this->records->index->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type));
+		$grouped = $this->discover(query: new SubjectQuery(subjectId: $request->subjectId, type: $request->type), rbac: true, multitenancy: true);
 		$run = new ErasureRun(request: $request, matchedCount: count($grouped));
 
 		foreach ($grouped as $entry) {

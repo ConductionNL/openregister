@@ -649,6 +649,17 @@ class PropertyValidatorHandlerTest extends TestCase {
 	}
 
 	/**
+	 * The closed modifier values are the Search profile's own vocabulary, read
+	 * through the Kernel contract.
+	 *
+	 * @return void
+	 */
+	public function testTheClosedModifierValuesAreTheSearchProfileVocabulary(): void {
+		$this->assertSame(PropertySearchProfile::MATCH_TYPES, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES['matchType']);
+		$this->assertSame(PropertySearchProfile::INPUT_CONTROLS, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES['inputControl']);
+	}
+
+	/**
 	 * Every value the vocabulary does hold is accepted, so the refusals above
 	 * refuse the wrong value rather than the key itself.
 	 *
@@ -664,6 +675,67 @@ class PropertyValidatorHandlerTest extends TestCase {
 		foreach (PropertySearchProfile::INPUT_CONTROLS as $control) {
 			$this->assertTrue($handler->validateProperty(['type' => 'string', 'inputControl' => $control], '/field'));
 		}
+	}
+
+
+	/**
+	 * A required-when condition with an unknown operator, on an undeclared field
+	 * or on the property itself is refused at schema save, naming the property;
+	 * one on a declared sibling saves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	public function testARequiredWhenConditionMustBeUsableAtSchemaSave(): void {
+		$handler = new PropertyValidatorHandler();
+		$schema = static fn (array $condition): array => [
+			'requestType' => ['type' => 'string'],
+			'complaintCategory' => ['type' => 'string', 'x-openregister-required-when' => $condition],
+		];
+
+		$this->assertTrue($handler->validateProperties($schema(['field' => 'requestType', 'op' => 'eq', 'value' => 'Klacht'])));
+
+		$refused = [
+			'unknown op' => [['field' => 'requestType', 'op' => 'like', 'value' => 'K'], "operator 'like'"],
+			'undeclared field' => [['field' => 'soort', 'op' => 'eq', 'value' => 'x'], "'soort'"],
+			'self condition' => [['field' => 'complaintCategory', 'op' => 'notEmpty'], 'the property itself'],
+		];
+		foreach ($refused as $case => [$condition, $words]) {
+			try {
+				$handler->validateProperties($schema($condition));
+				$this->fail('Accepted: ' . $case);
+			} catch (Exception $exception) {
+				$this->assertStringContainsString('/complaintCategory', $exception->getMessage(), $case);
+				$this->assertStringContainsString($words, $exception->getMessage(), $case);
+			}
+		}
+	}
+
+	/**
+	 * A condition inside a nested object is not judged against that object's
+	 * members: conditions read the object from its root.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-required-when-enforced/specs/object-lifecycle/spec.md
+	 */
+	public function testARequiredWhenConditionInANestedObjectNamesARootField(): void {
+		$handler = new PropertyValidatorHandler();
+
+		$this->assertTrue(
+			$handler->validateProperties(
+				[
+					'requestType' => ['type' => 'string'],
+					'adres' => [
+						'type' => 'object',
+						'properties' => [
+							'land' => ['type' => 'string', 'x-openregister-required-when' => ['field' => 'requestType', 'op' => 'notEmpty']],
+						],
+					],
+				]
+			)
+		);
 	}
 
 }
