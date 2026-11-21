@@ -232,3 +232,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: LogicException 'MagicSearchHandler needs the property search profile to search properties.' in a PR's new test.
 - Cause: main added PropertySearchProfileInterface to MagicSearchHandler; MagicMapper passes it, tests must too.
 - Fix: in the test's constructor call add searchProfile: new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile(). Example: #10540.
+
+## Main adds tests constructing a value object whose constructor the PR split (or-fix-17)
+- Symptom: after merging main, 'Unknown named parameter $appId' or TypeError 'Argument #1 ($listing) must be of type StoreListing, string given' in tests main added (e.g. GenericStoreServiceFetchGoldenTest); parked as bisect-park.
+- Cause: the PR replaced a flat constructor with part objects (StoreDescriptor(listing:, sharing:)); main kept adding tests on the flat form.
+- Fix: grep 'new <Class>(' across lib and tests, wrap the old arguments in the part object(s), add #[UsesClass] for the parts; keep any new main helper (offeredTypes) inside the PR's form in conflict hunks (#9817).
