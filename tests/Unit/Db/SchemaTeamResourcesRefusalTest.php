@@ -24,15 +24,14 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Listener\TeamResourcesDeclarationCheckListener;
 use OCA\OpenRegister\Reference\TeamResourceDeclaration;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Tests for the save-time refusal of a team-page declaration.
  *
- * @covers \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @covers \OCA\OpenRegister\Listener\TeamResourcesDeclarationCheckListener
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
@@ -63,10 +62,10 @@ final class SchemaTeamResourcesRefusalTest extends TestCase {
 	/**
 	 * The refusals.
 	 *
-	 * @return RecordAnnotationRefusals The checks.
+	 * @return TeamResourcesDeclarationCheckListener The checks.
 	 */
-	private function checks(): RecordAnnotationRefusals {
-		return new RecordAnnotationRefusals(logger: $this->createMock(LoggerInterface::class));
+	private function checks(): TeamResourcesDeclarationCheckListener {
+		return new TeamResourcesDeclarationCheckListener();
 	}//end checks()
 
 	/**

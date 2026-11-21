@@ -394,14 +394,39 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * implicitly assigned. A strategy that finds nobody, with no fallback,
 	 * is a pooled task, full stop.
 	 *
-	 * @param TaskActorRef         $ref  The task and the offering identity.
-	 * @param array<string, mixed> $pool candidateUsers / candidateGroups / candidateRole / routingStrategy / routingFallback, each optional.
+	 * Takes main's TaskActorRef, or the release's uuid, pool and actor, by name or by position (a
+	 * uuid in the first slot); a TaskActorRef wins.
+	 *
+	 * @param TaskActorRef|string|null $ref   The task and the offering identity; a string here is the release's positional `$uuid`.
+	 * @param array<string, mixed>     $pool  candidateUsers / candidateGroups / candidateRole / routingStrategy / routingFallback, each optional.
+	 * @param string|null              $actor The offering identity.
+	 * @param string|null              $uuid  The task uuid.
 	 *
 	 * @return Task The offered task.
 	 *
+	 * @throws TaskValidationException When neither a ref nor a uuid is given.
+	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
-	public function offer(TaskActorRef $ref, array $pool): Task {
+	public function offer(
+		TaskActorRef|string|null $ref = null,
+		array $pool = [],
+		string|null $actor = null,
+		string|null $uuid = null,
+	): Task {
+		if (is_string($ref) === true) {
+			$uuid ??= $ref;
+			$ref    = null;
+		}
+
+		if ($ref === null) {
+			if ($uuid === null) {
+				throw new TaskValidationException(message: 'offer() needs a task uuid or a TaskActorRef.');
+			}
+
+			$ref = new TaskActorRef(uuid: $uuid, actor: $actor);
+		}
+
 		$task = $this->openUnassigned(act: new TaskAct(verb: 'offer', actor: $ref->actor), uuid: $ref->uuid);
 
 		return $this->transactional(mutation: fn (): Task => $this->reroute(task: $this->pooled(task: $task, pool: $pool), actor: $ref->actor));
@@ -933,15 +958,33 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	/**
 	 * Explicit propagation: a branch decision made this task moot.
 	 *
-	 * @param string      $uuid    The task uuid.
-	 * @param TaskTrigger $trigger The propagation source recorded as actor, and what made it moot: recorded,
-	 *                             because "why did this disappear from my inbox" must stay answerable.
+	 * Takes main's TaskTrigger, or the release's reason and source, by name or by position (a reason
+	 * in the second slot); a TaskTrigger wins.
+	 *
+	 * @param string                  $uuid    The task uuid.
+	 * @param TaskTrigger|string|null $trigger The propagation source recorded as actor, and what made it moot; a string here is the release's
+	 *                                         positional `$reason`.
+	 * @param string|null             $source  The propagation source, recorded as actor.
+	 * @param string|null             $reason  What made the task moot.
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
+	 * @throws TaskValidationException When neither a trigger nor a source and reason is given.
+	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
-	public function terminateAsMoot(string $uuid, TaskTrigger $trigger): Task {
+	public function terminateAsMoot(
+		string $uuid,
+		TaskTrigger|string|null $trigger = null,
+		string|null $source = null,
+		string|null $reason = null,
+	): Task {
+		if (is_string($trigger) === true) {
+			$reason ??= $trigger;
+			$trigger  = null;
+		}
+
+		$trigger ??= $this->taskTrigger(source: $source, reason: $reason);
 		$act = new TaskAct(verb: 'terminate', actor: $trigger->source, reason: $trigger->reason, state: Task::STATE_TERMINATED);
 
 		return $this->terminateOpen(task: $this->services->tables->tasks->findByUuid(uuid: $uuid), act: $act);
@@ -1189,9 +1232,13 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * concurrent completion surfaces as {@see TaskConflictException}, which
 	 * the sweep treats as "nothing to do".
 	 *
-	 * @param string       $uuid    The task uuid.
-	 * @param TimerOutcome $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity
-	 *                              recorded as actor (`flow-timer:<uuid>`) with why, recorded on the audit.
+	 * Takes main's TimerOutcome, or the release's outcome, source and reason, by name or by position.
+	 *
+	 * @param string              $uuid    The task uuid.
+	 * @param TimerOutcome|string $outcome `skip`, `error`, `dead_letter` or `transition:<action>`, and the timer identity; a plain outcome string
+	 *                                     is the release's form, with `$source` and `$reason`.
+	 * @param string|null         $source  The timer identity, recorded as actor.
+	 * @param string|null         $reason  Why the timer fired.
 	 *
 	 * @return Task The task as left by the outcome, or untouched when already terminal.
 	 *
@@ -1200,7 +1247,16 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
-	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task {
+	public function applyTimerOutcome(
+		string $uuid,
+		TimerOutcome|string $outcome,
+		string|null $source = null,
+		string|null $reason = null,
+	): Task {
+		if (is_string($outcome) === true) {
+			$outcome = new TimerOutcome(outcome: $outcome, trigger: $this->taskTrigger(source: $source, reason: $reason));
+		}
+
 		[$state, $recorded, $action] = $this->timerOutcomeTarget(outcome: $outcome->outcome);
 		$act = new TaskAct(verb: $action, actor: $outcome->trigger->source, reason: $outcome->trigger->reason, state: $state);
 
@@ -1975,4 +2031,22 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 
 		$this->services->tables->candidates->replaceForTask(taskId: (int)$task->getId(), candidates: $rows);
 	}//end rewriteCandidateIndex()
+
+	/**
+	 * The trigger of a call that gave its source and reason separately.
+	 *
+	 * @param string|null $source The source, recorded as actor.
+	 * @param string|null $reason Why.
+	 *
+	 * @return TaskTrigger The trigger.
+	 *
+	 * @throws TaskValidationException When the source or the reason is missing.
+	 */
+	private function taskTrigger(?string $source, ?string $reason): TaskTrigger {
+		if ($source === null || $reason === null) {
+			throw new TaskValidationException(message: 'A task trigger needs a source and a reason.');
+		}
+
+		return new TaskTrigger(source: $source, reason: $reason);
+	}//end taskTrigger()
 }//end class

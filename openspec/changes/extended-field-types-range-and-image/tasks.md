@@ -5,7 +5,7 @@
 - [x] 1.1 Add `calendar-range` to `PropertyValidatorHandler::TYPES` (category `temporal`, conversion `unsupported`). Verify: unit test that a schema declaring it imports, and one declaring an unknown type is refused naming the property.
 - [x] 1.2 Check the value in `ExtendedFieldCheck`: an object with `start` and `end`, both present, `end` not before `start`, and the time component following the property's `format`. Verify: unit tests for each refusal message in the spec.
 - [x] 1.3 Pass the object through `SchemaTypeConverter::convertValue()` unchanged. Verify: round-trip unit test.
-- [ ] 1.4 Make `period.start` and `period.end` filterable with the existing range operators. Verify: API test with rows inside and outside the window.
+- [x] 1.4 Make `period.start` and `period.end` filterable with the existing range operators. Verify: API test with rows inside and outside the window.
 
 ## 2. image-url
 

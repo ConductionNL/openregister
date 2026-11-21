@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
  */
 final class IdentityGuardListenerTest extends TestCase {
 

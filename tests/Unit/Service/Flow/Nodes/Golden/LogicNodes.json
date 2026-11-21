@@ -3,6 +3,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ActionInputsNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\ActionInputsNodeInterface"
@@ -24,6 +25,9 @@
             "returned": "logic"
         },
         "configKeys": {
+            "returned": []
+        },
+        "configForm": {
             "returned": []
         },
         "validate": {
@@ -650,6 +654,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FlowStateNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\FlowStateNodeInterface"
@@ -684,6 +689,65 @@
                 "leaseSeconds",
                 "holder",
                 "slot"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "operation",
+                    "label": "Operation",
+                    "type": "text",
+                    "help": "One of: get, set, forget, claim, release. Which other fields apply depends on it.",
+                    "required": true
+                },
+                {
+                    "key": "key",
+                    "label": "State key",
+                    "type": "text",
+                    "help": "The name the value is kept under. Needed for get, set and forget."
+                },
+                {
+                    "key": "as",
+                    "label": "Read into field",
+                    "type": "text",
+                    "help": "get only: the item field the value lands in. Defaults to the state key. The value used when the key is unset (\"default\") is edited in the JSON pane."
+                },
+                {
+                    "key": "from",
+                    "label": "Store the item field",
+                    "type": "text",
+                    "help": "set only: the item field whose value is stored. Leave empty to store the fixed \"value\", which is edited in the JSON pane."
+                },
+                {
+                    "key": "slots",
+                    "label": "Slot table",
+                    "type": "text",
+                    "help": "claim and release: the state key of the table of slots."
+                },
+                {
+                    "key": "capacity",
+                    "label": "Capacity",
+                    "type": "number",
+                    "help": "claim only: how many slots the table has. At least one."
+                },
+                {
+                    "key": "leaseSeconds",
+                    "label": "Lease in seconds",
+                    "type": "number",
+                    "help": "claim only: after how long a held slot counts as free again. Zero or empty keeps it until it is released."
+                },
+                {
+                    "key": "holder",
+                    "label": "Holder field",
+                    "type": "text",
+                    "help": "claim and release: the item field that names who holds the slot. Defaults to \"holder\". Extra fields to keep on the slot (\"record\") are edited in the JSON pane."
+                },
+                {
+                    "key": "slot",
+                    "label": "Slot field",
+                    "type": "text",
+                    "help": "release only: the item field that names the slot to give back. Defaults to \"slot\"."
+                }
             ]
         },
         "validate": {
@@ -913,6 +977,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MapNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\Nodes\\MapNodeInterface"
@@ -936,6 +1001,17 @@
         "configKeys": {
             "returned": [
                 "mapping"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "mapping",
+                    "label": "Mapping",
+                    "type": "text",
+                    "help": "The id, uuid or reference of a stored mapping. Each item is run through it; a mapping that cannot be found fails the step.",
+                    "required": true
+                }
             ]
         },
         "validate": {
@@ -1145,6 +1221,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\RouterNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -1170,6 +1247,16 @@
             "returned": [
                 "rules",
                 "default"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "default",
+                    "label": "Fallback output",
+                    "type": "text",
+                    "help": "The output an item takes when no rule matches; leave empty to drop such items. The rules themselves are edited in the JSON pane: a list of {\"condition\": <flow expression (JSONLogic)>, \"output\": <output name>}, tried in order."
+                }
             ]
         },
         "validate": {
@@ -1263,6 +1350,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SetFieldsNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -1291,6 +1379,16 @@
                 "rename",
                 "remove",
                 "keepOnlySet"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "keepOnlySet",
+                    "label": "Keep only the fields this step sets",
+                    "type": "boolean",
+                    "help": "Start each item empty, so it leaves with only the fields under \"set\" and \"compute\". The fields themselves are edited in the JSON pane: \"set\" takes values with {{path}} placeholders filled in from the item, \"compute\" takes flow expressions (JSONLogic), \"rename\" maps old names to new, and \"remove\" lists the fields to drop."
+                }
             ]
         },
         "validate": {
@@ -1527,6 +1625,7 @@
         "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SwitchNode",
         "interfaces": [
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
             "OCA\\OpenRegister\\Service\\Flow\\IFlowSideEffectFree",
@@ -1549,6 +1648,9 @@
             "returned": "logic"
         },
         "configKeys": {
+            "returned": []
+        },
+        "configForm": {
             "returned": []
         },
         "validate": {
