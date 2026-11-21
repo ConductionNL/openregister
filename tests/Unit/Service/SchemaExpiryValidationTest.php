@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ArchivalDeclarationRefusals;
 use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * REQ-EXP-001: a schema save with a valid expiry block passes; an unknown
  * action or a kept property the schema lacks is refused, naming the fault.
  *
- * @covers \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @covers \OCA\OpenRegister\Db\SchemaMapper\ArchivalDeclarationRefusals
  * @covers \OCA\OpenRegister\Service\Retention\ExpiryDeclaration
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
@@ -61,10 +61,10 @@ final class SchemaExpiryValidationTest extends TestCase {
 	/**
 	 * The save check.
 	 *
-	 * @return RecordAnnotationRefusals
+	 * @return ArchivalDeclarationRefusals
 	 */
-	private function refusals(): RecordAnnotationRefusals {
-		return new RecordAnnotationRefusals(logger: $this->createMock(LoggerInterface::class));
+	private function refusals(): ArchivalDeclarationRefusals {
+		return new ArchivalDeclarationRefusals(logger: $this->createMock(LoggerInterface::class));
 	}//end refusals()
 
 	/**

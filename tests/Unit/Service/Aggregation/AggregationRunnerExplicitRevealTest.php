@@ -75,6 +75,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
  * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
  * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class AggregationRunnerExplicitRevealTest extends TestCase {
 

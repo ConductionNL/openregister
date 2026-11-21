@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\TaskSequence;
 /**
  * Carries the undecided sequence and the task whose outcome closed it.
  *
- * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
  */
 class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 
@@ -44,7 +44,7 @@ class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 	 * @param Task $task The position that completed without a decision.
 	 */
 	public function __construct(
-		TaskSequence $sequence,
+		private readonly TaskSequence $sequence,
 		private readonly Task $task,
 	) {
 		parent::__construct(sequence: $sequence);
@@ -52,11 +52,22 @@ class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 	}//end __construct()
 
 	/**
+	 * The sequence the event is about, as the TaskSequence row it was dispatched with.
+	 *
+	 * @return TaskSequence The sequence as persisted.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 */
+	public function getSequence(): TaskSequence {
+		return $this->sequence;
+	}//end getSequence()
+
+	/**
 	 * The position that completed without a decision.
 	 *
 	 * @return Task The task, carrying its outcome and decider.
 	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
 	public function getTask(): Task {
 		return $this->task;

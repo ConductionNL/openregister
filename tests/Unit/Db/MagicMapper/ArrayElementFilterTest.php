@@ -196,6 +196,17 @@ class ArrayElementFilterTest extends TestCase {
 	}//end testTheUnionPathRefuses()
 
 	/**
+	 * The raw UNION path refuses `_ref` too, so a cross-schema query never answers without it.
+	 *
+	 * @return void
+	 */
+	public function testTheUnionPathRefusesARefBlock(): void {
+		$this->expectException(exception: RelatedRowFilterNotSupportedException::class);
+		$this->expectExceptionMessage(message: "'_ref' filters are not supported on a query across several schemas");
+		$this->handler(mayRead: true, postgres: true)->refuseRelatedRowFilters(query: ['_ref' => ['aanvrager' => ['woonplaats' => 'x']]]);
+	}//end testTheUnionPathRefusesARefBlock()
+
+	/**
 	 * Run applyArrayElementFilters() and return what it added.
 	 *
 	 * @param array<string,mixed> $query   The request query.

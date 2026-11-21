@@ -415,7 +415,7 @@ export default {
 		 *
 		 * @param {object} schemaData - The schema payload from the editor.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async saveDraft(schemaData) {
 			try {

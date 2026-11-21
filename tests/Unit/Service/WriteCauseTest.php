@@ -201,15 +201,16 @@ final class WriteCauseTest extends TestCase {
 	}
 
 	/**
-	 * The vocabulary is seven words and normalisation is case-insensitive.
+	 * The vocabulary is eight words and normalisation is case-insensitive.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
-	public function testTheVocabularyIsSevenWords(): void {
-		self::assertCount(7, WriteCause::ALL);
+	public function testTheVocabularyIsEightWords(): void {
+		self::assertCount(8, WriteCause::ALL);
+		self::assertSame(WriteCause::SEED, WriteCause::normalise(cause: 'Seed'));
 		self::assertSame(WriteCause::LOOKUP, WriteCause::normalise(cause: 'Lookup'));
 		self::assertSame(WriteCause::MIGRATION, WriteCause::normalise(cause: ' Migration '));
 		self::assertSame(WriteCause::PERSON, WriteCause::normalise(cause: 'whatever'));

@@ -30,8 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Lifecycle\LifecycleActionInvoker;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Executes a transition's declared actions in order.
@@ -50,12 +52,15 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	 *
 	 * @param LifecycleActionRegistry $registry Resolves action names to handler instances.
 	 * @param LoggerInterface $logger Logger for execution diagnostics.
+	 * @param LifecycleActionRecorder|null $recorder Records each action reached; none in a bare unit context.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleActionRegistry $registry,
 		private readonly LoggerInterface $logger,
+		private readonly ?LifecycleActionRecorder $recorder = null,
 	) {
 	}//end __construct()
 
@@ -82,10 +87,20 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	 * @param TransitionPayload $payload The transition and the object data before the first action.
 	 *
 	 * @return TransitionPayload The payload after the last action.
+	 *
+	 * @throws Throwable Whatever an action throws, after its failure is recorded.
+	 *
+	 * @spec openspec/changes/automation-run-records/specs/object-lifecycle/spec.md
 	 */
 	private function runActions(array $actions, TransitionPayload $payload): TransitionPayload {
 		foreach ($actions as $envelope) {
-			$payload = $this->runAction(envelope: $envelope, payload: $payload);
+			try {
+				$payload = $this->runAction(envelope: $envelope, payload: $payload);
+			} catch (Throwable $e) {
+				// Fail loud stays: record the failure, then let the transition fail.
+				$this->recorder?->failed(payload: $payload, envelope: $envelope, message: $e->getMessage());
+				throw $e;
+			}
 		}
 
 		return $payload;
@@ -104,11 +119,18 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	private function runAction(mixed $envelope, TransitionPayload $payload): TransitionPayload {
 		$actionName = $this->actionNameOf(envelope: $envelope, transition: $payload->transition);
 		if ($this->conditionHolds(envelope: $envelope, payload: $payload) === false) {
+			$this->recorder?->reached(
+				payload: $payload,
+				envelope: $envelope,
+				outcome: LifecycleActionRecorder::OUTCOME_SKIPPED,
+				message: 'condition is false'
+			);
 			return $payload;
 		}
 
-		$objectData = $this->registry->resolve($actionName)->execute(
-			new LifecycleActionContext(
+		$objectData = (new LifecycleActionInvoker())->execute(
+			action: $this->registry->resolve($actionName),
+			context: new LifecycleActionContext(
 				objectData: $payload->objectData,
 				previousData: $payload->previousData,
 				parameters: $this->parametersOf(envelope: $envelope),
@@ -117,6 +139,7 @@ class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 		);
 
 		$this->logger->debug(sprintf('[LifecycleActionExecutor] ran action "%s" on transition "%s".', $actionName, $payload->transition));
+		$this->recorder?->reached(payload: $payload, envelope: $envelope, outcome: LifecycleActionRecorder::OUTCOME_SUCCEEDED);
 		return $payload->withObjectData(objectData: $objectData);
 	}//end runAction()
 

@@ -29,12 +29,16 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 
 /**
  * Every public method of SaveObject. Callers depend on this interface, not on the class.
  */
-interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveObjectWriterInterface, SaveObjectRelatedUpdateGuardInterface {
+interface SaveObjectInterface extends
+	SaveObjectRelationScannerInterface,
+	SaveObjectWriterInterface,
+	SaveObjectRelatedUpdateGuardInterface,
+	SaveObjectUpdaterInterface
+{
 
 	/**
 	 * Get sub-objects created during cascade operations.
@@ -174,7 +178,7 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -277,7 +281,7 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 *
 	 * @return ObjectSlugHandler The handler.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function getSlugHandler(): ObjectSlugHandler;
 
@@ -331,21 +335,4 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
-
-	/**
-	 * Updates an existing object.
-	 *
-	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
-	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
-	 *
-	 * @return ObjectEntity The updated object entity.
-	 *
-	 * @throws Exception If there is an error during update.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function updateObject(
-		StoredObjectUpdate $update,
-		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
-	): ObjectEntity;
 }//end interface
