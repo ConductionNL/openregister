@@ -336,3 +336,13 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: PublishedSignaturesTest::testTheContractNamesOnlyPublishedClasses ('<method>() names OCA\OpenRegister\Kernel\Contracts\X, which a consuming app cannot load'), often after an ObjectServiceInterface use-block conflict.
 - Cause: main (e1fd76341bf) made lib/Contract/ObjectServiceInterface name only lib/Contract classes; a PR that gives a contract method a Kernel value object now fails.
 - Fix: a value new on the PR: move it to lib/Contract (namespace, callers, Adr011 VALUE_OBJECTS, drop from KERNEL_LEAVES). A Kernel leaf main already uses: add a small final published value in lib/Contract for that method (Kernel leaves may not extend Contract). Add each new file to ContractIsALeafTest::PUBLISHED, import it in Kernel ObjectOperationsInterface, migrate test doubles; pin the params in PublishedSignaturesTest (#9103).
+
+## PR test saves through SchemaMapper::cleanObject but its check moved to a slot (or-fix-9)
+- Symptom: a PR's SchemaMapper<Check>Test expects an Exception from cleanObject() on a bare SchemaMapper and gets none ("Failed asserting that exception ... is thrown"), after the check was moved onto a declaration-check slot.
+- Cause: main's SchemaMapper only runs slots contributed via SchemaDeclarationChecksEvent; a bare mapper in a unit test has no listeners, so the check never runs.
+- Fix: in the test, build the owning listener (e.g. SchemaDeclarationChecksListener with mocked logger/container), handle() a new SchemaDeclarationChecksEvent, pick the check whose position() is the slot constant and call check(schema:, discarded: new DiscardedAnnotations()). See #10529.
+
+## Hand-built service factory drops a new nullable constructor param (or-fix-9)
+- Symptom: reviewer BLOCK 'feature ticked but unwired'; unit tests green because the param is nullable and the feature degrades to off.
+- Cause: main registers the service by hand in an area wiring (e.g. FlowWiring::buildTaskInboxService) with named args; a PR param added to the constructor is never passed.
+- Fix: add the named arg in the wiring builder ($container->get(X::class)) and a wiring test that reads the private property of the built service (ReflectionProperty) and asserts the instance. See #10269.
