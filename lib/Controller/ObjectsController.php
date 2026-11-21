@@ -105,7 +105,6 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
@@ -129,7 +128,6 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -138,7 +136,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -6167,127 +6164,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return null;
 	}//end migrationRefusal()
-
-	/**
-	 * Download all files of an object as a ZIP archive
-	 *
-	 * This method creates a ZIP file containing all files associated with a specific object
-	 * and returns it as a downloadable file. The ZIP file includes all files stored in the
-	 * object's folder with their original names.
-	 *
-	 * @param string $id The identifier of the object to download files for
-	 * @param string $register The register (identifier or slug) to search within
-	 * @param string $schema The schema (identifier or slug) to search within
-	 * @param ObjectOperationsInterface $objectService The object service for handling object operations
-	 *
-	 * @return DataDownloadResponse|JSONResponse Download response or error.
-	 *
-	 * @throws ContainerExceptionInterface If there's an issue with dependency injection.
-	 * @throws NotFoundExceptionInterface If the file archive dependency is not found.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function downloadFiles(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse|DataDownloadResponse {
-		try {
-			// Set the context for the object service.
-			$objectService->setRegister(register: $register);
-			$objectService->setSchema(schema: $schema);
-
-			// Get the object to ensure it exists and we have access.
-			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-
-			// File storage builds the archive.
-			$archive = $this->container->get(ObjectFilesArchiveInterface::class);
-
-			// Optional: get custom filename from query parameters.
-			$customFilename = $this->request->getParam(key: 'filename');
-
-			// Create the ZIP archive.
-			$zipInfo = $archive->createZip(object: $object, zipName: $customFilename);
-
-			$zipContent = self::takeZipContent(path: $zipInfo['path']);
-
-			$this->auditBulkDownload(object: $object, zipInfo: $zipInfo);
-
-			// Return the ZIP file as a download response.
-			return new DataDownloadResponse(
-				$zipContent,
-				$zipInfo['filename'],
-				$zipInfo['mimeType']
-			);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end downloadFiles()
-
-	/**
-	 * Read a temporary ZIP file and remove it.
-	 *
-	 * @param string $path The file path.
-	 *
-	 * @return string The content.
-	 *
-	 * @throws RuntimeException When the file cannot be read.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private static function takeZipContent(string $path): string {
-		$zipContent = file_get_contents($path);
-		if (file_exists($path) === true) {
-			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
-			unlink($path);
-		}
-
-		if ($zipContent === false) {
-			throw new RuntimeException('Failed to read ZIP file content');
-		}
-
-		return $zipContent;
-	}//end takeZipContent()
-
-	/**
-	 * Audit a bulk download as ONE entry tied to the parent object.
-	 *
-	 * Best-effort: an audit-trail failure must not break the download.
-	 *
-	 * @param ObjectEntity $object  The object whose files were downloaded.
-	 * @param array        $zipInfo The ZIP file's name and size.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
-		try {
-			$this->container->get(ObjectFilesArchiveInterface::class)->recordDownload(object: $object, zipInfo: $zipInfo);
-		} catch (\Throwable $auditError) {
-			// The audit trail must never break the download response.
-			$this->logger->warning(
-				message: '[ObjectsController] Bulk download audit entry not written',
-				context: [
-					'zipName' => $zipInfo['filename'],
-					'exception' => $auditError->getMessage(),
-				]
-			);
-		}
-	}//end auditBulkDownload()
 
 	/**
 	 * Start batch vectorization of objects
