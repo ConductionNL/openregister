@@ -42,6 +42,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIdentityIndex
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses   \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class MagicTableIndexerBranchesTest extends TestCase {
 

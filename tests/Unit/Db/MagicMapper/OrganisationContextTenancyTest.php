@@ -96,6 +96,44 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses   \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacFilterCall
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacMatchSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses   \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListLens
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListing
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses   \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses   \OCA\OpenRegister\Service\Rbac\RbacFallbacks
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndecidablePosture
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses   \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Service\TenancyCollaborators
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class OrganisationContextTenancyTest extends TestCase {
 

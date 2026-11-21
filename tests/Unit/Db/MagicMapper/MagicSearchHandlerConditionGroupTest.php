@@ -46,6 +46,23 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionGroup
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionGroupParser
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionLeaf
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\FieldComparison
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ObjectFieldFilter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ObjectFilterRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RawObjectFieldFilter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TypedColumnRef
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Exception\ConditionGroupException
+ * @uses   \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses   \OCA\OpenRegister\Support\NullFilter
  */
 class MagicSearchHandlerConditionGroupTest extends TestCase {
 

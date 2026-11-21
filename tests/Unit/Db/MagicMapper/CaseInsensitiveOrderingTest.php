@@ -42,6 +42,10 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest
+ * @uses   \OCA\OpenRegister\Service\DateTimeNormalizer
+ * @uses   \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class CaseInsensitiveOrderingTest extends TestCase {
 

@@ -76,6 +76,10 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  * @uses \OCA\OpenRegister\Service\Search\SearchTermLiteral
  * @uses \OCA\OpenRegister\Service\Search\SearchTokenStream
  * @uses \OCA\OpenRegister\Service\Search\TokenizeRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListLens
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListing
  */
 class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 
