@@ -49,7 +49,7 @@ class SheddableRoutesTest extends TestCase {
 		'OCA\\OpenRegister\\Controller\\BulkController::runSchemaValidation',
 		'OCA\\OpenRegister\\Controller\\BulkController::save',
 		'OCA\\OpenRegister\\Controller\\BulkJobsController::create',
-		'OCA\\OpenRegister\\Controller\\ObjectsController::export',
+		'OCA\\OpenRegister\\Controller\\ObjectExportController::export',
 		'OCA\\OpenRegister\\Search\\Controller\\AggregationController::aggregate',
 		'OCA\\OpenRegister\\Search\\Controller\\AggregationController::grouped',
 		'OCA\\OpenRegister\\Search\\Controller\\AggregationController::timeseries',

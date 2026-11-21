@@ -38,14 +38,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the task's kind column and the index the inbox filter reads.
  *
  * @spec openspec/specs/flow-tasks/spec.md
  */
-class Version1Date20260918101500 extends SimpleMigrationStep {
+class Version1Date20260918101500 extends TargetedMigrationStep {
 	/**
 	 * The engine's task table.
 	 *
@@ -64,7 +63,7 @@ class Version1Date20260918101500 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -96,5 +95,5 @@ class Version1Date20260918101500 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

@@ -134,6 +134,40 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	}
 
 	/**
+	 * Of every controller in lib/Controller, exactly the console, the
+	 * maintenance verbs, the consistency check and the dependency breakers
+	 * stay reachable while the mode holds; every other controller is refused.
+	 *
+	 * Pins the reachable set over the whole controller directory, so changing
+	 * how the middleware recognises those three neither opens nor closes
+	 * another controller.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testExactlyTheThreeOperationsControllersStayReachable(): void {
+		$reachable = [];
+		foreach (glob(__DIR__.'/../../../lib/Controller/*Controller.php') as $path) {
+			$class = 'OCA\\OpenRegister\\Controller\\'.basename($path, '.php');
+			if ($this->refusalOf($this->middleware(true), $class, 'index') === null) {
+				$reachable[] = $class;
+			}
+		}
+
+		sort($reachable);
+		$this->assertSame(
+			[
+				'OCA\\OpenRegister\\Controller\\OperationsConsistencyController',
+				'OCA\\OpenRegister\\Controller\\OperationsConsoleController',
+				'OCA\\OpenRegister\\Controller\\OperationsDependenciesController',
+				'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController',
+			],
+			$reachable
+		);
+	}
+
+	/**
 	 * With the mode off, nothing is refused.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006

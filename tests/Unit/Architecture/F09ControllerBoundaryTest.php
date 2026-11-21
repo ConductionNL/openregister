@@ -11,8 +11,8 @@
  * place, and that no outside file names them again.
  *
  * MaintenanceModeMiddleware (lib/Middleware) named OperationsConsoleController
- * in its always-reachable list; that list now lives in
- * MaintenanceReachableControllersInterface, next to the controller.
+ * in its always-reachable list; the reachable controllers now carry the
+ * Configuration marker MaintenanceReachableInterface, which the middleware asks for.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -35,10 +35,10 @@ use OCA\OpenRegister\Controller\OperationsConsoleController;
 use OCA\OpenRegister\Controller\OperationsDependenciesController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
-use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -111,10 +111,9 @@ final class F09ControllerBoundaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOperationsConsoleStaysAlwaysReachable(): void {
-		$this->assertSame(
-			expected: [OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class, OperationsDependenciesController::class],
-			actual: MaintenanceReachableControllersInterface::ALWAYS_REACHABLE
-		);
+		foreach ([OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class, OperationsDependenciesController::class] as $class) {
+			$this->assertTrue(condition: is_subclass_of($class, MaintenanceReachableInterface::class), message: $class.' must carry the maintenance-reachable marker.');
+		}
 	}//end testTheOperationsConsoleStaysAlwaysReachable()
 
 	/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCA\OpenRegister\Service\Resilience\DependencyConsole;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -37,7 +38,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
  */
-class OperationsDependenciesController extends Controller {
+class OperationsDependenciesController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * Constructor.

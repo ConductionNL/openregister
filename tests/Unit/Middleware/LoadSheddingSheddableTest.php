@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
 use Doctrine\DBAL\Driver\Exception as DriverError;
 use Doctrine\DBAL\Exception\DriverException;
+use OCA\OpenRegister\Controller\ObjectExportController;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Middleware\LoadSheddingMiddleware;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
@@ -62,6 +63,8 @@ class LoadSheddingSheddableTest extends TestCase {
 
 	private ObjectsController $controller;
 
+	private ObjectExportController $exporter;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$clock = $this->createMock(ITimeFactory::class);
@@ -80,6 +83,7 @@ class LoadSheddingSheddableTest extends TestCase {
 
 		// The real controller class, so its attributes are the real ones; nothing in it runs.
 		$this->controller = (new ReflectionClass(ObjectsController::class))->newInstanceWithoutConstructor();
+		$this->exporter   = (new ReflectionClass(ObjectExportController::class))->newInstanceWithoutConstructor();
 	}
 
 	private function middleware(): LoadSheddingMiddleware {
@@ -99,10 +103,10 @@ class LoadSheddingSheddableTest extends TestCase {
 		$middleware = $this->middleware();
 
 		try {
-			$middleware->beforeController($this->controller, 'export');
+			$middleware->beforeController($this->exporter, 'export');
 			$this->fail('A sheddable method must be refused under pressure.');
 		} catch (DependencyUnavailableException $refused) {
-			$response = $middleware->afterException($this->controller, 'export', $refused);
+			$response = $middleware->afterException($this->exporter, 'export', $refused);
 		}
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
@@ -125,7 +129,7 @@ class LoadSheddingSheddableTest extends TestCase {
 
 	public function testAnExportPassesWithoutPressure(): void {
 		$middleware = $this->middleware();
-		$middleware->beforeController($this->controller, 'export');
+		$middleware->beforeController($this->exporter, 'export');
 
 		$this->assertSame(0, $this->meter->state()['requests']);
 	}
@@ -134,7 +138,7 @@ class LoadSheddingSheddableTest extends TestCase {
 		$this->pressure();
 		$this->enabled = false;
 
-		$this->middleware()->beforeController($this->controller, 'export');
+		$this->middleware()->beforeController($this->exporter, 'export');
 		$this->addToAssertionCount(1);
 	}
 

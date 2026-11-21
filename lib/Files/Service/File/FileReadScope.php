@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCP\Files\Folder;
 use Psr\Log\LoggerInterface;
@@ -42,7 +43,7 @@ use Throwable;
  * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
  * @spec openspec/specs/file-actions/spec.md
  */
-class FileReadScope {
+class FileReadScope implements ReadableFileHitsInterface {
 
 	/**
 	 * Wire the file tree and the session.

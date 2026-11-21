@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -38,7 +38,7 @@ final class FileServicePlatform {
 	 *
 	 * @param LoggerInterface          $logger      Logger
 	 * @param IRootFolder              $rootFolder  Root folder
-	 * @param ShareUrlBuilderInterface $shareUrls   Share link builder
+	 * @param ShareLinkUrlInterface    $shareUrls   Share link builder
 	 * @param IUserSession             $userSession User session
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
@@ -46,7 +46,7 @@ final class FileServicePlatform {
 	public function __construct(
 		public readonly LoggerInterface $logger,
 		public readonly IRootFolder $rootFolder,
-		public readonly ShareUrlBuilderInterface $shareUrls,
+		public readonly ShareLinkUrlInterface $shareUrls,
 		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
