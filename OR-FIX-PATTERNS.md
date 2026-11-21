@@ -77,3 +77,12 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan 'array_map expects callable(...Kernel\Contracts\Core\AuditRecordInterface)..., Closure(AuditTrail) given' in a PR's new code that consumes DeletedObjectAuthorizer or audit lookups.
 - Cause: main retyped those returns to the Core marker port AuditRecordInterface (no methods).
 - Fix: narrow with array_filter($records, fn (AuditRecordInterface $r): bool => $r instanceof AuditTrail) before mapping; add a test that a non-AuditTrail record is skipped (see #10490 70ae2ae5). DeletedController::1077 has the same error on main: inherited.
+
+## Outside lib/Service naming an ObjectAction class directly
+- Symptom: C12InterfaceBindingsTest::testNoOutsideFileNamesTheClass with data set ...\ObjectAction\ObjectActionDefinition (or another class in tests/Unit/Architecture/C12/*.php).
+- Cause: main forbids files outside lib/Service from naming the concrete class; only the listed 'kept' files may.
+- Fix: use the static facade (ObjectActionDeclarations::declarations/parse) or type against the interface the C12 data file names; never add the file to 'kept'.
+
+## Test env: OCP\\EventDispatcher\\Event not found in process-isolated tests (e.g. TalkGatewaySetDescriptionTest)
+- Cause: -d auto_prepend_file is not passed to PHPUnit's isolated child processes, so the OCP autoloader is missing there; not a PR defect.
+- Fix: put auto_prepend_file in an ini dir and export PHP_INI_SCAN_DIR=/etc/php/8.3/cli/conf.d:<that dir>; such parked reds pass on the merge.
