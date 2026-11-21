@@ -3536,3 +3536,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 (or-fix-9)
 2026-11-21T19:27:24Z session-20261121T164841-9a727093 cloud-or-reviewer-0: 15 verdicts (all APPROVE): 9816 10504 10608 10992 5968 9824 9864 10232 10456 10496 10520 10568, then re-merged heads 8344 10232 10456 10496 10568; #10976/#10992 merged meanwhile; lane 0 has no PR left without a verdict at head
 2026-11-21T19:27:30Z session-20261121T164841-9a727093 cloud-or-reviewer-0: correction to previous line: 17 verdicts, all APPROVE (12 heads + 5 re-merged heads)
+2026-11-21T19:27:57Z or-fix-18 done: fixed 9798 10398 10458 10518 10538 (main merges; 10398/10518 info.xml bump); 9818 10358 10498 green on main merge; 10978 10638 dependabot not red
