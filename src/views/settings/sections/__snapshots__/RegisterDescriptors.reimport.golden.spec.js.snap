@@ -1,0 +1,349 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RegisterDescriptors.load shows a full inventory 1`] = `
+{
+  "absent": 1,
+  "behind": 2,
+  "error": "",
+  "loading": false,
+  "rows": [
+    {
+      "slug": "a",
+    },
+  ],
+  "seenError": "",
+  "seenLoading": true,
+  "total": 4,
+}
+`;
+
+exports[`RegisterDescriptors.load shows an empty answer 1`] = `
+{
+  "absent": 0,
+  "behind": 0,
+  "error": "",
+  "loading": false,
+  "rows": [],
+  "seenError": "",
+  "seenLoading": true,
+  "total": 0,
+}
+`;
+
+exports[`RegisterDescriptors.load words a failure from the request message 1`] = `
+{
+  "absent": 9,
+  "behind": 9,
+  "error": "Could not read the descriptor inventory: {reason} {"reason":"Network down"}",
+  "loading": false,
+  "rows": [
+    "stale",
+  ],
+  "seenError": "",
+  "seenLoading": true,
+  "total": 9,
+}
+`;
+
+exports[`RegisterDescriptors.load words a failure from the server error 1`] = `
+{
+  "absent": 9,
+  "behind": 9,
+  "error": "Could not read the descriptor inventory: {reason} {"reason":"Denied"}",
+  "loading": false,
+  "rows": [
+    "stale",
+  ],
+  "seenError": "",
+  "seenLoading": true,
+  "total": 9,
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders a failure worded from its error 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "Import failed: {reason} {"reason":"Bad descriptor"}",
+    "ok": false,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders a failure worded from its message 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "Import failed: {reason} {"reason":"Network down"}",
+    "ok": false,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders a failure worded from its reason 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "Import failed: {reason} {"reason":"Locked"}",
+    "ok": false,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders a success for an answer without data 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"}",
+    "ok": true,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of blocksAboveCount 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"} Authorization taken from the file over a local change: {count}. {"count":2}",
+    "ok": true,
+    "replaced": [
+      {
+        "path": "a",
+        "schema": "x",
+      },
+      {
+        "path": "b",
+        "schema": "y",
+      },
+    ],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of blocksNotAList 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"}",
+    "ok": true,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of blocksWithoutCount 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"} Authorization taken from the file over a local change: {count}. {"count":1}",
+    "ok": true,
+    "replaced": [
+      {
+        "path": "a",
+        "schema": "x",
+      },
+    ],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of countAboveBlocks 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"} Authorization taken from the file over a local change: {count}. {"count":3}",
+    "ok": true,
+    "replaced": [
+      {
+        "path": "a",
+        "schema": "x",
+      },
+    ],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of countAndBlocks 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"} Authorization taken from the file over a local change: {count}. {"count":1}",
+    "ok": true,
+    "replaced": [
+      {
+        "path": "authorization",
+        "schema": "x",
+      },
+    ],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of countWithoutBlocks 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"} Authorization taken from the file over a local change: {count}. {"count":2}",
+    "ok": true,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of empty 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"}",
+    "ok": true,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
+
+exports[`RegisterDescriptors.reimport renders the outcome of nothingReplaced 1`] = `
+{
+  "busy": "",
+  "outcome": {
+    "message": "{register} was imported from {app}. {"register":"Dossiq","app":"dossiq"}",
+    "ok": true,
+    "replaced": [],
+  },
+  "seen": [
+    [
+      "post",
+      "/gen/apps/openregister/api/register-descriptors/dossiq/dossiq-main/import",
+      "dossiq/dossiq-main",
+      null,
+    ],
+    [
+      "load",
+      "dossiq/dossiq-main",
+    ],
+  ],
+}
+`;
