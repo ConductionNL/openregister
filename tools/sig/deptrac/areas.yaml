@@ -694,7 +694,7 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Controller/Support/ReadableObject[.]php$'
         - type: directory
-          value: 'lib/Repair/(AdminUserIds|AdoptOrganisationlessRows|MarkImplicitCrossOrganisationReadRules|MigratedFlowOrigins|NarrowMagicJsonColumns|OpenSpecialRightsToEveryone|SchemaListing)[.]php$'
+          value: 'lib/Repair/(AdminUserIds|AdoptOrganisationlessRows|IntakeSourceRegisterSlugsInterface|MarkImplicitCrossOrganisationReadRules|MigratedFlowOrigins|NarrowMagicJsonColumns|OpenSpecialRightsToEveryone|SchemaListing)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
@@ -2686,7 +2686,7 @@ deptrac:
         - type: directory
           value: 'lib/Mcp/BuiltIn/FlowToolServices[.]php$'
         - type: directory
-          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|IntakeSourceRegisterSlugsInterface|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php$'
+          value: 'lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php$'
         - type: directory
           value: 'lib/Repair/Support/ApprovalTaskStores[.]php$'
         - type: directory

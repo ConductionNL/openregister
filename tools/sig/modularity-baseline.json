@@ -680,7 +680,6 @@
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
   "lib/Kernel/Contracts/Core/HeldChangeCodes.php",
-  "lib/Kernel/Contracts/Core/IntakeSourceRegisterAddressInterface.php",
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/LifecycleStatesKeeperInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
@@ -2225,13 +2224,13 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 892,
-  "Core": 57249,
+  "Core": 57248,
   "Files": 1458,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1759,
   "Platform": 61,
-  "Processes": 27064,
+  "Processes": 27058,
   "Search": 1343
  },
  "kernel_files": [

@@ -3890,7 +3890,7 @@ Repair/FlowNodeTypeRewrite.php,,Repair,,,,,Processes
 Repair/FlowTimerRegisterPathInterface.php,,Repair,,,,,Processes
 Repair/FlowVersionBackfillTally.php,,Repair,,,,,Processes
 Repair/FlowVersionNumbering.php,,Repair,,,,,Processes
-Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Processes
+Repair/IntakeSourceRegisterSlugsInterface.php,,Repair,,,,,Core
 Repair/MagicTableSweepRun.php,,Repair,,,,,Platform
 Repair/MigrateRegisterFlowsRun.php,,Repair,,,,,Platform
 Repair/MigratedFlowOrigins.php,,Repair,,,,,Core
