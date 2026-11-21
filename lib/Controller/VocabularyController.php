@@ -40,11 +40,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CodedOptionsRequest;
 use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
@@ -145,7 +145,7 @@ class VocabularyController extends Controller {
 		IRequest $request,
 		VocabularyControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->options = $services->options;
 		$this->declarationResolver = $services->declarationResolver;

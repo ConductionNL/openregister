@@ -32,14 +32,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drop the flow oversight column and setting.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
  */
-class Version1Date20261106130000 extends SimpleMigrationStep {
+class Version1Date20261106130000 extends TargetedMigrationStep {
 	private const TABLE = 'openregister_flows';
 
 	/**
@@ -62,7 +61,7 @@ class Version1Date20261106130000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -73,7 +72,7 @@ class Version1Date20261106130000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Remove the stored setting.
@@ -87,7 +86,7 @@ class Version1Date20261106130000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$this->appConfig->deleteKey('openregister', 'flow_oversight_enabled');
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 }//end class

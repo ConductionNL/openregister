@@ -123,6 +123,7 @@ DOMAIN_ORDER=(
     "draft-activation"
     "anonymisation-disclosures"
     "large-file-handling"
+    "public-export"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -228,6 +229,8 @@ declare -A DOMAIN_COLLECTIONS=(
     # part bodies, the out-of-order parts and the status between them only exist
     # over the wire. Under tests/integration so gate-112 (newman-reach) sees it.
     [large-file-handling]="$REPO_ROOT/tests/integration/openregister-large-file-handling.postman_collection.json"
+    # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
+    [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

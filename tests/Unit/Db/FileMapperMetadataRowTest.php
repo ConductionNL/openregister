@@ -122,6 +122,21 @@ final class FileMapperMetadataRowTest extends TestCase {
 		$this->assertSame([[10, 20], IQueryBuilder::PARAM_INT_ARRAY], $this->params[':p0']);
 	}//end testRowsAreKeyedByTheirFileId()
 
+	public function testNoFileIdsFindNoCategoriesWithoutAQuery(): void {
+		$this->assertSame([], $this->mapper->findCategoriesByFileIds([]));
+		$this->assertSame([], $this->queries);
+	}//end testNoFileIdsFindNoCategoriesWithoutAQuery()
+
+	public function testCategoriesAreKeyedByTheFileIdOfTheirRow(): void {
+		$this->results[] = [['id' => 1, 'file_id' => 20, 'category' => 'cat'], ['id' => 2, 'file_id' => 10, 'category' => null]];
+
+		$categories = $this->mapper->findCategoriesByFileIds([10, 20, 30]);
+
+		$this->assertSame([20 => 'cat', 10 => null], $categories);
+		$this->assertSame('select(*) from(openregister_files) where(in(file_id, :p0)) executeQuery()', $this->sql());
+		$this->assertSame([[10, 20, 30], IQueryBuilder::PARAM_INT_ARRAY], $this->params[':p0']);
+	}//end testCategoriesAreKeyedByTheFileIdOfTheirRow()
+
 	public function testAllNonDirectoryFilesAreCounted(): void {
 		$this->results[] = [['count' => '12']];
 
