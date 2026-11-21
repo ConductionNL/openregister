@@ -369,3 +369,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Clean main merge, but four open PRs add the same Version1Date20261114100000 (or-fix-3)
 - Symptom: lane green after the merge; check-migration-version-bump exits 1, and a scan of open PR heads finds #10451, #10499, #10518 and #10523 each adding a DIFFERENT step under Version1Date20261114100000.
 - Fix: per PR in your lane, git mv the step (and test) to Version1Date20261114100<lane>, sed csv/tasks.md, add a migration test if missing, bump info.xml one past main. #10523 moved to ...100003 (75f015a0); the other three still clash.
+
+## New controller find() trips the recent-lens sweep (or-fix-18)
+- Symptom: RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision lists 'lib/Controller/<New>Controller.php::<method>'.
+- Cause: main requires every ObjectService find() in lib/ to be decided: a person opening the object, a lookup, or audit-skipped.
+- Fix: a read whose response is the record itself (show, single-record export) goes in the test's OPENED list (as TmloController::exportSingle); a read that only checks or resolves gets WriteCause::asLookup(fn () => ...) or ObjectFindOptions audit: false. See #10498 786b83ff.
