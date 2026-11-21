@@ -316,18 +316,23 @@ class IcalendarWriter {
 			return $line;
 		}
 
+		return implode("\r\n ", $this->foldSegments(line: $line));
+	}//end fold()
+
+	/**
+	 * Cut an over-long line into octet-bounded segments, never inside a UTF-8 character.
+	 *
+	 * @param string $line The unfolded content line.
+	 *
+	 * @return array<int, string> The segments, the first FOLD_AT octets, the rest one fewer.
+	 */
+	private function foldSegments(string $line): array {
 		$segments = [];
 		$remaining = $line;
 		$budget = self::FOLD_AT;
 
 		while (strlen($remaining) > $budget) {
-			$cut = $budget;
-
-			// Walk back off a UTF-8 continuation byte (10xxxxxx).
-			while ($cut > 1 && (ord($remaining[$cut]) & 0xC0) === 0x80) {
-				$cut--;
-			}
-
+			$cut = $this->cutPoint(remaining: $remaining, budget: $budget);
 			$segments[] = substr($remaining, 0, $cut);
 			$remaining = substr($remaining, $cut);
 
@@ -336,7 +341,23 @@ class IcalendarWriter {
 		}
 
 		$segments[] = $remaining;
+		return $segments;
+	}//end foldSegments()
 
-		return implode("\r\n ", $segments);
-	}//end fold()
+	/**
+	 * Where to cut: at the budget, walked back off a UTF-8 continuation byte (10xxxxxx).
+	 *
+	 * @param string $remaining The rest of the line.
+	 * @param int    $budget    The octets this segment may hold.
+	 *
+	 * @return int The cut offset.
+	 */
+	private function cutPoint(string $remaining, int $budget): int {
+		$cut = $budget;
+		while ($cut > 1 && (ord($remaining[$cut]) & 0xC0) === 0x80) {
+			$cut--;
+		}
+
+		return $cut;
+	}//end cutPoint()
 }//end class

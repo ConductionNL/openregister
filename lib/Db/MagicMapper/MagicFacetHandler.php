@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Formats\UuidFormat;
@@ -80,40 +81,6 @@ use Psr\Log\LoggerInterface;
  */
 class MagicFacetHandler {
 	use MagicColumnNameTrait;
-
-	/**
-	 * Reserved query parameters that are never object field filters.
-	 *
-	 * @var array<int, string>
-	 */
-	private const RESERVED_FILTER_PARAMS = [
-		'_limit',
-		'_offset',
-		'_page',
-		'_order',
-		'_sort',
-		'_search',
-		'_extend',
-		'_fields',
-		'_filter',
-		'_unset',
-		'_facets',
-		'_facetable',
-		'_aggregations',
-		'_debug',
-		'_source',
-		'_rbac',
-		'_multitenancy',
-		'_validation',
-		'_events',
-		'_register',
-		'_schema',
-		'_schemas',
-		'_includeDeleted',
-		'_deleted',
-		'_empty',
-		'@self',
-	];
 
 	/**
 	 * Maximum number of buckets to return per facet.
@@ -2367,7 +2334,7 @@ class MagicFacetHandler {
 	private function loadColumns(string $fullTableNameLower): void {
 		// The table_name is compared as stored, so PostgreSQL can use the catalog index.
 		$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE table_name = ?';
+                    WHERE table_name = ? AND ' . (new CatalogueScope(db: $this->db))->condition();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);
@@ -2476,7 +2443,9 @@ class MagicFacetHandler {
 	}//end applyObjectFieldFilters()
 
 	/**
-	 * The query terms that filter on an object field: no reserved or underscore-prefixed parameter.
+	 * The query terms that filter on an object field: no `@self` and no underscore-prefixed parameter.
+	 *
+	 * Every reserved query parameter but `@self` starts with an underscore.
 	 *
 	 * @param array $baseQuery The base query.
 	 *
@@ -2485,7 +2454,7 @@ class MagicFacetHandler {
 	private function objectFieldFilterTerms(array $baseQuery): array {
 		$terms = [];
 		foreach ($baseQuery as $key => $value) {
-			if (in_array($key, self::RESERVED_FILTER_PARAMS, true) === true || str_starts_with($key, '_') === true) {
+			if ($key === '@self' || str_starts_with($key, '_') === true) {
 				continue;
 			}
 
@@ -2519,12 +2488,23 @@ class MagicFacetHandler {
 		// NOTE: Even though MagicMapper's applyFuzzySearch() includes trigram % operator,
 		// in practice it seems to only use ILIKE. We match the actual behavior for consistency.
 		$platform = $this->db->getDatabasePlatform();
+		// The same accent folding as the search behind the facet, so a facet
+		// count stays equal to the number of results it narrows to.
+		$folding = $this->searchHandler?->searchFolding(query: $facet->baseQuery);
 
 		foreach ($searchableColumns as $column) {
-			if ($this->columnExists(tableName: $facet->tableName, columnName: $column) === true) {
-				$filter = new FacetColumnFilter(queryBuilder: $queryBuilder, columnName: $column);
-				$orConditions->add($filter->searchCondition(pattern: '%' . $searchTerm . '%', platform: $platform));
+			if ($this->columnExists(tableName: $facet->tableName, columnName: $column) === false) {
+				continue;
 			}
+
+			if ($folding !== null) {
+				$pattern = (string)$queryBuilder->createNamedParameter('%' . $searchTerm . '%');
+				$orConditions->add($queryBuilder->createFunction($folding->match(quotedColumn: $column, quotedPattern: $pattern, nullSafe: false)));
+				continue;
+			}
+
+			$filter = new FacetColumnFilter(queryBuilder: $queryBuilder, columnName: $column);
+			$orConditions->add($filter->searchCondition(pattern: '%' . $searchTerm . '%', platform: $platform));
 		}
 
 		if ($orConditions->count() > 0) {

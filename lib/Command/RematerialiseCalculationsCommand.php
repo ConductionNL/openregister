@@ -35,15 +35,18 @@ namespace OCA\OpenRegister\Command;
 use DateTimeInterface;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Re-evaluate every materialised calculation declared on a (register, schema).
@@ -247,10 +250,9 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @return array<string, mixed>|null The payload, or null when an aggregate failed.
 	 */
 	private function payloadWithAggregates(RematerialiseRun $run, array $row): ?array {
-		$outcome = $this->evaluation->aggregates->resolveAllWithOutcome(
-			payload: $row['payload'],
-			aggregates: $run->aggregateSpecs,
-			registerRef: $row['entity']->getRegister()
+		$outcome = $this->evaluation->aggregates->resolveOutcome(
+			referrer: new ReferringObject(payload: $row['payload'], register: $row['entity']->getRegister()),
+			aggregates: $run->aggregateSpecs
 		);
 		if ($outcome['failed'] !== []) {
 			$messages = $this->aggregateFailureMessages(failed: $outcome['failed'], uuid: (string)$row['entity']->getUuid());
@@ -442,7 +444,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return array<string, mixed> The row with current data and the values still to change.
 	 *
-	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function withCurrentState(RematerialiseRun $run, array $row): array {
 		$current = $this->reread(run: $run, entity: $row['entity']);
@@ -467,7 +469,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return array<string, mixed>|null The stored data, or null when the row cannot be read again.
 	 *
-	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function reread(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
 		try {
@@ -500,7 +502,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 *
 	 * @return bool True when every expected value is on the saved row.
 	 *
-	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function saveForMaterialisation(RematerialiseRun $run, array $row): bool {
 		$entity = $row['entity'];
@@ -508,9 +510,10 @@ class RematerialiseCalculationsCommand extends Command {
 			// No user session under occ: write as the system (live pass O7).
 			$saved = $this->storage->objectService->saveObject(
 				object: $row['data'],
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

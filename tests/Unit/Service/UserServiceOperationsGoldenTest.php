@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\User\UserDirectory;
@@ -92,7 +93,8 @@ class UserServiceOperationsGoldenTest extends TestCase {
 				config: $this->config,
 				db: $this->createMock(IDBConnection::class),
 				auditTrailMapper: $this->audit,
-				secureRandom: $this->random
+				secureRandom: $this->random,
+				auditEntries: $this->createMock(AuditEntryWriterInterface::class)
 			),
 			organisationService: $this->createMock(OrganisationServiceInterface::class)
 		);

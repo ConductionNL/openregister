@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
@@ -53,7 +54,7 @@ final class C08RbacMiddlewareInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AnonymousEnvelope::class => [AnonymousEnvelopeInterface::class, ContractBindings::class],
-		ChatProxyHandler::class => [ChatProxyHandlerInterface::class, ContractBindings::class],
+		ChatProxyHandler::class => [ChatProxyHandlerInterface::class, PlatformServiceRegistrar::class],
 		RevealFlusher::class => [RevealFlusherInterface::class, ContractBindings::class],
 	];
 

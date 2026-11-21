@@ -141,7 +141,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$accounts->method('getAccount')->willReturn($account);
 		$users = $this->createMock(\OCP\IUserManager::class);
 		$users->method('get')->willReturn($this->createMock(\OCP\IUser::class));
-		$profiles = new ExampleSetProfiles(users: $users, profiles: $accounts, container: $this->createMock(\Psr\Container\ContainerInterface::class));
+		$profiles = new ExampleSetProfiles(reach: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(\Psr\Container\ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $users), profiles: $accounts);
 
 		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'organisation' => 'Woo en informatie', 'absence' => null, 'status' => null]);
 

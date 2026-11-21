@@ -70,7 +70,7 @@ interface TaskServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
-	 * @spec openspec/changes/sequence-fields-are-set-by-the-sequence-service-only/specs/flow-approval-consolidation/spec.md#requirement-only-the-task-sequence-sets-a-tasks-sequence-fields
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md
 	 */
 	public function create(array $data, ?string $actor): Task;
 
@@ -328,7 +328,7 @@ interface TaskServiceInterface {
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
-	 * @spec openspec/changes/consume-follows-the-approving-rule/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, TaskTrigger $trigger): Task;
 
@@ -381,7 +381,7 @@ interface TaskServiceInterface {
 	 * @throws TaskValidationException On an outcome outside the vocabulary.
 	 * @throws TaskConflictException When the row was closed concurrently.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function applyTimerOutcome(string $uuid, TimerOutcome $outcome): Task;
 

@@ -22,13 +22,14 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\ExportRunMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Walks findForActor() against a recording query builder.
  *
  * @covers \OCA\OpenRegister\Db\ExportRunMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ExportRunMapperTest extends TestCase {
 	use FluentQueryBuilderTrait;

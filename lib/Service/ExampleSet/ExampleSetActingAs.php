@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
@@ -110,16 +111,8 @@ class ExampleSetActingAs {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function run(string $uid, callable $operation): mixed {
-		$refusal = $this->refusal();
-		if ($refusal !== '') {
-			throw new ExampleSetException($refusal);
-		}
-
+		$user = $this->accountToActAs(uid: $uid);
 		$previous = $this->userSession->getUser();
-		$user = $this->userManager->get($uid);
-		if ($user === null) {
-			throw new ExampleSetException('no account "'.$uid.'" to act as');
-		}
 
 		$this->userSession->setVolatileActiveUser($user);
 		try {
@@ -128,4 +121,27 @@ class ExampleSetActingAs {
 			$this->userSession->setVolatileActiveUser($previous);
 		}
 	}//end run()
+
+	/**
+	 * The account to act as, once acting as another account is allowed here at all.
+	 *
+	 * @param string $uid The account to act as.
+	 *
+	 * @return IUser The account.
+	 *
+	 * @throws ExampleSetException When acting as is refused or the account does not exist.
+	 */
+	private function accountToActAs(string $uid): IUser {
+		$refusal = $this->refusal();
+		if ($refusal !== '') {
+			throw new ExampleSetException($refusal);
+		}
+
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			throw new ExampleSetException('no account "'.$uid.'" to act as');
+		}
+
+		return $user;
+	}//end accountToActAs()
 }//end class

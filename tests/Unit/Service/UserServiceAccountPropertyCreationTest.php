@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\User\UserDirectory;
@@ -107,7 +108,8 @@ class UserServiceAccountPropertyCreationTest extends TestCase {
 				config: $this->config,
 				db: $this->createMock(IDBConnection::class),
 				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-				secureRandom: $this->createMock(ISecureRandom::class)
+				secureRandom: $this->createMock(ISecureRandom::class),
+				auditEntries: $this->createMock(AuditEntryWriterInterface::class)
 			),
 			organisationService: $this->createMock(OrganisationService::class)
 		);

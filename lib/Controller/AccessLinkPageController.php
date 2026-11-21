@@ -31,8 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AccessLinkPageControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -80,7 +80,7 @@ class AccessLinkPageController extends Controller {
 		IRequest $request,
 		AccessLinkPageControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->initialState = $services->initialState;
 		$this->l10n = $services->l10n;
 	}//end __construct()

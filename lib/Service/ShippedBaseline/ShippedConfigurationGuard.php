@@ -74,6 +74,19 @@ class ShippedConfigurationGuard {
 	public const ACTION_DECIDED = 'configuration.conflict.decided';
 
 	/**
+	 * The divergence answer for a schema with no shipped baseline recorded.
+	 *
+	 * @var array{baseline: false, app: '', appVersion: '', recordedAt: '', divergences: array{}}
+	 */
+	private const NO_BASELINE_DIVERGENCE = [
+		'baseline' => false,
+		'app' => '',
+		'appVersion' => '',
+		'recordedAt' => '',
+		'divergences' => [],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
@@ -169,6 +182,7 @@ class ShippedConfigurationGuard {
 		$upgrade = $run->upgrade;
 		// While an administrator's re-import is in effect, the merge takes
 		// every authorization block from the file (REQ-LCA-003).
+		$baseline = (new GuardedAnnotations())->seededBaseline(baseline: $baseline, live: $upgrade->live);
 		$revisions = new DescriptorRevisions(baseline: $baseline, live: $upgrade->live, incoming: $upgrade->incoming->definition);
 		$result = $this->merge->mergeRevisions(revisions: $revisions, decisions: $run->options->decisions);
 		$this->recordReplaced(upgrade: $upgrade, roots: $result['replacedLocal']);
@@ -388,13 +402,7 @@ class ShippedConfigurationGuard {
 		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $slug));
 
 		if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
-			return [
-				'baseline' => false,
-				'app' => '',
-				'appVersion' => '',
-				'recordedAt' => '',
-				'divergences' => [],
-			];
+			return self::NO_BASELINE_DIVERGENCE;
 		}
 
 		return [
@@ -402,7 +410,10 @@ class ShippedConfigurationGuard {
 			'app' => $baseline['app'],
 			'appVersion' => $baseline['appVersion'],
 			'recordedAt' => $baseline['recordedAt'],
-			'divergences' => $this->comparator->report(baseline: $baseline['definition'], live: $live),
+			'divergences' => $this->comparator->report(
+				baseline: (new GuardedAnnotations())->seededBaseline(baseline: $baseline['definition'], live: $live),
+				live: $live
+			),
 		];
 	}//end divergenceFor()
 
@@ -434,7 +445,7 @@ class ShippedConfigurationGuard {
 
 		$parts = new DescriptorParts();
 		$flat = [
-			'shipped' => $parts->flatten(descriptor: $baseline['definition']),
+			'shipped' => $parts->flatten(descriptor: (new GuardedAnnotations())->seededBaseline(baseline: $baseline['definition'], live: $request->live)),
 			'live' => $parts->flatten(descriptor: $request->live),
 		];
 
@@ -550,7 +561,7 @@ class ShippedConfigurationGuard {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function resetToBaseline(string $slug, array $live, string $path, bool $record = true): array {
 		$user = $this->session->getUser();

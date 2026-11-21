@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution;
-use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCA\OpenRegister\Service\AuditCanonicalV1;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
@@ -37,6 +36,12 @@ use ReflectionMethod;
  * Pins verifyUnderV1(): the valid verdict, the broken verdict and the window paging.
  *
  * @covers \OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Repair\V1ChainVerificationRun
+ * @uses \OCA\OpenRegister\Service\AuditCanonicalV1
  */
 class RechainAuditTrailV1VerifierGoldenTest extends TestCase {
 
@@ -77,8 +82,10 @@ class RechainAuditTrailV1VerifierGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($qb);
 
 		return new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($db, $this->createMock(IAppConfig::class), new NullLogger()),
-			$this->createMock(AuditHashService::class)
+			db: $db,
+			config: $this->createMock(IAppConfig::class),
+			logger: new NullLogger(),
+			hashes: $this->createMock(AuditHashService::class)
 		);
 	}//end step()
 

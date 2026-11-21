@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\AuthorizationEdit;
@@ -85,28 +86,8 @@ class UnknownMetadataConditionsCommand extends Command {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$conditions = RbacChecks::metadataConditions();
-		$keys = RbacChecks::unknownRuleKeys();
-		$found = 0;
-
-		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
-			foreach (array_merge($conditions->schemaFindings(schema: $schema), $keys->schemaFindings(schema: $schema)) as $finding) {
-				$output->writeln(sprintf('schema %s: %s', (string)$schema->getId(), $finding));
-				$found++;
-			}
-		}
-
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			$subject = sprintf('register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? $register->getId()));
-			$authorization = $register->getAuthorization();
-			foreach (array_merge(
-				$conditions->findings(edit: new AuthorizationEdit(authorization: $authorization), context: $subject),
-				$keys->registerFindings(authorization: $authorization, context: $subject)
-			) as $finding) {
-				$output->writeln(sprintf('register %s: %s', (string)$register->getId(), $finding));
-				$found++;
-			}
-		}
+		$found = $this->reportSchemas(output: $output);
+		$found += $this->reportRegisters(output: $output);
 
 		$output->writeln('Rules in an object\'s own _authorization are not scanned.');
 
@@ -118,4 +99,68 @@ class UnknownMetadataConditionsCommand extends Command {
 		$output->writeln(sprintf('<comment>%d rule condition(s) can never match. Nothing was changed.</comment>', $found));
 		return Command::FAILURE;
 	}//end execute()
+
+	/**
+	 * Print every finding on a schema's rules.
+	 *
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int The findings printed.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function reportSchemas(OutputInterface $output): int {
+		$conditions = RbacChecks::metadataConditions();
+		$keys = RbacChecks::unknownRuleKeys();
+		$found = 0;
+
+		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
+			foreach (array_merge($conditions->schemaFindings(schema: $schema), $keys->schemaFindings(schema: $schema)) as $finding) {
+				$output->writeln(sprintf('schema %s: %s', (string)$schema->getId(), $finding));
+				$found++;
+			}
+		}
+
+		return $found;
+	}//end reportSchemas()
+
+	/**
+	 * Print every finding on a register's rules.
+	 *
+	 * @param OutputInterface $output Console output stream.
+	 *
+	 * @return int The findings printed.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private function reportRegisters(OutputInterface $output): int {
+		$found = 0;
+		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			foreach (self::registerFindings(register: $register) as $finding) {
+				$output->writeln(sprintf('register %s: %s', (string)$register->getId(), $finding));
+				$found++;
+			}
+		}
+
+		return $found;
+	}//end reportRegisters()
+
+	/**
+	 * The unknown-metadata conditions and unknown keys in one register's rules.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, string> The findings.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	private static function registerFindings(Register $register): array {
+		$subject = sprintf('register "%s"', (string)($register->getSlug() ?? $register->getTitle() ?? $register->getId()));
+		$authorization = $register->getAuthorization();
+
+		return array_merge(
+			RbacChecks::metadataConditions()->findings(edit: new AuthorizationEdit(authorization: $authorization), context: $subject),
+			RbacChecks::unknownRuleKeys()->registerFindings(authorization: $authorization, context: $subject)
+		);
+	}//end registerFindings()
 }//end class

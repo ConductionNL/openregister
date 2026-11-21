@@ -27,11 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\MoveObject;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -74,18 +77,25 @@ class UrnService implements UrnServiceInterface {
 	private const URN_REGEX = '/^urn:([a-zA-Z0-9][a-zA-Z0-9-]{1,31}):(.+)$/i';
 
 	/**
+	 * How many `moved` entries of a record are read when its URN is resolved.
+	 */
+	private const MOVES_READ = 50;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param LoggerInterface $logger The logger.
+	 * @param AuditTrailMapperInterface $trail The objects' `moved` entries, which a URN follows after a move.
 	 */
 	public function __construct(
 		private readonly SchemaCatalogInterface $catalog,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly AuditTrailMapperInterface $trail,
 	) {
 	}//end __construct()
 
@@ -234,13 +244,63 @@ class UrnService implements UrnServiceInterface {
 			return null;
 		}
 
-		$slugs = $this->resolvedSlugs(registerRef: $parts['register'], schemaRef: $parts['schema']);
-		if ($slugs === null) {
+		$register = $this->findRegister(ref: $parts['register']);
+		$schema = $this->findSchema(ref: $parts['schema']);
+		if ($register === null || $schema === null) {
 			return null;
+		}
+
+		$slugs = ['register' => (string)$register->getSlug(), 'schema' => (string)$schema->getSlug()];
+		// A record keeps its URN when it moves: the URN names the address it
+		// was given, and the `moved` entries on its trail say where it went.
+		$moved = $this->movedTo(uuid: $parts['uuid'], from: ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()]);
+		if ($moved !== null) {
+			$slugs = ($this->resolvedSlugs(registerRef: $moved['register'], schemaRef: $moved['schema']) ?? $slugs);
 		}
 
 		return $this->objectApiUrl(slugs: $slugs, uuid: $parts['uuid']);
 	}//end resolveUrl()
+
+	/**
+	 * Where a record that moved away from an address lives now: the target
+	 * of its newest `moved` entry, when any of its `moved` entries left from
+	 * that address; null when it never moved from there.
+	 *
+	 * @param string                                  $uuid The record.
+	 * @param array{register: string, schema: string} $from The register and schema ids of the address the URN names.
+	 *
+	 * @return array{register: string, schema: string}|null The ids of its current address.
+	 *
+	 * @spec openspec/changes/capability-rows-stated-requirements/specs/urn-resource-addressing/spec.md#requirement-a-record-keeps-its-urn-when-it-moves-to-another-register-or-schema
+	 */
+	private function movedTo(string $uuid, array $from): ?array {
+		try {
+			$entries = $this->trail->findObjectActions(
+				objectUuid: $uuid,
+				options: new ActionLookupOptions(actions: [MoveObject::ACTION], limit: self::MOVES_READ)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[UrnService] moved lookup failed for "' . $uuid . '": ' . $e->getMessage());
+			return null;
+		}
+
+		$movedFromHere = false;
+		foreach ($entries as $entry) {
+			$left = ($entry->getChanged()['from'] ?? null);
+			if (is_array($left) === true && (string)($left['register'] ?? '') === $from['register'] && (string)($left['schema'] ?? '') === $from['schema']) {
+				$movedFromHere = true;
+				break;
+			}
+		}
+
+		// Newest first: the first entry's target is where the record lives now.
+		$current = ($entries[0] ?? null)?->getChanged()['to'] ?? null;
+		if ($movedFromHere === false || is_array($current) === false) {
+			return null;
+		}
+
+		return ['register' => (string)($current['register'] ?? ''), 'schema' => (string)($current['schema'] ?? '')];
+	}//end movedTo()
 
 	/**
 	 * The absolute read-by-uuid REST url of an object.

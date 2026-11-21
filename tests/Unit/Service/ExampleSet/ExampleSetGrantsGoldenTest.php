@@ -35,6 +35,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FilledRow
  */
 class ExampleSetGrantsGoldenTest extends TestCase {
 	/**

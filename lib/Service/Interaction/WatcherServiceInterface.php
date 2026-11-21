@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Notifications\Db\Watcher;
  * Declares only what callers outside the component use; the rest of the
  * class stays its own.
  */
-interface WatcherServiceInterface {
+interface WatcherServiceInterface extends ObjectWatchersInterface {
 
 	/**
 	 * Subscribe the calling user to an object they may read.

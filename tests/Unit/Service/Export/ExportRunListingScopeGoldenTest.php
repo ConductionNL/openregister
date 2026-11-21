@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;

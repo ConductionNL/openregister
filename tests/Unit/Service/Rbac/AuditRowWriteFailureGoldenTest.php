@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
@@ -43,6 +44,18 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\RevealFlusher
  * @covers \OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Rbac\AuditRowWriter
+ * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses \OCA\OpenRegister\Service\Rbac\SettingsChange
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Service\Rbac\AuditRowWriter
+ * @uses   \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses   \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses   \OCA\OpenRegister\Service\Rbac\SettingsChange
  */
 class AuditRowWriteFailureGoldenTest extends TestCase {
 
@@ -91,13 +104,13 @@ class AuditRowWriteFailureGoldenTest extends TestCase {
 
 		return new RevealFlusher(
 			recording: new RevealRecording(logger: $this->logger(), reveals: $collector),
-			mapper: $this->mapper($fails)
+			trail: new AuditEntryWriter(mapper: $this->mapper($fails))
 		);
 	}
 
 	private function auditor(bool $fails): SettingsChangeAuditor {
 		return new SettingsChangeAuditor(
-			mapper: $this->mapper($fails),
+			trail: new AuditEntryWriter(mapper: $this->mapper($fails)),
 			userSession: $this->createMock(IUserSession::class),
 			logger: $this->logger()
 		);

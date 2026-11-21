@@ -50,6 +50,8 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 #[CoversClass(MagicRbacHandler::class)]
 #[CoversClass(MagicOrganizationHandler::class)]
@@ -63,6 +65,18 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(\OCA\OpenRegister\Service\OrganisationContext::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\DraftStatusPolicy::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Rbac\RuleColumns::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacAccessCall::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacMatchSql::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\AuthorizationColumn::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\GrantedRows::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\McpScope::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\RbacCollaborators::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\RbacFallbacks::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable::class)]
 class SystemOperationReadScopeTest extends TestCase {
 
 	/**
@@ -96,13 +110,19 @@ class SystemOperationReadScopeTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn(['ambtenaar']);
 
 		return new class(
-			$this->session($withUser),
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(LoggerInterface::class)
+			new MagicMapperIdentity(
+				$this->session($withUser),
+				$groupManager,
+				$this->createMock(IUserManager::class)
+			),
+			new MagicRbacSettings(
+				$this->createMock(IAppConfig::class)
+			),
+			new MagicRbacSupport(
+				$this->createMock(ConditionMatcher::class),
+				$this->createMock(ContainerInterface::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends MagicRbacHandler {
 			/**
 			 * A web request, not the command line.

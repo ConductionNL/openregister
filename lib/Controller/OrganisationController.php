@@ -29,7 +29,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Organisation\OrganisationEdit as AuditedOrganisationEdit;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
@@ -37,7 +38,7 @@ use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
 use OCA\OpenRegister\Controller\Support\ParentAssignmentRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
+use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
@@ -199,7 +201,7 @@ class OrganisationController extends Controller {
 		IRequest $request,
 		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
@@ -306,7 +308,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: OrganisationService::setActiveOrganisation enforces membership
 	 *   (hasUser(userId) === false throws); a user cannot activate an organisation they do not belong to.
 	 *
@@ -438,7 +439,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Self-service, no object read: creates a new organisation with the current user added as owner;
 	 *   no caller-supplied object id is read.
 	 *
@@ -473,10 +473,8 @@ class OrganisationController extends Controller {
 			$uuid = $requestData['uuid'] ?? '';
 
 			$organisation = $this->organisationService->createOrganisation(
-				name: $name,
-				description: $description,
-				addCurrentUser: true,
-				uuid: $uuid
+				details: new NewOrganisation(name: $name, description: $description, uuid: $uuid),
+				addCurrentUser: true
 			);
 
 			return new JSONResponse(
@@ -517,8 +515,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function join(string $uuid): JSONResponse {
@@ -548,8 +544,6 @@ class OrganisationController extends Controller {
 	 * @return JSONResponse Success or error response.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -807,8 +801,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated organisation or error
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Already decomposed into helper methods
@@ -859,8 +851,7 @@ class OrganisationController extends Controller {
 			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
 			$this->lifecycleAuditor?->recordUpdate(
 				organisation: $organisation,
-				before: $detailsBefore,
-				after: $this->auditedDetailsOf(organisation: $organisation)
+				edit: new AuditedOrganisationEdit(before: $detailsBefore, after: $this->auditedDetailsOf(organisation: $organisation))
 			);
 
 			// Who holds the right to decide who reads a record is the one change
@@ -920,8 +911,6 @@ class OrganisationController extends Controller {
 	 * @param string $uuid Organisation UUID.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with patched organisation or error
 	 *
@@ -1026,7 +1015,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Session-scoped: OrganisationService::clearCache clears only the current user's own caches keyed by UID;
 	 *   not an instance-wide admin operation despite the name.
 	 *
@@ -1434,8 +1422,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse Success or error response
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -1468,8 +1454,6 @@ class OrganisationController extends Controller {
 	 * @param string $uuid Organisation UUID to activate
 	 *
 	 * @return JSONResponse Success or error response
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -1507,8 +1491,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse Success or error response
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -1536,8 +1518,6 @@ class OrganisationController extends Controller {
 	 * @param string $uuid Organisation UUID to retain
 	 *
 	 * @return JSONResponse Success or error response
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
 	 */
@@ -1725,8 +1705,6 @@ class OrganisationController extends Controller {
 	 * Run tenant isolation verification checks.
 	 *
 	 * @return JSONResponse Verification report
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-isolation-audit/spec.md

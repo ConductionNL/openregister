@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\LinkedEntityController;
+use OCA\OpenRegister\Service\EntityLink;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LinkedEntityControllerFactory;
@@ -66,8 +67,8 @@ final class LinkedEntityRemoveLinkGoldenTest extends TestCase {
 
 	public function testTheRemainingIdsAreAnsweredUnderTheType(): void {
 		$seen   = [];
-		$answer = function (string $uuid, string $type, string $entityId) use (&$seen): array {
-			$seen = [$uuid, $type, $entityId];
+		$answer = function (string $uuid, EntityLink $link) use (&$seen): array {
+			$seen = [$uuid, $link->type, $link->entityId];
 			return ['card-3'];
 		};
 

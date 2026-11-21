@@ -36,8 +36,9 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -52,7 +53,7 @@ use RuntimeException;
  * inside the mutation methods so the provider's surface stays
  * uniform.
  */
-class TasksProvider extends AbstractIntegrationProvider {
+class TasksProvider extends CoreIntegrationProvider {
 	/**
 	 * Tasks service.
 	 *
@@ -127,24 +128,6 @@ class TasksProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping.
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -152,15 +135,6 @@ class TasksProvider extends AbstractIntegrationProvider {
 	public function getStorageStrategy(): string {
 		return 'link-table';
 	}//end getStorageStrategy()
-
-	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List VTODO tasks linked to the given OR object.
@@ -264,8 +238,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	private function objectTitle(RegisterSchema $table, string $objectId): string {
 		$objectEntity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
-			register: $table->register,
-			schema: $table->schema
+			options: new ObjectFindOptions(register: $table->register, schema: $table->schema)
 		));
 
 		return $objectEntity?->getName() ?? $objectId;

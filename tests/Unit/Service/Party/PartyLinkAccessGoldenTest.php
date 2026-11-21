@@ -39,6 +39,22 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Party\PartyRoleService
  * @covers \OCA\OpenRegister\Service\Party\PartyLinkWriter
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\VocabularyEntries
+ * @uses \OCA\OpenRegister\Event\AbstractPersonLinkEvent
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
+ * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkRequest
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkTarget
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\Party\PartyRoleRecords
+ * @uses \OCA\OpenRegister\Service\PersonLinkEvents
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
  */
 class PartyLinkAccessGoldenTest extends TestCase {
 

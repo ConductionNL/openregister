@@ -111,9 +111,31 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			return self::ACCESS_OWNER;
 		}
 
-		// The widest share that names the caller or one of their groups. A
-		// caller reached read by name and write by a group holds write: the
-		// shares are ways in, not ceilings on each other.
+		$shared = $this->sharedAccess(view: $view, reach: $reach);
+		if ($shared !== null) {
+			return $shared;
+		}
+
+		if (($view['isPublic'] ?? false) === true) {
+			return self::ACCESS_READ;
+		}
+
+		return null;
+	}//end accessOf()
+
+	/**
+	 * The widest access a view's shares give the caller, or null when none names them.
+	 *
+	 * The widest share that names the caller or one of their groups. A
+	 * caller reached read by name and write by a group holds write: the
+	 * shares are ways in, not ceilings on each other.
+	 *
+	 * @param array<string, mixed> $view  The view.
+	 * @param ViewerReach          $reach The caller and their group ids.
+	 *
+	 * @return string|null Write, read, or null.
+	 */
+	private function sharedAccess(array $view, ViewerReach $reach): ?string {
 		$best = null;
 		foreach ($this->sharesOf(view: $view) as $share) {
 			if ($this->shareNames(share: $share, reach: $reach) === false) {
@@ -127,16 +149,8 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			$best = self::ACCESS_READ;
 		}
 
-		if ($best !== null) {
-			return $best;
-		}
-
-		if (($view['isPublic'] ?? false) === true) {
-			return self::ACCESS_READ;
-		}
-
-		return null;
-	}//end accessOf()
+		return $best;
+	}//end sharedAccess()
 
 	/**
 	 * Whether one share names the caller, by user id or by one of their groups.
@@ -234,16 +248,28 @@ class ViewShareResolver implements ViewShareResolverInterface {
 			case 'isDefault':
 				return (bool)$value;
 			case 'sharedWith':
-				$shares = array_map(
-					fn (array $share): string => $this->targetKey(share: $share).'|'.$share['mode'],
-					$this->sharesOf(view: ['sharedWith' => $value])
-				);
-				sort($shares);
-				return $shares;
+				return $this->canonicalShares(value: $value);
 			default:
 				return $this->sortedKeys(value: $value);
 		}
 	}//end canonical()
+
+	/**
+	 * A `sharedWith` value as a sorted list of target-and-mode keys.
+	 *
+	 * @param mixed $value The `sharedWith` value.
+	 *
+	 * @return array<int, string> The keys, sorted.
+	 */
+	private function canonicalShares(mixed $value): array {
+		$shares = array_map(
+			fn (array $share): string => $this->targetKey(share: $share).'|'.$share['mode'],
+			$this->sharesOf(view: ['sharedWith' => $value])
+		);
+		sort($shares);
+
+		return $shares;
+	}//end canonicalShares()
 
 	/**
 	 * A value with every object's keys sorted; lists keep their order.

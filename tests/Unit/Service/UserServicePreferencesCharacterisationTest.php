@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\User\UserDirectory;
 use OCA\OpenRegister\Service\User\UserPlatform;
@@ -81,7 +82,8 @@ class UserServicePreferencesCharacterisationTest extends TestCase {
 				config: $this->config,
 				db: $this->createMock(IDBConnection::class),
 				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-				secureRandom: $this->createMock(ISecureRandom::class)
+				secureRandom: $this->createMock(ISecureRandom::class),
+				auditEntries: $this->createMock(AuditEntryWriterInterface::class)
 			),
 			organisationService: $this->createMock(OrganisationService::class)
 		);

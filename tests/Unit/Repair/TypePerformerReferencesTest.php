@@ -31,7 +31,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -96,6 +96,9 @@ class NamedResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
  * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Repair\Support\EveryFlow
  */
 final class TypePerformerReferencesTest extends TestCase {
 

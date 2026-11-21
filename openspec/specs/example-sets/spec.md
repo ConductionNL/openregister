@@ -53,6 +53,18 @@ Declared values SHALL support `{{cast:<key>.<field>}}` (a dot path into a cast p
 - **WHEN** the set is checked
 - **THEN** the placeholder SHALL be refused; `beta` must use a lookup on a business key
 
+An object MAY be marked `"optional": true`. When a lookup of an optional object finds no row, because the app that holds the row is not installed or the row is not there, the check and the install SHALL leave that object out and name it as skipped (`Skipped (optional)`), instead of refusing the set; the rest of the set SHALL be checked and written as without it, and the install SHALL still prove itself. Every other refusal of an optional object (a lookup that more than one row answers, an unresolvable placeholder, a value its schema refuses) SHALL still refuse the set. An object not marked optional SHALL keep refusing the set when a lookup finds nothing.
+
+#### Scenario: An optional publication in a set whose catalogue app is absent
+- **GIVEN** a set whose fragment declares a publication marked `"optional": true` with a lookup on a theme in a register of an app that is not installed
+- **WHEN** the set is checked and installed
+- **THEN** the publication SHALL be named as skipped, the set SHALL not be refused, and every other object of the set SHALL be written
+
+#### Scenario: Optional does not cover an ambiguous lookup
+- **GIVEN** the same optional publication, and two themes with its slug on the instance
+- **WHEN** the set is checked
+- **THEN** the set SHALL be refused naming the count, as for any lookup that more than one row answers
+
 ### Requirement: Accounts and groups come from the cast and are never taken over (REQ-EXS-003)
 
 The loader SHALL create a Nextcloud account for every cast person with a `uid`, with the cast's display name and e-mail, and every group the cast declares. A generated password SHALL be printed once on the console and SHALL NOT be written to a file, the install record or a log; `--password-from-env` SHALL read one password for every new account from `OC_PASS` instead. An account that exists and that the install record does not list as created by this set SHALL refuse the install before anything is written, unless the administrator names its uid with `--adopt`; an adopted account SHALL be recorded as adopted and SHALL NOT be deleted by remove. A group that already exists SHALL be used and SHALL NOT be deleted by remove; only memberships this set added are removed.
@@ -943,7 +955,7 @@ An administrator MAY mark a set for a daily refresh with `--daily` on the instal
 
 ### Requirement: A fragment flow may carry finished runs
 
-A `flows` entry MAY declare `runs`, each a finished run (`status` one of completed, stopped, dead_letter, failed) on a `subject` object uuid, with optional `subjectRegister`, `subjectSchema`, `trigger`, `triggeredBy`, `error`, `created` and `updated`. The set SHALL store each run for the flow in the flow's organisation, and SHALL delete the runs with the flow on remove. A run that is not finished, has no subject or carries another field SHALL be refused at check time.
+A fragment's flow MAY carry runs on a subject object. A run is finished (its status is terminal) unless it is a waiting run as the requirement above describes; a queued or running run SHALL be refused, because the flow worker would execute it.
 
 #### Scenario: a case's run history
 - **GIVEN** a flow entry with a completed and a failed run on a case
@@ -951,7 +963,11 @@ A `flows` entry MAY declare `runs`, each a finished run (`status` one of complet
 - **THEN** the case's finished runs read both, and removing the set removes them
 
 #### Scenario: a waiting run
-- **WHEN** a run declares status `suspended`
+- **WHEN** a run declares status `suspended` without a key or a user-task step
+- **THEN** the check refuses it and nothing is written
+
+#### Scenario: a running run
+- **WHEN** a run declares status `running`
 - **THEN** the check refuses it and nothing is written
 
 ### Requirement: An app config entry may name its type
@@ -1309,3 +1325,36 @@ Every object write an example set install or refresh makes SHALL be recorded wit
 - WHEN the daily refresh rewrites it the next day
 - THEN the audit row of that update has cause `import` and run `example-set:zuiddrecht`
 - AND the seeded row "Version 4 published" by Lars de Koning keeps its own run
+
+### Requirement: A fragment's flow may carry a run that waits on a task
+
+A fragment's flow MAY declare, besides finished runs, a waiting run: `status` `suspended`, a `key`, and a `node` that is an `openregister.user-task` step of that flow. Install SHALL write it as the user-task step leaves a live wait: parked on that step with one item, its resume slot empty until a task of the same fragment names it. The flow's record entry SHALL carry the run's uuid under its key, so a task quotes it as `{{flow:<flow>.runs.<run>}}`. The check SHALL refuse a waiting run on any other step type, a waiting run without a key, and a waiting run that no task in its fragment names.
+
+#### Scenario: A hearing step waits on its task
+- **GIVEN** a fragment declares the bezwaar flow with a waiting run `wacht` on the user-task step `hoorzitting`, and a task with `runUuid` `{{flow:bezwaar.runs.wacht}}` and `nodeId` `hoorzitting`
+- **WHEN** the set is installed
+- **THEN** the run SHALL be `suspended` with a token on `hoorzitting`, its slot SHALL hold the task's uuid, its heartbeat SHALL be set, and the task SHALL carry the run's uuid and the step
+
+#### Scenario: A waiting run no task names
+- **GIVEN** a fragment's flow declares a waiting run and no task of the fragment quotes it
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the run and write nothing
+
+#### Scenario: A waiting run on a step that is not a user task
+- **GIVEN** a fragment's flow declares a waiting run on a step of type `dossiq.askPerson`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the run and write nothing
+
+### Requirement: A fragment's task may name the run it waits in and carry its claim
+
+A fragment's task MAY declare `runUuid` and `nodeId`, always together, where `nodeId` is the step its run waits on. A task MAY declare `claimedBy`, the task's assignee, and `claimedAt`, a date that is not in the future. Install SHALL write one `claim` entry in the task's audit by `claimedBy` at `claimedAt`, after the `create` entry.
+
+#### Scenario: A claimed task reads as picked up
+- **GIVEN** a fragment's task assigned to Pieter declares `claimedBy` Pieter and `claimedAt` yesterday at 09:05
+- **WHEN** the set is installed
+- **THEN** the task's audit SHALL hold a `claim` entry by Pieter dated yesterday at 09:05
+
+#### Scenario: A task names a run and no step
+- **GIVEN** a fragment's task declares `runUuid` and no `nodeId`
+- **WHEN** the set is checked
+- **THEN** the check SHALL refuse the task and write nothing

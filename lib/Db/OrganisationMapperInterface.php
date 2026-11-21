@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use Exception;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -154,7 +155,7 @@ interface OrganisationMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 *
-	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 * @spec openspec/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function findLocalTenants(int $limit = 50, int $offset = 0, ?array $filters = []): array;
 

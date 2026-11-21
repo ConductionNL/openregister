@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -94,7 +95,8 @@ class PartyServiceAccessGoldenTest extends TestCase {
 		$schemas = ($schemas === [] ? [$this->schema(7)] : $schemas);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend=[], bool $files=false, mixed $register=null, mixed $schema=null) use ($stored): ?ObjectEntity {
+			function (...$args) use ($stored): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema] = FindCallShape::find(args: $args);
 				$key = $id . '@' . (string)$schema;
 				$this->calls[] = 'find:' . $key . ':' . (string)$register;
 				$hit = ($stored[$key] ?? null);

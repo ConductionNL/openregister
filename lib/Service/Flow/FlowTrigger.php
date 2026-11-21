@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * One fired trigger event, as {@see FlowTriggerServiceInterface::trigger()} takes it.
  *
- * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+ * @spec openspec/specs/flow-triggers/spec.md
  */
 final class FlowTrigger {
 	/**

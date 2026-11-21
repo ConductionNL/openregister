@@ -878,22 +878,10 @@ export default {
 	 * @spec exclude Vue created() lifecycle hook — hydrates store lists and seeds a blank configurationItem; modal init plumbing.
 	 */
 	async created() {
-		// Organisations and applications are now hot-loaded at app startup
-		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (isEmptyList(organisationStore.organisationList)) {
-			organisationStore.refreshOrganisationList()
-		}
-		if (isEmptyList(applicationStore.applicationList)) {
-			applicationStore.refreshApplicationList()
-		}
+		refreshEmptyOwnerLists()
 
 		// Perform initial searches for Configuration tab entities (load top 10)
-		this.searchRegisters('')
-		this.searchSchemas('')
-		this.searchSources('')
-		this.searchAgents('')
-		this.searchViews('')
-		this.searchApplications('')
+		this.searchAllEntities()
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
@@ -906,6 +894,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Search every Configuration tab entity with an empty query (the top 10).
+		 *
+		 * @return {void}
+		 */
+		searchAllEntities() {
+			this.searchRegisters('')
+			this.searchSchemas('')
+			this.searchSources('')
+			this.searchAgents('')
+			this.searchViews('')
+			this.searchApplications('')
+		},
+
 		/**
 		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
@@ -1267,12 +1269,7 @@ export default {
 			}
 			this[link.loading] = true
 			try {
-				const promises = ids.map((id) =>
-					fetch(`/index.php/apps/openregister/api/${link.key}/${id}`).then(
-						(r) => r.json(),
-					),
-				)
-				this[link.target] = await Promise.all(promises)
+				this[link.target] = await fetchLinkedEntities(link.key, ids)
 			} catch (error) {
 				console.error(`Error loading selected ${link.key}:`, error)
 			} finally {
@@ -1335,6 +1332,38 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * Refresh the organisation and application lists when they are empty.
+ * They are hot-loaded at app startup, so this should not happen in the
+ * normal flow.
+ *
+ * @return {void}
+ */
+function refreshEmptyOwnerLists() {
+	if (isEmptyList(organisationStore.organisationList)) {
+		organisationStore.refreshOrganisationList()
+	}
+	if (isEmptyList(applicationStore.applicationList)) {
+		applicationStore.refreshApplicationList()
+	}
+}
+
+/**
+ * Fetch the linked entities of one kind, one request per id.
+ *
+ * @param {string} key The kind, as its API path (e.g. registers)
+ * @param {Array<number|string>} ids The ids
+ * @return {Promise<Array<object>>} The entities, in id order
+ */
+function fetchLinkedEntities(key, ids) {
+	const promises = ids.map((id) =>
+		fetch(`/index.php/apps/openregister/api/${key}/${id}`).then((r) =>
+			r.json(),
+		),
+	)
+	return Promise.all(promises)
 }
 </script>
 

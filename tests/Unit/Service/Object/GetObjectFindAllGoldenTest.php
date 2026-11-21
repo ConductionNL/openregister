@@ -20,13 +20,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
@@ -44,6 +44,18 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicListRequest
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\Object\GetObjectSources
+ * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSourceBinding
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
  */
 class GetObjectFindAllGoldenTest extends TestCase {
 
@@ -125,7 +137,7 @@ class GetObjectFindAllGoldenTest extends TestCase {
 		return new GetObject(
 			objectMapper: $mapper,
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
-			readHistory: $this->createMock(ReadHistoryService::class),
+			readHistory: $this->createMock(ReadHistoryInterface::class),
 			sources: new \OCA\OpenRegister\Service\Object\GetObjectSources(
 				objectSourceRegistry: $registry,
 				logger: new NullLogger()

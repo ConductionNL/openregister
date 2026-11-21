@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Service\Configuration\RegisterBundleEntryRules
  */
 class RegisterBundleBindingTest extends TestCase {
 

@@ -21,7 +21,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Sends connection reports and refresh requests to integriq.
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 class ConnectionReporter implements ConnectionReporterInterface {
 
@@ -141,7 +141,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function report(string $key, string $status, string $message = ''): bool {
 		return $this->reportStatus(report: new ConnectionStatusReport(key: $key, status: $status, message: $message));
@@ -158,7 +158,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function reportStatus(ConnectionStatusReport $report): bool {
 		if ($this->hasKnownKey(report: $report) === false || $this->hasKnownStatus(report: $report) === false) {
@@ -245,7 +245,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function reportLlmProviders(mixed $chatProvider, mixed $embeddingProvider): bool {
 		$chat      = $this->chosenProvider(value: $chatProvider);
@@ -312,7 +312,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return array<int, string> The connection keys a refresh was sent for.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function refreshFromSave(array $savedKeys): array {
 		$eventClass = $this->resolveEventClass(eventClass: self::REFRESH_EVENT);
@@ -322,18 +322,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 
 		$refreshed = [];
 		foreach (self::REFRESH_KEYS as $key => $configKeys) {
-			if (array_intersect($configKeys, $savedKeys) === []) {
-				continue;
-			}
-
-			$sent = $this->send(
-				key: $key,
-				build: static fn (): object => new $eventClass(
-					app: self::APP_ID,
-					key: $key,
-				)
-			);
-			if ($sent === true) {
+			if (array_intersect($configKeys, $savedKeys) !== [] && $this->requestRefresh(key: $key, eventClass: $eventClass) === true) {
 				$refreshed[] = $key;
 			}
 		}
@@ -342,13 +331,31 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	}//end refreshFromSave()
 
 	/**
+	 * Ask integriq to resolve one connection again.
+	 *
+	 * @param string $key        The connection key.
+	 * @param string $eventClass The resolved integriq refresh event class.
+	 *
+	 * @return bool True when the request was sent.
+	 */
+	private function requestRefresh(string $key, string $eventClass): bool {
+		return $this->send(
+			key: $key,
+			build: static fn (): object => new $eventClass(
+				app: self::APP_ID,
+				key: $key,
+			)
+		);
+	}//end requestRefresh()
+
+	/**
 	 * The event class to instantiate, or null when integriq does not ship it.
 	 *
 	 * @param string $eventClass The fully qualified class name, without a leading backslash.
 	 *
 	 * @return string|null The class name to instantiate, or null when absent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	protected function resolveEventClass(string $eventClass): ?string {
 		$qualified = '\\' . $eventClass;
@@ -397,11 +404,23 @@ class ConnectionReporter implements ConnectionReporterInterface {
 			$this->eventDispatcher->dispatchTyped($event);
 			return true;
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ConnectionReporter] Could not send a connection event to integriq',
-				context: ['key' => $key, 'exception' => $e->getMessage()]
-			);
+			$this->logSendFailure(key: $key, failure: $e);
 			return false;
 		}
 	}//end send()
+
+	/**
+	 * Log a connection event that could not be built or dispatched.
+	 *
+	 * @param string    $key     The connection key.
+	 * @param Throwable $failure What went wrong.
+	 *
+	 * @return void
+	 */
+	private function logSendFailure(string $key, Throwable $failure): void {
+		$this->logger->warning(
+			message: '[ConnectionReporter] Could not send a connection event to integriq',
+			context: ['key' => $key, 'exception' => $failure->getMessage()]
+		);
+	}//end logSendFailure()
 }//end class
