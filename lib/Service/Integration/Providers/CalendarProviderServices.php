@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 
 /**
@@ -36,13 +36,13 @@ final class CalendarProviderServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param CalendarEventService $calendarEventService Reads and writes the VEVENTs.
-	 * @param CalendarLinkService  $calendarLinkService  Links an event to an object.
+	 * @param ObjectCalendarLinkInterface $calendarEventService Checks and unlinks the caller's VEVENTs.
+	 * @param CalendarLinkService         $calendarLinkService  Links an event to an object.
 	 *
 	 * @spec openspec/specs/integration-calendar/spec.md
 	 */
 	public function __construct(
-		public readonly CalendarEventService $calendarEventService,
+		public readonly ObjectCalendarLinkInterface $calendarEventService,
 		public readonly CalendarLinkService $calendarLinkService,
 	) {
 	}//end __construct()

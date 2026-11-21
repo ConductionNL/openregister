@@ -46,10 +46,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DelegationControllerServices;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -147,7 +147,7 @@ class DelegationController extends Controller {
 		IRequest $request,
 		DelegationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->grants = $services->mappers->grants;
 		$this->consent = $services->domain->consent;
 		$this->notifier = $services->domain->notifier;

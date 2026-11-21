@@ -22,10 +22,10 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
@@ -70,7 +70,7 @@ class SourcesController extends Controller {
 	/**
 	 * The source mapper
 	 *
-	 * @var SourceMapperInterface
+	 * @var SourceMapperInterface<Source>
 	 */
 	private readonly SourceMapperInterface $sourceMapper;
 
@@ -107,7 +107,7 @@ class SourcesController extends Controller {
 		IRequest $request,
 		SourcesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->sourceMapper = $services->mappers->sourceMapper;
 		$this->l10n = $services->platform->l10n;
