@@ -72,6 +72,23 @@ class ExampleSetEmailLinksBehaviourTest extends TestCase {
 		$this->assertSame(['error' => 'no object "obj-1" to link the mail to', 'entry' => null], $this->links()->write(self::row()));
 	}
 
+	public function testABlankObjectIsNotRead(): void {
+		$this->objects->expects($this->never())->method('find');
+		$this->mapper->expects($this->never())->method('insert');
+		$row = new ExampleSetRow('app', 'mail-1', ['object' => '  ', 'subject' => 'Aanvraag', 'sender' => 'a@example.org']);
+
+		$this->assertSame(['error' => 'no object "  " to link the mail to', 'entry' => null], $this->links()->write($row));
+	}
+
+	public function testAFailedReadCountsAsNoObject(): void {
+		$this->objects->expects($this->once())->method('find')
+			->with('obj-1', $this->callback(static fn ($options): bool => $options->render === false && $options->audit === false), false, false)
+			->willThrowException(new \RuntimeException('not found'));
+		$this->mapper->expects($this->never())->method('insert');
+
+		$this->assertSame(['error' => 'no object "obj-1" to link the mail to', 'entry' => null], $this->links()->write(self::row()));
+	}
+
 	public function testWriteReportsAFailedInsert(): void {
 		$object = new ObjectEntity();
 		$object->setRegister('1');
