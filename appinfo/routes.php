@@ -1302,7 +1302,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'GET',
             'requirements' => ['id' => '[^/]+'],
         ],
-        ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'auditTrail#objectLogs', 'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Relation rows and the relation graph (relation-types-with-inverses).
         // The stored rows are the links no $ref property can hold: a split's
         // provenance, what a child inherited, an address outside the product,

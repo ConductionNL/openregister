@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * The platform services of the audit trail API.
@@ -34,14 +35,16 @@ final class AuditTrailPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession  $userSession  Active user session for caller identity.
-	 * @param IGroupManager $groupManager Group manager for admin / role checks.
+	 * @param IUserSession    $userSession  Active user session for caller identity.
+	 * @param IGroupManager   $groupManager Group manager for admin / role checks.
+	 * @param LoggerInterface $logger       Logs a failed object history lookup.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 */
 	public function __construct(
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class
