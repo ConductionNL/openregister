@@ -47,6 +47,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Search\Service\MetricsService
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Search\Service\MetricOutcome
+ * @uses \OCA\OpenRegister\Search\Service\MetricRecord
+ * @uses \OCA\OpenRegister\Search\Service\MetricSubject
  */
 class ObjectMetricsListenerTest extends TestCase {
 	/**

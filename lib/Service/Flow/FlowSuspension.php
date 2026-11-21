@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/specs/flow-runs/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ class FlowSuspension extends RuntimeException {
 	 *
 	 * @return DateTime|null The resume time, or null when waiting on a signal.
 	 *
-	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 * @spec openspec/specs/flow-runs/spec.md
 	 */
 	public function getResumeAt(): ?DateTime {
 		return $this->resumeAt;

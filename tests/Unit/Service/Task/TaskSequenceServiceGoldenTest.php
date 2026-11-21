@@ -49,6 +49,22 @@ use RuntimeException;
  * rewrite the fixture. The random sequence uuid is masked as `<seq>`.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceService
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Service\Task\ChainPosition
+ * @uses \OCA\OpenRegister\Service\Task\PositionAdvance
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
+ * @uses \OCA\OpenRegister\Service\Task\SequenceClosure
+ * @uses \OCA\OpenRegister\Service\Task\TaskSequenceServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\SequenceProvenance
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskSequence
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
+ * @uses \OCA\OpenRegister\Event\TaskSequenceCompletedEvent
+ * @uses \OCA\OpenRegister\Event\TaskSequenceUndecidedEvent
  */
 class TaskSequenceServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/task-sequence-service-golden.json';
@@ -112,7 +128,9 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 			}
 		);
 		$tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source): Task {
+			function (string $uuid, TaskTrigger $trigger): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$this->calls[] = ['terminateAsMoot', $uuid, $reason, $source];
 				if (in_array($uuid, $this->failing, true) === true) {
 					throw new RuntimeException('cannot terminate ' . $uuid);

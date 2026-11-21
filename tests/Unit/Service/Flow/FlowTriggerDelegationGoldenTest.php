@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
@@ -137,13 +138,12 @@ class FlowTriggerDelegationGoldenTest extends TestCase {
 			/**
 			 * Pass-through.
 			 *
-			 * @param array $items   The items.
-			 * @param array $config  The config.
-			 * @param array $context The context.
+			 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 			 *
 			 * @return array
 			 */
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};

@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -32,6 +33,12 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalFrame
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalRecord
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftRemovalFrameTest extends TestCase {
 
@@ -49,12 +56,12 @@ class DraftRemovalFrameTest extends TestCase {
 	 */
 	private function record(): DraftRemovalRecord {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('createAuditTrailEntry')->willReturnCallback(
+		$trail->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->actors[] = $actorId;
 				return new AuditTrail();
 			}
-		);
+		));
 
 		return new DraftRemovalRecord($trail, new NullLogger());
 

@@ -517,7 +517,7 @@ class Flow extends Entity implements JsonSerializable {
 	 *
 	 * @return string|null The `runAs`, or null when no schedule trigger names one.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function scheduledRunAs(): ?string {
 		foreach (($this->nodes ?? []) as $node) {
@@ -546,7 +546,7 @@ class Flow extends Entity implements JsonSerializable {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function belongsTo(?string $organisation): bool {
+	public function belongsTo(string|null $organisation): bool {
 		if ($this->organisation === null || trim($this->organisation) === '') {
 			return false;
 		}

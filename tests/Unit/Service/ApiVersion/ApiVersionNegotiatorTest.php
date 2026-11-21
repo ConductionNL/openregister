@@ -35,6 +35,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiVersionNegotiatorTest extends TestCase {
 

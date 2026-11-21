@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionRefusedException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionEvaluation
  */
 class NamedConditionEvaluatorGoldenTest extends TestCase {
 

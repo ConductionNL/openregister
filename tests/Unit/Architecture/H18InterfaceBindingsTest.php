@@ -26,10 +26,11 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\BackgroundJob\CalendarRecomputeJobInterface;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
@@ -60,11 +61,11 @@ final class H18InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		CalendarRecompute::class => [CalendarRecomputeInterface::class, FlowBindings::class],
-		FlowRunSignalService::class => [FlowRunSignalInterface::class, FlowBindings::class],
+		CalendarRecompute::class => [CalendarRecomputeInterface::class, FlowWiring::class],
+		FlowRunSignalService::class => [FlowRunSignalInterface::class, FlowWiring::class],
 		RecomputeTimersForCalendarJob::class => [CalendarRecomputeJobInterface::class, null],
-		TermDiagnostic::class => [TermDiagnosticInterface::class, FlowBindings::class],
-		WorkingCalendars::class => [WorkingCalendarDefinitionsInterface::class, FlowBindings::class],
+		TermDiagnostic::class => [TermDiagnosticInterface::class, FlowWiring::class],
+		WorkingCalendars::class => [WorkingCalendarDefinitionsInterface::class, FlowWiring::class],
 	];
 
 	/**
@@ -138,7 +139,7 @@ final class H18InterfaceBindingsTest extends TestCase {
 		$bindings = constant($registrar . '::BINDINGS');
 		$this->assertArrayHasKey(key: $contract, array: $bindings);
 		$this->assertSame(expected: $class, actual: $bindings[$contract]);
-		$this->assertSame(expected: $class, actual: ContractBindings::BINDINGS[$contract] ?? null, message: 'Spread into ContractBindings');
+		$this->assertSame(expected: $class, actual: FlowRegistrar::BINDINGS[$contract] ?? null, message: 'Registered by FlowRegistrar');
 	}//end testTheInterfaceIsBound()
 
 	/**

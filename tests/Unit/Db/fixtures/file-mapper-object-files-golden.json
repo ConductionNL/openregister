@@ -1,0 +1,242 @@
+{
+    "object with folder": {
+        "result": [
+            {
+                "fileid": 70,
+                "name": "f70.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=70&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/70/download",
+                "published": null,
+                "owner": null
+            },
+            {
+                "fileid": 71,
+                "name": "f71.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=71&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/71/download",
+                "published": null,
+                "owner": null
+            }
+        ],
+        "queries": [
+            "#1 select(fc.fileid, fc.storage, fc.path, fc.path_hash, fc.parent, fc.name, mt.mimetype, mp.mimetype as mimepart, fc.size, fc.mtime, fc.storage_mtime, fc.encrypted, fc.unencrypted_size, fc.etag, fc.permissions, fc.checksum, s.token as share_token, s.stime as share_stime, st.id as storage_id)",
+            "#1 from(filecache, fc)",
+            "#1 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#1 expr.eq(fc.mimepart, mp.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mp, eq(fc.mimepart, mp.id, NULL))",
+            "#1 expr.eq(s.file_source, fc.fileid, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(s.share_type, :p1, NULL)",
+            "#1 expr.andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p1, NULL))",
+            "#1 leftJoin(fc, share, s, andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p1, NULL)))",
+            "#1 expr.eq(fc.storage, st.numeric_id, NULL)",
+            "#1 leftJoin(fc, storages, st, eq(fc.storage, st.numeric_id, NULL))",
+            "#1 param :p2 = 12, 1",
+            "#1 expr.eq(fc.parent, :p2, NULL)",
+            "#1 andWhere(eq(fc.parent, :p2, NULL))",
+            "#1 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "object without folder or uuid": {
+        "result": [],
+        "queries": [],
+        "unservedRowSets": 0
+    },
+    "object uuid matches no folder": {
+        "result": [],
+        "queries": [
+            "#1 select(fileid)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(name, :p1, NULL)",
+            "#1 where(eq(name, :p1, NULL))",
+            "#1 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "object uuid matches one folder": {
+        "result": [
+            {
+                "fileid": 70,
+                "name": "f70.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=70&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/70/download",
+                "published": null,
+                "owner": null
+            },
+            {
+                "fileid": 71,
+                "name": "f71.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=71&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/71/download",
+                "published": null,
+                "owner": null
+            }
+        ],
+        "queries": [
+            "#1 select(fileid)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(name, :p1, NULL)",
+            "#1 where(eq(name, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(fc.fileid, fc.storage, fc.path, fc.path_hash, fc.parent, fc.name, mt.mimetype, mp.mimetype as mimepart, fc.size, fc.mtime, fc.storage_mtime, fc.encrypted, fc.unencrypted_size, fc.etag, fc.permissions, fc.checksum, s.token as share_token, s.stime as share_stime, st.id as storage_id)",
+            "#2 from(filecache, fc)",
+            "#2 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#2 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#2 expr.eq(fc.mimepart, mp.id, NULL)",
+            "#2 leftJoin(fc, mimetypes, mp, eq(fc.mimepart, mp.id, NULL))",
+            "#2 expr.eq(s.file_source, fc.fileid, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(s.share_type, :p2, NULL)",
+            "#2 expr.andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p2, NULL))",
+            "#2 leftJoin(fc, share, s, andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p2, NULL)))",
+            "#2 expr.eq(fc.storage, st.numeric_id, NULL)",
+            "#2 leftJoin(fc, storages, st, eq(fc.storage, st.numeric_id, NULL))",
+            "#2 param :p3 = 30, 1",
+            "#2 expr.eq(fc.parent, :p3, NULL)",
+            "#2 andWhere(eq(fc.parent, :p3, NULL))",
+            "#2 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "object uuid matches several folders": {
+        "result": [
+            {
+                "fileid": 70,
+                "name": "f70.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=70&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/70/download",
+                "published": null,
+                "owner": null
+            },
+            {
+                "fileid": 71,
+                "name": "f71.txt",
+                "share_token": null,
+                "share_stime": null,
+                "storage_id": null,
+                "accessUrl": "abs:/index.php/core/preview?fileId=71&x=1920&y=1080&a=1",
+                "downloadUrl": "abs:/index.php/apps/openregister/api/files/71/download",
+                "published": null,
+                "owner": null
+            }
+        ],
+        "queries": [
+            "#1 select(fileid)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = u-1, 2",
+            "#1 expr.eq(name, :p1, NULL)",
+            "#1 where(eq(name, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(fc.fileid, fc.storage, fc.path, fc.path_hash, fc.parent, fc.name, mt.mimetype, mp.mimetype as mimepart, fc.size, fc.mtime, fc.storage_mtime, fc.encrypted, fc.unencrypted_size, fc.etag, fc.permissions, fc.checksum, s.token as share_token, s.stime as share_stime, st.id as storage_id)",
+            "#2 from(filecache, fc)",
+            "#2 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#2 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#2 expr.eq(fc.mimepart, mp.id, NULL)",
+            "#2 leftJoin(fc, mimetypes, mp, eq(fc.mimepart, mp.id, NULL))",
+            "#2 expr.eq(s.file_source, fc.fileid, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(s.share_type, :p2, NULL)",
+            "#2 expr.andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p2, NULL))",
+            "#2 leftJoin(fc, share, s, andX(eq(s.file_source, fc.fileid, NULL), eq(s.share_type, :p2, NULL)))",
+            "#2 expr.eq(fc.storage, st.numeric_id, NULL)",
+            "#2 leftJoin(fc, storages, st, eq(fc.storage, st.numeric_id, NULL))",
+            "#2 param :p3 = 31, 1",
+            "#2 expr.eq(fc.parent, :p3, NULL)",
+            "#2 andWhere(eq(fc.parent, :p3, NULL))",
+            "#2 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "ids for no uuids": {
+        "result": [],
+        "queries": [],
+        "unservedRowSets": 0
+    },
+    "ids for invalid uuids only": {
+        "result": [],
+        "queries": [],
+        "unservedRowSets": 0
+    },
+    "ids where no folder exists": {
+        "result": {
+            "u-1": [],
+            "u-2": []
+        },
+        "queries": [
+            "#1 select(fileid, name)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(name, :p1, NULL)",
+            "#1 where(in(name, :p1, NULL))",
+            "#1 orderBy(fileid, ASC)",
+            "#1 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "ids with duplicate folders and childless folder": {
+        "result": {
+            "u-1": [
+                50,
+                51
+            ],
+            "u-2": [],
+            "u-3": []
+        },
+        "queries": [
+            "#1 select(fileid, name)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\",\"u-3\"], 102",
+            "#1 expr.in(name, :p1, NULL)",
+            "#1 where(in(name, :p1, NULL))",
+            "#1 orderBy(fileid, ASC)",
+            "#1 executeQuery()",
+            "#2 select(fileid, parent)",
+            "#2 from(filecache, NULL)",
+            "#2 param :p2 = [40,41], 101",
+            "#2 expr.in(parent, :p2, NULL)",
+            "#2 where(in(parent, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    },
+    "ids where folders have no children": {
+        "result": {
+            "u-1": []
+        },
+        "queries": [
+            "#1 select(fileid, name)",
+            "#1 from(filecache, NULL)",
+            "#1 param :p1 = [\"u-1\"], 102",
+            "#1 expr.in(name, :p1, NULL)",
+            "#1 where(in(name, :p1, NULL))",
+            "#1 orderBy(fileid, ASC)",
+            "#1 executeQuery()",
+            "#2 select(fileid, parent)",
+            "#2 from(filecache, NULL)",
+            "#2 param :p2 = [40], 101",
+            "#2 expr.in(parent, :p2, NULL)",
+            "#2 where(in(parent, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "unservedRowSets": 0
+    }
+}

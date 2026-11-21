@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
  */
 class ObjectEventGateTest extends TestCase {
 

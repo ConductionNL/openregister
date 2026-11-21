@@ -36,6 +36,7 @@ use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -54,6 +55,13 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Search\Service\SizeTally
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Service\DashboardMappers
  */
 class DashboardServiceReadsGoldenTest extends TestCase {
 
@@ -98,7 +106,7 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$objects->method($m)->willThrowException($boom);
 			}
 
-			foreach (['getStatistics', 'getActionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
+			foreach (['statisticsTotals', 'actionChartData', 'detailedStatistics', 'actionDistribution', 'mostActiveObjects'] as $m) {
 				$audit->method($m)->willThrowException($boom);
 			}
 		} else {
@@ -107,10 +115,10 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 				$this->logged[] = 'objects.getStatistics ' . json_encode($args);
 				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
 			});
-			$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+			$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 				$this->logged[] = 'audit.getStatistics ' . json_encode($args);
 				return ['total' => 21, 'size' => 22];
-			});
+			}));
 			$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 		}
 

@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
@@ -30,6 +31,10 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
  */
 final class ObjectHistoryAfterAMoveTest extends TestCase {
 
@@ -41,12 +46,12 @@ final class ObjectHistoryAfterAMoveTest extends TestCase {
 	public function testTheRouteAddressDoesNotNarrowTheHistory(): void {
 		$seen = null;
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('findAll')->willReturnCallback(
+		$audit->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit, ?int $offset, array $filters) use (&$seen): array {
 				$seen = $filters;
 				return [];
 			}
-		);
+		));
 
 		$this->history(audit: $audit)->page(
 			ref: new ObjectRef(register: '5', schema: '7', id: 'u-1'),

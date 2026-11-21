@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
@@ -47,6 +48,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Authorization\RbacGroupCollector
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationExportRun
  */
 class ExportHandlerGoldenTest extends TestCase {
 
@@ -272,13 +279,13 @@ class ExportHandlerGoldenTest extends TestCase {
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findAllListed')->willReturnCallback(
-			function (MagicListRequest $request): array {
-				$q = $request->query;
-				$this->calls[] = ['objects.findAll', [$q->limitOrNull(), $q->offset, ($q->filters ?: null), null, null, $q->sort, $q->search, $request->ids, $request->uses, false, null, null]];
-				$register = $request->query->filters['register'];
+		$objectMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (RegisterSchema $table): array {
+				[$registerEntity, $schemaEntity] = [$table->register, $table->schema];
+				$this->calls[] = ['objects.findAllInRegisterSchemaTable', $registerEntity->getId(), $schemaEntity->getId()];
+				$register = $registerEntity->getId();
 				$objects = [];
-				foreach ([[$register, 11], [$register, 12], [7, 99]] as $index => [$registerId, $schemaId]) {
+				foreach ([[$register, $schemaEntity->getId()], [7, 99]] as $index => [$registerId, $schemaId]) {
 					$object = $this->createMock(ObjectEntity::class);
 					$object->method('jsonSerialize')->willReturn(
 						['@self' => ['id' => 'o'.$index, 'register' => (string)$registerId, 'schema' => $schemaId], 'name' => 'n'.$index]

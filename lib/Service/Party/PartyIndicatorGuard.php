@@ -35,13 +35,15 @@ namespace OCA\OpenRegister\Service\Party;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
  *
  * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
-class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface {
+class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface, PublicationRefusalInterface {
 
 	/**
 	 * The effect refusing a publication.
@@ -175,21 +177,55 @@ class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefu
 	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 */
 	private function indicatorsOfLink(ContactLink $link): array {
-		$partyUuid = (string)($link->getPartyUuid() ?? '');
-		if ($partyUuid === '') {
-			return [];
-		}
-
-		$party = $this->parties->find(partyUuid: $partyUuid);
+		$party = $this->partyOf(link: $link);
 		if ($party === null) {
 			return [];
 		}
 
+		return self::stamped(indicators: $this->parties->indicators(party: $party), link: $link);
+	}//end indicatorsOfLink()
+
+	/**
+	 * The party a link points at, or null when it names none or the party is gone.
+	 *
+	 * @param ContactLink $link The link.
+	 *
+	 * @return ObjectEntity|null The party.
+	 */
+	private function partyOf(ContactLink $link): ?ObjectEntity {
+		$partyUuid = self::partyUuidOf(link: $link);
+		if ($partyUuid === '') {
+			return null;
+		}
+
+		return $this->parties->find(partyUuid: $partyUuid);
+	}//end partyOf()
+
+	/**
+	 * The party uuid a link names, '' when none.
+	 *
+	 * @param ContactLink $link The link.
+	 *
+	 * @return string The uuid.
+	 */
+	private static function partyUuidOf(ContactLink $link): string {
+		return (string)($link->getPartyUuid() ?? '');
+	}//end partyUuidOf()
+
+	/**
+	 * Each indicator stamped with the link's party, party kind and role.
+	 *
+	 * @param array<int, array<string, string|null>> $indicators The party's indicators.
+	 * @param ContactLink                            $link       The link.
+	 *
+	 * @return array<int, array<string, string|null>> The stamped indicators.
+	 */
+	private static function stamped(array $indicators, ContactLink $link): array {
 		$found = [];
-		foreach ($this->parties->indicators(party: $party) as $indicator) {
+		foreach ($indicators as $indicator) {
 			$found[] = array_merge(
 				[
-					'party' => $partyUuid,
+					'party' => self::partyUuidOf(link: $link),
 					'partyKind' => $link->getPartyKind(),
 					'role' => $link->getRole(),
 				],
@@ -198,5 +234,5 @@ class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefu
 		}
 
 		return $found;
-	}//end indicatorsOfLink()
+	}//end stamped()
 }//end class

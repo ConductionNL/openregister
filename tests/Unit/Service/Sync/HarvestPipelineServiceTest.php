@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
@@ -52,6 +53,18 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\SyncRecord
  * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\SyncRecordInputs
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestImportServices
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestRun
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestedRecord
+ * @uses \OCA\OpenRegister\Service\Sync\SourceMapping
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflict
  */
 class HarvestPipelineServiceTest extends TestCase {
 
@@ -186,7 +199,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		$this->syncRecordMapper->method('findByExternalId')->willReturn(null);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$obj = new ObjectEntity();
 				$obj->setUuid('new-uuid');
 				return $obj;
@@ -269,7 +282,7 @@ class HarvestPipelineServiceTest extends TestCase {
 		// First save succeeds, second throws (e.g. schema validation failure).
 		$calls = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function () use (&$calls): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
 				$calls++;
 				if ($calls === 2) {
 					throw new RuntimeException('validation failed');

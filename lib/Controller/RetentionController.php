@@ -30,9 +30,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -40,7 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -76,9 +78,9 @@ class RetentionController extends Controller {
 	/**
 	 * Settings handler
 	 *
-	 * @var ArchivalSettingsReaderInterface
+	 * @var ArchivalSettingsInterface
 	 */
-	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+	private readonly ArchivalSettingsInterface $settingsHandler;
 
 	/**
 	 * Save object service
@@ -167,8 +169,6 @@ class RetentionController extends Controller {
 	 * POST /api/retention/destruction-lists/{id}/approve
 	 *
 	 * @param string $id Destruction list UUID
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response with updated destruction list
 	 *
@@ -283,10 +283,12 @@ class RetentionController extends Controller {
 		$this->jobList->add(DestructionExecutionJobInterface::JOB_CLASS, [DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => $approval->id]);
 		$objectCount = count($approval->listData['objects']);
 		$excludedCount = count($approval->listData['excluded'] ?? []);
-		$this->auditMapper->createAuditTrailEntry(
-			$listObject,
-			'archival.destruction_approved',
-			['approvedBy' => $approval->userId, 'objectCount' => $objectCount, 'excluded' => $excludedCount]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $listObject,
+				action: 'archival.destruction_approved',
+				context: ['approvedBy' => $approval->userId, 'objectCount' => $objectCount, 'excluded' => $excludedCount]
+			)
 		);
 
 		return new JSONResponse(['status' => 'approved', 'objectCount' => $objectCount, 'excludedCount' => $excludedCount]);
@@ -298,8 +300,6 @@ class RetentionController extends Controller {
 	 * POST /api/retention/destruction-lists/{id}/reject
 	 *
 	 * @param string $id Destruction list UUID
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Response with updated status
 	 *
@@ -406,8 +406,6 @@ class RetentionController extends Controller {
 	 *
 	 * POST /api/retention/legal-holds
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated object
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -430,14 +428,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->placeLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->placeHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_placed',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_placed',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(
@@ -459,8 +459,6 @@ class RetentionController extends Controller {
 	 *
 	 * @param string $id Object UUID (the object the hold is on)
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response with updated object
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -479,14 +477,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->releaseLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->releaseHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_released',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_released',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(
@@ -519,8 +519,6 @@ class RetentionController extends Controller {
 	 *
 	 * POST /api/retention/legal-holds/bulk
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Response confirming the bulk operation
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
@@ -539,7 +537,7 @@ class RetentionController extends Controller {
 
 			// Queue via background job for large datasets.
 			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD,
+				\OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface::BULK_LEGAL_HOLD,
 				[
 					'schemaId' => $schemaId,
 					'reason' => $reason,

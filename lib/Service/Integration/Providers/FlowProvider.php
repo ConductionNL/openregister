@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
+use OCA\OpenRegister\Service\FlowJsonColumn;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -153,8 +154,8 @@ class FlowProvider extends AbstractIntegrationProvider {
 			'class' => (string)($onRow['class'] ?? $link->getOperationClass() ?? ''),
 			'entity' => (string)($onRow['entity'] ?? $link->getEntityType() ?? ''),
 			'operation' => (string)($onRow['operation'] ?? ''),
-			'events' => $this->decodeJsonField(value: $onRow['events'] ?? null),
-			'checks' => $this->decodeJsonField(value: $onRow['checks'] ?? null),
+			'events' => FlowJsonColumn::decode(value: $onRow['events'] ?? null),
+			'checks' => FlowJsonColumn::decode(value: $onRow['checks'] ?? null),
 		];
 	}//end operationFields()
 
@@ -175,33 +176,6 @@ class FlowProvider extends AbstractIntegrationProvider {
 			}
 		);
 	}//end fetchOperationRow()
-
-	/**
-	 * Decode a JSON-serialised array column (`events`, `checks`).
-	 *
-	 * NC Flow stores these as JSON strings. Tolerates already-decoded
-	 * arrays so callers can pass raw row values from either source.
-	 *
-	 * @param mixed $value Raw column value.
-	 *
-	 * @return array<int,mixed>
-	 */
-	private function decodeJsonField(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false || $value === '') {
-			return [];
-		}
-
-		$decoded = json_decode($value, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return [];
-	}//end decodeJsonField()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).

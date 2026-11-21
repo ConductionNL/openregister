@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ActivityFeedMerge;
 use OCA\OpenRegister\Service\Integration\ActivityFeedObject;
 use OCA\OpenRegister\Service\Integration\ActivityFeedService;
@@ -35,7 +36,6 @@ use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The feed's source gathering, pinned.
@@ -80,8 +80,8 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 			->onlyMethods(['list'])
 			->getMock();
 		$provider->method('list')->willReturnCallback(
-			function (string $register, string $schema, string $objectId, array $filters = []) use ($activityFails): array {
-				$this->calls[] = ['activity', $register, $schema, $objectId, $filters];
+			function (ObjectRef $ref, array $filters = []) use ($activityFails): array {
+				$this->calls[] = ['activity', $ref->register, $ref->schema, $ref->id, $filters];
 				if ($activityFails === true) {
 					throw new RuntimeException('activity down');
 				}

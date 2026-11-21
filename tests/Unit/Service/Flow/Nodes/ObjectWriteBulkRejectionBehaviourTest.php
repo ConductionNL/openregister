@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
@@ -55,6 +56,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class ObjectWriteBulkRejectionBehaviourTest extends TestCase {
 
@@ -96,11 +101,11 @@ class ObjectWriteBulkRejectionBehaviourTest extends TestCase {
 	}//end node()
 
 	private function write(ObjectWriteNode $node): void {
-		$node->execute(
-			[FlowItems::item(json: ['name' => 'a']), FlowItems::item(json: ['name' => 'b'])],
-			['register' => 'cases', 'schema' => 'case', 'operation' => 'create', 'bulk' => true, 'fields' => ['title' => '{{ name }}']],
-			['runAs' => 'alice']
-		);
+		$node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: ['name' => 'a']), FlowItems::item(json: ['name' => 'b'])],
+			config: ['register' => 'cases', 'schema' => 'case', 'operation' => 'create', 'bulk' => true, 'fields' => ['title' => '{{ name }}']],
+			context: ['runAs' => 'alice']
+		));
 	}//end write()
 
 	public function testTheFirstRejectionThatSaysWhyIsNamed(): void {

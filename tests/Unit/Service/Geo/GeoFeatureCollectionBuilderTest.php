@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Geo;
 
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use PHPUnit\Framework\TestCase;
 
 class GeoFeatureCollectionBuilderTest extends TestCase {
@@ -55,7 +57,7 @@ class GeoFeatureCollectionBuilderTest extends TestCase {
 	}//end testBuildsFeatureCollection()
 
 	public function testFieldAllowListKeepsGeometry(): void {
-		$fc = $this->builder->buildFeatureCollection($this->pointRows(), null, ['title']);
+		$fc = $this->builder->buildFeatureCollection($this->pointRows(), new FeatureShape(fields: ['title']));
 		$props = $fc['features'][0]['properties'];
 		$this->assertArrayHasKey('title', $props);
 		$this->assertArrayNotHasKey('status', $props);
@@ -70,7 +72,7 @@ class GeoFeatureCollectionBuilderTest extends TestCase {
 	}//end testWfsResponseHasNumberReturned()
 
 	public function testWfsMaxFeaturesCap(): void {
-		$resp = $this->builder->buildWfsResponse($this->pointRows(), null, 1);
+		$resp = $this->builder->buildWfsResponse($this->pointRows(), new GetFeatureRequest(maxFeatures: 1));
 		$this->assertCount(1, $resp['features']);
 		$this->assertSame(1, $resp['numberReturned']);
 	}//end testWfsMaxFeaturesCap()
@@ -88,7 +90,7 @@ class GeoFeatureCollectionBuilderTest extends TestCase {
 			],
 		];
 
-		$fc = $this->builder->buildFeatureCollection($rows, null, null, true);
+		$fc = $this->builder->buildFeatureCollection($rows, new FeatureShape(includeArea: true));
 		$area = $fc['features'][0]['properties']['_area_m2'];
 		$this->assertIsFloat($area);
 		// Roughly a square kilometre — within an order of magnitude.

@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use OCA\OpenRegister\Tests\Unit\Service\Object\ReferenceValidationCalls;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1357,24 +1358,24 @@ class SaveObjectCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// extractUuidAndSelfData
+	// splitSelfData
 	// =========================================================================
 
 	/**
-	 * Test extractUuidAndSelfData with empty UUID normalizes to null.
+	 * Test splitSelfData with empty UUID normalizes to null.
 	 *
 	 * @return void
 	 */
 	public function testExtractUuidAndSelfDataEmptyUuidToNull(): void {
 		$data = ['name' => 'Test'];
 
-		$result = $this->invokePrivate('extractUuidAndSelfData', [$data, '', null]);
+		$result = $this->invokePrivate('splitSelfData', [$data, '']);
 
 		$this->assertNull($result[0]);
 	}
 
 	/**
-	 * Test extractUuidAndSelfData processes uploaded files.
+	 * Test splitSelfData processes uploaded files.
 	 *
 	 * @return void
 	 */
@@ -1387,27 +1388,28 @@ class SaveObjectCoverageTest extends TestCase {
 			->with($uploadedFiles, $this->anything())
 			->willReturn(['name' => 'Test', 'logo' => 'file-id']);
 
-		$result = $this->invokePrivate('extractUuidAndSelfData', [$data, null, $uploadedFiles]);
+		$result    = $this->invokePrivate('splitSelfData', [$data, null]);
+		$result[2] = $this->invokePrivate('injectUploadedFiles', [$result[2], $uploadedFiles]);
 
 		$this->assertSame('file-id', $result[2]['logo']);
 	}
 
 	/**
-	 * Test extractUuidAndSelfData extracts id from data.
+	 * Test splitSelfData extracts id from data.
 	 *
 	 * @return void
 	 */
 	public function testExtractUuidAndSelfDataExtractsIdFromData(): void {
 		$data = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
 
-		$result = $this->invokePrivate('extractUuidAndSelfData', [$data, null, null]);
+		$result = $this->invokePrivate('splitSelfData', [$data, null]);
 
 		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result[0]);
 		$this->assertArrayNotHasKey('id', $result[2]);
 	}
 
 	/**
-	 * Test extractUuidAndSelfData extracts @self.id.
+	 * Test splitSelfData extracts @self.id.
 	 *
 	 * @return void
 	 */
@@ -1417,7 +1419,7 @@ class SaveObjectCoverageTest extends TestCase {
 			'name' => 'Test',
 		];
 
-		$result = $this->invokePrivate('extractUuidAndSelfData', [$data, null, null]);
+		$result = $this->invokePrivate('splitSelfData', [$data, null]);
 
 		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result[0]);
 		$this->assertArrayNotHasKey('@self', $result[2]);
@@ -1439,7 +1441,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$selfData = ['owner' => 'user123'];
 
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
+		$this->invokePrivate('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		// owner must remain null — the client-supplied value is discarded.
 		$this->assertNull($entity->getOwner());
@@ -1462,7 +1464,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$selfData = ['organisation' => 'org-uuid'];
 
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
+		$this->invokePrivate('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		// Organisation must NOT be stamped from client input without access verification.
 		$this->assertNull($entity->getOrganisation());
@@ -1485,7 +1487,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$selfData = ['organisation' => 'org-uuid'];
 
-		$this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
+		$this->invokePrivate('setSelfMetadata', [$entity, new SelfSubmission(selfData: $selfData)]);
 
 		$this->assertSame('org-uuid', $entity->getOrganisation());
 	}

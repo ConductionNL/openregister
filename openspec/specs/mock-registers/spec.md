@@ -12,6 +12,8 @@ Provide self-contained mock registers for the five Dutch base registries -- BRP 
 
 This capability is a key competitive differentiator: competitor products (KISS, Dimpact ZAC, Open Formulieren) all require extensive external infrastructure to run locally. Our mock registers make the entire suite self-contained from `docker compose up`.
 
+The ORI mock register (`lib/Settings/ori_register.json`) becomes eligible for retirement once decidesk's ORI adoption, through the openconnector leaf-app path, is complete. Do not remove it before then: procest still depends on the same six slugs (aggregation-dialect-repair, task 8.1).
+
 ## Requirements
 
 ### Requirement: BRP Mock Register (Basisregistratie Personen)

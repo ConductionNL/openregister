@@ -38,7 +38,7 @@ interface GrantableRightsIndexInterface {
 	 *
 	 * @return array<int, array<string, mixed>> The grantable rights.
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function getIndex(): array;
 
@@ -51,7 +51,7 @@ interface GrantableRightsIndexInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	public function invalidate(): void;
 }//end interface

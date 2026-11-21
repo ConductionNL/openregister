@@ -349,18 +349,30 @@ class TaskBuilder {
 		}
 
 		if (in_array($behaviour, Task::OUTCOME_BEHAVIOURS, true) === false) {
-			throw new TaskValidationException(
-				message: sprintf(
-					"Field '%s' value '%s' is not in the behaviour vocabulary (%s).",
-					$field,
-					$behaviour,
-					implode('|', Task::OUTCOME_BEHAVIOURS)
-				)
-			);
+			throw self::behaviourRefusal(behaviour: $behaviour, field: $field);
 		}
 
 		return $behaviour;
 	}//end validBehaviour()
+
+	/**
+	 * The refusal for a behaviour outside the outcome vocabulary.
+	 *
+	 * @param string $behaviour The submitted behaviour.
+	 * @param string $field     The field name, for the message.
+	 *
+	 * @return TaskValidationException The refusal, listing the vocabulary.
+	 */
+	private static function behaviourRefusal(string $behaviour, string $field): TaskValidationException {
+		return new TaskValidationException(
+			message: sprintf(
+				"Field '%s' value '%s' is not in the behaviour vocabulary (%s).",
+				$field,
+				$behaviour,
+				implode('|', Task::OUTCOME_BEHAVIOURS)
+			)
+		);
+	}//end behaviourRefusal()
 
 	/**
 	 * Parse a date field: DateTime passes, ISO strings parse, junk refuses.
@@ -372,7 +384,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException When present but unparsable.
 	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-due_at-advises-expires_at-enforces
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-due-at-advises-expires-at-enforces
 	 */
 	private function parseDate(mixed $value, string $field): ?DateTime {
 		if ($value === null || $value === '') {

@@ -56,10 +56,10 @@
 
 ## 9. Woo programme amendment: mask forms and grounds (rows 4.18, 4.28)
 
-- [ ] 9.1 Add `anonymisation.maskForms` to `FileSettingsHandler` with validation (unknown form or `n` below 1 refused with 400). Verify: `tests/Unit/Service/Settings/MaskFormSettingTest.php::testAnUnknownFormIsRefused` (fails today: the key does not exist).
-- [ ] 9.2 Compute the mask in `DocumentProcessingHandler` where the placeholder is built, with the half-visible fallback (REQ-PIS-010). Verify: `tests/Unit/Service/File/MaskFormTest.php::testLastFourOfAnIban`, `testEmailLocalPartIsMasked`, `testGeneraliseADateToItsYear`, `testAMaskThatWouldRevealTooMuchFallsBack`.
-- [ ] 9.3 Append grounds from `EntityRelation::$bases` to the placeholder and the mask (REQ-PIS-011), reading `bases` from `findEntitiesForAnonymization()` rows. Verify: `tests/Unit/Service/File/PlaceholderGroundTest.php::testAGroundIsPrintedInThePlaceholder` using a real `EntityRelation`, `testNoBasesKeepsThePlaceholder`, `testTheResidualCheckParsesTheExtendedForm`, `testCollapseKeepsTheGround`.
-- [ ] 9.4 Prove every output mode prints it: PDF, DOCX, ODT, text. Verify: `PlaceholderGroundTest::testEveryOutputModePrintsTheGround` over four fixtures through `FileService::anonymizeDocument()`, the call opencatalogi's `DocumentRedactor` makes.
+- [x] 9.1 Add `anonymisation.maskForms` to `FileSettingsHandler` with validation (unknown form or `n` below 1 refused with 400). Verify: `tests/Unit/Service/Settings/MaskFormSettingTest.php::testAnUnknownFormIsRefused` (fails today: the key does not exist).
+- [x] 9.2 Compute the mask in `DocumentProcessingHandler` where the placeholder is built, with the half-visible fallback (REQ-PIS-010). Verify: `tests/Unit/Service/File/MaskFormTest.php::testLastFourOfAnIban`, `testEmailLocalPartIsMasked`, `testGeneraliseADateToItsYear`, `testAMaskThatWouldRevealTooMuchFallsBack`.
+- [x] 9.3 Append grounds from `EntityRelation::$bases` to the placeholder and the mask (REQ-PIS-011), reading `bases` from `findEntitiesForAnonymization()` rows. Verify: `tests/Unit/Service/File/PlaceholderGroundTest.php::testAGroundIsPrintedInThePlaceholder` using a real `EntityRelation`, `testNoBasesKeepsThePlaceholder`, `testTheResidualCheckParsesTheExtendedForm`, `testCollapseKeepsTheGround`.
+- [x] 9.4 Prove every output mode prints it: PDF, DOCX, ODT, text. Verify: `PlaceholderGroundTest::testEveryOutputModePrintsTheGround` over four fixtures through `FileService::anonymizeDocument()`, the call opencatalogi's `DocumentRedactor` makes.
 - [ ] 9.5 Mask form choice on `src/views/settings/sections/FileConfiguration.vue`. Verify: `tests/e2e/ci/placeholder-mask-and-ground.spec.ts` sets IBAN to last 4, sets a ground on a relation through `PATCH /api/entity-relations/{id}`, anonymises a PDF fixture and reads both in the output text.
 
 ## V. Verification and done

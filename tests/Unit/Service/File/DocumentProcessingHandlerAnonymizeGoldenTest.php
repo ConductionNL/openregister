@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden master for DocumentProcessingHandler::anonymizeDocument() on a
+ * Golden master for DocumentProcessingHandler::anonymize() on a
  * plain-text document.
  *
  * Every case anonymises one text file and records the content written, the
@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
@@ -51,6 +53,19 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
  * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 
@@ -242,11 +257,12 @@ class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 		$node->method('getContent')->willReturn(self::TEXT);
 		$node->method('getParent')->willReturn($parent);
 
-		$handler->anonymizeDocument(
-			node: $node,
-			entities: $scenario['entities'],
-			scope: ($scenario['scope'] ?? 'document'),
-			fileKey: ($scenario['fileKey'] ?? null)
+		$handler->anonymize(
+			request: new DocumentAnonymisationRequest(
+				node: $node,
+				entities: $scenario['entities'],
+				options: new DocumentAnonymisationOptions(scope: ($scenario['scope'] ?? 'document'), fileKey: ($scenario['fileKey'] ?? null))
+			)
 		);
 
 		return [

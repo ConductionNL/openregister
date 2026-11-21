@@ -11,22 +11,16 @@
 		<div v-if="objects.length" class="selected-objects-list">
 			<div v-for="obj in objects" :key="obj.id" class="selected-object-item">
 				<div class="object-info">
-					<strong>{{
-						titleOf(obj) || t('openregister', 'Unnamed Object')
-					}}</strong>
+					<strong>{{ shownName(obj) }}</strong>
 					<p class="object-id">
-						{{
-							t('openregister', 'ID: {id}', {
-								id: obj.id || obj['@self']?.id,
-							})
-						}}
+						{{ t('openregister', 'ID: {id}', { id: idOf(obj) }) }}
 					</p>
 				</div>
 				<NcButton
 					variant="tertiary"
 					:aria-label="
 						t('openregister', 'Remove {title}', {
-							title: titleOf(obj) || obj.id,
+							title: removedName(obj),
 						})
 					"
 					@click="$emit('remove', obj.id)">
@@ -74,6 +68,22 @@ export default {
 			type: String,
 			required: true,
 		},
+
+		/**
+		 * How an object is named, on the list and on its remove button. By
+		 * default its name or title, else "Unnamed Object" on the list and
+		 * its id on the button.
+		 */
+		nameOf: {
+			type: Function,
+			default: null,
+		},
+
+		/** The id shown for an object. By default its id, else its `@self` id. */
+		idOf: {
+			type: Function,
+			default: (obj) => obj.id || obj['@self']?.id,
+		},
 	},
 
 	emits: ['remove'],
@@ -90,6 +100,34 @@ export default {
 		 */
 		titleOf(obj) {
 			return obj['@self']?.name || obj.name || obj.title || obj['@self']?.title
+		},
+
+		/**
+		 * The name shown for an object on the list.
+		 *
+		 * @spec exclude Client-side display helper.
+		 * @param {object} obj The object
+		 * @return {string} Its name
+		 */
+		shownName(obj) {
+			if (this.nameOf) {
+				return this.nameOf(obj)
+			}
+			return this.titleOf(obj) || t('openregister', 'Unnamed Object')
+		},
+
+		/**
+		 * The name an object's remove button says it removes.
+		 *
+		 * @spec exclude Client-side display helper.
+		 * @param {object} obj The object
+		 * @return {string} Its name, or its id when it has none
+		 */
+		removedName(obj) {
+			if (this.nameOf) {
+				return this.nameOf(obj)
+			}
+			return this.titleOf(obj) || obj.id
 		},
 	},
 }

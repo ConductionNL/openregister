@@ -107,4 +107,59 @@ describe('Views Store — kanban/calendar presentation fetches (object-views-kan
 			)
 		})
 	})
+
+	describe('view save carries the presentation and surfaces refusals (saved-view-presentation-picker)', () => {
+		it('POSTs the presentation with a created view', async () => {
+			fetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ view: { id: 'v9' } }),
+			})
+
+			await store.createView({
+				name: 'Board',
+				presentation: { viewType: 'kanban', kanban: { groupByField: 'status' } },
+			})
+
+			const [, options] = fetch.mock.calls[0]
+			expect(JSON.parse(options.body).presentation).toEqual({
+				viewType: 'kanban',
+				kanban: { groupByField: 'status' },
+			})
+		})
+
+		it('PUTs the presentation with an updated view, keeping it through cleanViewForSave', async () => {
+			fetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ view: { id: 'v9' } }),
+			})
+
+			await store.updateView('v9', {
+				id: 'v9',
+				name: 'Board',
+				presentation: { viewType: 'calendar', calendar: { dateField: 'ontvangst' } },
+			})
+
+			const [, options] = fetch.mock.calls[0]
+			const sent = JSON.parse(options.body)
+			expect(sent.presentation).toEqual({ viewType: 'calendar', calendar: { dateField: 'ontvangst' } })
+			expect(sent.id).toBeUndefined()
+		})
+
+		it('surfaces the server error body on a refused save, so the field message is not lost', async () => {
+			fetch.mockResolvedValueOnce({
+				ok: false,
+				status: 400,
+				json: async () => ({ error: 'A calendar presentation requires a non-empty calendar.dateField' }),
+			})
+
+			await expect(
+				store.updateView('v9', { name: 'Bad', presentation: { viewType: 'calendar', calendar: {} } }),
+			).rejects.toMatchObject({
+				status: 400,
+				body: { error: 'A calendar presentation requires a non-empty calendar.dateField' },
+				message: 'A calendar presentation requires a non-empty calendar.dateField',
+			})
+		})
+	})
+
 })
