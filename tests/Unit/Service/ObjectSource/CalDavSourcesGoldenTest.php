@@ -34,9 +34,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\TaskService;
@@ -50,6 +51,16 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\ObjectSource\VtodoScope
+ * @uses \OCA\OpenRegister\Service\ObjectSource\VtodoSelection
  */
 class CalDavSourcesGoldenTest extends TestCase {
 
@@ -108,8 +119,9 @@ class CalDavSourcesGoldenTest extends TestCase {
 	 */
 	private function vtodo(?array $rows, ?array $apps = ['dav']): CalDavVtodoObjectSourceProvider {
 		$service = $this->createMock(TaskService::class);
-		$service->method('getAllUserTasks')->willReturnCallback(
-			function (?string $status = null, int $limit = 50, int $offset = 0) use ($rows): array {
+		$service->method('listUserTasks')->willReturnCallback(
+			function (?string $status, ListQuery $query) use ($rows): array {
+				[$limit, $offset] = [$query->limit, (int)$query->offset];
 				$this->log[] = ['getAllUserTasks', $status, $limit, $offset];
 				if ($rows === null) {
 					throw new RuntimeException('caldav down');
@@ -129,7 +141,7 @@ class CalDavSourcesGoldenTest extends TestCase {
 	 * @return CalendarEventObjectSourceProvider The provider.
 	 */
 	private function vevent(?array $rows, ?array $apps = ['dav']): CalendarEventObjectSourceProvider {
-		$service = $this->createMock(CalendarEventService::class);
+		$service = $this->createMock(UserCalendarEventsInterface::class);
 		$service->method('getAllUserEvents')->willReturnCallback(
 			function (int $limit = 200, int $offset = 0) use ($rows): array {
 				$this->log[] = ['getAllUserEvents', $limit, $offset];

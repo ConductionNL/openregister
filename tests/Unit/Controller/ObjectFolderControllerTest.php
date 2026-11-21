@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectFolderControllerFactory;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use Exception;
 use OCA\OpenRegister\Files\Controller\ObjectFolderController;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -630,9 +632,8 @@ class ObjectFolderControllerTest extends TestCase {
 		$stored = $this->file(id: 202, path: self::ROOT_PATH . '/Bijlagen/nota.txt', name: 'nota.txt');
 		$this->fileService->expects($this->once())->method('addFile')
 			->with(
-				$this->object,
-				'Bijlagen/nota.txt',
-				$this->callback(static fn ($content): bool => is_resource($content) === true && stream_get_contents($content) === 'aGFsbG8=')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $this->object),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'Bijlagen/nota.txt' && $this->callback(static fn ($content): bool => is_resource($content) === true && stream_get_contents($content) === 'aGFsbG8=')->evaluate($upload->content, '', true))
 			)
 			->willReturn($stored);
 

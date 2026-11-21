@@ -44,6 +44,13 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\RevertController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\RevertControllerServices
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\RevertPoint
+ * @uses \OCA\OpenRegister\Exception\LockedException
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
  */
 final class RevertControllerA24GoldenTest extends TestCase {
 
@@ -128,31 +135,33 @@ final class RevertControllerA24GoldenTest extends TestCase {
 		$controller = $this->controller(params: ['version' => '2'], objects: $objects);
 		$reverted = $this->reverted();
 		$this->handler->method('revert')->willReturn($reverted);
-		$objects->expects($this->once())->method('renderEntity')->with($reverted, [], 0, [], [], [], true)->willReturn(['masked' => true]);
+		$objects->expects($this->once())->method('renderEntity')->with($reverted, null, true)->willReturn(['masked' => true]);
 		$response = $controller->revert('r', 's', 'u-1');
 
 		$this->assertSame([200, ['masked' => true]], [$response->getStatus(), $response->getData()]);
 	}//end testTheAnswerIsTheRenderedRead()
 
 	/**
-	 * Each refusal keeps its own status and message.
+	 * Each refusal keeps its own status and answers a fixed sentence, never the exception's text.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	public function testEveryRefusal(): void {
 		$cases = [
-			[new DoesNotExistException('gone'), 404, 'Object not found'],
-			[new NotAuthorizedException('no update'), 403, 'no update'],
-			[new LockedException('locked by anna'), 423, 'locked by anna'],
-			[new ObjectStateWriteException('frozen'), 409, 'frozen'],
-			[new ValidationException('no longer fits'), 400, 'no longer fits'],
-			[new \RuntimeException('db down'), 500, 'db down'],
+			[new DoesNotExistException('gone'), 404, 'Record not found.'],
+			[new NotAuthorizedException('no update'), 403, 'You may not restore this record.'],
+			[new LockedException('locked by anna'), 423, 'This record is locked by someone else.'],
+			[new ObjectStateWriteException('frozen'), 409, 'This record is archived or frozen and cannot be changed.'],
+			[new ValidationException('no longer fits'), 422, "This version does not fit the record's schema as it is now."],
+			[new \RuntimeException('db down'), 500, 'The record could not be restored.'],
 		];
 		foreach ($cases as [$exception, $status, $message]) {
 			$controller = $this->controller(params: ['auditTrailId' => 3]);
 			$this->handler->method('revert')->willThrowException($exception);
 			$response = $controller->revert('r', 's', 'u-1');
-			$this->assertSame([$status, ['error' => $message]], [$response->getStatus(), $response->getData()]);
+			$this->assertSame([$status, $message], [$response->getStatus(), $response->getData()['error']]);
 		}
 	}//end testEveryRefusal()
 }//end class

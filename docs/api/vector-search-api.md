@@ -31,7 +31,7 @@ Find documents by meaning using vector similarity.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/semantic?query=budget+planning&limit=5&threshold=0.75' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/semantic?query=budget+planning&limit=5&threshold=0.75' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -120,7 +120,7 @@ Combines keyword (SOLR) and semantic (vector) search for best results.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/hybrid?query=Amsterdam+projects&limit=10&semanticWeight=0.6&keywordWeight=0.4' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/search/hybrid?query=Amsterdam+projects&limit=10&semanticWeight=0.6&keywordWeight=0.4' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -183,6 +183,70 @@ where:
 
 ---
 
+## Reading a file's extracted text
+
+**Endpoint**: `GET /api/files/{fileId}/text`
+
+Returns the text OpenRegister extracted from a file, assembled from its stored
+chunks in reading order. It answers as the requesting user: the file is looked
+up in that user's own folder, so a file they cannot open is never read.
+
+**Response (200)**:
+
+```json
+{
+  "success": true,
+  "fileId": 812,
+  "text": "Quarterly report ...",
+  "chunkCount": 4,
+  "extractedAt": "2026-11-03T09:30:00+00:00",
+  "file_id": 812,
+  "length": 5120
+}
+```
+
+`chunkCount` counts the content chunks (the metadata chunk is left out);
+`extractedAt` is the latest time one of them was written, or `null`. `file_id`
+and `length` are kept for callers of the earlier answer.
+
+**Errors** (both 404, each with its own sentence):
+
+| Case | `message` |
+|------|-----------|
+| The caller cannot open the file, or it does not exist | `File not found.` |
+| The file has no extracted text yet | `No text has been extracted from this file yet.` |
+
+Extraction is started with `POST /api/files/{fileId}/extract`.
+
+### Read rights on search results
+
+`POST /api/search/files/semantic` and `POST /api/search/files/hybrid` keep only
+the files the caller can open; another user's file never appears in the results.
+The facade below additionally asks the vector store for three times the limit
+before filtering, so its page stays full when it can.
+
+## Vector search facade (for other apps)
+
+`OCA\OpenRegister\Service\Search\VectorSearchFacade` is a public cross-app
+contract, used the same way as `ToolRegistryFacade`: other Nextcloud apps get
+it from the container and call it in the current user's context.
+
+| Method | Returns |
+|--------|---------|
+| `isAvailable(): bool` | `false` when no embedding provider is configured, so the caller can fall back to keyword search |
+| `searchSemantic(string $query, int $limit = 10, array $views = []): array` | rows ranked by vector similarity |
+| `searchHybrid(string $query, int $limit = 10, array $views = []): array` | rows ranked by fused keyword and vector score |
+| `embedTexts(array $texts): array` | one embedding (list of floats) per text |
+
+Each row has `entity_id`, `entity_type` (`object` or `file`), `chunk_text`,
+`similarity` and `metadata`. `$limit` is capped at 50. `$views` narrows
+`object` rows to the registers and schemas of those views; an empty list means
+all. Every row is checked against the caller's read rights before it is
+returned: files through the caller's own folder, objects through the object
+permission check. Signatures are stable; changing one needs an OpenSpec change.
+
+---
+
 ## Vectorization Endpoints
 
 ### Vectorize Single Object
@@ -201,7 +265,7 @@ Generate and store embedding for a specific object.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/123/vectorize?provider=openai' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/123/vectorize?provider=openai' \
   -u admin:admin \
   -H "Content-Type: application/json"
 ```
@@ -255,7 +319,7 @@ Vectorize multiple objects in batch (efficient for large datasets).
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/bulk' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/bulk' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -336,7 +400,7 @@ Retrieve stats about vectorized content.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/stats' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/solr/objects/vectorize/stats' \
   -u admin:admin
 ```
 
@@ -404,7 +468,7 @@ Send a message to the AI assistant and get a RAG-powered response.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/chat/send' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/chat/send' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{
@@ -466,7 +530,7 @@ Retrieve conversation history for the current user.
 
 **Request Example**:
 ```bash
-curl -X GET 'http://nextcloud.local/apps/openregister/api/chat/history?limit=20' \
+curl -H 'OCS-APIRequest: true' -X GET 'http://nextcloud.local/apps/openregister/api/chat/history?limit=20' \
   -u admin:admin
 ```
 
@@ -500,7 +564,7 @@ Delete all conversation history for the current user.
 
 **Request Example**:
 ```bash
-curl -X DELETE 'http://nextcloud.local/apps/openregister/api/chat/history' \
+curl -H 'OCS-APIRequest: true' -X DELETE 'http://nextcloud.local/apps/openregister/api/chat/history' \
   -u admin:admin
 ```
 
@@ -530,7 +594,7 @@ Submit feedback (thumbs up/down) for an AI response.
 
 **Request Example**:
 ```bash
-curl -X POST 'http://nextcloud.local/apps/openregister/api/chat/feedback' \
+curl -H 'OCS-APIRequest: true' -X POST 'http://nextcloud.local/apps/openregister/api/chat/feedback' \
   -u admin:admin \
   -H "Content-Type: application/json" \
   -d '{"messageId": 42, "feedback": "positive"}'

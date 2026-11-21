@@ -175,6 +175,24 @@ class GenericActionAuthService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function getMatrix(): array {
+		$matrix = [];
+		foreach ($this->storedMatrix() as $action => $groups) {
+			if (is_string($action) === false || is_array($groups) === false) {
+				continue;
+			}
+
+			$matrix[$action] = self::groupNames(groups: $groups);
+		}
+
+		return $matrix;
+	}//end getMatrix()
+
+	/**
+	 * The stored matrix as decoded; empty when it is not valid JSON or not an object.
+	 *
+	 * @return array
+	 */
+	private function storedMatrix(): array {
 		$json = $this->appConfig->getValueString($this->appId, static::CONFIG_KEY, '{}');
 
 		try {
@@ -187,24 +205,26 @@ class GenericActionAuthService {
 			return [];
 		}
 
-		$matrix = [];
-		foreach ($decoded as $action => $groups) {
-			if (is_string($action) === false || is_array($groups) === false) {
-				continue;
-			}
+		return $decoded;
+	}//end storedMatrix()
 
-			$clean = [];
-			foreach ($groups as $group) {
-				if (is_string($group) === true && $group !== '') {
-					$clean[] = $group;
-				}
+	/**
+	 * The distinct non-empty group names of one action, in stored order.
+	 *
+	 * @param array $groups The stored groups of an action.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function groupNames(array $groups): array {
+		$clean = [];
+		foreach ($groups as $group) {
+			if (is_string($group) === true && $group !== '') {
+				$clean[] = $group;
 			}
-
-			$matrix[$action] = array_values(array_unique($clean));
 		}
 
-		return $matrix;
-	}//end getMatrix()
+		return array_values(array_unique($clean));
+	}//end groupNames()
 
 	/**
 	 * Write the full matrix. Caller MUST enforce admin-only before invoking;
@@ -234,6 +254,31 @@ class GenericActionAuthService {
 		$json = json_encode($normalized, flags: JSON_THROW_ON_ERROR);
 		$this->appConfig->setValueString($this->appId, static::CONFIG_KEY, $json);
 	}//end setMatrix()
+
+	/**
+	 * Add the actions the matrix lacks, never touching an entry it already has.
+	 *
+	 * An entry already stored may be an administrator's narrowing, so only keys
+	 * absent from the stored matrix are written.
+	 *
+	 * @param array<string, array<int, string>> $actions Groups per action to add when absent.
+	 *
+	 * @return array<int, string> The actions that were added.
+	 *
+	 * @throws \JsonException When the matrix cannot be encoded.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-the-action-rights-are-administered-and-published
+	 */
+	public function addMissing(array $actions): array {
+		$existing = $this->getMatrix();
+		$missing  = array_diff_key($actions, $existing);
+		if ($missing === []) {
+			return [];
+		}
+
+		$this->setMatrix(array_merge($existing, $missing));
+		return array_map('strval', array_keys($missing));
+	}//end addMissing()
 
 	/**
 	 * List all action keys currently in the matrix.

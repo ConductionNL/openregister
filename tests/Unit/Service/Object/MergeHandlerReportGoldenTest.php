@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +36,15 @@ use RuntimeException;
  * fixtures/merge-handler-report-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\MergeHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\Object\FileActionRun
+ * @uses \OCA\OpenRegister\Service\Object\FileMove
+ * @uses \OCA\OpenRegister\Service\Object\MergeRun
  */
 class MergeHandlerReportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/merge-handler-report-golden.json';
@@ -111,7 +122,8 @@ class MergeHandlerReportGoldenTest extends TestCase {
 		$fileService->method('getFiles')->willReturn(
 			[$this->file(name: 'a.pdf'), $this->createMock(Folder::class), $this->file(name: 'stuck.pdf'), $this->file(name: 'broken.pdf')]
 		);
-		$fileService->method('addFile')->willReturnCallback(function ($objectEntity, $fileName): File {
+		$fileService->method('addFile')->willReturnCallback(function (FileTarget $target, FileUpload $upload): File {
+			$fileName = $upload->fileName;
 			if ($fileName === 'broken.pdf') {
 				throw new RuntimeException('quota');
 			}

@@ -71,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class ErasureGoldenTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -579,8 +580,9 @@ final class ErasureGoldenTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(DestructionRecorder::class);
-		$recorder->method('record')->willReturnCallback(
-			function (ObjectEntity $object, array $scope, string $rule, array $context): array {
+		$recorder->method('recordDestruction')->willReturnCallback(
+			function (RecordDestructionCommand $command): array {
+				[$object, $scope, $rule, $context] = [$command->object, $command->scope, $command->rule, $command->context];
 				$this->calls[] = 'record:' . $object->getUuid() . ':' . $rule . ':' . json_encode($context);
 				if ($object->getUuid() === 'x3') {
 					throw new RuntimeException('record failed');

@@ -153,3 +153,33 @@ describe.each([
 		expect(navigationStore.setDialog.mock.calls).toEqual([[false]])
 	})
 })
+
+describe('audit trail value formatting', () => {
+	const cyclic = { name: 'loop' }
+	cyclic.self = cyclic
+	const VALUES = [
+		null,
+		undefined,
+		'',
+		'text',
+		0,
+		42,
+		false,
+		true,
+		{ a: 1, b: [2, 3] },
+		[1, 'two'],
+		cyclic,
+	]
+
+	it('formats every kind of value in the changes modal', () => {
+		expect(
+			VALUES.map((value) => AuditTrailChanges.methods.formatValue(value)),
+		).toMatchSnapshot()
+	})
+
+	it('formats every kind of value in the details modal', () => {
+		expect(
+			VALUES.map((value) => AuditTrailDetails.methods.formatFieldValue(value)),
+		).toMatchSnapshot()
+	})
+})

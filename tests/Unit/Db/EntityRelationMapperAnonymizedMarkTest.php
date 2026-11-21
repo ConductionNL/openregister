@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class EntityRelationMapperAnonymizedMarkTest extends TestCase {
 	use RecordingQueryBuilderTrait;

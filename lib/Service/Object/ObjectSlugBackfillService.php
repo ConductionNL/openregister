@@ -71,40 +71,20 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 	}//end __construct()
 
 	/**
-	 * Run the backfill.
+	 * Check the schema, report the duplicates, plan the fill and write it unless dry.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema; must set `objectSlugField`.
-	 * @param bool     $dryRun   Plan only, write nothing.
+	 * @param ObjectSlugBackfillRequest $request The run's register, schema (which must set `objectSlugField`) and
+	 *                                           whether to plan only and write nothing.
 	 *
-	 * @return array{
-	 *     duplicates: array<string, list<string>>,
-	 *     plan: list<array{uuid: string, old: ?string, new: ?string}>,
-	 *     summary: array{scanned: int, assigned: int, collisions: int, unchanged: int, duplicates: int, skipped: int}
-	 * } What was found and what was (or would be) written.
+	 * @return array{duplicates: array<string, list<string>>, plan: list<array>, summary: array<string, int>}
+	 *         What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
 	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
 	 */
-	public function run(Register $register, Schema $schema, bool $dryRun=false): array {
-		return $this->runRequest(request: new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun));
-	}//end run()
-
-	/**
-	 * Check the schema, report the duplicates, plan the fill and write it unless dry.
-	 *
-	 * @param ObjectSlugBackfillRequest $request The run's register, schema and mode.
-	 *
-	 * @return array{duplicates: array<string, list<string>>, plan: list<array>, summary: array<string, int>} As run().
-	 *
-	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
-	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails.
-	 */
-	private function runRequest(ObjectSlugBackfillRequest $request): array {
+	public function run(ObjectSlugBackfillRequest $request): array {
 		$register = $request->register;
 		$schema = $request->schema;
 		if ($this->slugHandler->isManaged(schema: $schema) === false) {
@@ -134,7 +114,7 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 		}
 
 		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
-	}//end runRequest()
+	}//end run()
 
 	/**
 	 * Warn about every slug more than one object holds already; they stay as they are.
@@ -198,7 +178,7 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 					'uuid' => $row['uuid'],
 					'slug' => $row['slug'],
 					'created' => $row['created'] ?? null,
-					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null),
+					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema),
 				];
 			}
 

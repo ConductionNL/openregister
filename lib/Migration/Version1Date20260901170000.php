@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the three business-timer tables.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
  */
 class Version1Date20260901170000 extends SimpleMigrationStep {
 	/**
@@ -84,7 +84,7 @@ class Version1Date20260901170000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -123,7 +123,7 @@ class Version1Date20260901170000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	private function createTimers(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_TIMERS);
@@ -207,7 +207,7 @@ class Version1Date20260901170000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	private function createFires(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_FIRES);
@@ -233,7 +233,7 @@ class Version1Date20260901170000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	private function createEvents(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_EVENTS);

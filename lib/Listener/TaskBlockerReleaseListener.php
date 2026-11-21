@@ -40,6 +40,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
 
 /**
  * Releases a closed task's dependants.
@@ -92,10 +93,12 @@ class TaskBlockerReleaseListener implements IEventListener {
 		foreach ($dependants as $dependant) {
 			try {
 				$this->service->record(
-					uuid: (string)$dependant->getUuid(),
-					action: 'released',
-					actor: null,
-					reason: sprintf("Task '%s' it waited on reached state '%s'.", $blocker, $event->getState())
+					entry: new TaskAuditEntry(
+						uuid: (string)$dependant->getUuid(),
+						action: 'released',
+						actor: null,
+						reason: sprintf("Task '%s' it waited on reached state '%s'.", $blocker, $event->getState())
+					)
 				);
 			} catch (Throwable $failure) {
 				$this->logger->warning(

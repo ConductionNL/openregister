@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCP\IRequest;
 /**
  * Admin only (no NoAdminRequired): GET previews, POST applies, one named part each.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ShippedBaselineController extends Controller {
 
@@ -62,7 +62,7 @@ class ShippedBaselineController extends Controller {
 	 * @NoCSRFRequired
 	 * @auth admin-only a preview shows a schema's shipped authorization, which only an administrator reads
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function preview(string $id, string $path=''): JSONResponse {
 		try {
@@ -82,7 +82,7 @@ class ShippedBaselineController extends Controller {
 	 *
 	 * @auth admin-only a reset changes who may read a schema's objects, so only an administrator applies it, with the CSRF check on
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function reset(string $id, string $path=''): JSONResponse {
 		try {

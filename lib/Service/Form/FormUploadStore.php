@@ -301,6 +301,18 @@ class FormUploadStore implements FormUploadStoreInterface {
 	}//end liveMeta()
 
 	/**
+	 * Whether claiming a token leaves a record: only a draft claim of a token that was live does.
+	 *
+	 * @param string|null               $draftId The draft the files now sit on; null for a final submit.
+	 * @param array<string, mixed>|null $meta    The token's record before it was deleted; null when unknown.
+	 *
+	 * @return bool
+	 */
+	private static function leavesClaimRecord(?string $draftId, ?array $meta): bool {
+		return $draftId !== null && $meta !== null;
+	}//end leavesClaimRecord()
+
+	/**
 	 * Delete claimed tokens: their bytes now live on the destination object.
 	 *
 	 * A token claimed for a draft leaves a small record behind (which form,
@@ -325,29 +337,11 @@ class FormUploadStore implements FormUploadStoreInterface {
 		foreach ($tokens as $token) {
 			$meta = $this->meta(token: $token);
 			$this->deleteToken(folder: $folder, token: $token);
-			if ($draftId !== null && $meta !== null) {
+			if (self::leavesClaimRecord(draftId: $draftId, meta: $meta) === true) {
 				$claims->record(token: $token, claim: new FormUploadClaim(formId: $meta['formId'], property: $meta['property'], draftId: $draftId));
 			}
 		}
 	}//end claim()
-
-	/**
-	 * A token as the upload for the property a payload put it on, or null when the draft already holds that file.
-	 *
-	 * @param string      $formId   The form submitting it.
-	 * @param string      $property The destination property the payload put the token on.
-	 * @param string      $token    The token.
-	 * @param string|null $draftId  The draft being saved or left; a token it already claimed is satisfied.
-	 *
-	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null The upload, null when satisfied.
-	 *
-	 * @throws FormSubmitRefusedException 422 when the token is unknown, expired, another form's or issued for another property.
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
-	 */
-	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
-		return $this->redeemClaim(claim: new FormUploadClaim(formId: $formId, property: $property, draftId: $draftId), token: $token);
-	}//end redeem()
 
 	/**
 	 * A token as the upload for the claim's property, or null when the claim's draft already holds that file.
@@ -361,14 +355,14 @@ class FormUploadStore implements FormUploadStoreInterface {
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function redeemClaim(FormUploadClaim $claim, string $token): ?array {
+	public function redeem(FormUploadClaim $claim, string $token): ?array {
 		$claims = new FormUploadClaims(time: $this->time, folder: $this->folder(create: false));
 		if ($claims->isClaimedBy(token: $token, claim: $claim) === true) {
 			return null;
 		}
 
 		return $this->forProperty(file: $this->materialise(formId: $claim->formId, token: $token), property: $claim->property);
-	}//end redeemClaim()
+	}//end redeem()
 
 	/**
 	 * A materialised upload for the property it was issued for, without that property.

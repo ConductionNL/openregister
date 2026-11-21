@@ -236,7 +236,10 @@ class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 		$declaration = $query->declaration;
 		$concept = $query->concept(uri: $uri);
 		$lifecycle = $this->scheme->lifecycle;
-		if ($lifecycle->isOfferable(concept: $concept, at: $query->reading->instant, allowDeprecated: $declaration->allowDeprecated) === false) {
+		$offerable = ($declaration->allowDeprecated === true)
+			? $lifecycle->isWithinWindow(concept: $concept, at: $query->reading->instant)
+			: $lifecycle->isOfferable(concept: $concept, at: $query->reading->instant);
+		if ($offerable === false) {
 			return false;
 		}
 

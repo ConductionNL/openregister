@@ -251,23 +251,14 @@ interface AppSettingsInterface {
 	 * Re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
 	 *
-	 * @param int $maxObjects Maximum number of objects to process (0 = all).
-	 * @param int $batchSize Batch size for processing (default: 1000).
-	 * @param string $mode Processing mode: 'serial' or 'parallel'.
-	 * @param bool $collectErrors Whether to collect all errors or stop on first.
+	 * @param MassValidationRequest $request How many objects (0 = all), the batch size, the mode
+	 *                                       ('serial' or 'parallel') and whether all errors are collected.
 	 *
 	 * @return array Mass validation results
 	 *
 	 * @throws \Exception If mass validation operation fails.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for error collection behavior
 	 */
-	public function massValidateObjects(
-		int $maxObjects = 0,
-		int $batchSize = 1000,
-		string $mode = 'serial',
-		bool $collectErrors = false,
-	): array;
+	public function massValidate(MassValidationRequest $request): array;
 
 	/**
 	 * Rebase configuration from source.
@@ -291,15 +282,14 @@ interface AppSettingsInterface {
 	/**
 	 * Persist the Deck default board+stack for a schema. Overwrites any prior value.
 	 *
-	 * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-	 * @param int $boardId NC Deck board id.
-	 * @param int $stackId NC Deck stack id on that board.
+	 * @param string        $schemaSlug Schema slug or numeric id used to scope the default.
+	 * @param DeckPlacement $placement  The NC Deck board id and the stack id on that board.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void;
+	public function setDeckDefault(string $schemaSlug, DeckPlacement $placement): void;
 
 	/**
 	 * Update archival settings only
@@ -407,7 +397,7 @@ interface AppSettingsInterface {
 	 * Validate all objects in the system
 	 *
 	 * Triggers validation logic for all objects without re-saving them.
-	 * This is a lighter-weight operation compared to massValidateObjects.
+	 * This is a lighter-weight operation compared to massValidate.
 	 *
 	 * @return array Validation results
 	 *

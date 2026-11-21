@@ -245,6 +245,59 @@ class ShippedConfigurationGuardAuditGoldenTest extends TestCase {
 	}//end testResetRowsAllowedAndRefused()
 
 	/**
+	 * The whole reset outcome, refused without an actor, refused for an unchanged part,
+	 * applied without recording, and applied with recording.
+	 *
+	 * @return void
+	 */
+	public function testResetOutcomesArePinnedWhole(): void {
+		$baseline = ['properties' => ['t' => ['maxLength' => 500]]];
+		$live = ['properties' => ['t' => ['maxLength' => 2000]]];
+
+		$this->assertSame(
+			[
+				'applied' => false,
+				'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
+				'from' => null,
+				'to' => null,
+				'definition' => $live,
+			],
+			$this->guard(baseline: $baseline)->resetToBaseline(slug: 'zaak', live: $live, path: 'properties.t.maxLength')
+		);
+		$this->assertSame([], $this->rows);
+
+		$this->assertSame(
+			[
+				'applied' => false,
+				'reason' => '"properties.t.maxLength" already matches what was shipped',
+				'from' => 500,
+				'to' => 500,
+				'definition' => $baseline,
+			],
+			$this->guard(baseline: $baseline, actor: 'beheerder')->resetToBaseline(slug: 'zaak', live: $baseline, path: 'properties.t.maxLength')
+		);
+
+		$applied = [
+			'applied' => true,
+			'reason' => '',
+			'from' => 2000,
+			'to' => 500,
+			'definition' => $baseline,
+		];
+		$this->assertSame(
+			$applied,
+			$this->guard(baseline: $baseline, actor: 'beheerder')->resetToBaseline(slug: 'zaak', live: $live, path: 'properties.t.maxLength', record: false)
+		);
+		$this->assertSame([], $this->rows, 'record: false leaves the row to the caller');
+
+		$this->assertSame(
+			$applied,
+			$this->guard(baseline: $baseline, actor: 'beheerder')->resetToBaseline(slug: 'zaak', live: $live, path: 'properties.t.maxLength')
+		);
+		$this->assertCount(1, $this->rows);
+	}//end testResetOutcomesArePinnedWhole()
+
+	/**
 	 * recordShippedSchema() records the definition under the schema subject with its release.
 	 *
 	 * @return void

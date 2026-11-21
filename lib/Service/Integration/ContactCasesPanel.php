@@ -70,31 +70,50 @@ class ContactCasesPanel {
 	 * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md
 	 */
 	public function group(array $rows): array {
-		$groups = [];
-		$unreadable = 0;
-		$total = 0;
+		$rows = array_values(array_filter($rows, is_array(...)));
 
-		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			$total++;
-
-			$schema = self::readableSchema(row: $row);
-			if ($schema === null) {
-				$unreadable++;
-				continue;
-			}
-
-			$groups[$schema] = self::withRow(group: ($groups[$schema] ?? self::newGroup(schema: $schema, row: $row)), row: $row);
-		}
-
-		$groups = array_values($groups);
+		$groups = array_values(self::groupedBySchema(rows: $rows));
 		usort($groups, [self::class, 'compareGroups']);
 
-		return ['groups' => $groups, 'unreadable' => $unreadable, 'total' => $total];
+		return ['groups' => $groups, 'unreadable' => self::unreadableCount(rows: $rows), 'total' => count($rows)];
 	}//end group()
+
+	/**
+	 * The readable rows, grouped by their schema in the order the schemas first appear.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 *
+	 * @return array<string, array<string, mixed>> The groups by schema.
+	 */
+	private static function groupedBySchema(array $rows): array {
+		$groups = [];
+		foreach ($rows as $row) {
+			$schema = self::readableSchema(row: $row);
+			if ($schema !== null) {
+				$groups[$schema] = self::withRow(group: ($groups[$schema] ?? self::newGroup(schema: $schema, row: $row)), row: $row);
+			}
+		}
+
+		return $groups;
+	}//end groupedBySchema()
+
+	/**
+	 * How many rows cannot be read.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 *
+	 * @return int
+	 */
+	private static function unreadableCount(array $rows): int {
+		$unreadable = 0;
+		foreach ($rows as $row) {
+			if (self::readableSchema(row: $row) === null) {
+				$unreadable++;
+			}
+		}
+
+		return $unreadable;
+	}//end unreadableCount()
 
 	/**
 	 * The schema a row is grouped under, or null when the reader may not see it.

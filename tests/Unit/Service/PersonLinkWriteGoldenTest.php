@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -175,7 +176,8 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$existing->setContactUid('user:jan');
 		$existing->setNote('kept');
 		$links->method('findByObjectContactAndRole')->willReturnCallback(
-			function (...$args) use ($existing): ?ContactLink {
+			function (PersonLinkRef $ref) use ($existing): ?ContactLink {
+				$args = [$ref->objectUuid, $ref->contactUid, $ref->role];
 				$this->calls[] = 'find:'.json_encode($args);
 				if ($args[2] === 'handler') {
 					return $existing;
