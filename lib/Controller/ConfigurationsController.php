@@ -27,7 +27,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;

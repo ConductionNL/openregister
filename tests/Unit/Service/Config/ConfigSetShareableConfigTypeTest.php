@@ -61,7 +61,7 @@ class ConfigSetShareableConfigTypeTest extends TestCase {
 
 	public function testSerialiseByAppUsesTheFirstMatch(): void {
 		$config = $this->createMock(Configuration::class);
-		$this->mapper->expects($this->once())->method('findByAppInOrganisation')->with('openbuild', new \OCA\OpenRegister\Db\ListQuery(limit: 50, offset: 0))->willReturn([$config]);
+		$this->mapper->expects($this->once())->method('findByAppInOrganisation')->with('openbuild', new \OCA\OpenRegister\Kernel\Contracts\ListQuery(limit: 50, offset: 0))->willReturn([$config]);
 		$this->configService->expects($this->once())->method('exportConfig')
 			->with($config, true)
 			->willReturn(['openapi' => '3.0.0']);

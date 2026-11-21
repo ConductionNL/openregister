@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\ConfigurationRecords;

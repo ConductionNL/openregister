@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
-use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -51,7 +51,7 @@ class ConfigurationMapperListingGoldenTest extends TestCase {
 		return new ConfigurationMapper(
 			$this->recordingDb(),
 			new TenancyServices($this->createMock(OrganisationMapper::class), $session, $groups),
-			$this->createMock(IEventDispatcher::class)
+			$this->createMock(EntityEventsInterface::class)
 		);
 	}//end mapper()
 
