@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use InvalidArgumentException;
@@ -63,8 +64,7 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 	 * Create the previewed job.
 	 *
 	 * @param ObjectActionSelection $selection The selection, its schema, and the register and schema as named.
-	 * @param string                $action    The action key.
-	 * @param array<string, mixed>  $inputs    The inputs.
+	 * @param ObjectActionRequest   $request   The action key and the inputs.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
@@ -73,26 +73,42 @@ class ObjectActionBulk implements ObjectActionBulkInterface {
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function start(ObjectActionSelection $selection, string $action, array $inputs): BulkJob {
+	public function start(ObjectActionSelection $selection, ObjectActionRequest $request): BulkJob {
+		$parameters = ['action' => $request->key, 'inputs' => $request->given, 'register' => $selection->register, 'schema' => $selection->schemaRef];
+
+		return $this->create(selection: $selection, call: new BulkJobActionCall(actionId: RunActionActionInterface::ID, parameters: $parameters));
+	}//end start()
+
+	/**
+	 * Create the previewed job that makes this call on every selected object, as the signed-in user.
+	 *
+	 * @param ObjectActionSelection $selection The selection, its schema, and the register as named.
+	 * @param BulkJobActionCall     $call      The run-action call each member gets.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 * @throws InvalidArgumentException When nobody is signed in to run it as.
+	 */
+	private function create(ObjectActionSelection $selection, BulkJobActionCall $call): BulkJob {
 		$actorUid = $this->gate->userId();
 		if ($actorUid === null) {
 			throw new InvalidArgumentException('A bulk job runs as the person who starts it, so it needs a signed-in user.');
 		}
 
-		return $this->jobs->create(
-			call: new BulkJobActionCall(
-				actionId: RunActionActionInterface::ID,
-				parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $selection->register, 'schema' => $selection->schemaRef]
-			),
-			selection: new BulkJobSelection(
-				criteria: ['ids' => $selection->ids],
-				registerId: $this->registerId(register: $selection->register),
-				schemaId: $selection->schema->getId()
-			),
-			actorUid: $actorUid,
-			justification: null
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $call,
+				selection: new BulkJobSelection(
+					criteria: ['ids' => $selection->ids],
+					registerId: $this->registerId(register: $selection->register),
+					schemaId: $selection->schema->getId()
+				),
+				actorUid: $actorUid,
+				justification: null
+			)
 		);
-	}//end start()
+	}//end create()
 
 	/**
 	 * The register's id, or null when the name resolves to none.

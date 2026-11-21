@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
@@ -97,20 +98,18 @@ class ErasureRunner implements ErasureRunnerInterface {
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function run(ErasurePreview $record): array {
-		$subject = (string)($record->getSubject() ?? '');
-		$type = $record->getSubjectType();
-		$mode = (string)($record->getEraseMode() ?? DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
-
-		$fresh = $this->previewService->preview(subjectId: $subject, type: $type, eraseMode: $mode);
+		$run = new ApprovedErasureRun(record: $record);
+		$subject = new SubjectQuery(subjectId: $run->subject(), type: $record->getSubjectType());
+		$fresh = $this->previewService->preview(subject: $subject, eraseMode: $run->mode());
 		$this->refuseIfStale(record: $record, freshDigest: $fresh['digest']);
 
-		$hits = $this->hitsByUuid(subject: $subject, type: $type);
-		$outcome = $this->emptyOutcome(record: $record, subject: $subject, mode: $mode);
+		$run->hits = $this->hitsByUuid(subject: $subject);
+		$run->outcome = $this->emptyOutcome(run: $run);
 		foreach ($fresh['items'] as $item) {
-			$this->runOne(item: $item, hits: $hits, record: $record, outcome: $outcome);
+			$this->runOne(run: $run, item: $item);
 		}
 
-		$outcome = $this->conclude(outcome: $outcome);
+		$outcome = $this->conclude(outcome: $run->outcome);
 		$this->store->consume(preview: $record, outcome: $outcome);
 
 		return $outcome;
@@ -145,14 +144,13 @@ class ErasureRunner implements ErasureRunnerInterface {
 	/**
 	 * The subject's discovery hits, indexed by object uuid.
 	 *
-	 * @param string      $subject The subject value.
-	 * @param string|null $type    Optional GdprEntity type filter.
+	 * @param SubjectQuery $subject The subject value and optional GdprEntity type filter, exact match.
 	 *
 	 * @return array<string, array> The hits.
 	 */
-	private function hitsByUuid(string $subject, ?string $type): array {
+	private function hitsByUuid(SubjectQuery $subject): array {
 		$hits = [];
-		foreach ($this->subjects->findSubjectObjects(new SubjectQuery(subjectId: $subject, type: $type)) as $hit) {
+		foreach ($this->subjects->findSubjectObjects($subject) as $hit) {
 			$hits[(string)($hit['object']->getUuid() ?? '')] = $hit;
 		}
 
@@ -162,18 +160,16 @@ class ErasureRunner implements ErasureRunnerInterface {
 	/**
 	 * The run report before any item was acted on.
 	 *
-	 * @param ErasurePreview $record  The preview being run.
-	 * @param string         $subject The subject value.
-	 * @param string         $mode    The erase mode.
+	 * @param ApprovedErasureRun $run The run: the preview, its subject and mode.
 	 *
 	 * @return array<string, mixed> The empty outcome.
 	 */
-	private function emptyOutcome(ErasurePreview $record, string $subject, string $mode): array {
+	private function emptyOutcome(ApprovedErasureRun $run): array {
 		$outcome = [
-			'preview' => $record->getUuid(),
-			'request' => $record->getRequestId(),
-			'subject' => $subject,
-			'eraseMode' => $mode,
+			'preview' => $run->record->getUuid(),
+			'request' => $run->record->getRequestId(),
+			'subject' => $run->subject(),
+			'eraseMode' => $run->mode(),
 			'ranAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 		];
 
@@ -207,27 +203,24 @@ class ErasureRunner implements ErasureRunnerInterface {
 	/**
 	 * Act on one preview item.
 	 *
-	 * @param array<string, mixed> $item    The preview item.
-	 * @param array<string, array> $hits    Discovery hits indexed by uuid.
-	 * @param ErasurePreview       $record  The preview being run.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference).
+	 * @param ApprovedErasureRun   $run  The run: the preview, its hits and the report.
+	 * @param array<string, mixed> $item The preview item.
 	 *
 	 * @return void
 	 */
-	private function runOne(array $item, array $hits, ErasurePreview $record, array &$outcome): void {
+	private function runOne(ApprovedErasureRun $run, array $item): void {
 		if ((string)($item['bucket'] ?? '') === ErasureBucket::PROTECTED) {
-			$outcome['withheld'][] = $item;
+			$run->outcome['withheld'][] = $item;
 			return;
 		}
 
 		$uuid = (string)($item['uuid'] ?? '');
-		$hit = ($hits[$uuid] ?? null);
-		if ($hit === null) {
-			$outcome['failed'][] = ['uuid' => $uuid, 'error' => 'The object could not be loaded at run time.'];
+		if (($run->hits[$uuid] ?? null) === null) {
+			$run->outcome['failed'][] = ['uuid' => $uuid, 'error' => 'The object could not be loaded at run time.'];
 			return;
 		}
 
-		$this->actOn(item: $item, hit: $hit, record: $record, outcome: $outcome);
+		$this->actOn(run: $run, item: $item);
 	}//end runOne()
 
 	/**
@@ -236,45 +229,43 @@ class ErasureRunner implements ErasureRunnerInterface {
 	 * Anything not marked pseudonymised goes through the destruction path, whose
 	 * own per-object refusals decide whether it is actually destroyed.
 	 *
-	 * @param array<string, mixed> $item    The preview item.
-	 * @param array<string, mixed> $hit     The discovery hit for its object.
-	 * @param ErasurePreview       $record  The preview being run.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference).
+	 * @param ApprovedErasureRun   $run  The run: the preview, its hits and the report.
+	 * @param array<string, mixed> $item The preview item, whose object is loaded.
 	 *
 	 * @return void
 	 */
-	private function actOn(array $item, array $hit, ErasurePreview $record, array &$outcome): void {
+	private function actOn(ApprovedErasureRun $run, array $item): void {
 		if ((string)($item['bucket'] ?? '') === ErasureBucket::PSEUDONYMISED) {
-			$this->pseudonymise(item: $item, hit: $hit, record: $record, outcome: $outcome);
+			$this->pseudonymise(run: $run, item: $item);
 			return;
 		}
 
-		$this->destroyer->destroy(object: $hit['object'], record: $record, outcome: $outcome);
+		$hit = $run->hits[(string)($item['uuid'] ?? '')];
+		[$bucket, $entry] = $this->destroyer->destroy(object: $hit['object'], record: $run->record);
+		$run->outcome[$bucket][] = $entry;
 	}//end actOn()
 
 	/**
 	 * Scrub the subject's values from one object, through the audited write.
 	 *
-	 * @param array<string, mixed> $item    The preview item.
-	 * @param array<string, mixed> $hit     The discovery hit for its object.
-	 * @param ErasurePreview       $record  The preview being run.
-	 * @param array<string, mixed> $outcome The outcome (mutated by reference).
+	 * @param ApprovedErasureRun   $run  The run: the preview, its hits and the report.
+	 * @param array<string, mixed> $item The preview item, whose object is loaded.
 	 *
 	 * @return void
 	 */
-	private function pseudonymise(array $item, array $hit, ErasurePreview $record, array &$outcome): void {
+	private function pseudonymise(ApprovedErasureRun $run, array $item): void {
 		$uuid = (string)($item['uuid'] ?? '');
+		$hit = $run->hits[$uuid];
 		$saved = $this->subjects->pseudonymiseObject(
-			object: $hit['object'],
-			subjectId: (string)($record->getSubject() ?? ''),
-			matched: $hit['gdprEntities']
+			match: new SubjectMatch(object: $hit['object'], matched: $hit['gdprEntities']),
+			subjectId: $run->subject()
 		);
 
 		if ($saved === null) {
-			$outcome['failed'][] = ['uuid' => $uuid, 'error' => 'The scrub could not be persisted.'];
+			$run->outcome['failed'][] = ['uuid' => $uuid, 'error' => 'The scrub could not be persisted.'];
 			return;
 		}
 
-		$outcome['pseudonymised'][] = ['uuid' => $uuid, 'ground' => ($item['ground'] ?? null)];
+		$run->outcome['pseudonymised'][] = ['uuid' => $uuid, 'ground' => ($item['ground'] ?? null)];
 	}//end pseudonymise()
 }//end class

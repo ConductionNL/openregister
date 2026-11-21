@@ -32,10 +32,13 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Each case imports scripted records and records the summary plus every
@@ -45,6 +48,27 @@ use Psr\Log\LoggerInterface;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Db\SyncFailure
+ * @uses \OCA\OpenRegister\Db\SyncRecord
+ * @uses \OCA\OpenRegister\Db\SyncRecordInputs
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestImportServices
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestRun
+ * @uses \OCA\OpenRegister\Service\Sync\HarvestedRecord
+ * @uses \OCA\OpenRegister\Service\Sync\SourceMapping
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflict
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class HarvestPipelineImportGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/harvest-pipeline-import-golden.json';
@@ -171,7 +195,8 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use ($scenario, &$calls) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($scenario, &$calls) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$named = $args;
 				$calls[] = ['saveObject', $named];
 				$object = ($named['object'] ?? $named[0]);
@@ -230,7 +255,7 @@ class HarvestPipelineImportGoldenTest extends TestCase {
 			$entities[] = $record;
 		}
 
-		$summary = $pipeline->import($source, $entities, 'exec-1');
+		$summary = $pipeline->import(new HarvestRun($source, $this->createMock(SourceFetcherInterface::class), 'exec-1'), $entities);
 
 		$actual = json_decode((string) json_encode(['summary' => $summary, 'calls' => $calls]), true);
 		$case = (string) $this->dataName();

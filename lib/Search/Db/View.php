@@ -25,12 +25,12 @@ namespace OCA\OpenRegister\Search\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use OCP\AppFramework\Db\Entity;
-use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\IsoTimestampsTrait;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\Task;
 
 /**
  * Entity class representing a View
@@ -74,15 +74,15 @@ use OCA\OpenRegister\Db\Task;
  *
  * @SuppressWarnings(PHPMD.TooManyFields) Sixteen of the eighteen ARE the
  * columns of `oc_openregister_views`, one property each, the way every other
- * entity in this directory is built ({@see Task}, {@see ScheduledReport},
- * {@see TimelineEntry} and sixteen more carry this same suppression for the
+ * entity in this directory is built (Task, ScheduledReport, TimelineEntry
+ * and sixteen more carry this same suppression for the
  * same reason). Reducing the count would mean folding columns together, which
  * is a migration and a change to stored data, not a refactor. The remaining
  * two — `$managedByConfig` and `$access` — are transient decorations set per
  * request and never written, and merging those two into one bag would hide
  * what they are to move a number by one.
  */
-class View extends Entity implements JsonSerializable {
+class View extends Entity implements JsonSerializable, ViewInterface {
 	use IsoTimestampsTrait;
 
 	/**
@@ -123,9 +123,9 @@ class View extends Entity implements JsonSerializable {
 	/**
 	 * Configuration that manages this view (transient, not stored in DB)
 	 *
-	 * @var Configuration|null
+	 * @var ConfigurationInterface|null
 	 */
-	private ?Configuration $managedByConfig = null;
+	private ?ConfigurationInterface $managedByConfig = null;
 
 	/**
 	 * The access the current caller holds (transient, not stored in DB)
@@ -158,9 +158,10 @@ class View extends Entity implements JsonSerializable {
 	/**
 	 * Presentation configuration stored as JSON (nullable)
 	 *
-	 * Declares how the view renders: `viewType` (table|kanban|calendar) plus
-	 * type-specific config (kanban: groupByField/cardFields/columnOrder;
-	 * calendar: dateField/endDateField). Null means "not configured" and MUST
+	 * Declares how the view renders: `viewType` (table|kanban|calendar|gallery|tree)
+	 * plus type-specific config (kanban: groupByField/cardFields/columnOrder;
+	 * calendar: dateField/endDateField; gallery:
+	 * coverField/titleField/cardFields/cardSize; tree: labelField/fields). Null means "not configured" and MUST
 	 * render as `table` (the default) so existing views are unchanged.
 	 *
 	 * @var array|null Presentation configuration, or null for the default table view
@@ -354,6 +355,29 @@ class View extends Entity implements JsonSerializable {
 	public function jsonSerialize(): array {
 		$favoredBy = $this->favoredBy ?? [];
 
+		return array_merge(
+			$this->identityJson(),
+			$this->definitionJson(),
+			[
+				// `@self.access` is what this CALLER may do, and it is absent
+				// rather than guessed when nobody resolved it: a serialiser that
+				// answered `read` by default would tell a client the view is
+				// read-only on every path that forgot to ask.
+				'@self' => ['access' => $this->access],
+				'favoredBy' => $favoredBy,
+				'quota' => $this->quotaJson(),
+				'usage' => $this->usageJson(favoredBy: $favoredBy),
+			],
+			$this->timestampsJson()
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * Who the view is and who holds it.
+	 *
+	 * @return array<string, mixed> The identity part of the serialised view.
+	 */
+	private function identityJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -363,56 +387,79 @@ class View extends Entity implements JsonSerializable {
 			'organisation' => $this->organisation,
 			'isPublic' => $this->isPublic,
 			'isDefault' => $this->isDefault,
+		];
+	}//end identityJson()
+
+	/**
+	 * What the view searches and shows, its alert and its shares.
+	 *
+	 * @return array<string, mixed> The definition part of the serialised view.
+	 */
+	private function definitionJson(): array {
+		return [
 			'query' => $this->query,
 			'presentation' => $this->getPresentationFormatted(),
 			'alert' => $this->alert,
 			'alertState' => $this->alertState,
 			'sharedWith' => ($this->sharedWith ?? []),
-			// `@self.access` is what this CALLER may do, and it is absent
-			// rather than guessed when nobody resolved it: a serialiser that
-			// answered `read` by default would tell a client the view is
-			// read-only on every path that forgot to ask.
-			'@self' => ['access' => $this->access],
-			'favoredBy' => $favoredBy,
-			'quota' => [
-				'storage' => null,
-				// To be set via admin configuration.
-				'bandwidth' => null,
-				// To be set via admin configuration.
-				'requests' => null,
-				// To be set via admin configuration.
-				'users' => null,
-				// To be set via admin configuration.
-				'groups' => null,
-				// To be set via admin configuration.
-			],
-			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage (query executions).
-				'users' => count($favoredBy),
-				// Number of users who favorited this view.
-				'groups' => 0,
-				// Views don't have groups.
-			],
+		];
+	}//end definitionJson()
+
+	/**
+	 * The quota block; every limit is set via admin configuration, so all are null here.
+	 *
+	 * @return array<string, null> The quota block.
+	 */
+	private function quotaJson(): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'users' => null,
+			'groups' => null,
+		];
+	}//end quotaJson()
+
+	/**
+	 * The usage block: users is the number of users who favorited this view;
+	 * storage, bandwidth and requests are not calculated yet, and views have no groups.
+	 *
+	 * @param array $favoredBy The user ids who favorited this view.
+	 *
+	 * @return array<string, int> The usage block.
+	 */
+	private function usageJson(array $favoredBy): array {
+		return [
+			'storage' => 0,
+			'bandwidth' => 0,
+			'requests' => 0,
+			'users' => count($favoredBy),
+			'groups' => 0,
+		];
+	}//end usageJson()
+
+	/**
+	 * The timestamps and the managing configuration, formatted for the API.
+	 *
+	 * @return array<string, mixed> The timestamp part of the serialised view.
+	 */
+	private function timestampsJson(): array {
+		return [
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
 			'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
 		];
-	}//end jsonSerialize()
+	}//end timestampsJson()
 
 	/**
 	 * Get the presentation configuration, defaulted to the `table` view.
 	 *
 	 * A null `presentation` (never configured) MUST render exactly like an
-	 * unconfigured legacy view: `viewType: table` and no kanban/calendar
+	 * unconfigured legacy view: `viewType: table` and no kanban/calendar/gallery/tree
 	 * config. This is the single place that applies that default so both
 	 * the API response and any internal consumer see the same shape.
 	 *
-	 * @return array{viewType: string, kanban?: array, calendar?: array} The effective presentation config
+	 * @return array{viewType: string, kanban?: array, calendar?: array, gallery?: array, tree?: array} The effective presentation config
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
@@ -480,11 +527,11 @@ class View extends Entity implements JsonSerializable {
 	/**
 	 * Set the configuration that manages this view (transient property)
 	 *
-	 * @param Configuration|null $configuration The managing configuration
+	 * @param ConfigurationInterface|null $configuration The managing configuration
 	 *
 	 * @return void
 	 */
-	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
+	public function setManagedByConfigurationEntity(?ConfigurationInterface $configuration): void {
 		$this->managedByConfig = $configuration;
 	}//end setManagedByConfigurationEntity()
 
@@ -494,14 +541,13 @@ class View extends Entity implements JsonSerializable {
 	 * Returns the first configuration that has this view's ID in its views array.
 	 * Returns null if the view is not managed by any configuration.
 	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 * @param array<T> $configurations The configurations to check against
 	 *
-	 * @return Configuration|null The configuration managing this view, or null
+	 * @return T|null The configuration managing this view, or null
 	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @template T of ConfigurationMembershipInterface
 	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
+	public function getManagedByConfiguration(array $configurations): ?ConfigurationMembershipInterface {
 		return ViewFormatting::managing(viewId: $this->id, configurations: $configurations);
 	}//end getManagedByConfiguration()
 }//end class

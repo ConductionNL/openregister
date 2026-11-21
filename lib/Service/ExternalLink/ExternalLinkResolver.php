@@ -132,7 +132,11 @@ class ExternalLinkResolver implements ExternalLinkResolverInterface {
 			return null;
 		}
 
-		$url = $this->urlFor(declaration: $declaration, template: $template, object: $object);
+		if ($this->conditionHolds(condition: ($declaration['condition'] ?? null), object: $object) === false) {
+			return null;
+		}
+
+		$url = $this->fill(template: $template, object: $object);
 		if ($url === null) {
 			return null;
 		}
@@ -140,25 +144,6 @@ class ExternalLinkResolver implements ExternalLinkResolverInterface {
 		return $this->withOptionalFields(link: ['title' => $title, 'url' => $url], declaration: $declaration);
 
 	}//end resolveOne()
-
-	/**
-	 * The filled URL, or null when the declaration's condition does not hold
-	 * or a placeholder has no value.
-	 *
-	 * @param array<string, mixed> $declaration The declaration.
-	 * @param string               $template    The trimmed URL template.
-	 * @param array<string, mixed> $object      The object.
-	 *
-	 * @return string|null
-	 */
-	private function urlFor(array $declaration, string $template, array $object): ?string {
-		if ($this->conditionHolds(condition: ($declaration['condition'] ?? null), object: $object) === false) {
-			return null;
-		}
-
-		return $this->fill(template: $template, object: $object);
-
-	}//end urlFor()
 
 	/**
 	 * Add the non-blank `description` and `target` of a declaration to a link.
@@ -320,7 +305,8 @@ class ExternalLinkResolver implements ExternalLinkResolverInterface {
 	 */
 	private function allClausesHold(array $condition, array $object): bool {
 		foreach ($condition as $path => $expected) {
-			if ($this->clauseHolds(path: (string)$path, expected: $expected, object: $object) === false) {
+			$actual = $this->valueAt(path: (string)$path, object: $object);
+			if ($actual === null || $this->matches(actual: $actual, expected: $expected) === false) {
 				return false;
 			}
 		}
@@ -328,25 +314,6 @@ class ExternalLinkResolver implements ExternalLinkResolverInterface {
 		return true;
 
 	}//end allClausesHold()
-
-	/**
-	 * Whether one condition clause holds: the path has a value and it matches.
-	 *
-	 * @param string               $path     The dotted path.
-	 * @param mixed                $expected The expected value or list of values.
-	 * @param array<string, mixed> $object   The object.
-	 *
-	 * @return bool
-	 */
-	private function clauseHolds(string $path, mixed $expected, array $object): bool {
-		$actual = $this->valueAt(path: $path, object: $object);
-		if ($actual === null) {
-			return false;
-		}
-
-		return $this->matches(actual: $actual, expected: $expected);
-
-	}//end clauseHolds()
 
 	/**
 	 * Whether one resolved value satisfies one expectation.

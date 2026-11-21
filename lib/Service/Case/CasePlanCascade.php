@@ -73,18 +73,24 @@ class CasePlanCascade {
 	private array $evaluating = [];
 
 	/**
+	 * The plan-item table, the transaction and the failure log the machine writes through.
+	 *
+	 * @var CasePlanStore
+	 */
+	private readonly CasePlanStore $store;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanStore $store The plan-item table, the evaluation's transaction and the failure log.
-	 * @param CasePlanStateMachine $machine The one transition path.
+	 * @param CasePlanStateMachine $machine The one transition path, and through its store the plan-item
+	 *                                      table, the evaluation's transaction and the failure log.
 	 * @param CaseCascadeReaders $readers The entry and exit criteria, how realisations ended, and the anchoring object.
 	 */
 	public function __construct(
-		private readonly CasePlanStore $store,
 		private readonly CasePlanStateMachine $machine,
 		private readonly CaseCascadeReaders $readers,
 	) {
-
+		$this->store = $machine->store();
 	}//end __construct()
 
 	/**
@@ -106,18 +112,35 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function evaluate(string $objectUuid, ?string $event = null, array $payload = [], ?string $actor = null): array {
+		return $this->evaluateOn(trigger: new CasePlanTrigger(objectUuid: $objectUuid, event: $event, payload: $payload), actor: $actor);
+	}//end evaluate()
+
+	/**
+	 * Evaluate one object's plan to a fixpoint on one trigger: see {@see evaluate()}.
+	 *
+	 * @param CasePlanTrigger $trigger The anchoring object, and the event with its payload when an event caused this.
+	 * @param string|null     $actor   The identity whose act triggered this, or null for the system.
+	 *
+	 * @return array{passes: int, transitions: int, skipped: bool} What happened.
+	 *
+	 * @throws CaseCascadeBoundException At the bound, after rolling back.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 */
+	public function evaluateOn(CasePlanTrigger $trigger, ?string $actor = null): array {
+		$objectUuid = $trigger->objectUuid;
 		if (isset($this->evaluating[$objectUuid]) === true) {
 			return ['passes' => 0, 'transitions' => 0, 'skipped' => true];
 		}
 
 		$this->evaluating[$objectUuid] = true;
 		$outermost = $this->store->db->inTransaction() === false;
-		$run = new CaseCascadeRun(objectUuid: $objectUuid, event: $event, payload: $payload, actor: $actor);
+		$run = new CaseCascadeRun(objectUuid: $objectUuid, event: $trigger->event, payload: $trigger->payload, actor: $actor);
 		$this->evaluateInTransaction(run: $run);
 		$this->settle(objectUuid: $objectUuid, outermost: $outermost);
 
 		return ['passes' => $run->passes, 'transitions' => $run->transitions, 'skipped' => false];
-	}//end evaluate()
+	}//end evaluateOn()
 
 	/**
 	 * Run the passes inside a transaction; on any failure roll back, drop the
@@ -247,7 +270,9 @@ class CasePlanCascade {
 		}
 
 		$tree = new CasePlanTree(items: $rows);
-		$object = $this->readers->anchor->read(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId());
+		$object = $this->readers->anchor->read(
+			anchor: new CaseAnchor(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId())
+		);
 		$state = new CasePassState(tree: $tree, object: $object, run: $run);
 
 		return $this->applyRules(state: $state);
@@ -308,15 +333,9 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function take(CaseCascadeStep $step, CasePlanTree $tree): void {
-		$this->machine->transition(
-			item: $step->item,
-			to: $step->to,
-			cause: $step->cause,
-			causeRef: $step->causeRef,
-			actor: $step->actor,
-			reason: $step->reason,
-			tree: $tree
-		);
+		$cause = $step->why;
+		$why = new CaseTransitionCause(cause: $cause->cause, causeRef: $cause->causeRef, actor: $cause->actor, reason: $cause->reason);
+		$this->machine->commit(move: new CasePlanMove(item: $step->item, to: $step->to, why: $why, tree: $tree));
 	}//end take()
 
 	/**
@@ -357,7 +376,7 @@ class CasePlanCascade {
 		}
 
 		$sentries = $this->readers->sentries;
-		$sentry = $sentries->exitSentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentry = $sentries->exitSentryOn(item: $row, occasion: CaseSentryOccasion::fromPass(state: $state));
 		if ($sentry === null) {
 			return null;
 		}
@@ -382,7 +401,7 @@ class CasePlanCascade {
 		}
 
 		$sentries = $this->readers->sentries;
-		$sentry = $sentries->entrySentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentry = $sentries->entrySentryOn(item: $row, occasion: CaseSentryOccasion::fromPass(state: $state));
 		if ($sentry === null) {
 			return null;
 		}
@@ -518,12 +537,8 @@ class CasePlanCascade {
 	private function createNextRealisation(CaseItem $previous): void {
 		$clone = self::nextRealisation(previous: $previous, count: (int)$previous->getRealisationCount() + 1);
 		$inserted = $this->store->items->insert($clone);
-		$this->machine->recordCreation(
-			item: $inserted,
-			cause: CaseItemAudit::CAUSE_REALISATION,
-			causeRef: (string)$previous->getUuid(),
-			actor: null
-		);
+		$why = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_REALISATION, causeRef: (string)$previous->getUuid(), actor: null, reason: null);
+		$this->machine->recordCreationOf(item: $inserted, why: $why);
 	}//end createNextRealisation()
 
 	/**

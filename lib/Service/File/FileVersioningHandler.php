@@ -31,7 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 
 /**
  * Handles file versioning operations.
@@ -71,23 +71,52 @@ class FileVersioningHandler {
 	private readonly ContainerInterface $container;
 
 	/**
+	 * User session for current user context.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for FileVersioningHandler.
 	 *
 	 * @param FileVersionsPlatform $platform    The root folder, the app manager and the container the versions manager is resolved from.
-	 * @param IUserSession         $userSession User session for current user context.
-	 * @param LoggerInterface      $logger      Logger for logging operations.
+	 * @param FileSession          $session     The user session and logger.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		FileVersionsPlatform $platform,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		FileSession $session,
 	) {
+		$this->userSession = $session->userSession;
+		$this->logger = $session->logger;
 		$this->rootFolder = $platform->rootFolder;
 		$this->appManager = $platform->appManager;
 		$this->container = $platform->container;
 	}//end __construct()
+
+	/**
+	 * The document store root, the default when the store cannot be resolved.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function documentRoot(): string {
+		try {
+			return $this->container->get(DocumentStore::class)->root();
+		} catch (\Throwable $e) {
+			return DocumentStore::DEFAULT_ROOT;
+		}
+	}//end documentRoot()
 
 	/**
 	 * Check if the files_versions app is enabled.
@@ -369,7 +398,7 @@ class FileVersioningHandler {
 	 *
 	 * @return IUser|null The openregister account for an object's file, else the session user.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function versionUser(File $file): ?IUser {
 		try {
@@ -381,9 +410,9 @@ class FileVersioningHandler {
 		// An object's file is owned by the openregister account and sits in
 		// its home, where the caller has no mount. The caller has already
 		// passed the object rule, so the versions are read as that account.
-		if (preg_match('#^/openregister/files/Open Registers/#', $path) === 1) {
+		if (preg_match('#^/' . DocumentStore::ACCOUNT . '/files/' . preg_quote($this->documentRoot(), '#') . '/#', $path) === 1) {
 			try {
-				return $this->container->get(FileOwnershipHandlerInterface::class)->getUser();
+				return $this->container->get(FileAccountInterface::class)->getUser();
 			} catch (\Throwable $e) {
 				return null;
 			}

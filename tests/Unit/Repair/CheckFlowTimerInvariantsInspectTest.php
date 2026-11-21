@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Repair\CheckFlowTimerInvariants;
@@ -34,6 +35,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Repair\CheckFlowTimerInvariants
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class CheckFlowTimerInvariantsInspectTest extends TestCase {
 
@@ -55,8 +59,8 @@ class CheckFlowTimerInvariantsInspectTest extends TestCase {
 	private function measure(array $armed, array $suspended): array {
 		$timers = $this->createMock(FlowTimerMapper::class);
 		$timers->method('findByStatePaged')->willReturnCallback(
-			static function (string $state, int $afterId, int $limit) use ($armed, $suspended): array {
-				if ($afterId !== 0) {
+			static function (string $state, IdCursor $cursor) use ($armed, $suspended): array {
+				if ($cursor->afterId !== 0) {
 					return [];
 				}
 

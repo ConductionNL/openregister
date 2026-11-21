@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
+use OCA\OpenRegister\Service\Flow\DelegatedRun;
 use OCA\OpenRegister\Service\Flow\FlowDelegationCheck;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -170,7 +171,7 @@ class FlowDelegationCheckTest extends TestCase {
 	 */
 	public function testAnUnstampedTriggerIsNotADelegation(): void {
 		$this->assertNull(
-			$this->check(null)->refuseIfRevoked('flow-1', 'schedule', null, 'carol')
+			$this->check(null)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: null, runAs: 'carol'))
 		);
 	}
 
@@ -183,7 +184,7 @@ class FlowDelegationCheckTest extends TestCase {
 	 */
 	public function testASelfNamedStampIsNotADelegation(): void {
 		$this->assertNull(
-			$this->check(null)->refuseIfRevoked('flow-1', 'schedule', 'carol', 'carol')
+			$this->check(null)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'carol', runAs: 'carol'))
 		);
 	}
 
@@ -197,7 +198,7 @@ class FlowDelegationCheckTest extends TestCase {
 	public function testALiveGrantProceeds(): void {
 		$this->assertNull(
 			$this->check(DelegationVerdict::granted($this->grant()))
-				->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol')
+				->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'))
 		);
 		$this->assertFalse($this->updated, 'a permitted run must not write an error onto the flow');
 	}
@@ -216,7 +217,7 @@ class FlowDelegationCheckTest extends TestCase {
 	public function testAnUnansweredRequestParksRatherThanRefusing(): void {
 		$park = $this->check(
 			DelegationVerdict::refused(DelegationVerdict::REASON_PENDING, 'waiting.')
-		)->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol');
+		)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'));
 
 		$this->assertSame(
 			['principal' => 'alice', 'actingAs' => 'carol', 'reason' => DelegationVerdict::REASON_PENDING],
@@ -239,7 +240,7 @@ class FlowDelegationCheckTest extends TestCase {
 		try {
 			$this->check(
 				DelegationVerdict::refused(DelegationVerdict::REASON_REVOKED, 'carol withdrew it.')
-			)->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol');
+			)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'));
 			$this->fail('a revoked delegation must refuse');
 		} catch (DelegationRefused $e) {
 			$this->assertSame(DelegationVerdict::REASON_REVOKED, $e->getVerdict()->reason);
@@ -268,7 +269,7 @@ class FlowDelegationCheckTest extends TestCase {
 		try {
 			$this->check(
 				DelegationVerdict::refused(DelegationVerdict::REASON_DENIED, 'no.')
-			)->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol');
+			)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'));
 		} catch (DelegationRefused $e) {
 			// Expected.
 		}
@@ -292,7 +293,7 @@ class FlowDelegationCheckTest extends TestCase {
 	 */
 	public function testAnUnreachableStoreRefusesADelegatingRun(): void {
 		try {
-			$this->check(null)->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol');
+			$this->check(null)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'));
 			$this->fail('an unverifiable delegation must not run');
 		} catch (DelegationRefused $e) {
 			$this->assertSame(DelegationVerdict::REASON_UNREADABLE, $e->getVerdict()->reason);
@@ -316,6 +317,6 @@ class FlowDelegationCheckTest extends TestCase {
 
 		$this->check(
 			DelegationVerdict::refused(DelegationVerdict::REASON_EXPIRED, 'it ran out.')
-		)->refuseIfRevoked('flow-1', 'schedule', 'alice', 'carol');
+		)->verify(run: new DelegatedRun(flowId: 'flow-1', trigger: 'schedule', declaredBy: 'alice', runAs: 'carol'));
 	}
 }

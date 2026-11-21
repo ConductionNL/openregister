@@ -62,12 +62,36 @@ final class IpRange {
 
 		$trimmedRange = trim($range);
 		if (str_contains($trimmedRange, '/') === false) {
-			$packedRange = self::pack(value: $trimmedRange);
-
-			return ($packedRange !== null && hash_equals($packedRange, $packedAddress));
+			return self::matchesLiteral(packedAddress: $packedAddress, literal: $trimmedRange);
 		}
 
-		[$network, $prefix] = explode('/', $trimmedRange, 2);
+		return self::matchesCidr(packedAddress: $packedAddress, cidr: $trimmedRange);
+	}//end matches()
+
+	/**
+	 * Whether an address is one literal address.
+	 *
+	 * @param string $packedAddress The packed address.
+	 * @param string $literal       The literal address, trimmed.
+	 *
+	 * @return bool True when they are the same address.
+	 */
+	private static function matchesLiteral(string $packedAddress, string $literal): bool {
+		$packedRange = self::pack(value: $literal);
+
+		return ($packedRange !== null && hash_equals($packedRange, $packedAddress));
+	}//end matchesLiteral()
+
+	/**
+	 * Whether an address falls inside a CIDR range of its own family.
+	 *
+	 * @param string $packedAddress The packed address.
+	 * @param string $cidr          The range in CIDR notation, trimmed.
+	 *
+	 * @return bool True when the address is inside the range.
+	 */
+	private static function matchesCidr(string $packedAddress, string $cidr): bool {
+		[$network, $prefix] = explode('/', $cidr, 2);
 
 		$packedNetwork = self::pack(value: trim($network));
 		if ($packedNetwork === null) {
@@ -86,9 +110,8 @@ final class IpRange {
 			return false;
 		}
 
-		return self::sharesPrefix(left: $packedAddress, right: $packedNetwork, bits: $bits);
-
-	}//end matches()
+		return self::prefix(packed: $packedAddress, bits: $bits) === self::prefix(packed: $packedNetwork, bits: $bits);
+	}//end matchesCidr()
 
 	/**
 	 * Pack an address into its binary form, normalising the IPv4-mapped shape.
@@ -152,32 +175,25 @@ final class IpRange {
 	}//end prefixBits()
 
 	/**
-	 * Whether two packed addresses agree on their first N bits.
+	 * The leading bits of a packed address, as a string that compares equal
+	 * for two addresses exactly when those bits are equal.
 	 *
-	 * @param string $left The packed address.
-	 * @param string $right The packed network.
-	 * @param int $bits How many leading bits must agree.
+	 * @param string $packed The packed address.
+	 * @param int    $bits   The prefix length, at most the address length in bits.
 	 *
-	 * @return bool True when they agree.
+	 * @return string The whole leading bytes, then the masked partial byte when the prefix ends inside one.
 	 */
-	private static function sharesPrefix(string $left, string $right, int $bits): bool {
-		if ($bits === 0) {
-			return true;
-		}
-
+	private static function prefix(string $packed, int $bits): string {
 		$wholeBytes = intdiv($bits, 8);
-		if ($wholeBytes > 0 && substr($left, 0, $wholeBytes) !== substr($right, 0, $wholeBytes)) {
-			return false;
-		}
-
+		$prefix = substr($packed, 0, $wholeBytes);
 		$remainder = ($bits % 8);
 		if ($remainder === 0) {
-			return true;
+			return $prefix;
 		}
 
 		$mask = (0xFF << (8 - $remainder)) & 0xFF;
 
-		return ((ord($left[$wholeBytes]) & $mask) === (ord($right[$wholeBytes]) & $mask));
+		return $prefix . chr(ord($packed[$wholeBytes]) & $mask);
 
-	}//end sharesPrefix()
+	}//end prefix()
 }//end class

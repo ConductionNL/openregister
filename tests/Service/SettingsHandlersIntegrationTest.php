@@ -1179,21 +1179,20 @@ class SettingsHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test handle with ConfigurationUpdatedEvent triggers error
+	 * Test handle with ConfigurationUpdatedEvent
 	 *
-	 * Note: ConfigurationUpdatedEvent is missing getConfiguration() method
-	 * which the WebhookEventListener expects. This tests the known bug path.
+	 * The listener reads the payload through getConfiguration(), which answers
+	 * the new configuration.
 	 *
 	 * @return void
 	 */
-	public function testHandleConfigurationUpdatedEventTriggersError(): void {
+	public function testHandleConfigurationUpdatedEvent(): void {
 		$newConfig = new Configuration();
 		$oldConfig = new Configuration();
 		$event = new ConfigurationUpdatedEvent($newConfig, $oldConfig);
 
-		// Known bug: ConfigurationUpdatedEvent lacks getConfiguration() method.
-		$this->expectException(\Error::class);
 		$this->webhookListener->handle($event);
+		$this->assertSame($newConfig, $event->getConfiguration());
 	}
 
 	/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\StagedDenial;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -151,12 +152,12 @@ class DenyEnforcementModeTest extends TestCase {
 			}
 		);
 
-		$this->modeReading(DenyEnforcementMode::MODE_STAGING, $logger)->record(
+		$this->modeReading(DenyEnforcementMode::MODE_STAGING, $logger)->record(staged: new StagedDenial(
 			denial: ['rule' => 'waarnemers', 'principal' => 'waarnemers', 'action' => 'read', 'conditional' => false],
 			action: 'read',
 			userId: 'ana',
 			context: ['schemaId' => 7, 'path' => 'object']
-		);
+		));
 
 		$this->assertCount(1, $records);
 		$this->assertSame('waarnemers', $records[0]['context']['rule']);

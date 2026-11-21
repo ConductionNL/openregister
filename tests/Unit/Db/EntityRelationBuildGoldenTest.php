@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -27,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\EntityRelationMapper
  * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  *
  * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
@@ -63,7 +66,7 @@ class EntityRelationBuildGoldenTest extends TestCase {
 			db: $this->createMock(IDBConnection::class),
 			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
 			userSession: $this->createMock(IUserSession::class),
-			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			entityEvents: new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 		$before = new DateTime();

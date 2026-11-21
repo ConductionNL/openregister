@@ -25,9 +25,11 @@ namespace Unit\Service\Import;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Import\MatchLookupFailedException;
+use OCA\OpenRegister\Service\Import\MatchQuery;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -85,7 +87,7 @@ final class MatchResolverTest extends TestCase {
 	 * @return array<int, string> The uuids.
 	 */
 	private function resolve(array $object, array $key): array {
-		return $this->resolver->resolve($object, $key, $this->register, $this->schema);
+		return $this->resolver->matchesOf(new MatchQuery($object, $key, new RegisterSchema($this->register, $this->schema)));
 	}
 
 	public function testAnEmptyKeyMatchesNothingWithoutALookup(): void {

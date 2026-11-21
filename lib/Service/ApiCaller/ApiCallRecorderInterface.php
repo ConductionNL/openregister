@@ -22,12 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ApiCaller;
 
-use DateTime;
 
 /**
  * ApiCallRecorder, typed for callers outside the Service component.
  *
- * Its outside caller, the API caller middleware, calls principal() and record(), so those are
+ * Its outside caller, the API caller middleware, calls principal() and recordCall(), so those are
  * the whole contract. Binding it in ContractBindings lets that caller resolve
  * ApiCallRecorder without naming the class.
  */
@@ -44,19 +43,11 @@ interface ApiCallRecorderInterface {
 	/**
 	 * Record one call against the caller making the current request.
 	 *
-	 * @param string $path The request path.
-	 * @param string $method The HTTP method.
-	 * @param string $apiVersion The contract version that served it.
-	 * @param DateTime|null $moment When it happened; defaults to now.
+	 * @param ApiCallObservation $call The path, method, API version and moment (defaults to now).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function record(
-		string $path,
-		string $method,
-		string $apiVersion,
-		?DateTime $moment = null,
-	): void;
+	public function recordCall(ApiCallObservation $call): void;
 }//end interface

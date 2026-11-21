@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Calculation\Reference\ReferenceQuery;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -100,12 +101,8 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function resolveAll(array $payload, array $references, mixed $register, ?string $organisation): array {
-		return $this->resolveAllWithOutcome(
-			payload: $payload,
-			references: $references,
-			register: $register,
-			organisation: $organisation
-		)['refs'];
+		$referrer = new ReferringObject(payload: $payload, register: $register, organisation: $organisation);
+		return $this->resolveReferences(referrer: $referrer, references: $references)['refs'];
 	}//end resolveAll()
 
 	/**
@@ -117,20 +114,18 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 * read failed. An empty foreign key, or a lookup that matched nothing, is a
 	 * real answer (null) and is not listed.
 	 *
-	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
+	 * @param ReferringObject      $referrer   The saving object: payload, register and organisation.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
-	 * @param Register|string|int|null $register Saving object's register context.
-	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
 	 *
 	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.
 	 *
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	public function resolveAllWithOutcome(array $payload, array $references, mixed $register, ?string $organisation): array {
+	public function resolveReferences(ReferringObject $referrer, array $references): array {
 		$refs = [];
 		$unresolved = [];
 		foreach ($this->usableDeclarations(declarations: $references) as $name => $spec) {
-			$outcome = $this->resolveOne(payload: $payload, spec: $spec, register: $register, organisation: $organisation);
+			$outcome = $this->resolveOne(referrer: $referrer, spec: $spec);
 			$refs[$name] = $outcome['data'];
 			if ($outcome['unresolved'] === true) {
 				$unresolved[] = (string)$name;
@@ -138,28 +133,26 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		}
 
 		return ['refs' => $refs, 'unresolved' => $unresolved];
-	}//end resolveAllWithOutcome()
+	}//end resolveReferences()
 
 	/**
 	 * Resolve a single reference spec to a data array, or null.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single reference declaration.
-	 * @param Register|string|int|null $register Saving object's register context.
-	 * @param string|null $organisation Saving object's organisation UUID.
+	 * @param ReferringObject      $referrer The saving object: payload, register and organisation.
+	 * @param array<string, mixed> $spec     Single reference declaration.
 	 *
 	 * @return array{data: array<string, mixed>|null, unresolved: bool} Resolved data, and whether it failed to resolve.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 */
-	private function resolveOne(array $payload, array $spec, mixed $register, ?string $organisation): array {
-		$query = $this->queryFor(payload: $payload, spec: $spec, register: $register, organisation: $organisation);
+	private function resolveOne(ReferringObject $referrer, array $spec): array {
+		$query = $this->queryFor(referrer: $referrer, spec: $spec);
 		if ($query === null) {
 			return ['data' => null, 'unresolved' => false];
 		}
 
 		try {
-			$outcome = $this->resolveByMode(mode: (string)$spec['mode'], query: $query, spec: $spec);
+			$outcome = $this->resolveByMode(query: $query, spec: $spec);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf('Reference resolution failed for schema "%s": %s', $query->schema, $e->getMessage())
@@ -173,14 +166,12 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	/**
 	 * The read a reference spec makes, or null when it names no schema or no known mode.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single reference declaration.
-	 * @param Register|string|int|null $register Saving object's register context.
-	 * @param string|null $organisation Saving object's organisation UUID.
+	 * @param ReferringObject      $referrer The saving object: payload, register and organisation.
+	 * @param array<string, mixed> $spec     Single reference declaration.
 	 *
 	 * @return ReferenceQuery|null The read, or null.
 	 */
-	private function queryFor(array $payload, array $spec, mixed $register, ?string $organisation): ?ReferenceQuery {
+	private function queryFor(ReferringObject $referrer, array $spec): ?ReferenceQuery {
 		$schema = (string)($spec['schema'] ?? '');
 		$mode = (string)($spec['mode'] ?? '');
 		if ($schema === '' || in_array($mode, ['relatedObject', 'lookup'], true) === false) {
@@ -189,20 +180,24 @@ class ReferenceResolver implements ReferenceResolverInterface {
 
 		// Allow the reference to override the register; default to the saving
 		// object's register so the lookup stays within the same dataset.
-		return new ReferenceQuery(payload: $payload, schema: $schema, register: ($spec['register'] ?? $register), organisation: $organisation);
+		return new ReferenceQuery(
+			payload: $referrer->payload,
+			schema: $schema,
+			register: ($spec['register'] ?? $referrer->register),
+			organisation: $referrer->organisation
+		);
 	}//end queryFor()
 
 	/**
-	 * Resolve a reference by its mode.
+	 * Resolve a reference by its mode, `relatedObject` or `lookup` (queryFor() admits no other).
 	 *
-	 * @param string $mode `relatedObject` or `lookup`.
-	 * @param ReferenceQuery $query The read's inputs.
-	 * @param array<string, mixed> $spec Single reference declaration.
+	 * @param ReferenceQuery       $query The read's inputs.
+	 * @param array<string, mixed> $spec  Single reference declaration.
 	 *
 	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object, and whether there was something to resolve.
 	 */
-	private function resolveByMode(string $mode, ReferenceQuery $query, array $spec): array {
-		if ($mode === 'relatedObject') {
+	private function resolveByMode(ReferenceQuery $query, array $spec): array {
+		if ((string)$spec['mode'] === 'relatedObject') {
 			$id = $this->foreignKey(payload: $query->payload, field: (string)($spec['field'] ?? ''));
 			if ($id === null) {
 				return ['entity' => null, 'attempted' => false];
@@ -248,8 +243,7 @@ class ReferenceResolver implements ReferenceResolverInterface {
 		// boundary is enforced by the guard below instead of by the session.
 		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $id,
-			register: $query->register,
-			schema: $query->schema,
+			options: new ObjectFindOptions(register: $query->register, schema: $query->schema),
 			_rbac: false,
 			_multitenancy: false
 		));
@@ -307,12 +301,25 @@ class ReferenceResolver implements ReferenceResolverInterface {
 			return ['entity' => null, 'attempted' => false];
 		}
 
-		$config = $this->lookupConfig(query: $query, criteria: $criteria, effective: ($spec['effectiveDate'] ?? null));
+		$config = $this->lookupConfig(query: $query, criteria: $criteria);
+		$config = $this->withEffectiveSort(config: $config, effective: ($spec['effectiveDate'] ?? null));
 
 		// Read as the system (see resolveRelatedObject()); rows outside the
 		// saving object's tenant are dropped by the guard, keeping the sort
 		// order so the most-relevant ADMITTED row wins.
 		$results = $this->objectService->findAll($config, _rbac: false, _multitenancy: false);
+		return $this->lookupOutcome(query: $query, results: $results);
+	}//end resolveLookup()
+
+	/**
+	 * The lookup's outcome: the first row the saving object's tenant admits, or nothing when no row matched.
+	 *
+	 * @param ReferenceQuery      $query   The saving object's organisation.
+	 * @param array<int, mixed> $results The matching rows, most relevant first.
+	 *
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted row (or null), and whether any row matched.
+	 */
+	private function lookupOutcome(ReferenceQuery $query, array $results): array {
 		if (count($results) === 0) {
 			return ['entity' => null, 'attempted' => false];
 		}
@@ -321,32 +328,44 @@ class ReferenceResolver implements ReferenceResolverInterface {
 			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: $results),
 			'attempted' => true,
 		];
-	}//end resolveLookup()
+	}//end lookupOutcome()
 
 	/**
 	 * The findAll() configuration of a lookup.
 	 *
-	 * @param ReferenceQuery $query The read's inputs.
+	 * The sort is added by withEffectiveSort().
+	 *
+	 * @param ReferenceQuery           $query    The read's inputs.
 	 * @param array<int|string, mixed> $criteria The declared filter criteria.
-	 * @param mixed $effective The `effectiveDate` selector, or null.
 	 *
 	 * @return array<string, mixed> The configuration.
 	 */
-	private function lookupConfig(ReferenceQuery $query, array $criteria, mixed $effective): array {
+	private function lookupConfig(ReferenceQuery $query, array $criteria): array {
 		$filters = ['schema' => $query->schema];
 		if ($query->register !== null) {
 			$filters['register'] = $query->register;
 		}
 
 		$filters = array_replace($filters, $this->resolveTokens(payload: $query->payload, criteria: $criteria));
-		$config = ['filters' => $filters, 'limit' => 50];
+		return ['filters' => $filters, 'limit' => 50];
+	}//end lookupConfig()
+
+	/**
+	 * Add the effective-dating sort to a lookup configuration, when the selector names a field.
+	 *
+	 * @param array<string, mixed> $config    The findAll() configuration.
+	 * @param mixed                $effective The `effectiveDate` selector, or null.
+	 *
+	 * @return array<string, mixed> The configuration, with `sort` when there is one.
+	 */
+	private function withEffectiveSort(array $config, mixed $effective): array {
 		$sort = $this->effectiveSort(effective: $effective);
 		if ($sort !== []) {
 			$config['sort'] = $sort;
 		}
 
 		return $config;
-	}//end lookupConfig()
+	}//end withEffectiveSort()
 
 	/**
 	 * Effective-dating: keep only rows whose effective field is <= (or per

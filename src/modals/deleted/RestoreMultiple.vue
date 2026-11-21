@@ -36,14 +36,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 
 <script>
 import Restore from 'vue-material-design-icons/Restore.vue'
-import BulkSelectionDialog from './BulkSelectionDialog.vue'
-import {
-	bulkDialogData,
-	bulkDialogLifecycle,
-	bulkDialogMethods,
-	reviewStateOf,
-	runBulkAction,
-} from './bulkSelection.js'
+import { bulkDialog, BulkSelectionDialog, reviewStateOf, runBulkAction } from './bulkDialog.js'
 
 export default {
 	name: 'RestoreMultiple',
@@ -52,7 +45,7 @@ export default {
 		Restore,
 	},
 
-	data: bulkDialogData,
+	mixins: [bulkDialog('restoreMultiple')],
 
 	computed: {
 		/**
@@ -76,11 +69,7 @@ export default {
 		},
 	},
 
-	...bulkDialogLifecycle('restoreMultiple'),
-
 	methods: {
-		...bulkDialogMethods,
-
 		/**
 		 * Restore multiple objects
 		 *

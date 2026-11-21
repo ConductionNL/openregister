@@ -63,22 +63,34 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	private readonly RuleScope $scopes;
 
 	/**
+	 * Lifts a property's own calculation into the one map; stateless, so it is built in place.
+	 *
+	 * @var PropertyCalculations
+	 */
+	private readonly PropertyCalculations $propertyCalculations;
+
+	/**
+	 * The published kinds, verdicts and actions; stateless, so it is built in place.
+	 *
+	 * @var RuleVocabulary
+	 */
+	private readonly RuleVocabulary $vocabulary;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
-	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
-	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
 	 * @param FlowRuleDescriptors $flows Reads the flows a schema's objects trigger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RuleRunSummaryMapperInterface $summaries,
-		private readonly PropertyCalculations $propertyCalculations,
-		private readonly RuleVocabulary $vocabulary,
 		private readonly FlowRuleDescriptors $flows,
 	) {
 		$this->scopes = new RuleScope();
+		$this->propertyCalculations = new PropertyCalculations();
+		$this->vocabulary = new RuleVocabulary();
 	}//end __construct()
 
 	/**
@@ -110,31 +122,20 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	/**
 	 * The inventory as the API returns it: descriptors with their summaries.
 	 *
-	 * @param Schema $schema The schema to read.
-	 * @param int $idleDays How long a rule may go unevaluated before it is flagged.
-	 * @param DateTime|null $now The moment to measure the idle window from.
-	 * @param array<string, mixed> $scope Property => value: only the rules with that scope, plus those without one.
+	 * @param Schema               $schema  The schema to read.
+	 * @param RuleInventoryOptions $options The idle window, the moment it is measured from and the scope filter.
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function inventory(
-		Schema $schema,
-		int $idleDays = self::DEFAULT_IDLE_DAYS,
-		?DateTime $now = null,
-		array $scope = []
-	): array {
+	public function inventory(Schema $schema, RuleInventoryOptions $options = new RuleInventoryOptions()): array {
 		$summaries = $this->summaries->findBySchema(schemaSlug: (string)($schema->getSlug() ?? ''));
-		$window = new RuleInventoryWindow(idleDays: $idleDays, now: ($now ?? new DateTime()));
+		$window = new RuleInventoryWindow(idleDays: $options->idleDays, now: ($options->now ?? new DateTime()));
+		$rowOf = static fn (RuleDescriptor $rule): array => $window->rowOf(descriptor: $rule, summary: ($summaries[$rule->getId()] ?? null));
 
-		$rows = [];
-		foreach ($this->admitted(schema: $schema, filter: $scope) as $descriptor) {
-			$rows[] = $window->rowOf(descriptor: $descriptor, summary: ($summaries[$descriptor->getId()] ?? null));
-		}
-
-		return $rows;
+		return array_map($rowOf, $this->admitted(schema: $schema, filter: $options->scope));
 	}//end inventory()
 
 	/**
@@ -175,6 +176,88 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 
 		return null;
 	}//end find()
+
+	/**
+	 * Each named condition of a schema, with the rules that name it directly (task 1.4b).
+	 *
+	 * Every rule in the inventory and every administered validation is read
+	 * for `$condition` references, keyed by the same rule id the run log and
+	 * the routes use. Direct references only, as {@see NamedConditionLibrary::usage()}
+	 * answers them: a condition that merely composes another is not a rule.
+	 *
+	 * A name a rule references but the schema does not declare is listed too,
+	 * with `declared: false`: such a rule refuses at evaluation, and the
+	 * inventory is where an administrator looks for why.
+	 *
+	 * @param Schema $schema The schema to read.
+	 *
+	 * @return array<int, array{name: string, description: string, declared: bool, usedBy: array<int, string>}> One row per condition, by name.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md#requirement-a-condition-is-named-once-and-used-inside-other-rules-req-rct-001
+	 */
+	public function namedConditions(Schema $schema): array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$library = new NamedConditionLibrary();
+		$declared = $library->libraryFrom(annotation: $this->annotationOf(configuration: $configuration, key: NamedConditionLibrary::ANNOTATION));
+		$usage = $library->usage(usingNodes: $this->conditionNodes(schema: $schema, configuration: $configuration));
+
+		$rows = [];
+		foreach (array_unique(array_merge(array_keys($declared), array_keys($usage))) as $name) {
+			$rows[(string)$name] = [
+				'name' => (string)$name,
+				'description' => ($declared[$name]['description'] ?? ''),
+				'declared' => array_key_exists($name, $declared),
+				'usedBy' => ($usage[$name] ?? []),
+			];
+		}
+
+		ksort($rows);
+		return array_values($rows);
+	}//end namedConditions()
+
+	/**
+	 * The condition of every rule and administered validation, by rule id.
+	 *
+	 * @param Schema               $schema        The schema to read.
+	 * @param array<string, mixed> $configuration The schema's configuration block.
+	 *
+	 * @return array<string, mixed> Condition node by rule id.
+	 */
+	private function conditionNodes(Schema $schema, array $configuration): array {
+		$nodes = [];
+		foreach ($this->describe(schema: $schema) as $descriptor) {
+			if ($descriptor->getCondition() !== null) {
+				$nodes[$descriptor->getId()] = $descriptor->getCondition();
+			}
+		}
+
+		$slug = (string)($schema->getSlug() ?? '');
+		foreach ($this->annotationOf(configuration: $configuration, key: AdministeredValidations::ANNOTATION) ?? [] as $key => $validation) {
+			if (is_array($validation) === true && array_key_exists('condition', $validation) === true) {
+				$id = RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$key);
+				$nodes[$id] = $validation['condition'];
+			}
+		}
+
+		return $nodes;
+	}//end conditionNodes()
+
+	/**
+	 * One annotation of a configuration block, or null when it is absent or not an object.
+	 *
+	 * @param array<string, mixed> $configuration The schema's configuration block.
+	 * @param string               $key           The annotation key.
+	 *
+	 * @return array<string, mixed>|null The annotation.
+	 */
+	private function annotationOf(array $configuration, string $key): ?array {
+		$annotation = ($configuration[$key] ?? null);
+		if (is_array($annotation) === false) {
+			return null;
+		}
+
+		return $annotation;
+	}//end annotationOf()
 
 	/**
 	 * The one calculations map: the annotation with every property calculation lifted in.

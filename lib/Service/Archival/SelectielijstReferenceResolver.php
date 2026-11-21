@@ -56,11 +56,11 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 	private const TTL = 86400;
 
 	/**
-	 * The cache the resolved rows are kept in.
+	 * The cache the resolved rows are kept in, once a lookup needed it.
 	 *
-	 * @var ICache
+	 * @var ICache|null
 	 */
-	private ICache $cache;
+	private ?ICache $cache = null;
 
 	/**
 	 * Constructor.
@@ -71,11 +71,19 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 	 */
 	public function __construct(
 		private readonly IClientService $clients,
-		ICacheFactory $cacheFactory,
+		private readonly ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openregister-selectielijst-reference');
 	}//end __construct()
+
+	/**
+	 * The distributed cache of resolved rows, created on first use.
+	 *
+	 * @return ICache The cache.
+	 */
+	private function cache(): ICache {
+		return ($this->cache ??= $this->cacheFactory->createDistributed('openregister-selectielijst-reference'));
+	}//end cache()
 
 	/**
 	 * Whether a URL is one this resolver will fetch: https, an allowed host, a result or process type.
@@ -114,14 +122,46 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 		}
 
 		$key    = hash(algo: 'sha256', data: $url);
-		$cached = $this->cache->get($key);
+		$cached = $this->cache()->get($key);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
 
+		$resolved = $this->fetchReference(url: $url);
+		if ($resolved !== null) {
+			$this->cache()->set($key, $resolved, self::TTL);
+		}
+
+		return $resolved;
+	}//end resolve()
+
+	/**
+	 * Fetch the selectielijst row behind a resolvable URL and reduce it to its code and name.
+	 *
+	 * @param string $url The resolvable URL.
+	 *
+	 * @return array{url: string, code: string, name: string}|null Null when the row cannot be read or has neither.
+	 */
+	private function fetchReference(string $url): ?array {
+		$row = $this->fetchRow(url: $url);
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return $this->reduceRow(url: $url, row: $row);
+	}//end fetchReference()
+
+	/**
+	 * Read and decode the row behind a URL; a failed read is logged and gives null.
+	 *
+	 * @param string $url The resolvable URL.
+	 *
+	 * @return mixed The decoded body, or null when it could not be read.
+	 */
+	private function fetchRow(string $url): mixed {
 		try {
 			$body = (string) $this->clients->newClient()->get($url, ['timeout' => 5, 'headers' => ['Accept' => 'application/json']])->getBody();
-			$row  = json_decode($body, true);
+			return json_decode($body, true);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SelectielijstReferenceResolver] The selectielijst row could not be read',
@@ -129,20 +169,23 @@ class SelectielijstReferenceResolver implements SelectielijstReferenceResolverIn
 			);
 			return null;
 		}
+	}//end fetchRow()
 
-		if (is_array($row) === false) {
-			return null;
-		}
-
+	/**
+	 * Reduce a row to its code (full number, else number) and name.
+	 *
+	 * @param string               $url The URL the row was read from.
+	 * @param array<string, mixed> $row The decoded row.
+	 *
+	 * @return array{url: string, code: string, name: string}|null Null when the row has neither a code nor a name.
+	 */
+	private function reduceRow(string $url, array $row): ?array {
 		$code = (string) ($row['volledigNummer'] ?? $row['nummer'] ?? '');
 		$name = (string) ($row['naam'] ?? '');
 		if ($code === '' && $name === '') {
 			return null;
 		}
 
-		$resolved = ['url' => $url, 'code' => $code, 'name' => $name];
-		$this->cache->set($key, $resolved, self::TTL);
-
-		return $resolved;
-	}//end resolve()
+		return ['url' => $url, 'code' => $code, 'name' => $name];
+	}//end reduceRow()
 }//end class

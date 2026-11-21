@@ -50,11 +50,6 @@ final class ToolFunctionTable {
 	 * @return array<string, mixed> The function definition
 	 */
 	public static function definition(array $row): array {
-		$properties = [];
-		foreach ($row[4] as $parameter => $spec) {
-			$properties[$parameter] = ['type' => $spec[0], 'description' => $spec[1]];
-		}
-
 		return [
 			'name' => $row[0],
 			'subject' => $row[1],
@@ -62,9 +57,25 @@ final class ToolFunctionTable {
 			'description' => $row[3],
 			'parameters' => [
 				'type' => 'object',
-				'properties' => $properties,
+				'properties' => self::properties(parameters: $row[4]),
 				'required' => $row[5],
 			],
 		];
 	}//end definition()
+
+	/**
+	 * The JSON-schema properties of a row's `[name => [type, description]]` parameters.
+	 *
+	 * @param array<string, array<int, string>> $parameters The compact parameters
+	 *
+	 * @return array<string, array{type: string, description: string}>
+	 */
+	private static function properties(array $parameters): array {
+		$properties = [];
+		foreach ($parameters as $parameter => $spec) {
+			$properties[$parameter] = ['type' => $spec[0], 'description' => $spec[1]];
+		}
+
+		return $properties;
+	}//end properties()
 }//end class

@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * A create refused because it duplicates something already stored.
@@ -55,31 +54,20 @@ use Throwable;
 class DuplicateBlockedException extends Exception {
 
 	/**
-	 * The matches that caused the refusal.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private array $matches = [];
-
-	/**
 	 * Constructor.
 	 *
-	 * @param string $message Human-readable refusal.
+	 * The exception always carries HTTP 409 Conflict.
+	 *
+	 * @param string                           $message Human-readable refusal.
 	 * @param array<int, array<string, mixed>> $matches The stored objects the candidate matched.
-	 * @param int $code HTTP status carried on the exception (default: 409 Conflict).
-	 * @param Throwable|null $previous Previous exception, when chained.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'This object duplicates one that already exists.',
-		array $matches = [],
-		int $code = 409,
-		?Throwable $previous = null,
+		string $message='This object duplicates one that already exists.',
+		private readonly array $matches=[],
 	) {
-		$this->matches = $matches;
-
-		parent::__construct(message: $message, code: $code, previous: $previous);
+		parent::__construct(message: $message, code: 409);
 	}//end __construct()
 
 	/**

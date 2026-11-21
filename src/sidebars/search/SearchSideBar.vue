@@ -55,6 +55,15 @@
 							</template>
 							{{ t('openregister', 'Delete') }}
 						</NcButton>
+						<NcButton
+							v-if="ownsActiveView"
+							variant="secondary"
+							@click="showViewLinksDialog = true">
+							<template #icon>
+								<LinkVariant :size="20" />
+							</template>
+							{{ t('openregister', 'Share by link') }}
+						</NcButton>
 					</div>
 				</div>
 
@@ -117,23 +126,22 @@
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Objects') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Registers')
-					}}</label>
+				<div
+					v-for="picker in scopePickers"
+					:key="picker.id"
+					class="filterGroup">
+					<label :for="picker.id">{{ picker.label }}</label>
 					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisters"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:inputLabel="t('openregister', 'Registers')"
+						v-bind="picker.bag"
+						:id="picker.id"
+						:modelValue="picker.value"
+						:loading="picker.loading"
+						:disabled="picker.disabled"
+						:inputLabel="picker.label"
 						:multiple="true"
 						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more registers')
-						"
-						@update:modelValue="handleRegisterChange">
+						:placeholder="picker.placeholder"
+						@update:modelValue="picker.change">
 						<template #option="{ title, description }">
 							<SelectOption
 								:title="title"
@@ -141,36 +149,8 @@
 						</template>
 					</NcSelect>
 					<p class="field-hint">
-						{{ selectedRegisters.length }}
-						{{ t('openregister', 'register(s) selected') }}
-					</p>
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schemas')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemas"
-						:loading="schemaLoading"
-						:disabled="selectedRegisters.length === 0 || schemaLoading"
-						:inputLabel="t('openregister', 'Schemas')"
-						:multiple="true"
-						:closeOnSelect="false"
-						:placeholder="
-							t('openregister', 'Select one or more schemas')
-						"
-						@update:modelValue="handleSchemaChange">
-						<template #option="{ title, description }">
-							<SelectOption
-								:title="title"
-								:description="description" />
-						</template>
-					</NcSelect>
-					<p class="field-hint">
-						{{ selectedSchemas.length }}
-						{{ t('openregister', 'schema(s) selected') }}
+						{{ picker.value.length }}
+						{{ picker.hint }}
 					</p>
 				</div>
 			</div>
@@ -494,10 +474,17 @@
 		v-if="showDeleteDialog"
 		:view="viewToDelete"
 		@close="handleDeleteClose" />
+
+	<!-- Share the active view by link -->
+	<ViewAccessLinksModal
+		v-if="showViewLinksDialog && viewsStore.activeView"
+		:view="viewsStore.activeView"
+		@close="showViewLinksDialog = false" />
 </template>
 
 <script>
 import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -508,10 +495,12 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Star from 'vue-material-design-icons/Star.vue'
@@ -529,6 +518,7 @@ import {
 	viewsStore,
 } from '../../store/store.js'
 import { scopeListLoader } from '../scopeListLoader.js'
+import { rememberedSearchColumns, rememberSearchColumns } from './searchColumnMemory.js'
 
 /**
  * The state every instance of this component starts from.
@@ -566,6 +556,8 @@ const INITIAL_STATE = {
 	// Delete view dialog
 	showDeleteDialog: false,
 	viewToDelete: null,
+	// Share-by-link dialog of the active view
+	showViewLinksDialog: false,
 	// Column visibility collapsible state
 	expandedSchemas: {}, // Track which schema groups are expanded
 	metadataExpanded: true, // Metadata section expanded by default
@@ -631,6 +623,13 @@ export default {
 		CogOutline,
 		EditView,
 		DeleteView,
+		// Loaded when the dialog first opens: the access-link panel and its
+		// dialogs are only needed by the view's owner, on demand.
+		ViewAccessLinksModal: defineAsyncComponent(
+			() => import('../../modals/view/ViewAccessLinksModal.vue'),
+		),
+
+		LinkVariant,
 		SelectOption,
 	},
 
@@ -648,6 +647,53 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user owns the active view; only the owner may
+		 * share it by link.
+		 *
+		 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+		 * @return {boolean}
+		 */
+		ownsActiveView() {
+			const owner = viewsStore.activeView?.owner
+			const uid = getCurrentUser()?.uid
+			return Boolean(owner) && owner === uid
+		},
+
+		/**
+		 * The register and schema pickers: the same multi-select twice, the
+		 * schema one disabled until a register is picked.
+		 *
+		 * @spec exclude Presentational picker configuration.
+		 * @return {Array<object>} The pickers, registers first
+		 */
+		scopePickers() {
+			return [
+				{
+					id: 'registerSelect',
+					label: t('openregister', 'Registers'),
+					bag: this.registerOptions,
+					value: this.selectedRegisters,
+					loading: this.registerLoading,
+					disabled: this.registerLoading,
+					placeholder: t('openregister', 'Select one or more registers'),
+					change: this.handleRegisterChange,
+					hint: t('openregister', 'register(s) selected'),
+				},
+				{
+					id: 'schemaSelect',
+					label: t('openregister', 'Schemas'),
+					bag: this.schemaOptions,
+					value: this.selectedSchemas,
+					loading: this.schemaLoading,
+					disabled: this.selectedRegisters.length === 0 || this.schemaLoading,
+					placeholder: t('openregister', 'Select one or more schemas'),
+					change: this.handleSchemaChange,
+					hint: t('openregister', 'schema(s) selected'),
+				},
+			]
+		},
+
 		/**
 		 * The facet checkbox groups: metadata (`@self`) fields, then object
 		 * fields. A group's `entries` is null when the schema has none of them.
@@ -1017,10 +1063,12 @@ export default {
 		 * CnIndexSidebar @columns-change: persist visible columns.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-8
+		 * @spec openspec/changes/records-api-and-table-stated/specs/zoeken-filteren/spec.md#REQ-RAT-002
 		 * @param {Array<string>} columns
 		 */
 		onColumnsChange(columns) {
 			objectStore.setSearchVisibleColumns(columns)
+			rememberSearchColumns(objectStore.searchParams?.schema, columns)
 		},
 
 		/**
@@ -1243,6 +1291,11 @@ export default {
 				if (schema) schemaStore.setSchemaItem(schema)
 			} else {
 				schemaStore.setSchemaItem(null)
+			}
+			// The columns are the user's choice FOR THIS SCHEMA: switching to
+			// another schema shows the columns picked there, or its defaults.
+			if (String(schemaId ?? '') !== String(objectStore.searchParams?.schema ?? '')) {
+				objectStore.setSearchVisibleColumns(rememberedSearchColumns(schemaId))
 			}
 			objectStore.setSearchParams({
 				register: registerId,

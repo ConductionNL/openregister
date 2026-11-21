@@ -1,0 +1,1048 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ApiTokenConfiguration token settings loadTokens logs a failure quietly 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "console",
+    "Failed to load API tokens:",
+    [Error: down],
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings loadTokens reads all settings 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "get",
+    "/gen/apps/openregister/api/settings/api-tokens",
+  ],
+  [
+    "set",
+    "githubToken",
+    "a",
+  ],
+  [
+    "set",
+    "gitlabToken",
+    "b",
+  ],
+  [
+    "set",
+    "gitlabUrl",
+    "c",
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "a",
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "b",
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "c",
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings loadTokens reads no settings 1`] = `
+[
+  [
+    "set",
+    "loading",
+    true,
+  ],
+  [
+    "get",
+    "/gen/apps/openregister/api/settings/api-tokens",
+  ],
+  [
+    "set",
+    "githubToken",
+    "",
+  ],
+  [
+    "set",
+    "gitlabToken",
+    "",
+  ],
+  [
+    "set",
+    "gitlabUrl",
+    "",
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "",
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "",
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "",
+  ],
+  [
+    "set",
+    "loading",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitHubToken fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "github_token": "ghp_x",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitHub token:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitHub token",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitHubToken saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "github_token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "originalGithubToken",
+    "ghp_x",
+  ],
+  [
+    "success",
+    "GitHub token saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabToken fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_token": "glpat_x",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitLab token:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitLab token",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabToken saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_token": "glpat_x",
+    },
+  ],
+  [
+    "set",
+    "originalGitlabToken",
+    "glpat_x",
+  ],
+  [
+    "success",
+    "GitLab token saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabUrl fails 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_url": "https://gitlab.example",
+    },
+  ],
+  [
+    "console",
+    "Failed to save GitLab URL:",
+    [Error: down],
+  ],
+  [
+    "error",
+    "Failed to save GitLab URL",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token settings saveGitLabUrl saves 1`] = `
+[
+  [
+    "set",
+    "saving",
+    true,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens",
+    {
+      "gitlab_url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "originalGitlabUrl",
+    "https://gitlab.example",
+  ],
+  [
+    "success",
+    "GitLab URL saved successfully",
+  ],
+  [
+    "set",
+    "saving",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitHubToken fails with a server message 1`] = `
+[
+  [
+    "set",
+    "testingGithub",
+    true,
+  ],
+  [
+    "set",
+    "githubTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/github",
+    {
+      "token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "githubTestResult",
+    {
+      "message": "Bad credentials",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitHub token test failed: {message} {"message":"Bad credentials"}",
+  ],
+  [
+    "set",
+    "testingGithub",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitHubToken fails with its own message 1`] = `
+[
+  [
+    "set",
+    "testingGithub",
+    true,
+  ],
+  [
+    "set",
+    "githubTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/github",
+    {
+      "token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "githubTestResult",
+    {
+      "message": "Network down",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitHub token test failed: {message} {"message":"Network down"}",
+  ],
+  [
+    "set",
+    "testingGithub",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitHubToken fails without a message 1`] = `
+[
+  [
+    "set",
+    "testingGithub",
+    true,
+  ],
+  [
+    "set",
+    "githubTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/github",
+    {
+      "token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "githubTestResult",
+    {
+      "message": "Unknown error",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitHub token test failed: {message} {"message":"Unknown error"}",
+  ],
+  [
+    "set",
+    "testingGithub",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitHubToken passes 1`] = `
+[
+  [
+    "set",
+    "testingGithub",
+    true,
+  ],
+  [
+    "set",
+    "githubTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/github",
+    {
+      "token": "ghp_x",
+    },
+  ],
+  [
+    "set",
+    "githubTestResult",
+    {
+      "message": "ok",
+      "scopes": [
+        "repo",
+      ],
+      "success": true,
+      "username": "octo",
+    },
+  ],
+  [
+    "success",
+    "GitHub token is valid! Username: {username} {"username":"octo"}",
+  ],
+  [
+    "set",
+    "testingGithub",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitLabToken fails with a server message 1`] = `
+[
+  [
+    "set",
+    "testingGitlab",
+    true,
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/gitlab",
+    {
+      "token": "glpat_x",
+      "url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    {
+      "message": "Bad credentials",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitLab token test failed: {message} {"message":"Bad credentials"}",
+  ],
+  [
+    "set",
+    "testingGitlab",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitLabToken fails with its own message 1`] = `
+[
+  [
+    "set",
+    "testingGitlab",
+    true,
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/gitlab",
+    {
+      "token": "glpat_x",
+      "url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    {
+      "message": "Network down",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitLab token test failed: {message} {"message":"Network down"}",
+  ],
+  [
+    "set",
+    "testingGitlab",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitLabToken fails without a message 1`] = `
+[
+  [
+    "set",
+    "testingGitlab",
+    true,
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/gitlab",
+    {
+      "token": "glpat_x",
+      "url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    {
+      "message": "Unknown error",
+      "success": false,
+    },
+  ],
+  [
+    "error",
+    "GitLab token test failed: {message} {"message":"Unknown error"}",
+  ],
+  [
+    "set",
+    "testingGitlab",
+    false,
+  ],
+]
+`;
+
+exports[`ApiTokenConfiguration token tests testGitLabToken passes 1`] = `
+[
+  [
+    "set",
+    "testingGitlab",
+    true,
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    null,
+  ],
+  [
+    "post",
+    "/gen/apps/openregister/api/settings/api-tokens/test/gitlab",
+    {
+      "token": "glpat_x",
+      "url": "https://gitlab.example",
+    },
+  ],
+  [
+    "set",
+    "gitlabTestResult",
+    {
+      "instance": "gitlab.example",
+      "message": "ok",
+      "success": true,
+      "username": "octo",
+    },
+  ],
+  [
+    "success",
+    "GitLab token is valid! Username: {username} {"username":"octo"}",
+  ],
+  [
+    "set",
+    "testingGitlab",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testDolphinConnection asks for a missing endpoint too 1`] = `
+[
+  [
+    "set",
+    "dolphinConnectionTested",
+    null,
+  ],
+  [
+    "message",
+    "Please provide both API endpoint and API key",
+    "error",
+  ],
+  [
+    "set",
+    "dolphinConnectionTested",
+    "error",
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testDolphinConnection asks for missing input 1`] = `
+[
+  [
+    "set",
+    "dolphinConnectionTested",
+    null,
+  ],
+  [
+    "message",
+    "Please provide both API endpoint and API key",
+    "error",
+  ],
+  [
+    "set",
+    "dolphinConnectionTested",
+    "error",
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testDolphinConnection crashes 1`] = `
+[
+  [
+    "set",
+    "dolphinConnectionTested",
+    null,
+  ],
+  [
+    "store",
+    "testDolphinConnection",
+    {
+      "apiEndpoint": "http://d",
+      "apiKey": "dk",
+    },
+  ],
+  [
+    "console",
+    "Failed to test Dolphin connection:",
+    [Error: offline],
+  ],
+  [
+    "message",
+    "Connection test failed",
+    "error",
+  ],
+  [
+    "set",
+    "dolphinConnectionTested",
+    "error",
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testDolphinConnection is refused 1`] = `
+[
+  [
+    "set",
+    "dolphinConnectionTested",
+    null,
+  ],
+  [
+    "store",
+    "testDolphinConnection",
+    {
+      "apiEndpoint": "http://d",
+      "apiKey": "dk",
+    },
+  ],
+  [
+    "message",
+    "Connection failed: bad key",
+    "error",
+  ],
+  [
+    "set",
+    "dolphinConnectionTested",
+    "error",
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testDolphinConnection passes 1`] = `
+[
+  [
+    "set",
+    "dolphinConnectionTested",
+    null,
+  ],
+  [
+    "store",
+    "testDolphinConnection",
+    {
+      "apiEndpoint": "http://d",
+      "apiKey": "dk",
+    },
+  ],
+  [
+    "message",
+    "Dolphin connection successful!",
+    "success",
+  ],
+  [
+    "set",
+    "dolphinConnectionTested",
+    "success",
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testOpenAnonymiserConnection asks for missing input 1`] = `
+[
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    true,
+  ],
+  [
+    "message",
+    "Please provide the OpenAnonymiser API endpoint",
+    "error",
+  ],
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testOpenAnonymiserConnection crashes 1`] = `
+[
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    true,
+  ],
+  [
+    "store",
+    "testOpenAnonymiserConnection",
+    {
+      "apiEndpoint": "http://o",
+    },
+  ],
+  [
+    "console",
+    "Failed to test OpenAnonymiser connection:",
+    [Error: offline],
+  ],
+  [
+    "message",
+    "Connection test failed",
+    "error",
+  ],
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testOpenAnonymiserConnection is refused 1`] = `
+[
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    true,
+  ],
+  [
+    "store",
+    "testOpenAnonymiserConnection",
+    {
+      "apiEndpoint": "http://o",
+    },
+  ],
+  [
+    "message",
+    "Connection failed: bad key",
+    "error",
+  ],
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testOpenAnonymiserConnection passes 1`] = `
+[
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    true,
+  ],
+  [
+    "store",
+    "testOpenAnonymiserConnection",
+    {
+      "apiEndpoint": "http://o",
+    },
+  ],
+  [
+    "message",
+    "OpenAnonymiser connection successful!",
+    "success",
+  ],
+  [
+    "set",
+    "openAnonymiserConnectionTested",
+    "success",
+  ],
+  [
+    "set",
+    "testingOpenAnonymiser",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testPresidioConnection asks for missing input 1`] = `
+[
+  [
+    "set",
+    "presidioConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingPresidio",
+    true,
+  ],
+  [
+    "message",
+    "Please provide the Presidio API endpoint",
+    "error",
+  ],
+  [
+    "set",
+    "presidioConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingPresidio",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testPresidioConnection crashes 1`] = `
+[
+  [
+    "set",
+    "presidioConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingPresidio",
+    true,
+  ],
+  [
+    "store",
+    "testPresidioConnection",
+    {
+      "apiEndpoint": "http://p",
+    },
+  ],
+  [
+    "console",
+    "Failed to test Presidio connection:",
+    [Error: offline],
+  ],
+  [
+    "message",
+    "Connection test failed",
+    "error",
+  ],
+  [
+    "set",
+    "presidioConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingPresidio",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testPresidioConnection is refused 1`] = `
+[
+  [
+    "set",
+    "presidioConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingPresidio",
+    true,
+  ],
+  [
+    "store",
+    "testPresidioConnection",
+    {
+      "apiEndpoint": "http://p",
+    },
+  ],
+  [
+    "message",
+    "Connection failed: bad key",
+    "error",
+  ],
+  [
+    "set",
+    "presidioConnectionTested",
+    "error",
+  ],
+  [
+    "set",
+    "testingPresidio",
+    false,
+  ],
+]
+`;
+
+exports[`FileConfiguration connection tests testPresidioConnection passes 1`] = `
+[
+  [
+    "set",
+    "presidioConnectionTested",
+    null,
+  ],
+  [
+    "set",
+    "testingPresidio",
+    true,
+  ],
+  [
+    "store",
+    "testPresidioConnection",
+    {
+      "apiEndpoint": "http://p",
+    },
+  ],
+  [
+    "message",
+    "Presidio connection successful!",
+    "success",
+  ],
+  [
+    "set",
+    "presidioConnectionTested",
+    "success",
+  ],
+  [
+    "set",
+    "testingPresidio",
+    false,
+  ],
+]
+`;

@@ -18,6 +18,7 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -248,7 +249,8 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		$cascadeThrows = ($case['cascadeThrows'] ?? []);
 		$deleteHandler = $this->createMock(DeleteObject::class);
 		$deleteHandler->method('deleteObject')->willReturnCallback(
-			function ($register, $schema, string $uuid, ?string $originalObjectId = null, bool $_rbac = true, bool $_multitenancy = true, bool $scoped = false, ?ObjectEntity $preResolved = null, bool $permanent = false) use ($case, &$lastCascade): bool {
+			function (DeletionRequest $request, bool $_rbac = true, bool $_multitenancy = true) use ($case, &$lastCascade): bool {
+				[$register, $schema, $uuid, $originalObjectId, $scoped, $preResolved, $permanent] = [$request->register, $request->schema, $request->uuid, $request->options->originalObjectId, $request->options->scoped, $request->options->preResolved, $request->options->permanent];
 				$this->record('deleteHandler.deleteObject', [$register, $schema, $uuid, $originalObjectId, $_rbac, $_multitenancy, $scoped, $preResolved, $permanent]);
 				$lastCascade = ($case['cascade'][$uuid] ?? 0);
 				$outcome = ($case['delete'][$uuid] ?? true);

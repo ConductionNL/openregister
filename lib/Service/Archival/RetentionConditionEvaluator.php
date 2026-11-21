@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use Closure;
 use InvalidArgumentException;
 
 /**
@@ -93,7 +94,7 @@ final class RetentionConditionEvaluator {
 		$left = $row[$field];
 		$right = $this->parseLiteral(source: $literalSource);
 
-		return $this->compare(left: $left, right: $right, operator: $operator);
+		return $this->comparator(operator: $operator)($left, $right);
 	}//end evaluate()
 
 	/**
@@ -166,7 +167,7 @@ final class RetentionConditionEvaluator {
 	}//end parseNumber()
 
 	/**
-	 * Compare two values under the given operator.
+	 * The comparison of two values under the given operator.
 	 *
 	 * PHP's loose comparison semantics are used for `==` / `!=` so
 	 * `200 == 200.0 → true`. Strict-typed equality is not part of
@@ -176,26 +177,24 @@ final class RetentionConditionEvaluator {
 	 * pairs we fall back to PHP's native comparison rules; this is
 	 * documented as DSL behaviour, not a bug.
 	 *
-	 * @param mixed $left Left-hand value (from row).
-	 * @param mixed $right Right-hand literal.
 	 * @param string $operator One of the supported operators.
 	 *
-	 * @return bool
+	 * @return Closure(mixed, mixed): bool The comparison of a row value (left) with a literal (right).
 	 *
 	 * @throws InvalidArgumentException When the operator is not in the supported set.
 	 */
-	private function compare(mixed $left, mixed $right, string $operator): bool {
+	private function comparator(string $operator): Closure {
 		return match ($operator) {
-			'==' => $left == $right,
-			'!=' => $left != $right,
-			'<' => $left < $right,
-			'<=' => $left <= $right,
-			'>' => $left > $right,
-			'>=' => $left >= $right,
+			'==' => static fn (mixed $left, mixed $right): bool => $left == $right,
+			'!=' => static fn (mixed $left, mixed $right): bool => $left != $right,
+			'<' => static fn (mixed $left, mixed $right): bool => $left < $right,
+			'<=' => static fn (mixed $left, mixed $right): bool => $left <= $right,
+			'>' => static fn (mixed $left, mixed $right): bool => $left > $right,
+			'>=' => static fn (mixed $left, mixed $right): bool => $left >= $right,
 			default => throw new InvalidArgumentException(
 				sprintf('Unsupported retention operator: "%s".', $operator)
 			),
 		};
 
-	}//end compare()
+	}//end comparator()
 }//end class

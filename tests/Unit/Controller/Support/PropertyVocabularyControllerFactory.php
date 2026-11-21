@@ -18,7 +18,6 @@ final class PropertyVocabularyControllerFactory {
 	/**
 	 * The constructor arguments of PropertyVocabularyController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param PropertyVocabularyInterface $vocabulary Constructor argument.
 	 * @param ExtendingFormDeclarationInterface $declarations Constructor argument.
@@ -27,14 +26,12 @@ final class PropertyVocabularyControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface $vocabulary,
 		\OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface $declarations,
 		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\PropertyVocabularyControllerServices(
 				vocabulary: $vocabulary,

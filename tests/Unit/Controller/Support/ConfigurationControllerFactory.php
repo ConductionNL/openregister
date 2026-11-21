@@ -18,7 +18,7 @@ final class ConfigurationControllerFactory {
 	/**
 	 * The constructor arguments of ConfigurationController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param ConfigurationMapper $configurationMapper Constructor argument.
 	 * @param ConfigurationService $configurationService Constructor argument.
@@ -46,7 +46,6 @@ final class ConfigurationControllerFactory {
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ConfigurationControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

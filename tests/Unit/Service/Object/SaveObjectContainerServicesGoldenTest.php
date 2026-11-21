@@ -20,7 +20,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -35,6 +37,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TmloService;
@@ -53,6 +56,27 @@ use stdClass;
  * Pins the four lazy resolvers: no container, a found service, a container that throws, and a wrong type.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugBatch
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClientValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class SaveObjectContainerServicesGoldenTest extends TestCase {
 
@@ -82,6 +106,17 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 	 * @return mixed
 	 */
 	private function resolve(string $method, ?ContainerInterface $container): mixed {
+		return (new ReflectionMethod(SaveObject::class, $method))->invoke($this->handler(container: $container));
+	}//end resolve()
+
+	/**
+	 * A SaveObject on the given container, logging its debug lines into $this->debug.
+	 *
+	 * @param ContainerInterface|null $container The container.
+	 *
+	 * @return SaveObject
+	 */
+	private function handler(?ContainerInterface $container): SaveObject {
 		$this->debug = [];
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('debug')->willReturnCallback(
@@ -89,14 +124,12 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 				$this->debug[] = (string) $message;
 			}
 		);
-		$handler = new SaveObject(
+		return new SaveObject(
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -134,9 +167,7 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 			permissionHandler: $this->createMock(PermissionHandler::class),
 			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
-
-		return (new ReflectionMethod(SaveObject::class, $method))->invoke($handler);
-	}//end resolve()
+	}//end handler()
 
 	/**
 	 * A container that answers one id with the given value or exception.
@@ -192,4 +223,58 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 		$this->assertNull($this->resolve($method, $this->container($id, new stdClass())));
 		$this->assertSame([], $this->debug);
 	}//end testAnAnswerOfTheWrongTypeResolvesNothing()
+
+	/**
+	 * Expression defaults are the rules engine's work: the save path hands the schema and data to the Core port and returns its answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testExpressionDefaultsAreAskedOfTheCorePort(): void {
+		$schema = new Schema();
+		$port = $this->createMock(ExpressionDefaultsInterface::class);
+		$port->expects($this->once())->method('apply')->with($schema, ['a' => 1])->willReturn(['a' => 1, 'derived' => 2]);
+
+		$result = $this->handler(container: $this->container(ExpressionDefaultsInterface::class, $port))->applyExpressionDefaults(schema: $schema, data: ['a' => 1]);
+
+		$this->assertSame(['a' => 1, 'derived' => 2], $result);
+	}//end testExpressionDefaultsAreAskedOfTheCorePort()
+
+	/**
+	 * A refusal of the port reaches the caller unchanged, so the create is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testAnExpressionDefaultRefusalReachesTheCaller(): void {
+		$port = $this->createMock(ExpressionDefaultsInterface::class);
+		$port->method('apply')->willThrowException(new ExpressionDefaultException(property: 'due', message: 'due: no date'));
+
+		$this->expectException(ExpressionDefaultException::class);
+
+		$this->handler(container: $this->container(ExpressionDefaultsInterface::class, $port))->applyExpressionDefaults(schema: new Schema(), data: []);
+	}//end testAnExpressionDefaultRefusalReachesTheCaller()
+
+	/**
+	 * A container that cannot serve the port fails loudly instead of skipping the defaults.
+	 *
+	 * @return void
+	 */
+	public function testAContainerThatCannotServeTheExpressionDefaultsPortFailsLoudly(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('boom');
+
+		$this->handler(container: $this->container(ExpressionDefaultsInterface::class, new RuntimeException('boom')))->applyExpressionDefaults(schema: new Schema(), data: []);
+	}//end testAContainerThatCannotServeTheExpressionDefaultsPortFailsLoudly()
+
+	/**
+	 * A hand-built handler with no container derives nothing and returns the data as given.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAContainerNoExpressionDefaultIsDerived(): void {
+		$this->assertSame(['a' => 1], $this->handler(container: null)->applyExpressionDefaults(schema: new Schema(), data: ['a' => 1]));
+	}//end testWithoutAContainerNoExpressionDefaultIsDerived()
 }//end class

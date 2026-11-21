@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\Service\Quality;
 
+use OCA\OpenRegister\Search\Service\Quality\ComparedValues;
 use OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Quality\SimilarityCalculator
+ * @uses \OCA\OpenRegister\Search\Service\Quality\ComparedValues
  */
 class SimilarityCalculatorGoldenTest extends TestCase {
 
@@ -75,7 +77,7 @@ class SimilarityCalculatorGoldenTest extends TestCase {
 		$actual     = [];
 		foreach (self::pairs() as $name => [$left, $right]) {
 			foreach (self::METHODS as $method) {
-				$actual[$name][$method] = $calculator->similarity($method, $left, $right);
+				$actual[$name][$method] = $calculator->similarity($method, new ComparedValues($left, $right));
 				$actual[$name]['token ' . $method] = [$calculator->blockingToken($method, $left), $calculator->blockingToken($method, $right)];
 			}
 		}

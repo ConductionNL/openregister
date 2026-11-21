@@ -18,7 +18,6 @@ final class AuditQueryControllerFactory {
 	/**
 	 * The constructor arguments of AuditQueryController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param AuditQueryService $auditQueryService Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -27,19 +26,16 @@ final class AuditQueryControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\AuditQueryService $auditQueryService,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AuditQueryControllerServices(
 				auditQueryService: $auditQueryService,
-				userSession: $userSession,
-				groupManager: $groupManager,
+				principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 			),
 		];
 	}//end args()

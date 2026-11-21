@@ -25,6 +25,19 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
@@ -311,15 +324,48 @@ class CalculatedChangeTriggerTest extends TestCase {
 	 */
 	private function makeDispatcher(): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->logger,
-			$this->groupManager,
-			$this->userManager,
-			$this->mailer,
-			$this->activityManager,
-			$this->httpClient,
-			$this->serverContainer
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $this->logger,
+					userManager: $this->userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->httpClient,
+					logger: $this->logger
+				),
+				activityManager: $this->activityManager
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold()
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->httpClient,
+				serverContainer: $this->serverContainer
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger,
+					serverContainer: $this->serverContainer
+				)
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->logger
+				)
+			)
 		);
 
 	}//end makeDispatcher()

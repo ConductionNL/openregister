@@ -25,12 +25,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\InboxListing;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -48,6 +52,17 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectLocator
+ * @uses \OCA\OpenRegister\Service\Task\InboxListing
+ * @uses \OCA\OpenRegister\Service\Task\TaskInboxPage
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class TaskInboxServiceTest extends TestCase {
 
@@ -74,7 +89,6 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskMapper::class);
 		$this->inbox = new TaskInboxService(
 			tasks: $this->tasks,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: null
 		);
@@ -109,12 +123,13 @@ class TaskInboxServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testPaginationReportsTheDatastoreTotalOverTheSameCriteria(): void {
-		$criteria = new TaskInboxCriteria(uid: 'alice');
+		$criteria = new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice'));
 		$seenByFind = null;
 		$seenByCount = null;
 
 		$this->tasks->expects($this->once())->method('findInbox')->willReturnCallback(
-			function (TaskInboxCriteria $c, int $limit, int $offset) use (&$seenByFind): array {
+			function (TaskInboxCriteria $c, ListQuery $page) use (&$seenByFind): array {
+				[$limit, $offset] = [$page->limit, $page->offset];
 				$seenByFind = $c;
 				$this->assertSame(25, $limit);
 				$this->assertSame(0, $offset);
@@ -130,7 +145,7 @@ class TaskInboxServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->inbox->inbox(criteria: $criteria, limit: 25, offset: 0);
+		$result = $this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: 25, offset: 0));
 
 		$this->assertCount(25, $result['results']);
 		$this->assertSame(120, $result['total']);
@@ -148,7 +163,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->expects($this->never())->method('findInbox');
 		$this->tasks->expects($this->never())->method('countInbox');
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(uid: ' '));
+		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: ' ')));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -161,7 +176,8 @@ class TaskInboxServiceTest extends TestCase {
 	 */
 	public function testTheLimitIsClamped(): void {
 		$this->tasks->expects($this->once())->method('findInbox')->willReturnCallback(
-			function (TaskInboxCriteria $c, int $limit, int $offset): array {
+			function (TaskInboxCriteria $c, ListQuery $page): array {
+				$limit = $page->limit;
 				$this->assertSame(500, $limit);
 
 				return [];
@@ -169,7 +185,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(0);
 
-		$this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), limit: 99999);
+		$this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 99999));
 	}//end testTheLimitIsClamped()
 
 	/**
@@ -195,7 +211,7 @@ class TaskInboxServiceTest extends TestCase {
 			],
 		];
 
-		$row = $this->inbox->row(task: $task, subjects: $subjects, now: new DateTime('2026-08-31T12:00:00+00:00'));
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: $subjects, now: new DateTime('2026-08-31T12:00:00+00:00'), openBlockers: []));
 
 		$this->assertSame('Claim: Bouwtekening Dorpsstraat 12', $row['displayTitle']);
 		$this->assertNull($row['title'], 'The stored title must STAY null.');
@@ -228,7 +244,7 @@ class TaskInboxServiceTest extends TestCase {
 				return [$case, $plain];
 			}
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$first = new Task();
 		$first->setUuid('t-1');
@@ -239,7 +255,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second]);
 		$this->tasks->method('countInbox')->willReturn(2);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame(expected: '2026-0074', actual: $result['results'][0]['subject']['identifier']);
 		$this->assertSame(expected: 'Bezwaar parkeerboete Havenstraat', actual: $result['results'][0]['subject']['title']);
@@ -278,7 +294,7 @@ class TaskInboxServiceTest extends TestCase {
 				return [$one, $noUuid];
 			}
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$first = new Task();
 		$first->setUuid('t-1');
@@ -291,7 +307,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second, $third]);
 		$this->tasks->method('countInbox')->willReturn(3);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title']);
 		$this->assertSame('zaak', $result['results'][0]['subject']['schema']);
@@ -351,10 +367,9 @@ class TaskInboxServiceTest extends TestCase {
 
 		$inbox = new TaskInboxService(
 			tasks: $this->tasks,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects,
-			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator($objects, $registers, $schemas, new NullLogger())
+			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects), new NullLogger())
 		);
 
 		$first = new Task();
@@ -368,7 +383,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$first, $second]);
 		$this->tasks->method('countInbox')->willReturn(2);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('Zaak 7', $result['results'][0]['subject']['title']);
 		$this->assertSame('Zaak oud', $result['results'][1]['subject']['title']);
@@ -392,7 +407,7 @@ class TaskInboxServiceTest extends TestCase {
 				},
 			]
 		);
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$task = new Task();
 		$task->setUuid('t-1');
@@ -400,7 +415,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$task]);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame('zaken', $result['results'][0]['subject']['register']);
 		$this->assertSame('Zaak 42', $result['results'][0]['subject']['title'], 'the flat title fallback still answers');
@@ -414,7 +429,7 @@ class TaskInboxServiceTest extends TestCase {
 	public function testAFailingObjectStoreLeavesContextNull(): void {
 		$objects = $this->createMock(originalClassName: MagicMapperInterface::class);
 		$objects->method('findMultiple')->willThrowException(new \RuntimeException('store down'));
-		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+		$inbox = new TaskInboxService(tasks: $this->tasks, logger: new NullLogger(), objects: $objects);
 
 		$task = new Task();
 		$task->setUuid('t-1');
@@ -422,7 +437,7 @@ class TaskInboxServiceTest extends TestCase {
 		$this->tasks->method('findInbox')->willReturn([$task]);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')));
 
 		$this->assertSame(1, $result['total']);
 		$this->assertNull($result['results'][0]['subject']);
@@ -438,7 +453,8 @@ class TaskInboxServiceTest extends TestCase {
 		$task->setUuid('t-1');
 		$task->setObjectUuid('obj-1');
 		$this->tasks->method('findInbox')->willReturnCallback(
-			function (TaskInboxCriteria $c, int $limit, int $offset) use ($task): array {
+			function (TaskInboxCriteria $c, ListQuery $page) use ($task): array {
+				$offset = $page->offset;
 				$this->assertSame(0, $offset, 'a negative offset is clamped to zero');
 
 				return [$task];
@@ -446,7 +462,7 @@ class TaskInboxServiceTest extends TestCase {
 		);
 		$this->tasks->method('countInbox')->willReturn(1);
 
-		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'), limit: 0, offset: -5);
+		$result = $this->inbox->inbox(criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'alice')), page: new TaskInboxPage(limit: 0, offset: -5));
 
 		$this->assertSame(1, $result['limit']);
 		$this->assertNull($result['results'][0]['subject']);
@@ -461,7 +477,7 @@ class TaskInboxServiceTest extends TestCase {
 		$task = new Task();
 		$task->setTitle('Keur de offerte goed');
 
-		$row = $this->inbox->row(task: $task, subjects: [], now: new DateTime());
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: [], now: new DateTime(), openBlockers: []));
 
 		$this->assertSame('Keur de offerte goed', $row['displayTitle']);
 	}//end testAStoredTitleWins()
@@ -475,7 +491,7 @@ class TaskInboxServiceTest extends TestCase {
 		$task = new Task();
 		$task->setDueAt(new DateTime('2026-08-01T00:00:00+00:00'));
 
-		$row = $this->inbox->row(task: $task, subjects: [], now: new DateTime('2026-08-31T00:00:00+00:00'));
+		$row = $this->inbox->row(task: $task, listing: new InboxListing(subjects: [], now: new DateTime('2026-08-31T00:00:00+00:00'), openBlockers: []));
 
 		$this->assertTrue($row['overdue']);
 		$this->assertSame(30, $row['daysOverdue']);

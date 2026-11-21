@@ -18,7 +18,7 @@ final class PermissionsAuditControllerFactory {
 	/**
 	 * The constructor arguments of PermissionsAuditController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param PermissionCatalogue $catalogue Constructor argument.
 	 * @param DenyEnforcementMode $enforcement Constructor argument.
@@ -40,7 +40,6 @@ final class PermissionsAuditControllerFactory {
 		\OCA\OpenRegister\Service\Rbac\AdminGate $adminGate = new AdminGate(),
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices(
 				rules: new \OCA\OpenRegister\Controller\Support\PermissionsAuditRules(

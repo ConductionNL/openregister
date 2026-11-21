@@ -69,25 +69,54 @@ class AppHostSettingsService {
 	private ?array $featureDeclarations = null;
 
 	/**
+	 * App config store.
+	 *
+	 * @var IAppConfig
+	 */
+	protected readonly IAppConfig $appConfig;
+
+	/**
+	 * App manager (OR availability).
+	 *
+	 * @var IAppManager
+	 */
+	protected readonly IAppManager $appManager;
+
+	/**
+	 * DI container (lazy OR service resolution).
+	 *
+	 * @var ContainerInterface
+	 */
+	protected readonly ContainerInterface $container;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	protected readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
+	 * The group manager and user session decide the admin check, so they stay
+	 * direct parameters rather than part of the platform bundle.
+	 *
 	 * @param string $appId The calling (leaf) app id.
-	 * @param IAppConfig $appConfig App config store.
-	 * @param IAppManager $appManager App manager (OR availability).
-	 * @param ContainerInterface $container DI container (lazy OR service resolution).
+	 * @param AppHostSettingsServices $services Config store, app manager, container and logger.
 	 * @param IGroupManager $groupManager Group manager (admin check).
 	 * @param IUserSession $userSession Current user session.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
 		protected readonly string $appId,
-		protected readonly IAppConfig $appConfig,
-		protected readonly IAppManager $appManager,
-		protected readonly ContainerInterface $container,
+		AppHostSettingsServices $services,
 		protected readonly IGroupManager $groupManager,
 		protected readonly IUserSession $userSession,
-		protected readonly LoggerInterface $logger,
 	) {
+		$this->appConfig = $services->appConfig;
+		$this->appManager = $services->appManager;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -189,24 +218,11 @@ class AppHostSettingsService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	private function auditSettingsChange(array $before, array $after): void {
 		try {
-			$auditor = $this->container->get(
-				'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
-			);
-
-			if (method_exists($auditor, 'recordUpdate') === false) {
-				return;
-			}
-
-			$auditor->recordUpdate(
-				$this->appId,
-				$before,
-				$after,
-				$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
-			);
+			$this->recordSettingsChange(before: $before, after: $after);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf(
@@ -217,6 +233,127 @@ class AppHostSettingsService {
 			);
 		}
 	}//end auditSettingsChange()
+
+	/**
+	 * Hand a settings change to OpenRegister's settings-change auditor, when it can record one.
+	 *
+	 * @param array<string, mixed> $before The values before the change.
+	 * @param array<string, mixed> $after  The values after the change.
+	 *
+	 * @return void
+	 */
+	private function recordSettingsChange(array $before, array $after): void {
+		$auditor = $this->container->get(
+			'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+		);
+
+		if (method_exists($auditor, 'recordUpdate') === false) {
+			return;
+		}
+
+		$auditor->recordUpdate(
+			$this->appId,
+			$before,
+			$after,
+			$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
+		);
+	}//end recordSettingsChange()
+
+	/**
+	 * Record a register configuration import as one row on the audit trail.
+	 *
+	 * Runs after the import and before the version stamp, so the count is the
+	 * managed keys the import itself overwrote. Like the update path it never
+	 * throws: the import has happened, and a failure here would deny it.
+	 *
+	 * @param array<string, mixed> $before The settings before the import.
+	 * @param bool                 $forced Whether the import was forced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function auditImport(array $before, bool $forced): void {
+		try {
+			$this->recordImport(keysOverwritten: $this->overwrittenKeyCount(before: $before, after: $this->getSettings()), forced: $forced);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf(
+					'[AppHost:%s] Configuration import was stored but not audited: %s',
+					$this->appId,
+					$e->getMessage()
+				)
+			);
+		}
+	}//end auditImport()
+
+	/**
+	 * Hand an import to OpenRegister's settings-change auditor, when it can record one.
+	 *
+	 * @param int  $keysOverwritten How many stored keys the import replaced.
+	 * @param bool $forced          Whether the import was forced.
+	 *
+	 * @return void
+	 */
+	private function recordImport(int $keysOverwritten, bool $forced): void {
+		$auditor = $this->container->get(
+			'OCA\\OpenRegister\\Service\\Rbac\\SettingsChangeAuditor'
+		);
+		$import  = 'OCA\\OpenRegister\\Service\\Rbac\\SettingsImport';
+		if (method_exists($auditor, 'recordImport') === false || class_exists($import) === false) {
+			return;
+		}
+
+		$auditor->recordImport($this->appId, new $import($forced, $keysOverwritten));
+	}//end recordImport()
+
+	/**
+	 * How many managed keys held a value before and hold a different one after.
+	 *
+	 * A key set for the first time is not overwritten. Values compare as text,
+	 * because `IAppConfig` stores strings: `"1"` over a stored `1` is no change.
+	 *
+	 * @param array<string, mixed> $before The settings before.
+	 * @param array<string, mixed> $after  The settings after.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	protected function overwrittenKeyCount(array $before, array $after): int {
+		$count = 0;
+		foreach ($this->configKeys() as $key) {
+			$old = ($before[$key] ?? null);
+			if ($old === null || $old === '') {
+				continue;
+			}
+
+			if (self::settingText(value: $old) !== self::settingText(value: ($after[$key] ?? null))) {
+				$count++;
+			}
+		}
+
+		return $count;
+	}//end overwrittenKeyCount()
+
+	/**
+	 * A setting value as the text it is stored as; non-scalars as JSON.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null The text, or null when absent.
+	 */
+	private static function settingText(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		if (is_scalar($value) === true) {
+			return (string)$value;
+		}
+
+		return (string)json_encode($value);
+	}//end settingText()
 
 	/**
 	 * The feature toggles this app declares.
@@ -241,9 +378,20 @@ class AppHostSettingsService {
 			return $this->featureDeclarations;
 		}
 
+		$this->featureDeclarations = $this->declaredFeatures();
+
+		return $this->featureDeclarations;
+	}//end featureDeclarations()
+
+	/**
+	 * The `features` block of the register configuration, as a list; none when it is unreadable.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function declaredFeatures(): array {
 		$declarations = [];
 		try {
-			[$data] = $this->resolveRegisterConfiguration();
+			[$data]   = $this->resolveRegisterConfiguration();
 			$declared = ($data[FeatureToggleService::DECLARATION_KEY] ?? null);
 			if (is_array($declared) === true) {
 				$declarations = array_values($declared);
@@ -254,10 +402,8 @@ class AppHostSettingsService {
 			);
 		}
 
-		$this->featureDeclarations = $declarations;
-
 		return $declarations;
-	}//end featureDeclarations()
+	}//end declaredFeatures()
 
 	/**
 	 * The effective feature toggles: declared defaults under instance overrides.
@@ -409,7 +555,7 @@ class AppHostSettingsService {
 	 *
 	 * @return array<int, string> The secret keys.
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	protected function secretConfigKeys(): array {
 		return [];
@@ -431,58 +577,123 @@ class AppHostSettingsService {
 	 */
 	public function loadConfiguration(bool $force = false): array {
 		if ($this->isOpenRegisterAvailable() === false) {
-			$this->logger->warning(sprintf('[AppHost:%s] OpenRegister not available, skipping register initialization', $this->appId));
-			return [
-				'success' => false,
-				'message' => 'OpenRegister is not installed or enabled.',
-			];
+			return $this->openRegisterUnavailable();
 		}
 
 		try {
-			[$data, $version] = $this->resolveRegisterConfiguration();
-			if ($data === null) {
-				$message = sprintf(
-					'Configuration file %s_register.json not found under the %s app path.',
-					$this->appId,
-					$this->appId
-				);
-				$this->logger->warning(sprintf('[AppHost:%s] %s', $this->appId, $message));
-				return [
-					'success' => false,
-					'message' => $message,
-				];
-			}
-
-			$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationServiceInterface');
-			$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
-
-			if (empty($result) === false) {
-				$this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
-				// Stamp the app version the config was imported for, so the admin
-				// page can show a REAL up-to-date check (config_version === app version).
-				$this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
-				return [
-					'success' => true,
-					'message' => 'Configuration imported successfully.',
-					'version' => ($result['version'] ?? 'unknown'),
-				];
-			}
-
-			return [
-				'success' => false,
-				'message' => 'Import returned an empty result.',
-			];
+			return $this->importRegisterConfiguration(force: $force);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				sprintf('[AppHost:%s] configuration import failed', $this->appId),
-				['exception' => $e->getMessage()]
-			);
-			return [
-				'success' => false,
-				'message' => $e->getMessage(),
-			];
-		}//end try
+			return $this->registerImportFailed(error: $e);
+		}
 	}//end loadConfiguration()
+
+	/**
+	 * Log and report that OpenRegister is not there to import into.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	private function openRegisterUnavailable(): array {
+		$this->logger->warning(sprintf('[AppHost:%s] OpenRegister not available, skipping register initialization', $this->appId));
+		return [
+			'success' => false,
+			'message' => 'OpenRegister is not installed or enabled.',
+		];
+	}//end openRegisterUnavailable()
+
+	/**
+	 * Read the app's register JSON and import it through the ConfigurationService.
+	 *
+	 * The service is reached through the Core import contract it implements,
+	 * AppConfigurationImporterInterface, bound to the same ConfigurationService.
+	 *
+	 * @param bool $force Force re-import even when already configured.
+	 *
+	 * @return array<string, mixed> Result with `success`, `message`, and `version`.
+	 */
+	private function importRegisterConfiguration(bool $force): array {
+		[$data, $version] = $this->resolveRegisterConfiguration();
+		if ($data === null) {
+			return $this->registerJsonNotFound();
+		}
+
+		$configurationService = $this->container->get('OCA\OpenRegister\Service\AppConfigurationImporterInterface');
+		$before = $this->getSettings();
+		$result = $configurationService->importFromApp(appId: $this->appId, data: $data, version: $version, force: $force);
+
+		if (empty($result) === false) {
+			$this->auditImport(before: $before, forced: $force);
+			return $this->registerImportSucceeded(result: $result);
+		}
+
+		return $this->registerImportEmpty();
+	}//end importRegisterConfiguration()
+
+	/**
+	 * Log and report that the app ships no register JSON.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	private function registerJsonNotFound(): array {
+		$message = sprintf(
+			'Configuration file %s_register.json not found under the %s app path.',
+			$this->appId,
+			$this->appId
+		);
+		$this->logger->warning(sprintf('[AppHost:%s] %s', $this->appId, $message));
+		return [
+			'success' => false,
+			'message' => $message,
+		];
+	}//end registerJsonNotFound()
+
+	/**
+	 * Log and report a failed import.
+	 *
+	 * @param Throwable $error The failure.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	private function registerImportFailed(Throwable $error): array {
+		$this->logger->error(
+			sprintf('[AppHost:%s] configuration import failed', $this->appId),
+			['exception' => $error->getMessage()]
+		);
+		return [
+			'success' => false,
+			'message' => $error->getMessage(),
+		];
+	}//end registerImportFailed()
+
+	/**
+	 * Log a successful import, stamp the version it was imported for and report it.
+	 *
+	 * @param array<string, mixed> $result The non-empty import result.
+	 *
+	 * @return array{success: bool, message: string, version: mixed}
+	 */
+	protected function registerImportSucceeded(array $result): array {
+		$this->logger->info(sprintf('[AppHost:%s] register configuration imported successfully', $this->appId));
+		// Stamp the app version the config was imported for, so the admin
+		// page can show a REAL up-to-date check (config_version === app version).
+		$this->appConfig->setValueString($this->appId, 'config_version', $this->appManager->getAppVersion($this->appId));
+		return [
+			'success' => true,
+			'message' => 'Configuration imported successfully.',
+			'version' => ($result['version'] ?? 'unknown'),
+		];
+	}//end registerImportSucceeded()
+
+	/**
+	 * The report of an import that returned nothing: an explicit non-success.
+	 *
+	 * @return array{success: bool, message: string}
+	 */
+	protected function registerImportEmpty(): array {
+		return [
+			'success' => false,
+			'message' => 'Import returned an empty result.',
+		];
+	}//end registerImportEmpty()
 
 	/**
 	 * Resolve the leaf app's register JSON + `register.d/` fragments.

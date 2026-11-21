@@ -40,9 +40,10 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
 
 /**
  * Clears, snoozes and archives a user's own notices.
@@ -53,12 +54,12 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * Constructor.
 	 *
 	 * @param NotificationHistoryMapper $mapper The dispatched notices.
-	 * @param IUserSession $userSession Resolves the calling user.
+	 * @param PrincipalDirectory $principals Resolves the calling user.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly NotificationHistoryMapper $mapper,
-		private readonly IUserSession $userSession,
+		private readonly PrincipalDirectory $principals,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -78,7 +79,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function clearForObject(string $objectUuid, ?string $userId = null): int {
-		return $this->clear(objectUuid: $objectUuid, subjectId: null, userId: $userId);
+		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: null), userId: $userId);
 
 	}//end clearForObject()
 
@@ -88,20 +89,21 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * Narrower than `clearForObject()` on purpose: opening the documents tab
 	 * says nothing about the messages nobody has read.
 	 *
+	 * The notices cleared are the caller's own.
+	 *
 	 * @param string $objectUuid The object the sub-resource hangs off.
-	 * @param string $subjectId The sub-resource's own id.
-	 * @param string|null $userId The reader, or null for the caller.
+	 * @param string $subjectId  The sub-resource's own id.
 	 *
 	 * @return integer How many notices were cleared.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function clearForSubResource(string $objectUuid, string $subjectId, ?string $userId = null): int {
+	public function clearForSubResource(string $objectUuid, string $subjectId): int {
 		if ($subjectId === '') {
 			return 0;
 		}
 
-		return $this->clear(objectUuid: $objectUuid, subjectId: $subjectId, userId: $userId);
+		return $this->clear(subject: new NoticeSubject(objectUuid: $objectUuid, subjectId: $subjectId), userId: null);
 
 	}//end clearForSubResource()
 
@@ -148,7 +150,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 		$uid = $this->requireCaller();
 		$this->requireOwn(id: $id, userId: $uid);
 
-		$this->mapper->snooze(id: $id, recipient: $uid, until: $until);
+		$this->mapper->snooze(notice: new RecipientNotice(id: $id, recipient: $uid), until: $until);
 
 		return $this->requireOwn(id: $id, userId: $uid);
 
@@ -169,7 +171,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 		$uid = $this->requireCaller();
 		$this->requireOwn(id: $id, userId: $uid);
 
-		$this->mapper->archive(id: $id, recipient: $uid);
+		$this->mapper->archive(notice: new RecipientNotice(id: $id, recipient: $uid));
 
 		return $this->requireOwn(id: $id, userId: $uid);
 
@@ -203,27 +205,26 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	/**
 	 * The shared body of the two clear paths.
 	 *
-	 * @param string $objectUuid The object that was opened.
-	 * @param string|null $subjectId The sub-resource, when one was opened.
-	 * @param string|null $userId The reader, or null for the caller.
+	 * @param NoticeSubject $subject The object that was opened, and the sub-resource when one was.
+	 * @param string|null   $userId  The reader, or null for the caller.
 	 *
 	 * @return integer How many notices were cleared.
 	 */
-	private function clear(string $objectUuid, ?string $subjectId, ?string $userId): int {
-		$uid = ($userId ?? $this->userSession->getUser()?->getUID());
-		if ($objectUuid === '' || $uid === null || $uid === '') {
+	private function clear(NoticeSubject $subject, ?string $userId): int {
+		$uid = ($userId ?? $this->principals->userSession->getUser()?->getUID());
+		if ($subject->objectUuid === '' || $uid === null || $uid === '') {
 			return 0;
 		}
 
 		try {
 			return $this->mapper->markReadForSubject(
 				recipient: $uid,
-				objectUuid: $objectUuid,
-				subjectId: $subjectId
+				objectUuid: $subject->objectUuid,
+				subjectId: $subject->subjectId
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				sprintf('[NotificationClearingService] clearing failed for %s: %s', $objectUuid, $e->getMessage())
+				sprintf('[NotificationClearingService] clearing failed for %s: %s', $subject->objectUuid, $e->getMessage())
 			);
 			return 0;
 		}
@@ -261,7 +262,7 @@ class NotificationClearingService implements NotificationClearingServiceInterfac
 	 * @return string The uid.
 	 */
 	private function requireCaller(): string {
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->principals->userSession->getUser()?->getUID();
 		if ($uid === null || $uid === '') {
 			throw new NotAuthorizedException(message: 'Clearing a notification needs a signed-in user');
 		}

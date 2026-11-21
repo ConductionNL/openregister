@@ -36,12 +36,16 @@ const log = []
  * @return {object} The context
  */
 function context(component, selected) {
+	// A dialog's options may come from its mixins as well as its own.
+	const options = [...(component.mixins || []), component]
+	const data = options.find((option) => option.data).data
+	const methods = Object.assign({}, ...options.map((option) => option.methods || {}))
 	const ctx = {
-		...component.data.call({}),
+		...data.call({}),
 		selectedObjects: selected,
 		error: 'old error',
 	}
-	for (const [name, method] of Object.entries(component.methods)) {
+	for (const [name, method] of Object.entries(methods)) {
 		ctx[name] = method.bind(ctx)
 	}
 	for (const [name, getter] of Object.entries(component.computed)) {
@@ -134,7 +138,8 @@ describe('bulk dialogs actions golden', () => {
 			const ctx = context(component, [])
 			let calls = 0
 			ctx.initializeSelection = () => calls++
-			const watcher = component.watch['navigationStore.dialog']
+			const watcher = [...(component.mixins || []), component]
+				.find((option) => option.watch).watch['navigationStore.dialog']
 			watcher.call(ctx, dialog, 'other')
 			watcher.call(ctx, dialog, dialog)
 			watcher.call(ctx, 'other', dialog)

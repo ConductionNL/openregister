@@ -35,6 +35,8 @@ use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleGuard;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCA\OpenRegister\Service\Flow\FlowVersionGraphs;
+use OCA\OpenRegister\Service\Flow\FlowVersionRows;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +51,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowGraphDiff
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraphRevision
+ * @uses \OCA\OpenRegister\Service\Flow\FlowVersionGraphs
+ * @uses \OCA\OpenRegister\Service\Flow\FlowVersionRows
  */
 final class FlowVersionPreviewTest extends TestCase {
 
@@ -108,14 +114,8 @@ final class FlowVersionPreviewTest extends TestCase {
 		}
 
 		return new FlowVersionService(
-			$versions,
-			$this->createMock(FlowMapper::class),
-			$pin,
-			$this->createMock(FlowLifecycleGuard::class),
-			$this->createMock(FlowTriggerIndex::class),
-			new FlowSemanticVersion(),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(LoggerInterface::class)
+			new FlowVersionRows($versions, $this->createMock(FlowMapper::class), $this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class)),
+			new FlowVersionGraphs($pin, $this->createMock(FlowLifecycleGuard::class), $this->createMock(FlowTriggerIndex::class), new FlowSemanticVersion())
 		);
 	}//end service()
 

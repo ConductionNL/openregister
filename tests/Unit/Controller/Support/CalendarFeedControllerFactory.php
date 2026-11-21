@@ -18,7 +18,7 @@ final class CalendarFeedControllerFactory {
 	/**
 	 * The constructor arguments of CalendarFeedController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param CalendarFeedTokenService $tokens Constructor argument.
 	 * @param ObjectCalendarFeedService $feed Constructor argument.
@@ -40,7 +40,6 @@ final class CalendarFeedControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices(
 				domain: new \OCA\OpenRegister\Controller\Support\CalendarFeedDomain(

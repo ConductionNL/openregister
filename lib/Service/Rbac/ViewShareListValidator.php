@@ -58,60 +58,74 @@ class ViewShareListValidator {
 		$findings = [];
 		$seen = [];
 		foreach ($sharedWith as $index => $share) {
+			$target = $this->targetOf(share: $share, index: (string)$index);
+			if (isset($target['finding']) === true) {
+				$findings[] = $target['finding'];
+				continue;
+			}
+
 			$findings = array_merge(
 				$findings,
-				$this->shareFindings(share: $share, index: (string)$index, exists: $exists, seen: $seen)
+				self::modeFindings(share: $share, id: $target['id']),
+				self::duplicateFindings(target: $target, seen: $seen),
+				self::existenceFindings(target: $target, exists: $exists)
 			);
+			$seen[$target['kind'].':'.$target['id']] = true;
 		}
 
 		return $findings;
 	}//end findings()
 
 	/**
-	 * The findings for one share.
+	 * The finding for a share whose mode is neither read nor write.
 	 *
-	 * @param mixed                   $share  The declared share.
-	 * @param string                  $index  Which share it is.
-	 * @param array<string, callable> $exists Per kind, whether an id exists.
-	 * @param array<string, true>     $seen   Targets already shared with, updated in place.
+	 * @param array<string, mixed> $share The declared share.
+	 * @param string               $id    Who it names.
 	 *
-	 * @return array<int, array{code: string, message: string}> The findings.
+	 * @return array<int, array{code: string, message: string}> The finding, or none.
 	 */
-	private function shareFindings(mixed $share, string $index, array $exists, array &$seen): array {
-		$target = $this->targetOf(share: $share, index: $index);
-		if (isset($target['finding']) === true) {
-			return [$target['finding']];
-		}
-
-		[$kind, $id] = [$target['kind'], $target['id']];
+	private static function modeFindings(array $share, string $id): array {
 		$mode = trim((string)($share['mode'] ?? ''));
-
-		$findings = [];
-		if (in_array($mode, ViewShareResolver::MODES, true) === false) {
-			$findings[] = [
-				'code' => 'share.bad-mode',
-				'message' => 'Share with "'.$id.'" must be read or write, not "'.$mode.'".',
-			];
+		if (in_array($mode, ViewShareResolver::MODES, true) === true) {
+			return [];
 		}
 
-		if (isset($seen[$kind.':'.$id]) === true) {
-			$findings[] = [
-				'code' => 'share.duplicate-'.$kind,
-				'message' => 'The '.$kind.' "'.$id.'" is shared with twice.',
-			];
+		return [['code' => 'share.bad-mode', 'message' => 'Share with "'.$id.'" must be read or write, not "'.$mode.'".']];
+	}//end modeFindings()
+
+	/**
+	 * The finding for a target an earlier share of the list already names.
+	 *
+	 * @param array{kind: string, id: string} $target Who the share names.
+	 * @param array<string, true>             $seen   Targets already shared with.
+	 *
+	 * @return array<int, array{code: string, message: string}> The finding, or none.
+	 */
+	private static function duplicateFindings(array $target, array $seen): array {
+		[$kind, $id] = [$target['kind'], $target['id']];
+		if (isset($seen[$kind.':'.$id]) === false) {
+			return [];
 		}
 
-		$seen[$kind.':'.$id] = true;
+		return [['code' => 'share.duplicate-'.$kind, 'message' => 'The '.$kind.' "'.$id.'" is shared with twice.']];
+	}//end duplicateFindings()
 
-		if ($exists[$kind]($id) !== true) {
-			$findings[] = [
-				'code' => 'share.unknown-'.$kind,
-				'message' => 'The '.$kind.' "'.$id.'" does not exist.',
-			];
+	/**
+	 * The finding for a target that does not exist.
+	 *
+	 * @param array{kind: string, id: string} $target Who the share names.
+	 * @param array<string, callable>         $exists Per kind, whether an id exists.
+	 *
+	 * @return array<int, array{code: string, message: string}> The finding, or none.
+	 */
+	private static function existenceFindings(array $target, array $exists): array {
+		[$kind, $id] = [$target['kind'], $target['id']];
+		if ($exists[$kind]($id) === true) {
+			return [];
 		}
 
-		return $findings;
-	}//end shareFindings()
+		return [['code' => 'share.unknown-'.$kind, 'message' => 'The '.$kind.' "'.$id.'" does not exist.']];
+	}//end existenceFindings()
 
 	/**
 	 * Who one share names, or the finding that says it names nobody usable.

@@ -4,17 +4,27 @@
  * Reads an organisation's special rights, and answers whether a caller holds one.
  *
  * WHAT A SPECIAL RIGHT IS. An organisation's `authorization` block carries the
- * create, read, update and delete lists per entity type, and beside them a few
- * rights that are not one of those four: `object_publish`, `agent_use`,
- * `dashboard_view` and `llm_use` ({@see \OCA\OpenRegister\Db\Organisation}). The
- * organisation editor shows them in its "Special Rights" tab. Each is a list of
- * the groups that hold it.
+ * create, read, update and delete lists per entity type, and beside them three
+ * rights that are not one of those four: `agent_use`, `llm_use` and
+ * `grant_manage` ({@see \OCA\OpenRegister\Db\Organisation}). The organisation
+ * editor shows them in its "Special Rights" tab. Each is a list of entries.
  *
- * WHY THIS CLASS EXISTS. The four rights above are declared, stored and
- * assignable, and nothing reads them: no code path asks whether a caller holds
- * one. This is the read. It is written for the first special right that IS
- * enforced, `grant_manage`, and answers for any right by name so the next one
- * does not get a second reader.
+ * `object_publish` and `dashboard_view` are retired (decisions 247, 248). They
+ * were never enforced. An organisation that still stores them loads as before;
+ * nothing reads or writes them.
+ *
+ * WHY THIS CLASS EXISTS. It is the one read of every special right: a right
+ * over one record, `grant_manage` ({@see holdsOn()}), and the rights a caller
+ * USES, `agent_use` and `llm_use` ({@see mayUse()}).
+ *
+ * A RIGHT A CALLER USES. Read from the organisation the thing being used
+ * belongs to: an agent's organisation for `agent_use`, a conversation's for
+ * `llm_use`. A list of group ids, where `*` stands for every signed-in user.
+ * An administrator always holds it. A key the organisation does not carry is
+ * not narrowed, and holds for everybody: an upgrade must not refuse a caller
+ * nobody decided to refuse. The repair step
+ * {@see \OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone} writes that `*`
+ * into every organisation once, so an administrator sees it and can narrow it.
  *
  * `grant_manage` lets its holder list, add and remove the grants on a record
  * and name the record's owning group, on records the holder does not own. It is
@@ -25,7 +35,7 @@
  * groups, so the right cannot be turned into a read.
  *
  * AN ENTRY. Either a group id, which holds the right on every record of the
- * organisation, as the four existing rights are written. Or an object naming a
+ * organisation, as `agent_use` and `llm_use` are written. Or an object naming a
  * group and narrowing it:
  *
  *   {"group": "dossiq-background-service", "register": "dossiq", "schemas": ["reviewBatch"]}
@@ -64,11 +74,19 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use InvalidArgumentException;
+use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * The one reader, and the one in-process writer, of an organisation's special rights.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Decision 239 asks for ONE reader of every special
+ *                                                   right; a right over a record and a right a caller
+ *                                                   uses are answered here so they cannot drift apart.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Same reason: the record, register, schema and
+ *                                                   organisation lookups plus the group manager.
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
@@ -88,12 +106,14 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	 * @param RegisterMapperInterface $registers Loads a record's register, for a narrowed entry.
 	 * @param SchemaMapperInterface $schemas Loads a record's schema, for a narrowed entry.
 	 * @param LoggerInterface $logger Logger.
+	 * @param IGroupManager $groupManager Says whether a caller is an administrator, and which groups it is in.
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisations,
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
+		private readonly IGroupManager $groupManager,
 	) {
 	}//end __construct()
 
@@ -120,24 +140,206 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 			return false;
 		}
 
+		$mine = array_filter(
+			$this->rightEntries(right: $right, object: $object),
+			fn (mixed $entry): bool => $this->namesAGroupOf(entry: $entry, userGroups: $userGroups)
+		);
+
+		return $this->anyCovers(entries: $mine, object: $object);
+	}//end holdsOn()
+
+	/**
+	 * The entries of a special right in the organisation the record belongs to.
+	 *
+	 * @param string       $right  The special right's key.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<int|string, mixed> The entries; empty when the organisation or the right is missing.
+	 */
+	private function rightEntries(string $right, ObjectEntity $object): array {
 		$organisation = $this->organisationOf(object: $object);
 		if ($organisation === null) {
-			return false;
+			return [];
 		}
 
 		$entries = ($organisation->getAuthorization()[$right] ?? null);
 		if (is_array($entries) === false) {
-			return false;
+			return [];
 		}
 
+		return $entries;
+	}//end rightEntries()
+
+	/**
+	 * Whether one of the entries covers the record's register and schema, asked in order.
+	 *
+	 * @param array<int|string, mixed> $entries The caller's entries of the right.
+	 * @param ObjectEntity             $object  The record.
+	 *
+	 * @return bool True at the first entry that covers it.
+	 */
+	private function anyCovers(array $entries, ObjectEntity $object): bool {
 		foreach ($entries as $entry) {
-			if ($this->entryAdmits(entry: $entry, userGroups: $userGroups, object: $object) === true) {
+			if ($this->entryCovers(entry: $entry, object: $object) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end holdsOn()
+	}//end anyCovers()
+
+	/**
+	 * Whether a caller may use something a special right guards, in one organisation.
+	 *
+	 * For the rights in {@see OPEN_BY_DEFAULT}; any other right answers false.
+	 *
+	 * - An administrator may.
+	 * - The organisation is the one the used thing belongs to. When it names
+	 *   none, the instance's default organisation is read. When there is no
+	 *   default either, no organisation could have narrowed the right, and the
+	 *   caller may: that is how the instance behaved before the right was read.
+	 * - An organisation that is named and cannot be loaded refuses.
+	 * - A key the organisation does not carry is not narrowed: the caller may.
+	 * - A value that is not a list refuses. A list holding `*` admits every
+	 *   signed-in user. Otherwise the caller must be in one of the listed groups.
+	 *   An empty list admits only administrators.
+	 *
+	 * @param string $right The special right's key.
+	 * @param string $userId The caller.
+	 * @param string|null $organisationUuid The organisation the used thing belongs to, or null.
+	 *
+	 * @return bool True when the caller may.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function mayUse(string $right, string $userId, ?string $organisationUuid): bool {
+		if ($userId === '' || in_array(needle: $right, haystack: self::OPEN_BY_DEFAULT, strict: true) === false) {
+			return false;
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return true;
+		}
+
+		$entries = $this->entriesInUse(right: $right, organisationUuid: $organisationUuid);
+		if ($entries === null) {
+			return true;
+		}
+
+		return $this->entriesAdmit(entries: $entries, userId: $userId);
+	}//end mayUse()
+
+	/**
+	 * Whether a list of a right a caller uses admits the caller: `*`, or one of its groups.
+	 *
+	 * @param array<int|string, mixed> $entries The stored entries.
+	 * @param string $userId The caller.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function entriesAdmit(array $entries, string $userId): bool {
+		foreach ($entries as $entry) {
+			if ($entry === self::EVERYONE) {
+				return true;
+			}
+
+			if (is_string($entry) === true && $entry !== '' && $this->groupManager->isInGroup($userId, $entry) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end entriesAdmit()
+
+	/**
+	 * The list a right a caller uses is read from, or null when nothing narrows it.
+	 *
+	 * @param string $right The special right's key.
+	 * @param string|null $organisationUuid The organisation the used thing belongs to, or null.
+	 *
+	 * @return array<int|string, mixed>|null The stored entries; empty when the organisation
+	 *                                       cannot be loaded or the value is not a list.
+	 */
+	private function entriesInUse(string $right, ?string $organisationUuid): ?array {
+		$uuid = $organisationUuid;
+		if (is_string($uuid) === false || $uuid === '') {
+			$uuid = $this->organisations->getDefaultOrganisationFromConfig();
+		}
+
+		if (is_string($uuid) === false || $uuid === '') {
+			return null;
+		}
+
+		try {
+			$authorization = $this->organisations->findByUuid($uuid)->getAuthorization();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[OrganisationSpecialRights] Could not load the organisation a special right is read from; refused',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'right' => $right, 'organisation' => $uuid, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		if (array_key_exists($right, $authorization) === false) {
+			return null;
+		}
+
+		if (is_array($authorization[$right]) === false) {
+			return [];
+		}
+
+		return $authorization[$right];
+	}//end entriesInUse()
+
+	/**
+	 * Give every signed-in user a special right in every organisation that does not already.
+	 *
+	 * For the upgrade that starts reading a right: it writes down what the
+	 * instance did before, so nothing is refused until an administrator
+	 * narrows it. Adds `*` to the list and keeps whatever groups it names. An
+	 * organisation whose list already holds `*` is not written.
+	 *
+	 * @param string $right The special right's key, one of {@see OPEN_BY_DEFAULT}.
+	 *
+	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
+	 *
+	 * @throws InvalidArgumentException When the right may not be given to everybody.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function openToEveryoneInEveryOrganisation(string $right): array {
+		if (in_array(needle: $right, haystack: self::OPEN_BY_DEFAULT, strict: true) === false) {
+			throw new InvalidArgumentException(message: 'The special right ' . $right . ' is never given to everybody');
+		}
+
+		$answer = ['organisations' => 0, 'changed' => 0];
+		$offset = 0;
+		do {
+			$page = $this->organisations->findAll(limit: self::PAGE, offset: $offset);
+			$offset += self::PAGE;
+			$read = count($page);
+			foreach ($page as $organisation) {
+				$answer['organisations']++;
+				$authorization = $organisation->getAuthorization();
+				$entries = [];
+				if (is_array($authorization[$right] ?? null) === true) {
+					$entries = array_values($authorization[$right]);
+				}
+
+				if (in_array(needle: self::EVERYONE, haystack: $entries, strict: true) === true) {
+					continue;
+				}
+
+				$entries[] = self::EVERYONE;
+				$authorization[$right] = $entries;
+				$organisation->setAuthorization($authorization);
+				$this->organisations->update($organisation);
+				$answer['changed']++;
+			}
+		} while ($read === self::PAGE);
+
+		return $answer;
+	}//end openToEveryoneInEveryOrganisation()
 
 	/**
 	 * Give a group a special right in one organisation, or narrow or widen what it has.
@@ -150,11 +352,8 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	 * One entry per group. Giving a group the right again replaces its entry, so
 	 * an app that changes its list of schemas does not leave the old one behind.
 	 *
-	 * @param string $organisationUuid The organisation.
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param string            $organisationUuid The organisation.
+	 * @param SpecialRightGrant $grant            The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return bool True when the stored block changed.
 	 *
@@ -162,52 +361,46 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function give(
-		string $organisationUuid,
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): bool {
+	public function give(string $organisationUuid, SpecialRightGrant $grant): bool {
 		$organisation = $this->organisations->findByUuid($organisationUuid);
 		$authorization = $organisation->getAuthorization();
 
-		$entry = $group;
-		if ($register !== null || $schemas !== null) {
-			$entry = ['group' => $group];
-			if ($register !== null) {
-				$entry['register'] = $register;
-			}
-
-			if ($schemas !== null) {
-				$entry['schemas'] = array_values($schemas);
-			}
-		}
-
 		$before = [];
-		if (is_array($authorization[$right] ?? null) === true) {
-			$before = array_values($authorization[$right]);
+		if (is_array($authorization[$grant->right] ?? null) === true) {
+			$before = array_values($authorization[$grant->right]);
 		}
 
-		$after = [];
-		foreach ($before as $existing) {
-			if ($this->groupOf(entry: $existing) !== $group) {
-				$after[] = $existing;
-			}
-		}
-
-		$after[] = $entry;
-
+		$after = $this->withEntry(entries: $before, grant: $grant);
 		if ($after === $before) {
 			return false;
 		}
 
-		$authorization[$right] = $after;
+		$authorization[$grant->right] = $after;
 		$organisation->setAuthorization($authorization);
 		$this->organisations->update($organisation);
 
 		return true;
 	}//end give()
+
+	/**
+	 * The entries with the grant's group's entry replaced by the grant's, last.
+	 *
+	 * @param array<int, mixed> $entries The entries as stored.
+	 * @param SpecialRightGrant $grant   The grant.
+	 *
+	 * @return array<int, mixed> The entries.
+	 */
+	private function withEntry(array $entries, SpecialRightGrant $grant): array {
+		$after = [];
+		foreach ($entries as $existing) {
+			if ($this->groupOf(entry: $existing) !== $grant->group) {
+				$after[] = $existing;
+			}
+		}
+
+		$after[] = $grant->entry();
+		return $after;
+	}//end withEntry()
 
 	/**
 	 * Give a group a special right in every organisation of the instance.
@@ -217,21 +410,13 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	 * each. Run again on every upgrade: an organisation made since is covered
 	 * then, and one that already has the entry is not written.
 	 *
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param SpecialRightGrant $grant The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function giveInEveryOrganisation(
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): array {
+	public function giveInEveryOrganisation(SpecialRightGrant $grant): array {
 		$answer = ['organisations' => 0, 'changed' => 0];
 		$offset = 0;
 		do {
@@ -240,18 +425,10 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 			$read = count($page);
 			foreach ($page as $organisation) {
 				$answer['organisations']++;
-				if ($this->give(
-					organisationUuid: (string)$organisation->getUuid(),
-					right: $right,
-					group: $group,
-					register: $register,
-					schemas: $schemas
-				) === true
-				) {
+				if ($this->give(organisationUuid: (string)$organisation->getUuid(), grant: $grant) === true) {
 					$answer['changed']++;
 				}
 			}
-
 		} while ($read === self::PAGE);
 
 		return $answer;
@@ -306,46 +483,77 @@ class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 	}//end groupOf()
 
 	/**
-	 * Whether one entry gives one of the caller's groups the right on this record.
+	 * Whether one entry names one of the caller's groups.
 	 *
-	 * @param mixed $entry The entry as stored.
+	 * @param mixed    $entry      The entry as stored.
 	 * @param string[] $userGroups The caller's group ids.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function namesAGroupOf(mixed $entry, array $userGroups): bool {
+		$group = $this->groupOf(entry: $entry);
+
+		return $group !== null && in_array(needle: $group, haystack: $userGroups, strict: true) === true;
+	}//end namesAGroupOf()
+
+	/**
+	 * Whether one entry reaches this record: a plain group reaches every record, a narrowed one only its register and schemas.
+	 *
+	 * @param mixed        $entry  The entry as stored.
 	 * @param ObjectEntity $object The record.
 	 *
 	 * @return bool True when it does.
 	 */
-	private function entryAdmits(mixed $entry, array $userGroups, ObjectEntity $object): bool {
-		$group = $this->groupOf(entry: $entry);
-		if ($group === null || in_array(needle: $group, haystack: $userGroups, strict: true) === false) {
-			return false;
-		}
-
+	private function entryCovers(mixed $entry, ObjectEntity $object): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
 
-		if (array_key_exists('register', $entry) === true
-			&& $this->names(wanted: [$entry['register']], names: $this->namesOf(
-				id: (string)$object->getRegister(),
-				load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
-			)) === false
-		) {
+		return $this->registerCovers(entry: $entry, object: $object) === true
+			&& $this->schemasCover(entry: $entry, object: $object) === true;
+	}//end entryCovers()
+
+	/**
+	 * Whether a narrowed entry's register, when it names one, is the record's register.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry names no register or names this one.
+	 */
+	private function registerCovers(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('register', $entry) === false) {
+			return true;
+		}
+
+		return $this->names(wanted: [$entry['register']], names: $this->namesOf(
+			id: (string)$object->getRegister(),
+			load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end registerCovers()
+
+	/**
+	 * Whether a narrowed entry's schema list, when it has one, names the record's schema.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry has no schema list or it names this schema; false for a list that is not a list.
+	 */
+	private function schemasCover(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('schemas', $entry) === false) {
+			return true;
+		}
+
+		if (is_array($entry['schemas']) === false) {
 			return false;
 		}
 
-		if (array_key_exists('schemas', $entry) === true) {
-			if (is_array($entry['schemas']) === false) {
-				return false;
-			}
-
-			return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
-				id: (string)$object->getSchema(),
-				load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
-			));
-		}
-
-		return true;
-	}//end entryAdmits()
+		return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
+			id: (string)$object->getSchema(),
+			load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end schemasCover()
 
 	/**
 	 * Whether one of the wanted references is among the names a record answers to.

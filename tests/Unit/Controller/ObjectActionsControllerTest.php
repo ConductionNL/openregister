@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -64,16 +65,12 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
-		$this->runner->method('target')->willReturnCallback(
-			static fn (ObjectEntity $object, Schema $schema, string $register, string $schemaRef): ObjectActionTarget => new ObjectActionTarget($object, $schema, $register, $schemaRef)
-		);
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 		$this->request = $this->createMock(IRequest::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = ObjectActionsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->objects,
 			$this->macros,
@@ -166,7 +163,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->macros->method('loadSchema')->willReturn($this->schema());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'ticket']), 'publish', ['from' => '2026-11-01'])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'ticket']), new ObjectActionRequest('publish', ['from' => '2026-11-01']))
 			->willReturn(['status' => Http::STATUS_ACCEPTED, 'body' => ['status' => 'queued']]);
 
 		$response = $this->controller->invoke('r', 'ticket', 'obj-1', 'publish');
@@ -249,8 +246,7 @@ class ObjectActionsControllerTest extends TestCase {
 						&& $selection->schemaRef === 'ticket'
 						&& $selection->ids === $ids
 				),
-				'assign-to-me',
-				[]
+				new ObjectActionRequest('assign-to-me', [])
 			)
 			->willReturn($job);
 		$this->runner->expects($this->never())->method('run');

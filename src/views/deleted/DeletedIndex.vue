@@ -163,9 +163,39 @@ import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { storePaging } from '../storePaging.js'
+
+/**
+ * The page filters that map one to one onto an API filter parameter.
+ */
+const OBJECT_FILTERS = [
+	['register', '@self.register'],
+	['schema', '@self.schema'],
+	['deletedBy', '@self.deleted.deletedBy'],
+]
+
+/**
+ * The deletion date range the filters ask for, or null when they set no date.
+ *
+ * @param {object} filters The page filters
+ * @return {{gte?: string, lte?: string}|null} The range
+ */
+function deletionRange(filters) {
+	if (!filters.dateFrom && !filters.dateTo) {
+		return null
+	}
+	const range = {}
+	if (filters.dateFrom) {
+		range.gte = filters.dateFrom
+	}
+	if (filters.dateTo) {
+		range.lte = filters.dateTo
+	}
+	return range
+}
 
 export default {
 	name: 'DeletedIndex',
@@ -373,12 +403,7 @@ export default {
 				await deletedStore.fetchDeleted()
 
 				// Load register and schema data if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
-				}
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
-				}
+				await ensureRegisterAndSchemaLists()
 			} catch (error) {
 				console.error('Error loading deleted items:', error)
 			}
@@ -421,24 +446,14 @@ export default {
 		convertFiltersToApiFormat(filters) {
 			const apiFilters = {}
 
-			if (filters.register) {
-				apiFilters['@self.register'] = filters.register
-			}
-			if (filters.schema) {
-				apiFilters['@self.schema'] = filters.schema
-			}
-			if (filters.deletedBy) {
-				apiFilters['@self.deleted.deletedBy'] = filters.deletedBy
-			}
-			if (filters.dateFrom) {
-				apiFilters['@self.deleted.deleted'] = { gte: filters.dateFrom }
-			}
-			if (filters.dateTo) {
-				if (apiFilters['@self.deleted.deleted']) {
-					apiFilters['@self.deleted.deleted'].lte = filters.dateTo
-				} else {
-					apiFilters['@self.deleted.deleted'] = { lte: filters.dateTo }
+			for (const [key, apiKey] of OBJECT_FILTERS) {
+				if (filters[key]) {
+					apiFilters[apiKey] = filters[key]
 				}
+			}
+			const range = deletionRange(filters)
+			if (range) {
+				apiFilters['@self.deleted.deleted'] = range
 			}
 
 			return apiFilters

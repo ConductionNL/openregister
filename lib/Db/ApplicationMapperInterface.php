@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -31,6 +33,14 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
  *
  * Callers type against this interface and resolve it from the container; the
  * registrar binds it to ApplicationMapper.
+ *
+ * The native return types name the Kernel application contract, so a caller
+ * below Configuration reads an application without naming the Configuration
+ * entity. The template carries the entity class for callers that need it:
+ * ApplicationMapper implements `ApplicationMapperInterface<Application>`, and a
+ * Configuration caller types its property the same way.
+ *
+ * @template-covariant TApplication of ApplicationInterface
  */
 interface ApplicationMapperInterface {
 
@@ -57,11 +67,11 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param array<string, mixed> $data The application data as key-value pairs
 	 *
-	 * @return Application The created application entity with assigned ID
+	 * @return TApplication The created application entity with assigned ID
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication
 	 */
-	public function createFromArray(array $data): Application;
+	public function createFromArray(array $data): ApplicationInterface;
 
 	/**
 	 * Delete an application
@@ -72,11 +82,11 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param Entity $entity Application entity to delete
 	 *
-	 * @return Application The deleted application entity
+	 * @return TApplication&Entity The deleted application entity
 	 *
 	 * @throws \Exception If user doesn't have delete permission or access to this organisation
 	 *
-	 * @psalm-return   Application
+	 * @psalm-return   TApplication&Entity
 	 */
 	public function delete(Entity $entity): Entity;
 
@@ -88,42 +98,56 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param int $id Application database ID
 	 *
-	 * @return Application The application entity
+	 * @return TApplication The application entity
 	 *
 	 * @throws DoesNotExistException If application not found with the given ID
 	 * @throws MultipleObjectsReturnedException If multiple applications found (should not happen)
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication
 	 */
-	public function find(int $id): Application;
+	public function find(int $id): ApplicationInterface;
 
 	/**
 	 * Find all applications
 	 *
-	 * Retrieves all applications with optional pagination, filtering, and search.
+	 * Retrieves all applications with optional pagination and filtering.
 	 * Results are ordered by creation date (newest first).
 	 * Automatically applies organisation filtering for multi-tenancy.
 	 *
 	 * @param int|null $limit Maximum number of results to return (null for all)
 	 * @param int|null $offset Number of results to skip for pagination (null for no offset)
 	 * @param array<string, mixed> $filters Filter conditions as key-value pairs (default: empty array)
-	 * @param array $searchConditions Search conditions for WHERE clause (default: empty array)
-	 * @param array<string, mixed> $searchParams Parameters for search conditions (default: empty array)
 	 *
-	 * @return Application[]
+	 * @return TApplication[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
+	 * @psalm-return list<TApplication>
 	 */
 	public function findAll(
 		?int $limit = null,
 		?int $offset = null,
 		array $filters = [],
-		array $searchConditions = [],
-		array $searchParams = [],
 	): array;
+
+	/**
+	 * Find the applications of a listing
+	 *
+	 * Results are ordered by creation date (newest first). The listing's
+	 * limit (unbounded for all rows), offset and equality filters apply; its
+	 * sort and search do not. Automatically applies organisation filtering
+	 * for multi-tenancy.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return TApplication[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<TApplication>
+	 */
+	public function findAllBy(ListQuery $query): array;
 
 	/**
 	 * Find an application by its UUID
@@ -133,15 +157,15 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param string $uuid Application UUID (RFC 4122 format)
 	 *
-	 * @return Application The application entity
+	 * @return TApplication The application entity
 	 *
 	 * @throws DoesNotExistException If application not found with the given UUID
 	 * @throws MultipleObjectsReturnedException If multiple applications found (should not happen)
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication
 	 */
-	public function findByUuid(string $uuid): Application;
+	public function findByUuid(string $uuid): ApplicationInterface;
 
 	/**
 	 * Insert a new application
@@ -152,11 +176,11 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param Entity $entity Application entity to insert
 	 *
-	 * @return Application The inserted application with updated ID and timestamps
+	 * @return TApplication&Entity The inserted application with updated ID and timestamps
 	 *
 	 * @throws \Exception If user doesn't have create permission
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication&Entity
 	 */
 	public function insert(Entity $entity): Entity;
 
@@ -169,11 +193,11 @@ interface ApplicationMapperInterface {
 	 *
 	 * @param Entity $entity Application entity to update
 	 *
-	 * @return Application The updated application entity
+	 * @return TApplication&Entity The updated application entity
 	 *
 	 * @throws \Exception If user doesn't have update permission or access to this organisation
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication&Entity
 	 */
 	public function update(Entity $entity): Entity;
 
@@ -186,11 +210,11 @@ interface ApplicationMapperInterface {
 	 * @param int $id The application database ID
 	 * @param array<string, mixed> $data The application data as key-value pairs to update
 	 *
-	 * @return Application The updated application entity
+	 * @return TApplication The updated application entity
 	 *
 	 * @throws DoesNotExistException If the application is not found with the given ID
 	 *
-	 * @psalm-return Application
+	 * @psalm-return TApplication
 	 */
-	public function updateFromArray(int $id, array $data): Application;
+	public function updateFromArray(int $id, array $data): ApplicationInterface;
 }//end interface

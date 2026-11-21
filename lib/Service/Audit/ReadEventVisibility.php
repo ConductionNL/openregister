@@ -34,9 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Throwable;
 
 /**
@@ -68,16 +67,26 @@ class ReadEventVisibility {
 	public const READ_ACTION = 'read';
 
 	/**
+	 * The audit action a field reveal carries (sensitive-field-reveal-audit).
+	 *
+	 * A reveal is a read of personal data — a BSN shown on a screen — so it is
+	 * gated and surfaced exactly as a read event: the processing-activity log
+	 * reads the rows as reads, and they are shown only to the groups named for
+	 * read events. Kept in step with {@see \OCA\OpenRegister\Service\Rbac\RevealCollector::ACTION}.
+	 *
+	 * @var string
+	 */
+	public const REVEAL_ACTION = 'property.revealed';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig    $appConfig    Where the groups are configured.
-	 * @param IGroupManager $groupManager Administrators and group membership.
-	 * @param IUserSession  $userSession  The caller.
+	 * @param IAppConfig    $appConfig Where the groups are configured.
+	 * @param CallerContext $caller    The caller's session, and administrators and group membership.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		private readonly CallerContext $caller,
 	) {
 	}//end __construct()
 
@@ -94,20 +103,31 @@ class ReadEventVisibility {
 	 */
 	public function maySeeReadEvents(?string $userId = null): bool {
 		if ($userId === null) {
-			$userId = $this->userSession->getUser()?->getUID();
+			$userId = $this->caller->userSession->getUser()?->getUID();
 		}
 
 		if ($userId === null || $userId === '') {
 			return false;
 		}
 
+		return $this->isAdminOrReadEventReader(userId: $userId);
+	}//end maySeeReadEvents()
+
+	/**
+	 * Whether a user is an administrator or in a group that may see read events; a failing lookup refuses.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return bool True when the user may see read events.
+	 */
+	private function isAdminOrReadEventReader(string $userId): bool {
 		try {
-			if ($this->groupManager->isAdmin($userId) === true) {
+			if ($this->caller->groupManager->isAdmin($userId) === true) {
 				return true;
 			}
 
 			foreach ($this->groups() as $group) {
-				if ($this->groupManager->isInGroup($userId, $group) === true) {
+				if ($this->caller->groupManager->isInGroup($userId, $group) === true) {
 					return true;
 				}
 			}
@@ -116,19 +136,24 @@ class ReadEventVisibility {
 		}
 
 		return false;
-	}//end maySeeReadEvents()
+	}//end isAdminOrReadEventReader()
 
 	/**
-	 * Whether an audit action is a read.
+	 * Whether an audit action is a read of personal data: a read event or a field reveal.
 	 *
 	 * @param mixed $action The entry's action.
 	 *
-	 * @return bool True for a read.
+	 * @return bool True for a read event or a property reveal.
 	 *
-		 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function isReadAction(mixed $action): bool {
-		return is_string($action) === true && strtolower($action) === self::READ_ACTION;
+		if (is_string($action) === false) {
+			return false;
+		}
+
+		return in_array(strtolower($action), [self::READ_ACTION, self::REVEAL_ACTION], true) === true;
 	}//end isReadAction()
 
 	/**
@@ -156,12 +181,24 @@ class ReadEventVisibility {
 	 * @return array<int, string> The groups; empty when unset or unreadable.
 	 */
 	private function groups(): array {
-		$raw = $this->appConfig->getValueString(self::APP, self::CONFIG_KEY, '[]');
+		return self::groupsFrom(raw: $this->appConfig->getValueString(self::APP, self::CONFIG_KEY, '[]'));
+	}//end groups()
+
+	/**
+	 * The group ids a stored setting value names.
+	 *
+	 * @param string $raw The stored value, a JSON list of group ids.
+	 *
+	 * @return array<int, string> The groups; empty when the value is not a list.
+	 *
+	 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+	 */
+	public static function groupsFrom(string $raw): array {
 		$groups = json_decode($raw, true);
 		if (is_array($groups) === false) {
 			return [];
 		}
 
 		return array_values(array_filter($groups, static fn ($group): bool => is_string($group) === true && $group !== ''));
-	}//end groups()
+	}//end groupsFrom()
 }//end class

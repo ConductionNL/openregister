@@ -50,7 +50,10 @@ namespace OCA\OpenRegister\Service\Interaction;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -60,7 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
-class ReadHistoryService {
+class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterface {
 
 	/**
 	 * How many distinct objects one user's read history answers.
@@ -98,7 +101,7 @@ class ReadHistoryService {
 	 *
 	 * @var string
 	 */
-	public const REASON_UNAVAILABLE = 'read-history-unavailable';
+	public const REASON_UNAVAILABLE = ReadHistoryInterface::REASON_UNAVAILABLE;
 
 	/**
 	 * Constructor.
@@ -150,7 +153,7 @@ class ReadHistoryService {
 	 *
 	 * @return AuditTrail|null The row written, or null when none was due.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `$_audit` flag of GetObject::find().
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `audit` flag of GetObject::find()'s request.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
 	 */
@@ -185,7 +188,7 @@ class ReadHistoryService {
 	public function registerProcessingRead(ObjectEntity $object, string $action = self::READ_ACTION): void {
 		try {
 			$service = $this->container->get(ProcessingLogService::class);
-			$service->logRead(object: $object, action: $action);
+			$service->recordRead(object: $object, read: new ProcessingRead(action: $action));
 			$service->flush();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -200,21 +203,67 @@ class ReadHistoryService {
 	 * Register a list or search read on the AVG processing log.
 	 *
 	 * One collapsed entry per register and schema in the result, through
-	 * ProcessingLogService::logReadList, which applies the same `logReads`
+	 * ProcessingLogService::recordReadList, which applies the same `logReads`
 	 * opt-in as a single read and carries the query parameters. A row that
 	 * is a rendered array is read by its `@self` block; a row that names no
 	 * uuid, register and schema cannot be attributed and is reported in the
 	 * log rather than dropped silently. Fail-soft, like registerProcessingRead().
 	 *
 	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
-	 * @param array<string, mixed>     $query   The query parameters of the list or search.
-	 * @param string                   $action  `read` or `export`.
+	 * @param ProcessingListRead       $read    The query parameters and the action of the read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
 	 */
-	public function registerProcessingReadList(array $objects, array $query = [], string $action = self::READ_ACTION): void {
+	public function registerListRead(array $objects, ProcessingListRead $read): void {
+		$groups = $this->groupedByTable(objects: $objects);
+		if ($groups === []) {
+			return;
+		}
+
+		try {
+			$service = $this->container->get(ProcessingLogService::class);
+			foreach ($groups as $group) {
+				$service->recordReadList(objects: $group, read: new ProcessingRead(action: $read->action, query: $read->query));
+			}
+
+			$service->flush();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[AVG] processing-log list read hook skipped',
+				context: ['exception' => $e->getMessage()]
+			);
+		}
+
+	}//end registerListRead()
+
+	/**
+	 * Register a list or search read with its query parameters, as a read.
+	 *
+	 * The object read path's door to registerListRead(): it names the query
+	 * and no Processes type.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 * @param array<string, mixed>     $query   The query parameters of the list or search.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+	 */
+	public function registerQueriedRead(array $objects, array $query): void {
+		$this->registerListRead(objects: $objects, read: new ProcessingListRead(query: $query));
+	}//end registerQueriedRead()
+
+	/**
+	 * The listed rows as ObjectEntities grouped per register and schema; rows
+	 * that cannot be attributed are counted and reported, not dropped silently.
+	 *
+	 * @param array<int|string, mixed> $objects The listed objects: ObjectEntity or rendered arrays.
+	 *
+	 * @return array<string, list<ObjectEntity>> The groups, keyed `register|schema`.
+	 */
+	private function groupedByTable(array $objects): array {
 		$groups = [];
 		$unattributed = 0;
 		foreach ($objects as $row) {
@@ -234,25 +283,9 @@ class ReadHistoryService {
 			);
 		}
 
-		if ($groups === []) {
-			return;
-		}
+		return $groups;
 
-		try {
-			$service = $this->container->get(ProcessingLogService::class);
-			foreach ($groups as $group) {
-				$service->logReadList(objects: $group, action: $action, query: $query);
-			}
-
-			$service->flush();
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[AVG] processing-log list read hook skipped',
-				context: ['exception' => $e->getMessage()]
-			);
-		}
-
-	}//end registerProcessingReadList()
+	}//end groupedByTable()
 
 	/**
 	 * A listed row as an ObjectEntity, or null when it cannot be attributed.
@@ -266,21 +299,60 @@ class ReadHistoryService {
 			return $row;
 		}
 
+		$self = $this->selfBlockOf(row: $row);
+		if ($this->isAttributable(self: $self) === false) {
+			return null;
+		}
+
+		return $this->objectFromRendered(row: $row, self: $self);
+	}//end listedObject()
+
+	/**
+	 * The `@self` block of a rendered row, or an empty block.
+	 *
+	 * @param mixed $row A listed row.
+	 *
+	 * @return array<string, mixed> The block.
+	 */
+	private function selfBlockOf(mixed $row): array {
 		$self = [];
 		if (is_array($row) === true && is_array($row['@self'] ?? null) === true) {
 			$self = $row['@self'];
 		}
 
+		return $self;
+	}//end selfBlockOf()
+
+	/**
+	 * Whether a `@self` block names a uuid (or id), a register and a schema.
+	 *
+	 * @param array<string, mixed> $self The `@self` block.
+	 *
+	 * @return bool
+	 */
+	private function isAttributable(array $self): bool {
 		$uuid = ($self['uuid'] ?? $self['id'] ?? null);
 		if (is_scalar($uuid) === false || is_scalar($self['register'] ?? null) === false || is_scalar($self['schema'] ?? null) === false) {
-			return null;
+			return false;
 		}
 
+		return true;
+	}//end isAttributable()
+
+	/**
+	 * A rendered row as an ObjectEntity: its `@self` identity and organisation, and its data.
+	 *
+	 * @param array<string, mixed> $row  The rendered row.
+	 * @param array<string, mixed> $self Its attributable `@self` block.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectFromRendered(array $row, array $self): ObjectEntity {
 		$data = $row;
 		unset($data['@self']);
 
 		$object = new ObjectEntity();
-		$object->setUuid((string)$uuid);
+		$object->setUuid((string)($self['uuid'] ?? $self['id'] ?? null));
 		$object->setRegister((string)$self['register']);
 		$object->setSchema((string)$self['schema']);
 		if (is_scalar($self['organisation'] ?? null) === true) {
@@ -289,7 +361,7 @@ class ReadHistoryService {
 
 		$object->setObject($data);
 		return $object;
-	}//end listedObject()
+	}//end objectFromRendered()
 
 	/**
 	 * Resolve the `_recent` lens for one caller.
@@ -314,6 +386,17 @@ class ReadHistoryService {
 			return ['available' => false, 'reason' => self::REASON_AUDIT_TRAIL_DISABLED, 'views' => []];
 		}
 
+		return $this->recentViewsOf(userId: $userId);
+	}//end resolveRecentLens()
+
+	/**
+	 * The caller's read history from the audit trail, as a lens.
+	 *
+	 * @param string $userId The caller's uid.
+	 *
+	 * @return array{available: bool, reason: string|null, views: array<string, string>}
+	 */
+	private function recentViewsOf(string $userId): array {
 		// Distinct objects, each with the moment of its latest audited read,
 		// newest first. A row tombstoned by retention has an empty `user`, so
 		// it drops out of every history on its own.
@@ -329,5 +412,5 @@ class ReadHistoryService {
 
 		return ['available' => true, 'reason' => null, 'views' => $views];
 
-	}//end resolveRecentLens()
+	}//end recentViewsOf()
 }//end class

@@ -24,6 +24,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
 
 class TasksControllerTest extends TestCase {
 	/**
@@ -172,7 +173,7 @@ class TasksControllerTest extends TestCase {
 		$taskData = ['id' => 'task-new', 'summary' => 'New Task'];
 		$this->taskService
 			->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->willReturn($taskData);
 
 		$result = $this->controller->create('reg', 'schema', '1');
@@ -210,7 +211,7 @@ class TasksControllerTest extends TestCase {
 		$taskData = ['id' => 'task-1', 'summary' => 'Updated'];
 		$this->taskService
 			->expects($this->once())
-			->method('updateTask')
+			->method('changeTask')
 			->willReturn($taskData);
 
 		$result = $this->controller->update('reg', 'schema', '1', 'task-1');
@@ -321,12 +322,14 @@ class TasksControllerTest extends TestCase {
 		$captured = null;
 		$inbox->expects($this->once())->method('inbox')
 			->willReturnCallback(
-				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured, $payload) {
+				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured, $payload) {
+					$limit = $page->limit;
+					$offset = $page->offset;
 					$captured = [$criteria, $limit, $offset];
 					return $payload;
 				}
 			);
-		$this->taskService->expects($this->never())->method('getAllUserTasks');
+		$this->taskService->expects($this->never())->method('listUserTasks');
 
 		$result = $controller->allUserTasks();
 
@@ -354,7 +357,9 @@ class TasksControllerTest extends TestCase {
 		$captured = null;
 		$inbox->method('inbox')
 			->willReturnCallback(
-				static function (TaskInboxCriteria $criteria, int $limit, int $offset) use (&$captured) {
+				static function (TaskInboxCriteria $criteria, TaskInboxPage $page) use (&$captured) {
+					$limit = $page->limit;
+					$offset = $page->offset;
 					$captured = [$criteria, $limit, $offset];
 					return ['results' => [], 'total' => 0, 'limit' => $limit, 'offset' => $offset];
 				}
@@ -371,7 +376,7 @@ class TasksControllerTest extends TestCase {
 		[$controller, $inbox] = $this->inboxController('alice', ['limit' => '15', 'offset' => '5']);
 
 		$inbox->expects($this->once())->method('inbox')
-			->with($this->anything(), 15, 5)
+			->with($this->anything(), new TaskInboxPage(limit: 15, offset: 5))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 15, 'offset' => 5]);
 
 		$controller->allUserTasks();
@@ -381,7 +386,7 @@ class TasksControllerTest extends TestCase {
 		[$controller, $inbox] = $this->inboxController('alice', ['_limit' => '100000']);
 
 		$inbox->expects($this->once())->method('inbox')
-			->with($this->anything(), 200, 0)
+			->with($this->anything(), new TaskInboxPage(limit: 200, offset: 0))
 			->willReturn(['results' => [], 'total' => 0, 'limit' => 200, 'offset' => 0]);
 
 		$controller->allUserTasks();
@@ -426,7 +431,7 @@ class TasksControllerTest extends TestCase {
 	public function testCreateRefusesAnEngineTaskIdentity(): void {
 		$this->setupObjectValidation($this->createObjectEntity());
 		$this->request->method('getParams')->willReturn(['summary' => 'Forged', 'X-OPENREGISTER-TASK' => 'some-uuid']);
-		$this->taskService->method('createTask')
+		$this->taskService->method('createObjectTask')
 			->willThrowException(new TaskAccessDeniedException('An engine task cannot be created through the object task endpoint.'));
 
 		$result = $this->controller->create('1', '2', 'test-uuid');

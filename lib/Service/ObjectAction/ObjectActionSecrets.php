@@ -146,17 +146,29 @@ final class ObjectActionSecrets {
 				continue;
 			}
 
-			foreach ($names as $name) {
-				if (array_key_exists($name, $item['json']['inputs']) === true) {
-					$item['json']['inputs'][$name] = self::REDACTED;
-				}
-			}
-
-			$items[$index] = $item;
+			$items[$index] = self::redactedInputs(item: $item, names: $names);
 		}
 
 		return $items;
 	}//end redactItems()
+
+	/**
+	 * The item with each named secret input replaced by the redaction marker.
+	 *
+	 * @param array<string, mixed> $item  The item, carrying `json.inputs`.
+	 * @param array<int, string>   $names The secret input names.
+	 *
+	 * @return array<string, mixed> The redacted item.
+	 */
+	private static function redactedInputs(array $item, array $names): array {
+		foreach ($names as $name) {
+			if (array_key_exists($name, $item['json']['inputs']) === true) {
+				$item['json']['inputs'][$name] = self::REDACTED;
+			}
+		}
+
+		return $item;
+	}//end redactedInputs()
 
 	/**
 	 * Log entries with the item samples of each step (`input`, `output`) redacted.
@@ -234,7 +246,7 @@ final class ObjectActionSecrets {
 			return $data;
 		}
 
-		return self::replaceCopies(data: $data, secrets: $secrets, numbers: self::numericSecrets(ref: $ref));
+		return self::replaceCopies(data: $data, copies: new SecretCopies(secrets: $secrets, numbers: self::numericSecrets(ref: $ref)));
 	}//end redactCopies()
 
 	/**
@@ -260,18 +272,13 @@ final class ObjectActionSecrets {
 	/**
 	 * Walk the data, replacing whole-string copies.
 	 *
-	 * @param mixed              $data    The data.
-	 * @param array<int, string> $secrets The secrets a string may equal.
-	 * @param array<int, string> $numbers The numeric secrets a number may equal.
+	 * @param mixed        $data   The data.
+	 * @param SecretCopies $copies The secrets a value may be a copy of.
 	 *
 	 * @return mixed The data.
 	 */
-	private static function replaceCopies(mixed $data, array $secrets, array $numbers): mixed {
-		if (is_string($data) === true && in_array($data, $secrets, true) === true) {
-			return self::REDACTED;
-		}
-
-		if ((is_int($data) === true || is_float($data) === true) && in_array((string)$data, $numbers, true) === true) {
+	private static function replaceCopies(mixed $data, SecretCopies $copies): mixed {
+		if (self::isSecretCopy(data: $data, copies: $copies) === true) {
 			return self::REDACTED;
 		}
 
@@ -285,11 +292,27 @@ final class ObjectActionSecrets {
 				continue;
 			}
 
-			$data[$key] = self::replaceCopies(data: $value, secrets: $secrets, numbers: $numbers);
+			$data[$key] = self::replaceCopies(data: $value, copies: $copies);
 		}
 
 		return $data;
 	}//end replaceCopies()
+
+	/**
+	 * Whether a scalar is a copy of a secret: the secret text, or a number written as one.
+	 *
+	 * @param mixed        $data   The value.
+	 * @param SecretCopies $copies The secrets and their numeric spellings.
+	 *
+	 * @return boolean Whether it must be redacted.
+	 */
+	private static function isSecretCopy(mixed $data, SecretCopies $copies): bool {
+		if (is_string($data) === true && in_array($data, $copies->secrets, true) === true) {
+			return true;
+		}
+
+		return (is_int($data) === true || is_float($data) === true) && in_array((string)$data, $copies->numbers, true) === true;
+	}//end isSecretCopy()
 
 	/**
 	 * The held values long enough to be looked for outside their own key.

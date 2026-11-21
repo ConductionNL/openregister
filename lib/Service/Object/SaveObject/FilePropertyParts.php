@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\File\DangerousFileExtensions;
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Log\LoggerInterface;
@@ -35,6 +36,13 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/content-versioning/spec.md
  */
 final class FilePropertyParts {
+
+	/**
+	 * Dangerous executable extensions to block.
+	 *
+	 * @var list<string>
+	 */
+	private const DANGEROUS_EXECUTABLE_EXTENSIONS = DangerousFileExtensions::ALL;
 
 	/**
 	 * Reads uploads, data URIs and base64.
@@ -67,20 +75,19 @@ final class FilePropertyParts {
 	/**
 	 * Build the parts.
 	 *
-	 * @param LoggerInterface           $logger              Logger for logging operations.
-	 * @param ObjectFilesInterface      $fileService         File service for file operations.
-	 * @param ExecutableContentDetector $executableDetector  Shared executable-content detection.
-	 * @param list<string>              $dangerousExtensions The executable file extensions to block.
+	 * The executable-content detector is stateless, so the parts build their own.
+	 *
+	 * @param LoggerInterface      $logger      Logger for logging operations.
+	 * @param ObjectFilesInterface $fileService File service for file operations.
 	 */
-	public function __construct(
-		LoggerInterface $logger,
-		ObjectFilesInterface $fileService,
-		ExecutableContentDetector $executableDetector,
-		array $dangerousExtensions,
-	) {
+	public function __construct(LoggerInterface $logger, ObjectFilesInterface $fileService) {
 		$log = new FilePropertyLog(logger: $logger);
 		$this->reader = new FileInputReader(log: $log);
-		$this->guard = new FileUploadGuard(log: $log, executableDetector: $executableDetector, dangerousExtensions: $dangerousExtensions);
+		$this->guard = new FileUploadGuard(
+			log: $log,
+			executableDetector: new ExecutableContentDetector(),
+			dangerousExtensions: self::DANGEROUS_EXECUTABLE_EXTENSIONS
+		);
 		$this->files = new FilePropertyFiles(log: $log, fileService: $fileService);
 		$this->configs = new FilePropertyConfigs(log: $log);
 	}//end __construct()

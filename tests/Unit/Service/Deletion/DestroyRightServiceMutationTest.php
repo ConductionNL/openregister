@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Deletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -58,7 +59,7 @@ final class DestroyRightServiceMutationTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(false);
 
-		return new DestroyRightService($this->permissions, $session, $groups, new NullLogger());
+		return new DestroyRightService($this->permissions, new CallerContext($session, $groups), new NullLogger());
 	}//end service()
 
 	private function object(): ObjectEntity {

@@ -209,23 +209,22 @@ class ScheduledMessagePolicy {
 	 * so a test can assert the comparison without one.
 	 *
 	 * @param array<string,mixed> $message The row.
-	 * @param string              $worker  Who is claiming.
-	 * @param DateTimeImmutable   $now     Now.
+	 * @param ClaimAttempt        $attempt Who is claiming, and when.
 	 *
 	 * @return array{expect:array<string,mixed>,set:array<string,mixed>}
 	 *         What must still be true, and what to write.
 	 *
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md
 	 */
-	public function claim(array $message, string $worker, DateTimeImmutable $now): array {
+	public function claim(array $message, ClaimAttempt $attempt): array {
 		$expect = $this->expected(message: $message);
 		return [
 			'expect' => $expect,
 			'set' => [
 				'state' => self::CLAIMED,
 				'attempts' => ($expect['attempts'] + 1),
-				'claimedBy' => $worker,
-				'claimedAt' => $now->format('c'),
+				'claimedBy' => $attempt->worker,
+				'claimedAt' => $attempt->at->format('c'),
 			],
 		];
 	}//end claim()

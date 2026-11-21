@@ -40,13 +40,13 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapperInterface;
+use OCA\OpenRegister\Service\FormsAppRows;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class FormsProvider extends AbstractIntegrationProvider {
 	use NcAppLinkTableProvider;
@@ -103,20 +103,26 @@ class FormsProvider extends AbstractIntegrationProvider {
 	private IL10N $l10n;
 
 	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param LeafProviderPlatform    $platform       The DB connection, app manager and localisation.
+	 * @param LeafMarkerScanning      $leaf           The DB connection, app manager, localisation and marker-scan logger.
 	 * @param FormLinkMapperInterface $formLinkMapper Form-link mapper (Tier-2 link table).
-	 * @param LoggerInterface         $logger         Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
-		LeafProviderPlatform $platform,
+		LeafMarkerScanning $leaf,
 		private FormLinkMapperInterface $formLinkMapper,
-		private LoggerInterface $logger,
 	) {
-		$this->db = $platform->db;
-		$this->appManager = $platform->appManager;
-		$this->l10n = $platform->l10n;
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -400,7 +406,7 @@ class FormsProvider extends AbstractIntegrationProvider {
 	private function formData(array $row): array {
 		$formId = (int)($row['id'] ?? 0);
 		$expires = (int)($row['expires'] ?? 0);
-		$status = $this->resolveStatus(state: (int)($row['state'] ?? 0), expires: $expires);
+		$status = FormsAppRows::status(state: (int)($row['state'] ?? 0), expires: $expires);
 
 		return [
 			'id' => $formId,
@@ -430,30 +436,6 @@ class FormsProvider extends AbstractIntegrationProvider {
 	}//end atomOrNull()
 
 	/**
-	 * Map upstream `state` + `expires` onto canonical status strings.
-	 *
-	 * @param integer $state NC Forms `state` column (0 open, 1 archived, 2 draft).
-	 * @param integer $expires NC Forms `expires` epoch (0 = no expiry).
-	 *
-	 * @return string Canonical status.
-	 */
-	private function resolveStatus(int $state, int $expires): string {
-		if ($state === 1) {
-			return 'archived';
-		}
-
-		if ($state === 2) {
-			return 'draft';
-		}
-
-		if ($expires > 0 && $expires <= time()) {
-			return 'closed';
-		}
-
-		return 'open';
-	}//end resolveStatus()
-
-	/**
 	 * Best-effort submission count for a given form id.
 	 *
 	 * Defensive: returns 0 when the query fails.
@@ -467,28 +449,6 @@ class FormsProvider extends AbstractIntegrationProvider {
 			return 0;
 		}
 
-		try {
-			$result = $this->submissionCountQuery(formId: $formId)->executeQuery();
-			$count = (int)$result->fetchOne();
-			$result->closeCursor();
-			return $count;
-		} catch (Throwable $e) {
-			return 0;
-		}
+		return FormsAppRows::submissionCount(db: $this->db, formId: $formId);
 	}//end countSubmissions()
-
-	/**
-	 * The query counting a form's submissions.
-	 *
-	 * @param integer $formId The NC Forms form id.
-	 *
-	 * @return IQueryBuilder
-	 */
-	private function submissionCountQuery(int $formId): IQueryBuilder {
-		$qb = $this->db->getQueryBuilder();
-
-		return $qb->select($qb->createFunction('COUNT(*)'))
-			->from('forms_v2_submissions')
-			->where($qb->expr()->eq('form_id', $qb->createNamedParameter($formId)));
-	}//end submissionCountQuery()
 }//end class

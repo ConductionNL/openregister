@@ -41,6 +41,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * The timeline entry record.
@@ -60,27 +61,6 @@ class TimelineEntryService {
 	use OptionalPayloadString;
 
 	/**
-	 * Reads and writes the record.
-	 *
-	 * @var TimelineEntryMapper
-	 */
-	private readonly TimelineEntryMapper $entryMapper;
-
-	/**
-	 * Declares kinds and validates their fields.
-	 *
-	 * @var TimelineKindService
-	 */
-	private readonly TimelineKindService $kinds;
-
-	/**
-	 * Records the language a message arrived in.
-	 *
-	 * @var LanguageDetector
-	 */
-	private readonly LanguageDetector $languages;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param TimelineEntryRecords      $records     The record store, kind registry and language detector.
@@ -91,14 +71,11 @@ class TimelineEntryService {
 	 * @return void
 	 */
 	public function __construct(
-		TimelineEntryRecords $records,
+		private readonly TimelineEntryRecords $records,
 		private readonly TimelineVisibilityService $visibility,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->entryMapper = $records->entryMapper;
-		$this->kinds = $records->kinds;
-		$this->languages = $records->languages;
 	}//end __construct()
 
 	/**
@@ -121,7 +98,7 @@ class TimelineEntryService {
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
 		$kind = $this->stringOrNull(data: $data, key: 'kind');
-		$accepted = $this->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
+		$accepted = $this->records->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
 
 		$entry = $this->newEntry(object: $object, data: $data);
 		$entry->setKind($kind);
@@ -129,11 +106,11 @@ class TimelineEntryService {
 		$this->writeText(entry: $entry, data: $data);
 		$this->writeInbound(entry: $entry, data: $data);
 
-		if ($this->kinds->carriesFollowUp(kindSlug: $kind) === true) {
+		if ($this->records->kinds->carriesFollowUp(kindSlug: $kind) === true) {
 			$entry->setFollowUp(TimelineEntry::FOLLOW_UP_OPEN);
 		}
 
-		return $this->entryMapper->insert($entry);
+		return $this->records->entryMapper->insert($entry);
 	}//end record()
 
 	/**
@@ -174,7 +151,7 @@ class TimelineEntryService {
 
 		$entry->setVisibility($this->visibility->normalise(value: $this->stringOrNull(data: $data, key: 'visibility')));
 		$entry->setMessage($message);
-		$entry->setLanguage($this->languages->detect(text: $message));
+		$entry->setLanguage($this->records->languages->detect(text: $message));
 	}//end writeText()
 
 	/**
@@ -215,14 +192,14 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function syncFromNote(NoteRewrite $rewrite): ?TimelineEntry {
-		$entry = $this->entryMapper->findByComment(commentId: $rewrite->commentId);
+		$entry = $this->records->entryMapper->findByComment(commentId: $rewrite->commentId);
 		if ($entry === null) {
 			return null;
 		}
 
 		if ($rewrite->message !== null) {
 			$entry->setMessage($rewrite->message);
-			$entry->setLanguage($this->languages->detect(text: $rewrite->message));
+			$entry->setLanguage($this->records->languages->detect(text: $rewrite->message));
 		}
 
 		if ($rewrite->visibility !== null) {
@@ -231,32 +208,26 @@ class TimelineEntryService {
 
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end syncFromNote()
 
 	/**
 	 * One object's timeline, pinned first.
 	 *
-	 * @param ObjectEntity $object     The object.
-	 * @param string|null  $visibility The effective filter, or null for the unfiltered view.
-	 * @param integer      $limit      Page size.
-	 * @param integer      $offset     Page offset.
+	 * @param ObjectEntity $object The object.
+	 * @param ListQuery    $query  The page (limit and offset) and the `visibility` filter: the effective
+	 *                             filter, or absent for the unfiltered view.
 	 *
 	 * @return array<int, TimelineEntry> The entries.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function listForObject(
-		ObjectEntity $object,
-		?string $visibility = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
-		return $this->entryMapper->findForObject(
+	public function listForObject(ObjectEntity $object, ListQuery $query = new ListQuery(limit: 50)): array {
+		return $this->records->entryMapper->findForObject(
 			objectUuid: (string)$object->getUuid(),
-			visibility: $visibility,
-			limit: $limit,
-			offset: $offset
+			visibility: ($query->filters['visibility'] ?? null),
+			limit: $query->limit,
+			offset: ($query->offset ?? 0)
 		);
 	}//end listForObject()
 
@@ -275,7 +246,7 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function get(ObjectEntity $object, string $entryUuid): ?TimelineEntry {
-		$entry = $this->entryMapper->findByUuid(uuid: $entryUuid);
+		$entry = $this->records->entryMapper->findByUuid(uuid: $entryUuid);
 		if ($entry === null || $entry->getObjectUuid() !== (string)$object->getUuid()) {
 			return null;
 		}
@@ -297,7 +268,7 @@ class TimelineEntryService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function entryForNote(int $commentId): ?TimelineEntry {
-		return $this->entryMapper->findByComment(commentId: $commentId);
+		return $this->records->entryMapper->findByComment(commentId: $commentId);
 	}//end entryForNote()
 
 	/**
@@ -333,7 +304,7 @@ class TimelineEntryService {
 
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end pin()
 
 	/**
@@ -368,7 +339,7 @@ class TimelineEntryService {
 		$entry->setClosedAt(new DateTime());
 		$entry->setUpdated(new DateTime());
 
-		return $this->entryMapper->update($entry);
+		return $this->records->entryMapper->update($entry);
 	}//end closeFollowUp()
 
 	/**
@@ -414,7 +385,7 @@ class TimelineEntryService {
 		foreach ($entries as $entry) {
 			$entry->setSiblings($this->siblingsOf(entry: $entry, entries: $entries));
 			$entry->setUpdated(new DateTime());
-			$written[] = $this->entryMapper->update($entry);
+			$written[] = $this->records->entryMapper->update($entry);
 		}
 
 		return $written;
@@ -459,7 +430,7 @@ class TimelineEntryService {
 	 */
 	public function forgetNote(int $commentId): int {
 		try {
-			return $this->entryMapper->deleteForComment(commentId: $commentId);
+			return $this->records->entryMapper->deleteForComment(commentId: $commentId);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'[TimelineEntryService] The record for note '.$commentId.' could not be removed',
@@ -481,7 +452,7 @@ class TimelineEntryService {
 	 */
 	public function forgetObject(string $objectUuid): int {
 		try {
-			return $this->entryMapper->deleteForObject(objectUuid: $objectUuid);
+			return $this->records->entryMapper->deleteForObject(objectUuid: $objectUuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'[TimelineEntryService] The records on object '.$objectUuid.' could not be removed',

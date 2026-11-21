@@ -180,27 +180,36 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list = false): array {
+		return $this->mappingService->executeMapping(mapping: $this->resolveMapping(mapping: $mapping), input: $input, list: $list);
+	}//end executeMapping()
+
+	/**
+	 * The Mapping a template names: an object as is, an array hydrated, a URL by
+	 * reference, and any other string or integer by id.
+	 *
+	 * @param Mapping|array|string|int $mapping The mapping as the template passed it.
+	 *
+	 * @return Mapping The mapping to execute.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveMapping(Mapping|array|string|int $mapping): Mapping {
+		if ($mapping instanceof Mapping) {
+			return $mapping;
+		}
+
 		if (is_array($mapping) === true) {
 			$mappingObject = new Mapping();
 			$mappingObject->hydrate($mapping);
-			$mapping = $mappingObject;
-		} elseif (is_string($mapping) === true || is_int($mapping) === true) {
-			if (is_string($mapping) !== true || str_starts_with($mapping, 'http') !== true) {
-				$mapping = $this->mappingMapper->find($mapping, true);
-			}
-
-			if (is_string($mapping) === true && str_starts_with($mapping, 'http') === true) {
-				$results = $this->mappingMapper->findByRef($mapping);
-				$mapping = $results[0];
-			}
+			return $mappingObject;
 		}
 
-		return $this->mappingService->executeMapping(
-			mapping: $mapping,
-			input: $input,
-			list: $list
-		);
-	}//end executeMapping()
+		if (is_string($mapping) === true && str_starts_with($mapping, 'http') === true) {
+			return $this->mappingMapper->findByRef($mapping)[0];
+		}
+
+		return $this->mappingMapper->find($mapping, true);
+	}//end resolveMapping()
 
 	/**
 	 * Generate a UUID v4.
@@ -227,11 +236,7 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function zgwEnum(string $value, string $fieldName, array $valueMappings = []): string {
-		if (isset($valueMappings[$fieldName][$value]) === true) {
-			return $valueMappings[$fieldName][$value];
-		}
-
-		return $value;
+		return ($valueMappings[$fieldName][$value] ?? $value);
 	}//end zgwEnum()
 
 	/**

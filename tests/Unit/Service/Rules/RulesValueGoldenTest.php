@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Rules\DependentValueWrite;
 
 /**
  * Pins every outcome of the rules value objects and the schema-save checks,
@@ -223,7 +224,7 @@ class RulesValueGoldenTest extends TestCase {
 			$actual[$name]['declaresAny'] = $table->declaresAny($properties);
 			$actual[$name]['tablesOf'] = $table->tablesOf($properties);
 			foreach ($payloads as $payload => [$data, $stored]) {
-				$actual[$name]['violations'][$payload] = $table->violations($properties, $data, $stored);
+				$actual[$name]['violations'][$payload] = $table->violations($properties, new DependentValueWrite(data: $data, stored: $stored));
 			}
 		}
 

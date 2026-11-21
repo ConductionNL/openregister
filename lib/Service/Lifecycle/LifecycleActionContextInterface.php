@@ -38,4 +38,15 @@ interface LifecycleActionContextInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function systemAppFor(string $uuid): ?string;
+
+	/**
+	 * The transition currently declared for this object, if any.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The innermost declared action, or null when none.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function declaredFor(string $uuid): ?string;
 }//end interface

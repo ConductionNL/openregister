@@ -92,7 +92,7 @@ class UninitialisedPropertyConstructionTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$agents = $this->createMock(AgentMapper::class);
 
-		$service = new EndpointService(new EndpointMappers($mapper, $agents), $logger, $session, $groups);
+		$service = new EndpointService(new EndpointMappers($mapper, $agents), $logger, new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $this->createMock(\OCP\IUserManager::class), groups: $groups));
 
 		$this->assertSame($mapper, $this->readProperty($service, 'endpointLogMapper'));
 		$this->assertSame($logger, $this->readProperty($service, 'logger'));

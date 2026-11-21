@@ -27,9 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -37,6 +38,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\RegisterDescriptorControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Serves the register-descriptor inventory and the forced re-import.
@@ -66,18 +68,16 @@ class RegisterDescriptorController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName     The app id.
 	 * @param IRequest                  $request     The current request.
 	 * @param RegisterDescriptorControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RegisterDescriptorControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->descriptors = $services->descriptors;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -150,11 +150,12 @@ class RegisterDescriptorController extends Controller {
 	 * green gate — the panel posts through axios with Nextcloud's request token,
 	 * so it needs nothing of the sort. `AuthorizedAdminSetting` declares the
 	 * posture the body actually enforces, which is what both gates are asking
-	 * for. Bound to OpenRegisterAdmin, the panel this endpoint serves.
+	 * for. Bound to the OpenRegisterAdmin panel this endpoint serves, by its
+	 * delegation id.
 	 *
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function import(string $appId, string $slug): JSONResponse {
 		return ($this->requireAdmin() ?? $this->reimport(appId: $appId, slug: $slug));
 	}//end import()
@@ -170,9 +171,8 @@ class RegisterDescriptorController extends Controller {
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	private function reimport(string $appId, string $slug): JSONResponse {
-		$result = $this->descriptors->reimport(
-			appId: $appId,
-			slug: $slug,
+		$result = $this->descriptors->reimportShipped(
+			register: new ShippedRegister(appId: $appId, slug: $slug),
 			via: 'admin settings: Register descriptors'
 		);
 		if ($result['outcome'] === 'failed') {

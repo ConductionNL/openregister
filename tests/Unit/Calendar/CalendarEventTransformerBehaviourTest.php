@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Calendar;
 
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -122,8 +123,7 @@ class CalendarEventTransformerBehaviourTest extends TestCase {
 
 		$result = $this->transformer->transform(
 			$this->object(['start' => '2026-03-25T10:00:00Z']),
-			$this->schema(),
-			$config
+			new CalendarDefinition($this->schema(), $config)
 		);
 
 		$this->assertSame(['CONFIRMED', []], $result['objects'][0]['STATUS']);
@@ -143,8 +143,7 @@ class CalendarEventTransformerBehaviourTest extends TestCase {
 
 		$result = $this->transformer->transform(
 			$this->object(['start' => '2026-03-25T10:00:00Z', 'state' => 'cancelled']),
-			$this->schema(),
-			$config
+			new CalendarDefinition($this->schema(), $config)
 		);
 
 		$this->assertSame(['CANCELLED', []], $result['objects'][0]['STATUS']);

@@ -67,79 +67,84 @@ final class OasValidationReport implements OasValidationReportInterface {
 	public const CODE_RELATIVE_SERVER_URL = 'relative_server_url';
 
 	/**
+	 * A finding of an NLGov API Design Rule; the issue's `rule` names which.
+	 */
+	public const CODE_NLGOV_RULE = 'nlgov_rule';
+
+	/**
 	 * Issues collected during validation.
 	 *
-	 * @var list<array{path: string, message: string, code: string, severity: string}>
+	 * @var list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	private array $issues = [];
 
 	/**
-	 * Record a hard error.
+	 * Record an issue at the given severity.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description of the failure.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue    The issue: path, message and code.
+	 * @param string   $severity One of the SEVERITY_* constants.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addError(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_ERROR,
+	public function add(OasIssue $issue, string $severity): void {
+		$entry = [
+			'path' => $issue->path,
+			'message' => $issue->message,
+			'code' => $issue->code,
+			'severity' => $severity,
 		];
+		if ($issue->rule !== null) {
+			$entry['rule'] = $issue->rule;
+		}
 
+		$this->issues[] = $entry;
+	}//end add()
+
+	/**
+	 * Record a hard error.
+	 *
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
+	 */
+	public function addError(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_ERROR);
 	}//end addError()
 
 	/**
 	 * Record a non-blocking warning.
 	 *
-	 * @param string $path JSON Pointer path identifying the offending location.
-	 * @param string $message Human-readable description.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addWarning(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_WARNING,
-		];
-
+	public function addWarning(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_WARNING);
 	}//end addWarning()
 
 	/**
 	 * Record an auto-correction the validator applied to keep the document valid.
 	 *
-	 * @param string $path JSON Pointer path identifying the corrected location.
-	 * @param string $message Human-readable description of the correction.
-	 * @param string $code Stable machine code (one of the CODE_* constants).
+	 * @param OasIssue $issue The location (JSON Pointer path), the description and the machine code (a CODE_* constant).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-9
 	 */
-	public function addAutoCorrection(string $path, string $message, string $code): void {
-		$this->issues[] = [
-			'path' => $path,
-			'message' => $message,
-			'code' => $code,
-			'severity' => self::SEVERITY_AUTO_CORRECTED,
-		];
-
+	public function addAutoCorrection(OasIssue $issue): void {
+		$this->add(issue: $issue, severity: self::SEVERITY_AUTO_CORRECTED);
 	}//end addAutoCorrection()
 
 	/**
 	 * Returns every issue regardless of severity.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getIssues(): array {
 		return $this->issues;
@@ -148,7 +153,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the error-severity issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getErrors(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_ERROR);
@@ -157,7 +162,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the warning-severity issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getWarnings(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_WARNING);
@@ -166,7 +171,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	/**
 	 * Returns only the auto-corrected issues.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	public function getAutoCorrections(): array {
 		return $this->filterBySeverity(severity: self::SEVERITY_AUTO_CORRECTED);
@@ -244,7 +249,7 @@ final class OasValidationReport implements OasValidationReportInterface {
 	 *
 	 * @param string $severity One of the SEVERITY_* constants.
 	 *
-	 * @return list<array{path: string, message: string, code: string, severity: string}>
+	 * @return list<array{path: string, message: string, code: string, severity: string, rule?: string}>
 	 */
 	private function filterBySeverity(string $severity): array {
 		return array_values(

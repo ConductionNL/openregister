@@ -39,6 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Behaviour of the Mail picker reads and link pages of EmailLinkService over
@@ -246,7 +247,7 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 			['id' => 8],
 		];
 
-		$page = $this->service()->getMessagesForMailbox(7, 'INBOX', null, 2);
+		$page = $this->service()->getMessagesForMailbox((new MailboxPage(7, 'INBOX'))->startingAfter(null, 2));
 
 		$this->assertSame(9, $page['nextCursor']);
 		$this->assertSame(['id' => 10, 'uid' => '100', 'subject' => 'A', 'sender' => 'x@y.nl', 'date' => date('c', 0)], $page['items'][0]);
@@ -258,7 +259,7 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		$this->answers['mail_mailboxes'][] = ['id' => 3];
 		$this->answers['mail_messages'][]  = [['id' => 10]];
 
-		$this->assertNull($this->service()->getMessagesForMailbox(7, 'INBOX', '50', 2)['nextCursor']);
+		$this->assertNull($this->service()->getMessagesForMailbox((new MailboxPage(7, 'INBOX'))->startingAfter('50', 2))['nextCursor']);
 	}
 
 	public function testAnExactlyFullPageHasNoNextCursor(): void {
@@ -266,7 +267,7 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		$this->answers['mail_mailboxes'][] = ['id' => 3];
 		$this->answers['mail_messages'][]  = [['id' => 10], ['id' => 9]];
 
-		$page = $this->service()->getMessagesForMailbox(7, 'INBOX', null, 2);
+		$page = $this->service()->getMessagesForMailbox((new MailboxPage(7, 'INBOX'))->startingAfter(null, 2));
 
 		$this->assertCount(2, $page['items']);
 		$this->assertNull($page['nextCursor']);
@@ -276,14 +277,14 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		$this->ownsAccount();
 		$this->answers['mail_mailboxes'][] = false;
 
-		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox(7, 'Nope', null));
+		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox((new MailboxPage(7, 'Nope'))->startingAfter(null, 50)));
 	}
 
 	public function testMessagesAreEmptyWhenTheMailboxLookupFails(): void {
 		$this->ownsAccount();
 		$this->failing[] = 'mail_mailboxes';
 
-		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox(7, 'INBOX', null));
+		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox((new MailboxPage(7, 'INBOX'))->startingAfter(null, 50)));
 		$this->assertSame(['[EmailLinkService] resolveMailboxId failed: mail_mailboxes unavailable'], $this->warnings);
 	}
 
@@ -292,7 +293,7 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 		$this->answers['mail_mailboxes'][] = ['id' => 3];
 		$this->failing[] = 'mail_messages';
 
-		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox(7, 'INBOX', null));
+		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox((new MailboxPage(7, 'INBOX'))->startingAfter(null, 50)));
 		$this->assertSame(['[EmailLinkService] getMessagesForMailbox failed: mail_messages unavailable'], $this->warnings);
 	}
 
@@ -326,6 +327,6 @@ class EmailLinkServiceBehaviourTest extends TestCase {
 	}
 
 	public function testMessagesAreEmptyWithoutAMailboxName(): void {
-		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox(7, '', null));
+		$this->assertSame(['items' => [], 'nextCursor' => null], $this->service()->getMessagesForMailbox((new MailboxPage(7, ''))->startingAfter(null, 50)));
 	}
 }//end class

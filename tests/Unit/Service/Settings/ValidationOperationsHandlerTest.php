@@ -110,7 +110,7 @@ class ValidationOperationsHandlerTest extends TestCase {
 	public function testValidateAllObjectsValidationErrorsIsArray(): void {
 		$result = $this->handler->validateAllObjects();
 
-		$this->assertIsArray($result['validation_errors']);
+		$this->assertSame([], $result['validation_errors']);
 	}
 
 	/**
@@ -127,6 +127,10 @@ class ValidationOperationsHandlerTest extends TestCase {
 		$this->assertIsNumeric($result['summary']['validation_success_rate']);
 		$this->assertIsBool($result['summary']['has_errors']);
 		$this->assertIsInt($result['summary']['error_count']);
+		// With no objects nothing is invalid and the success rate is full.
+		$this->assertSame(0, $result['total_objects']);
+		$this->assertSame(100, $result['summary']['validation_success_rate']);
+		$this->assertFalse($result['summary']['has_errors']);
 	}
 
 	/**
@@ -155,7 +159,7 @@ class ValidationOperationsHandlerTest extends TestCase {
 
 		// Verify the handler works (indirectly testing constructor).
 		$result = $handler->validateAllObjects();
-		$this->assertIsArray($result);
+		$this->assertSame(['total_objects' => 0, 'valid_objects' => 0, 'invalid_objects' => 0, 'validation_errors' => [], 'summary' => ['validation_success_rate' => 100, 'has_errors' => false, 'error_count' => 0]], $result);
 	}
 
 	/**

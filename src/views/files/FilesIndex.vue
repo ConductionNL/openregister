@@ -43,78 +43,23 @@
 				<table v-else class="filesTable">
 					<thead>
 						<tr>
-							<th
-								scope="col"
-								class="column-filename sortable"
-								@click="toggleSort('fileName')">
-								{{ t('openregister', 'File Name') }}
-								<span
-									v-if="sortField === 'fileName'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-mimetype">
-								{{ t('openregister', 'Type') }}
-							</th>
-							<th
-								scope="col"
-								class="column-size sortable"
-								@click="toggleSort('fileSize')">
-								{{ t('openregister', 'Size') }}
-								<span
-									v-if="sortField === 'fileSize'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-chunks sortable"
-								@click="toggleSort('chunkCount')">
-								{{ t('openregister', 'Chunks') }}
-								<span
-									v-if="sortField === 'chunkCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-entities sortable"
-								@click="toggleSort('entityCount')">
-								{{ t('openregister', 'Entities') }}
-								<span
-									v-if="sortField === 'entityCount'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-risk sortable"
-								@click="toggleSort('riskLevel')">
-								{{ t('openregister', 'Risk Level') }}
-								<span
-									v-if="sortField === 'riskLevel'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th
-								scope="col"
-								class="column-extracted sortable"
-								@click="toggleSort('extractedAt')">
-								{{ t('openregister', 'Extracted At') }}
-								<span
-									v-if="sortField === 'extractedAt'"
-									class="sort-indicator"
-									>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
-								>
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
+							<template v-for="column in headerColumns" :key="column.key">
+								<th
+									v-if="column.sort"
+									scope="col"
+									:class="'column-' + column.key + ' sortable'"
+									@click="toggleSort(column.sort)">
+									{{ column.label }}
+									<span
+										v-if="sortField === column.sort"
+										class="sort-indicator"
+										>{{ sortOrder === 'ASC' ? '▲' : '▼' }}</span
+									>
+								</th>
+								<th v-else scope="col" :class="'column-' + column.key">
+									{{ column.label }}
+								</th>
+							</template>
 						</tr>
 					</thead>
 					<tbody>
@@ -170,6 +115,11 @@
 			</div>
 		</div>
 
+		<FileAccessLinksModal
+			v-if="sharingFile"
+			:file="sharingFile"
+			@close="sharingFile = null" />
+
 		<!-- Search Sidebar -->
 		<template #details>
 			<FilesSidebar
@@ -189,14 +139,17 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
 import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
@@ -216,6 +169,9 @@ export default {
 		NcEmptyContent,
 		FileDocumentOutline,
 		FilesSidebar,
+		FileAccessLinksModal: defineAsyncComponent(
+			() => import('../../modals/file/FileAccessLinksModal.vue'),
+		),
 	},
 
 	mixins: [offsetPaging('totalFiles', 'loadFiles')],
@@ -223,6 +179,8 @@ export default {
 	data() {
 		return {
 			filesList: [],
+			// The file row whose access links are open, or null.
+			sharingFile: null,
 			loading: false,
 			totalFiles: 0,
 			limit: 50,
@@ -236,7 +194,27 @@ export default {
 		}
 	},
 
-	computed: {},
+	computed: {
+		/**
+		 * The table's header cells, in column order; `sort` is the API field a
+		 * click sorts on, absent for a column that does not sort.
+		 *
+		 * @spec exclude UI plumbing — static table header list for display.
+		 * @return {Array<{key: string, label: string, sort?: string}>}
+		 */
+		headerColumns() {
+			return [
+				{ key: 'filename', label: t('openregister', 'File Name'), sort: 'fileName' },
+				{ key: 'mimetype', label: t('openregister', 'Type') },
+				{ key: 'size', label: t('openregister', 'Size'), sort: 'fileSize' },
+				{ key: 'chunks', label: t('openregister', 'Chunks'), sort: 'chunkCount' },
+				{ key: 'entities', label: t('openregister', 'Entities'), sort: 'entityCount' },
+				{ key: 'risk', label: t('openregister', 'Risk Level'), sort: 'riskLevel' },
+				{ key: 'extracted', label: t('openregister', 'Extracted At'), sort: 'extractedAt' },
+				{ key: 'actions', label: t('openregister', 'Actions') },
+			]
+		},
+	},
 
 	mounted() {
 		this.loadFiles()
@@ -266,20 +244,19 @@ export default {
 					run: () => this.showError(file),
 					hidden: !file.extractionError,
 				},
+				{
+					// A file link names its object, so only a file an object carries can be shared.
+					label: t('openregister', 'Share by link'),
+					icon: LinkVariant,
+					run: () => { this.sharingFile = file },
+					hidden: !file.objectUuid,
+				},
 			]
 		},
 
 		t,
 
-		/**
-		 * Toggle sidebar visibility
-		 *
-		 * @spec exclude list-view detail-sidebar toggle plumbing
-		 * @return {void}
-		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
-		},
+		...sidebarToggle,
 
 		/**
 		 * Toggle sort field and direction
@@ -347,39 +324,64 @@ export default {
 		async loadFiles() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: this.offset,
-					sort: this.sortField,
-					order: this.sortOrder,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.statusFilter) {
-					params.status = this.statusFilter
-				}
-
-				if (this.riskLevelFilter) {
-					params.riskLevel = this.riskLevelFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/files'),
-					{ params },
+					{ params: this.fileListParams() },
 				)
-
-				if (response.data.success) {
-					this.filesList = response.data.data
-					this.totalFiles = response.data.count || this.filesList.length
-				}
+				this.showFileList(response.data)
 			} catch (error) {
 				console.error('Failed to load files:', error)
 				showError(t('openregister', 'Failed to load files'))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * The page of files to ask for, in the chosen order, narrowed by the
+		 * filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The query parameters
+		 */
+		fileListParams() {
+			return {
+				limit: this.limit,
+				offset: this.offset,
+				sort: this.sortField,
+				order: this.sortOrder,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, status and risk-level filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				status: this.statusFilter,
+				riskLevel: this.riskLevelFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
+		},
+
+		/**
+		 * Take the page of files and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showFileList(data) {
+			if (data.success) {
+				this.filesList = data.data
+				this.totalFiles = data.count || this.filesList.length
 			}
 		},
 

@@ -21,6 +21,7 @@ namespace Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -59,11 +60,11 @@ class FavouriteServiceTest extends TestCase {
 	public function testStarIsAQuietFollow(): void {
 		$object = $this->createMock(originalClassName: ObjectEntity::class);
 		$this->watchers->expects($this->once())
-			->method('followQuietly')
-			->with($object, 'zaken', 'zaak')
+			->method('followQuietlyAt')
+			->with(new AddressedObject(object: $object, register: 'zaken', schema: 'zaak'))
 			->willReturn(new Watcher());
 
-		(new FavouriteService($this->watchers))->star(object: $object, register: 'zaken', schema: 'zaak');
+		(new FavouriteService($this->watchers))->star(target: new AddressedObject(object: $object, register: 'zaken', schema: 'zaak'));
 
 	}//end testStarIsAQuietFollow()
 

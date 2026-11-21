@@ -99,7 +99,7 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 		}
 
 		try {
-			$this->migrationPackService->create(definition: $this->definition(), ownerUid: null, builtin: true);
+			$this->migrationPackService->seedBuiltin(definition: $this->definition());
 			$output->info('Seeded built-in migration pack "zgw-zaken-json"');
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedZgwZakenMigrationPack] seed failed: ' . $e->getMessage());

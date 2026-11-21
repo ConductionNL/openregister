@@ -38,14 +38,12 @@ interface StateConditionEvaluatorInterface {
 	 * ahead of an `entry` one. A move that stays in the same state is not a
 	 * move and is evaluated as neither.
 	 *
-	 * @param array<string, mixed> $annotation The lifecycle annotation.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param string|null $from The state being left, null on a create.
-	 * @param string|null $to The state being entered.
+	 * @param StateSave     $save     The lifecycle annotation and the object as it would be saved.
+	 * @param StateCrossing $crossing The state being left (null on a create) and the state being entered.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function refusal(array $annotation, array $newData, ?string $from, ?string $to): ?array;
+	public function refusal(StateSave $save, StateCrossing $crossing): ?array;
 }//end interface

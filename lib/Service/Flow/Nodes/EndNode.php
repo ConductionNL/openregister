@@ -20,16 +20,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+ * @spec openspec/specs/flow-logic/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -38,7 +40,7 @@ use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
  * Stops the run, optionally as an error.
  */
 class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
-	IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree
 {
 	/**
 	 * The step type.
@@ -88,7 +90,7 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		// `next` overrides the manual trigger's hint for the run that reached
@@ -96,6 +98,38 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 		// flow with two endings.
 		return ['error', 'message', 'next'];
 	}//end configKeys()
+
+	/**
+	 * Whether this ending is a failure, its message, and where the person goes afterwards.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'error',
+				'label' => $this->l10n->t('End the run as failed'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t('Failing is an outcome, not the absence of one: leave this off for an ending the flow expects.'),
+			],
+			[
+				'key' => 'message',
+				'label' => $this->l10n->t('Message'),
+				'type' => 'text',
+				'help' => $this->l10n->t('Written to the run log as the reason the run ended here.'),
+			],
+			[
+				'key' => 'next',
+				'label' => $this->l10n->t('Afterwards, go to'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Overrides the manual trigger\'s choice for a run that ends here: "stay", "next" or "list". Empty keeps the trigger\'s choice.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Nothing to REQUIRE — a stop with no message is a fine clean stop.
@@ -120,15 +154,15 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 	 * branch was not taken, and the node passes through instead — see the
 	 * comment in the body for why that distinction is load-bearing.
 	 *
-	 * @param array $items The input items — empty means "this branch was not taken".
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The empty item list, when there was nothing to stop for.
 	 *
 	 * @throws FlowStop When items reached it — this is how the node ends the run.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		// A stop that received NOTHING is a branch that was not taken.
 		//
 		// `FlowEngine::advanceItems()` marks every place on a firing
@@ -154,17 +188,30 @@ class EndNode extends LogicNodeBase implements IFlowNode, EndNodeInterface,
 			return [];
 		}
 
+		throw $this->stopFor(config: $config);
+	}//end execute()
+
+	/**
+	 * The stop a reached end node throws: its configured message, or the
+	 * default for a plain or an error stop.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return FlowStop The stop to throw.
+	 */
+	private function stopFor(array $config): FlowStop {
 		$isError = (($config['error'] ?? false) === true);
 		$message = trim((string)($config['message'] ?? ''));
-		if ($message === '') {
-			$message = 'Flow stopped';
-			if ($isError === true) {
-				$message = 'Flow stopped with an error';
-			}
+		if ($message === '' && $isError === true) {
+			return new FlowStop(reason: 'Flow stopped with an error', isError: true);
 		}
 
-		throw new FlowStop(reason: $message, isError: $isError);
-	}//end execute()
+		if ($message === '') {
+			$message = 'Flow stopped';
+		}
+
+		return new FlowStop(reason: $message, isError: $isError);
+	}//end stopFor()
 
 	/**
 	 * What kind of step this is. An end.

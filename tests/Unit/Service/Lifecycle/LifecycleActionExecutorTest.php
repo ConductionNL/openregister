@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Lifecycle\ContextLifecycleActionInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
@@ -37,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor
@@ -66,9 +69,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$result = $this->executor->run(
 			actions: $actions,
-			objectData: ['status' => 'submitted'],
-			previousData: ['status' => 'draft'],
-			transition: 'submit'
+			payload: new TransitionPayload(transition: 'submit', objectData: ['status' => 'submitted'], previousData: ['status' => 'draft'])
 		);
 
 		$this->assertSame('stamp', $result['submittedAt']);
@@ -90,9 +91,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$result = $this->executor->run(
 			actions: $actions,
-			objectData: ['settlementMode' => 'passthrough'],
-			previousData: [],
-			transition: 'post'
+			payload: new TransitionPayload(transition: 'post', objectData: ['settlementMode' => 'passthrough'], previousData: [])
 		);
 
 		$this->assertSame(['settlementMode' => 'passthrough'], $result);
@@ -102,8 +101,10 @@ class LifecycleActionExecutorTest extends TestCase {
 	 * A `@previous`-scoped condition that holds runs the action.
 	 */
 	public function testPreviousConditionTrueRunsAction(): void {
-		$handler = $this->createMock(LifecycleActionInterface::class);
-		$handler->expects($this->once())->method('execute')->willReturnArgument(0);
+		$handler = $this->createMock(ContextLifecycleActionInterface::class);
+		$handler->expects($this->once())->method('execute')->willReturnCallback(
+			static fn (LifecycleActionContext $context): array => $context->objectData
+		);
 		$this->registry->method('resolve')->with('create-offset-move')->willReturn($handler);
 
 		$actions = [
@@ -115,9 +116,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$this->executor->run(
 			actions: $actions,
-			objectData: ['lifecycleState' => 'cancelled'],
-			previousData: ['lifecycleState' => 'posted'],
-			transition: 'cancel'
+			payload: new TransitionPayload(transition: 'cancel', objectData: ['lifecycleState' => 'cancelled'], previousData: ['lifecycleState' => 'posted'])
 		);
 	}//end testPreviousConditionTrueRunsAction()
 
@@ -137,9 +136,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$this->executor->run(
 			actions: $actions,
-			objectData: [],
-			previousData: [],
-			transition: 'submit'
+			payload: new TransitionPayload(transition: 'submit', objectData: [], previousData: [])
 		);
 	}//end testUnparseableConditionFailsLoudly()
 
@@ -157,9 +154,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$this->executor->run(
 			actions: [['action' => 'ghost']],
-			objectData: [],
-			previousData: [],
-			transition: 'submit'
+			payload: new TransitionPayload(transition: 'submit', objectData: [], previousData: [])
 		);
 	}//end testMissingHandlerPropagates()
 
@@ -172,9 +167,7 @@ class LifecycleActionExecutorTest extends TestCase {
 
 		$this->executor->run(
 			actions: [['actionParameters' => ['x' => 1]]],
-			objectData: [],
-			previousData: [],
-			transition: 'submit'
+			payload: new TransitionPayload(transition: 'submit', objectData: [], previousData: [])
 		);
 	}//end testActionWithoutNameFailsLoudly()
 }//end class

@@ -59,6 +59,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunnableGuard
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowRunSubjectsReadTest extends TestCase {
 

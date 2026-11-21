@@ -23,12 +23,18 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
 
 /**
  * Pins the exact SQL, parameters and types of every filter combination,
  * the result rows, and the hybrid envelope built from them.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KnnStatement
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\RankedResults
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
  */
 final class VectorSearchKnnQueryGoldenTest extends TestCase {
 
@@ -121,7 +127,7 @@ final class VectorSearchKnnQueryGoldenTest extends TestCase {
 	 * @dataProvider filters
 	 */
 	public function testQuery(array $filters, string $where, array $params, array $types): void {
-		$this->handler([self::row(1, 'a', 0.25)])->semanticSearch([1.0, 0.0], 0, $filters);
+		$this->handler([self::row(1, 'a', 0.25)])->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 0, filters: $filters));
 		$this->assertSame(
 			[[
 				'SELECT v.id, v.entity_type, v.entity_id, v.chunk_index, v.total_chunks, v.chunk_text, '
@@ -147,11 +153,11 @@ final class VectorSearchKnnQueryGoldenTest extends TestCase {
 				['vector_id' => 1, 'entity_type' => 'object', 'entity_id' => 'a', 'similarity' => 0.75, 'chunk_index' => 0, 'total_chunks' => 1, 'chunk_text' => 't1', 'metadata' => ['k' => 1], 'model' => 'm', 'dimensions' => 2],
 				['vector_id' => 2, 'entity_type' => 'object', 'entity_id' => 'b', 'similarity' => 0.5, 'chunk_index' => 0, 'total_chunks' => 1, 'chunk_text' => 't2', 'metadata' => [], 'model' => 'm', 'dimensions' => 2],
 			],
-			$handler->semanticSearch([1.0, 0.0], 5)
+			$handler->semanticSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 5))
 		);
 
 		$keyword = [['entity_type' => 'object', 'entity_id' => 'b', 'score' => 9], ['entity_type' => 'file', 'entity_id' => 'c']];
-		$hybrid  = $handler->hybridSearch([1.0, 0.0], $keyword, 2, ['keyword' => 1, 'vector' => 3]);
+		$hybrid  = $handler->hybridSearch(new VectorQuery(embedding: [1.0, 0.0], limit: 2), new KeywordFusion(results: $keyword, weights: ['keyword' => 1, 'vector' => 3]));
 		unset($hybrid['search_time_ms']);
 		$this->assertStringEndsWith('LIMIT 4', $this->calls[1][0]);
 		$this->assertSame(

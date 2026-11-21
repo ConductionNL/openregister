@@ -52,27 +52,27 @@ class ShippedSeedContent {
 	public function hash(array $shipped): string {
 		unset($shipped['@self']);
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return sha1((string) json_encode($this->sorted(value: $shipped), (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)));
 	}//end hash()
 
 	/**
 	 * The object to write over a stored seed, or null when the stored seed stays.
 	 *
-	 * @param array<string, mixed> $stored     The stored object, with `@self`.
-	 * @param array<string, mixed> $shipped    The seed as listed, with `@self`.
-	 * @param string|null          $remembered The hash of the content last shipped; null when none was kept.
+	 * @param array<string, mixed> $stored  The stored object, with `@self`.
+	 * @param ShippedSeed          $shipped The seed as listed and the hash of the content last shipped.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function update(array $stored, array $shipped, ?string $remembered): ?array {
-		if ($remembered !== null && $remembered !== $this->hash(shipped: $shipped)) {
-			return $shipped;
+	public function updateFrom(array $stored, ShippedSeed $shipped): ?array {
+		if ($shipped->remembered !== null && $shipped->remembered !== $this->hash(shipped: $shipped->content)) {
+			return $shipped->content;
 		}
 
-		return $this->filledGaps(stored: $stored, shipped: $shipped);
-	}//end update()
+		return $this->filledGaps(stored: $stored, shipped: $shipped->content);
+	}//end updateFrom()
 
 	/**
 	 * The stored seed with the fields it lacks taken from the shipped seed, or null when it lacks none.

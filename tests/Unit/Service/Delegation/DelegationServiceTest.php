@@ -287,7 +287,7 @@ class DelegationServiceTest extends TestCase {
 	 */
 	public function testVerdictForAnswersWithoutRunningAnything(): void {
 		$verdict = $this->service(DelegationVerdict::granted($this->grant()))
-			->verdictFor('alice', 'mayor', [], new DateTime('2026-08-25 12:00:00'));
+			->verdictFor(new DelegationRequest('alice', 'mayor', [], new DateTime('2026-08-25 12:00:00')));
 
 		$this->assertTrue($verdict->permitted);
 		$this->assertFalse($this->switched);

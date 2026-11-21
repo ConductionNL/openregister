@@ -64,6 +64,13 @@ use Psr\Log\AbstractLogger;
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Listener\ViewAlertAudience
+ * @uses \OCA\OpenRegister\Listener\ViewAlertMail
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\View\ViewAlertLine
  */
 class ViewAlertCrossedListenerTest extends TestCase {
 
@@ -197,7 +204,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		return new ViewAlertCrossedListener(
 			audience: new ViewAlertAudience(
 				recipients: new NotificationRecipientResolver(userManager: $userManager, groupManager: $groupManager, logger: $logger),
-				viewers: new ViewerReachResolver(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $logger)
+				viewers: new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groupManager), logger: $logger)
 			),
 			notifications: $manager,
 			mail: new ViewAlertMail(

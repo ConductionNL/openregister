@@ -35,7 +35,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use JsonSerializable;
 /**
  * The lossy-mapping report an import returns beside the flow.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnMappingReport implements JsonSerializable {
 
@@ -98,25 +98,23 @@ class BpmnMappingReport implements JsonSerializable {
 	 * is a report an author cannot act on, and it reads as though the importer
 	 * is unsure rather than the file being unusual.
 	 *
-	 * @param string $elementId The BPMN element id.
-	 * @param string $kind      The element kind.
-	 * @param string $verdict   One of {@see self::VERDICTS}.
-	 * @param string $action    What the author should do about it.
+	 * @param string      $elementId The BPMN element id.
+	 * @param BpmnReading $reading   The element kind, one of {@see self::VERDICTS}, and what the author should do about it.
 	 *
 	 * @return bool True when the entry was recorded.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
-	public function record(string $elementId, string $kind, string $verdict, string $action = ''): bool {
-		if (trim($elementId) === '' || in_array($verdict, self::VERDICTS, true) === false) {
+	public function record(string $elementId, BpmnReading $reading): bool {
+		if (trim($elementId) === '' || in_array($reading->verdict, self::VERDICTS, true) === false) {
 			return false;
 		}
 
 		$this->entries[] = [
 			'elementId' => $elementId,
-			'kind' => $kind,
-			'verdict' => $verdict,
-			'action' => $action,
+			'kind' => $reading->kind,
+			'verdict' => $reading->verdict,
+			'action' => $reading->action,
 		];
 
 		return true;
@@ -127,7 +125,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<int, array<string, string>> The entries.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function entries(): array {
 		return $this->entries;
@@ -140,7 +138,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<int, array<string, string>> The entries.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function withVerdict(string $verdict): array {
 		return array_values(
@@ -157,7 +155,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return bool True when something was approximated or refused.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function lostSomething(): bool {
 		return ($this->withVerdict(verdict: self::APPROXIMATED) !== []
@@ -174,7 +172,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return bool True when strict must refuse the import.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function failsStrict(): bool {
 		return ($this->withVerdict(verdict: self::REFUSED) !== []);
@@ -185,7 +183,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<string, int> Verdict to count.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function summary(): array {
 		$summary = [];
@@ -201,7 +199,7 @@ class BpmnMappingReport implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialised report.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

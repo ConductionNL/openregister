@@ -43,9 +43,7 @@ class ExampleSetOrder {
 	/**
 	 * Order the apps that ship a fragment.
 	 *
-	 * @param array<string, array<int, string>> $after   The `after` list of each app that ships a fragment.
-	 * @param array<int, string>                $enabled Every enabled app id.
-	 * @param array<int, string>                $expected Apps the set names as taking part, enabled or not.
+	 * @param FragmentOrdering $apps Each fragment's `after`, the enabled apps, and the apps the set names.
 	 *
 	 * @return array{order: array<int, string>, skipped: array<int, string>} The app ids in order, and every
 	 *                                                                         named app that is not enabled.
@@ -54,8 +52,9 @@ class ExampleSetOrder {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
-	public function order(array $after, array $enabled, array $expected=[]): array {
-		$skipped = array_filter($expected, static fn (mixed $app): bool => in_array($app, $enabled, true) === false);
+	public function order(FragmentOrdering $apps): array {
+		[$after, $enabled] = [$apps->after, $apps->enabled];
+		$skipped = array_filter($apps->expected, static fn (mixed $app): bool => in_array($app, $enabled, true) === false);
 		$waitsOn = [];
 		foreach ($after as $app => $before) {
 			$waitsOn[$app] = $this->waitsOn(app: $app, after: $after);

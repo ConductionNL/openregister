@@ -38,28 +38,15 @@
 
 			<template v-else>
 				<table class="mergeOperationsTable">
-					<thead>
-						<tr>
-							<th scope="col">
-								{{ t('openregister', 'Survivor') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Merged from') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Reason') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Merged at') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Status') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
+					<TableHeadRow
+						:labels="[
+							t('openregister', 'Survivor'),
+							t('openregister', 'Merged from'),
+							t('openregister', 'Reason'),
+							t('openregister', 'Merged at'),
+							t('openregister', 'Status'),
+							t('openregister', 'Actions'),
+						]" />
 					<tbody>
 						<tr
 							v-for="operation in mergeOperations"
@@ -123,6 +110,7 @@ import {
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import TableHeadRow from '../avg/TableHeadRow.vue'
 import RangePager from './RangePager.vue'
 import { qualityStore } from '../../store/store.js'
 
@@ -140,6 +128,7 @@ export default {
 	name: 'MergeOperationsIndex',
 
 	components: {
+		TableHeadRow,
 		RangePager,
 		NcAppContent,
 		NcEmptyContent,
@@ -280,7 +269,7 @@ export default {
 	margin-top: 16px;
 }
 
-.mergeOperationsTable th,
+.mergeOperationsTable :deep(th),
 .mergeOperationsTable td {
 	text-align: left;
 	padding: 8px;

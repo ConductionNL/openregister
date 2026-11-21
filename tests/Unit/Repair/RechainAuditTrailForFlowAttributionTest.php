@@ -111,10 +111,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 			->willReturn(['rechained' => 3, 'tombstonesPreserved' => 1]);
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			$this->emptyDb(),
-			$this->config(store: $store),
-			$hashes,
-			new NullLogger()
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$step->run($this->createMock(IOutput::class));
@@ -144,10 +144,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->expects($this->never())->method('rechainAll');
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			$this->emptyDb(),
-			$this->config(writable: false, store: $store),
-			$hashes,
-			new NullLogger()
+			db: $this->emptyDb(),
+			config: $this->config(writable: false, store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$output = $this->createMock(IOutput::class);
@@ -172,10 +172,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->expects($this->never())->method('rechainAll');
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			$this->emptyDb(),
-			$this->config(store: $store),
-			$hashes,
-			new NullLogger()
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$output = $this->createMock(IOutput::class);
@@ -196,10 +196,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->method('rechainAll')->willThrowException(new RuntimeException('lock unavailable'));
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			$this->emptyDb(),
-			$this->config(store: $store),
-			$hashes,
-			new NullLogger()
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		try {
@@ -222,10 +222,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 
 	public function testItNamesItselfForTheRepairRunner(): void {
 		$step = new RechainAuditTrailForFlowAttribution(
-			$this->emptyDb(),
-			$this->config(),
-			$this->createMock(AuditHashService::class),
-			new NullLogger()
+			db: $this->emptyDb(),
+			config: $this->config(),
+			logger: new NullLogger(),
+			hashes: $this->createMock(AuditHashService::class)
 		);
 
 		$this->assertStringContainsString('audit chain', strtolower($step->getName()));

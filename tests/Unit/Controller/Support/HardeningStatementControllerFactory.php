@@ -18,7 +18,6 @@ final class HardeningStatementControllerFactory {
 	/**
 	 * The constructor arguments of HardeningStatementController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param StatementService $statements Constructor argument.
 	 * @param ElevationService $elevation Constructor argument.
@@ -27,14 +26,12 @@ final class HardeningStatementControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Hardening\StatementService $statements,
 		\OCA\OpenRegister\Service\Hardening\ElevationService $elevation,
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices(
 				statements: $statements,

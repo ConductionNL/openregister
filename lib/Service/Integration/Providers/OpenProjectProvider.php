@@ -37,13 +37,11 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Throwable;
 
 /**
@@ -76,19 +74,16 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
+	 * @param ConnectorRouting                    $routing    The router, app manager and localisation.
 	 * @param OpenProjectLinkMapperInterface|null $linkMapper Tier-2 link table (optional).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private ?OpenProjectLinkMapperInterface $linkMapper = null,
 	) {
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	public function getId(): string {
@@ -128,26 +123,36 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * When no link rows exist (or the mapper isn't wired) it falls back
 	 * to the external router so a fresh source still surfaces rows.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional: `_search`, `_limit`, `_page`.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedOrSourced(ref: $ref, filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's work packages: the link table first, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
 		// Tier-2 path: read from the link table first.
-		$linked = $this->linkedRows(objectId: $objectId);
+		$linked = $this->linkedRows(objectId: $ref->id);
 		if (count($linked) > 0) {
 			return $linked;
 		}
 
 		// Fallback: query the external source through OpenConnector.
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
-	}//end list()
+	}//end linkedOrSourced()
 
 	/**
 	 * The rows of the link table for an object; none when the table cannot be read.

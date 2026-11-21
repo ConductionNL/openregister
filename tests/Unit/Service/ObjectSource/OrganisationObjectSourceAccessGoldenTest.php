@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -150,7 +152,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 		$this->organisationMapper->method('findByUuidFollowingMerge')
 			->willReturn($this->organisation(uuid: 'org-1', member: 'member'));
 
-		return $this->provider()->find(register: new Register(), schema: new Schema(), id: 'org-1') !== null;
+		return $this->provider()->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'org-1') !== null;
 
 	}//end findAllowed()
 
@@ -198,7 +200,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 			->willReturn([$this->organisation(uuid: 'org-1', member: 'x'), $this->organisation(uuid: 'org-2', member: 'y')]);
 		$this->organisationMapper->expects($this->never())->method('findByUserId');
 
-		$this->assertCount(2, $this->provider()->findAll(register: new Register(), schema: new Schema()));
+		$this->assertCount(2, $this->provider()->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 
 	}//end testAnAdminListsEveryOrganisation()
 
@@ -213,7 +215,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 		$this->organisationMapper->expects($this->once())->method('findByUserId')->with('member')
 			->willReturn([$this->organisation(uuid: 'org-1', member: 'member')]);
 
-		$this->assertCount(1, $this->provider()->findAll(register: new Register(), schema: new Schema()));
+		$this->assertCount(1, $this->provider()->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 
 	}//end testAMemberListsOnlyTheirOwn()
 
@@ -227,7 +229,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 		$this->organisationMapper->expects($this->never())->method('findAll');
 		$this->organisationMapper->expects($this->never())->method('findByUserId');
 
-		$this->assertSame([], $this->provider()->findAll(register: new Register(), schema: new Schema()));
+		$this->assertSame([], $this->provider()->findAll(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()))));
 
 	}//end testAnAnonymousCallerListsNothing()
 
@@ -242,7 +244,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->organisationMapper->expects($this->once())->method('save')->willReturnArgument(0);
 
-		$entity = $this->provider()->update(register: new Register(), schema: new Schema(), id: 'org-1', data: ['name' => 'New']);
+		$entity = $this->provider()->update(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'org-1', data: ['name' => 'New']);
 
 		$this->assertSame('New', $entity->getObject()['name']);
 
@@ -279,7 +281,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('does not exist');
 
-		$this->provider()->update(register: new Register(), schema: new Schema(), id: 'org-1', data: ['name' => 'New']);
+		$this->provider()->update(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: 'org-1', data: ['name' => 'New']);
 
 	}//end testAWriteIsRefusedToAnyoneButTheAdministrator()
 }//end class

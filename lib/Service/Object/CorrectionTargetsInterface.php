@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * Names the record a correction is made on, for callers outside lib/Service.
  *
@@ -35,13 +37,11 @@ interface CorrectionTargetsInterface {
 	/**
 	 * The record a correction is made on.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object's id or uuid.
+	 * @param ObjectRef $ref The register and schema (slug or id) and the object's id or uuid.
 	 *
 	 * @return CorrectionTarget
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function forRecord(string $register, string $schema, string $id): CorrectionTarget;
+	public function forRecord(ObjectRef $ref): CorrectionTarget;
 }//end interface

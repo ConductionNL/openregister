@@ -116,36 +116,88 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 		}
 
 		$valid = [];
-
 		foreach ($sharedWith as $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			$kept = self::validEntry(entry: $entry);
+			if ($kept !== null) {
+				$valid[] = $kept;
 			}
-
-			$type = ($entry['type'] ?? null);
-			if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
-				continue;
-			}
-
-			$id = ($entry['id'] ?? null);
-			if (is_string($id) === false || trim($id) === '') {
-				continue;
-			}
-
-			$permission = ($entry['permission'] ?? null);
-			if (is_string($permission) === false) {
-				$permission = null;
-			}
-
-			$valid[] = [
-				'type' => $type,
-				'id' => trim($id),
-				'permission' => $permission,
-			];
-		}//end foreach
+		}
 
 		return $valid;
 	}//end validEntries()
+
+	/**
+	 * One share entry with a known type and a non-blank id, trimmed; null when it is dropped.
+	 *
+	 * @param mixed $entry One entry of the share list.
+	 *
+	 * @return array{type: string, id: string, permission: string|null}|null The entry.
+	 */
+	private static function validEntry(mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$type = self::knownType(entry: $entry);
+		$id = self::nonBlankId(entry: $entry);
+		if ($type === null || $id === null) {
+			return null;
+		}
+
+		return [
+			'type' => $type,
+			'id' => $id,
+			'permission' => self::permissionOf(entry: $entry),
+		];
+	}//end validEntry()
+
+	/**
+	 * The entry's type when it is a user or a group, else null.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The type.
+	 */
+	private static function knownType(array $entry): ?string {
+		$type = ($entry['type'] ?? null);
+		if ($type !== self::TYPE_USER && $type !== self::TYPE_GROUP) {
+			return null;
+		}
+
+		return $type;
+	}//end knownType()
+
+	/**
+	 * The entry's id, trimmed, or null when it is missing, blank or not a string.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The id.
+	 */
+	private static function nonBlankId(array $entry): ?string {
+		$id = ($entry['id'] ?? null);
+		if (is_string($id) === false || trim($id) === '') {
+			return null;
+		}
+
+		return trim($id);
+	}//end nonBlankId()
+
+	/**
+	 * The entry's permission, or null when it names none as a string.
+	 *
+	 * @param array<string, mixed> $entry One share entry.
+	 *
+	 * @return string|null The permission.
+	 */
+	private static function permissionOf(array $entry): ?string {
+		$permission = ($entry['permission'] ?? null);
+		if (is_string($permission) === false) {
+			return null;
+		}
+
+		return $permission;
+	}//end permissionOf()
 
 	/**
 	 * Whether a principal holds one of the given permissions on a share list.
@@ -155,36 +207,17 @@ class SharePrincipalDeriver implements SharePrincipalDeriverInterface {
 	 * a verb (the flow trigger endpoint refusing a `read`-only recipient) has to
 	 * read the rich list, which is what this answers.
 	 *
-	 * @param mixed $sharedWith The raw `sharedWith` value.
-	 * @param string $userId The acting user id.
-	 * @param string[] $userGroups The acting user's group ids.
-	 * @param array<string|null> $permissions Permissions that satisfy the check.
-	 *        null is a MEANINGFUL member, not sloppiness: a share entry that
+	 * @param ShareGrantee   $grantee The acting user id and the acting user's group ids.
+	 * @param ShareListCheck $check   The raw `sharedWith` value and the permissions that satisfy the check.
+	 *        null is a MEANINGFUL permission, not sloppiness: a share entry that
 	 *        carries no explicit permission has `permission => null`, and both
 	 *        callers pass `['use', null]` to mean "an unqualified share counts
-	 *        as 'use'". Narrowing this to string[] would silently stop matching
-	 *        those entries.
+	 *        as 'use'". Narrowing the permissions to string[] would silently
+	 *        stop matching those entries.
 	 *
 	 * @return bool True when a matching principal holds one of the permissions.
 	 */
-	public function grants(mixed $sharedWith, string $userId, array $userGroups, array $permissions): bool {
-		if ($userId === '') {
-			return false;
-		}
-
-		foreach ($this->validEntries(sharedWith: $sharedWith) as $entry) {
-			$matchesPrincipal = ($entry['type'] === self::TYPE_USER && $entry['id'] === $userId)
-				|| ($entry['type'] === self::TYPE_GROUP && in_array($entry['id'], $userGroups, true) === true);
-
-			if ($matchesPrincipal === false) {
-				continue;
-			}
-
-			if (in_array($entry['permission'], $permissions, true) === true) {
-				return true;
-			}
-		}//end foreach
-
-		return false;
+	public function grants(ShareGrantee $grantee, ShareListCheck $check): bool {
+		return $grantee->holdsAnyOf(entries: $this->validEntries(sharedWith: $check->sharedWith), permissions: $check->permissions);
 	}//end grants()
 }//end class

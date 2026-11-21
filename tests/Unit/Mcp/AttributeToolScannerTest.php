@@ -25,12 +25,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\McpLeafApp;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
@@ -60,9 +63,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanFixture(): array {
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: AttributeFixtureService::class,
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: AttributeFixtureService::class, logger: $this->logger)
 		);
 
 		$byName = [];
@@ -202,9 +203,7 @@ class AttributeToolScannerTest extends TestCase {
 			->with($this->stringContains('does not exist'));
 
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: 'OCA\\Pipelinq\\Service\\DoesNotExist',
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: 'OCA\\Pipelinq\\Service\\DoesNotExist', logger: $this->logger)
 		);
 
 		$this->assertSame([], $descriptors);
@@ -213,9 +212,8 @@ class AttributeToolScannerTest extends TestCase {
 
 	public function testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames(): void {
 		$descriptors = $this->scanner->scanClasses(
-			appId: 'pipelinq',
-			classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class'],
-			logger: $this->logger
+			app: new McpLeafApp(appId: 'pipelinq', container: $this->createMock(ContainerInterface::class), logger: $this->logger),
+			classNames: [AttributeFixtureService::class, '', 'Not\\A\\Real\\Class']
 		);
 
 		$names = array_column($descriptors, 'name');
@@ -231,9 +229,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanHintScopeFixture(): array {
 		$descriptors = $this->scanner->scanClass(
-			appId: 'pipelinq',
-			className: HintScopeFixtureService::class,
-			logger: $this->logger
+			subject: new ToolScanSubject(appId: 'pipelinq', className: HintScopeFixtureService::class, logger: $this->logger)
 		);
 
 		$byName = [];
@@ -292,7 +288,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanReachFixture(): array {
 		$byName = [];
-		foreach ($this->scanner->scanClass(appId: 'dossiq', className: ReachFixtureService::class, logger: $this->logger) as $descriptor) {
+		foreach ($this->scanner->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: ReachFixtureService::class, logger: $this->logger)) as $descriptor) {
 			$byName[$descriptor['name']] = $descriptor;
 		}
 
@@ -334,7 +330,7 @@ class AttributeToolScannerTest extends TestCase {
 	 */
 	private function scanAnnotationFixture(): array {
 		$byName = [];
-		foreach ($this->scanner->scanClass(appId: 'dossiq', className: AnnotationFixtureService::class, logger: $this->logger) as $descriptor) {
+		foreach ($this->scanner->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: AnnotationFixtureService::class, logger: $this->logger)) as $descriptor) {
 			$byName[$descriptor['name']] = $descriptor;
 		}
 

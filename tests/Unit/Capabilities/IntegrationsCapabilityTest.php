@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Capabilities;
 
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Capabilities\IntegrationsCapabilityServices;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -77,7 +78,7 @@ class _CapStubProvider extends AbstractIntegrationProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class

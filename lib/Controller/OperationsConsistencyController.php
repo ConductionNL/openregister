@@ -32,8 +32,9 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 
 /**
  * The consistency check, the repair plan and the repair.
@@ -48,7 +49,7 @@ use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class OperationsConsistencyController extends Controller {
+class OperationsConsistencyController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * The acting administrator and the parameter readers.
@@ -74,21 +75,17 @@ class OperationsConsistencyController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName     Application name.
 	 * @param IRequest                 $request     HTTP request.
 	 * @param OperationsConsistencyControllerServices $services The services, bundled.
-	 * @param IUserSession             $userSession Names the administrator acting.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OperationsConsistencyControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->check = $services->check;
 		$this->repair = $services->repair;
-		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
 	}//end __construct()
 
 	/**

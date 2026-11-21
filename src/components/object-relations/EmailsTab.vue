@@ -137,13 +137,24 @@ export default {
 				const response = await axios.get(url)
 				this.emails = response.data?.results || response.data || []
 			} catch (err) {
-				if (err.response && err.response.status === 501) {
-					this.mailUnavailable = true
-				} else {
-					this.showFailure(err)
-				}
+				this.showLoadFailure(err)
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Show why the emails did not load: Mail not being installed (501),
+		 * or the failure itself.
+		 *
+		 * @param {Error} err What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(err) {
+			if (err.response && err.response.status === 501) {
+				this.mailUnavailable = true
+			} else {
+				this.showFailure(err)
 			}
 		},
 

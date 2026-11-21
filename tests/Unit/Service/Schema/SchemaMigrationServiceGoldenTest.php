@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Service\Schema\SchemaPopulationRuns;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -28,10 +29,11 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class SchemaMigrationServiceGoldenTest extends TestCase {
 	private SchemaMigrationService $service;
@@ -73,11 +75,7 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 
 		$this->service = new SchemaMigrationService(
 			new SchemaMigrationPlanner(),
-			$this->runMapper,
-			$this->runEntryMapper,
-			$schemaMapper,
-			$this->objectService,
-			$this->createMock(LoggerInterface::class)
+			new SchemaPopulationRuns($this->runMapper, $this->runEntryMapper, $schemaMapper, $this->objectService)
 		);
 	}
 
@@ -120,7 +118,8 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 
 	private function saveRefusesU8(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves[] = $args;
 				if ($args[4] === 'u8') {
 					throw new RuntimeException('save refused');
@@ -230,6 +229,7 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 		$finds = [];
 		$this->objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$finds): ?ObjectEntity {
+				$args    = FindCallShape::find(args: $args);
 				$finds[] = $args;
 				return match ($args[0]) {
 					'gone' => null,
@@ -239,7 +239,8 @@ class SchemaMigrationServiceGoldenTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves[] = $args;
 				if ($args[4] === 'refused') {
 					throw new RuntimeException('restore refused');

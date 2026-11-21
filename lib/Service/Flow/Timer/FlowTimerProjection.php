@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -68,7 +69,7 @@ final class FlowTimerProjection {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function project(FlowTimer $timer, ?DateTimeInterface $suspendedUntil = null): void {
 		$task = $this->subjectTask(timer: $timer);
@@ -96,7 +97,7 @@ final class FlowTimerProjection {
 	 *
 	 * @return Task|null The task.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function subjectTask(FlowTimer $timer): ?Task {
 		if ($timer->getSubjectType() !== 'task') {
@@ -120,7 +121,7 @@ final class FlowTimerProjection {
 	private function earliestOpenDeadlines(string $subjectUuid): array {
 		$earliest = [FlowTimer::PURPOSE_DUE => null, FlowTimer::PURPOSE_EXPIRY => null];
 		$states = [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED];
-		foreach ($this->timers->findBySubject(subjectType: 'task', subjectUuid: $subjectUuid, states: $states) as $candidate) {
+		foreach ($this->timers->findBySubject(subject: new TimerSubject(type: 'task', uuid: $subjectUuid), states: $states) as $candidate) {
 			$purpose = (string)$candidate->getPurpose();
 			$fireAt = $candidate->getFireAt();
 			if ($fireAt !== null && array_key_exists($purpose, $earliest) === true) {

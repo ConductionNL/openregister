@@ -32,10 +32,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
-use OCA\OpenRegister\Service\Configuration\PreviewMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Before this, every object row of the preview was an empty array and every
@@ -90,8 +89,7 @@ final class PreviewHandlerChangesTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 
 		$this->handler = new PreviewHandler(
-			new PreviewMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper),
-			$this->createMock(LoggerInterface::class),
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper),
 			$this->fetchHandler
 		);
 	}//end setUp()

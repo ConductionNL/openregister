@@ -32,7 +32,6 @@ class ApplicationsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = ApplicationsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->applicationService,
 			$this->applicationMapper,
@@ -43,6 +42,8 @@ class ApplicationsControllerTest extends TestCase {
 	public function testPage(): void {
 		$result = $this->controller->page();
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('index', $result->getTemplateName());
+		$this->assertSame('openregister', $result->getApp());
 	}
 
 	public function testIndexSuccess(): void {

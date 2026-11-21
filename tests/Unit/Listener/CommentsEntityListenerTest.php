@@ -6,6 +6,7 @@ namespace Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
+use OCA\OpenRegister\Service\CommentsCollectionCatalog;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,14 +26,15 @@ class CommentsEntityListenerTest extends TestCase {
 		$this->listener = new CommentsEntityListener(
 			$this->objectMapper,
 			$this->logger,
+			$this->createMock(CommentsCollectionCatalog::class),
 		);
 	}
 
 	public function testEarlyReturnForNonCommentsEntityEvent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$event = $this->createMock(Event::class);
 		$this->listener->handle($event);
-		// No exception = pass
-		$this->assertTrue(true);
 	}
 
 	public function testRegistersOpenregisterEntityCollection(): void {

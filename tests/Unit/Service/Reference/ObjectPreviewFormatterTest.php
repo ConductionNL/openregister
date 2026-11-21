@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -51,6 +52,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses   \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
  */
 class ObjectPreviewFormatterTest extends TestCase {
 
@@ -219,7 +225,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 	 */
 	public function testBuildCanonicalUrlsRoundTripThroughParseReference(): void {
 		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$urls = $this->formatter->buildCanonicalUrls(5, 12, $uuid);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid));
 
 		$this->assertCount(3, $urls);
 
@@ -269,7 +275,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 	 */
 	public function testAllCanonicalUrlsCollapseToTheSameCachePrefix(): void {
 		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$urls = $this->formatter->buildCanonicalUrls(5, 12, $uuid);
+		$urls = $this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid));
 
 		$prefixes = array_map(
 			fn (string $url): string => $this->formatter->resolveCachePrefix($url),
@@ -279,6 +285,22 @@ class ObjectPreviewFormatterTest extends TestCase {
 		$this->assertSame(['5/12/' . $uuid, '5/12/' . $uuid, '5/12/' . $uuid], $prefixes);
 		$this->assertCount(1, array_unique($prefixes));
 	}//end testAllCanonicalUrlsCollapseToTheSameCachePrefix()
+
+	/**
+	 * The formatter is the preview-cache port the object save path clears previews through.
+	 *
+	 * @return void
+	 */
+	public function testTheFormatterAnswersThePreviewCachePort(): void {
+		$uuid = '550e8400-e29b-41d4-a716-446655440000';
+		$port = $this->formatter;
+
+		$this->assertInstanceOf(\OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface::class, $port);
+		$this->assertSame(['5/12/' . $uuid], array_values(array_unique(array_map(
+			fn (string $url): string => $port->resolveCachePrefix($url),
+			$port->buildCanonicalUrls(new ObjectRef(5, 12, $uuid))
+		))));
+	}//end testTheFormatterAnswersThePreviewCachePort()
 
 	/**
 	 * Test the cache-invalidation hook's dedup + separate deep-link call
@@ -303,7 +325,7 @@ class ObjectPreviewFormatterTest extends TestCase {
 			});
 
 		$invalidatedPrefixes = [];
-		foreach ($this->formatter->buildCanonicalUrls(5, 12, $uuid) as $canonicalUrl) {
+		foreach ($this->formatter->buildCanonicalUrls(new ObjectRef(5, 12, $uuid)) as $canonicalUrl) {
 			$prefix = $this->formatter->resolveCachePrefix($canonicalUrl);
 			if (isset($invalidatedPrefixes[$prefix]) === false) {
 				$referenceManager->invalidateCache($prefix);
@@ -356,6 +378,9 @@ class ObjectPreviewFormatterTest extends TestCase {
 		$this->assertNotNull($reference);
 		$richObject = $reference->jsonSerialize()['richObject'] ?? null;
 		$this->assertIsArray($richObject);
+		$this->assertSame('Test Object', $richObject['title']);
+		$this->assertSame(['id' => 12, 'title' => 'Producten'], $richObject['schema']);
+		$this->assertSame(['id' => 5, 'title' => 'Gemeente'], $richObject['register']);
 	}//end testBuildReferenceSuccess()
 
 	/**
