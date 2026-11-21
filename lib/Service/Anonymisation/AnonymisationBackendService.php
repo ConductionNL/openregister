@@ -50,6 +50,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private const APP_API = 'app_api';
 
 	/**
+	 * The file-settings key the anonymisation block is stored under
+	 * (FileSettingsHandler::ANONYMISATION_KEY; read here through the
+	 * FileSettingsReaderInterface port, so the value is restated).
+	 */
+	private const ANONYMISATION_SETTINGS_KEY = 'anonymisation';
+
+	/**
 	 * App id of the full OpenAnonymiser ExApp (preferred variant).
 	 */
 	private const EXAPP_FULL = 'openanonymiser';
@@ -691,7 +698,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 */
 	private function statementFor(string $backend): BackendStatement {
 		$settings = $this->fileSettingsHandler->getFileSettingsOnly();
-		$anonymisation = ($settings[FileSettingsHandler::ANONYMISATION_KEY] ?? null);
+		$anonymisation = ($settings[self::ANONYMISATION_SETTINGS_KEY] ?? null);
 		$statements = [];
 		if (is_array($anonymisation) === true && is_array($anonymisation[BackendStatement::SETTINGS_KEY] ?? null) === true) {
 			$statements = $anonymisation[BackendStatement::SETTINGS_KEY];

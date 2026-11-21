@@ -37,6 +37,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
 use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendInfo;
@@ -71,6 +72,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Anonymisation\BackendState
  * @uses \OCA\OpenRegister\Service\Anonymisation\DetectorVersion
  * @uses \OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion
  * @uses \OCA\OpenRegister\Service\Anonymisation\ProbeResult
  * @uses \OCA\OpenRegister\Db\TypedFieldsJsonTrait
  * @uses \OCA\OpenRegister\Db\TypedFieldsJson
@@ -85,7 +87,7 @@ class AnonymisationLogVersionTest extends TestCase {
 	public function testARunStoresTheBackendVersionRecord(): void {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppVersion')->willReturn('0.2.150');
-		$regex = (new DetectorVersionReader(appManager: $appManager))->forMethod(method: BackendState::METHOD_REGEX);
+		$regex = (new DetectorVersionReader(appManager: $appManager, patterns: new PatternSetVersion()))->forMethod(method: BackendState::METHOD_REGEX);
 
 		$rows = $this->anonymise(state: $this->state(effective: BackendState::METHOD_REGEX, detector: $regex));
 

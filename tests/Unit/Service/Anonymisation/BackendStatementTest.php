@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Anonymisation;
 
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
@@ -56,6 +57,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\File\ArchiveBounds
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion
  * @uses   \OCA\OpenRegister\Service\Settings\EntityPatternSetSetting
  */
 final class BackendStatementTest extends TestCase {
@@ -175,7 +177,7 @@ final class BackendStatementTest extends TestCase {
 
 		$service = new AnonymisationBackendService(
 			new AnonymisationBackendPlatform($apps, $this->inMemoryAppConfig(), $caches, $this->createMock(IClientService::class)),
-			new AnonymisationBackendCollaborators($files, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class))
+			new AnonymisationBackendCollaborators($files, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class), new PatternSetVersion())
 		);
 
 		return json_decode((string) json_encode($service->getState()), true);
