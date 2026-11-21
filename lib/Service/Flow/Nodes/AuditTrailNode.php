@@ -45,8 +45,10 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUser;
 use OCP\IUserManager;
 use RuntimeException;
@@ -56,7 +58,7 @@ use UnexpectedValueException;
 /**
  * Puts an object's audit trail, or one entry of it, on each item.
  */
-class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -146,6 +148,39 @@ class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNode
 	}//end configKeys()
 
 	/**
+	 * The editor form.
+	 *
+	 * @return array<int, array<string, mixed>> The fields.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-rule-parity/spec.md
+	 */
+	public function configForm(): array {
+		$l10n = $this->presentation->l10n;
+
+		return [
+			[
+				'key' => 'object',
+				'label' => $l10n->t('Object'),
+				'type' => 'text',
+				'required' => true,
+				'help' => $l10n->t('The uuid of the object whose audit trail to read. Placeholders such as {{ uuid }} are filled from the item.'),
+			],
+			[
+				'key' => 'entry',
+				'label' => $l10n->t('Entry'),
+				'type' => 'text',
+				'help' => $l10n->t('One audit-trail entry to read. Leave empty to read the whole trail.'),
+			],
+			[
+				'key' => 'output',
+				'label' => $l10n->t('Output field'),
+				'type' => 'text',
+				'help' => $l10n->t('Where the trail lands on the item. Defaults to auditTrail.'),
+			],
+		];
+	}//end configForm()
+
+	/**
 	 * Refuse a step that names no object.
 	 *
 	 * @param array $config The step configuration.
@@ -232,6 +267,8 @@ class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNode
 	 * @throws RuntimeException When the object cannot be read or the entry does not exist.
 	 *
 	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-rule-parity/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function trailFor(IUser $owner, string $object, ?string $entry): array {
 		$filters = [];
@@ -243,7 +280,7 @@ class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNode
 			$logs = $this->objects->runAs(
 				$owner,
 				function () use ($object, $filters): array {
-					$found = $this->objects->find(id: $object);
+					$found = WriteCause::asLookup(fn () => $this->objects->find(id: $object));
 					if ($found === null) {
 						throw new RuntimeException('not found');
 					}

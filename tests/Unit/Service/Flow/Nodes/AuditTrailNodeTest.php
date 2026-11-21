@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -167,6 +168,31 @@ class AuditTrailNodeTest extends TestCase {
 		$this->assertSame(self::UUID, $out[0][FlowItems::JSON]['id'], 'the item keeps its own fields');
 		$this->assertSame(['file' => 'x'], $out[0][FlowItems::BINARY]);
 		$this->assertSame(['alice'], $this->actedAs);
+	}
+
+	public function testTheObjectReadIsALookupNotAPersonOpeningIt(): void {
+		WriteCause::reset();
+		$causes = [];
+		$this->objects->method('find')->willReturnCallback(
+			function () use (&$causes): ObjectEntity {
+				$causes[] = WriteCause::current()['cause'];
+				return $this->entity();
+			}
+		);
+		$this->objects->method('getLogs')->willReturn([]);
+
+		$this->node->execute($this->call(['object' => '{{id}}']));
+
+		$this->assertSame([WriteCause::LOOKUP], $causes);
+	}
+
+	public function testTheFormOffersExactlyTheConfigKeysWithTheObjectRequired(): void {
+		$form = $this->node->configForm();
+
+		$this->assertSame($this->node->configKeys(), array_column($form, 'key'));
+		$this->assertTrue($form[0]['required']);
+		$this->assertArrayNotHasKey('required', $form[1]);
+		$this->assertArrayNotHasKey('required', $form[2]);
 	}
 
 	public function testOneEntryIsReturnedUnderTheNamedOutput(): void {
