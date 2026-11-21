@@ -26,12 +26,7 @@ import {
 		<div class="tabContainer">
 			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Settings Tab -->
-				<AppTab active>
-					<template #title>
-						<Cog :size="16" />
-						<span>{{ t('openregister', 'Settings') }}</span>
-					</template>
-
+				<SettingsTab>
 					<div class="form-editor">
 						<NcTextField
 							:label="t('openregister', 'Title *')"
@@ -96,7 +91,7 @@ import {
 
 						<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
-				</AppTab>
+				</SettingsTab>
 
 				<!-- Configuration Tab -->
 				<AppTab>
@@ -573,13 +568,13 @@ import {
 } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CloudSync from 'vue-material-design-icons/CloudSync.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
 import FormSelectField from '../../components/shared/FormSelectField.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import SettingsTab from '../../components/tabs/SettingsTab.vue'
 import { freshState } from '../../services/initialState.js'
 import { optionSearchMethods, searchUrl } from './optionSearch.js'
 
@@ -817,10 +812,10 @@ export default {
 		FormCheckboxField,
 		FormSelectField,
 		AppTab,
+		SettingsTab,
 		// Icons
 		Cancel,
 		ContentSave,
-		Cog,
 		Database,
 		CloudSync,
 	},
