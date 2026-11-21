@@ -6,6 +6,10 @@
 import { loadState } from '@nextcloud/initial-state'
 import { createApp, h } from 'vue'
 import PublicFormPage from './views/publicForm/PublicFormPage.vue'
+import { registerLibraryTranslations } from './services/libraryTranslations.js'
+
+// The page renders library components, which translate under their own app id.
+registerLibraryTranslations()
 
 const form = loadState('openregister', 'publicForm', null)
 
