@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Dmn;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
@@ -54,7 +55,7 @@ class DecisionTableStoreTest extends TestCase {
 	 */
 	private function store(array $rows, bool $unreadable = false): DecisionTableStore {
 		$objects = $this->createMock(ObjectService::class);
-		$method  = $objects->method('searchObjectsBySlug')->with(DecisionTableStore::REGISTER, DecisionTableStore::SCHEMA);
+		$method  = $objects->method('searchObjectsBySlug')->with($this->equalTo(new RegisterSchemaRef(register: DecisionTableStore::REGISTER, schema: DecisionTableStore::SCHEMA)));
 		if ($unreadable === true) {
 			$method->willThrowException(new RuntimeException('register missing'));
 		} else {

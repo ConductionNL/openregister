@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -194,8 +195,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 			->willReturn([]);
 
 		$result = $this->service->searchObjectsBySlug(
-			'openbuild',
-			'application',
+			new RegisterSchemaRef(register: 'openbuild', schema: 'application'),
 			['status' => 'published']
 		);
 
@@ -226,8 +226,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'ghost-register',
-			'application',
+			new RegisterSchemaRef(register: 'ghost-register', schema: 'application'),
 			[]
 		);
 
@@ -276,8 +275,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'openbuild',
-			'ghost-schema',
+			new RegisterSchemaRef(register: 'openbuild', schema: 'ghost-schema'),
 			[]
 		);
 
@@ -323,8 +321,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'document',
-			'anonymizationLink',
+			new RegisterSchemaRef(register: 'document', schema: 'anonymizationLink'),
 			[]
 		);
 
@@ -383,7 +380,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 				}
 			);
 
-		$this->service->searchObjectsBySlug('document', 'anonymizationLink', []);
+		$this->service->searchObjectsBySlug(target: new RegisterSchemaRef(register: 'document', schema: 'anonymizationLink'), filters: []);
 
 		$this->assertSame(
 			expected: ['register' => 6, 'schema' => 9177],

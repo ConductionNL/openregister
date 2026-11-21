@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -103,7 +105,7 @@ class BulkSelectionResolver {
 		foreach (array_chunk($uuids, self::HYDRATION_CHUNK) as $chunk) {
 			$found = $this->objectService->searchObjects(
 				query: $this->scopedQuery(query: [], scope: $scope),
-				ids: $chunk
+				options: new SearchOptions(selection: new ObjectSelection(ids: $chunk))
 			);
 
 			if (is_array($found) === false) {

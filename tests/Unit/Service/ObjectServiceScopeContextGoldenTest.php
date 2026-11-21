@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -48,7 +49,7 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
- * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\ReadScope
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
@@ -214,7 +215,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             )
             ->willReturn([]);
 
-        $service->searchObjectsBySlug('r', 's', ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
+        $service->searchObjectsBySlug(new RegisterSchemaRef(register: 'r', schema: 's'), ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
     }
 
     public function testFindSilentDropsAPendingRefBeforeItSetsItsRegister(): void

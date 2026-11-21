@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
@@ -110,15 +111,13 @@ class ObjectCalendarFeedServiceTest extends TestCase {
 				array $query = [],
 				bool $_rbac = true,
 				bool $_multitenancy = true,
-				?array $ids = null,
-				?string $uses = null,
-				?array $views = null,
+				SearchOptions $options = new SearchOptions(),
 			): array {
 				$this->searchCall = [
 					'query' => $query,
 					'_rbac' => $_rbac,
 					'_multitenancy' => $_multitenancy,
-					'views' => $views,
+					'views' => $options->views,
 				];
 
 				return $this->objectsToReturn;
