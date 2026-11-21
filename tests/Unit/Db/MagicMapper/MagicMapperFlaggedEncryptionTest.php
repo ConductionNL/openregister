@@ -46,6 +46,7 @@ use stdClass;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPropertyDate
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnprocessedUploads
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
