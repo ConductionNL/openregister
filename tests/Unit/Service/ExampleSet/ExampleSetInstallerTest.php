@@ -463,12 +463,12 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->publicationFragment(optional: true);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame([], $check['refusals']);
 		$this->assertCount(1, $check['skipped']);
 		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['skipped'][0]);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertSame(3, $this->store->creates, 'the rest of the set is written, the skipped entry is not');
 		$this->assertCount(1, $report['skipped']);
@@ -480,7 +480,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->store->offer(register: 'catalogi', schema: 'theme');
 		$this->publicationFragment(optional: true);
 
-		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame([], $check['refusals']);
 		$this->assertCount(1, $check['skipped']);
@@ -490,12 +490,12 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->publicationFragment(optional: false);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame([], $check['skipped']);
 		$this->assertCount(1, $check['refusals']);
 		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['refusals'][0]);
-		$this->assertFalse($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertFalse($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$this->assertSame(0, $this->store->creates, 'a refused check writes nothing');
 	}
 
@@ -506,7 +506,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
 		$this->publicationFragment(optional: true);
 
-		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame([], $check['skipped']);
 		$this->assertCount(1, $check['refusals']);
