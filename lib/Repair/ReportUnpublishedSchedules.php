@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reports each on-disk schedule with no compiled flow as refused.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ReportUnpublishedSchedules implements IRepairStep {
 	/**
@@ -58,7 +58,7 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function getName(): string {
 		return 'Report schedules in app manifests that nobody published';
@@ -71,7 +71,7 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function run(IOutput $output): void {
 		foreach ($this->manifests->loadAllOnDisk() as $manifest) {

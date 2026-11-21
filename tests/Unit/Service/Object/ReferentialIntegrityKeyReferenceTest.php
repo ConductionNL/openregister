@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -65,6 +65,13 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
@@ -134,7 +141,7 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$this->service = new ReferentialIntegrityService(
 			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->mapper, db: $this->db),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(CascadeRetentionCheckInterface::class)),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

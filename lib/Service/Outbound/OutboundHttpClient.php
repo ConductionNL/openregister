@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
+use OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IPromise;
 use OCP\Http\Client\IResponse;
@@ -68,12 +69,14 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @param IClient $inner The client this one decorates.
 	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
+	 * @param OutboundBreakerInterface|null $breakers The dependency breakers; null leaves calls unguarded.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClient $inner,
 		private readonly ProxySettingsInterface $proxy,
+		private readonly ?OutboundBreakerInterface $breakers = null,
 	) {
 
 	}//end __construct()
@@ -116,7 +119,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function get(string $uri, array $options = []): IResponse {
-		return $this->inner->get($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->get($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end get()
 
@@ -131,7 +138,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function head(string $uri, array $options = []): IResponse {
-		return $this->inner->head($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->head($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end head()
 
@@ -146,7 +157,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function post(string $uri, array $options = []): IResponse {
-		return $this->inner->post($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->post($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end post()
 
@@ -161,7 +176,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function put(string $uri, array $options = []): IResponse {
-		return $this->inner->put($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->put($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end put()
 
@@ -176,7 +195,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function patch(string $uri, array $options = []): IResponse {
-		return $this->inner->patch($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->patch($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end patch()
 
@@ -191,7 +214,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function delete(string $uri, array $options = []): IResponse {
-		return $this->inner->delete($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->delete($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end delete()
 
@@ -206,7 +233,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function options(string $uri, array $options = []): IResponse {
-		return $this->inner->options($uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->options($uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end options()
 
@@ -222,7 +253,11 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function request(string $method, string $uri, array $options = []): IResponse {
-		return $this->inner->request($method, $uri, $this->withProxy(options: $options));
+		return $this->guarded(
+			uri: $uri,
+			options: $options,
+			send: fn (array $sendOptions): IResponse => $this->inner->request($method, $uri, $this->withProxy(options: $sendOptions))
+		);
 
 	}//end request()
 
@@ -237,7 +272,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function getAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->getAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->getAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end getAsync()
 
@@ -252,7 +287,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function headAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->headAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->headAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end headAsync()
 
@@ -267,7 +302,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function postAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->postAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->postAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end postAsync()
 
@@ -282,7 +317,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function putAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->putAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->putAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end putAsync()
 
@@ -297,7 +332,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function deleteAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->deleteAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->deleteAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end deleteAsync()
 
@@ -312,7 +347,7 @@ class OutboundHttpClient implements IClient {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function optionsAsync(string $uri, array $options = []): IPromise {
-		return $this->inner->optionsAsync($uri, $this->withProxy(options: $options));
+		return $this->inner->optionsAsync($uri, $this->withProxy(options: self::withoutDependency(options: $options)));
 
 	}//end optionsAsync()
 
@@ -349,4 +384,76 @@ class OutboundHttpClient implements IClient {
 		return $this->inner->getResponseFromThrowable($e);
 
 	}//end getResponseFromThrowable()
+
+	/**
+	 * The request option a call site names its dependency with.
+	 *
+	 * Stripped before the request is sent: the transport would reject an
+	 * option it does not know.
+	 *
+	 * @var string
+	 */
+	public const DEPENDENCY_OPTION = 'openregister_dependency';
+
+	/**
+	 * Send one request through the dependency's breaker.
+	 *
+	 * While the breaker is open the request is NOT sent: the caller gets the
+	 * breaker's refusal at once. Otherwise the outcome is counted by the
+	 * breaker. A request that names no host, or a client without breakers,
+	 * is sent unguarded.
+	 *
+	 * @param string   $uri     The request URI.
+	 * @param array    $options The caller's request options.
+	 * @param callable $send    Sends the request with the given options.
+	 *
+	 * @return IResponse The response.
+	 *
+	 * @throws Throwable The breaker's refusal while it is open, or what the transport threw.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function guarded(string $uri, array $options, callable $send): IResponse {
+		$dependency = self::dependencyOf(uri: $uri, options: $options);
+		$options    = self::withoutDependency(options: $options);
+		if ($dependency === null || $this->breakers === null) {
+			return $send($options);
+		}
+
+		return $this->breakers->send(dependency: $dependency, send: static fn (): IResponse => $send($options));
+	}//end guarded()
+
+	/**
+	 * The dependency one request reaches: the named dependency, else the host.
+	 *
+	 * @param string $uri     The request URI.
+	 * @param array  $options The caller's request options.
+	 *
+	 * @return string|null The dependency, or null when the URI names no host.
+	 */
+	private static function dependencyOf(string $uri, array $options): ?string {
+		$named = $options[self::DEPENDENCY_OPTION] ?? null;
+		if (is_string($named) === true && trim($named) !== '') {
+			return $named;
+		}
+
+		$host = parse_url($uri, PHP_URL_HOST);
+		if (is_string($host) === false || $host === '') {
+			return null;
+		}
+
+		return $host;
+	}//end dependencyOf()
+
+	/**
+	 * The options without the dependency name, which the transport must not see.
+	 *
+	 * @param array $options The caller's request options.
+	 *
+	 * @return array The options to send.
+	 */
+	private static function withoutDependency(array $options): array {
+		unset($options[self::DEPENDENCY_OPTION]);
+		return $options;
+	}//end withoutDependency()
 }//end class

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);

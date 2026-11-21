@@ -34,6 +34,9 @@ use PHPUnit\Framework\TestCase;
  * depends neither on today's date nor on the default timezone.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPack\MappingEngine
+ * @uses \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
+ * @uses \OCA\OpenRegister\Service\MigrationPack\RowMappingRun
+ * @uses \OCA\OpenRegister\Service\MigrationPack\TransformRequest
  */
 class MappingEngineGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/mapping-engine-golden.json';

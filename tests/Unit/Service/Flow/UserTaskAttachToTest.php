@@ -74,6 +74,15 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectClaim
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
  */
 final class UserTaskAttachToTest extends TestCase {
 

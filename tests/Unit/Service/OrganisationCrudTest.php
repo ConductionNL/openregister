@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
@@ -867,10 +867,8 @@ class OrganisationCrudTest extends TestCase {
 		$this->expectExceptionMessage('Invalid UUID format');
 
 		$this->organisationService->createOrganisation(
-			'Test Org',
-			'Description',
-			true,
-			'not-a-valid-uuid'
+			new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Test Org', description: 'Description', uuid: 'not-a-valid-uuid'),
+			true
 		);
 	}
 
@@ -901,7 +899,7 @@ class OrganisationCrudTest extends TestCase {
 			->willReturn('existing-default-uuid');
 
 		// Act: Create without user - should succeed but with no owner.
-		$result = $this->organisationService->createOrganisation('No User Org', 'test');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'No User Org', description: 'test'));
 
 		// Assert: Organisation created without owner.
 		$this->assertInstanceOf(Organisation::class, $result);
@@ -917,6 +915,7 @@ class OrganisationCrudTest extends TestCase {
 		// Arrange: Mock user session.
 		$this->mockUser->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
+		$this->groupManager->method('isAdmin')->with('alice')->willReturn(true);
 
 		// Mock: No existing default organisation.
 		$this->appConfig->method('getValueString')
@@ -943,10 +942,36 @@ class OrganisationCrudTest extends TestCase {
 			->with('openregister', 'defaultOrganisation', 'first-org-uuid');
 
 		// Act.
-		$result = $this->organisationService->createOrganisation('First Org', 'desc');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'First Org', description: 'desc'));
 
 		// Assert.
 		$this->assertEquals('first-org-uuid', $result->getUuid());
+	}
+
+	/**
+	 * Test createOrganisation by a regular user never makes it the default
+	 *
+	 * @return void
+	 */
+	public function testCreateOrganisationByARegularUserDoesNotBecomeTheDefault(): void {
+		$this->mockUser->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($this->mockUser);
+		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+		$this->groupManager->method('get')->willReturn(null);
+		$this->appConfig->method('getValueString')
+			->with('openregister', 'defaultOrganisation', '')
+			->willReturn('');
+
+		$savedOrg = new Organisation();
+		$savedOrg->setName('Bob Org');
+		$savedOrg->setUuid('bob-org-uuid');
+		$this->organisationMapper->method('save')->willReturn($savedOrg);
+
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Bob Org', description: 'desc'));
+
+		$this->assertEquals('bob-org-uuid', $result->getUuid());
 	}
 
 	/**
@@ -986,10 +1011,8 @@ class OrganisationCrudTest extends TestCase {
 
 		// Act.
 		$result = $this->organisationService->createOrganisation(
-			'UUID Org',
-			'desc',
-			true,
-			$specificUuid
+			new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'UUID Org', description: 'desc', uuid: $specificUuid),
+			true
 		);
 
 		// Assert.
@@ -1044,7 +1067,7 @@ class OrganisationCrudTest extends TestCase {
 			->willReturn('existing-default');
 
 		// Act.
-		$result = $this->organisationService->createOrganisation('Admin Org', 'desc');
+		$result = $this->organisationService->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Admin Org', description: 'desc'));
 
 		// Assert.
 		$this->assertInstanceOf(Organisation::class, $result);

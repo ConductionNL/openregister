@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
@@ -44,6 +46,16 @@ use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceAddress
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceWrite
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredNotification
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceLookup
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices
  */
 class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 
@@ -166,7 +178,14 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 				$schemaDefault = [];
 			}
 
-			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolveEffective($schemaDefault, $user, 'case', 'assigned', $scopes, $groupIds));
+			$out['effective ' . $name] = $this->capture(step: fn (): mixed => $service->resolve(
+				resolution: new PreferenceResolution(
+					schemaDefault: $schemaDefault,
+					userId: $user,
+					topic: new PreferenceTopic(schemaSlug: 'case', notificationKey: 'assigned', scopes: $scopes),
+					groupIds: $groupIds
+				)
+			));
 		}
 
 		$this->store = $seed;

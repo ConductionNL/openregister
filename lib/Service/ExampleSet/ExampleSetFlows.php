@@ -27,7 +27,7 @@
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -331,7 +331,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function checkFragment(array $fragment, ExampleSetFragmentCheck $check): array {
 		return array_merge(

@@ -752,6 +752,7 @@ import Check from 'vue-material-design-icons/Check.vue'
 import DatabaseSearch from 'vue-material-design-icons/DatabaseSearch.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { withRequestToken } from '../../services/requestToken.js'
 import {
 	selectedPropertyConfig,
 	suggestedPropertyConfig,
@@ -932,7 +933,7 @@ function propertyUpdateOf(config) {
 async function postPropertyUpdates(propertyUpdates) {
 	const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/update-from-exploration`
 
-	const response = await fetch(endpoint, {
+	const response = await fetch(endpoint, withRequestToken({
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
@@ -940,7 +941,7 @@ async function postPropertyUpdates(propertyUpdates) {
 		body: JSON.stringify({
 			properties: propertyUpdates,
 		}),
-	})
+	}))
 
 	return jsonOrThrow(response)
 }

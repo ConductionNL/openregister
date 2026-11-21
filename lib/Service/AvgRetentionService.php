@@ -162,17 +162,13 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function runRetentionPass(bool $dryRun = false): array {
-		$now = new DateTime();
+		$pass = new RetentionPass(now: new DateTime(), dryRun: $dryRun);
 		$summary = self::EMPTY_SUMMARY;
 		$summary['dryRun'] = $dryRun;
 
 		$activities = $this->vrwMapper->findAll(status: 'published');
 		foreach ($activities as $activity) {
-			$perActivity = $this->processActivity(
-				activity: $activity,
-				now: $now,
-				dryRun: $dryRun
-			);
+			$perActivity = $this->processActivity(activity: $activity, pass: $pass);
 			$summary = $this->withActivityReport(summary: $summary, perActivity: $perActivity);
 		}
 
@@ -209,15 +205,14 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 	 * is unset or unparseable (caller increments `skippedActivities`).
 	 *
 	 * @param Verwerkingsactiviteit $activity Catalog entry.
-	 * @param DateTime $now Reference timestamp.
-	 * @param bool $dryRun Pass-through dry-run flag.
+	 * @param RetentionPass         $pass     Reference timestamp and dry-run flag.
 	 *
 	 * @return array<string, mixed>|null Per-activity result or null skip.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array {
-		$cutoff = $this->activityCutoff(activity: $activity, now: $now);
+	private function processActivity(Verwerkingsactiviteit $activity, RetentionPass $pass): ?array {
+		$cutoff = $this->activityCutoff(activity: $activity, now: $pass->now);
 		if ($cutoff === null) {
 			return null;
 		}
@@ -228,7 +223,7 @@ class AvgRetentionService implements AvgRetentionPassInterface {
 		);
 
 		$outcome = self::NOTHING_ERASED;
-		if ($dryRun === false) {
+		if ($pass->dryRun === false) {
 			$outcome = $this->erasureOutcome(candidates: $candidates, activity: $activity);
 		}
 

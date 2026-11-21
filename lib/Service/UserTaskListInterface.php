@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Lists the VTODO tasks of every calendar of the logged-in user.

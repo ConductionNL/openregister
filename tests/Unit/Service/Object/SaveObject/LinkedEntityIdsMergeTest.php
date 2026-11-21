@@ -30,6 +30,8 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityIds
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class LinkedEntityIdsMergeTest extends TestCase {
 

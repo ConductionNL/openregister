@@ -142,23 +142,36 @@ class RelationTypeResolver implements RelationTypeResolverInterface {
 	 */
 	private function describeAll(Schema $schema, string $language): array {
 		$vocabulary = $this->vocabularyOf(schema: $schema);
+
+		$descriptors = [];
+		foreach (self::referencePropertiesOf(schema: $schema) as $name => $property) {
+			$descriptors[(string)$name] = $this->describe(
+				run: new DescribeRun(name: (string)$name, property: $property, language: $language),
+				vocabulary: $vocabulary
+			);
+		}
+
+		return $descriptors;
+	}//end describeAll()
+
+	/**
+	 * The schema's properties that hold a reference, keyed by name, in declaration order.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int|string, mixed> The reference properties; none when the schema's properties are unreadable.
+	 */
+	private static function referencePropertiesOf(Schema $schema): array {
 		$properties = ($schema->getProperties() ?? []);
 		if (is_array($properties) === false) {
 			return [];
 		}
 
-		$descriptors = [];
-		foreach ($properties as $name => $property) {
-			if (RelationAnnotationValidator::isReferenceProperty(property: $property) === true) {
-				$descriptors[(string)$name] = $this->describe(
-					run: new DescribeRun(name: (string)$name, property: $property, language: $language),
-					vocabulary: $vocabulary
-				);
-			}
-		}
-
-		return $descriptors;
-	}//end describeAll()
+		return array_filter(
+			$properties,
+			static fn ($property): bool => RelationAnnotationValidator::isReferenceProperty(property: $property) === true
+		);
+	}//end referencePropertiesOf()
 
 	/**
 	 * One property's descriptor, or null when the property holds no reference.

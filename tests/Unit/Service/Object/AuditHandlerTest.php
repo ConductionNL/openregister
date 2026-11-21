@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -34,6 +34,8 @@ use RuntimeException;
  * Which filters reach the audit trail mapper, and what happens when it fails.
  *
  * @covers \OCA\OpenRegister\Service\Object\AuditHandler
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditHandlerTest extends TestCase {
 

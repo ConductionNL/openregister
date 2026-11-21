@@ -25,6 +25,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
@@ -174,8 +175,8 @@ class ImportServiceExcelSheetGoldenTest extends TestCase {
 		}
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObjects')->willReturnCallback(function (array $objects) use ($case) {
-			$this->record(method: 'objectService.saveObjects', args: func_get_args());
+		$objectService->method('saveObjects')->willReturnCallback(function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($case) {
+			$this->record(method: 'objectService.saveObjects', args: [$objects, $options->defaults->register, $options->defaults->schema, $_rbac, $_multitenancy, $options->validation, $options->events, $options->audit]);
 			if (($case['saveThrows'] ?? false) === true) {
 				throw new Exception('Bulk save failed');
 			}

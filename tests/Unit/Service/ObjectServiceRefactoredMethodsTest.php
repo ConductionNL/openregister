@@ -69,6 +69,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Unit tests for ObjectService refactored methods.
@@ -143,7 +144,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 		$this->mockSchema->setHardValidation(false);
 
 		// Create ObjectService with all required constructor parameters.
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
@@ -182,7 +183,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// Set up reflection for accessing private methods.
 		$this->reflection = new ReflectionClass(ObjectService::class);

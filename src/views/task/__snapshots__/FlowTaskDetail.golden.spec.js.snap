@@ -1,0 +1,262 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FlowTaskDetail.dueLabel labels due in days 1`] = `"Due in {days} days {"days":6}"`;
+
+exports[`FlowTaskDetail.dueLabel labels due in the past 1`] = `"Due today"`;
+
+exports[`FlowTaskDetail.dueLabel labels due today 1`] = `"Due today"`;
+
+exports[`FlowTaskDetail.dueLabel labels due tomorrow 1`] = `"Due tomorrow"`;
+
+exports[`FlowTaskDetail.dueLabel labels due without a count 1`] = `"Due today"`;
+
+exports[`FlowTaskDetail.dueLabel labels no task 1`] = `"date:undefined"`;
+
+exports[`FlowTaskDetail.dueLabel labels not overdue but flagged so loosely 1`] = `"Due in {days} days {"days":3}"`;
+
+exports[`FlowTaskDetail.dueLabel labels overdue by a day 1`] = `"Overdue by 1 day"`;
+
+exports[`FlowTaskDetail.dueLabel labels overdue by days 1`] = `"Overdue by {days} days {"days":4}"`;
+
+exports[`FlowTaskDetail.dueLabel labels overdue with a bad count 1`] = `"Overdue"`;
+
+exports[`FlowTaskDetail.dueLabel labels overdue without a count 1`] = `"Overdue"`;
+
+exports[`FlowTaskDetail.load reads a failing read 1`] = `
+{
+  "data": {
+    "$route": {
+      "params": {
+        "uuid": "t-1",
+      },
+    },
+    "loading": false,
+    "notFound": true,
+    "task": null,
+  },
+  "logged": [
+    "[FlowTaskDetail] task read failed",
+  ],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/flow-tasks/t-1",
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+  "shown": [
+    [
+      "Could not load the task",
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.load reads a found task 1`] = `
+{
+  "data": {
+    "$route": {
+      "params": {
+        "uuid": "t-1",
+      },
+    },
+    "loading": false,
+    "notFound": false,
+    "task": {
+      "title": "Check",
+      "uuid": "t-1",
+    },
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/flow-tasks/t-1",
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+  "shown": [],
+}
+`;
+
+exports[`FlowTaskDetail.load reads a missing task 1`] = `
+{
+  "data": {
+    "$route": {
+      "params": {
+        "uuid": "t-1",
+      },
+    },
+    "loading": false,
+    "notFound": true,
+    "task": null,
+  },
+  "logged": [],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/flow-tasks/t-1",
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+  "shown": [],
+}
+`;
+
+exports[`FlowTaskDetail.load reads a network failure 1`] = `
+{
+  "data": {
+    "$route": {
+      "params": {
+        "uuid": "t-1",
+      },
+    },
+    "loading": false,
+    "notFound": true,
+    "task": null,
+  },
+  "logged": [
+    "[FlowTaskDetail] task read failed",
+  ],
+  "seen": [
+    [
+      [
+        "/gen/apps/openregister/api/flow-tasks/t-1",
+      ],
+      true,
+      false,
+      null,
+    ],
+  ],
+  "shown": [
+    [
+      "Could not load the task",
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.postVerb handles a bare failure, then reloads 1`] = `
+{
+  "acting": false,
+  "order": [
+    [
+      "post",
+      "/gen/apps/openregister/api/flow-tasks/t-1/claim",
+      {
+        "note": "n",
+      },
+      true,
+    ],
+    [
+      "showError",
+      "The task refused that action",
+    ],
+    [
+      "load",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.postVerb handles a refusal with a non-text reason, then reloads 1`] = `
+{
+  "acting": false,
+  "order": [
+    [
+      "post",
+      "/gen/apps/openregister/api/flow-tasks/t-1/claim",
+      {
+        "note": "n",
+      },
+      true,
+    ],
+    [
+      "showError",
+      "The task refused that action",
+    ],
+    [
+      "load",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.postVerb handles a refusal with a reason, then reloads 1`] = `
+{
+  "acting": false,
+  "order": [
+    [
+      "post",
+      "/gen/apps/openregister/api/flow-tasks/t-1/claim",
+      {
+        "note": "n",
+      },
+      true,
+    ],
+    [
+      "showError",
+      "Already claimed",
+    ],
+    [
+      "load",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.postVerb handles a refusal with an empty reason, then reloads 1`] = `
+{
+  "acting": false,
+  "order": [
+    [
+      "post",
+      "/gen/apps/openregister/api/flow-tasks/t-1/claim",
+      {
+        "note": "n",
+      },
+      true,
+    ],
+    [
+      "showError",
+      "The task refused that action",
+    ],
+    [
+      "load",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`FlowTaskDetail.postVerb handles an accepted action, then reloads 1`] = `
+{
+  "acting": false,
+  "order": [
+    [
+      "post",
+      "/gen/apps/openregister/api/flow-tasks/t-1/claim",
+      {
+        "note": "n",
+      },
+      true,
+    ],
+    [
+      "load",
+      false,
+    ],
+  ],
+}
+`;

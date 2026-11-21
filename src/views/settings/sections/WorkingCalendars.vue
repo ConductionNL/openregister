@@ -154,6 +154,18 @@ import EditWorkingCalendarModal from '../../../modals/settings/EditWorkingCalend
  * copy of a calendar to drift, and the validation it meets on save is the
  * validation the engine applies at arm time.
  */
+/**
+ * Read the working calendars, up to a hundred.
+ *
+ * @return {Promise<object>} The response; its data holds the calendars
+ */
+function fetchCalendars() {
+	return axios.get(
+		generateUrl('/apps/openregister/api/objects/flow-timers/working-calendar'),
+		{ params: { _limit: 100 } },
+	)
+}
+
 export default {
 	name: 'WorkingCalendars',
 
@@ -196,12 +208,7 @@ export default {
 			this.error = ''
 
 			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/objects/flow-timers/working-calendar',
-					),
-					{ params: { _limit: 100 } },
-				)
+				const response = await fetchCalendars()
 				this.calendars = response.data?.results || []
 			} catch (error) {
 				this.error =
