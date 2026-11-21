@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCP\IL10N;
@@ -72,7 +73,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	}//end codes()
 
 	public function testAStagingDestinationIsReportedWithoutAProperty(): void {
-		$findings = $this->validator->validate([], $this->schema([], [], ['staging' => true]));
+		$findings = $this->judge([], $this->schema([], [], ['staging' => true]));
 
 		$this->assertSame(
 			[
@@ -87,7 +88,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	}//end testAStagingDestinationIsReportedWithoutAProperty()
 
 	public function testAStagingFlagThatIsNotStrictlyTrueIsIgnored(): void {
-		$this->assertSame([], $this->validator->validate([], $this->schema([], [], ['staging' => 'yes'])));
+		$this->assertSame([], $this->judge([], $this->schema([], [], ['staging' => 'yes'])));
 	}//end testAStagingFlagThatIsNotStrictlyTrueIsIgnored()
 
 	/**
@@ -113,7 +114,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	 */
 	#[DataProvider('audiences')]
 	public function testTheAudienceMustBeAllowedToCreate(?array $authorization, string $audience, bool $open): void {
-		$findings = $this->validator->validate([], $this->schema([], [], null, $authorization), ['audience' => $audience]);
+		$findings = $this->judge([], $this->schema([], [], null, $authorization), $audience);
 
 		if ($open === true) {
 			$this->assertSame([], $findings);
@@ -128,14 +129,14 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	}//end testTheAudienceMustBeAllowedToCreate()
 
 	public function testAnInternalFormSkipsTheAudienceCheck(): void {
-		$this->assertSame([], $this->validator->validate([], $this->schema([], [], null, ['create' => ['admin']])));
+		$this->assertSame([], $this->judge([], $this->schema([], [], null, ['create' => ['admin']])));
 	}//end testAnInternalFormSkipsTheAudienceCheck()
 
 	public function testAFixedValueIntoAnUnknownPropertyIsReportedUnlessExtrasAreAllowed(): void {
 		$mapping = ['fixed' => ['channel' => 'web']];
 
-		$closed = $this->validator->validate($mapping, $this->schema(['title' => ['type' => 'string']]));
-		$open = $this->validator->validate($mapping, $this->schema(['title' => ['type' => 'string']], [], ['additionalProperties' => true]));
+		$closed = $this->judge($mapping, $this->schema(['title' => ['type' => 'string']]));
+		$open = $this->judge($mapping, $this->schema(['title' => ['type' => 'string']], [], ['additionalProperties' => true]));
 
 		$this->assertSame(
 			[['property' => 'channel', 'code' => 'property-unknown', 'message' => 'A fixed value writes into "channel", which schema "ticket" does not have.']],
@@ -147,8 +148,8 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	public function testAFixedValueThePropertyRefusesIsReportedAndAFittingOneIsNot(): void {
 		$schema = $this->schema(['channel' => ['type' => 'string', 'enum' => ['web', 'phone']], 'count' => ['type' => 'integer']]);
 
-		$bad = $this->validator->validate(['fixed' => ['channel' => 'fax', 'count' => 'many']], $schema);
-		$good = $this->validator->validate(['fixed' => ['channel' => 'web', 'count' => 3]], $schema);
+		$bad = $this->judge(['fixed' => ['channel' => 'fax', 'count' => 'many']], $schema);
+		$good = $this->judge(['fixed' => ['channel' => 'web', 'count' => 3]], $schema);
 
 		$this->assertSame(['fixed-value-invalid', 'fixed-value-invalid'], self::codes($bad));
 		$this->assertSame(['channel', 'count'], array_column($bad, 'property'));
@@ -157,7 +158,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 	}//end testAFixedValueThePropertyRefusesIsReportedAndAFittingOneIsNot()
 
 	public function testAFixedBlockThatIsNotAnArrayIsIgnored(): void {
-		$this->assertSame([], $this->validator->validate(['fixed' => 'channel=web'], $this->schema([])));
+		$this->assertSame([], $this->judge(['fixed' => 'channel=web'], $this->schema([])));
 	}//end testAFixedBlockThatIsNotAnArrayIsIgnored()
 
 	public function testARequiredPropertyNothingFillsIsReported(): void {
@@ -176,7 +177,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 		);
 		$mapping = ['fields' => [['field' => 'subject', 'type' => 'text', 'property' => 'title'], 'not-a-field'], 'fixed' => ['channel' => 'web']];
 
-		$findings = $this->validator->validate($mapping, $schema);
+		$findings = $this->judge($mapping, $schema);
 
 		$this->assertSame(['notes', 'flagged'], array_column($findings, 'property'));
 		$this->assertSame(['required-unmapped', 'required-unmapped'], self::codes($findings));
@@ -248,7 +249,7 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 			['field' => 'f-kind', 'property' => 'kind', 'type' => 'text'],
 		];
 
-		$findings = $this->validator->validate(['fields' => $fields], $schema);
+		$findings = $this->judge(['fields' => $fields], $schema);
 
 		$this->assertSame(
 			[
@@ -270,9 +271,22 @@ class FormDestinationValidatorDestinationBehaviourTest extends TestCase {
 		$schema = $this->schema(['title' => ['type' => 'string']], [], ['additionalProperties' => true]);
 		$fields = [['field' => 'f-none', 'type' => 'text'], ['field' => 'f-extra', 'property' => 'nope', 'type' => 'text']];
 
-		$findings = $this->validator->validate(['fields' => $fields], $schema);
+		$findings = $this->judge(['fields' => $fields], $schema);
 
 		$this->assertSame(['f-none'], array_column($findings, 'field'));
 		$this->assertSame(['property-unknown'], self::codes($findings));
 	}//end testWithExtrasAllowedOnlyAFieldWithoutAPropertyIsUnknown()
+
+	/**
+	 * Judge a mapping against a schema, for the given audience.
+	 *
+	 * @param array<string, mixed> $mapping  The mapping.
+	 * @param Schema               $schema   The destination schema.
+	 * @param string|null          $audience The form audience; null for an internal form.
+	 *
+	 * @return array<int, array<string, mixed>> The findings.
+	 */
+	private function judge(array $mapping, Schema $schema, ?string $audience = null): array {
+		return $this->validator->validate($mapping, new FormDestination($schema, $audience));
+	}//end judge()
 }//end class

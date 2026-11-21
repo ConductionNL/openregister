@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\IdempotentRequest;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
@@ -203,17 +204,17 @@ class FormIdempotencyStoreBehaviourTest extends TestCase {
 
 	public function testARememberedAnswerIsReplayedOnlyToTheSameAsker(): void {
 		$store = $this->store();
-		$this->assertNull($store->find('form-1', 'key-1', 'bind-a'));
+		$this->assertNull($store->answerFor(new IdempotentRequest('form-1', 'key-1', 'bind-a')));
 
-		$store->remember('form-1', 'key-1', ['uuid' => 'o-1'], 'bind-a');
+		$store->keep(new IdempotentRequest('form-1', 'key-1', 'bind-a'), ['uuid' => 'o-1']);
 
-		$this->assertSame(['uuid' => 'o-1'], $store->find('form-1', 'key-1', 'bind-a'));
+		$this->assertSame(['uuid' => 'o-1'], $store->answerFor(new IdempotentRequest('form-1', 'key-1', 'bind-a')));
 		$this->assertSame(
 			['expiresAt' => self::NOW + 86400, 'binding' => 'bind-a', 'response' => ['uuid' => 'o-1']],
 			json_decode($this->files[self::entryName('form-1', 'key-1')], true)
 		);
 		try {
-			$store->find('form-1', 'key-1', 'bind-b');
+			$store->answerFor(new IdempotentRequest('form-1', 'key-1', 'bind-b'));
 			$this->fail('Another asker received the stored answer.');
 		} catch (FormSubmitRefusedException $e) {
 			$this->assertSame('This Idempotency-Key was already used for another submission.', $e->getMessage());
@@ -223,25 +224,25 @@ class FormIdempotencyStoreBehaviourTest extends TestCase {
 
 	public function testRememberingTwiceOverwritesTheEntry(): void {
 		$store = $this->store();
-		$store->remember('form-1', 'key-1', ['uuid' => 'o-1'], 'bind-a');
+		$store->keep(new IdempotentRequest('form-1', 'key-1', 'bind-a'), ['uuid' => 'o-1']);
 		$this->now += 10;
 
-		$store->remember('form-1', 'key-1', ['uuid' => 'o-2'], 'bind-a');
+		$store->keep(new IdempotentRequest('form-1', 'key-1', 'bind-a'), ['uuid' => 'o-2']);
 
 		$this->assertCount(1, $this->files);
-		$this->assertSame(['uuid' => 'o-2'], $store->find('form-1', 'key-1', 'bind-a'));
+		$this->assertSame(['uuid' => 'o-2'], $store->answerFor(new IdempotentRequest('form-1', 'key-1', 'bind-a')));
 	}//end testRememberingTwiceOverwritesTheEntry()
 
 	public function testAnExpiredOrUnreadableEntryIsDeletedAndNotFound(): void {
 		$store = $this->store();
-		$store->remember('form-1', 'old', ['uuid' => 'o-1'], 'bind');
+		$store->keep(new IdempotentRequest('form-1', 'old', 'bind'), ['uuid' => 'o-1']);
 		$this->files[self::entryName('form-1', 'bad')] = '{"expiresAt":"soon","response":[]}';
 		$this->files[self::entryName('form-1', 'noresponse')] = '{"expiresAt":'.(self::NOW + 999999).',"response":"x"}';
 		$this->now = self::NOW + 86400;
 
-		$this->assertNull($store->find('form-1', 'old', 'bind'));
-		$this->assertNull($store->find('form-1', 'bad', 'bind'));
-		$this->assertNull($store->find('form-1', 'noresponse', 'bind'));
+		$this->assertNull($store->answerFor(new IdempotentRequest('form-1', 'old', 'bind')));
+		$this->assertNull($store->answerFor(new IdempotentRequest('form-1', 'bad', 'bind')));
+		$this->assertNull($store->answerFor(new IdempotentRequest('form-1', 'noresponse', 'bind')));
 		$this->assertSame([], $this->files);
 	}//end testAnExpiredOrUnreadableEntryIsDeletedAndNotFound()
 
@@ -250,7 +251,7 @@ class FormIdempotencyStoreBehaviourTest extends TestCase {
 
 		$this->expectException(FormSubmitRefusedException::class);
 
-		$this->store()->find('form-1', 'legacy', 'bind');
+		$this->store()->answerFor(new IdempotentRequest('form-1', 'legacy', 'bind'));
 	}//end testAnEntryWithoutABindingMatchesNobody()
 
 	public function testPurgeDeletesExpiredAndUnreadableEntriesAndKeepsLiveOnes(): void {
@@ -268,7 +269,7 @@ class FormIdempotencyStoreBehaviourTest extends TestCase {
 	public function testWithoutAFolderThereIsNothingToFindOrPurge(): void {
 		$store = $this->store();
 
-		$this->assertNull($store->find('form-1', 'key-1', 'bind'));
+		$this->assertNull($store->answerFor(new IdempotentRequest('form-1', 'key-1', 'bind')));
 		$this->assertSame(0, $store->purge());
 		$this->assertNull($this->files);
 	}//end testWithoutAFolderThereIsNothingToFindOrPurge()

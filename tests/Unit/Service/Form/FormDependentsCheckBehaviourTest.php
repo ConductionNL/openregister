@@ -29,6 +29,8 @@ use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
 use OCA\OpenRegister\Service\Form\FormDependent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsSignals;
+use OCA\OpenRegister\Service\Form\FormDestination;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -76,9 +78,9 @@ class FormDependentsCheckBehaviourTest extends TestCase {
 	private array $findings = [];
 
 	/**
-	 * Validator options seen, per form mapping marker.
+	 * Destination audience seen, per validated form.
 	 *
-	 * @var list<array<string, mixed>>
+	 * @var list<string|null>
 	 */
 	private array $options = [];
 
@@ -94,8 +96,8 @@ class FormDependentsCheckBehaviourTest extends TestCase {
 		$this->notifications = $this->createMock(IManager::class);
 		$this->validator = $this->createMock(FormDestinationValidator::class);
 		$this->validator->method('validate')->willReturnCallback(
-			function (array $mapping, Schema $schema, array $options = []): array {
-				$this->options[] = $options;
+			function (array $mapping, FormDestination $destination): array {
+				$this->options[] = $destination->audience;
 				return $this->findings[$mapping['form']] ?? [];
 			}
 		);
@@ -122,7 +124,7 @@ class FormDependentsCheckBehaviourTest extends TestCase {
 	}//end schema()
 
 	private function form(string $id, string $app, ?string $author = 'alice', ?\Closure $unpublish = null, ?string $audience = null): FormDependent {
-		return new FormDependent($id, $app, 'Title '.$id, $author, ['form' => $id], $unpublish, $audience);
+		return new FormDependent(new PublishedForm($id, $app, 'Title '.$id, $audience), $author, ['form' => $id], $unpublish);
 	}//end form()
 
 	public function testAClaimIsRememberedPerSchemaId(): void {
@@ -150,7 +152,7 @@ class FormDependentsCheckBehaviourTest extends TestCase {
 		$this->assertSame(['unpublish', 'unpublish'], array_column($assessment['affected'], 'break'));
 		$this->assertSame([['code' => 'x']], $assessment['affected'][0]['findings']);
 		$this->assertSame('Title broken', $assessment['affected'][0]['title']);
-		$this->assertSame([[], ['audience' => 'public'], []], $this->options);
+		$this->assertSame([null, 'public', null], $this->options);
 	}//end testOnlyFormsWithFindingsAreAffectedAndTheBreakDefaultsToUnpublish()
 
 	public function testOneAppThatRefusesRefusesTheWholeSaveAndNothingIsUnpublished(): void {
