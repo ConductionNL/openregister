@@ -323,7 +323,8 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * A rule whose value is a path in the input takes the value found there; an
 	 * array value is used as it is; any other value is rendered as a Twig
-	 * template against the input.
+	 * template against the input. The root rule (`#`) is the exception: a
+	 * value without Twig tags is a path, and a path not in the input gives null.
 	 *
 	 * @param Mapping $mapping The mapping recipe.
 	 * @param array   $input   The input of the mapping.
@@ -339,6 +340,11 @@ class MappingService implements MappingServiceInterface {
 		foreach ($mapping->getMapping() as $key => $value) {
 			if ($dotInput->has($value) === true) {
 				$values[$key] = $dotInput->get($value);
+				continue;
+			}
+
+			if ($key === '#' && is_string($value) === true && preg_match('/{{|{%/', $value) !== 1) {
+				$values[$key] = null;
 				continue;
 			}
 
@@ -760,11 +766,15 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * @param string $coordinates A string containing coordinates.
 	 *
-	 * @return array An array of coordinates.
+	 * @return array An array of coordinates; empty for a blank string.
 	 *
 	 * @spec exclude Pure coordinate-string parsing helper; no orchestration or persisted state.
 	 */
 	public function coordinateStringToArray(string $coordinates): array {
+		if (trim($coordinates) === '') {
+			return [];
+		}
+
 		// Pairs of space-separated values; an odd value out ends as a pair of one.
 		$coordinateArray = array_chunk(explode(' ', $coordinates), 2);
 		if (count($coordinateArray) === 1) {

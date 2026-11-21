@@ -39,7 +39,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 
 /**
  * Set, keep, leave and hide drafts.
@@ -352,7 +351,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return array<string, string> Property => reason, in ValidateObject's notSupplied shape.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::isServerFilled() reads a schema property; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ServerFilledProperty::isServerFilled() reads a schema property; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
@@ -363,7 +362,7 @@ class DraftStatusPolicy {
 				continue;
 			}
 
-			if (FormDestinationValidator::isServerFilled(property: $property) === true) {
+			if (ServerFilledProperty::isServerFilled(property: $property) === true) {
 				$excused[(string)$name] = 'server-set';
 			}
 		}
@@ -419,18 +418,17 @@ class DraftStatusPolicy {
 	 * that looks its target up past that rule asks here, so somebody who
 	 * cannot read a draft cannot change it either.
 	 *
-	 * @param ObjectEntity $object The stored object.
-	 * @param Schema       $schema Its schema.
-	 * @param string|null  $userId The caller, null when nobody is signed in.
+	 * @param DraftSubject $subject The stored object and its schema.
+	 * @param string|null  $userId  The caller, null when nobody is signed in.
 	 *
 	 * @return bool True when the caller may not touch it.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
-	public function keptFrom(ObjectEntity $object, Schema $schema, ?string $userId): bool {
-		return $object->isDraft() === true
-			&& $this->draftsVisibleToOthers(schema: $schema) === false
-			&& $object->getOwner() !== $userId;
+	public function keptFrom(DraftSubject $subject, ?string $userId): bool {
+		return $subject->object->isDraft() === true
+			&& $this->draftsVisibleToOthers(schema: $subject->schema) === false
+			&& $subject->object->getOwner() !== $userId;
 	}//end keptFrom()
 
 	/**

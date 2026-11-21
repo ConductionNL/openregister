@@ -61,11 +61,7 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 			return null;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('hash', $qb->createNamedParameter($hash)))
-			->setMaxResults(1);
+		$qb = $this->selectByHash(hash: $hash);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -76,6 +72,23 @@ class FlowDefinitionMapper extends QBMapper implements FlowDefinitionMapperInter
 		}
 
 	}//end findByHash()
+
+	/**
+	 * The one definition stored under a hash.
+	 *
+	 * @param string $hash The content hash.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function selectByHash(string $hash): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('hash', $qb->createNamedParameter($hash)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end selectByHash()
 
 	/**
 	 * Store a definition under its hash, or return the one already there.

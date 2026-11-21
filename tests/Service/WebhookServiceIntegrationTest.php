@@ -162,7 +162,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.event.' . uniqid(),
 			['test' => 'data']
 		);
@@ -179,7 +178,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.empty.payload.' . uniqid(),
 			[]
 		);
@@ -206,7 +204,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		];
 
 		$this->service->dispatchEvent(
-			$event,
 			'phpunit.test.complex.payload.' . uniqid(),
 			$payload
 		);
@@ -702,7 +699,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			$eventName,
 			['uuid' => 'test-dispatch-' . uniqid()]
 		);
@@ -788,7 +784,6 @@ class WebhookServiceIntegrationTest extends TestCase {
 		$event = new class extends Event {};
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
 			['uuid' => 'test-' . uniqid()]
 		);

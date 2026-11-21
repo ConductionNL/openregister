@@ -140,20 +140,33 @@ class ExampleSetArchival extends ExampleSetEngineRows {
 		$data = $row->data;
 		$had     = $this->has();
 		$setting = $this->setting();
-		$entry   = ['hadSetting' => $had, 'set' => $data, 'had' => [], 'old' => []];
-		foreach ($data as $name => $value) {
-			$entry['had'][$name] = array_key_exists($name, $setting);
-			$entry['old'][$name] = ($setting[$name] ?? null);
-			$setting[$name]      = $value;
-		}
+		$entry   = ['hadSetting' => $had] + self::recordOf(data: $data, setting: $setting);
 
-		$error = $this->store(setting: $setting);
+		$error = $this->store(setting: array_replace($setting, $data));
 		if ($error !== '') {
 			return ['error' => $error, 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => $entry];
 	}//end write()
+
+	/**
+	 * What the merge sets, and whether and what each key held before.
+	 *
+	 * @param array<string, mixed> $data    The keys the set writes.
+	 * @param array<string, mixed> $setting The setting before the merge.
+	 *
+	 * @return array{set: array<string, mixed>, had: array<string, bool>, old: array<string, mixed>}
+	 */
+	private static function recordOf(array $data, array $setting): array {
+		$record = ['set' => $data, 'had' => [], 'old' => []];
+		foreach (array_keys($data) as $name) {
+			$record['had'][$name] = array_key_exists($name, $setting);
+			$record['old'][$name] = ($setting[$name] ?? null);
+		}
+
+		return $record;
+	}//end recordOf()
 
 	/**
 	 * Whether a key no longer holds what the set wrote.

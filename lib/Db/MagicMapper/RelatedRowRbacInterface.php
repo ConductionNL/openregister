@@ -54,10 +54,7 @@ interface RelatedRowRbacInterface {
 	/**
 	 * Check if a user has permission to perform an action on a schema.
 	 *
-	 * @param Schema      $schema              Schema to check
-	 * @param string      $action              CRUD action to check
-	 * @param string|null $objectOwner         Optional object owner for ownership check
-	 * @param array|null  $objectData          Optional object data for conditional checks
+	 * @param RbacPermissionAsk $ask The schema, the action, and optionally the object owner and data
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -65,19 +62,13 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $objectOwner = null,
-		?array $objectData = null,
-	): bool;
+	public function hasPermission(RbacPermissionAsk $ask): bool;
 
 	/**
 	 * Check if a user has permission to perform an action on one stored row.
 	 *
-	 * @param Schema       $schema Schema to check
-	 * @param string       $action CRUD action to check
-	 * @param ObjectEntity $row    The stored row: owner, match envelope, own `_authorization` and uuid
+	 * @param RbacPermissionAsk $ask The schema and the action; the row supplies every object fact
+	 * @param ObjectEntity      $row The stored row: owner, match envelope, own `_authorization` and uuid
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -85,7 +76,7 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool;
+	public function hasRowPermission(RbacPermissionAsk $ask, ObjectEntity $row): bool;
 
 	/**
 	 * The RBAC row predicate for rows carried under an alias in a subquery.
@@ -99,7 +90,7 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @see MagicRbacHandler::buildRbacPredicateForAlias()
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string;
 }//end interface

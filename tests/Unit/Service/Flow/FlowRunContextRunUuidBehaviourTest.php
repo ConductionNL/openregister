@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
  */
 class FlowRunContextRunUuidBehaviourTest extends TestCase {
 

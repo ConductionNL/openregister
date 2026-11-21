@@ -279,10 +279,7 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 	private function liveStatus(ConfigurationSnapshot $live, array $verdict): string {
 		$removes = (bool)$verdict['removes'];
 		if ($live->present === false) {
-			return match ($removes) {
-				true => 'unchanged',
-				false => 'create',
-			};
+			return $this->absentStatus(removes: $removes);
 		}
 
 		if ($removes === true) {
@@ -296,6 +293,21 @@ class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 		return 'change';
 
 	}//end liveStatus()
+
+	/**
+	 * The status of a pending value at an address that holds nothing live.
+	 *
+	 * @param bool $removes Whether the pending value removes the address.
+	 *
+	 * @return string 'unchanged' for a removal, else 'create'.
+	 */
+	private function absentStatus(bool $removes): string {
+		return match ($removes) {
+			true => 'unchanged',
+			false => 'create',
+		};
+
+	}//end absentStatus()
 
 	/**
 	 * Whether the live value moved since the draft recorded its base.

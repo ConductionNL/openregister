@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Connection\ConnectionReportKind;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 
@@ -40,6 +41,7 @@ final class ScheduledReportExporters {
 	 * @param ExportService         $exportService  The export engine this feature composes.
 	 * @param ?ExportProfileService $profileService Runs a named export profile, when the schedule names one.
 	 * @param ?ExportRunRecorder    $exportRuns     Records what each run produced.
+	 * @param ?ConnectionReportKind  $connectionReports Runs the connection-health kind.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
@@ -47,6 +49,7 @@ final class ScheduledReportExporters {
 		public readonly ExportService $exportService,
 		public readonly ?ExportProfileService $profileService = null,
 		public readonly ?ExportRunRecorder $exportRuns = null,
+		public readonly ?ConnectionReportKind $connectionReports = null,
 	) {
 	}//end __construct()
 }//end class

@@ -254,7 +254,7 @@ class MdtoSourceReader {
 	 * 1. A declared restriction under `retention.useRestriction` or
 	 *    `tmlo.beperkingGebruik`.
 	 * 2. An ACTIVE legal hold in `retention.legalHold`, which
-	 *    `RetentionService::placeLegalHold()` does write, with a reason and a
+	 *    `RetentionService::placeHold()` does write, with a reason and a
 	 *    placed date. A hold restricts what may be done with the record, so it
 	 *    is reported as a restriction on use.
 	 *
@@ -287,6 +287,77 @@ class MdtoSourceReader {
 
 		return $this->legalHoldRestriction(object: $object);
 	}//end useRestriction()
+
+	/**
+	 * The parties the schema's archival block names for this object, for `betrokkene`.
+	 *
+	 * Read from the evaluated annotation only: `parties` names the record's
+	 * own properties, so the evaluation is where the row's values are read.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{role: string, name: string, id: string|null}> The parties; empty when none is named.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	public function parties(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['parties'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parties = [];
+		foreach ($declared as $party) {
+			if (is_array($party) === false || is_string($party['name'] ?? null) === false || $party['name'] === '') {
+				continue;
+			}
+
+			$id = null;
+			if (isset($party['id']) === true) {
+				$id = (string) $party['id'];
+			}
+
+			$parties[] = ['role' => (string) ($party['role'] ?? ''), 'name' => $party['name'], 'id' => $id];
+		}
+
+		return $parties;
+	}//end parties()
+
+	/**
+	 * The parts the schema's declared containment relation holds for this record.
+	 *
+	 * Each part is its id, with its name when the row carried one. A schema
+	 * that declares no containment, or an annotation stored before it could,
+	 * yields none.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{id: string, name: string|null}> The parts.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function parts(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['containment']['parts'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parts = [];
+		foreach ($declared as $part) {
+			if (is_array($part) === false || is_string(($part['id'] ?? null)) === false || $part['id'] === '') {
+				continue;
+			}
+
+			$name = null;
+			if (is_string(($part['name'] ?? null)) === true && $part['name'] !== '') {
+				$name = $part['name'];
+			}
+
+			$parts[] = ['id' => $part['id'], 'name' => $name];
+		}
+
+		return $parts;
+	}//end parts()
 
 	/**
 	 * Report an ACTIVE legal hold as a use restriction.

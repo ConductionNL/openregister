@@ -32,6 +32,7 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
 
 /**
  * Pins every request listIssues sends and the list it returns, for no label,
@@ -39,6 +40,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubIssueQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection
  */
 class GitHubHandlerIssuesGoldenTest extends TestCase {
 
@@ -96,7 +98,7 @@ class GitHubHandlerIssuesGoldenTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
-		return ['result' => $handler->listIssues(...$args), 'requests' => $requests];
+		return ['result' => $handler->listIssues(selection: new GitHubIssueSelection(...$args)), 'requests' => $requests];
 	}//end listWith()
 
 	/**

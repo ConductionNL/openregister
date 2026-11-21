@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Service\DeckLinkService;
@@ -108,7 +109,7 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$this->assertSame($expected, $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame($expected, $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsLinkedCards()
 
 	public function testListSwallowsThrowableAndReturnsEmpty(): void {
@@ -117,7 +118,7 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListSwallowsThrowableAndReturnsEmpty()
 
 	public function testCreateLinksExistingCardWhenCardIdPresent(): void {
@@ -132,16 +133,11 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$result = $provider->create(
-			'reg',
-			'sch',
-			'obj-uuid',
-			[
+		$result = $provider->create(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), [
 				'cardId' => 42,
 				'registerId' => 10,
 				'schemaId' => 20,
-			]
-		);
+			]);
 
 		$this->assertIsArray($result);
 		$this->assertSame(42, $result['cardId']);
@@ -161,11 +157,7 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$result = $provider->create(
-			'reg',
-			'sch',
-			'obj-uuid',
-			[
+		$result = $provider->create(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), [
 				'boardId' => 1,
 				'stackId' => 2,
 				'title' => 'Hello',
@@ -173,8 +165,7 @@ class DeckProviderTest extends TestCase {
 				'duedate' => '2026-12-31',
 				'registerId' => 10,
 				'schemaId' => 20,
-			]
-		);
+			]);
 
 		$this->assertIsArray($result);
 		$this->assertSame(99, $result['cardId']);
@@ -193,7 +184,7 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$provider->create('5', '6', 'obj-uuid', ['boardId' => 1, 'stackId' => 2]);
+		$provider->create(new ObjectRef(register: '5', schema: '6', id: 'obj-uuid'), ['boardId' => 1, 'stackId' => 2]);
 	}//end testCreateDefaultsTheTitleAndLeavesAbsentDetailsNull()
 
 	public function testCreateNeedsBothBoardAndStack(): void {
@@ -203,7 +194,7 @@ class DeckProviderTest extends TestCase {
 
 		foreach ([['boardId' => 1], ['stackId' => 2]] as $payload) {
 			try {
-				$provider->create('5', '6', 'obj-uuid', $payload);
+				$provider->create(new ObjectRef(register: '5', schema: '6', id: 'obj-uuid'), $payload);
 				$this->fail('expected a refusal');
 			} catch (Exception $e) {
 				$this->assertSame('Either cardId or boardId+stackId is required', $e->getMessage());
@@ -222,7 +213,7 @@ class DeckProviderTest extends TestCase {
 			->willReturn($this->buildDeckLink(9));
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$provider->create('5', '6', 'obj-uuid', ['cardId' => '9', 'boardId' => 1, 'stackId' => 2]);
+		$provider->create(new ObjectRef(register: '5', schema: '6', id: 'obj-uuid'), ['cardId' => '9', 'boardId' => 1, 'stackId' => 2]);
 	}//end testCreatePrefersAnExistingCardOverBoardData()
 
 	public function testCreateThrowsWhenPayloadMissing(): void {
@@ -231,7 +222,7 @@ class DeckProviderTest extends TestCase {
 
 		$this->expectException(Exception::class);
 
-		$provider->create('reg', 'sch', 'obj-uuid', []);
+		$provider->create(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), []);
 	}//end testCreateThrowsWhenPayloadMissing()
 
 	public function testDeleteDelegatesToUnlinkCard(): void {
@@ -240,7 +231,7 @@ class DeckProviderTest extends TestCase {
 
 		$provider = new DeckProvider(new AppProviderDescription($this->buildAppManager(), $this->buildL10n()), $linkService);
 
-		$provider->delete('reg', 'sch', 'obj-uuid', '42');
+		$provider->delete(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'), '42');
 	}//end testDeleteDelegatesToUnlinkCard()
 
 	public function testHealthReportsOkWhenAvailable(): void {

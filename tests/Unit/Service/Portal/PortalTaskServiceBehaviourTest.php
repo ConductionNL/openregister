@@ -20,8 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -30,6 +32,7 @@ use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
@@ -278,7 +281,8 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->files->expects($this->exactly(2))
 			->method('addFile')
 			->willReturnCallback(
-				function ($objectEntity, string $fileName, mixed $content, bool $share, array $tags, $schema, $register, $registerId) use (&$stream): File {
+				function (FileTarget $target, FileUpload $upload) use (&$stream): File {
+					[$objectEntity, $fileName, $content, $share, $tags, $registerId] = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags, $target->registerId];
 					$this->assertSame('case-7', $objectEntity);
 					$this->assertFalse($share);
 					$this->assertSame(['portal-task:t-1'], $tags);
@@ -297,9 +301,10 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 				}
 			);
 		$this->tasks->expects($this->once())
-			->method('complete')
+			->method('completeWithAnswer')
 			->willReturnCallback(
-				function (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses, ?array $evidence) use ($task): Task {
+				function (string $uuid, TaskAnswer $answer, ?string $actor) use ($task): Task {
+					[$outcome, $resultText, $comment, $responses, $evidence] = [$answer->outcome, $answer->resultText, $answer->comment, $answer->payload->responses, $answer->payload->evidence];
 					$this->assertSame('submitted', $outcome);
 					$this->assertNull($resultText);
 					$this->assertSame('see attached', $comment);
@@ -338,7 +343,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 	public function testCompleteRefusesAnUploadWithoutContent(): void {
 		$this->tasks->method('openFor')->willReturn($this->task());
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(TaskValidationException::class);
 		$this->expectExceptionMessage("File 'x.pdf' carries no content.");
@@ -357,7 +362,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 	public function testCompleteRefusesAnUnreadableTempFile(): void {
 		$this->tasks->method('openFor')->willReturn($this->task());
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		set_error_handler(static fn (): bool => true, E_WARNING);
 		try {
@@ -383,7 +388,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 	public function testCompleteViaAdmitsOnlyTheNamedApp(): void {
 		$task = $this->task(metadata: [PortalTaskService::COMPLETE_VIA => ['app' => 'zaak', 'action' => 'sign']]);
 		$this->tasks->method('openFor')->willReturn($task);
-		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->willReturn($task);
 
 		try {
 			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', viaApp: 'other');
@@ -405,7 +410,7 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$task->setBlockedBy('blocker-1');
 		$this->tasks->method('openFor')->willReturn($task);
 		$this->mapper->method('findByUuid')->willReturn($this->task(uuid: 'blocker-1'));
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(DoesNotExistException::class);
 		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');

@@ -44,17 +44,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Integration\DeclaresListExtraKeys;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -131,7 +134,7 @@ class ObjectIntegrationsController extends Controller {
 		IRequest $request,
 		ObjectIntegrationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->registry = $services->domain->registry;
 		$this->objectService = $services->domain->objectService;
 		$this->schemaMapper = $services->domain->schemaMapper;
@@ -321,7 +324,12 @@ class ObjectIntegrationsController extends Controller {
 			integrationId: $integrationId,
 			callback: fn ($provider) => $this->listed(
 				integrationId: $integrationId,
-				rows: $provider->list($register, $schema, $this->guardedUuid(), $this->collectFilters())
+				provider: $provider,
+				rows: (new IntegrationProviderInvoker())->list(
+					$provider,
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectFilters()
+				)
 			)
 		);
 	}//end index()
@@ -329,14 +337,29 @@ class ObjectIntegrationsController extends Controller {
 	/**
 	 * What a provider listed for the guarded object, filtered for the caller, as the canonical envelope.
 	 *
-	 * @param string $integrationId Integration id.
-	 * @param array<int,mixed> $rows    What the provider's `list()` returned.
+	 * A provider that declares extra top-level keys of its answer
+	 * ({@see DeclaresListExtraKeys}) gets exactly those passed through,
+	 * unchanged, next to the envelope; every other key is dropped as before.
 	 *
-	 * @return array<string, mixed> The `{items, total, nextCursor}` envelope.
+	 * @param string           $integrationId Integration id.
+	 * @param object           $provider      The provider that listed them.
+	 * @param array<int,mixed> $rows          What the provider's `list()` returned.
+	 *
+	 * @return array<string, mixed> The `{items, total, nextCursor}` envelope, plus any declared extra keys.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-an-integration-may-declare-extra-top-level-keys-of-its-list-answer
 	 */
-	private function listed(string $integrationId, array $rows): array {
-		return PaginatedResults::envelope(
+	private function listed(string $integrationId, object $provider, array $rows): array {
+		$envelope = PaginatedResults::envelope(
 			$this->applyTimelineVisibility(integrationId: $integrationId, rows: $rows)
+		);
+		if (($provider instanceof DeclaresListExtraKeys) === false) {
+			return $envelope;
+		}
+
+		return array_merge(
+			$envelope,
+			PaginatedResults::extras(value: $rows, declared: $provider->listExtraKeys())
 		);
 	}//end listed()
 
@@ -390,7 +413,11 @@ class ObjectIntegrationsController extends Controller {
 	public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->get($register, $schema, $this->guardedUuid(), $entityId)
+			callback: fn ($provider) => (new IntegrationProviderInvoker())->get(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId
+			)
 		);
 	}//end show()
 
@@ -413,7 +440,11 @@ class ObjectIntegrationsController extends Controller {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? self::created(
 			response: $this->dispatch(
 				integrationId: $integrationId,
-				callback: fn ($provider) => $provider->create($register, $schema, $this->guardedUuid(), $this->collectPayload())
+				callback: fn ($provider) => (new IntegrationProviderInvoker())->create(
+					$provider,
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectPayload()
+				)
 			)
 		);
 	}//end create()
@@ -437,7 +468,12 @@ class ObjectIntegrationsController extends Controller {
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->update($register, $schema, $this->guardedUuid(), $entityId, $this->collectPayload())
+			callback: fn ($provider) => (new IntegrationProviderInvoker())->update(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId,
+				$this->collectPayload()
+			)
 		);
 	}//end update()
 
@@ -460,7 +496,11 @@ class ObjectIntegrationsController extends Controller {
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
 		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatchDelete(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->delete($register, $schema, $this->guardedUuid(), $entityId)
+			callback: fn ($provider) => (new IntegrationProviderInvoker())->delete(
+				$provider,
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId
+			)
 		);
 	}//end destroy()
 

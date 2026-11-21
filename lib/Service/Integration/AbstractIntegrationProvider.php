@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use BadMethodCallException;
 use OCA\OpenRegister\Exception\NotImplementedException;
 
 /**
@@ -42,8 +43,11 @@ use OCA\OpenRegister\Exception\NotImplementedException;
  *
  * Concrete providers MUST override the metadata methods (getId,
  * getLabel, getIcon, getRequiredApp, getStorageStrategy) and the
- * read-path list(). They MAY override get/create/update/delete when
- * their storage strategy supports those operations.
+ * read-path list(). They MAY add get/create/update/delete when their
+ * storage strategy supports those operations, in either published form
+ * (see IntegrationProvider); an operation a provider does not declare
+ * answers NotImplementedException, called directly or through
+ * IntegrationProviderInvoker.
  *
  * @SuppressWarnings(PHPMD.NumberOfChildren) ADR-019's pluggable integration
  *   registry is built around exactly this template-method base — each leaf
@@ -102,106 +106,41 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	}//end getOpenConnectorSource()
 
 	/**
-	 * Get a single linked thing.
+	 * Answer NotImplementedException for a linked-thing operation the provider does not declare.
 	 *
-	 * Default: throw NotImplementedException. List-only and query-time
-	 * providers can rely on this default; CRUD-capable providers
-	 * override.
+	 * The operations are not declared here so that a subclass can declare
+	 * them in either published form; a declared method always wins over this.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
+	 * @param string      $name      The method called.
+	 * @param list<mixed> $arguments Its arguments.
 	 *
-	 * @return array<string,mixed>
+	 * @return never
 	 *
-	 * @throws NotImplementedException Always, unless overridden.
+	 * @throws NotImplementedException For get, create, update, delete or list.
+	 * @throws BadMethodCallException  For any other undeclared method.
 	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
+	 * @spec openspec/specs/integration-registry/spec.md
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature of __call is fixed by PHP.
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		throw $this->unsupported(operation: 'get');
-	}//end get()
+	public function __call(string $name, array $arguments): never {
+		if (in_array($name, ['list', 'get', 'create', 'update', 'delete'], true) === true) {
+			throw $this->unsupported(operation: $name);
+		}
 
-	/**
-	 * Create / attach a linked thing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param array<string,mixed> $payload New linked-thing fields.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		throw $this->unsupported(operation: 'create');
-	}//end create()
-
-	/**
-	 * Update a linked thing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
-	 * @param array<string,mixed> $payload Update payload.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		throw $this->unsupported(operation: 'update');
-	}//end update()
-
-	/**
-	 * Delete / unlink a linked thing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
-	 * @param string $entityId Linked-thing id.
-	 *
-	 * @return void
-	 *
-	 * @throws NotImplementedException Always, unless overridden.
-	 *
-	 * @spec exclude Base-class default-throwing stub for list-only/query-time providers — the NotImplemented→501
-	 *              contract is owned by pluggable-integration-registry task-2/task-6; CRUD-capable providers override.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
-	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
-	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		throw $this->unsupported(operation: 'delete');
-	}//end delete()
+		throw new BadMethodCallException(sprintf('Call to undefined method %s::%s()', static::class, $name));
+	}//end __call()
 
 	/**
 	 * The NotImplementedException a provider answers for an operation it does not support.
 	 *
-	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
+	 * @param string $operation The operation, as the message names it: `list`, `get`, `create`, `update` or `delete`.
 	 *
 	 * @return NotImplementedException
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
-	private function unsupported(string $operation): NotImplementedException {
+	protected function unsupported(string $operation): NotImplementedException {
 		return new NotImplementedException(
 			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
 		);

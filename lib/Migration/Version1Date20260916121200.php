@@ -48,14 +48,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the reversal columns to the bulk job and bulk job member tables.
  *
  * @spec openspec/specs/bulk-action-jobs/spec.md
  */
-class Version1Date20260916121200 extends SimpleMigrationStep {
+class Version1Date20260916121200 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -68,7 +67,7 @@ class Version1Date20260916121200 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -87,7 +86,7 @@ class Version1Date20260916121200 extends SimpleMigrationStep {
 		$output->info('Added '.$added.' reversal column(s) to the bulk job tables');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Add the four reversal columns to the job table.

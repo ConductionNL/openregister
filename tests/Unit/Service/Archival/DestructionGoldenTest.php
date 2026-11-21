@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ApprovalChoice;
+use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
@@ -52,6 +53,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden outcomes of the destruction workflow.
@@ -210,7 +212,7 @@ class DestructionGoldenTest extends TestCase {
 	}//end decidedList()
 
 	public function testApproveAllWithholdsDecidedEntriesAndQueuesTheJob(): void {
-		$result = $this->stripNow($this->destruction()->approveList(destructionList: $this->decidedList()));
+		$result = $this->stripNow($this->destruction()->approveList(destructionList: $this->decidedList(), request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: false, listUuid: null)));
 
 		$this->assertSame(
 			[
@@ -223,7 +225,7 @@ class DestructionGoldenTest extends TestCase {
 					'not-an-entry',
 				],
 				'decisions' => $this->decidedList()['decisions'],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0]],
 				'excludedObjects' => [
 					[
 						'uuid' => 'keep',
@@ -251,11 +253,7 @@ class DestructionGoldenTest extends TestCase {
 		];
 
 		$result = $this->stripNow(
-			$this->destruction(extension: 'P2M')->approveList(
-				destructionList: $list,
-				choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']),
-				listUuid: 'given-uuid'
-			)
+			$this->destruction(extension: 'P2M')->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']), requiresDual: false, listUuid: 'given-uuid'))
 		);
 
 		$this->assertSame(
@@ -267,7 +265,7 @@ class DestructionGoldenTest extends TestCase {
 					['uuid' => 'b', 'status' => 'uitgezonderd', 'exclusionReason' => 'Geen reden opgegeven'],
 					['uuid' => 'keep', 'decision' => 'retain', 'status' => 'uitgezonderd', 'exclusionReason' => 'Review decision "retain"'],
 				],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial', 'destroyedOverConflict' => 0]],
 				'objectCount' => 1,
 				'status' => 'approved',
 			],
@@ -295,10 +293,7 @@ class DestructionGoldenTest extends TestCase {
 	}//end testPartialApprovalExcludesExtendsAndMergesWithEarlierExclusions()
 
 	public function testPartialActionWithoutExclusionsAndBadExcludedKeyBehaveAsBefore(): void {
-		$result = $this->destruction()->approveList(
-			destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []],
-			choice: new ApprovalChoice(action: 'approve_partial')
-		);
+		$result = $this->destruction()->approveList(destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []], request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial'), requiresDual: false, listUuid: null));
 
 		$this->assertSame([['uuid' => 'x']], $result['objects']);
 		$this->assertSame('broken', $result['excludedObjects']);
@@ -306,10 +301,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->assertSame([[DestructionExecutionJob::class, ['destructionListUuid' => null]]], $this->jobs);
 
 		$this->object('y', ['archiefactiedatum' => '2021-01-01']);
-		$partial = $this->destruction()->approveList(
-			destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []],
-			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y'])
-		);
+		$partial = $this->destruction()->approveList(destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []], request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y']), requiresDual: false, listUuid: null));
 		$this->assertSame([], $partial['objects']);
 		$this->assertSame('2022-01-01', $this->updates[0]['retention']['archiefactiedatum']);
 		$this->assertSame(
@@ -321,24 +313,24 @@ class DestructionGoldenTest extends TestCase {
 	public function testDualApprovalNeedsTwoDistinctArchivists(): void {
 		$service = $this->destruction();
 
-		$first = $service->approveList(destructionList: $this->decidedList(), requiresDual: true);
+		$first = $service->approveList(destructionList: $this->decidedList(), request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null));
 		$this->assertSame('awaiting_second_approval', $first['status']);
 		$this->assertCount(2, $first['excludedObjects']);
 		$this->assertSame([], $this->jobs);
 
-		$same = $service->approveList(destructionList: $first, requiresDual: true);
+		$same = $service->approveList(destructionList: $first, request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null));
 		$this->assertSame('awaiting_second_approval', $same['status']);
 		$this->assertCount(1, $same['approvals']);
 		$this->assertCount(2, $same['excludedObjects']);
 		$this->assertSame([], $this->jobs);
 
 		$this->uid = '';
-		$second = $this->stripNow($service->approveList(destructionList: $first, requiresDual: true));
+		$second = $this->stripNow($service->approveList(destructionList: $first, request: new ApprovalRequest(choice: new ApprovalChoice(), requiresDual: true, listUuid: null)));
 		$this->assertSame('approved', $second['status']);
 		$this->assertSame(
 			[
-				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
-				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
+				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
+				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
 			],
 			$second['approvals']
 		);
@@ -419,7 +411,12 @@ class DestructionGoldenTest extends TestCase {
 		$saved->setUuid('new-list');
 		$save = $this->createMock(SaveObjectInterface::class);
 		$save->expects($this->once())->method('saveObject')
-			->with(7, 9, ['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]], null, false, false, true, true)
+			->with(
+				['objects' => [['uuid' => 'ok-1'], ['uuid' => 'ok-2']]],
+				$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === 7 && $options->target->schema === 9 && $options->uuid === null && $options->policy->silent === true),
+				false,
+				false
+			)
 			->willReturn($saved);
 
 		$result = $this->creator(retention: $retention, save: $save)->createFor([' ok-1', 'ok-1 ', 'held', '', 'nope', 'ok-2']);

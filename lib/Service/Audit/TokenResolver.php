@@ -22,11 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AccountConsumerInterface;
 use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\Authentication\Token\IToken;
 use OCP\ISession;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -58,16 +58,16 @@ class TokenResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ISession       $session       The current session.
-	 * @param ITokenProvider $tokenProvider Resolves an app password to its token record.
-	 * @param IUserSession   $userSession   The authenticated principal.
-	 * @param ConsumerMapperInterface $consumerMapper Registered API consumers.
+	 * @param ISession                 $session       The current session.
+	 * @param ITokenProvider           $tokenProvider Resolves an app password to its token record.
+	 * @param IUserSession             $userSession   The authenticated principal.
+	 * @param AccountConsumerInterface $consumers     Names the registered API consumer an account is.
 	 */
 	public function __construct(
 		private readonly ISession $session,
 		private readonly ITokenProvider $tokenProvider,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapperInterface $consumerMapper,
+		private readonly AccountConsumerInterface $consumers,
 	) {
 	}//end __construct()
 
@@ -184,12 +184,7 @@ class TokenResolver {
 			return null;
 		}
 
-		try {
-			$user = $this->userSession->getUser();
-		} catch (Throwable $sessionUnavailable) {
-			return null;
-		}
-
+		$user = $this->sessionUser();
 		if ($user === null || $user->getUID() !== $ownerUid) {
 			return null;
 		}
@@ -201,6 +196,19 @@ class TokenResolver {
 
 		return $displayName;
 	}//end ownerName()
+
+	/**
+	 * The user of the current session, or null when there is none or the session cannot be read.
+	 *
+	 * @return IUser|null The user.
+	 */
+	private function sessionUser(): ?IUser {
+		try {
+			return $this->userSession->getUser();
+		} catch (Throwable $sessionUnavailable) {
+			return null;
+		}
+	}//end sessionUser()
 
 	/**
 	 * Add the registered consumer the token belongs to, when there is one.
@@ -223,43 +231,15 @@ class TokenResolver {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function withConsumer(TokenIdentity $identity, ?string $ownerUid): TokenIdentity {
-		$consumer = $this->findConsumer(ownerUid: $ownerUid);
+		if ($ownerUid === null) {
+			return $identity;
+		}
+
+		$consumer = $this->consumers->soleConsumerOf(ownerUid: $ownerUid);
 		if ($consumer === null) {
 			return $identity;
 		}
 
-		return $identity->withConsumer(consumer: new NamedIdentifier(id: $consumer->getUuid(), name: $consumer->getName()));
+		return $identity->withConsumer(consumer: $consumer);
 	}//end withConsumer()
-
-	/**
-	 * The single registered consumer running as this user, if exactly one does.
-	 *
-	 * @param string|null $ownerUid The token owner's uid.
-	 *
-	 * @return Consumer|null The consumer, or null when there is no unambiguous one.
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	private function findConsumer(?string $ownerUid): ?Consumer {
-		if ($ownerUid === null) {
-			return null;
-		}
-
-		try {
-			$consumers = $this->consumerMapper->findAll(filters: ['user_id' => $ownerUid]);
-		} catch (Throwable $lookupFailed) {
-			return null;
-		}
-
-		if (count($consumers) !== 1) {
-			return null;
-		}
-
-		$consumer = $consumers[0];
-		if (($consumer instanceof Consumer) === false) {
-			return null;
-		}
-
-		return $consumer;
-	}//end findConsumer()
 }//end class

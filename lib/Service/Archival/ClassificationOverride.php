@@ -173,12 +173,23 @@ class ClassificationOverride {
 		}
 
 		if ($resolver->entryFor(category: $requested) === null) {
-			throw new ValidationException(
-				message: 'The selectielijst category "' . $requested . '" in "' . (string) $property
-					. '" matches no selectielijst row.'
-			);
+			throw $this->unmatchedCategory(override: $override);
 		}
 	}//end refuseUnresolvable()
+
+	/**
+	 * The refusal for a requested category that matches no selectielijst row.
+	 *
+	 * @param RequestedCategory $override The property and the (string) category it names.
+	 *
+	 * @return ValidationException The refusal.
+	 */
+	private function unmatchedCategory(RequestedCategory $override): ValidationException {
+		return new ValidationException(
+			message: 'The selectielijst category "' . (string) $override->value . '" in "' . (string) $override->property
+				. '" matches no selectielijst row.'
+		);
+	}//end unmatchedCategory()
 
 	/**
 	 * A non-empty trimmed string, or null.

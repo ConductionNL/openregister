@@ -7,9 +7,9 @@
  *
  * A store item here is a configuration set, a flow, or a schema that marked
  * itself shareable: whatever the app's declared shareable types own. Discovery,
- * signature checking, trust and install all stay in FederatedConfigService, so
- * this class only translates between the store surface's card shape and the
- * federated engine's repo/bundle shape.
+ * signature checking, trust and install all stay in Configuration, behind the
+ * shareable configuration catalogue port, so this class only translates between
+ * the store surface's card shape and the federated engine's repo/bundle shape.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -35,8 +35,7 @@ namespace OCA\OpenRegister\AppHost\Store;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
-use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -65,13 +64,11 @@ class FederatedStoreCatalog {
 	/**
 	 * Constructor.
 	 *
-	 * @param ShareableConfigTypeRegistryInterface $registry  Resolves a declared type id to its type.
-	 * @param FederatedConfigServiceInterface      $federated Discovery, fetch, trust and install.
-	 * @param LoggerInterface                      $logger    PSR logger, server-side detail only.
+	 * @param ShareableConfigCatalogueInterface $catalogue Declared types, discovery, fetch, trust and install.
+	 * @param LoggerInterface                   $logger    PSR logger, server-side detail only.
 	 */
 	public function __construct(
-		private readonly ShareableConfigTypeRegistryInterface $registry,
-		private readonly FederatedConfigServiceInterface $federated,
+		private readonly ShareableConfigCatalogueInterface $catalogue,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -97,6 +94,28 @@ class FederatedStoreCatalog {
 		$slug = preg_replace('/[^a-z0-9]+/', '-', $raw);
 		return trim((string)$slug, '-');
 	}//end slugFor()
+
+	/**
+	 * The declared type ids an installed app registers, in declaration order.
+	 *
+	 * A manifest may declare a type that an optional app owns, such as
+	 * `nldesign.theme`, which only exists while the app that registers it is
+	 * enabled. Such a type must not be offered while nothing owns it.
+	 *
+	 * @param array<int, string> $typeIds The declared type ids.
+	 *
+	 * @return array<int, string> The ids the registry holds.
+	 *
+	 * @spec openspec/changes/federated-config-sharing
+	 */
+	public function ownedTypes(array $typeIds): array {
+		return array_values(
+			array_filter(
+				$typeIds,
+				fn (string $typeId): bool => $this->catalogue->declaredType(typeId: $typeId) !== null
+			)
+		);
+	}//end ownedTypes()
 
 	/**
 	 * Browse every declared type's published configuration.
@@ -135,8 +154,8 @@ class FederatedStoreCatalog {
 	 * @return DeclaredShareableType|null The type, or null when no app owns it.
 	 */
 	private function ownedType(StoreDescriptor $descriptor, string $typeId): ?DeclaredShareableType {
-		$type = $this->registry->get(id: $typeId);
-		if ($type === null) {
+		$declared = $this->catalogue->declaredType(typeId: $typeId);
+		if ($declared === null) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Store] %s declares shareable type %s, which no app owns', $descriptor->appId, $typeId),
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -144,7 +163,7 @@ class FederatedStoreCatalog {
 			return null;
 		}
 
-		return new DeclaredShareableType(typeId: $typeId, type: $type);
+		return $declared;
 	}//end ownedType()
 
 	/**
@@ -189,7 +208,7 @@ class FederatedStoreCatalog {
 	 */
 	private function discoverType(DeclaredShareableType $declared): array {
 		try {
-			return $this->federated->discover(topic: $declared->type->getTopic());
+			return $this->catalogue->discover(topic: $declared->topic);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $declared->typeId, $e->getMessage()),
@@ -212,12 +231,12 @@ class FederatedStoreCatalog {
 	 */
 	public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
 		foreach ($descriptor->types as $typeId) {
-			$type = $this->registry->get(id: $typeId);
-			if ($type === null) {
+			$declared = $this->catalogue->declaredType(typeId: $typeId);
+			if ($declared === null) {
 				continue;
 			}
 
-			$entry = $this->entryFor(declared: new DeclaredShareableType(typeId: $typeId, type: $type), slug: $slug);
+			$entry = $this->entryFor(declared: $declared, slug: $slug);
 			if ($entry !== null) {
 				return $this->resolvedBundle(typeId: $typeId, entry: $entry);
 			}
@@ -287,62 +306,129 @@ class FederatedStoreCatalog {
 	public function install(array $ref): array {
 		$source = (string)($ref['source'] ?? '');
 
-		if ($this->federated->isSourceAllowed(source: $source) === false) {
-			return [
-				'success' => false,
-				'components' => [
-					[
-						'schema' => (string)($ref['typeId'] ?? ''),
-						'status' => 'refused',
-						'message' => sprintf('This organisation does not trust %s as a store source.', $source),
-					],
-				],
-			];
+		if ($this->catalogue->isSourceAllowed(source: $source) === false) {
+			return $this->refusedReport(ref: $ref, source: $source);
 		}
 
 		try {
-			$result = $this->federated->install(
-				typeId: (string)$ref['typeId'],
-				bundle: (array)$ref['bundle'],
-				source: $source
-			);
+			$result = $this->installThroughType(ref: $ref, source: $source);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf('[AppHost\\Store] installing %s failed: %s', (string)$ref['typeId'], $e->getMessage()),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'success' => false,
-				'components' => [
-					[
-						'schema' => (string)$ref['typeId'],
-						'status' => 'error',
-						'message' => 'The configuration could not be installed.',
-					],
-				],
-			];
-		}//end try
-
-		$installed = ($result['installed'] ?? []);
-		if (is_array($installed) === false) {
-			$installed = [];
+			return $this->failedReport(typeId: (string)$ref['typeId'], error: $e);
 		}
 
+		return ['success' => true, 'components' => $this->installedComponents(result: $result, typeId: (string)$ref['typeId'])];
+	}//end install()
+
+	/**
+	 * The report of a bundle refused because its source is not trusted.
+	 *
+	 * @param array  $ref    The resolved bundle.
+	 * @param string $source The bundle's source.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function refusedReport(array $ref, string $source): array {
+		return $this->failureReport(
+			component: [
+				'schema' => (string)($ref['typeId'] ?? ''),
+				'status' => 'refused',
+				'message' => sprintf('This organisation does not trust %s as a store source.', $source),
+			]
+		);
+	}//end refusedReport()
+
+	/**
+	 * An install report of one component that did not install.
+	 *
+	 * @param array<string, string> $component The component's report line.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function failureReport(array $component): array {
+		return [
+			'success' => false,
+			'components' => [$component],
+		];
+	}//end failureReport()
+
+	/**
+	 * Install the bundle through the shareable type that owns it.
+	 *
+	 * @param array  $ref    The resolved bundle.
+	 * @param string $source The bundle's (trusted) source.
+	 *
+	 * @return array The type's install result.
+	 */
+	private function installThroughType(array $ref, string $source): array {
+		return $this->catalogue->install(
+			typeId: (string)$ref['typeId'],
+			bundle: (array)$ref['bundle'],
+			source: $source
+		);
+	}//end installThroughType()
+
+	/**
+	 * Log a failed install and report it without the exception's detail.
+	 *
+	 * @param string    $typeId The type the bundle was installed through.
+	 * @param Throwable $error  The failure.
+	 *
+	 * @return array{success: bool, components: array<int, array<string, string>>}
+	 */
+	private function failedReport(string $typeId, Throwable $error): array {
+		$this->logger->error(
+			message: sprintf('[AppHost\\Store] installing %s failed: %s', $typeId, $error->getMessage()),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return $this->failureReport(
+			component: [
+				'schema' => $typeId,
+				'status' => 'error',
+				'message' => 'The configuration could not be installed.',
+			]
+		);
+	}//end failedReport()
+
+	/**
+	 * The components a successful install reports, the type itself when it named none.
+	 *
+	 * @param array  $result The type's install result.
+	 * @param string $typeId The type the bundle was installed through.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private function installedComponents(array $result, string $typeId): array {
 		$components = [];
-		foreach ($installed as $entry) {
+		foreach ($this->installedEntries(result: $result) as $entry) {
 			$components[] = [
-				'schema' => $this->componentName(entry: $entry, fallback: (string)$ref['typeId']),
+				'schema' => $this->componentName(entry: $entry, fallback: $typeId),
 				'status' => 'installed',
 				'message' => '',
 			];
 		}
 
 		if ($components === []) {
-			$components[] = ['schema' => (string)$ref['typeId'], 'status' => 'installed', 'message' => ''];
+			$components[] = ['schema' => $typeId, 'status' => 'installed', 'message' => ''];
 		}
 
-		return ['success' => true, 'components' => $components];
-	}//end install()
+		return $components;
+	}//end installedComponents()
+
+	/**
+	 * The entries a type's install result lists as installed, none when it lists nothing readable.
+	 *
+	 * @param array $result The type's install result.
+	 *
+	 * @return array
+	 */
+	private function installedEntries(array $result): array {
+		$installed = ($result['installed'] ?? []);
+		if (is_array($installed) === false) {
+			$installed = [];
+		}
+
+		return $installed;
+	}//end installedEntries()
 
 	/**
 	 * Name one installed component for the report.
@@ -377,12 +463,7 @@ class FederatedStoreCatalog {
 	 */
 	private function fetch(string $repo): ?array {
 		foreach (self::BUNDLE_PATHS as $path) {
-			try {
-				$bundle = $this->federated->fetchBundle(repo: $repo, path: $path);
-			} catch (Throwable $e) {
-				continue;
-			}
-
+			$bundle = $this->fetchAt(repo: $repo, path: $path);
 			if ($bundle !== []) {
 				return $bundle;
 			}
@@ -395,6 +476,22 @@ class FederatedStoreCatalog {
 
 		return null;
 	}//end fetch()
+
+	/**
+	 * Read a repository's bundle at one path; empty when the path does not answer.
+	 *
+	 * @param string $repo The `owner/repo`.
+	 * @param string $path The path to read.
+	 *
+	 * @return array<string, mixed> The decoded bundle, empty on failure.
+	 */
+	private function fetchAt(string $repo, string $path): array {
+		try {
+			return $this->catalogue->fetchBundle(repo: $repo, path: $path);
+		} catch (Throwable $e) {
+			return [];
+		}
+	}//end fetchAt()
 
 	/**
 	 * Turn one discovered repository into a store card.
@@ -417,7 +514,7 @@ class FederatedStoreCatalog {
 			// discriminator here: a set, a flow and a schema are what differ.
 			'kind' => $typeId,
 			'type' => $typeId,
-			'typeName' => $declared->type->getDisplayName(),
+			'typeName' => $declared->typeName,
 			'publisher' => $owner,
 			'source' => (string)($entry['url'] ?? ''),
 			'updated' => (string)($entry['updated'] ?? ''),

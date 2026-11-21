@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -29,7 +29,7 @@ use OCP\IUser;
  * Not strict: the value is cast from client input the same way the save did
  * before this object existed.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+ * @spec openspec/specs/file-actions/spec.md
  */
 final class FolderBind {
 	/**
@@ -38,7 +38,7 @@ final class FolderBind {
 	 * @param string     $folder     The requested folder value, uncast to an id.
 	 * @param IUser|null $actingUser Explicit acting user; null falls back to the session user.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly string $folder,
@@ -54,7 +54,7 @@ final class FolderBind {
 	 *
 	 * @return self|null The bind, or null when `folder` is absent or empty.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public static function fromSelfData(array $selfData, ?IUser $actingUser): ?self {
 		if (array_key_exists('folder', $selfData) === false || empty($selfData['folder']) === true) {

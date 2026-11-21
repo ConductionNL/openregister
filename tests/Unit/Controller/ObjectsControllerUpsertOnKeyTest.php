@@ -26,7 +26,8 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -41,6 +42,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * `POST /api/objects/{register}/{schema}?_upsertOn=<constraint>` through the real controller.
@@ -116,8 +118,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 		// With no interception webhook configured, the real service hands the
 		// request's own parameters back unchanged.
-		$webhooks = $this->createMock(WebhookService::class);
-		$webhooks->method('interceptRequest')->willReturnCallback(fn (): array => $this->params);
+		$webhooks = $this->createMock(originalClassName: IEventDispatcher::class);
+		$webhooks->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($this->params));
 
 		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
@@ -148,7 +150,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 	private function savesEcho(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
 			// Positional, in ObjectService::saveObject()'s own order: object, extend, register, schema, uuid.
-			function (array $object, $extend = [], $register = null, $schema = null, ?string $uuid = null): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->savedUuids[] = $uuid;
 				$this->savedObjects[] = $object;
 				$entity = new ObjectEntity();
