@@ -318,6 +318,7 @@ All metadata fields support the following operators for precise filtering:
 | `null` | Null value check | `@self[depublished][null]=true` |
 | `isnull` | Empty (`true`) or filled (`false`) | `@self[expires][isnull]=true` |
 | `orNull` | Also match rows where the field is empty (a modifier, see below) | `@self[expires][lt]=2026-01-01&@self[expires][orNull]=true` |
+| `inOrEmpty` | One of the values, or no value at all (null, missing, `''` or `[]`) | `setting_inOrEmpty[]=<uuid>` |
 
 #### Including empty values with `orNull`
 
@@ -349,6 +350,27 @@ It reads its value like `isnull`: `true`, `1`, `on` and `yes` switch it on,
 anything else leaves the filter as it was. On its own, without another operator,
 it adds no condition. `ne` and the other operators keep their meaning when
 `orNull` is absent.
+
+#### A value or no value with `inOrEmpty`
+
+`inOrEmpty` matches objects whose property is one of the listed values, **or**
+has no value: null, missing, an empty string or an empty array. It is the
+filter for "this world plus the shared things that belong to no world", in one
+query, so paging, totals and facets are computed on the same condition:
+
+```
+GET /api/objects/larpinq/character?setting_inOrEmpty[]=<world uuid>
+GET /api/objects/larpinq/character?setting[inOrEmpty][]=<world uuid>
+```
+
+- It works on scalar properties (`IN`), on array properties (the item is one of
+  the values), on `@self` metadata fields (`@self[organisation][inOrEmpty][]=…`)
+  and on paths inside object properties.
+- Other operators on the same property still apply together with it.
+- An empty list (`setting_inOrEmpty[]=`) matches only the rows with no value:
+  that is its literal meaning.
+
+`orNull` admits only null; `inOrEmpty` also admits `''` and `[]`.
 
 :::info Why Operator Names Instead of Mathematical Symbols?
 

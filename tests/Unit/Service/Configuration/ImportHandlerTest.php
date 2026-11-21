@@ -44,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Unit tests for ImportHandler.
@@ -105,15 +106,20 @@ class ImportHandlerTest extends TestCase {
 		// No willReturn needed; createMock() already stubs them as no-ops.
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 
 	}//end setUp()
@@ -150,15 +156,20 @@ class ImportHandlerTest extends TestCase {
 		mkdir($appDataPath, 0777, true);
 
 		$handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         $appDataPath,
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: $appDataPath,
+			objectService: $this->objectService
 		);
 
 		return [$handler, $base];
@@ -1514,15 +1525,7 @@ class ImportHandlerTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (
-					$object,
-					$extend = [],
-					$register = null,
-					$schema = null,
-					$uuid = null,
-					bool $_rbac = true,
-					bool $_multitenancy = true,
-				) use (&$saveRbac, &$saveMt, $savedObject) {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saveRbac, &$saveMt, $savedObject) {
 					$saveRbac = $_rbac;
 					$saveMt = $_multitenancy;
 					return $savedObject;

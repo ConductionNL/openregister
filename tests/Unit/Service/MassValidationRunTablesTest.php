@@ -30,6 +30,12 @@ use Psr\Log\LoggerInterface;
  * The run counts and pages through the objects table by table.
  *
  * @covers \OCA\OpenRegister\Service\MassValidationRun
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\ValidationChunkResult
  */
 class MassValidationRunTablesTest extends TestCase {
 
@@ -75,7 +81,7 @@ class MassValidationRunTablesTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$saved): ObjectEntity {
-				$saved[] = $args['uuid'] ?? $args[4];
+				$saved[] = ($args['options'] ?? $args[1])->uuid;
 				return new ObjectEntity();
 			}
 		);

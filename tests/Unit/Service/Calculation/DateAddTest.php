@@ -339,6 +339,8 @@ class DateAddTest extends TestCase {
 			],
 			'properties' => [
 				'startDate' => ['type' => 'string'],
+				// A materialised calculation is stored in its own property (aggregation-dialect-repair).
+				'deadline' => ['type' => 'string'],
 			],
 		]);
 		$this->assertSame([], $errors);

@@ -33,6 +33,11 @@ namespace OCA\OpenRegister\Db;
  */
 final class TranslationFilter {
 	/**
+	 * The workflow status an out-of-date search narrows to; `Translation::STATUS_OUTDATED` is this value.
+	 */
+	public const OUTDATED_STATUS = 'outdated';
+
+	/**
 	 * Construct the filter.
 	 *
 	 * @param string|null $language       Optional language filter (BCP-47 tag).
@@ -67,7 +72,7 @@ final class TranslationFilter {
 			['source_language', $this->sourceLanguage],
 		];
 		if ($isOutOfDate === true) {
-			$filters[] = ['status', Translation::STATUS_OUTDATED];
+			$filters[] = ['status', self::OUTDATED_STATUS];
 		}
 
 		return $filters;

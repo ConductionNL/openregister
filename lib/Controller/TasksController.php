@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectTask;
 use OCA\OpenRegister\Controller\Support\TasksControllerServices;
@@ -39,7 +38,11 @@ use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskInboxPage;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskStateRules;
@@ -125,7 +128,7 @@ class TasksController extends Controller {
 		IRequest $request,
 		TasksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->inbox = $services->domain->inbox;
 		$this->userSession = $services->platform->userSession;
 		$this->temporal = $services->domain->temporal;
@@ -380,7 +383,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response with the created task
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -399,7 +401,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response with the updated task
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -421,7 +422,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -522,12 +522,9 @@ class TasksController extends Controller {
 			return new JSONResponse(data: ['error' => 'Task summary is required'], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
-		$task = $this->taskService->createTask(
-			registerId: (int)$object->getRegister(),
-			schemaId: (int)$object->getSchema(),
-			objectUuid: $object->getUuid(),
-			objectTitle: $object->getName() ?? $object->getUuid(),
-			data: $data
+		$task = $this->taskService->createObjectTask(
+			ref: new ObjectRef(register: (int)$object->getRegister(), schema: (int)$object->getSchema(), id: (string)$object->getUuid()),
+			draft: new LinkedTaskDraft(objectTitle: $object->getName() ?? $object->getUuid(), data: $data)
 		);
 
 		return new JSONResponse(data: $task, statusCode: Http::STATUS_CREATED);
@@ -549,7 +546,9 @@ class TasksController extends Controller {
 
 		return $this->onOwnedTask(
 			task: new ObjectTask(object: $object, taskId: $taskId, calendarId: $calendarId),
-			operation: fn (): JSONResponse => new JSONResponse(data: $this->taskService->updateTask($calendarId, $taskId, $data))
+			operation: fn (): JSONResponse => new JSONResponse(
+				data: $this->taskService->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskId), data: $data)
+			)
 		);
 	}//end updateFor()
 
@@ -586,7 +585,10 @@ class TasksController extends Controller {
 			return new JSONResponse(data: ['error' => 'Task not found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$this->taskService->requireTaskOf((string)$task->object->getUuid(), (string)$task->calendarId, $task->taskId);
+		$this->taskService->requireTaskAt(
+			objectUuid: (string)$task->object->getUuid(),
+			at: new TaskLocation(calendarId: (string)$task->calendarId, uri: $task->taskId)
+		);
 
 		return $operation();
 	}//end onOwnedTask()

@@ -64,6 +64,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Another administration's rows are excluded, and the count and pages agree.
@@ -189,13 +192,19 @@ class MagicRbacMemberOfListTest extends TestCase {
 		);
 
 		return new MagicRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$matcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger()
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			)
 		);
 	}//end rbacHandler()
 

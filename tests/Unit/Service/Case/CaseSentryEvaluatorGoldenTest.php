@@ -51,6 +51,8 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\CaseItem
  * @uses   \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses   \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOccasion
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
  */
 class CaseSentryEvaluatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/case-sentry-golden.json';

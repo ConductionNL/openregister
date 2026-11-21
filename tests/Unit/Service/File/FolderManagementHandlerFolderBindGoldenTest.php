@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\File;
@@ -107,7 +107,7 @@ class FolderManagementHandlerFolderBindGoldenTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			auditTrailMapper: $this->auditTrailMapper,
 			mountCache: $this->createMock(IUserMountCache::class),
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
+			folderRecorder: $this->createMock(RegisterFolderRecordsInterface::class)
 		);
 
 	}//end setUp()

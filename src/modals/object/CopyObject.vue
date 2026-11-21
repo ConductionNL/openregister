@@ -1,30 +1,19 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { objectName } from './objectName.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.dialog === 'copyObject'"
-		:name="
-			'Copy '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
-		"
+		:name="'Copy ' + (objectName(objectStore.objectItem) || 'Object')"
 		size="normal"
 		noClose>
 		<div v-if="success === null">
 			<p>
 				Create a copy of
-				<b>{{
-					objectStore.objectItem?.['@self']?.name
-					|| objectStore.objectItem?.name
-					|| objectStore.objectItem?.['@self']?.title
-					|| objectStore.objectItem?.id
-				}}</b>
+				<b>{{ objectName(objectStore.objectItem) }}</b>
 			</p>
 
 			<div class="form-group">
@@ -72,7 +61,11 @@ import {
 } from '@nextcloud/vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
-import { renameCopy, withoutOriginalMetadata } from '../../services/objectCopy.js'
+import {
+	originalName,
+	renameCopy,
+	withoutOriginalMetadata,
+} from '../../services/objectCopy.js'
 
 export default {
 	name: 'CopyObject',
@@ -105,13 +98,7 @@ export default {
 		 * @spec exclude computed display helper for default copy name
 		 */
 		defaultCopyName() {
-			const originalName =
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| `Object ${objectStore.objectItem?.['@self']?.id}`
-
-			return `Copy of ${originalName}`
+			return `Copy of ${originalName(objectStore.objectItem)}`
 		},
 	},
 
@@ -143,8 +130,7 @@ export default {
 		 * @spec exclude modal submit handler delegating to objectStore.saveObject
 		 */
 		async copyObject() {
-			if (!this.copyName.trim()) {
-				this.error = 'Please provide a name for the copy'
+			if (this.refusedEmptyName()) {
 				return
 			}
 
@@ -152,28 +138,79 @@ export default {
 			this.error = false
 
 			try {
-				const objectToCopy = withoutOriginalMetadata(objectStore.objectItem)
-				renameCopy(objectToCopy, this.copyName.trim())
-				const data = await this.saveCopy(objectToCopy)
-
-				if (!data) {
-					throw new Error('Failed to create copy')
-				}
-				this.success = true
-				this.closeModalTimeout = setTimeout(() => {
-					this.closeDialog()
-
-					// Set the new object as selected and open ViewObject modal
-					objectStore.setObjectItem(data)
-					navigationStore.setModal('viewObject')
-				}, 2000)
+				await this.copyAndOpen()
 			} catch (error) {
-				this.success = false
-				this.error =
-					error.message || 'An error occurred while copying the object'
+				this.showCopyFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Refuse a copy without a name, saying so.
+		 *
+		 * @return {boolean} True when the name is blank
+		 */
+		refusedEmptyName() {
+			if (!this.copyName.trim()) {
+				this.error = 'Please provide a name for the copy'
+				return true
+			}
+			return false
+		},
+
+		/**
+		 * Save the copy, say so, and open it after two seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async copyAndOpen() {
+			const data = await this.createCopy()
+			this.success = true
+			this.closeModalTimeout = setTimeout(() => this.openCopy(data), 2000)
+		},
+
+		/**
+		 * Save a renamed copy of the object, without its metadata.
+		 *
+		 * @return {Promise<object>} The saved copy
+		 * @throws {Error} When nothing was saved
+		 */
+		async createCopy() {
+			const objectToCopy = withoutOriginalMetadata(objectStore.objectItem)
+			renameCopy(objectToCopy, this.copyName.trim())
+			const data = await this.saveCopy(objectToCopy)
+
+			if (!data) {
+				throw new Error('Failed to create copy')
+			}
+			return data
+		},
+
+		/**
+		 * Say why the copy failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showCopyFailure(error) {
+			this.success = false
+			this.error =
+				error.message || 'An error occurred while copying the object'
+		},
+
+		/**
+		 * Close the dialog and open the copy.
+		 *
+		 * @param {object} data The saved copy
+		 * @return {void}
+		 */
+		openCopy(data) {
+			this.closeDialog()
+
+			// Set the new object as selected and open ViewObject modal
+			objectStore.setObjectItem(data)
+			navigationStore.setModal('viewObject')
 		},
 
 		/**

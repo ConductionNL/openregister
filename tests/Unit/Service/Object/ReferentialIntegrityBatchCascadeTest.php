@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -118,7 +119,7 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->auditTrailMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
@@ -481,6 +482,36 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
 		);
 	}//end testARefusedTargetStopsTheBatchedCascade()
+
+	/**
+	 * The refusal of a dependent target reaches the caller without naming who holds it.
+	 *
+	 * @return void
+	 */
+	public function testARefusedTargetDoesNotNameItsLockHolder(): void {
+		$holder = 'Cannot delete object: Object is locked by Alice Example.';
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$this->createEntity(uuid: 'uuid-1')]);
+		$this->objectMapper->method('assertDeletable')->willThrowException(
+			new HookStoppedException(
+				message: $holder,
+				errors: ['code' => 'object-locked', 'message' => $holder, 'status' => 423, 'uuid' => 'uuid-1']
+			)
+		);
+
+		try {
+			$this->service->applyDeletionActions(
+				analysis: $this->analysisWithCascade(targets: [$this->target(uuid: 'uuid-1')]),
+				origin: new CascadeDeleteOrigin(userId: 'bob', cascadeSource: 'root-uuid', triggerSchemaSlug: null, organisationId: null)
+			);
+			$this->fail(message: 'The cascade should be refused.');
+		} catch (HookStoppedException $refusal) {
+			$this->assertStringNotContainsString(needle: 'Alice', haystack: $refusal->getMessage());
+			$this->assertSame(
+				expected: ['message' => $refusal->getMessage(), 'code' => 'object-locked', 'status' => 423],
+				actual: $refusal->getErrors()
+			);
+		}
+	}//end testARefusedTargetDoesNotNameItsLockHolder()
 
 	/**
 	 * The per-object fallback passes a guard's refusal on: it does not log it as a failed

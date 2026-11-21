@@ -34,6 +34,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
@@ -73,6 +75,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		'passwords'       => [],
 		'types'           => [],
 		'dropped'         => [],
+		'skipped'         => [],
 		'left'            => [],
 		'missing'         => [],
 		'lost'            => [],
@@ -146,7 +149,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$this->checkFragment(run: $run, fragment: $fragment);
 		}
 
-		return ['refusals' => $run->refusals, 'checked' => $run->checked, 'checkedChanges' => $run->checkedChanges, 'registers' => $ready['registers']];
+		return [
+			'refusals'       => $run->refusals,
+			'skipped'        => $run->skipped,
+			'checked'        => $run->checked,
+			'checkedChanges' => $run->checkedChanges,
+			'registers'      => $ready['registers'],
+		];
 	}//end checked()
 
 	/**
@@ -199,6 +208,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			object: $object,
 			scope: new ExampleSetResolveScope(context: $run->objectContext(), planned: $run->planned)
 		);
+		if (($resolved['skippable'] ?? false) === true) {
+			// An optional entry whose lookup found nothing (its app is not
+			// installed, or the row is not there) is left out, not refused.
+			$run->skipped[] = $this->objectWhere(run: $run, object: $object).': '.$resolved['refusal'];
+			return;
+		}
+
 		if ($resolved['refusal'] !== '') {
 			$run->refusals[] = $this->objectWhere(run: $run, object: $object).': '.$resolved['refusal'];
 			$run->objects[$object['key']] = $this->standIn(name: $run->fragment['app'].'/'.$object['key'], data: []);
@@ -219,11 +235,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private function planObject(ExampleSetCheckRun $run, ExampleSetResolvedObject $declared): void {
 		$object   = $declared->object;
 		$messages = array_merge(
-			$this->objects->store->validate(
-				register: $object['register'],
-				schema: $object['schema'],
-				data: $declared->resolved['sent'],
-				plannedUsers: $run->users
+			$this->objects->store->refusalsFor(
+				table: new RegisterSchemaRef(register: $object['register'], schema: $object['schema']),
+				check: new ObjectCheck(object: $declared->resolved['sent'], plannedUsers: $run->users)
 			),
 			$this->writers->files->refusals(dir: (string) $run->fragment['dir'], object: $object)
 		);
@@ -396,7 +410,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$merged = $resolved['merged'];
 			unset($merged['@self'], $merged['id']);
-			$messages = $this->objects->store->validate(register: $change['register'], schema: $change['schema'], data: $merged, plannedUsers: $run->users);
+			$messages = $this->objects->store->refusalsFor(
+				table: new RegisterSchemaRef(register: $change['register'], schema: $change['schema']),
+				check: new ObjectCheck(object: $merged, plannedUsers: $run->users)
+			);
 			foreach ($messages as $message) {
 				$refusals[] = $where.': '.$message;
 			}
@@ -520,6 +537,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function createObject(ExampleSetInstallRun $run, array $object): void {
 		$resolved = $this->resolve(object: $object, scope: new ExampleSetResolveScope(context: $run->objectContext()));
+		if (($resolved['skippable'] ?? false) === true) {
+			$run->report['skipped'][] = $run->fragment['file'].': object "'.$object['key'].'": '.$resolved['refusal'];
+			return;
+		}
+
 		$made     = ['id' => '', 'error' => $resolved['refusal']];
 		if ($resolved['refusal'] === '') {
 			$made = $this->objects->store->create(
@@ -565,7 +587,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$run->files[$object['key']] = $this->heldFileIds(record: $run->record, name: $name);
 
 		$id = (string) $run->record['objects'][$name]['id'];
-		$run->objects[$object['key']] = ($this->objects->store->get(register: $object['register'], schema: $object['schema'], id: $id) ?? ['id' => $id]);
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id);
+		$run->objects[$object['key']] = ($this->objects->store->row(ref: $ref) ?? ['id' => $id]);
 	}//end recordCreated()
 
 	/**
@@ -650,7 +673,9 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		$this->recordReferences(run: $run, refreshed: new ExampleSetRecordedObject(name: $name, entry: $made['entry']));
 
-		return ($this->objects->store->get(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']) ?? $held->row);
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']);
+
+		return ($this->objects->store->row(ref: $ref) ?? $held->row);
 	}//end refreshReferences()
 
 	/**
@@ -762,7 +787,8 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$this->installChange(run: $run, change: $change);
 		}
 
-		if (ExampleSetRecord::letGoUndeclared(part: self::changesPart(), fragment: $run->fragment, report: $run->report, record: $run->record) === true) {
+		$declaring = new FragmentPart(fragment: $run->fragment, part: self::changesPart());
+		if (ExampleSetRecord::letGoUndeclared(declaring: $declaring, ledger: new RecordLedger(report: $run->report, record: $run->record)) === true) {
 			$this->written(run: $run);
 		}
 	}//end installChanges()
@@ -875,8 +901,15 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @param ExampleSetResolveScope $scope  The context (`cast`, `objects`, `today`) and the objects a check declared
 	 *                                       earlier, for lookups.
 	 *
-	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null} The
-	 *         filled data, what to send and the declared owner, or why it cannot be filled.
+	 * An object marked `optional: true` whose lookup finds nothing, because the
+	 * app that holds the row is not installed or the row is not there, comes
+	 * back `skippable`: the caller leaves it out with a note instead of
+	 * refusing the set. Every other refusal stands, optional or not.
+	 *
+	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null, skippable?: bool}
+	 *         The filled data, what to send and the declared owner, or why it cannot be filled.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	private function resolve(array $object, ExampleSetResolveScope $scope): array {
 		$context = $scope->context;
@@ -886,7 +919,12 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			$lookup['register'] ??= (string) $object['register'];
 			$found  = $this->lookedUp(scope: new ExampleSetResolveScope(context: $context, planned: $scope->planned), lookup: $lookup);
 			if ($found['id'] === '') {
-				return ['data' => [], 'sent' => [], 'refusal' => 'lookup "'.$name.'" found '.$found['reason']];
+				return [
+					'data'      => [],
+					'sent'      => [],
+					'refusal'   => 'lookup "'.$name.'" found '.$found['reason'],
+					'skippable' => (($object['optional'] ?? false) === true && $found['missing'] === true),
+				];
 			}
 
 			$context['lookups'][(string) $name] = $found['id'];
@@ -916,7 +954,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                                       declared earlier.
 	 * @param array<string, mixed>   $lookup `register` (the object's own unless it names another), `schema` and `where`.
 	 *
-	 * @return array{id: string, reason: string}
+	 * @return array{id: string, reason: string, missing: bool} `missing` is true only when nothing matched.
 	 */
 	private function lookedUp(ExampleSetResolveScope $scope, array $lookup): array {
 		$gaps   = [];
@@ -927,29 +965,33 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$schema = (string) ($lookup['schema'] ?? '');
 		$from   = (string) $lookup['register'];
 		if ($gaps !== []) {
-			return ['id' => '', 'reason' => 'an unresolvable '.implode(', ', array_unique($gaps))];
+			return ['id' => '', 'reason' => 'an unresolvable '.implode(', ', array_unique($gaps)), 'missing' => false];
 		}
 
 		if ($where === [] || $schema === '') {
-			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
+			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where', 'missing' => false];
 		}
 
-		$rows = $this->objects->store->matching(register: $from, schema: $schema, where: $where);
+		$rows = $this->objects->store->rowsMatching(table: new RegisterSchemaRef(register: $from, schema: $schema), where: $where);
 		if (count($rows) > 1) {
-			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
+			return [
+				'id'      => '',
+				'reason'  => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one',
+				'missing' => false,
+			];
 		}
 
 		if ($rows !== []) {
-			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => ''];
+			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => '', 'missing' => false];
 		}
 
 		$planned = array_filter($scope->planned, static fn (array $object): bool => $object['register'] === $from && $object['schema'] === $schema);
 		$id      = $this->plannedMatch(planned: $planned, where: $where);
 		if ($id !== '') {
-			return ['id' => $id, 'reason' => ''];
+			return ['id' => $id, 'reason' => '', 'missing' => false];
 		}
 
-		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where)];
+		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where), 'missing' => true];
 	}//end lookedUp()
 
 	/**
@@ -1003,7 +1045,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return ['row' => null, 'error' => ''];
 		}
 
-		return $this->objects->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		return $this->objects->store->readRow(ref: new ObjectRef(register: $held['register'], schema: $held['schema'], id: $held['id']));
 	}//end kept()
 
 	/**
@@ -1086,7 +1128,7 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$report = $run->report;
 		foreach ($run->record['objects'] as $name => $held) {
 			$type   = $held['register'].' '.$held['schema'];
-			$stored = $this->objects->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
+			$stored = $this->objects->store->row(ref: new ObjectRef(register: $held['register'], schema: $held['schema'], id: $held['id']));
 			if ($stored === null) {
 				$report['missing'][] = $type.' '.$name;
 				continue;
@@ -1274,7 +1316,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				continue;
 			}
 
-			$refusal = $this->setup->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $run->users);
+			$refusal = $this->setup->userPreferences->refusal(
+				preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $fragment['app'], 'key' => $entry['key']]),
+				users: $run->users
+			);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 			}
@@ -1317,24 +1362,26 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$name  = $app.'/'.$uid.'/'.$entry['key'];
 		$run->report['userPreferences'][$name] = 'kept';
 		if (isset($run->record['userPreferences'][$name]) === true) {
-			$made = $this->setup->userPreferences->follow(
-				entry: $run->record['userPreferences'][$name],
-				value: $value,
-				refresh: $run->refresh() && $gaps === []
-			);
+			$held = $run->record['userPreferences'][$name];
+			$made = $this->setup->userPreferences->kept(entry: $held);
+			if ($run->refresh() === true && $gaps === []) {
+				$made = $this->setup->userPreferences->follow(entry: $held, value: $value);
+			}
+
 			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made));
 			return;
 		}
 
 		// Checked again against the record: only an account this set created or adopted.
-		$why = $this->setup->userPreferences->refusal(app: $app, uid: $uid, key: $entry['key'], users: array_keys($run->record['users']));
+		$preference = new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $entry['key']]);
+		$why        = $this->setup->userPreferences->refusal(preference: $preference, users: array_keys($run->record['users']));
 		if ($why === '' && $gaps !== []) {
 			$why = 'cannot resolve '.implode(', ', $gaps);
 		}
 
 		$made = ['error' => $why, 'entry' => null];
 		if ($why === '') {
-			$made = $this->setup->userPreferences->apply(uid: $uid, app: $app, key: $entry['key'], value: $value);
+			$made = $this->setup->userPreferences->apply(preference: $preference, value: $value);
 		}
 
 		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'userPreferences', name: $name, made: $made)) === false) {

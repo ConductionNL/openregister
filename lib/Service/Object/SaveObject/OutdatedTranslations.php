@@ -24,10 +24,10 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\SourceLanguageLookup;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -43,14 +43,14 @@ final class OutdatedTranslations {
 
 	/**
 	 * @param TranslationHandler           $translations Names the translatable properties.
-	 * @param TranslationProjectionService $projection   Resolves the source language.
-	 * @param TranslationStatusService     $status       Marks the derived translations.
+	 * @param SourceLanguagesInterface     $projection   Resolves the source language.
+	 * @param DerivedTranslationsInterface $status       Marks the derived translations.
 	 * @param LoggerInterface              $logger       Records a failure.
 	 */
 	public function __construct(
 		private readonly TranslationHandler $translations,
-		private readonly TranslationProjectionService $projection,
-		private readonly TranslationStatusService $status,
+		private readonly SourceLanguagesInterface $projection,
+		private readonly DerivedTranslationsInterface $status,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -101,14 +101,7 @@ final class OutdatedTranslations {
 	 * @return void
 	 */
 	private function flagProperty(ObjectUpdateRun $run, mixed $property): void {
-		$source = $this->projection->resolveSourceLanguage(
-			lookup: new SourceLanguageLookup(
-				schema: $run->schema,
-				object: $run->updated,
-				property: $property,
-				registerDefault: $run->register->getDefaultLanguage()
-			)
-		);
+		$source = $this->sourceLanguage(run: $run, property: $property);
 		$old = self::languageValue(value: ((array)($run->oldObject->getObject() ?? []))[$property] ?? null, language: $source);
 		$new = self::languageValue(value: ((array)($run->updated->getObject() ?? []))[$property] ?? null, language: $source);
 		if ($old === null || $new === null || $old === $new) {
@@ -119,6 +112,25 @@ final class OutdatedTranslations {
 			source: new TranslationSlot(objectUuid: (string)$run->updated->getUuid(), property: (string)$property, language: $source)
 		);
 	}//end flagProperty()
+
+	/**
+	 * The language a property of the updated object is written in.
+	 *
+	 * @param ObjectUpdateRun $run      The update.
+	 * @param mixed           $property The property.
+	 *
+	 * @return string
+	 */
+	private function sourceLanguage(ObjectUpdateRun $run, mixed $property): string {
+		return $this->projection->resolveSourceLanguage(
+			lookup: new SourceLanguageLookup(
+				schema: $run->schema,
+				object: $run->updated,
+				property: $property,
+				registerDefault: $run->register->getDefaultLanguage()
+			)
+		);
+	}//end sourceLanguage()
 
 	/**
 	 * The value for a language in a translatable property: language-keyed (`{nl: "x"}`)

@@ -309,14 +309,8 @@ class QualityScorer implements QualityScorerInterface {
 	 *               the date is absent or unparseable.
 	 */
 	private function scoreFreshness(QualityScoreRun $run, array $rule): float {
-		$value = $this->scalarSubject(object: $run->object, rule: $rule);
-		if ($value === null) {
-			return 0.0;
-		}
-
-		try {
-			$when = new DateTimeImmutable($value);
-		} catch (Throwable $e) {
+		$when = $this->instantOf(run: $run, rule: $rule);
+		if ($when === null) {
 			return 0.0;
 		}
 
@@ -325,7 +319,39 @@ class QualityScorer implements QualityScorerInterface {
 			return 1.0;
 		}
 
-		$ageDays = ($ageSeconds / 86400.0);
+		return $this->decay(ageDays: ($ageSeconds / 86400.0), rule: $rule);
+	}//end scoreFreshness()
+
+	/**
+	 * The instant the rule's field holds, or null when it is absent or will not parse.
+	 *
+	 * @param QualityScoreRun      $run  The object and the reference instant.
+	 * @param array<string, mixed> $rule Rule definition.
+	 *
+	 * @return DateTimeImmutable|null The instant.
+	 */
+	private function instantOf(QualityScoreRun $run, array $rule): ?DateTimeImmutable {
+		$value = $this->scalarSubject(object: $run->object, rule: $rule);
+		if ($value === null) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end instantOf()
+
+	/**
+	 * Half-life decay of an age, clamped to [0, 1]; 0.0 for a half-life that is not positive.
+	 *
+	 * @param float                $ageDays The age in days.
+	 * @param array<string, mixed> $rule    Rule definition, with its optional `halfLifeDays`.
+	 *
+	 * @return float The score.
+	 */
+	private function decay(float $ageDays, array $rule): float {
 		$halfLife = $this->floatOr(value: ($rule['halfLifeDays'] ?? null), fallback: self::DEFAULT_HALF_LIFE_DAYS);
 		if ($halfLife <= 0.0) {
 			return 0.0;
@@ -335,7 +361,7 @@ class QualityScorer implements QualityScorerInterface {
 		$decay = exp((-1.0 * M_LN2 * $ageDays) / $halfLife);
 
 		return max(0.0, min(1.0, $decay));
-	}//end scoreFreshness()
+	}//end decay()
 
 	/**
 	 * Resolve a dotted-path field value from the payload.

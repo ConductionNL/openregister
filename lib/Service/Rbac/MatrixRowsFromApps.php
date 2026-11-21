@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -136,25 +137,50 @@ class MatrixRowsFromApps {
 		}
 
 		$event = new MatrixRowsRequestedEvent(schema: $schema, provider: $provider);
+		if ($this->dispatched(event: $event, provider: $provider) === false) {
+			return [];
+		}
+
+		return $this->ownedRows(event: $event, provider: $provider);
+	}//end ask()
+
+	/**
+	 * Dispatch the request; a failing listener is logged and means no rows.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The request.
+	 * @param string                   $provider The provider id, for the log.
+	 *
+	 * @return bool False when the dispatch failed.
+	 */
+	private function dispatched(MatrixRowsRequestedEvent $event, string $provider): bool {
 		try {
-			$this->dispatcher->dispatchTyped($event);
+			$this->dispatcher?->dispatchTyped($event);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[MatrixRowsFromApps] A matrix row provider failed; it contributes no rows',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'provider' => $provider, 'error' => $e->getMessage()]
 			);
-			return [];
+			return false;
 		}
 
+		return true;
+	}//end dispatched()
+
+	/**
+	 * The rows added by the app that owns the provider id; every other row is dropped and logged.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The answered request.
+	 * @param string                   $provider The provider id.
+	 *
+	 * @return array<int, array<string, mixed>> The rows the owning app added.
+	 */
+	private function ownedRows(MatrixRowsRequestedEvent $event, string $provider): array {
 		$owner = self::owningApp(provider: $provider);
 		$kept  = [];
 		foreach ($event->getRows() as $index => $row) {
 			$appId = $event->answeredBy(index: $index);
 			if ($appId === '' || $appId !== $owner) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
-					context: ['provider' => $provider, 'answeredBy' => $appId]
-				);
+				$this->logForeignRow(provider: $provider, appId: $appId);
 				continue;
 			}
 
@@ -162,7 +188,22 @@ class MatrixRowsFromApps {
 		}
 
 		return $kept;
-	}//end ask()
+	}//end ownedRows()
+
+	/**
+	 * Say that a provider row from an app that does not own the provider was dropped.
+	 *
+	 * @param string $provider The provider id.
+	 * @param string $appId    The app that answered, '' when unknown.
+	 *
+	 * @return void
+	 */
+	private function logForeignRow(string $provider, string $appId): void {
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
+			context: ['provider' => $provider, 'answeredBy' => $appId]
+		);
+	}//end logForeignRow()
 
 	/**
 	 * The app that owns a provider id: the part before the first dot (`dossiq`
@@ -191,27 +232,40 @@ class MatrixRowsFromApps {
 	 */
 	private function readable(array $rows, AppRowsRun $run): array {
 		$shape = new MatrixShape(properties: ($run->schema->getProperties() ?? []), field: $run->field);
-		$validator = $this->validator->withDeclaredActions(declaredActions: $run->schema->declaredActionNames());
+		$declared  = (new DeclaredActions())->names(configuration: $run->schema->getConfiguration());
+		$validator = $this->validator->withDeclaredActions(declaredActions: $declared);
 		$kept = [];
 		foreach ($rows as $row) {
-			if ($this->grantsAReservedGroup(row: $row, run: $run) === true) {
-				continue;
+			if ($this->grantsAReservedGroup(row: $row, run: $run) === false
+				&& $this->readsCleanly(findings: $validator->findingsForRow(row: $row, shape: $shape), run: $run) === true
+			) {
+				$kept[] = $row;
 			}
-
-			$findings = $validator->findingsForRow(row: $row, shape: $shape);
-			if ($findings !== []) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
-					context: ['provider' => $run->provider, 'findings' => array_column($findings, 'message')]
-				);
-				continue;
-			}
-
-			$kept[] = $row;
 		}
 
 		return $kept;
 	}//end readable()
+
+	/**
+	 * Whether a provider row validated without findings; a row that did not is logged as dropped.
+	 *
+	 * @param array<int, array{message: string}> $findings The row's validation findings.
+	 * @param AppRowsRun                         $run      The provider being read, for the log.
+	 *
+	 * @return bool True when the row has no findings.
+	 */
+	private function readsCleanly(array $findings, AppRowsRun $run): bool {
+		if ($findings === []) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
+			context: ['provider' => $run->provider, 'findings' => array_column($findings, 'message')]
+		);
+
+		return false;
+	}//end readsCleanly()
 
 	/**
 	 * Whether a provider row grants a reserved group; such a row is logged and dropped.

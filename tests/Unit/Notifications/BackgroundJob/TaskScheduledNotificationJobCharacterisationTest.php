@@ -12,12 +12,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
 use OCA\OpenRegister\Notifications\Db\DedupeSighting;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob;
@@ -39,6 +40,36 @@ use RuntimeException;
  * the scheduled task sweep over synthetic rules.
  *
  * @covers \OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskInboxAnchor
+ * @uses \OCA\OpenRegister\Db\TaskInboxAudience
+ * @uses \OCA\OpenRegister\Db\TaskInboxCriteria
+ * @uses \OCA\OpenRegister\Db\TaskInboxDueWindow
+ * @uses \OCA\OpenRegister\Db\TaskInboxFilter
+ * @uses \OCA\OpenRegister\Db\TaskInboxOrder
+ * @uses \OCA\OpenRegister\Db\TaskInboxSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates
+ * @uses \OCA\OpenRegister\Service\Task\OverdueOpenTasks
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskSweep
+ * @uses \OCA\OpenRegister\Notifications\BackgroundJob\TaskSweepRun
+ * @uses \OCA\OpenRegister\Notifications\Db\DedupeSighting
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDedupeKey
+ * @uses \OCA\OpenRegister\Notifications\Db\NotificationDedupeState
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterClause
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterDates
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterPosition
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TaskPayloadOptions
  */
 class TaskScheduledNotificationJobCharacterisationTest extends TestCase
 {
@@ -102,7 +133,7 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
 
         return new TaskScheduledNotificationJob(
             $time,
-            new TaskNotificationCandidates($ruleSet, $this->tasks, $inbox, new ScheduledFilterEvaluator()),
+            new TaskNotificationCandidates($ruleSet, new OverdueOpenTasks($this->tasks), $inbox, new ScheduledFilterEvaluator()),
             new TaskNotificationDelivery($this->dedupe, $this->dispatcher, $appConfig, $logger)
         );
     }

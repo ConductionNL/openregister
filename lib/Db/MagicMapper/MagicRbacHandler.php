@@ -44,8 +44,13 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyRowTest;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
@@ -61,6 +66,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacFallbacks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -130,36 +136,91 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private ?RbacMatchSql $matchSql = null;
 
 	/**
-	 * Constructor for MagicRbacHandler
+	 * User session for current user context.
 	 *
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for user group operations
-	 * @param IUserManager $userManager User manager for user operations
-	 * @param IAppConfig $appConfig App configuration for RBAC settings
-	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
-	 * @param ContainerInterface $container Container for service injection
-	 * @param LoggerInterface $logger Logger for debugging
-	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
-	 *                                      bundled together; nullable so adding them is not a fatal at existing
-	 *                                      construction sites.
-	 * @param DenyEnforcementModeInterface|null $denyEnforcementMode The staging switch; nullable for the same reason.
-	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for user group operations.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
-	 * collaborators are nullable so existing construction sites keep working.
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * User manager for user operations.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * App configuration for RBAC settings.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * The deny staging switch.
+	 *
+	 * @var DenyEnforcementModeInterface|null
+	 */
+	private readonly ?DenyEnforcementModeInterface $denyEnforcementMode;
+
+	/**
+	 * Knows which metadata columns a table that could not be healed still lacks.
+	 *
+	 * @var MagicMetadataColumnHealer|null
+	 */
+	private readonly ?MagicMetadataColumnHealer $metadataColumns;
+
+	/**
+	 * Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
+	 *
+	 * @var ConditionMatcher
+	 */
+	private readonly ConditionMatcher $conditionMatcher;
+
+	/**
+	 * Container for service injection.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for debugging.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param MagicMapperIdentity $identity  The user session, group manager and user manager.
+	 * @param MagicRbacSettings   $settings  The app config, the deny staging switch and the metadata column healer.
+	 * @param MagicRbacSupport    $support   The condition matcher, the container and the logger.
+	 * @param RbacResolvers|null  $resolvers The shared object-scope, per-object grant and deny-grammar resolvers.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly ConditionMatcher $conditionMatcher,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
+		MagicMapperIdentity $identity,
+		MagicRbacSettings $settings,
+		MagicRbacSupport $support,
 		private readonly ?RbacResolvers $resolvers = null,
-		private readonly ?DenyEnforcementModeInterface $denyEnforcementMode = null,
-		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
+		$this->userSession = $identity->userSession;
+		$this->groupManager = $identity->groupManager;
+		$this->userManager = $identity->userManager;
+		$this->appConfig = $settings->appConfig;
+		$this->denyEnforcementMode = $settings->denyEnforcementMode;
+		$this->metadataColumns = $settings->metadataColumns;
+		$this->conditionMatcher = $support->conditionMatcher;
+		$this->container = $support->container;
+		$this->logger = $support->logger;
 	}//end __construct()
 
 	/**
@@ -295,6 +356,36 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $call->schema->getId(), 'action' => $call->action, 'error' => $error->getMessage()]
 		);
 	}//end logUnresolvable()
+
+	/**
+	 * Whether the schema serves a question its authorization cannot answer; logged at warning when it does.
+	 *
+	 * The posture is read from the schema's OWN block, because the resolved one
+	 * is what failed. `closed` (the default) answers no and leaves the caller's
+	 * fail-closed path, and its log line, as they were; `open` answers yes and
+	 * says so, with what was missing, so the list path takes the same posture
+	 * as PermissionHandler on the find path.
+	 *
+	 * @param Schema      $schema The schema asked about.
+	 * @param string      $action The action asked.
+	 * @param string|null $userId The caller.
+	 * @param string      $error  What could not be resolved.
+	 *
+	 * @return bool True only when the schema declares `onUndecidable: open`.
+	 *
+	 * @spec openspec/changes/an-app-declares-object-access-rather-than-guarding-it/specs/object-access-contract/spec.md#requirement-a-schema-declares-what-an-undecidable-access-question-means
+	 */
+	private function undecidableAdmits(Schema $schema, string $action, ?string $userId, string $error): bool {
+		if ((new UndecidablePosture())->admits(authorization: $schema->getAuthorization()) === false) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[MagicRbacHandler] Authorization unresolvable; granting access because the schema declares onUndecidable: open',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'action' => $action, 'userId' => $userId, 'error' => $error]
+		);
+		return true;
+	}//end undecidableAdmits()
 
 	/**
 	 * The caller as the rule interpreters read it.
@@ -603,7 +694,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True when the list returns nothing.
 	 */
 	private function unconditionallyDenied(RbacAccessCall $call, array $principals): bool {
-		$unconditional = $this->denyResolver()->unconditionalDenial(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$unconditional = $this->denyResolver()->unconditionalDenial(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		if ($unconditional === null) {
 			return false;
 		}
@@ -625,9 +719,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function conditionalDenyTerm(RbacAccessCall $call, array $principals): string|false {
 		$rowTest = $this->denyResolver()->notDeniedRowSql(
-			columnName: $call->authorizationColumn(),
-			action: $call->action,
-			isPostgres: $this->isPostgres(),
+			test: new DenyRowTest(columnName: $call->authorizationColumn(), action: $call->action, isPostgres: $this->isPostgres()),
 			principals: $principals
 		);
 
@@ -649,7 +741,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 */
 	private function negatedConditionalDenials(RbacAccessCall $call, array $principals): array|false {
 		$columns = $call->columns();
-		$denials = $this->denyResolver()->conditionalDenials(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$denials = $this->denyResolver()->conditionalDenials(
+			authorization: $call->authorization,
+			question: new DenyQuestion(action: $call->action, principals: $principals)
+		);
 		$negated = [];
 		foreach ($denials as $denial) {
 			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
@@ -745,6 +840,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
+		// Classification is final: it narrows ahead of every grant and schema
+		// rule, and holds even where an undecidable posture leaves the rest open.
+		if ($this->applyClassification(call: $call) === false) {
+			return;
+		}
+
 		// The checks run in order, and each one that clamps the query ends it.
 		if ($this->resolveCallAuthorization(call: $call) === false || $this->applyDenyRules(call: $call) === false) {
 			return;
@@ -769,6 +870,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		$unresolvable = $this->unresolvableAuthorization(call: $call);
 		if ($unresolvable === null) {
 			return true;
+		}
+
+		// Declared `open`: the query is left unnarrowed by RBAC, and the rest of
+		// the RBAC filter is skipped because there is no resolved block to apply.
+		if ($this->undecidableAdmits(schema: $call->schema, action: $call->action, userId: $call->userId, error: $unresolvable->getMessage()) === true) {
+			return false;
 		}
 
 		$this->logUnresolvable(call: $call, error: $unresolvable);
@@ -826,6 +933,63 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
 	}//end applyAnyOf()
+
+	/**
+	 * Narrow the query to the classification labels the caller may see.
+	 *
+	 * @param RbacFilterCall $call The filter application, its caller identified.
+	 *
+	 * @return bool False when no label is admitted and the query was clamped to no rows.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function applyClassification(RbacFilterCall $call): bool {
+		$term = $this->classificationTermSql(call: $call);
+		if ($term === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($term !== null) {
+			$call->qb->andWhere($call->qb->createFunction($term));
+		}
+
+		return true;
+	}//end applyClassification()
+
+	/**
+	 * The classification term every listed row must satisfy, as raw SQL.
+	 *
+	 * An `IN` over the declared labels at or below the caller's clearance, less
+	 * those a ceiling refuses an anonymous caller. Compiled by the same match
+	 * emitter as a `$in` rule, so the column and the quoting are the ones every
+	 * other rule term uses.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|false|null The term; false when no label is admitted; null when classification narrows nothing.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationTermSql(RbacAccessCall $call): string|false|null {
+		$block = (new ClassificationListTerm(clearances: new ClearanceResolver(logger: $this->logger)))->matchBlock(
+			schema: $call->schema,
+			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action)
+		);
+		if ($block === null) {
+			return null;
+		}
+
+		if ((reset($block)['$in'] ?? []) === []) {
+			$this->logger->debug(
+				message: '[MagicRbacHandler] No classification level is admitted to the caller; the list returns nothing',
+				context: ['userId' => $call->userId, 'action' => $call->action]
+			);
+			return false;
+		}
+
+		return ($this->matchSql()->matchConditions(block: $block, columnPrefix: $call->columnPrefix) ?? false);
+	}//end classificationTermSql()
 
 	/**
 	 * Apply the schema's deny rules to the query.
@@ -1152,7 +1316,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
 	 */
 	private function ownReadRules(Schema $schema): array {
-		if (empty(RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())) === true) {
+		$ownRules = RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+		if (empty((new UndecidablePosture())->rulesOf(authorization: $ownRules)) === true) {
 			return [];
 		}
 
@@ -1426,8 +1591,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		// The cascaded block, resolved ONCE for the deny pass, the scope and the
 		// rule chain, with one fail-closed path.
-		if ($this->cascadeResolves(check: $check) === false) {
-			return false;
+		$unresolvable = $this->cascadeUnresolvable(check: $check);
+		if ($unresolvable !== null) {
+			return $this->undecidableAdmits(schema: $check->schema, action: $check->action, userId: $check->userId, error: $unresolvable->getMessage());
 		}
 
 		return $this->objectVerdict(check: $check, objectOwner: $objectOwner);
@@ -1438,16 +1604,16 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @param RbacPermissionCheck $check The check; its cascaded block is set when it resolves.
 	 *
-	 * @return bool False when the block is unresolvable, which refuses (fail-closed).
+	 * @return AuthorizationUnresolvableException|null Why it did not resolve, or null when it did.
 	 */
-	private function cascadeResolves(RbacPermissionCheck $check): bool {
+	private function cascadeUnresolvable(RbacPermissionCheck $check): ?AuthorizationUnresolvableException {
 		try {
 			$check->cascaded = $this->resolveSchemaAuthorization(schema: $check->schema);
-			return true;
+			return null;
 		} catch (AuthorizationUnresolvableException $e) {
-			return false;
+			return $e;
 		}
-	}//end cascadeResolves()
+	}//end cascadeUnresolvable()
 
 	/**
 	 * The verdict for a non-admin caller once the cascaded block is known.
@@ -1731,7 +1897,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function denyBlockSelects(RbacPermissionCheck $check, array $block): bool {
 		$resolver = $this->denyResolver();
 		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
-		if ($resolver->unconditionalDenial(authorization: $block, action: $check->action, principals: $principals) !== null) {
+		if ($resolver->unconditionalDenial(authorization: $block, question: new DenyQuestion(action: $check->action, principals: $principals)) !== null) {
 			return true;
 		}
 
@@ -1741,7 +1907,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return $this->anyDenialSelects(
 			check: $check,
-			denials: $resolver->conditionalDenials(authorization: $block, action: $check->action, principals: $principals)
+			denials: $resolver->conditionalDenials(
+				authorization: $block,
+				question: new DenyQuestion(action: $check->action, principals: $principals)
+			)
 		);
 	}//end denyBlockSelects()
 
@@ -1823,7 +1992,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @throws InvalidArgumentException When the alias is not a plain identifier.
 	 *
-	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string {
 		$this->assertPredicateAlias(alias: $rows->alias);
@@ -1937,16 +2106,49 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
+		$classification = $this->classificationTermSql(call: $call);
+		if ($classification === false) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
+		$result = $this->unclassifiedAccessConditions(call: $call);
+		if ($classification === null) {
+			return $result;
+		}
+
+		// Classification is final: it narrows every condition, and an open
+		// result becomes the one condition that every row is classified low enough.
+		if ($result['bypass'] === true) {
+			return ['bypass' => false, 'conditions' => [$classification]];
+		}
+
+		return ['bypass' => false, 'conditions' => $this->withDenyTerm(conditions: $result['conditions'], denyTerm: $classification)];
+	}//end accessConditions()
+
+	/**
+	 * The bypass flag and the SQL conditions of one access call before classification; fails closed.
+	 *
+	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read, its caller identified.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The bypass flag and conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function unclassifiedAccessConditions(RbacAccessCall $call): array {
 		// Fail-closed: an unresolvable authorization yields the deny-all result
 		// (`bypass => false` with no conditions) rather than the open bypass.
 		$unresolvable = $this->unresolvableAuthorization(call: $call);
 		if ($unresolvable !== null) {
+			if ($this->undecidableAdmits(schema: $call->schema, action: $call->action, userId: $call->userId, error: $unresolvable->getMessage()) === true) {
+				return ['bypass' => true, 'conditions' => []];
+			}
+
 			$this->logUnresolvable(call: $call, error: $unresolvable);
 			return ['bypass' => false, 'conditions' => []];
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end accessConditions()
+	}//end unclassifiedAccessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.
@@ -2273,8 +2475,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
-		if ($this->unresolvableAuthorization(call: $call) !== null) {
-			return false;
+		$unresolvable = $this->unresolvableAuthorization(call: $call);
+		if ($unresolvable !== null) {
+			return $this->undecidableAdmits(schema: $schema, action: $action, userId: $call->userId, error: $unresolvable->getMessage());
 		}
 
 		return $this->authorizationAdmitsCaller(call: $call);
@@ -2375,7 +2578,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
-		$ownAuthorization = RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+		$ownAuthorization = (new UndecidablePosture())->rulesOf(
+			authorization: RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())
+		);
 		if (empty($ownAuthorization) === false) {
 			return false;
 		}

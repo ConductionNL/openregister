@@ -119,11 +119,7 @@ class CrossRegisterExistenceService {
 	 */
 	public function probe(array $probes): array {
 		if (count($probes) > self::MAX_PROBES) {
-			return [
-				'error' => 'too-many-probes',
-				'message' => 'A call carries at most ' . self::MAX_PROBES . ' probes; this one carried '
-					. count($probes) . '. Nothing was queried.',
-			];
+			return self::tooManyProbes(count: count($probes));
 		}
 
 		$answers = [];
@@ -137,6 +133,21 @@ class CrossRegisterExistenceService {
 
 		return ['probes' => $answers];
 	}//end probe()
+
+	/**
+	 * The refusal of a call with more probes than allowed; nothing is queried.
+	 *
+	 * @param int $count How many probes the call carried.
+	 *
+	 * @return array{error: string, message: string}
+	 */
+	private static function tooManyProbes(int $count): array {
+		return [
+			'error' => 'too-many-probes',
+			'message' => 'A call carries at most ' . self::MAX_PROBES . ' probes; this one carried '
+				. $count . '. Nothing was queried.',
+		];
+	}//end tooManyProbes()
 
 	/**
 	 * Answer one probe.
@@ -255,25 +266,49 @@ class CrossRegisterExistenceService {
 			// can never answer about a register the caller could not have
 			// searched, because it asks the same way a search does.
 			$rows = $this->objects->searchObjects(
-				query: array_merge(
-					$filters,
-					['@self' => ['register' => $target['register'], 'schema' => $target['schema']], '_limit' => self::MAX_COUNT]
-				),
+				query: self::scopedQuery(target: $target, filters: $filters),
 				_rbac: true,
 				_multitenancy: true,
 			);
 		} catch (Throwable $e) {
-			$this->logger->info(
-				message: '[CrossRegisterExistenceService] probe of ' . $target['register'] . '/' . $target['schema']
-					. ' was refused: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logRefusedProbe(target: $target, error: $e);
 
 			return null;
 		}//end try
 
 		return ['value' => $rows];
 	}//end search()
+
+	/**
+	 * A probe's filters, scoped to its register and schema and capped at MAX_COUNT rows.
+	 *
+	 * @param array{register:string,schema:string} $target  The register and schema.
+	 * @param array                                $filters The probe's filters.
+	 *
+	 * @return array
+	 */
+	private static function scopedQuery(array $target, array $filters): array {
+		return array_merge(
+			$filters,
+			['@self' => ['register' => $target['register'], 'schema' => $target['schema']], '_limit' => self::MAX_COUNT]
+		);
+	}//end scopedQuery()
+
+	/**
+	 * Log a probe the search refused; it says nothing about whether a row exists.
+	 *
+	 * @param array{register:string,schema:string} $target The register and schema.
+	 * @param Throwable                            $error  The refusal.
+	 *
+	 * @return void
+	 */
+	private function logRefusedProbe(array $target, Throwable $error): void {
+		$this->logger->info(
+			message: '[CrossRegisterExistenceService] probe of ' . $target['register'] . '/' . $target['schema']
+				. ' was refused: ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logRefusedProbe()
 
 	/**
 	 * Whether rows matched, how many, and the allowed values of the first.
@@ -362,22 +397,48 @@ class CrossRegisterExistenceService {
 	private function partition(array $reveal, array $rules): array {
 		$allowed = [];
 		$refused = [];
-		foreach ($reveal as $field) {
-			$field = trim((string)$field);
-			if ($field === '') {
+		foreach (self::namedFields(reveal: $reveal) as $field) {
+			if (self::isRevealable(field: $field, rules: $rules) === true) {
+				$allowed[] = $field;
 				continue;
 			}
 
-			if (in_array($field, $rules['declared'], true) === false || in_array($field, $rules['withheld'], true) === true) {
-				$refused[] = $field;
-				continue;
-			}
-
-			$allowed[] = $field;
+			$refused[] = $field;
 		}
 
 		return [$allowed, $refused];
 	}//end partition()
+
+	/**
+	 * The requested field names, trimmed, without the empty ones.
+	 *
+	 * @param array $reveal The fields the probe asks to reveal.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function namedFields(array $reveal): array {
+		$fields = [];
+		foreach ($reveal as $field) {
+			$field = trim((string)$field);
+			if ($field !== '') {
+				$fields[] = $field;
+			}
+		}
+
+		return $fields;
+	}//end namedFields()
+
+	/**
+	 * Whether a field may be revealed: the schema declares it and does not withhold it.
+	 *
+	 * @param string                                                       $field The field.
+	 * @param array{declared: array<int, string>, withheld: array<int, string>} $rules The schema's declared and withheld fields.
+	 *
+	 * @return bool
+	 */
+	private static function isRevealable(string $field, array $rules): bool {
+		return in_array($field, $rules['declared'], true) === true && in_array($field, $rules['withheld'], true) === false;
+	}//end isRevealable()
 
 	/**
 	 * Build the revealed block out of named values.

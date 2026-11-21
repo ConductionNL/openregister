@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
  */
 
 declare(strict_types=1);
@@ -134,33 +134,31 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * whose purpose is not `expiry`, an SLA outside the vocabulary, and an
 	 * escalation rule whose preBreach offset resolves before the anchor.
 	 *
-	 * @param array<string, mixed> $config The timer configuration.
-	 * @param string|null $actor The arming identity.
-	 * @param DateTimeInterface|null $now The clock; null means the real clock.
+	 * Takes main's FlowTimerAct, or the release's actor and clock, by name or by position (an actor
+	 * or null in the second slot).
+	 *
+	 * @param array<string, mixed>     $config The timer configuration.
+	 * @param FlowTimerAct|string|null $act    The arming identity and the clock ({@see FlowTimerAct::of()} reads the real clock); a string or null
+	 *                                         here is the release's positional `$actor`.
+	 * @param DateTimeInterface|null   $now    The clock; null reads the real one.
+	 * @param string|null              $actor  The arming identity.
 	 *
 	 * @return FlowTimer The armed timer.
 	 *
 	 * @throws FlowTimerValidationException On any refused value.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
 	 */
-	public function arm(array $config, ?string $actor, ?DateTimeInterface $now = null): FlowTimer {
-		return $this->armFor(config: $config, act: new FlowTimerAct(actor: $actor, now: $this->instant(now: $now)));
-	}//end arm()
+	public function arm(
+		array $config,
+		FlowTimerAct|string|null $act = null,
+		DateTimeInterface|null $now = null,
+		string|null $actor = null,
+	): FlowTimer {
+		if (($act instanceof FlowTimerAct) === false) {
+			$act = new FlowTimerAct(actor: ($actor ?? $act), now: $this->instant(now: $now));
+		}
 
-	/**
-	 * Arm a timer for one act: validate it against its timeline, then persist it.
-	 *
-	 * @param array<string, mixed> $config The timer configuration, as {@see arm()} documents it.
-	 * @param FlowTimerAct         $act    The arming identity and the clock.
-	 *
-	 * @return FlowTimer The armed timer.
-	 *
-	 * @throws FlowTimerValidationException On any refused value.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadline-declares-its-legal-effect-and-only-a-legal-one-enforces
-	 */
-	public function armFor(array $config, FlowTimerAct $act): FlowTimer {
 		$timer = $this->factory()->build(config: $config, act: $act);
 		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 
@@ -174,7 +172,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		);
 
 		return $this->transactional(mutation: fn (): FlowTimer => $this->insertArmed(timer: $timer, act: $act));
-	}//end armFor()
+	}//end arm()
 
 	/**
 	 * Insert a validated timer, record that it was armed and project it.
@@ -215,7 +213,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @throws FlowTimerStateException When the timer is not armed.
 	 * @throws FlowTimerValidationException When the reason is empty.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function suspend(TimerSuspension $suspension, FlowTimerAct $act): FlowTimer {
 		if (trim($suspension->reason) === '') {
@@ -279,7 +277,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @throws FlowTimerStateException When the timer is not suspended.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function resume(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
 		$now = $act->now;
@@ -327,7 +325,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @throws FlowTimerStateException When fired/expired, or when the bound is reached (naming it).
 	 * @throws FlowTimerValidationException When the rationale is empty or the amount is not positive.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function extend(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
 		$timer = $this->storage->timers->findByUuid(uuid: $request->uuid);
@@ -360,7 +358,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @throws FlowTimerStateException When fired/expired.
 	 * @throws FlowTimerValidationException When the rationale or actor is empty.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
 	public function extendWithOverride(TimerExtensionRequest $request, FlowTimerAct $act): FlowTimer {
 		if (trim((string)$act->actor) === '') {
@@ -387,7 +385,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @throws FlowTimerStateException When the timer is not open.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function supersede(TimerAnchorMove $move, TimerChange $change): FlowTimer {
 		return $this->reanchor(
@@ -406,7 +404,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @throws FlowTimerStateException When the timer is not open.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-deadlines-anchor-is-stored-so-a-moved-anchor-re-arms-the-timer
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	private function reanchor(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
 		$prior = $this->storage->timers->findByUuid(uuid: $decision->uuid);
@@ -468,7 +466,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return int How many timers were cancelled.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function cancelForSubject(TimerSubjectRef $subject, TimerChange $change): int {
 		$open = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subject->type, uuid: $subject->uuid), states: self::OPEN_STATES);
@@ -485,7 +483,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return int How many timers were cancelled.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function cancelForRun(string $runUuid, TimerChange $change): int {
 		return $this->cancelRunTimers(runUuid: $runUuid, cancellation: $this->cancellation(change: $change));
@@ -533,7 +531,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return array{overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string} The derivation.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
 	public function describe(FlowTimer $timer, ?DateTimeInterface $now = null): array {
 		$now = $this->instant(now: $now);
@@ -583,7 +581,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return array<int, FlowTimerEvent> The events.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function history(string $uuid): array {
 		return $this->storage->events->findByTimer(timerUuid: $uuid);
@@ -602,7 +600,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return boolean True when THIS call fired the timer.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
 	 */
 	public function fireExpiry(FlowTimer $timer, DateTimeInterface $now): bool {
 		$uuid = (string)$timer->getUuid();
@@ -633,12 +631,11 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$this->subjects->dispatcher->dispatchTyped(
 			new FlowTimerFiredEvent(
 				timer: $timer,
-				kind: FlowTimerFiredEvent::KIND_EXPIRY,
-				transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none'),
-				rungKey: null,
-				recipients: [],
-				priority: 'critical',
-				message: null
+				firing: new TimerFiring(
+					kind: FlowTimerFiredEvent::KIND_EXPIRY,
+					transition: 'expiry:' . (string)($timer->getOnExpiry() ?? 'none')
+				),
+				notice: new EscalationNotice(priority: 'critical')
 			)
 		);
 		$this->projection()->project(timer: $timer);
@@ -657,7 +654,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 *
 	 * @return int How many rungs THIS call fired.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function fireRungs(FlowTimer $timer, DateTimeInterface $now): int {
 		if ($timer->getState() !== FlowTimer::STATE_ARMED || $timer->getFireAt() === null) {
@@ -700,13 +697,13 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					kind: FlowTimerFiredEvent::KIND_RUNG,
-					transition: $transition,
-					rungKey: (string)$rung['key'],
-					recipients: $recipients,
-					priority: (string)$rung['priority'],
-					message: $rung['message'],
-					consequence: ($rung['consequence'] ?? null)
+					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					notice: new EscalationNotice(
+						recipients: $recipients,
+						priority: (string)$rung['priority'],
+						message: $rung['message'],
+						consequence: ($rung['consequence'] ?? null)
+					)
 				)
 			);
 		}//end foreach

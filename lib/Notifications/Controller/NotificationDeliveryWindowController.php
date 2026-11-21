@@ -40,8 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -76,7 +76,7 @@ class NotificationDeliveryWindowController extends Controller {
 		IRequest $request,
 		NotificationDeliveryWindowControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->windowService = $services->windowService;
 		$this->userSession = $services->userSession;
@@ -114,7 +114,6 @@ class NotificationDeliveryWindowController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
