@@ -72,9 +72,6 @@ use OCA\OpenRegister\Service\AuditRetentionResolver;
 use OCA\OpenRegister\Service\AuditRetentionResolverInterface;
 use OCA\OpenRegister\Service\Bindings\AccessBindings;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
-use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
-use OCA\OpenRegister\Service\Bindings\RootBindings;
-use OCA\OpenRegister\Service\Bindings\SchemasBindings;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -860,13 +857,10 @@ final class ContractBindings {
 		// skips the item after a spread in an array this size, so two adjacent
 		// spreads end the analysis with an internal error.
 		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
-		...ObjectsBindings::BINDINGS,
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
-		...RootBindings::BINDINGS,
 		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		...AccessBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
-		...SchemasBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
 		...FeatureBindings::BINDINGS,
 		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
