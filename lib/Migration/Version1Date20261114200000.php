@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the nullable `journey` column (a journey object's uuid) to `openregister_access_links`.
@@ -36,7 +35,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-form-link-may-open-an-existing-record-for-change-req-fjr-008
  */
-class Version1Date20261114200000 extends SimpleMigrationStep {
+class Version1Date20261114200000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -58,7 +57,7 @@ class Version1Date20261114200000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/or-form-and-journey-registry/tasks.md#task-6-1
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */

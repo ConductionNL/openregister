@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 255;
+	private const LISTENER_COUNT = 257;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -37,7 +37,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
 	 * listeners; every other registration is unchanged and in the same order.
 	 */
-	private const SEQUENCE_SHA256 = '4c997433b745e7a5be813e2df9bbcfb3731c8eb1369992d1f671bc8682924f5d';
+	private const SEQUENCE_SHA256 = '356231ccfed86939ede9083583e053eb8f3bb412fa94c87be4007b0d67a3cdd8';
 
 	/**
 	 * The registration calls, in call order, with every argument.
