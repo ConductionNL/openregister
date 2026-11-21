@@ -40,14 +40,17 @@ final class ApiCallObservation {
 	 * @param string        $method     The HTTP method.
 	 * @param string        $apiVersion The API version the call addressed.
 	 * @param DateTime|null $moment     When the call was made; null for now.
+	 * @param string        $client     The official client library and its version, or ''.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
+	 * @spec openspec/changes/api-client-libraries/specs/api-client-libraries/spec.md#requirement-the-caller-record-names-the-client-library
 	 */
 	public function __construct(
 		public readonly string $path,
 		public readonly string $method,
 		public readonly string $apiVersion,
 		public readonly ?DateTime $moment = null,
+		public readonly string $client = '',
 	) {
 	}//end __construct()
 }//end class

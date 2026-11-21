@@ -159,6 +159,9 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 			'param(1,2)',
 			'expr.eq(api_version,:param)',
 			'andWhere(eq:api_version)',
+			'param(,2)',
+			'expr.eq(client,:param)',
+			'andWhere(eq:client)',
 			'executeStatement',
 		];
 	}//end incrementCalls()

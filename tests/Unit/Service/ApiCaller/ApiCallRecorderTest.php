@@ -200,7 +200,7 @@ class ApiCallRecorderTest extends TestCase {
 		$published = $record->jsonSerialize();
 
 		$this->assertSame(
-			['id', 'principal', 'route', 'method', 'version', 'calls', 'firstSeen', 'lastSeen'],
+			['id', 'principal', 'route', 'method', 'version', 'client', 'calls', 'firstSeen', 'lastSeen'],
 			array_keys($published),
 			'Recording what a caller sent puts a second copy of case data in a log.'
 		);
