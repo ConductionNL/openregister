@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Service\Object\FacetWeekLabels;
 use OCA\OpenRegister\Service\Object\FacetWeekNumbering;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use Psr\Log\NullLogger;
 
 /**
@@ -42,6 +43,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Object\FacetLookups
  * @uses   \OCA\OpenRegister\Service\Object\FacetRun
  * @uses   \OCA\OpenRegister\Service\Object\FacetWeekLabels
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
  * @uses   \OCA\OpenRegister\Service\Object\FacetableFieldDiscovery
  * @uses   \OCA\OpenRegister\Service\Flow\Timer\CalendarBlackouts
  * @uses   \OCA\OpenRegister\Service\Flow\Timer\CalendarWeekNumbering
@@ -89,6 +91,7 @@ class FacetHandlerWeekNumberingTest extends TestCase {
 			lookups: new FacetLookups(unifiedObjectMapper: $mapper, schemaMapper: $schemas),
 			responseCache: $cache,
 			logger: new NullLogger(),
+			searchProfile: new PropertySearchProfile(),
 			weekNumbering: $numbering,
 		);
 
