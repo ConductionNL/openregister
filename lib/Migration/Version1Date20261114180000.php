@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * The upload sessions table: one row per upload in parts (REQ-LFH-002).
@@ -35,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/large-file-handling/tasks.md#task-2-1
  */
-class Version1Date20261114180000 extends SimpleMigrationStep {
+class Version1Date20261114180000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -53,7 +52,7 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-1
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -80,5 +79,5 @@ class Version1Date20261114180000 extends SimpleMigrationStep {
 		$output->info('Created ' . self::TABLE . ' for uploads in parts.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
