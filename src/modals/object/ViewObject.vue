@@ -334,6 +334,35 @@ import {
 																)
 															" />
 
+														<!-- Geometry properties: a map that writes GeoJSON (geometry-on-a-map 3.2) -->
+														<GeometryEditor
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																)
+																=== 'GeometryEditor'
+															"
+															:value="
+																geometryValueFor(
+																	propertyValue(key, value),
+																)
+															"
+															:geoType="
+																currentSchema?.properties?.[key]?.format
+																	|| currentSchema?.properties?.[key]?.type
+															"
+															:label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@input="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															" />
+
 														<!-- Translatable properties: one input per register language (REQ-RFCE-001) -->
 														<TranslationFieldEditor
 															v-else-if="
@@ -1022,6 +1051,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import GeometryEditor from '../../components/geo/GeometryEditor.vue'
 import TranslationFieldEditor from '../../components/i18n/TranslationFieldEditor.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
@@ -1037,6 +1067,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { uploadSizeLabel } from '../../services/byteSize.js'
 import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
+import { parseGeometryText } from '../../services/geo/geometryValue.js'
 import { getTheme } from '../../services/getTheme.js'
 import {
 	editorFor,
@@ -1513,6 +1544,7 @@ export default {
 		NcActionButton,
 		NcEmptyContent,
 		NcSelect,
+		GeometryEditor,
 		TranslationFieldEditor,
 		CodeMirror,
 		AppTabs,
@@ -3011,6 +3043,21 @@ export default {
 		},
 
 		/**
+		 * A stored geometry as an object for the geometry editor: a value kept
+		 * as JSON text is read, anything else that is no object is none.
+		 *
+		 * @param {object|string|null} value The stored value.
+		 * @return {object|null}
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 */
+		geometryValueFor(value) {
+			if (typeof value === 'string') {
+				return parseGeometryText(value).value
+			}
+			return value && typeof value === 'object' && !Array.isArray(value) ? value : null
+		},
+
+		/**
 		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input component
 		 */
@@ -3028,6 +3075,7 @@ export default {
 					select: 'NcSelect',
 					file: 'file',
 					translation: 'TranslationFieldEditor',
+					geometry: 'GeometryEditor',
 				}[editor] || 'NcTextField'
 			)
 		},

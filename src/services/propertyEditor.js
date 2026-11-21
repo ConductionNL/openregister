@@ -6,6 +6,8 @@
  * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
  */
 
+import { isGeoProperty } from './geo/mapData.js'
+
 /**
  * The constants a `oneOf` declares, or null when it is not a list of constants.
  *
@@ -41,6 +43,7 @@ export function enumOptions(property) {
 
 // The editors a property without translations can get, first match wins.
 const EDITOR_RULES = [
+	['geometry', isGeoProperty],
 	['file', (property) => property.type === 'file'],
 	['select', (property) => enumOptions(property).length > 0],
 	['switch', (property) => property.type === 'boolean'],
@@ -48,8 +51,9 @@ const EDITOR_RULES = [
 ]
 
 /**
- * The editor kind for a property: `switch`, `date`, `select`, `file`,
- * `translation` or `text`.
+ * The editor kind for a property: `geometry`, `switch`, `date`, `select`,
+ * `file`, `translation` or `text`. A `geo:*` property gets the geometry
+ * editor, a map that writes GeoJSON (geometry-on-a-map task 3.2).
  *
  * A translatable property only gets one input per language when the register
  * declares languages; without them there is nothing to put a tab on.
@@ -58,6 +62,7 @@ const EDITOR_RULES = [
  * @param {Array<string>} languages The register's languages.
  * @return {string}
  * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
  */
 export function editorFor(property, languages = []) {
 	if (!property) return 'text'
