@@ -444,4 +444,64 @@ class FlowScheduleServiceTest extends TestCase {
 			'the message must name the key an author has to set'
 		);
 	}//end testTheRefusalNamesTheFlowAndTheTrigger()
+	/**
+	 * A schedule with a timezone fires on its wall-clock time in that zone.
+	 *
+	 * `0 7 * * *` in Europe/Amsterdam is 05:00 UTC in summer and 06:00 UTC in
+	 * winter. Read in the server's UTC it would fire at 07:00 UTC both times,
+	 * two and one hours late.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function testAScheduleWithATimezoneFiresOnItsLocalTime(): void {
+		$summer = $this->schedule('summer', '0 7 * * *', 'pieter', '2026-07-24T12:00:00+00:00');
+		$summer['timezone'] = 'Europe/Amsterdam';
+		$this->registry->method('scheduledFlows')->willReturn([$summer]);
+		$this->runs->expects($this->once())->method('queueRun')->with('summer', $this->anything());
+
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25T04:59:00+00:00')));
+		$this->assertSame(['summer'], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25T05:01:00+00:00')));
+	}//end testAScheduleWithATimezoneFiresOnItsLocalTime()
+
+	/**
+	 * In winter the same zoned schedule is an hour later in UTC.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function testAZonedScheduleFollowsTheZonesWinterOffset(): void {
+		$winter = $this->schedule('winter', '0 7 * * *', 'pieter', '2026-12-01T12:00:00+00:00');
+		$winter['timezone'] = 'Europe/Amsterdam';
+		$this->registry->method('scheduledFlows')->willReturn([$winter]);
+
+		$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T05:30:00+00:00')));
+		$this->assertSame(['winter'], $this->service->fireDueFlows(new DateTimeImmutable('2026-12-02T06:00:30+00:00')));
+	}//end testAZonedScheduleFollowsTheZonesWinterOffset()
+
+	/**
+	 * Without a timezone, or with one PHP does not know, the cron is read in
+	 * the server's timezone, as it was before the key existed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public function testAScheduleWithoutAKnownTimezoneKeepsTheServersClock(): void {
+		$previous = date_default_timezone_get();
+		date_default_timezone_set('UTC');
+		try {
+			$plain = $this->schedule('plain', '0 7 * * *', 'pieter', '2026-07-24T12:00:00+00:00');
+			$typo = $this->schedule('typo', '0 7 * * *', 'pieter', '2026-07-24T12:00:00+00:00');
+			$typo['timezone'] = 'Europe/Amsterdan';
+			$this->registry->method('scheduledFlows')->willReturn([$plain, $typo]);
+
+			$this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25T05:01:00+00:00')));
+			$this->assertSame(['plain', 'typo'], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25T07:00:30+00:00')));
+		} finally {
+			date_default_timezone_set($previous);
+		}
+	}//end testAScheduleWithoutAKnownTimezoneKeepsTheServersClock()
 }//end class

@@ -25,7 +25,6 @@
 namespace Unit\Repair;
 
 use OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution;
-use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -112,8 +111,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 			->willReturn(['rechained' => 3, 'tombstonesPreserved' => 1]);
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->emptyDb(), $this->config(store: $store), new NullLogger()),
-			$hashes
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$step->run($this->createMock(IOutput::class));
@@ -143,8 +144,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->expects($this->never())->method('rechainAll');
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->emptyDb(), $this->config(writable: false, store: $store), new NullLogger()),
-			$hashes
+			db: $this->emptyDb(),
+			config: $this->config(writable: false, store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$output = $this->createMock(IOutput::class);
@@ -169,8 +172,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->expects($this->never())->method('rechainAll');
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->emptyDb(), $this->config(store: $store), new NullLogger()),
-			$hashes
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		$output = $this->createMock(IOutput::class);
@@ -191,8 +196,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 		$hashes->method('rechainAll')->willThrowException(new RuntimeException('lock unavailable'));
 
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->emptyDb(), $this->config(store: $store), new NullLogger()),
-			$hashes
+			db: $this->emptyDb(),
+			config: $this->config(store: $store),
+			logger: new NullLogger(),
+			hashes: $hashes
 		);
 
 		try {
@@ -215,8 +222,10 @@ class RechainAuditTrailForFlowAttributionTest extends TestCase {
 
 	public function testItNamesItselfForTheRepairRunner(): void {
 		$step = new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($this->emptyDb(), $this->config(), new NullLogger()),
-			$this->createMock(AuditHashService::class)
+			db: $this->emptyDb(),
+			config: $this->config(),
+			logger: new NullLogger(),
+			hashes: $this->createMock(AuditHashService::class)
 		);
 
 		$this->assertStringContainsString('audit chain', strtolower($step->getName()));

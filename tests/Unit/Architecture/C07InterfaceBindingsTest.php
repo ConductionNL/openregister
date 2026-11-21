@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
@@ -81,14 +81,14 @@ final class C07InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		ArchiveActionDateCalculator::class => [ArchiveReferenceReaderInterface::class, ContractBindings::class],
 		AuditHashService::class => [AuditSealInterface::class, ContractBindings::class],
-		AuditTrailMapper::class => [AuditTrailMapperInterface::class, DbRegistrar::class],
+		AuditTrailMapper::class => [AuditTrailMapperInterface::class, ComplianceMapperRegistrar::class],
 		AvgRetentionService::class => [AvgRetentionPassInterface::class, ContractBindings::class],
 		DpiaPatternDetectionService::class => [DpiaPatternDetectorInterface::class, ContractBindings::class],
 		ExternalGrantLapseNotifier::class => [ExternalGrantLapseNotifierInterface::class, ContractBindings::class],
 		GroupReconciler::class => [GroupReconcilerInterface::class, ContractBindings::class],
 		OAuth2RefreshService::class => [OAuth2CredentialSweepInterface::class, ContractBindings::class],
 		RetentionSweepService::class => [RetentionSweepInterface::class, ContractBindings::class],
-		SearchTrailMapper::class => [SearchTrailCleanupInterface::class, DbRegistrar::class],
+		SearchTrailMapper::class => [SearchTrailCleanupInterface::class, ComplianceMapperRegistrar::class],
 	];
 
 	/**

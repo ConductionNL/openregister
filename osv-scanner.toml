@@ -1,0 +1,7 @@
+# Known vulnerabilities that have no fix this project can take yet. Each entry
+# says why, and expires so it is looked at again.
+
+[[IgnoredVulns]]
+id = "GHSA-848j-6mx2-7j84"
+ignoreUntil = 2027-05-20
+reason = "elliptic 6.6.1 is the newest release and no fixed version exists. It reaches the tree only as a dev dependency, through the webpack Node polyfills (crypto-browserify), and no code in this app signs or verifies with it."

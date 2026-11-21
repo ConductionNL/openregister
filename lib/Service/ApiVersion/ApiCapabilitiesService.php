@@ -112,6 +112,17 @@ class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 	];
 
 	/**
+	 * What a list query accepts beyond the flat filters, so a caller that also
+	 * supports older instances checks once instead of probing. `where`: the
+	 * `_where` condition tree (AND/OR groups of filters).
+	 *
+	 * @var array<string, bool>
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private const LIST_QUERY = ['where' => true];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
@@ -131,9 +142,10 @@ class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 	/**
 	 * The half any caller may read.
 	 *
-	 * @return array<string, mixed> The versions, the limits and the contract links.
+	 * @return array<string, mixed> The versions, the limits, the contract links and what a list query accepts.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
 	 */
 	public function publicCapabilities(): array {
 		$contracts = $this->contractPaths();
@@ -144,6 +156,7 @@ class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 			'apiVersions' => $this->publishedVersions(),
 			'contracts' => $contracts,
 			'limits' => $this->limits(),
+			'listQuery' => self::LIST_QUERY,
 		];
 
 	}//end publicCapabilities()

@@ -11,7 +11,8 @@
  * named rather than left to be discovered.
  *
  * 🔑 IT DOES NOT CHAIN ANYTHING ITSELF, and that is the whole reason it is
- * short. `AuditTrailMapper::insertAuditTrails()` inserts a chunk and then seals
+ * short. It hands its entries to the audit trail's writer
+ * (`AuditEntryWriterInterface`), whose `AuditTrailMapper::insertAuditTrails()` inserts a chunk and then seals
  * that chunk into the chain in one batched pass, so a second implementation of
  * the hashing here would be a second answer to "what is this row's hash" over a
  * structure whose entire value is that there is one. The earlier caution about
@@ -49,9 +50,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -75,11 +77,11 @@ class RevealFlusher implements RevealFlusherInterface {
 	 * Constructor.
 	 *
 	 * @param RevealRecording           $recording What the read path collected, and the logger.
-	 * @param AuditTrailMapperInterface $mapper    The trail, which owns the chain.
+	 * @param AuditEntryWriterInterface $trail     The audit trail, which owns the chain.
 	 */
 	public function __construct(
 		private readonly RevealRecording $recording,
-		private readonly AuditTrailMapperInterface $mapper,
+		private readonly AuditEntryWriterInterface $trail,
 	) {
 	}//end __construct()
 
@@ -104,8 +106,8 @@ class RevealFlusher implements RevealFlusherInterface {
 		// See the class docblock: the reads have already happened, so a
 		// failure here is a recording problem and must not become an
 		// availability one.
-		return (new AuditRowWriter(mapper: $this->mapper, logger: $this->recording->logger))->write(
-			rows: $this->rowsFor(pending: $pending),
+		return (new AuditEntryRecorder(trail: $this->trail, logger: $this->recording->logger))->record(
+			entries: $this->entriesFor(pending: $pending),
 			failure: '[RevealFlusher] Could not write the reveal entries; they are lost for this request'
 		);
 	}//end flush()
@@ -158,23 +160,23 @@ class RevealFlusher implements RevealFlusherInterface {
 	}//end reportOverflow()
 
 	/**
-	 * The collected reveals, as rows the mapper can seal.
+	 * The collected reveals, as entries the trail can seal.
 	 *
 	 * @param array<int, array<string, mixed>> $pending The entries taken from the collector.
 	 *
-	 * @return array<int, AuditTrail> The rows.
+	 * @return list<PlacedAuditEntry> The entries.
 	 */
-	private function rowsFor(array $pending): array {
-		$rows = [];
+	private function entriesFor(array $pending): array {
+		$entries = [];
 		foreach ($pending as $entry) {
-			$rows[] = $this->rowFor(entry: $entry);
+			$entries[] = $this->rowFor(entry: $entry);
 		}
 
-		return $rows;
-	}//end rowsFor()
+		return $entries;
+	}//end entriesFor()
 
 	/**
-	 * One collected reveal, as a row the mapper can seal.
+	 * One collected reveal, as an entry the trail can seal.
 	 *
 	 * 🔴 `changed` CARRIES THE PROPERTY NAME AND NEVER ITS VALUE. The point of
 	 * the row is that somebody saw a BSN; putting the BSN in the row would copy
@@ -182,48 +184,63 @@ class RevealFlusher implements RevealFlusherInterface {
 	 * readable by auditors and impossible to delete. The whole feature would
 	 * then be a second, permanent disclosure of everything it audits.
 	 *
+	 * The entry points at the object, schema and register the collected entry
+	 * names, where it names them.
+	 *
 	 * @param array<string, mixed> $entry One entry from the collector.
 	 *
-	 * @return AuditTrail The row, unsealed; the mapper seals it.
+	 * @return PlacedAuditEntry The entry, unsealed; the trail seals it.
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
-	public function rowFor(array $entry): AuditTrail {
-		$row = new AuditTrail();
-		$row->setUuid(Uuid::v4()->toRfc4122());
-		$row->setAction(RevealCollector::ACTION);
-		$row->setUser((string)($entry['user'] ?? ''));
-		$row->setUserName((string)($entry['user'] ?? ''));
-		$row->setCreated(new DateTime());
+	public function rowFor(array $entry): PlacedAuditEntry {
+		$user = (string)($entry['user'] ?? '');
 
-		$this->placeRow(row: $row, entry: $entry);
-		$row->setChanged(self::changedFor(entry: $entry));
-
-		return $row;
+		return new PlacedAuditEntry(
+			entry: new AuditEntry(
+				uuid: Uuid::v4()->toRfc4122(),
+				action: RevealCollector::ACTION,
+				user: $user,
+				userName: $user,
+				changed: self::changedFor(entry: $entry),
+				created: new DateTimeImmutable(),
+				objectUuid: self::objectOf(entry: $entry)
+			),
+			register: self::idOf(value: ($entry['register'] ?? null)),
+			schema: self::idOf(value: ($entry['schema'] ?? null))
+		);
 	}//end rowFor()
 
 	/**
-	 * Point the row at the object, schema and register the entry names, where it names them.
+	 * The uuid of the object the entry names, or null when it names none.
 	 *
-	 * @param AuditTrail           $row   The row being built.
 	 * @param array<string, mixed> $entry One entry from the collector.
 	 *
-	 * @return void
+	 * @return string|null The object uuid.
 	 */
-	private function placeRow(AuditTrail $row, array $entry): void {
+	private static function objectOf(array $entry): ?string {
 		$objectUuid = (string)($entry['object'] ?? '');
-		if ($objectUuid !== '') {
-			$row->setObjectUuid($objectUuid);
+		if ($objectUuid === '') {
+			return null;
 		}
 
-		if (($entry['schema'] ?? null) !== null) {
-			$row->setSchema((int)$entry['schema']);
+		return $objectUuid;
+	}//end objectOf()
+
+	/**
+	 * A register or schema id from the collector, or null when it named none.
+	 *
+	 * @param mixed $value The collected value.
+	 *
+	 * @return int|null The id.
+	 */
+	private static function idOf(mixed $value): ?int {
+		if ($value === null) {
+			return null;
 		}
 
-		if (($entry['register'] ?? null) !== null) {
-			$row->setRegister((int)$entry['register']);
-		}
-	}//end placeRow()
+		return (int)$value;
+	}//end idOf()
 
 	/**
 	 * What the row records as changed: the property name, or the process run.
