@@ -96,6 +96,7 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'permittedActionsFor',
 			'previewDepartmentMatrix',
 			'provenanceFor',
+			'remoteRecipientDenial',
 			'resolveAuthorization',
 			'resolveDeclaredAuthorization',
 			'resolveInheritFromPublic',

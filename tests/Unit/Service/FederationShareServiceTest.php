@@ -168,6 +168,57 @@ class FederationShareServiceTest extends TestCase {
 	}//end testCreateOutgoingSharePersistsOutgoingAcceptedWithToken()
 
 	/**
+	 * A share declaring nothing crosses with the narrowest part, the data (REQ-PCF-002).
+	 *
+	 * @return void
+	 */
+	public function testAShareDeclaringNothingSendsOnlyTheData(): void {
+		$captured = null;
+		$this->shareMapper->method('createFromArray')->willReturnCallback(
+			function (array $data) use (&$captured): FederatedShare {
+				$captured = $data;
+				return new FederatedShare();
+			}
+		);
+
+		$this->service->createOutgoingShare(['scope' => 'object', 'objectUri' => 'u-1', 'permissions' => 'read']);
+
+		$this->assertSame(['data'], $captured['crosses']);
+	}//end testAShareDeclaringNothingSendsOnlyTheData()
+
+	/**
+	 * A declaration is stored as declared, and judged with the rest of the share.
+	 *
+	 * @return void
+	 */
+	public function testADeclarationIsStoredAndJudgedWithTheShare(): void {
+		$captured = null;
+		$this->shareMapper->method('createFromArray')->willReturnCallback(
+			function (array $data) use (&$captured): FederatedShare {
+				$captured = $data;
+				return new FederatedShare();
+			}
+		);
+
+		$this->service->createOutgoingShare(['scope' => 'object', 'objectUri' => 'u-1', 'permissions' => 'read', 'crosses' => ['files', 'data']]);
+
+		$this->assertSame(['data', 'files'], $captured['crosses']);
+		$this->assertSame(['data', 'files'], $this->judged[0]->getCrosses());
+	}//end testADeclarationIsStoredAndJudgedWithTheShare()
+
+	/**
+	 * A declaration naming an unknown part is refused before anything is stored.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownPartIsRefusedAndNotStored(): void {
+		$this->shareMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->service->createOutgoingShare(['scope' => 'object', 'objectUri' => 'u-1', 'permissions' => 'read', 'crosses' => ['data', 'internalNotes']]);
+	}//end testAnUnknownPartIsRefusedAndNotStored()
+
+	/**
 	 * A share the caller may not grant is refused and never stored.
 	 *
 	 * @return void

@@ -46,6 +46,7 @@ interface FederationShareServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When scope, permissions or query filter are invalid.
 	 * @throws NotAuthorizedException When the caller does not hold the rights the share grants.
+	 * @throws \OCA\OpenRegister\Exception\FederatedShareNotDeliveredException When the recipient's instance could not take the share.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
@@ -105,4 +106,20 @@ interface FederationShareServiceInterface {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function renewShare(int $id): FederatedShare;
+
+	/**
+	 * Accept or decline a pending share another instance sent here, and answer its sender.
+	 *
+	 * @param int  $id     The share id.
+	 * @param bool $accept True to accept, false to decline.
+	 *
+	 * @return FederatedShare The answered share.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the share is not one of the active organisation's.
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the caller may not change the share.
+	 * @throws \InvalidArgumentException When the share is not a pending incoming share.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	public function answerIncomingShare(int $id, bool $accept): FederatedShare;
 }//end interface

@@ -32,8 +32,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Exception\FederatedShareNotDeliveredException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Federation\OcmShareSender;
 use OCA\OpenRegister\Service\Federation\ShareCreatorCheck;
+use OCA\OpenRegister\Service\Federation\ShareCrosses;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareLifetime;
 use OCP\Security\ISecureRandom;
@@ -76,6 +79,7 @@ class FederationShareService implements FederationShareServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 * @param ShareCreatorCheck $creatorCheck Judges a share as its creator when it is used.
 	 * @param ShareLifetime $lifetime How long a share is served.
+	 * @param OcmShareSender|null $sender Sends a share to another instance and tells it about status changes.
 	 */
 	public function __construct(
 		private readonly FederatedShareMapperInterface $shareMapper,
@@ -84,6 +88,7 @@ class FederationShareService implements FederationShareServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly ShareCreatorCheck $creatorCheck,
 		private readonly ShareLifetime $lifetime,
+		private readonly ?OcmShareSender $sender = null,
 	) {
 	}//end __construct()
 
@@ -152,6 +157,7 @@ class FederationShareService implements FederationShareServiceInterface {
 	 *
 	 * @throws \InvalidArgumentException When scope, permissions or query filter are invalid.
 	 * @throws NotAuthorizedException When the caller does not hold the rights the share grants.
+	 * @throws FederatedShareNotDeliveredException When the recipient's instance could not take the share.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
@@ -165,8 +171,44 @@ class FederationShareService implements FederationShareServiceInterface {
 			throw new NotAuthorizedException(message: $refusal);
 		}
 
-		return $this->shareMapper->createFromArray(data: $data);
+		$created = $this->shareMapper->createFromArray(data: $data);
+
+		return $this->sendToRemote(share: $created);
 	}//end createOutgoingShare()
+
+	/**
+	 * Send a just-created share to the recipient's instance, when it names one.
+	 *
+	 * A share sent over OCM waits for the recipient's answer as `pending`
+	 * (still served: the local grant stands). A share the other instance could
+	 * not take is revoked at once, so no live token is left behind for a share
+	 * nobody received, and the caller is told.
+	 *
+	 * @param FederatedShare $share The stored outgoing share.
+	 *
+	 * @return FederatedShare The share as it now stands.
+	 *
+	 * @throws FederatedShareNotDeliveredException When the other instance could not take the share.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	private function sendToRemote(FederatedShare $share): FederatedShare {
+		if ($this->sender === null) {
+			return $share;
+		}
+
+		$outcome = $this->sender->send(share: $share);
+		if ($outcome === OcmShareSender::SENT) {
+			return $this->shareMapper->updateFromArray(id: (int)$share->getId(), data: ['status' => 'pending']);
+		}
+
+		if ($outcome === OcmShareSender::FAILED) {
+			$this->shareMapper->updateFromArray(id: (int)$share->getId(), data: ['status' => 'revoked']);
+			throw new FederatedShareNotDeliveredException(message: 'The share could not be delivered to the other instance');
+		}
+
+		return $share;
+	}//end sendToRemote()
 
 	/**
 	 * The validated record of an outgoing share, owned by the current user and active organisation.
@@ -218,7 +260,11 @@ class FederationShareService implements FederationShareServiceInterface {
 
 		$queryFilter = ($params['queryFilter'] ?? null);
 		$this->assertQueryFilterKeepsItsTarget(queryFilter: $queryFilter);
-		return ['scope' => $scope] + $this->shareTarget(params: $params) + ['queryFilter' => $queryFilter, 'permissions' => $permissions];
+		$crosses = ShareCrosses::declared(requested: ($params['crosses'] ?? null));
+
+		$grant = ['queryFilter' => $queryFilter, 'permissions' => $permissions, 'crosses' => $crosses];
+
+		return ['scope' => $scope] + $this->shareTarget(params: $params) + $grant;
 	}//end outgoingGrant()
 
 	/**
@@ -338,13 +384,52 @@ class FederationShareService implements FederationShareServiceInterface {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
 	public function setStatus(int $id, string $status): FederatedShare {
-		$refusal = $this->grantor->changeRefusal(share: $this->shareMapper->find(id: $id));
+		$current = $this->shareMapper->find(id: $id);
+		$refusal = $this->grantor->changeRefusal(share: $current);
 		if ($refusal !== null) {
 			throw new NotAuthorizedException(message: $refusal);
 		}
 
-		return $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		$previous = $current->getStatus();
+		$updated  = $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		if ($this->sender !== null && $previous !== $status) {
+			// REQ-PCF-001: the other side learns of a revoke, accept or decline made here.
+			$this->sender->notify(share: $updated, status: $status);
+		}
+
+		return $updated;
 	}//end setStatus()
+
+	/**
+	 * Accept or decline a share another instance sent here, and answer its sender.
+	 *
+	 * Only a pending incoming share can be answered; the same rights as any
+	 * other change to a share apply.
+	 *
+	 * @param int  $id     The share id.
+	 * @param bool $accept True to accept, false to decline.
+	 *
+	 * @return FederatedShare The answered share.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the share is not one of the active organisation's.
+	 * @throws NotAuthorizedException When the caller may not change the share.
+	 * @throws InvalidArgumentException When the share is not a pending incoming share.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	public function answerIncomingShare(int $id, bool $accept): FederatedShare {
+		$share = $this->shareMapper->find(id: $id);
+		if ($share->getDirection() !== 'incoming' || $share->getStatus() !== 'pending') {
+			throw new InvalidArgumentException('Only a pending share received from another instance can be accepted or declined');
+		}
+
+		$status = 'declined';
+		if ($accept === true) {
+			$status = 'accepted';
+		}
+
+		return $this->setStatus(id: $id, status: $status);
+	}//end answerIncomingShare()
 
 	/**
 	 * Resolve the active organisation UUID (null when none).

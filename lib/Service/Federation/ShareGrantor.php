@@ -142,7 +142,8 @@ class ShareGrantor implements ShareGrantorInterface {
 	 *
 	 * A schema opts in with `configuration.federatable: true`; one that declares
 	 * nothing is not federatable. Asked when a share is created, so an existing
-	 * share keeps serving. A register share names no schema and is not judged here.
+	 * share keeps serving. A register share serves every schema in it, so every
+	 * one of them must declare it.
 	 *
 	 * @param FederatedShareInterface $share The share to create.
 	 *
@@ -152,7 +153,7 @@ class ShareGrantor implements ShareGrantorInterface {
 	 */
 	public function federationRefusal(FederatedShareInterface $share): ?string {
 		if ($share->getScope() === 'register') {
-			return null;
+			return $this->registerFederationRefusal(share: $share);
 		}
 
 		$schema = $this->targets->schema(share: $share);
@@ -162,6 +163,30 @@ class ShareGrantor implements ShareGrantorInterface {
 
 		return null;
 	}//end federationRefusal()
+
+	/**
+	 * Why a whole register may not be federated, or null when every schema in it declares it may.
+	 *
+	 * @param FederatedShareInterface $share The register share to create.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	private function registerFederationRefusal(FederatedShareInterface $share): ?string {
+		$schemas = $this->targets->registerSchemas(share: $share);
+		if ($schemas === null) {
+			return 'This register cannot be shared with another instance: it or one of its schemas could not be found';
+		}
+
+		foreach ($schemas as $schema) {
+			if ($schema->isFederatable() === false) {
+				return 'This register holds a schema that does not allow its objects to be shared with another instance';
+			}
+		}
+
+		return null;
+	}//end registerFederationRefusal()
 
 	/**
 	 * Why the caller may not change an existing share, or null when they may.

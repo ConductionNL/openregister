@@ -98,6 +98,38 @@ class ShareTargets {
 	}//end register()
 
 	/**
+	 * Every schema of the register a register share names, or null when the
+	 * register or one of its schemas does not resolve.
+	 *
+	 * @param FederatedShareInterface $share The register share.
+	 *
+	 * @return array<int, Schema>|null The schemas.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function registerSchemas(FederatedShareInterface $share): ?array {
+		$register = $this->register(share: $share);
+		if ($register === null) {
+			return null;
+		}
+
+		$schemas = [];
+		foreach ($register->getSchemas() as $schemaRef) {
+			if (is_int($schemaRef) === false && is_string($schemaRef) === false) {
+				return null;
+			}
+
+			try {
+				$schemas[] = $this->resolver->resolveSchemaWithin(register: $register, schemaRef: $schemaRef);
+			} catch (Throwable $e) {
+				return null;
+			}
+		}
+
+		return $schemas;
+	}//end registerSchemas()
+
+	/**
 	 * Whether the caller's own read reaches the one object an object-scope share names.
 	 *
 	 * @param FederatedShareInterface $share The share.
