@@ -29,7 +29,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkTranslation;
 use OCA\OpenRegister\Controller\Support\TranslationControllerServices;
 use OCA\OpenRegister\Controller\Support\TranslationFilter;
@@ -45,6 +44,7 @@ use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationFilter as RowFilter;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Db\TranslationSlot as RowSlot;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
 use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
@@ -106,7 +106,7 @@ class TranslationController extends Controller {
 		IRequest $request,
 		TranslationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->statusService = $services->statusService;
 		$this->translationMapper = $services->mappers->translationMapper;
 		$this->schemaMapper = $services->mappers->schemaMapper;
@@ -269,8 +269,6 @@ class TranslationController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with the updated row.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function setStatus(string $uuid, string $property, string $language, ?string $status = null): JSONResponse {
@@ -320,8 +318,6 @@ class TranslationController extends Controller {
 	 * @param string[]|null $properties Optional whitelist of property names.
 	 *
 	 * @return JSONResponse JSON response with translation result.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */

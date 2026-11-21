@@ -50,6 +50,28 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGraph
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGuards
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Controller\Support\ProseReference
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectRelation
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Relation\ProseMention
+ * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDerivation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Service\Relation\ParentInheritance
  */
 class ObjectRelationsControllerRouteAddressTest extends TestCase {
 

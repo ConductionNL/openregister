@@ -266,6 +266,72 @@ See ADR-019 (registry render/link), ADR-041 (cross-app commands via events),
 ADR-013 (first-wins collision), and ADR-066 (cross-app leaf registration — the
 render-and-read boundary).
 
+### Leaf or `IReferenceProvider`?
+
+Nextcloud ships its own cross-app read mechanism,
+`OCP\Collaboration\Reference\IReferenceProvider`. The two **coexist**; they
+answer different questions, so pick by the shape of what you are building:
+
+| You are building… | Use |
+|---|---|
+| An **object-scoped collection** of your app's own items on an Open Register object ("all of app X's notes on *this* object"), optionally with an append, and/or a tab + widget on the object | a **data-provider leaf** |
+| A **read-only rich preview** of a **single URL or text token** inside free text (Talk, Text, comments), with no Open Register object and no collection | an **`IReferenceProvider`** |
+
+- **Never** use a data-provider leaf for a stateless URL or text preview: a
+  leaf keys on a register, schema and object id and returns a collection; a
+  bare URL preview has none of those. Reviewers redirect it to an
+  `IReferenceProvider`.
+- **Never** use an `IReferenceProvider` to expose an object-scoped collection or
+  any append: `resolveReference()` returns one read-only `IReference` and the
+  contract has no write.
+
+The one overlap — rendering a **single read-only linked entity** identified by a
+URL or id — resolves by context. When it hangs off an Open Register object as
+that object's linked-entity card (a schema property with a `referenceType`), it
+is the leaf single-entity surface. When it is an inline preview of a bare URL in
+text, it is an `IReferenceProvider`. Do not implement it twice for the same
+surface. There is no adapter between the two mechanisms; a bridge that lets a
+reference also render as the leaf single-entity surface is a possible future
+option and does not exist today.
+
+See the openspec change `leaf-reference-provider-convergence` for the full
+capability comparison and rationale.
+
+### Render modes — `component` and `mount`
+
+A render-surface leaf declares how it renders through `renderMode` on its
+`LeafRendering` (`LeafDescriptor::RENDER_MODE_COMPONENT` or
+`LeafDescriptor::RENDER_MODE_MOUNT`):
+
+| `renderMode` | The leaf ships | Use it when |
+|---|---|---|
+| `component` (default) | an SFC `tab` + `widget`, interpreted by the host's Vue runtime | the leaf is built against the same Vue major as the host, or is a built-in |
+| `mount` | a `mount(el, props)` + `unmount(el)` pair; the host hands it a bare container element and the leaf renders into it with its own framework | the leaf is built against a different Vue major than the host (a Vue 3 app on a Vue 2.7 host page) |
+
+An SFC compiled by one Vue major cannot be rendered by another, so a cross-major
+leaf must use `mount`. The two functions travel as a pair: `unmount(el)` must
+release the leaf's framework instance and listeners, because the host calls it
+on hide, on teardown and before re-mounting when the object changes.
+
+```php
+rendering: new LeafRendering(
+    surfaces: ['detail-page'],
+    renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+),
+```
+
+The JS registration under the same id must declare the same `renderMode`. The
+integration parity gate in `@conduction/nextcloud-vue` reads the JS side;
+`LeafRenderModeParity` compares it with the server side: given the JS render
+modes keyed by leaf id, `mismatches()` lists every render-surface leaf whose two
+values differ, and `violations()` gives one report line per mismatch. A JS
+registration that states no `renderMode` counts as `component`, and a leaf known
+to one layer only is left to the tab/widget half of parity. An unknown `renderMode` is rejected
+at registration and only that leaf is skipped. `renderMode` is reported per leaf
+on `openregister.integrations.leaves`, so a manifest app or admin UI can see how
+a leaf renders without loading its JS. A mount leaf is still render-and-read
+only: it invokes no command in the host (ADR-041).
+
 ## What to read next
 
 - **[xWiki leaf](./xwiki.md)** — the worked external example (OpenConnector-backed).

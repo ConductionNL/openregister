@@ -1,4 +1,15 @@
 {
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+        ]
+      }
+    }
+  ],
   "info": {
     "name": "OpenRegister JSON-LD Output",
     "description": "Read-side JSON-LD content negotiation on the object read endpoints, context-document dereferencing, default-JSON regression, and write-verb independence (json-ld-output spec).",

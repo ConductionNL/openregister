@@ -48,6 +48,8 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery
  */
 class PublicTimelineTest extends TestCase {
 

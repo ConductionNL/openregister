@@ -55,6 +55,14 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowTaskBridge
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\PortalTaskServices
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
  */
 class PortalTaskAskGoldenTest extends TestCase {
 

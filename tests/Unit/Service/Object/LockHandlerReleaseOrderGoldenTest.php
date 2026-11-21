@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -75,7 +76,7 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context): AuditTrail {
 				$this->events[] = 'entry:' . $action . ':' . json_encode($context);
 				return new AuditTrail();
@@ -112,7 +113,7 @@ final class LockHandlerReleaseOrderGoldenTest extends TestCase {
 		return new LockHandler(
 			new LockStores(magicMapper: $this->magic, auditTrailMapper: $audit, advisory: $advisory, runLocks: $runLocks),
 			$logger,
-			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class), $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end handler()
 

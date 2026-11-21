@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * The batch error cap, golden.
  *
  * @covers \OCA\OpenRegister\Dto\BulkSaveOutcome
+ * @uses \OCA\OpenRegister\Dto\BulkRowCount
  */
 final class BulkSaveOutcomeBatchErrorCapTest extends TestCase {
 

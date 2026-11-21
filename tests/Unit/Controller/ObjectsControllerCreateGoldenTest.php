@@ -33,7 +33,8 @@ use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -86,6 +87,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalWriteException
  * @uses   \OCA\OpenRegister\Service\Rules\ExpressionDefaultException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\UpsertOnKeyRequest
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses   \OCA\OpenRegister\Controller\Support\WriteFailureAnswer
+ * @uses   \OCA\OpenRegister\Exception\DatabaseErrorChain
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerCreateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-create-golden.json';
@@ -270,18 +282,18 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		);
 	}
 
-	private function webhooks(array $setup): ?WebhookService {
+	private function webhooks(array $setup): ?IEventDispatcher {
 		if (isset($setup['webhook']) === false) {
 			return null;
 		}
 
-		$service = $this->createMock(WebhookService::class);
+		$service = $this->createMock(originalClassName: IEventDispatcher::class);
 		if ($setup['webhook'] === 'fails') {
-			$service->method('interceptRequest')->willThrowException(new RuntimeException('no hook'));
+			$service->method('dispatchTyped')->willThrowException(new RuntimeException('no hook'));
 			return $service;
 		}
 
-		$service->method('interceptRequest')->willReturn($setup['webhook']);
+		$service->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($setup['webhook']));
 		return $service;
 	}
 

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -47,6 +48,16 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
+ * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
+ * @uses \OCA\OpenRegister\Service\Object\LockStores
  */
 final class LockHandlerAccessGoldenTest extends TestCase {
 
@@ -253,7 +264,7 @@ final class LockHandlerAccessGoldenTest extends TestCase {
 				runLocks: $this->createMock(RunLockRegistry::class)
 			),
 			$this->createMock(LoggerInterface::class),
-			new LockAuthorization($this->session(uid: $caller), $groupManager, $schemaMapper)
+			new LockAuthorization($this->session(uid: $caller), $groupManager, $schemaMapper, $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end handler()
 }//end class

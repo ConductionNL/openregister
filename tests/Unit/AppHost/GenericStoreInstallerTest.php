@@ -48,6 +48,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * @covers \OCA\OpenRegister\AppHost\Store\GenericStoreInstaller
  * @covers \OCA\OpenRegister\AppHost\Store\StoreManifest
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestContent
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestDiscovery
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestPermissions
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestTarget
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class GenericStoreInstallerTest extends TestCase {
 	/** @var ObjectService&MockObject */

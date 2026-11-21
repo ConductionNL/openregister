@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ final class SlaAddition {
 	 *
 	 * @throws FlowTimerValidationException When none was given.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function calendar(): WorkingCalendar {
 		if ($this->calendar === null) {
@@ -87,7 +87,7 @@ final class SlaAddition {
 	 *
 	 * @return WorkingCalendar|null The calendar, or null for wall-clock hours.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function serviceHoursCalendar(): ?WorkingCalendar {
 		if ($this->calendar !== null && $this->value > 0 && $this->calendar->getServiceHours()->areDeclared() === true) {
@@ -111,7 +111,7 @@ final class SlaAddition {
 	 *
 	 * @return float The amount.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function amount(): float {
 		if ($this->isForward() === true) {
@@ -126,7 +126,7 @@ final class SlaAddition {
 	 *
 	 * @return integer The sign.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function sign(): int {
 		if ($this->isForward() === true) {
@@ -141,7 +141,7 @@ final class SlaAddition {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function describe(): string {
 		$verb = 'Subtracting';

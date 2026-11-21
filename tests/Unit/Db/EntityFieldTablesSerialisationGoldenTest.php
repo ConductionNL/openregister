@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Files\Db\Chunk
  * @covers \OCA\OpenRegister\Db\ExportProfile
  * @covers \OCA\OpenRegister\Db\EndpointLog
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class EntityFieldTablesSerialisationGoldenTest extends TestCase {
 

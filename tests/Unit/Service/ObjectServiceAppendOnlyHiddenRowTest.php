@@ -113,6 +113,40 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
+ * @uses \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ElevatedWrite
  */
 class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 

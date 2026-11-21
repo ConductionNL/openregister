@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class MemberOfResolver {
 	 *
 	 * @return string[]|null The set, or null when the operand is malformed.
 	 *
-	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function valuesFor(mixed $operand, ?string $userId): ?array {
 		$spec = $this->normalise(operand: $operand);
@@ -147,7 +147,7 @@ class MemberOfResolver {
 	 *
 	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when unresolvable.
 	 *
-	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
 		$siblings = static fn (): array => array_map($resolveSibling, array_diff_key($operators, [self::OPERATOR => true]));

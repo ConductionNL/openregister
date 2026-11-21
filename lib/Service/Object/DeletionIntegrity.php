@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCP\IDBConnection;
@@ -78,6 +79,20 @@ final class DeletionIntegrity {
 	}//end analyse()
 
 	/**
+	 * The table the references of a `cascade: true` property must live in.
+	 *
+	 * @param array          $property The property definition.
+	 * @param RegisterSchema $owner    The register and schema of the object holding the property.
+	 *
+	 * @return RegisterSchema|null The table, or null when the named schema or its register does not resolve.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function cascadePropertyTable(array $property, RegisterSchema $owner): ?RegisterSchema {
+		return $this->integrity->cascadePropertyTable(property: $property, owner: $owner);
+	}//end cascadePropertyTable()
+
+	/**
 	 * Record a RESTRICT block and refuse the delete.
 	 *
 	 * @param RefusedDeletion  $refused  The object, its schema and who asked.
@@ -110,7 +125,7 @@ final class DeletionIntegrity {
 	}//end apply()
 
 	/**
-	 * Run the work in one transaction: committed when it returns, rolled back when it throws.
+	 * Run the work in one transaction: committed when it returns true, rolled back when it returns false or throws.
 	 *
 	 * @param callable(): bool $work The cascade and the root delete.
 	 *
@@ -124,8 +139,13 @@ final class DeletionIntegrity {
 		$this->db->beginTransaction();
 		try {
 			$result = $work();
+			if ($result === false) {
+				$this->db->rollBack();
+				return false;
+			}
+
 			$this->db->commit();
-			return $result;
+			return true;
 		} catch (Exception $e) {
 			$this->db->rollBack();
 			throw $e;

@@ -37,6 +37,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\EmailLink
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class ReplyThreadServiceTest extends TestCase {
 

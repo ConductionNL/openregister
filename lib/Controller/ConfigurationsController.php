@@ -24,10 +24,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -92,7 +92,7 @@ class ConfigurationsController extends Controller {
 		IRequest $request,
 		ConfigurationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->configurationMapper = $services->records->configurationMapper;
 		$this->configurationService = $services->records->configurationService;
@@ -180,8 +180,6 @@ class ConfigurationsController extends Controller {
 	 * Create a new configuration
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with created configuration or error
 	 *
@@ -311,8 +309,6 @@ class ConfigurationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated configuration or error
 	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
@@ -374,8 +370,6 @@ class ConfigurationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200, \OCA\OpenRegister\Db\Configuration,
 	 *     array<never, never>>|JSONResponse<400|403, array{error: string},
 	 *     array<never, never>>
@@ -392,8 +386,6 @@ class ConfigurationsController extends Controller {
 	 * @param int $id Configuration ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response on success (204) or error
 	 *
@@ -434,8 +426,6 @@ class ConfigurationsController extends Controller {
 	 * @return JSONResponse The import result.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
 	 */

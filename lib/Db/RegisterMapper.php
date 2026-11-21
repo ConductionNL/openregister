@@ -196,7 +196,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * "Register not found: '19'", and the error-level line that would have said
 	 * WHY — "Register not found after filters", carrying `existsBeforeFilter`,
 	 * i.e. "the row matched, then a filter removed it" — silently did not fire.
-	 * openregister#2820.
+	 * A register that does not exist at all is logged as
+	 * "Register does not exist" at debug, not as an error. openregister#2820.
 	 *
 	 * @return void
 	 */
@@ -263,7 +264,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Run one uncached register lookup through the organisation filter.
 	 *
 	 * Logs the attempt, probes whether the row exists before the filters (for
-	 * the miss diagnostics), then reads the oldest matching row.
+	 * the miss diagnostics), then reads the oldest matching row. A miss where
+	 * the row existed before the filters (a filter removed it) is logged at
+	 * error level; a miss where no such register exists is an ordinary miss,
+	 * logged at debug level.
 	 *
 	 * @param RegisterLookup $lookup The identifier and filter flags.
 	 *
@@ -307,6 +311,28 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			// `existsBeforeFilter` separates "no such row" from "the row matched
 			// and then a filter removed it": a bad identifier versus a scoping bug.
+			// Only the scoping bug is an error. A register that does not exist is an
+			// ordinary miss: callers such as ExternalIntegrationRouter probe several
+			// spellings of a register slug and catch this exception, and the probe
+			// above has already logged the absence at warning level, so this line is
+			// debug to avoid reporting the same miss twice.
+			if ($existsBeforeFilter === false) {
+				$this->logger->debug(
+					message: '[RegisterMapper] Register does not exist',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'identifier' => $lookup->id,
+						'existsBeforeFilter' => $existsBeforeFilter,
+						'multiEnabled' => $lookup->multitenancy,
+						'rbacEnabled' => $lookup->rbac,
+						'error' => $e->getMessage(),
+					]
+				);
+
+				throw $e;
+			}
+
 			$this->logger->error(
 				message: '[RegisterMapper] Register not found after filters',
 				context: [

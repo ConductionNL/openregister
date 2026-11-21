@@ -37,6 +37,10 @@ class TalkGatewayTestOldManager {
 
 /**
  * @covers \OCA\OpenRegister\Service\TalkLink\TalkGateway
+ * @uses   \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses   \OCA\OpenRegister\Service\TalkLink\TalkSession
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkSession
  */
 class TalkGatewayTest extends TestCase {
 

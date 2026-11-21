@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ObjectFolderOptions;
 use OCP\Files\Config\IUserMountCache;
@@ -50,6 +50,12 @@ use Stringable;
  * Stored-folder lookups, golden.
  *
  * @covers \OCA\OpenRegister\Service\File\FolderManagementHandler
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\ObjectFolderOptions
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFolderOptions
  */
 final class FolderManagementHandlerFolderLookupGoldenTest extends TestCase {
 
@@ -121,7 +127,7 @@ final class FolderManagementHandlerFolderLookupGoldenTest extends TestCase {
 					$logger,
 					$this->createMock(AuditTrailMapper::class),
 					$this->createMock(IUserMountCache::class),
-					$this->createMock(RegisterFolderRecorder::class),
+					$this->createMock(RegisterFolderRecordsInterface::class),
 				]
 			)
 			->onlyMethods($methods)

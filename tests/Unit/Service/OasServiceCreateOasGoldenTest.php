@@ -26,6 +26,16 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovConformance
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovFindings
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDateTimeRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovErrorRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovDocumentInfoRules
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovMarker
+ * @uses \OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue
+ * @uses \OCA\OpenRegister\Formats\SemVerFormat
+ * @uses \OCA\OpenRegister\Formats\FormatFactory
  * @uses \OCA\OpenRegister\Service\Oas\OasNames
  * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
  * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
@@ -40,6 +50,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\Oas\OasIssue
  */
 class OasServiceCreateOasGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/oas-create-oas-golden.json';

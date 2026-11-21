@@ -739,7 +739,8 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			$share->setNode($file);
 			$share->setShareType(IShare::TYPE_USER);
 			$share->setSharedWith($this->testUid);
-			$share->setSharedBy($this->ownerUid);
+			// File shares are made by the account that holds the file.
+			$share->setSharedBy((string)$file->getOwner()?->getUID());
 			$share->setPermissions(1);
 			$this->shareManager()->createShare($share);
 		} finally {
@@ -778,7 +779,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	}//end testAGrantIsScopedToTheObjectItNames()
 
 	/**
-	 * Create a real core share of an object's folder, as its real owner.
+	 * Grant an object to a user through the sharing service, as its real owner.
 	 *
 	 * @param ObjectEntity $entity The object to grant.
 	 * @param string $recipient Uid to grant it to.
@@ -786,23 +787,10 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return IShare The created share.
 	 */
 	private function grantTo(ObjectEntity $entity, string $recipient): IShare {
-		$folder = $this->objectFolderAsOwner($entity);
-		if ($folder === null) {
-			$this->markTestSkipped('could not resolve the object folder');
-		}
-
-		$this->userSession->setUser($this->ownerUser);
-		try {
-			$share = $this->shareManager()->newShare();
-			$share->setNode($folder);
-			$share->setShareType(IShare::TYPE_USER);
-			$share->setSharedWith($recipient);
-			$share->setSharedBy($this->ownerUid);
-			$share->setPermissions(1);
-			$created = $this->shareManager()->createShare($share);
-		} finally {
-			$this->userSession->setUser($this->testUser);
-		}
+		$grant = $this->asOwner(
+			fn () => $this->sharingService()->grant(object: $entity, type: 'user', shareWith: $recipient, permissions: 1)
+		);
+		$created = $this->shareManager()->getShareById((string)$grant['id']);
 
 		// The grant was made after this request's resolver had already answered,
 		// so drop the memoisation — a real next request starts with a fresh one.

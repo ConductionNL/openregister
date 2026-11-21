@@ -41,7 +41,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
+ * @spec openspec/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Drops `schemas_org_app_slug_unique` on `openregister_schemas`; adds no replacement index.
  *
- * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
+ * @spec openspec/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
  */
 class Version1Date20260726000000 extends SimpleMigrationStep {
 	/**
@@ -75,7 +75,7 @@ class Version1Date20260726000000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null
 	 *
-	 * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-no-database-level-uniqueness-constraint-scopes-schema-slugs
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*

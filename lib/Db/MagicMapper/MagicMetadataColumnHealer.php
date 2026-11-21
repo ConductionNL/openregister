@@ -163,12 +163,45 @@ class MagicMetadataColumnHealer {
 		}
 
 		$cached = $this->readCache(tableName: $tableName);
-		if ($cached !== null) {
-			self::$verified[$tableName] = $cached;
+		if ($cached === null) {
+			return null;
 		}
+
+		if ($cached !== []) {
+			$cached = $this->stillMissing(tableName: $tableName, cached: $cached);
+		}
+
+		self::$verified[$tableName] = $cached;
 
 		return $cached;
 	}//end known()
+
+	/**
+	 * Re-read a table the distributed cache marks as degraded.
+	 *
+	 * A cached failure only stops this request from trying the ALTER again. The
+	 * columns themselves are read fresh, so a column added since the failure was
+	 * cached is used at once: the search handler drops a predicate only for a
+	 * column that is really absent.
+	 *
+	 * @param string       $tableName Bare magic table name.
+	 * @param list<string> $cached    The missing columns the cache recorded.
+	 *
+	 * @return list<string> The metadata columns missing now, or the cached list when the columns cannot be read.
+	 */
+	private function stillMissing(string $tableName, array $cached): array {
+		$fresh = $this->inspectQuietly(tableName: $tableName);
+		if ($fresh === null) {
+			return $cached;
+		}
+
+		if ($fresh === []) {
+			$this->remember(tableName: $tableName, missing: []);
+			return [];
+		}
+
+		return array_map('strval', array_keys($fresh));
+	}//end stillMissing()
 
 	/**
 	 * The metadata columns a table lacks, or null when its columns cannot be read.

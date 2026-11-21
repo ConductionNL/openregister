@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\RecordTemplateMapper
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @uses   \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RecordTemplateMapperBehaviourTest extends TestCase {
 	use RecordingQueryBuilderTrait;

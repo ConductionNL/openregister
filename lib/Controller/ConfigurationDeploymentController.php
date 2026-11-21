@@ -142,8 +142,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The opened set, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -203,8 +201,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The pending value, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
@@ -259,8 +255,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The approved set, or the refusal.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function approve(string $id): JSONResponse {
@@ -281,8 +275,6 @@ class ConfigurationDeploymentController extends Controller {
 	 *
 	 * @return JSONResponse The recorded deployment, or the refusal naming the value.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function deploy(string $id): JSONResponse {
@@ -302,8 +294,6 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param string $id The set uuid.
 	 *
 	 * @return JSONResponse The discarded set, or the refusal.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
@@ -366,8 +356,6 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param string $id The deployment uuid to restore the values of.
 	 *
 	 * @return JSONResponse The recorded rollback, or the refusal.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */

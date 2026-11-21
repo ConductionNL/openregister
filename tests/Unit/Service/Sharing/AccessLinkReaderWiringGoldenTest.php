@@ -47,6 +47,8 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -105,7 +107,8 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 			sources: new AccessLinkReaderSources(
 				objects: $objects,
 				subjects: new AccessLinkSubject(),
-				restrictions: $restrictions
+				restrictions: $restrictions,
+				users: $this->minters()
 			),
 			filters: new AccessLinkReaderFilters(
 				schemas: $schemas,
@@ -114,6 +117,21 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 			),
 			logger: $this->createMock(LoggerInterface::class)
 		);
+	}
+
+	/**
+	 * The accounts that minted the links: `owner`, enabled.
+	 *
+	 * @return IUserManager
+	 */
+	private function minters(): IUserManager {
+		$owner = $this->createMock(IUser::class);
+		$owner->method('getUID')->willReturn('owner');
+		$owner->method('isEnabled')->willReturn(true);
+		$users = $this->createMock(IUserManager::class);
+		$users->method('get')->willReturnCallback(static fn (string $uid): ?IUser => $uid === 'owner' ? $owner : null);
+
+		return $users;
 	}
 
 	private function link(string $subjectType, string $subjectId): AccessLink {
@@ -175,9 +193,10 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 	}
 
 	public function testAViewLinkIsServedOnlyWithTheViewScopeRequired(): void {
+		$this->objects->method('runAs')->willReturnCallback(static fn ($user, callable $operation) => $operation());
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with(['_limit' => 200], false, false, null, null, ['view-uuid'], true)
+			->with(['_limit' => 200], true, true, null, null, ['view-uuid'], true)
 			->willReturn([$this->object()]);
 
 		$body = $this->reader->read(link: $this->link(AccessLink::SUBJECT_VIEW, 'view-uuid'));
@@ -211,6 +230,7 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 	}
 
 	public function testAViewThatNoLongerResolvesIsRefused(): void {
+		$this->objects->method('runAs')->willReturnCallback(static fn ($user, callable $operation) => $operation());
 		$this->objects->method('searchObjects')->willThrowException(new RuntimeException('gone'));
 
 		$this->assertNull($this->reader->read(link: $this->link(AccessLink::SUBJECT_VIEW, 'view-uuid')));

@@ -130,6 +130,31 @@ final class FilterParams {
 	];
 
 	/**
+	 * Query keys that carry a reader's uid, which only the search handler sets.
+	 *
+	 * `SearchQueryHandler` resolves `_unread`, `_watching` and `_recent` into
+	 * these keys from the session. A query assembled anywhere else (a stored
+	 * view, a schema-declared filter) must not carry them, or it would read
+	 * another user's read state, follows or history.
+	 *
+	 * @var string[]
+	 */
+	public const RESOLVED_READER_KEYS = ['_unreadFor', '_watchingFor', '_recentFor', '_recentViews', '_recentLens'];
+
+	/**
+	 * The query without the keys only the search handler may set.
+	 *
+	 * @param array<string, mixed> $query The query.
+	 *
+	 * @return array<string, mixed> The query without them.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	public static function withoutResolvedReaderKeys(array $query): array {
+		return array_diff_key($query, array_flip(self::RESOLVED_READER_KEYS));
+	}//end withoutResolvedReaderKeys()
+
+	/**
 	 * Lift `filter[x]=v` into a bare `x=v` for the object-search grammar.
 	 *
 	 * Runs on the parameters AFTER `buildSearchQuery()` has undone PHP's

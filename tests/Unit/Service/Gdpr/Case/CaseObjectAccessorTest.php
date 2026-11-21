@@ -28,8 +28,8 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Every case read is RBAC- and tenant-scoped; a listed row without uuid, or one the caller
@@ -38,6 +38,13 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @covers \OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
  */
 final class CaseObjectAccessorTest extends TestCase {
 

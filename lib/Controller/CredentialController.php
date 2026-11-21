@@ -69,8 +69,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -148,7 +148,7 @@ class CredentialController extends Controller {
 		}
 
 		if ($this->requestedScope() === self::SCOPE_ORGANISATION) {
-			return $this->indexOrganisation();
+			return $this->indexOrganisation(uid: $uid);
 		}
 
 		$objects = $this->listCredentialObjects();
@@ -203,20 +203,34 @@ class CredentialController extends Controller {
 	}//end ownPersonal()
 
 	/**
-	 * List the caller's active organisation's credential metadata (members may read).
+	 * List one organisation's credential metadata (members may read).
 	 *
-	 * Returns the organisation-scoped credentials whose `organisation` equals the
-	 * caller's active organisation UUID. The caller is a member of their own active
-	 * organisation by construction, so any member may read this metadata; no secret
-	 * is ever included (design D4).
+	 * Without an `organisation` param this is the caller's active organisation, of which
+	 * the caller is a member by construction. With one (the organisation picker of the
+	 * credential form), the caller must have access to that organisation, checked here
+	 * rather than trusted from the client. No secret is ever included (design D4).
 	 *
-	 * @return JSONResponse The active organisation's credential metadata.
+	 * @param string $uid The caller's UID.
+	 *
+	 * @return JSONResponse The organisation's credential metadata, or a static 403.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
 	 */
-	private function indexOrganisation(): JSONResponse {
-		$activeOrg = $this->services->tokens->organisationService->getActiveOrganisation()?->getUuid();
-		if ($activeOrg === null || $activeOrg === '') {
+	private function indexOrganisation(string $uid): JSONResponse {
+		$organisations = $this->services->tokens->organisationService;
+		$activeOrg = trim((string)$this->request->getParam('organisation', ''));
+		if ($activeOrg !== ''
+			&& $organisations->userHasAccessToOrganisation(organisationUuid: $activeOrg, userId: $uid) === false
+		) {
+			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+		}
+
+		if ($activeOrg === '') {
+			$activeOrg = (string)($organisations->getActiveOrganisation()?->getUuid() ?? '');
+		}
+
+		if ($activeOrg === '') {
 			return new JSONResponse(['results' => []]);
 		}
 
@@ -468,9 +482,10 @@ class CredentialController extends Controller {
 				)
 			);
 		} catch (InvalidArgumentException $invalid) {
-			// The only InvalidArgumentException a mint raises for a well-formed
-			// request is a rejected instance host, and that IS a bad request rather
-			// than a server fault: answering 500 would read as "try again later".
+			// A mint raises InvalidArgumentException for a well-formed request only
+			// when it refuses it: a rejected instance host, or an outside-vault
+			// credential with a secret or an unusable vault reference. That IS a bad
+			// request rather than a server fault: 500 would read as "try again later".
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to create credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -1038,11 +1053,22 @@ class CredentialController extends Controller {
 	 */
 	private function connectionMetadataParams(): array {
 		$metadata = [];
-		foreach (['kind', 'status', 'instanceBaseUrl', 'clientId', 'clientCredentialRef'] as $key) {
+		$keys = ['kind', 'status', 'instanceBaseUrl', 'clientId', 'clientCredentialRef', 'custody', 'vaultAuthMethod', 'vaultRoleId', 'vaultMount'];
+		foreach ($keys as $key) {
 			$value = $this->request->getParam($key);
 			if (is_string($value) === true && trim($value) !== '') {
 				$metadata[$key] = trim($value);
 			}
+		}
+
+		// Where an outside credential's secret lives (credential-outside-vault-reference).
+		$vaultRef = $this->request->getParam('vaultRef');
+		if (is_array($vaultRef) === true) {
+			$metadata['vaultRef'] = [
+				'connection' => trim((string)($vaultRef['connection'] ?? '')),
+				'path' => trim((string)($vaultRef['path'] ?? '')),
+				'key' => trim((string)($vaultRef['key'] ?? '')),
+			];
 		}
 
 		return $metadata;

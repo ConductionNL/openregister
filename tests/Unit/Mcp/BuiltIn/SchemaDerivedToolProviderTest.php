@@ -38,8 +38,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -273,6 +273,38 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$this->assertTrue($tools[0]['idempotentHint']);
 
 	}//end testMcpHintsArePassedThrough()
+
+	/**
+	 * A verb's declared reach is carried on its descriptor; an undeclared one adds no key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-reach-annotation/specs/ai-mcp/spec.md#requirement-a-derived-tool-entry-may-declare-its-reach
+	 */
+	public function testDeclaredReachIsCarriedOnTheDescriptor(): void {
+		$schema = $this->mockSchema(
+			id: 1,
+			slug: 'lead',
+			mcpBlock: [
+				'enabled' => true,
+				'tools' => [
+					'get' => ['scope' => 'read', 'reach' => 'user'],
+					'update' => ['scope' => 'update', 'reach' => 'instance'],
+					'delete' => ['scope' => 'delete'],
+				],
+			]
+		);
+
+		$byVerb = [];
+		foreach ($this->provider([['schema' => $schema, 'register' => null]])->getTools() as $tool) {
+			$byVerb[$tool['action']] = $tool;
+		}
+
+		$this->assertSame('user', $byVerb['get']['reach']);
+		$this->assertSame('instance', $byVerb['update']['reach']);
+		$this->assertArrayNotHasKey('reach', $byVerb['delete'], 'no reach is invented for a verb that declares none');
+
+	}//end testDeclaredReachIsCarriedOnTheDescriptor()
 
 	// ── invokeTool: unknown ids ─────────────────────────────────────
 

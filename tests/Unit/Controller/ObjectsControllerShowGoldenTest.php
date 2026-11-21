@@ -76,6 +76,14 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Service\Audit\PurposeRefusedException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\VerbListing
+ * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class ObjectsControllerShowGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-show-golden.json';

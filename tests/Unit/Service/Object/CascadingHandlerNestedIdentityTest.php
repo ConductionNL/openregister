@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The save handler would take a nested object's `id` or `@self.id` as the uuid to write to, and
@@ -36,6 +37,10 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class CascadingHandlerNestedIdentityTest extends TestCase {
 
@@ -62,12 +67,12 @@ class CascadingHandlerNestedIdentityTest extends TestCase {
 
 		$save = $this->createMock(SaveObject::class);
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->saves[] = [$data, $uuid];
 				$created = new ObjectEntity();
 				$created->setUuid('33333333-3333-3333-3333-333333333333');
 				return $created;
-			}
+			})
 		);
 
 		$utility = $this->createMock(UtilityHandler::class);

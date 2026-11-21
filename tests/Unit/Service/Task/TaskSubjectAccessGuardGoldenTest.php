@@ -44,6 +44,8 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
  * @uses \OCA\OpenRegister\Exception\TaskSubjectNotFoundException
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 final class TaskSubjectAccessGuardGoldenTest extends TestCase {
 

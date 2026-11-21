@@ -53,6 +53,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 

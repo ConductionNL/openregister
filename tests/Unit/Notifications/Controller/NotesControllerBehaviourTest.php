@@ -42,6 +42,10 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(NotesController::class)]
 #[UsesClass(NotesControllerServices::class)]
 #[UsesClass(ObjectEntity::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\ListQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NotePath::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Controller\Support\NoteStep::class)]
 class NotesControllerBehaviourTest extends TestCase {
 
 	/**

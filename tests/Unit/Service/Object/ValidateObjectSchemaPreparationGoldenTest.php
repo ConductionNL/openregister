@@ -36,6 +36,8 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectSchemaPreparationGoldenTest extends TestCase {
 

@@ -154,6 +154,9 @@ class PruneRetiredSchemasCommand extends Command {
 		}
 
 		$this->writeSummary(pass: $pass);
+		if ($run->notUnlinked > 0) {
+			return Command::FAILURE;
+		}
 
 		return Command::SUCCESS;
 	}//end execute()
@@ -233,6 +236,11 @@ class PruneRetiredSchemasCommand extends Command {
 				$suffix
 			)
 		);
+		if ($run->notUnlinked > 0) {
+			$pass->output->writeln(
+				sprintf('<error>%d register(s) still list a removed schema; fix them and update each register.</error>', $run->notUnlinked)
+			);
+		}
 	}//end writeSummary()
 
 	/**
@@ -489,7 +497,7 @@ class PruneRetiredSchemasCommand extends Command {
 			return;
 		}
 
-		$this->unlinkFromRegisters(schemaId: (int)$row->schema->getId(), output: $pass->output);
+		$this->unlinkFromRegisters(schemaId: (int)$row->schema->getId(), pass: $pass);
 
 		$pass->run->pruned++;
 		$pass->output->writeln($this->deletedLine(result: $result, forcedNote: $forcedNote));
@@ -704,16 +712,18 @@ class PruneRetiredSchemasCommand extends Command {
 	 * Runs after the teardown, so a refused teardown leaves the registers as they were.
 	 * The registers are read here, not before the teardown, so a slow teardown cannot
 	 * write back a stale list. A failed update is reported per register: the schema is
-	 * gone by then, and a rerun would no longer find it.
+	 * gone by then, and a rerun would no longer find it. A failed update is
+	 * counted, so the command exits non-zero.
 	 *
-	 * @param int             $schemaId The removed schema's id.
-	 * @param OutputInterface $output   Console output stream.
+	 * @param int                     $schemaId The removed schema's id.
+	 * @param PruneRetiredSchemasPass $pass     The run's tally and the console output stream.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
-	private function unlinkFromRegisters(int $schemaId, OutputInterface $output): void {
+	private function unlinkFromRegisters(int $schemaId, PruneRetiredSchemasPass $pass): void {
+		$output = $pass->output;
 		foreach ($this->registersReferencing(schemaId: $schemaId) as $register) {
 			$label = sprintf('register id=%d (%s)', (int)$register->getId(), (string)$register->getSlug());
 			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
@@ -722,6 +732,7 @@ class PruneRetiredSchemasCommand extends Command {
 				$this->catalog->registers()->update($register);
 				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
 			} catch (\Throwable $e) {
+				$pass->run->notUnlinked++;
 				$output->writeln(
 					sprintf('  <error>NOT UNLINKED: %s still lists removed schema %d: %s</error>', $label, $schemaId, $e->getMessage())
 				);
