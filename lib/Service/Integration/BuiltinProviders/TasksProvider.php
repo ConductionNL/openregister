@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -237,8 +238,7 @@ class TasksProvider extends CoreIntegrationProvider {
 	private function objectTitle(RegisterSchema $table, string $objectId): string {
 		$objectEntity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
-			register: $table->register,
-			schema: $table->schema
+			options: new ObjectFindOptions(register: $table->register, schema: $table->schema)
 		));
 
 		return $objectEntity?->getName() ?? $objectId;

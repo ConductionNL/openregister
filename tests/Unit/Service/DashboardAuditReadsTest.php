@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Search\Service\DashboardAuditReads
  * @covers \OCA\OpenRegister\Search\Service\DashboardPeriod
  * @covers \OCA\OpenRegister\Search\Service\DashboardScope
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
  */
 class DashboardAuditReadsTest extends TestCase {
 	private AuditTrailMapperInterface&MockObject $mapper;

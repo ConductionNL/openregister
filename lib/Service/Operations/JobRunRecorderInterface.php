@@ -22,25 +22,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Core\JobRunRecordingInterface;
 
 /**
  * Recording a job run around its execution, as the recorded job bases and
- * their subclasses use it. Only the method those callers call.
+ * their subclasses use it.
+ *
+ * The method is the Core-owned JobRunRecordingInterface's, which the recorded
+ * job base asks; this name stays for the callers that already type against it.
+ *
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-interface JobRunRecorderInterface {
-
-	/**
-	 * Run the work and record the run, its outcome and its duration.
-	 *
-	 * @param JobRunStart $start The job class the run belongs to, with its cause, actor, argument and details.
-	 * @param callable    $work  The execution to observe.
-	 *
-	 * @return mixed Whatever the work returned.
-	 *
-	 * @throws Throwable Whatever the work threw, after the failure is recorded.
-	 *
-	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
-	 */
-	public function around(JobRunStart $start, callable $work): mixed;
+interface JobRunRecorderInterface extends JobRunRecordingInterface {
 }//end interface

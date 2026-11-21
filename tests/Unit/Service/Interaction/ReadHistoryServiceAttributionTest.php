@@ -36,6 +36,9 @@ use Psr\Log\LoggerInterface;
  * One case per attribution branch of a listed row, plus the blank-uid lens.
  *
  * @covers \OCA\OpenRegister\Service\Interaction\ReadHistoryService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Interaction\ProcessingListRead
+ * @uses \OCA\OpenRegister\Service\ProcessingRead
  */
 class ReadHistoryServiceAttributionTest extends TestCase {
 

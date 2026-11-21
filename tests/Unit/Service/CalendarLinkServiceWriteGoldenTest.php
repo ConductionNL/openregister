@@ -33,6 +33,10 @@ use OCA\OpenRegister\Service\LinkTarget;
  *
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
  * @uses   \OCA\OpenRegister\Db\CalendarLink
+ * @uses \OCA\OpenRegister\Service\CalendarEventKey
+ * @uses \OCA\OpenRegister\Service\CalendarObjectRef
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class CalendarLinkServiceWriteGoldenTest extends TestCase {
 

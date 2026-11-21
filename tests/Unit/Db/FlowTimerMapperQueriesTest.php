@@ -37,6 +37,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowTimer\TimerSubject
+ * @uses \OCA\OpenRegister\Db\IdCursor
  */
 class FlowTimerMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -143,6 +145,19 @@ class FlowTimerMapperQueriesTest extends TestCase {
 		self::assertTrue($this->saw('expr.gt', 'id'));
 		self::assertTrue($this->saw('setMaxResults', 500));
 	}//end testSubjectRunSuccessorAndPagedReadsFilterWhatTheyClaim()
+
+	public function testTheCalendarReadsOnlyReachOpenTimersOfThatCalendar(): void {
+		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
+		$mapper->findOpenByCalendarSlug(calendarSlug: 'office', limit: 10);
+		self::assertTrue($this->saw('expr.eq', 'calendar_slug'));
+		self::assertTrue($this->saw('expr.in', 'state'));
+		self::assertTrue($this->saw('setMaxResults', 10));
+
+		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
+		$mapper->countOpenByCalendarSlug(calendarSlug: 'office');
+		self::assertTrue($this->saw('expr.eq', 'calendar_slug'));
+		self::assertTrue($this->saw('expr.in', 'state'));
+	}//end testTheCalendarReadsOnlyReachOpenTimersOfThatCalendar()
 
 	public function testAnUnrestrictedSubjectReadCarriesNoStatePredicate(): void {
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));

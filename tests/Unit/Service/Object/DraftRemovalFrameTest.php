@@ -33,6 +33,12 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalFrame
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalRecord
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftRemovalFrameTest extends TestCase {
 
@@ -50,7 +56,7 @@ class DraftRemovalFrameTest extends TestCase {
 	 */
 	private function record(): DraftRemovalRecord {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$trail->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->actors[] = $actorId;
 				return new AuditTrail();

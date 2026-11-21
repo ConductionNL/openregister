@@ -58,6 +58,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
@@ -68,6 +70,17 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\SlugBackfillCursor
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  */
 class MagicMapperSlugQueriesGoldenTest extends TestCase {
 

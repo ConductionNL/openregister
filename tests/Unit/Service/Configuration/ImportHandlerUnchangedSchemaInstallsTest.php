@@ -39,6 +39,8 @@ use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionProperty;
@@ -128,7 +130,7 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 
 		return new SchemaImportInstaller(
 			flows: new SchemaFlowImportListener($flows, new NullLogger(), null),
-			notifications: new NotificationsAnnotationInstaller($webhooks, new NullLogger()),
+			notifications: new NotificationsAnnotationInstaller($webhooks, new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
 			logger: new NullLogger()
 		);
 	}//end installer()
@@ -150,16 +152,22 @@ class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 		$schemaMapper->method('updateEventCount')->willReturnOnConsecutiveCalls(...$eventCounts);
 
 		return new ImportHandler(
-			schemaMapper: $schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(
+				installer: $installer
+			),
 			logger: new NullLogger(),
 			appDataPath: '/tmp',
-			objectService: $this->createMock(ObjectService::class),
-			schemaInstaller: $installer
+			objectService: $this->createMock(ObjectService::class)
 		);
 	}//end handler()
 

@@ -63,6 +63,18 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\WebhookMapper
  * @uses   \OCA\OpenRegister\Db\QueryPage
  * @uses   \OCA\OpenRegister\Db\OutcomeFilter
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\LinkColumn
+ * @uses \OCA\OpenRegister\Db\SearchTrailCriteria
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailPage
+ * @uses \OCA\OpenRegister\Db\SearchTrail\SearchTrailStatistics
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Files\Db\FileSourceOrder
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Search\Db\ViewMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class MapperPagingGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

@@ -21,7 +21,6 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Service\Rbac\ReachedView;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
@@ -32,6 +31,7 @@ use OCA\OpenRegister\Search\Service\ViewDefinition;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -96,7 +96,7 @@ class ViewsController extends Controller {
 	 * @param ViewsControllerServices $services The saved-views API services.
 	 */
 	public function __construct(IRequest $request, ViewsControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->viewService             = $services->viewService;
 		$this->viewPresentationService = $services->viewPresentationService;
@@ -272,15 +272,7 @@ class ViewsController extends Controller {
 		try {
 			return $this->listViews();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error fetching views',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return $this->serverError(error: 'Failed to fetch views', e: $e);
+			return $this->failed(action: 'fetching views', error: 'Failed to fetch views', e: $e);
 		}//end try
 	}//end index()
 
@@ -413,29 +405,9 @@ class ViewsController extends Controller {
 				]
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return $this->viewNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error fetching view',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to fetch view',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'fetching view', error: 'Failed to fetch view', e: $e, id: $id);
 		}//end try
 	}//end show()
 
@@ -443,8 +415,6 @@ class ViewsController extends Controller {
 	 * Create a new view
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with created view or error
 	 *
@@ -456,11 +426,7 @@ class ViewsController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error creating view',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to create view', 'message' => $e->getMessage()], statusCode: 500);
+			return $this->failed(action: 'creating view', error: 'Failed to create view', e: $e);
 		}
 	}//end create()
 
@@ -537,8 +503,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated view or error
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
@@ -547,15 +511,11 @@ class ViewsController extends Controller {
 		try {
 			return $this->updateView(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
+			return $this->viewNotFound();
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error updating view',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'exception' => $e->getMessage()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to update view', 'message' => $e->getMessage()], statusCode: 500);
+			return $this->failed(action: 'updating view', error: 'Failed to update view', e: $e, id: $id);
 		}
 	}//end update()
 
@@ -641,8 +601,6 @@ class ViewsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched view or error
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -653,11 +611,11 @@ class ViewsController extends Controller {
 		try {
 			return $this->patchView(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
+			return $this->viewNotFound();
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			return $this->patchFailed(id: $id, e: $e);
+			return $this->failed(action: 'patching view', error: 'Failed to patch view', e: $e, id: $id);
 		}//end try
 	}//end patch()
 
@@ -733,29 +691,11 @@ class ViewsController extends Controller {
 	}//end savePatch()
 
 	/**
-	 * Log a failed patch and answer 500.
-	 *
-	 * @param string     $id View ID.
-	 * @param \Exception $e  The failure.
-	 *
-	 * @return JSONResponse The 500 response.
-	 */
-	private function patchFailed(string $id, \Exception $e): JSONResponse {
-		$this->logger->error(
-			message: '[ViewsController] Error patching view',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'exception' => $e->getMessage()]
-		);
-		return new JSONResponse(data: ['error' => 'Failed to patch view', 'message' => $e->getMessage()], statusCode: 500);
-	}//end patchFailed()
-
-	/**
 	 * Delete a view
 	 *
 	 * @param string $id The view ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with delete confirmation or error
 	 *
@@ -780,29 +720,9 @@ class ViewsController extends Controller {
 				statusCode: 204
 			);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return $this->viewNotFound();
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error deleting view',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to delete view',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'deleting view', error: 'Failed to delete view', e: $e, id: $id);
 		}//end try
 	}//end destroy()
 
@@ -841,31 +761,11 @@ class ViewsController extends Controller {
 
 			return new JSONResponse(data: $board);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return $this->viewNotFound();
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ViewsController] Error building kanban board',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to build kanban board',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->failed(action: 'building kanban board', error: 'Failed to build kanban board', e: $e, id: $id);
 		}//end try
 	}//end kanban()
 
@@ -890,7 +790,7 @@ class ViewsController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
-			return $this->calendarFailed(id: $id, e: $e);
+			return $this->failed(action: 'querying calendar range', error: 'Failed to query calendar range', e: $e, id: $id);
 		}//end try
 	}//end calendar()
 
@@ -982,23 +882,24 @@ class ViewsController extends Controller {
 	}//end viewNotFound()
 
 	/**
-	 * Log a failed calendar query and answer 500.
+	 * Log a failed view action and answer 500.
 	 *
-	 * @param string     $id View ID.
-	 * @param \Exception $e  The failure.
+	 * @param string      $action What was being done, as the log names it.
+	 * @param string      $error  What failed, as the response names it.
+	 * @param \Exception  $e      The failure.
+	 * @param string|null $id     The view ID, when the action had one.
 	 *
 	 * @return JSONResponse The 500 response.
 	 */
-	private function calendarFailed(string $id, \Exception $e): JSONResponse {
-		$this->logger->error(
-			message: '[ViewsController] Error querying calendar range',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'id' => $id,
-				'exception' => $e->getMessage(),
-			]
-		);
-		return $this->serverError(error: 'Failed to query calendar range', e: $e);
-	}//end calendarFailed()
+	private function failed(string $action, string $error, \Exception $e, ?string $id=null): JSONResponse {
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		if ($id !== null) {
+			$context['id'] = $id;
+		}
+
+		$context['exception'] = $e->getMessage();
+		$this->logger->error(message: '[ViewsController] Error '.$action, context: $context);
+
+		return $this->serverError(error: $error, e: $e);
+	}//end failed()
 }//end class

@@ -80,6 +80,15 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 	public const REASON_VERSION_IN_USE = 'version-in-use';
 
 	/**
+	 * A flow cannot be deleted while one of its runs has not finished.
+	 *
+	 * @var string
+	 */
+	public const REASON_RUNS_IN_FLIGHT = 'runs-in-flight';
+
+	public const REASON_UNKNOWN_CHANGED_FIELD = 'unknown-changed-field';
+
+	/**
 	 * The sentence each reason reads as.
 	 *
 	 * @var array<string, string>
@@ -96,6 +105,10 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 			. 'cannot leave.',
 		self::REASON_VERSION_IN_USE => 'This version cannot be removed while a run is still pinned '
 			. 'to it.',
+		self::REASON_RUNS_IN_FLIGHT => 'This flow cannot be deleted while one of its runs has not '
+			. 'finished. Wait for the run to finish or cancel it first.',
+		self::REASON_UNKNOWN_CHANGED_FIELD => 'This version cannot be published while a trigger watches a '
+			. 'field its schema does not have: that trigger would never start.',
 	];
 
 	/**

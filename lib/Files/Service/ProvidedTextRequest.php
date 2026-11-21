@@ -37,14 +37,17 @@ final class ProvidedTextRequest {
 	 * @param string                  $text        The provided text.
 	 * @param array<int, string>|null $entityTypes Entity types to detect; null for all.
 	 * @param string                  $method      The extraction method recorded with the chunks.
+	 * @param array<mixed>|null       $words       OCR words with positions, `[{text, page, box: {x, y, w, h}}]`; null when the provider has none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-images-and-image-content-are-detected-through-one-seam-req-ais-001
 	 */
 	public function __construct(
 		public readonly int $fileId,
 		public readonly string $text,
 		public readonly ?array $entityTypes = null,
 		public readonly string $method = 'ocr',
+		public readonly ?array $words = null,
 	) {
 	}//end __construct()
 }//end class

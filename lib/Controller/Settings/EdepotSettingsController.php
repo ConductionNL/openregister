@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
@@ -77,7 +77,15 @@ class EdepotSettingsController extends Controller {
 		'hostKeyFingerprint' => 'edepot_sftp_host_key_fingerprint',
 		'sourceId' => 'edepot_openconnector_source_id',
 		'baseUrl' => 'edepot_openconnector_base_url',
+		'packageFormat' => 'edepot_package_format',
 	];
+
+	/**
+	 * The SIP output formats a connection can choose; the first is the default.
+	 *
+	 * @var list<string>
+	 */
+	private const PACKAGE_FORMATS = ['zip', 'bagit'];
 
 	/**
 	 * The app configuration.
@@ -131,7 +139,7 @@ class EdepotSettingsController extends Controller {
 		IRequest $request,
 		EdepotSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->appConfig = $services->platform->appConfig;
 		$this->transferService = $services->domain->transferService;
 		$this->sftpTransport = $services->domain->sftpTransport;
@@ -153,6 +161,8 @@ class EdepotSettingsController extends Controller {
 		try {
 			$config = $this->maskedSecrets(config: $this->transferService->getTransportConfig());
 			$config['availableProfiles'] = $this->transferService->getAvailableProfiles();
+			$config['packageFormat'] = $this->packageFormat();
+			$config['availablePackageFormats'] = self::PACKAGE_FORMATS;
 
 			return new JSONResponse(data: $config);
 		} catch (\Exception $e) {
@@ -180,8 +190,6 @@ class EdepotSettingsController extends Controller {
 	/**
 	 * Update e-Depot settings.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The update result.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
@@ -190,6 +198,11 @@ class EdepotSettingsController extends Controller {
 		try {
 			$params = $this->request->getParams();
 			$invalid = $this->invalidProfile(sipProfile: ($params['sipProfile'] ?? 'default'));
+			if ($invalid !== null) {
+				return $invalid;
+			}
+
+			$invalid = $this->invalidPackageFormat(params: $params);
 			if ($invalid !== null) {
 				return $invalid;
 			}
@@ -237,6 +250,50 @@ class EdepotSettingsController extends Controller {
 	}//end invalidProfile()
 
 	/**
+	 * The configured SIP output format, `zip` when unset or unknown.
+	 *
+	 * @return string `zip` or `bagit`.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
+	 */
+	private function packageFormat(): string {
+		$format = $this->appConfig->getValueString('openregister', self::CONFIG_KEYS['packageFormat'], self::PACKAGE_FORMATS[0]);
+		if (in_array($format, self::PACKAGE_FORMATS, true) === false) {
+			return self::PACKAGE_FORMATS[0];
+		}
+
+		return $format;
+	}//end packageFormat()
+
+	/**
+	 * The 400 answer for an unknown SIP output format, if the request names one.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return JSONResponse|null The rejection, or null when no format or a known one is asked.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-bagit-output/spec.md
+	 */
+	private function invalidPackageFormat(array $params): ?JSONResponse {
+		if (isset($params['packageFormat']) === false
+			|| in_array($params['packageFormat'], self::PACKAGE_FORMATS, true) === true
+		) {
+			return null;
+		}
+
+		$requested = gettype($params['packageFormat']);
+		if (is_scalar($params['packageFormat']) === true) {
+			$requested = (string)$params['packageFormat'];
+		}
+
+		$available = implode(', ', self::PACKAGE_FORMATS);
+		return new JSONResponse(
+			data: ['error' => "Invalid package format '{$requested}'. Available: {$available}"],
+			statusCode: 400
+		);
+	}//end invalidPackageFormat()
+
+	/**
 	 * Save every setting the request carries, skipping masked values so secrets are not overwritten with '***'.
 	 *
 	 * @param array<string, mixed> $params The request parameters.
@@ -278,8 +335,6 @@ class EdepotSettingsController extends Controller {
 
 	/**
 	 * Test e-Depot connection.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The connection test result.
 	 *
@@ -351,7 +406,7 @@ class EdepotSettingsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportTest(bool $passed, string $transport): void {
 		if ($passed === true) {

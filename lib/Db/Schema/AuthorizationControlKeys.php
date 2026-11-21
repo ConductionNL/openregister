@@ -23,6 +23,7 @@ use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\UndecidablePosture;
 
 /**
  * Validates the reserved keys of an authorization block, which grant nothing.
@@ -101,7 +102,7 @@ final class AuthorizationControlKeys {
 		return array_values(
 			array_diff(
 				PermissionCatalogueInterface::CONTROL_KEYS,
-				[ObjectScopeResolverInterface::SCOPE_KEY, Schema::ROLES_KEY, ExplicitRevealInterface::KEY]
+				[ObjectScopeResolverInterface::SCOPE_KEY, Schema::ROLES_KEY, ExplicitRevealInterface::KEY, UndecidablePosture::KEY]
 			)
 		);
 	}//end unvalidatedKeys()
@@ -124,6 +125,11 @@ final class AuthorizationControlKeys {
 
 		if ($action === ObjectScopeResolverInterface::SCOPE_KEY) {
 			$this->validateScopeValue(scope: $entry->value, context: $entry->context);
+			return true;
+		}
+
+		if ($action === UndecidablePosture::KEY) {
+			$this->validateUndecidablePosture(entry: $entry);
 			return true;
 		}
 
@@ -260,6 +266,26 @@ final class AuthorizationControlKeys {
 			);
 		}
 	}//end validateScopeValue()
+
+	/**
+	 * Refuse an `onUndecidable` that is neither `closed` nor `open`.
+	 *
+	 * @param AuthorizationEntry $entry The `onUndecidable` key, its value and the context for error messages.
+	 *
+	 * @throws InvalidAuthorizationRuleException When the value is not a known posture.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-app-declares-object-access-rather-than-guarding-it/specs/object-access-contract/spec.md#requirement-a-schema-declares-what-an-undecidable-access-question-means
+	 */
+	private function validateUndecidablePosture(AuthorizationEntry $entry): void {
+		$refusal = (new UndecidablePosture())->refusalFor(value: $entry->value);
+		if ($refusal !== null) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization key '" . UndecidablePosture::KEY . "' in {$entry->context} {$refusal}"
+			);
+		}
+	}//end validateUndecidablePosture()
 
 	/**
 	 * Refuse a reveal marker other than the one explicit value.

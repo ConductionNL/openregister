@@ -281,6 +281,56 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertSame([], $errors);
 	}
 
+	public function testWebhookChannelAcceptsAUrlFieldInsteadOfAUrl(): void {
+		$errors = $this->v->validate([
+			'x-openregister-notifications' => [
+				'decided' => [
+					'trigger' => ['type' => 'updated'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['webhook'],
+					'webhook' => ['urlField' => 'outcomeCallbackUrl'],
+					'subject' => 'x',
+				],
+			],
+			'properties' => [],
+		]);
+		$this->assertSame([], $errors);
+	}
+
+	public function testWebhookChannelRefusesABadOrPersistentUrlField(): void {
+		foreach ([['urlField' => ''], ['urlField' => 'not a name'], ['urlField' => ['x']], ['urlField' => 'outcomeCallbackUrl', 'persistent' => true]] as $hook) {
+			$errors = $this->v->validate([
+				'x-openregister-notifications' => [
+					'decided' => [
+						'trigger' => ['type' => 'updated'],
+						'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+						'channels' => ['webhook'],
+						'webhook' => $hook,
+						'subject' => 'x',
+					],
+				],
+				'properties' => [],
+			]);
+			$this->assertContains('notification-webhook-no-url', array_column($errors, 'code'), json_encode($hook));
+		}
+	}
+
+	public function testWebhookChannelRefusesANonHttpUrl(): void {
+		$errors = $this->v->validate([
+			'x-openregister-notifications' => [
+				'opened' => [
+					'trigger' => ['type' => 'created'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'ftp://hooks.example.com/x'],
+					'subject' => 'x',
+				],
+			],
+			'properties' => [],
+		]);
+		$this->assertContains('notification-webhook-no-url', array_column($errors, 'code'));
+	}
+
 	public function testObjectAclRecipientRequiresPermission(): void {
 		$errors = $this->v->validate([
 			'x-openregister-notifications' => [
