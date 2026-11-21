@@ -3525,3 +3525,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T18:47:54Z or-fix-15 done: fixed 10515 (ebaa3bdd) 10535 (ac0f0a67) listener golden conflict + yaml regen; 9835 9915 10075 10395 10595 clean and green merged with main (approved); 10635 npm bump approved, clean
 2026-11-21T18:55:11Z or-fix-3 done: merged main into 10283 (f15152c9), 10363 (7bfd39b7), 10503 (a17714ba), 10523 (f6e69aa7), 10543 (c04f4c22); 9023 9083 9103 9823 10243 10343 10483 merge clean and green on main (inherited reds only); 9163 10623 10643 10983 clean, no PHP
 2026-11-21T18:57:05Z session-20261121T181601-417b8968 or-fix-10 done; fixed 10450 (1bb6d175) 10530 (2049d13b) REVERIFY: merged main, listener golden; 7830 9370 10190 10490 10510 10550 10630 merge clean and green vs main; 8450 parked obsolete (commented earlier)
+2026-11-21T19:01:52Z cloud or-fix-2 start; share: 10182 10522 10542 10562 10622 10982
