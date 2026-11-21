@@ -212,3 +212,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDefinitionTest::testYamlIsTheGeneratorsOutput (or 3 cases) red: a new lib class has a component-map.csv row but the components yaml lacks it, or a moved file still has a pattern.
 - Cause: the PR (or the main merge) added/moved lib files without rerunning the generator.
 - Fix: python3 scripts/component-patterns.py, commit the regenerated yaml (on a yaml merge conflict: take main's copy, then regenerate). 'stale row' lines are warnings only.
+
+## PR code or tests still name a class main replaced with a Core port (or-fix-14)
+- Symptom: 'Class ...\FileSettingsHandler not found' in a service now typed on a port, or ArgumentCountError on a constructor (e.g. DetectorVersionReader, AnonymisationBackendCollaborators) in the PR's own tests.
+- Cause: main moved the dependency behind a Kernel/Contracts port and the PR's new lines still use the old class, its constants or the old constructor arity.
+- Fix: read the constructor on main; pass the real adapter (e.g. new PatternSetVersion()) or a mock of the port in the PR's tests, as main's own tests do; restate constants the port does not expose as a private const rather than importing the concrete class across areas.
