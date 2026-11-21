@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Service;
 
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Service\RegisterConfigResolver;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
@@ -42,9 +43,9 @@ class RegisterConfigResolverBehaviourTest extends TestCase {
 			) {
 			}//end __construct()
 
-			public function resolveSchemaId(string $appId, string $configKey): string {
+			public function lookupId(ConfigLookup $lookup): string {
 				throw $this->failure;
-			}//end resolveSchemaId()
+			}//end lookupId()
 		};
 
 		$appManager = $this->createMock(IAppManager::class);

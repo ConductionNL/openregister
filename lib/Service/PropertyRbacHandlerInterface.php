@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 
 /**
  * The contract callers of PropertyRbacHandler type against.
@@ -35,16 +36,15 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Whether the current user can read a property of this object.
 	 *
-	 * @param Schema $schema   Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array  $object   Object data (for conditional matching)
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching)
 	 *
 	 * @return bool True if user can read the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
 	 *       evaluates the property's read rules against the current user's groups + object conditions)
 	 */
-	public function canReadProperty(Schema $schema, string $property, array $object): bool;
+	public function canReadProperty(SchemaProperty $property, PropertyAccessRequest $request): bool;
 
 	/**
 	 * Whether the current user could read a property on some row.
@@ -126,15 +126,14 @@ interface PropertyRbacHandlerInterface {
 	/**
 	 * Carry stored write-only values forward onto a payload that omitted them.
 	 *
-	 * @param array              $prepared     The prepared update payload.
-	 * @param array              $stored       The RAW stored object.
-	 * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+	 * @param array            $prepared The prepared update payload.
+	 * @param OmittedWriteOnly $omitted  The RAW stored object and the declared paths absent from the incoming payload.
 	 *
 	 * @return array The payload with omitted write-only values carried forward
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array;
+	public function restoreWriteOnlyValues(array $prepared, OmittedWriteOnly $omitted): array;
 
 	/**
 	 * The submitted properties the current user is not allowed to write.

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\RetentionService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Tests for ArchivalNominationService.
@@ -291,10 +292,7 @@ class ArchivalNominationServiceTest extends TestCase {
 
 		$this->service->nominate(object: $object, schema: $schema);
 		$this->service->recompute(
-			object: $object,
-			schema: $schema,
-			actor: 'els',
-			reason: 'Selectielijst 2026 replaced the 2020 list'
+			new NominationRecompute(object: $object, schema: $schema, actor: 'els', reason: 'Selectielijst 2026 replaced the 2020 list')
 		);
 
 		$retention = $object->getRetention();

@@ -38,12 +38,14 @@ final class TaskInboxFilter {
 	 * @param bool|null          $isTerminal Restrict on terminality, or null for both.
 	 * @param string|null        $priority   Restrict to one priority.
 	 * @param string|null        $kind       When set, only tasks carrying this kind.
+	 * @param string|null        $term       When set, only tasks whose title or description holds every word of it.
 	 */
 	public function __construct(
 		public readonly array $states = [],
 		public readonly ?bool $isTerminal = null,
 		public readonly ?string $priority = null,
 		public readonly ?string $kind = null,
+		public readonly ?string $term = null,
 	) {
 	}//end __construct()
 }//end class

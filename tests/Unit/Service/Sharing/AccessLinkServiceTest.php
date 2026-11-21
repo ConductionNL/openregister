@@ -45,7 +45,9 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -94,7 +96,7 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->auditTrail), logger: $this->logger),
 			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
 			urlGenerator: $this->urlGenerator
 		);
@@ -378,8 +380,8 @@ class AccessLinkServiceTest extends TestCase {
 		$addresses = [];
 		$actions = [];
 		$this->auditTrail->expects($this->exactly(4))
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (
 					ObjectEntity $audited,
 					string $action,
@@ -395,7 +397,7 @@ class AccessLinkServiceTest extends TestCase {
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		foreach ([
 			AccessLinkService::ACT_READ,
@@ -430,7 +432,7 @@ class AccessLinkServiceTest extends TestCase {
 
 	public function testAUseWithNoResolvedObjectStillCountsOnTheRow(): void {
 		$link = $this->liveLink();
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 
 		$this->service->recordUse(link: $link, use: new AccessLinkUse(act: AccessLinkService::ACT_READ, object: null));
 

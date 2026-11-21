@@ -36,7 +36,6 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -45,6 +44,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 
 /**
  * Save-time policy for lifecycle conditions.
@@ -67,14 +69,18 @@ class SchemaMapperLifecycleConditionTest extends TestCase {
 	protected function setUp(): void {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->mapper = new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->logger
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: new ProcessDeclarationChecksDispatcher(logger: $this->logger),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->logger
+			)
 		);
 	}//end setUp()
 

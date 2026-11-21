@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -268,7 +269,7 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 		$this->service->method('previewUpdateFromSource')->willReturn($this->diff(applied: true));
 		$changes = new SchemaChangeSet([['kind' => 'added']], 'additive', 'minor');
 		$this->versioning->expects($this->once())->method('classify')
-			->with($schema, ['properties' => ['a' => [], 'b' => []], 'required' => ['a']])
+			->with($schema, new IncomingDefinition(['properties' => ['a' => [], 'b' => []], 'required' => ['a']]))
 			->willReturn($changes);
 		$this->versioning->method('nextVersion')->willReturn('1.1.0');
 		$this->schemas->expects($this->once())->method('update')->with($schema)->willReturnArgument(0);

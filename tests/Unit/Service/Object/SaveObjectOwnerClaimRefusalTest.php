@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -155,7 +157,12 @@ class SaveObjectOwnerClaimRefusalTest extends TestCase {
 	private function prepareUpdate(ObjectEntity $entity, array $selfData): void {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $entity, new Schema(), new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload([], $selfData), null);
+		$preparation = new UpdatePreparation(
+			existingObject: $entity,
+			schema: new Schema(),
+			payload: new ObjectPayload(data: [], selfData: $selfData)
+		);
+		$method->invoke($this->handler, $preparation);
 	}//end prepareUpdate()
 
 	/**

@@ -23,11 +23,14 @@
 
 namespace OCA\OpenRegister\Mcp\Tool;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Objects Tool
@@ -231,29 +234,11 @@ class ObjectsTool extends AbstractTool {
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 */
 	private function findPage(ListQuery $query): array {
-		$filters = $this->applyViewFilters(params: $this->searchFilters(query: $query));
-
-		$result = $this->objectService->findAll(
-			config: [
-				'limit' => $query->limit,
-				'offset' => $query->offset,
-				'filters' => $filters,
-			]
-		);
+		$result = $this->findObjects(query: $query);
 
 		$objectList = array_map(
-			function (ObjectEntity $object): array {
-				return [
-					'id' => $object->getId(),
-					'uuid' => $object->getUuid(),
-					'register' => $object->getRegister(),
-					'schema' => $object->getSchema(),
-					'data' => $object->getObject(),
-					'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-					'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-				];
-			},
-			$result['results'] ?? []
+			static fn (ObjectEntity $object): array => self::objectSummary(object: $object),
+			($result['results'] ?? [])
 		);
 
 		return $this->formatSuccess(
@@ -264,6 +249,44 @@ class ObjectsTool extends AbstractTool {
 			message: sprintf('Found %d objects', count($objectList))
 		);
 	}//end findPage()
+
+	/**
+	 * Find one page of objects matching the query and the view's filters.
+	 *
+	 * @param ListQuery $query The page and search terms.
+	 *
+	 * @return array The object service's result, with `results` and `total`.
+	 */
+	private function findObjects(ListQuery $query): array {
+		$filters = $this->applyViewFilters(params: $this->searchFilters(query: $query));
+
+		return $this->objectService->findAll(
+			config: [
+				'limit' => $query->limit,
+				'offset' => $query->offset,
+				'filters' => $filters,
+			]
+		);
+	}//end findObjects()
+
+	/**
+	 * The summary of one object a listing returns.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectSummary(ObjectEntity $object): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'data' => $object->getObject(),
+			'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+			'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end objectSummary()
 
 	/**
 	 * Get a specific object
@@ -286,21 +309,29 @@ class ObjectsTool extends AbstractTool {
 			throw new RuntimeException("Object with id {$id} not found.");
 		}
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $object->getId(),
-				'uuid' => $object->getUuid(),
-				'register' => $object->getRegister(),
-				'schema' => $object->getSchema(),
-				'data' => $object->getObject(),
-				'organisation' => $object->getOrganisation(),
-				'owner' => $object->getOwner(),
-				'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
-				'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
-			],
-			message: 'Object retrieved successfully'
-		);
+		return $this->formatSuccess(data: self::objectDetails(object: $object), message: 'Object retrieved successfully');
 	}//end getObject()
+
+	/**
+	 * The full row of one object: its identity, place, data, ownership and dates.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectDetails(ObjectEntity $object): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'register' => $object->getRegister(),
+			'schema' => $object->getSchema(),
+			'data' => $object->getObject(),
+			'organisation' => $object->getOrganisation(),
+			'owner' => $object->getOwner(),
+			'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+			'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+		];
+	}//end objectDetails()
 
 	/**
 	 * Create a new object
@@ -342,8 +373,9 @@ class ObjectsTool extends AbstractTool {
 
 		$object = $this->objectService->saveObject(
 			object: $objectData,
-			register: (int)$scope['register'],
-			schema: (int)$scope['schema']
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: (int)$scope['register'], schema: (int)$scope['schema'])
+			)
 		);
 
 		return $this->formatSuccess(
@@ -387,9 +419,10 @@ class ObjectsTool extends AbstractTool {
 		// Update object.
 		$object = $this->objectService->saveObject(
 			object: $mergedData,
-			register: $existingObject->getRegister(),
-			schema: $existingObject->getSchema(),
-			uuid: $existingObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existingObject->getRegister(), schema: $existingObject->getSchema()),
+				uuid: $existingObject->getUuid()
+			)
 		);
 
 		return $this->formatSuccess(
@@ -426,7 +459,7 @@ class ObjectsTool extends AbstractTool {
 		}
 
 		$uuid = $object->getUuid() ?? (string)$object->getId();
-		$this->objectService->deleteObject(uuid: $uuid);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 
 		return $this->formatSuccess(
 			data: ['id' => $id],

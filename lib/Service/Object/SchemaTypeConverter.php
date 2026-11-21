@@ -49,6 +49,14 @@ namespace OCA\OpenRegister\Service\Object;
  */
 class SchemaTypeConverter implements SchemaTypeConverterInterface {
 	/**
+	 * The declared types whose stored form is not a string: `convertValue()`
+	 * gives each its own arm instead of the string path.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRUCTURED_TYPES = ['array', 'object', 'number', 'integer', 'boolean', 'calendar-range', 'image-url'];
+
+	/**
 	 * Convert a database column value to the type declared in the JSON Schema.
 	 *
 	 * Dispatch table:
@@ -89,6 +97,11 @@ class SchemaTypeConverter implements SchemaTypeConverterInterface {
 			// (RenderObject), not here, since it is a sibling virtual field on the
 			// parent object rather than a transform of the value itself.
 			'color', 'recurrence' => $this->convertString(value: $value),
+			// A calendar range is stored and returned as its `{ start, end }`
+			// object. An image is always read in its object form: a bare URL
+			// stored before the save path normalised it reads as `{ url }`.
+			'calendar-range' => $this->convertArrayOrObject(value: $value),
+			'image-url' => $this->convertImageUrl(value: $value),
 			default => $this->convertString(value: $value),
 		};
 	}//end convertValue()
@@ -274,7 +287,7 @@ class SchemaTypeConverter implements SchemaTypeConverterInterface {
 
 		$named = array_diff(array_map('strtolower', array_filter($types, 'is_string')), ['null']);
 
-		return $named !== [] && array_intersect($named, ['array', 'object', 'number', 'integer', 'boolean']) === [];
+		return $named !== [] && array_intersect($named, self::STRUCTURED_TYPES) === [];
 	}//end isStringTyped()
 
 	/**
@@ -346,6 +359,27 @@ class SchemaTypeConverter implements SchemaTypeConverterInterface {
 
 		return $value;
 	}//end convertNumber()
+
+	/**
+	 * Convert a value to the `image-url` type: always its object form.
+	 *
+	 * A JSON string is decoded like an object; a bare URL, stored before the
+	 * save path normalised it, becomes `{ url }`.
+	 *
+	 * @param mixed $value The value to convert.
+	 *
+	 * @return mixed The object form, or the value as it is.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
+	 */
+	private function convertImageUrl(mixed $value): mixed {
+		$value = $this->convertArrayOrObject(value: $value);
+		if (is_string($value) === true) {
+			return ['url' => $value];
+		}
+
+		return $value;
+	}//end convertImageUrl()
 
 	/**
 	 * Convert a value to the `array` or `object` schema type.

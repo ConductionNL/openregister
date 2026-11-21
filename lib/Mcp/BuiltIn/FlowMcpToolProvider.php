@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+ * @spec openspec/specs/flow-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCP\IUserSession;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * MCP tools for listing and running flows.
@@ -107,7 +108,7 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @var array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	protected const TOOLS = [
 		[
@@ -206,7 +207,7 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @throws UnexpectedValueException On an unknown tool or a missing argument.
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	public function invokeTool(string $toolId, array $arguments): array {
 		if ($toolId === 'openregister.runFlow') {
@@ -239,7 +240,7 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @return string|null The acting user's uid, or null when there is no session user.
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	private function actingUser(): ?string {
 		$user = $this->userSession->getUser();
@@ -260,7 +261,7 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @return array<string, mixed> The queued run's uuid and status.
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	private function saveFlow(array $arguments): array {
 		$name = trim((string)($arguments['name'] ?? ''));
@@ -337,15 +338,17 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 		// action, rather than by widening the RBAC vocabulary.
 		$this->assertRunnable(flowId: $flowId);
 
-		$run = $this->runner->queue(
+		$run = $this->runner->queueRun(
 			flowId: $flowId,
-			subject: [
-				'uuid' => (string)($arguments['uuid'] ?? ''),
-				'register' => (string)($arguments['register'] ?? ''),
-				'schema' => (string)($arguments['schema'] ?? ''),
-			],
-			trigger: 'mcp',
-			user: $this->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => (string)($arguments['uuid'] ?? ''),
+					'register' => (string)($arguments['register'] ?? ''),
+					'schema' => (string)($arguments['schema'] ?? ''),
+				],
+				trigger: 'mcp',
+				user: $this->actingUser()
+			)
 		);
 
 		return [
@@ -415,7 +418,7 @@ class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	 *
 	 * @return array<string, mixed> The run's public shape, or a not-found marker.
 	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
+	 * @spec openspec/specs/flow-mcp/spec.md
 	 */
 	private function flowRunStatus(array $arguments): array {
 		$runUuid = trim((string)($arguments['runUuid'] ?? ''));

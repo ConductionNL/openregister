@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -90,6 +91,42 @@ class DepartmentMatrixPersonValues {
 	}//end __construct()
 
 	/**
+	 * The person field a source matches the user on, or the default when it names none.
+	 *
+	 * @param array<string, mixed>|null $source The matrix's `userSource`.
+	 *
+	 * @return string The field.
+	 */
+	private static function matchFieldOf(?array $source): string {
+		$match = trim((string)($source['match'] ?? self::DEFAULT_MATCH));
+		if ($match === '') {
+			return self::DEFAULT_MATCH;
+		}
+
+		return $match;
+	}//end matchFieldOf()
+
+	/**
+	 * The user's values read from the person source now, bypassing the cache.
+	 *
+	 * @param array<string, mixed>|null $source The matrix's `userSource`, with a schema and a property.
+	 * @param PersonMatch               $who    The person field and the user.
+	 *
+	 * @return string[] The values, or none when the persons cannot be read.
+	 */
+	private function freshValues(?array $source, PersonMatch $who): array {
+		$persons = $this->persons(
+			source: new RegisterSchemaRef(register: trim((string)($source['register'] ?? '')), schema: trim((string)($source['schema'] ?? ''))),
+			who: $who
+		);
+		if ($persons === null) {
+			return [];
+		}
+
+		return self::valuesOf(rows: self::matching(persons: $persons, who: $who), property: trim((string)($source['property'] ?? '')));
+	}//end freshValues()
+
+	/**
 	 * The caller's own values from the declared person source.
 	 *
 	 * @param array<string, mixed>|null $source The matrix's `userSource`.
@@ -106,28 +143,13 @@ class DepartmentMatrixPersonValues {
 			return [];
 		}
 
-		$match = trim((string)($source['match'] ?? self::DEFAULT_MATCH));
-		if ($match === '') {
-			$match = self::DEFAULT_MATCH;
-		}
-
+		$match = self::matchFieldOf(source: $source);
 		$key = $userId . '|' . $schemaRef . '|' . (string)($source['register'] ?? '') . '|' . $property . '|' . $match;
 		if (array_key_exists($key, $this->cache) === true) {
 			return $this->cache[$key];
 		}
 
-		$who     = new PersonMatch(field: $match, userId: $userId);
-		$persons = $this->persons(
-			source: new RegisterSchemaRef(register: trim((string)($source['register'] ?? '')), schema: $schemaRef),
-			who: $who
-		);
-
-		$values = [];
-		if ($persons !== null) {
-			$values = self::valuesOf(rows: self::matching(persons: $persons, who: $who), property: $property);
-		}
-
-		$this->cache[$key] = $values;
+		$this->cache[$key] = $this->freshValues(source: $source, who: new PersonMatch(field: $match, userId: $userId));
 
 		return $this->cache[$key];
 	}//end valuesFor()
@@ -141,37 +163,15 @@ class DepartmentMatrixPersonValues {
 	 * @return array<int, mixed>|null The objects, or null when the source cannot be read.
 	 */
 	private function persons(RegisterSchemaRef $source, PersonMatch $who): ?array {
-		$schemaRef = (string)$source->schema;
 		try {
-			$schema = $this->schemas->find($schemaRef, _multitenancy: false, _rbac: false);
-
-			$registerId = (string)$source->register;
-			if ($registerId === '') {
-				$registerId = (string)($this->registers->getFirstRegisterWithSchema((int)$schema->getId()) ?? '');
-			}
-
-			if ($registerId === '') {
-				return null;
-			}
-
-			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
-
-			$persons = $this->objects->searchObjects(
-				query: [
-					'@self' => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId()],
-					$who->field => $who->userId,
-					'_limit' => self::PERSON_LIMIT,
-				],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$persons = $this->searchPersons(source: $source, who: $who);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[DepartmentMatrixPersonValues] Could not read the person source; the user gets no own values',
-				context: ['schema' => $schemaRef, 'error' => $e->getMessage()]
+				context: ['schema' => (string)$source->schema, 'error' => $e->getMessage()]
 			);
 			return null;
-		}//end try
+		}
 
 		if (is_array($persons) === false) {
 			return null;
@@ -179,6 +179,73 @@ class DepartmentMatrixPersonValues {
 
 		return $persons;
 	}//end persons()
+
+	/**
+	 * Search the person schema for the user's person objects, unscoped and capped.
+	 *
+	 * @param RegisterSchemaRef $source The person schema's slug or id, and the register's ('' to find it).
+	 * @param PersonMatch       $who    The property matched against the user id, and the current user.
+	 *
+	 * @return mixed The search answer, or null when no register holds the schema.
+	 *
+	 * @throws \Throwable When the schema, the register or the search cannot be read.
+	 */
+	private function searchPersons(RegisterSchemaRef $source, PersonMatch $who): mixed {
+		$schema = $this->schemas->find((string)$source->schema, _multitenancy: false, _rbac: false);
+
+		$register = $this->registerHolding(source: $source, schemaId: (int)$schema->getId());
+		if ($register === null) {
+			return null;
+		}
+
+		return $this->objects->searchObjects(
+			query: self::personQuery(
+				who: $who,
+				table: new RegisterSchemaRef(register: (string)$register->getId(), schema: (string)$schema->getId())
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end searchPersons()
+
+	/**
+	 * The search for the user's person objects in one register and schema.
+	 *
+	 * @param PersonMatch       $who   The property matched against the user id, and the current user.
+	 * @param RegisterSchemaRef $table The register and the person schema.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function personQuery(PersonMatch $who, RegisterSchemaRef $table): array {
+		return [
+			'@self' => ['register' => $table->register, 'schema' => $table->schema],
+			$who->field => $who->userId,
+			'_limit' => self::PERSON_LIMIT,
+		];
+	}//end personQuery()
+
+	/**
+	 * The register the source names, else the first one holding the schema; null when there is none.
+	 *
+	 * @param RegisterSchemaRef $source   The register's slug or id ('' to find it).
+	 * @param int               $schemaId The person schema's id.
+	 *
+	 * @return Register|null The register.
+	 *
+	 * @throws \Throwable When the register cannot be read.
+	 */
+	private function registerHolding(RegisterSchemaRef $source, int $schemaId): ?Register {
+		$registerId = (string)$source->register;
+		if ($registerId === '') {
+			$registerId = (string)($this->registers->getFirstRegisterWithSchema($schemaId) ?? '');
+		}
+
+		if ($registerId === '') {
+			return null;
+		}
+
+		return $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
+	}//end registerHolding()
 
 	/**
 	 * The property's values over the persons that really match the user.

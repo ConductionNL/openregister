@@ -103,37 +103,67 @@ class TransferCheckJob extends TimedJob {
 			return;
 		}
 
+		$this->scanForTransfer();
+	}//end run()
+
+	/**
+	 * Scan for transfer-eligible objects, containing any failure as a logged error.
+	 *
+	 * @return void
+	 */
+	private function scanForTransfer(): void {
 		$this->logger->info(
 			message: '[TransferCheckJob] Starting transfer eligibility scan'
 		);
 
 		try {
-			$eligibleObjects = $this->findEligibleObjects();
-
-			if (empty($eligibleObjects) === true) {
-				$this->logger->info(
-					message: '[TransferCheckJob] No objects eligible for transfer'
-				);
-				return;
-			}
-
-			$transferList = $this->services->transferListService->createTransferList($eligibleObjects);
-			$this->services->transferListService->notifyArchivists($transferList);
-
-			$this->logger->info(
-				message: '[TransferCheckJob] Transfer list created',
-				context: [
-					'uuid' => $transferList['uuid'],
-					'objectCount' => count($eligibleObjects),
-				]
-			);
+			$this->listEligibleObjects();
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[TransferCheckJob] Error during transfer check',
 				context: ['error' => $e->getMessage()]
 			);
 		}//end try
-	}//end run()
+	}//end scanForTransfer()
+
+	/**
+	 * Put the eligible objects on one transfer list and tell the archivists.
+	 *
+	 * @return void
+	 */
+	private function listEligibleObjects(): void {
+		$eligibleObjects = $this->findEligibleObjects();
+
+		if (empty($eligibleObjects) === true) {
+			$this->logger->info(
+				message: '[TransferCheckJob] No objects eligible for transfer'
+			);
+			return;
+		}
+
+		$transferList = $this->services->transferListService->createTransferList($eligibleObjects);
+		$this->services->transferListService->notifyArchivists($transferList);
+
+		$this->logListCreated(transferList: $transferList, objectCount: count($eligibleObjects));
+	}//end listEligibleObjects()
+
+	/**
+	 * Log a created transfer list.
+	 *
+	 * @param array $transferList The created list.
+	 * @param int   $objectCount  How many objects it holds.
+	 *
+	 * @return void
+	 */
+	private function logListCreated(array $transferList, int $objectCount): void {
+		$this->logger->info(
+			message: '[TransferCheckJob] Transfer list created',
+			context: [
+				'uuid' => $transferList['uuid'],
+				'objectCount' => $objectCount,
+			]
+		);
+	}//end logListCreated()
 
 	/**
 	 * Check if e-Depot is configured.

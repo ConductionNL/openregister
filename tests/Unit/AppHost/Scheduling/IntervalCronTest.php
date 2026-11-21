@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\AppHost\Scheduling\IntervalCron
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
  */
 class IntervalCronTest extends TestCase {
 	/**

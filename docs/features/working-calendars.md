@@ -89,7 +89,7 @@ Adding a municipality's closure days is a normal write. A script reads the list
 it already maintains and PUTs it:
 
 ```bash
-curl -u admin:admin -X PUT \
+curl -H 'OCS-APIRequest: true' -u admin:admin -X PUT \
   -H 'Content-Type: application/json' \
   --data @gemeente-example.json \
   "$BASE/apps/openregister/api/objects/flow-timers/working-calendar/$ID"

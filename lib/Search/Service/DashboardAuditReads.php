@@ -55,12 +55,10 @@ class DashboardAuditReads {
 	 */
 	public function getAuditTrailActionChartData(DashboardPeriod $period): array {
 		try {
-			return $this->auditTrailMapper->getActionChartData(
-				from: $period->from,
-				till: $period->till,
-				registerId: $period->scope->registerId,
-				schemaId: $period->scope->schemaId
-			);
+			$scope = new AuditStatisticsScope(registerId: $period->scope->registerId, schemaId: $period->scope->schemaId);
+			$scope->from = $period->from;
+			$scope->till = $period->till;
+			return $this->auditTrailMapper->actionChartData(scope: $scope);
 		} catch (Exception $e) {
 			$this->logError(message: 'Failed to get audit trail action chart data: ' . $e->getMessage());
 			return ['labels' => [], 'series' => []];

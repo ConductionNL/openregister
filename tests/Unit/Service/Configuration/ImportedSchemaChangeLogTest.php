@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
 use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -24,6 +25,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Configuration\ImportedSchemaChangeLog
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeSet
+ * @uses \OCA\OpenRegister\Service\Schema\IncomingDefinition
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeRecord
  */
 class ImportedSchemaChangeLogTest extends TestCase {
 
@@ -87,7 +90,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 		$changes = $this->changes();
 		$versioning = $this->createMock(SchemaVersioningService::class);
 		$versioning->expects($this->once())->method('classify')
-			->with($stored, ['properties' => ['new' => []], 'required' => ['stored']])
+			->with($stored, new IncomingDefinition(['properties' => ['new' => []], 'required' => ['stored']]))
 			->willReturn($changes);
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 
@@ -103,7 +106,7 @@ class ImportedSchemaChangeLogTest extends TestCase {
 		$stored = $this->stored();
 		$versioning = $this->createMock(SchemaVersioningService::class);
 		$versioning->expects($this->once())->method('classify')
-			->with($stored, ['properties' => ['stored' => ['type' => 'string']], 'required' => []])
+			->with($stored, new IncomingDefinition(['properties' => ['stored' => ['type' => 'string']], 'required' => []]))
 			->willReturn($this->changes());
 		$log = new ImportedSchemaChangeLog(versioning: $versioning, logger: $this->createMock(LoggerInterface::class), appId: null);
 

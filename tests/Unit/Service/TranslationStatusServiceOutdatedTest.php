@@ -36,7 +36,7 @@ class TranslationStatusServiceOutdatedTest extends TestCase {
 		$mapper = $this->createMock(TranslationMapper::class);
 		$mapper->expects($this->once())
 			->method('markDerivedOutdated')
-			->with('obj-uuid', 'title', 'nl')
+			->with($this->equalTo(new TranslationSlot('obj-uuid', 'title', 'nl')))
 			->willReturn(3);
 
 		$service = new TranslationStatusService(

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Flow\TriggerLookup;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -194,12 +195,8 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	 */
 	public function testEveryListingFilterAddsItsPredicateInOrder(): void {
 		$this->mapper()->findAllFlows(
-			app: 'hydra',
-			applicationSlug: 'build',
-			organisation: 'org-1',
-			enabled: false,
-			limit: 5,
-			offset: 10
+			selection: new FlowSelection(app: 'hydra', applicationSlug: 'build', organisation: 'org-1', enabled: false),
+			query: new ListQuery(limit: 5, offset: 10)
 		);
 
 		$this->assertSame(
@@ -223,7 +220,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyListingFiltersAddNothing(): void {
-		$this->mapper()->findAllFlows(app: '', applicationSlug: '', organisation: '');
+		$this->mapper()->findAllFlows(selection: new FlowSelection(app: '', applicationSlug: '', organisation: ''));
 
 		$this->assertSame(
 			["from(openregister_flows)", "orderBy(id, DESC)", "setMaxResults(100)", "setFirstResult(0)"],
@@ -288,4 +285,26 @@ class FlowMapperQueryGoldenTest extends TestCase {
 			$this->recorded()
 		);
 	}//end testAScopedTriggerReadKeepsUnrestrictedFlows()
+
+	/**
+	 * The release's separate filters and page build the same listing as main's FlowSelection and ListQuery.
+	 *
+	 * @return void
+	 */
+	public function testTheReleaseFormsOfFindAllFlowsBuildTheSameQuery(): void {
+		$this->mapper()->findAllFlows(
+			selection: new FlowSelection(app: 'hydra', applicationSlug: 'build', organisation: 'org-1', enabled: false),
+			query: new ListQuery(limit: 5, offset: 10)
+		);
+		$main        = $this->recorded();
+		$this->calls = [];
+		$this->mapper()->findAllFlows(app: 'hydra', applicationSlug: 'build', organisation: 'org-1', enabled: false, limit: 5, offset: 10);
+		$named       = $this->recorded();
+		$this->calls = [];
+		$this->mapper()->findAllFlows('hydra', 'build', 'org-1', false, 5, 10);
+
+		$this->assertNotSame([], $main);
+		$this->assertSame($main, $named);
+		$this->assertSame($main, $this->recorded());
+	}//end testTheReleaseFormsOfFindAllFlowsBuildTheSameQuery()
 }//end class

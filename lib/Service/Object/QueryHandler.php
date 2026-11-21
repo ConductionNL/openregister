@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\AppFramework\IAppContainer;
+use OCA\OpenRegister\Service\OrganisationContext;
 
 /**
  * Handles all query and search operations for ObjectService.
@@ -85,37 +86,99 @@ class QueryHandler implements QueryHandlerInterface {
 	public const DEFAULT_PAGE_SIZE = 20;
 
 	/**
-	 * Constructor for QueryHandler.
+	 * Unified mapper for objects.
 	 *
-	 * @param MagicMapperInterface $objectMapper Unified mapper for objects.
-	 * @param RenderObject $renderHandler Render handler.
-	 * @param SearchQueryHandler $searchQueryHandler Search handler.
-	 * @param FacetHandler $facetHandler Facet handler.
-	 * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
-	 * @param ContentSearchHandler $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
-	 * @param IAppContainer $container App container.
-	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
-	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
-	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Render handler.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @var RenderObject
+	 */
+	private readonly RenderObject $renderHandler;
+
+	/**
+	 * App container.
+	 *
+	 * @var IAppContainer
+	 */
+	private readonly IAppContainer $container;
+
+	/**
+	 * Search handler.
+	 *
+	 * @var SearchQueryHandler
+	 */
+	private readonly SearchQueryHandler $searchQueryHandler;
+
+	/**
+	 * Facet handler.
+	 *
+	 * @var FacetHandler
+	 */
+	private readonly FacetHandler $facetHandler;
+
+	/**
+	 * Performance handler.
+	 *
+	 * @var PerformanceOptimizationHandler
+	 */
+	private readonly PerformanceOptimizationHandler $performanceHandler;
+
+	/**
+	 * Opt-in `_content_search` chunk fan-out handler.
+	 *
+	 * @var ContentSearchHandler
+	 */
+	private readonly ContentSearchHandler $contentSearchHandler;
+
+	/**
+	 * Resolves a history predicate to the ids the query keeps.
+	 *
+	 * @var HistoryNarrowing|null
+	 */
+	private readonly ?HistoryNarrowing $historyNarrowing;
+
+	/**
+	 * The administered synonym and stopword dictionary.
+	 *
+	 * @var SearchDictionaryProvider|null
+	 */
+	private readonly ?SearchDictionaryProvider $dictionary;
+
+	/**
+	 * Resolves a register/schema slug or uuid on a ready-made query.
+	 *
+	 * @var SearchReferenceResolver|null
+	 */
+	private readonly ?SearchReferenceResolver $referenceResolver;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param QueryPlatform    $platform    The object mapper, render handler and app container.
+	 * @param QueryHandlers    $handlers    The search, facet, performance and content-search handlers.
+	 * @param QueryRefinements $refinements The optional history narrowing, search dictionary and reference resolver; none by default.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly RenderObject $renderHandler,
-		private readonly SearchQueryHandler $searchQueryHandler,
-		private readonly FacetHandler $facetHandler,
-		private readonly PerformanceOptimizationHandler $performanceHandler,
-		private readonly ContentSearchHandler $contentSearchHandler,
-		private readonly IAppContainer $container,
-		// LAST AND NULLABLE on purpose: every existing construction of this
-		// handler, in production wiring and in tests, keeps working unchanged.
-		private readonly ?HistoryNarrowing $historyNarrowing = null,
-		private readonly ?SearchDictionaryProvider $dictionary = null,
-		private readonly ?SearchReferenceResolver $referenceResolver = null,
+		QueryPlatform $platform,
+		QueryHandlers $handlers,
+		QueryRefinements $refinements = new QueryRefinements(),
 	) {
+		$this->objectMapper = $platform->objectMapper;
+		$this->renderHandler = $platform->renderHandler;
+		$this->container = $platform->container;
+		$this->searchQueryHandler = $handlers->searchQueryHandler;
+		$this->facetHandler = $handlers->facetHandler;
+		$this->performanceHandler = $handlers->performanceHandler;
+		$this->contentSearchHandler = $handlers->contentSearchHandler;
+		$this->historyNarrowing = $refinements->historyNarrowing;
+		$this->dictionary = $refinements->dictionary;
+		$this->referenceResolver = $refinements->referenceResolver;
 	}//end __construct()
 
 	/**
@@ -157,16 +220,13 @@ class QueryHandler implements QueryHandlerInterface {
 	/**
 	 * Count search objects matching the query.
 	 *
-	 * @param array $query The search query.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param array|null $ids Optional array of IDs to filter by.
-	 * @param string|null $uses Optional uses parameter.
+	 * @param array           $query         The search query.
+	 * @param bool            $_rbac         Whether to apply RBAC checks.
+	 * @param bool            $_multitenancy Whether to apply multitenancy filtering.
+	 * @param ObjectSelection $selection     The ids and used objects the count is restricted to.
 	 *
 	 * @psalm-param   array<string, mixed> $query
-	 * @psalm-param   array<int, string>|null $ids
 	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $ids
 	 *
 	 * @return int The count of matching objects.
 	 *
@@ -179,14 +239,15 @@ class QueryHandler implements QueryHandlerInterface {
 		array $query = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		?array $ids = null,
-		?string $uses = null,
+		ObjectSelection $selection = new ObjectSelection(),
 	): int {
 		// A count is where the empty page hurt most: dossiq persisted a usage
 		// right as false from a count that never ran, because the schema
 		// reference behind it int-cast to 0. Resolve or refuse, never zero.
 		$query = $this->normaliseReferences(query: $query);
 
+		// Code acting for an organisation counts inside it, whatever the flag says.
+		$_multitenancy = OrganisationContext::multitenancy(requested: $_multitenancy);
 		$activeOrgUuid = null;
 		if ($_multitenancy === true) {
 			$activeOrgUuid = $this->performanceHandler->getActiveOrganisationForContext();
@@ -198,30 +259,22 @@ class QueryHandler implements QueryHandlerInterface {
 			_activeOrgUuid: $activeOrgUuid,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			ids: $ids,
-			uses: $uses
+			ids: $selection->ids,
+			uses: $selection->uses
 		);
 	}//end countSearchObjects()
 
 	/**
 	 * Search objects using clean query structure.
 	 *
-	 * @param array $query The search query.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param array|null $ids Optional array of IDs to filter by.
-	 * @param string|null $uses Optional uses parameter.
-	 * @param array|null $views Optional view IDs to apply.
-	 * @param bool $_viewScopeRequired Whether the view filter is the caller's only bound,
-	 *                                 making any failure to apply it fatal instead of logged.
+	 * @param array         $query         The search query.
+	 * @param bool          $_rbac         Whether to apply RBAC checks.
+	 * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+	 * @param SearchOptions $options       The object selection and the views that scope the search.
 	 *
 	 * @psalm-param array<string, mixed> $query
-	 * @psalm-param array<int, string>|null $ids
-	 * @psalm-param array<int, string>|null $views
 	 *
 	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $ids
-	 * @phpstan-param array<int, string>|null $views
 	 *
 	 * @return ObjectEntity[]|int
 	 *
@@ -229,7 +282,7 @@ class QueryHandler implements QueryHandlerInterface {
 	 * @phpstan-return array<int, ObjectEntity>|int
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
-	 * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied.
+	 * @throws \Exception If the views are required and cannot be applied.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `_rbac` / `_multitenancy` convention
 	 *
@@ -239,28 +292,13 @@ class QueryHandler implements QueryHandlerInterface {
 		array $query = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		?array $ids = null,
-		?string $uses = null,
-		?array $views = null,
-		bool $_viewScopeRequired = false,
+		SearchOptions $options = new SearchOptions(),
 	): array|int {
 		// A caller that hands a ready-made query instead of going through
 		// buildSearchQuery() reaches the same int-cast further down, in
 		// MagicMapper. Resolve here too, so a slug means the same thing on both
 		// routes (openregister#3990).
-		$query = $this->normaliseReferences(query: $query);
-
-		// Apply view filters if provided.
-		if (empty($views) === false) {
-			$query = $this->searchQueryHandler->applyViewsToQuery(
-				query: $query,
-				viewIds: $views,
-				_viewScopeRequired: $_viewScopeRequired
-			);
-		} elseif ($_viewScopeRequired === true) {
-			// A caller bounded only by a view must never run without one.
-			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
-		}
+		$query = $this->scopedByViews(query: $this->normaliseReferences(query: $query), options: $options);
 
 		// Execute database search.
 		$result = $this->objectMapper->searchObjects(
@@ -268,8 +306,8 @@ class QueryHandler implements QueryHandlerInterface {
 			_activeOrgUuid: $this->activeOrganisation(multitenancy: $_multitenancy),
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			ids: $ids,
-			uses: $uses
+			ids: $options->selection->ids,
+			uses: $options->selection->uses
 		);
 
 		$shaper = new SearchResultShaper(renderHandler: $this->renderHandler, container: $this->container);
@@ -278,6 +316,41 @@ class QueryHandler implements QueryHandlerInterface {
 			request: new SearchRenderRequest(query: $query, rbac: $_rbac, multitenancy: $_multitenancy)
 		);
 	}//end searchObjects()
+
+	/**
+	 * The query with the search's views applied.
+	 *
+	 * @param array         $query   The search query.
+	 * @param SearchOptions $options The views and whether they are required.
+	 *
+	 * @phpstan-param array<string, mixed> $query
+	 * @psalm-param   array<string, mixed> $query
+	 *
+	 * @return array The query scoped by the views.
+	 *
+	 * @phpstan-return array<string, mixed>
+	 * @psalm-return   array<string, mixed>
+	 *
+	 * @throws \Exception If the views are required and there is none to apply.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function scopedByViews(array $query, SearchOptions $options): array {
+		if (empty($options->views) === false) {
+			return $this->searchQueryHandler->applyViewsToQuery(
+				query: $query,
+				viewIds: $options->views,
+				_viewScopeRequired: $options->viewScopeRequired
+			);
+		}
+
+		if ($options->viewScopeRequired === true) {
+			// A caller bounded only by a view must never run without one.
+			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
+		}
+
+		return $query;
+	}//end scopedByViews()
 
 	/**
 	 * The active organisation a search is scoped to, or null without multitenancy.
@@ -299,25 +372,22 @@ class QueryHandler implements QueryHandlerInterface {
 	/**
 	 * Search objects with pagination (main entry point).
 	 *
-	 * @param array $query The search query.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param bool $deleted Whether to include deleted objects.
-	 * @param array|null $ids Optional array of IDs to filter by.
-	 * @param string|null $uses Optional uses parameter.
-	 * @param array|null $views Optional view IDs to apply.
+	 * Deleted objects are never included, so the answer reports `deleted` as false.
+	 *
+	 * @param array         $query         The search query.
+	 * @param bool          $_rbac         Whether to apply RBAC checks.
+	 * @param bool          $_multitenancy Whether to apply multitenancy filtering.
+	 * @param SearchOptions $options       The object selection and the views that scope the search.
 	 *
 	 * @psalm-param   array<string, mixed> $query
-	 * @psalm-param   array<int, string>|null $ids
-	 * @psalm-param   array<int, string>|null $views
 	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $ids
-	 * @phpstan-param array<int, string>|null $views
 	 *
 	 * @return array Paginated search results.
 	 *
 	 * @psalm-return   array<string, mixed>
 	 * @phpstan-return array<string, mixed>
+	 *
+	 * @throws \Exception If the views are required and cannot be applied.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
@@ -325,15 +395,9 @@ class QueryHandler implements QueryHandlerInterface {
 		array $query = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $deleted = false,
-		?array $ids = null,
-		?string $uses = null,
-		?array $views = null,
+		SearchOptions $options = new SearchOptions(),
 	): array {
-		// Apply view filters if provided.
-		if (empty($views) === false) {
-			$query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
-		}
+		$query = $this->scopedByViews(query: $query, options: $options);
 
 		// Strip deprecated _source parameter (silently ignore for backward compatibility).
 		unset($query['_source']);
@@ -343,16 +407,15 @@ class QueryHandler implements QueryHandlerInterface {
 			query: $query,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			deleted: $deleted,
-			ids: $ids,
-			uses: $uses
+			ids: $options->selection->ids,
+			uses: $options->selection->uses
 		);
 		// Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
 		$result['@self']['source'] = $result['@self']['source'] ?? 'database';
 		$result['@self']['query'] = $query;
 		$result['@self']['rbac'] = $_rbac;
 		$result['@self']['multi'] = $_multitenancy;
-		$result['@self']['deleted'] = $deleted;
+		$result['@self']['deleted'] = false;
 
 		return $result;
 	}//end searchObjectsPaginated()
@@ -401,12 +464,12 @@ class QueryHandler implements QueryHandlerInterface {
 		$expansion        = $this->expandSearchTerm(query: $query);
 		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
-		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
+		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses] + $window;
 		$run->countQuery = $queries['count'];
 		$this->narrowByHistory(run: $run, predicate: $historyPredicate);
 
 		$searchResult = $this->searchDatabase(run: $run, searchQuery: $queries['search']);
-		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $run->scope + $window, metrics: $run->metrics);
+		$searchResult = $this->widenWithContentMatches(run: $run, searchResult: $searchResult);
 		$results      = $this->renderListRows(run: $run, searchResult: $searchResult);
 
 		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
@@ -536,16 +599,16 @@ class QueryHandler implements QueryHandlerInterface {
 	 * It runs before rendering so appended rows get the same `_extend`/`_fields`
 	 * treatment (ZKN-CONTENT-003).
 	 *
-	 * @param array        $query        The search query
-	 * @param array        $searchResult The mapper's search result
-	 * @param array        $scope        The search scope plus the pagination window
-	 * @param ArrayObject $metrics      Collects timings
+	 * @param SearchPageRun $run          The search: its query, its scope with the pagination window, and its metrics
+	 * @param array         $searchResult The mapper's search result
 	 *
 	 * @return array The search result with `results` and `total` widened
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	private function widenWithContentMatches(array $query, array $searchResult, array $scope, ArrayObject $metrics): array {
+	private function widenWithContentMatches(SearchPageRun $run, array $searchResult): array {
+		$query = $run->query;
+		$scope = $run->scope;
 		if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === false) {
 			return $searchResult;
 		}
@@ -564,7 +627,7 @@ class QueryHandler implements QueryHandlerInterface {
 		);
 		$searchResult['results']   = $augmented['results'];
 		$searchResult['total']     = $augmented['total'];
-		$metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+		$run->metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
 
 		return $searchResult;
 	}//end widenWithContentMatches()

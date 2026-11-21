@@ -173,9 +173,9 @@ class RowFieldLevelSecurityIntegrationTest extends TestCase {
 	public function testCanReadPropertyForAdminAlwaysTrue(): void {
 		$object = ['title' => 'x', 'salary' => '95000', 'ssn' => '123-45-6789'];
 
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'title', $object));
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'salary', $object));
-		$this->assertTrue($this->propertyRbacHandler->canReadProperty($this->authedSchema, 'ssn', $object));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'title'), new PropertyAccessRequest($object)));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'salary'), new PropertyAccessRequest($object)));
+		$this->assertTrue($this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'ssn'), new PropertyAccessRequest($object)));
 	}
 
 	public function testCanUpdatePropertyForAdminAlwaysTrue(): void {

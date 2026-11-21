@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Service\RetentionService;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\NominationRecompute;
 
 /**
  * Golden outcomes of ArchivalNominationService.
@@ -136,7 +137,7 @@ class ArchivalNominationServiceGoldenTest extends TestCase {
 			return $this->outcome(block: $block, object: $object);
 		}
 
-		$block = $service->recompute(object: $object, schema: $schema, actor: $actor, reason: $reason);
+		$block = $service->recompute(request: new NominationRecompute(object: $object, schema: $schema, actor: $actor, reason: $reason));
 		return $this->outcome(block: $block, object: $object);
 	}
 

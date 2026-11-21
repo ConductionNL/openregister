@@ -156,10 +156,8 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$block = $this->withScope(object: $object, scope: $change->scope);
 
 		$this->records->authorizationWriter->writeAuthorizationBlock(
-			register: $table->register,
-			schema: $table->schema,
-			objectUuid: (string)$object->getUuid(),
-			block: $block
+			table: $table,
+			assignment: new AuthorizationAssignment(objectUuid: (string)$object->getUuid(), block: $block)
 		);
 
 		return $block;
@@ -300,12 +298,18 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$admittedAs = $this->requireMayManageGrants(object: $object, grantee: $this->principalOf(request: $request));
 		$this->assertGrantRequest(request: $request);
 
-		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$request->type]);
+		$permissions = $this->withoutReshare(permissions: $terms->permissions);
+		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$request->type], permissions: $permissions);
 		$share->setSharedWith(trim($request->shareWith));
-		$share->setPermissions($this->withoutReshare(permissions: $terms->permissions));
+		$share->setPermissions($permissions);
 		$this->applyVerbs(share: $share, verbs: $terms->verbs);
 		if ($terms->expiresAt !== null) {
 			$share->setExpirationDate($terms->expiresAt);
+		}
+
+		// The platform share's own note field (platform-share-provider 1.3).
+		if ($terms->note !== null && trim($terms->note) !== '') {
+			$share->setNote($terms->note);
 		}
 
 		$created = $this->createDated(share: $share, sharedAt: $terms->sharedAt);
@@ -518,8 +522,9 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	private function createProtectedShare(ObjectEntity $object, LinkInvitation $invitation): IShare {
 		$this->requireOwnerOrAdmin(object: $object);
 
-		$share = $this->shareOnFolder(object: $object, shareType: $invitation->shareType());
-		$share->setPermissions($this->withoutReshare(permissions: $invitation->permissions));
+		$permissions = $this->withoutReshare(permissions: $invitation->permissions);
+		$share = $this->shareOnFolder(object: $object, shareType: $invitation->shareType(), permissions: $permissions);
+		$share->setPermissions($permissions);
 		if ($invitation->recipient !== null) {
 			$share->setSharedWith(trim($invitation->recipient));
 		}
@@ -550,15 +555,19 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 	/**
 	 * A new share of one type on the object's folder, shared by the caller.
 	 *
-	 * @param ObjectEntity $object    The object.
-	 * @param int          $shareType Core share type.
+	 * The caller is given a view of the folder first ({@see SharerFolderAccess}),
+	 * since core lets a user share a node only as far as they reach it.
+	 *
+	 * @param ObjectEntity $object      The object, which the caller may share.
+	 * @param int          $shareType   Core share type.
+	 * @param int          $permissions The core permissions the share will carry.
 	 *
 	 * @throws InvalidArgumentException When the folder cannot be resolved.
-	 * @throws NotAuthorizedException   When there is no user session.
+	 * @throws NotAuthorizedException   When there is no user session, or the share asks for more than the caller holds.
 	 *
 	 * @return IShare The unsaved share.
 	 */
-	private function shareOnFolder(ObjectEntity $object, int $shareType): IShare {
+	private function shareOnFolder(ObjectEntity $object, int $shareType, int $permissions): IShare {
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
 			throw new InvalidArgumentException('Could not resolve the object folder to share');
@@ -568,6 +577,8 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		if ($uid === null) {
 			throw new NotAuthorizedException(message: 'No user session');
 		}
+
+		$this->shares->sharerAccess->ensureFor(object: $object, folder: $folder, uid: $uid, permissions: $permissions);
 
 		$share = $this->shares->shareManager->newShare();
 		$share->setNode($folder);
@@ -722,7 +733,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 		$uid = $this->callerUid();
 		$groups = $this->callerGroups(uid: $uid);
 
-		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		$admittedAs = $this->grantManage->admittedAs(caller: new GrantCaller(userId: $uid, userGroups: $groups), object: $object);
 		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change sharing on this object'
@@ -731,8 +742,7 @@ class ObjectSharingService implements ObjectSharingServiceInterface {
 
 		if ($this->grantManage->letsItselfIn(
 			admittedAs: $admittedAs,
-			userId: $uid,
-			userGroups: $groups,
+			caller: new GrantCaller(userId: $uid, userGroups: $groups),
 			principal: ($grantee ?? new GrantedPrincipal())
 		) === true
 		) {

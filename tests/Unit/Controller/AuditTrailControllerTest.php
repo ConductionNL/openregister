@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
@@ -14,6 +16,7 @@ use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCP\BackgroundJob\IJobList;
 use OCA\OpenRegister\Service\Audit\AuditTrailQuery;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\LogService;
@@ -756,12 +759,7 @@ class AuditTrailControllerTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setId(2);
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(
-				['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'],
-				null,
-				2,
-				0
-			)
+			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'], null), 2, 0))
 			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
 		$this->logService->expects($this->never())->method('countAllLogs');
 
@@ -843,10 +841,10 @@ class AuditTrailControllerTest extends TestCase {
 		$lister = $this->createMock(ReadableAuditTrailLister::class);
 		$lister->method('query')->willReturnCallback(static fn (array $filters = [], ?string $search = null): AuditTrailQuery => new AuditTrailQuery($filters, $search));
 		$lister->method('page')->willReturnCallback(
-			static function (?string $userId, int $limit = 20, int|string|null $cursor = null, ?AuditTrailQuery $query = null) use (&$captured): array {
-				$captured = ['cursor' => $cursor, 'filters' => ($query?->filters ?? [])];
+			static function (?string $userId, TrailPageOptions $options) use (&$captured): array {
+				$captured = ['cursor' => $options->cursor, 'filters' => $options->query->filters];
 
-				return ['results' => [], 'limit' => $limit, 'cursor' => $cursor, 'nextCursor' => null];
+				return ['results' => [], 'limit' => $options->limit, 'cursor' => $options->cursor, 'nextCursor' => null];
 			}
 		);
 

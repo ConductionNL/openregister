@@ -28,10 +28,12 @@ use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
@@ -63,6 +65,29 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Event\FlowEmailSentEvent
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Event\FlowEmailItem
+ * @uses \OCA\OpenRegister\Event\FlowEmailMessage
+ * @uses \OCA\OpenRegister\Event\FlowEmailOrigin
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\InAppNotice
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NoticeRule
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientSource
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\TalkMessage
+ * @uses \OCA\OpenRegister\Service\Flow\ExternalRecipientPolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingChannels
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingOverrides
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingPlatform
+ * @uses \OCA\OpenRegister\Service\Flow\FlowMessagingRecipients
+ * @uses \OCA\OpenRegister\Service\Flow\FlowScalarText
+ * @uses \OCA\OpenRegister\Service\Flow\MessageSend
+ * @uses \OCA\OpenRegister\Service\Flow\RecipientLookup
  */
 class FlowMessagingServiceGoldenTest extends TestCase {
 
@@ -219,8 +244,8 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$policy = $this->createMock(NotificationChannelPolicy::class);
 		$policy->method('isChannelEnabled')->willReturn($enabled);
 		$templating = $this->createMock(NotificationTemplating::class);
-		$templating->method('interpolate')->willReturnCallback(
-			fn (string $template, array $data): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($data[$m[1]] ?? ''), $template)
+		$templating->method('render')->willReturnCallback(
+			fn (string $template, PlaceholderValues $values): string => (string)preg_replace_callback('/\{\{\s*(\w+)\s*\}\}/', fn ($m) => (string)($values->data[$m[1]] ?? ''), $template)
 		);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn($bound);
@@ -288,13 +313,6 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function ncSender(): NcNotificationSender {
 		$sender = $this->createMock(NcNotificationSender::class);
-		$sender->method('send')->willReturnCallback(function (string $uid, $object, string $subjectKey, string $name, string $subject, string $message) {
-			$this->record(call: 'nc.send', args: [$uid, $object->getUuid(), $object->getName(), $name, $subject, $message]);
-			return self::outcome(recipient: $uid);
-		});
-		$sender->method('enqueueWebPush')->willReturnCallback(function (array $recipients, string $ruleId, string $originApp, string $subject, string $message, array $actions, $object): void {
-			$this->record(call: 'nc.webPush', args: [$recipients, $ruleId, $subject, $message, $object->getUuid()]);
-		});
 		$sender->method('notify')->willReturnCallback(function (InAppNotice $notice) {
 			$this->record(call: 'nc.send', args: [$notice->uid, $notice->object->getUuid(), $notice->object->getName(), $notice->rule->name, $notice->content->subject, $notice->content->message]);
 			return self::outcome(recipient: $notice->uid);
@@ -316,9 +334,9 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 			$this->record(call: 'email.send', args: [$uid, $subject, $body]);
 			return self::outcome(recipient: $uid);
 		});
-		$sender->method('sendToAddress')->willReturnCallback(function (string $address, string $displayName, string $subject, string $body): string {
-			$this->record(call: 'email.sendToAddress', args: [$address, $displayName, $subject, $body]);
-			return self::outcome(recipient: $address);
+		$sender->method('sendMailTo')->willReturnCallback(function (\OCA\OpenRegister\Notifications\Service\Notification\MailAddressee $to, \OCA\OpenRegister\Notifications\Service\Notification\MailContent $mail): string {
+			$this->record(call: 'email.sendToAddress', args: [$to->address, $to->displayName, $mail->subject, $mail->body]);
+			return self::outcome(recipient: $to->address);
 		});
 		return $sender;
 	}//end emailSender()
@@ -382,7 +400,7 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 	 */
 	private function preferences(): NotificationPreferenceService {
 		$preferences = $this->createMock(NotificationPreferenceService::class);
-		$preferences->method('resolveEffective')->willReturnCallback(fn (array $schemaDefault, string $userId): array => match ($userId) {
+		$preferences->method('resolve')->willReturnCallback(fn (PreferenceResolution $resolution): array => match ($resolution->userId) {
 			'dave' => ['enabled' => false, 'channels' => null],
 			'carol' => ['enabled' => true, 'channels' => ['talk']],
 			default => ['enabled' => true, 'channels' => null],

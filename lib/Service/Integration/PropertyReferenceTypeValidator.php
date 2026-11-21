@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 
 /**
  * Validate the optional `referenceType` marker on schema properties.

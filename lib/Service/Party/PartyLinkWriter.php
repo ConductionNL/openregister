@@ -32,6 +32,7 @@ use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\IUser;
 use OCP\IUserSession;
 
@@ -86,7 +87,8 @@ class PartyLinkWriter {
 
 		$target     = $request->target;
 		$contactUid = ContactLink::partyUid(partyUuid: $partyUuid);
-		$existing   = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $request->role);
+		$linkRef    = new PersonLinkRef(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $request->role);
+		$existing   = $this->links->findByObjectContactAndRole(ref: $linkRef);
 		$link       = ($existing ?? $this->newLink(objectUuid: $target->objectUuid, contactUid: $contactUid));
 
 		$link->setRegisterId($target->registerId);
@@ -232,7 +234,7 @@ class PartyLinkWriter {
 	 * @return string|null The address.
 	 */
 	private function primaryEmailOf(ObjectEntity $party, PartyDefinition $definition): ?string {
-		$preferred = $this->parties->addressesOfKind(party: $party, kind: 'correspondence', definition: $definition);
+		$preferred = $this->parties->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence', definition: $definition));
 		if ($preferred === []) {
 			$preferred = $this->parties->addresses(party: $party, definition: $definition);
 		}

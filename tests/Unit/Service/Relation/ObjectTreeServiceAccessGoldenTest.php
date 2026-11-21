@@ -216,7 +216,8 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 			sources: new ObjectTreeSources(
 				descender: $collaborators['descender'],
 				hierarchies: $collaborators['hierarchies'],
-				graphs: $collaborators['graphs']
+				graphs: $collaborators['graphs'],
+				parties: new \OCA\OpenRegister\Service\Party\PartyParent()
 			),
 			catalog: new SchemaCatalog(
 				registers: $collaborators['registerMapper'],
@@ -345,8 +346,7 @@ class ObjectTreeServiceAccessGoldenTest extends TestCase {
 		bool $rbac
 	): void {
 		$tree = $this->service(readable: $readable, accessFails: $accessFails, cap: $cap, levelFails: $levelFails)->tree(
-			root: self::entity(uuid: $root),
-			query: new ObjectTreeQuery(direction: $direction, depth: $depth, fields: $fields),
+			query: new ObjectTreeQuery(root: self::entity(uuid: $root), direction: $direction, depth: $depth, fields: $fields),
 			_rbac: $rbac
 		);
 

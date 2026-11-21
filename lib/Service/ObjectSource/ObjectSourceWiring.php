@@ -20,11 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\UserTaskListInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -56,6 +58,29 @@ final class ObjectSourceWiring {
 	];
 
 	/**
+	 * The built-in object-source providers boot() adds to the registry, in order.
+	 *
+	 * @var array<int, class-string>
+	 */
+	private const BUILTIN_PROVIDERS = [
+		CalDavVtodoObjectSourceProvider::class,
+		UserDirectoryObjectSourceProvider::class,
+		GroupObjectSourceProvider::class,
+		OrganisationObjectSourceProvider::class,
+		ContactsObjectSourceProvider::class,
+		CalendarEventObjectSourceProvider::class,
+		FilesObjectSourceProvider::class,
+		DeckObjectSourceProvider::class,
+		TalkObjectSourceProvider::class,
+		FederatedObjectSourceProvider::class,
+		TablesObjectSourceProvider::class,
+		// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
+		DbalObjectSourceProvider::class,
+		// A saved view's rows as a read-only type (modelling-query-backed-type).
+		\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
+	];
+
+	/**
 	 * The services register() adds, in order: per service, its constructor
 	 * arguments by name and the container id each one is resolved from.
 	 *
@@ -77,7 +102,7 @@ final class ObjectSourceWiring {
 			'logger'     => 'Psr\Log\LoggerInterface',
 		],
 		CalDavVtodoObjectSourceProvider::class => [
-			'taskService' => TaskService::class,
+			'taskService' => UserTaskListInterface::class,
 			'app'         => OptionalAppBridge::class,
 		],
 		UserDirectoryObjectSourceProvider::class => [
@@ -105,7 +130,7 @@ final class ObjectSourceWiring {
 			'app'             => OptionalAppBridge::class,
 		],
 		CalendarEventObjectSourceProvider::class => [
-			'calendarEventService' => \OCA\OpenRegister\Service\CalendarEventService::class,
+			'calendarEventService' => UserCalendarEventsInterface::class,
 			'app'                  => OptionalAppBridge::class,
 		],
 		FilesObjectSourceProvider::class => [
@@ -120,9 +145,9 @@ final class ObjectSourceWiring {
 			'app'         => OptionalAppBridge::class,
 			'userSession' => 'OCP\IUserSession',
 		],
-		// DBAL virtual registers: the connection factory depends only on the CredentialStore interface.
+		// DBAL virtual registers: the connection factory only reads secrets, through the Core credential port.
 		DbalConnectionFactory::class => [
-			'credentialStore' => \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+			'credentialStore' => CredentialSecretReaderInterface::class,
 			'logger'          => 'Psr\Log\LoggerInterface',
 		],
 		SqlTypeMapper::class => [
@@ -238,35 +263,30 @@ final class ObjectSourceWiring {
 		// Register each built-in provider independently so one absent provider
 		// never blocks the others — a failing provider simply won't serve its
 		// bound schemas.
-		$providerClasses = [
-			CalDavVtodoObjectSourceProvider::class,
-			UserDirectoryObjectSourceProvider::class,
-			GroupObjectSourceProvider::class,
-			OrganisationObjectSourceProvider::class,
-			ContactsObjectSourceProvider::class,
-			CalendarEventObjectSourceProvider::class,
-			FilesObjectSourceProvider::class,
-			DeckObjectSourceProvider::class,
-			TalkObjectSourceProvider::class,
-			FederatedObjectSourceProvider::class,
-			TablesObjectSourceProvider::class,
-			// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
-			DbalObjectSourceProvider::class,
-			// A saved view's rows as a read-only type (modelling-query-backed-type).
-			\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
-		];
-		foreach ($providerClasses as $providerClass) {
+		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
 			try {
 				$registry->addProvider($server->get($providerClass));
 			} catch (\Throwable $e) {
-				try {
-					$server->get(\Psr\Log\LoggerInterface::class)->warning(
-						'[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage()
-					);
-				} catch (\Throwable $inner) {
-					// Logger unavailable on this build — nothing to do.
-				}
+				self::warnUnregistered(server: $server, message: '[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
 			}
 		}
 	}//end boot()
+
+	/**
+	 * Log that a built-in provider could not be registered, when a logger can be resolved.
+	 *
+	 * @param mixed  $server  Server container (passed in from boot()).
+	 * @param string $message The warning.
+	 *
+	 * @return void
+	 */
+	private static function warnUnregistered($server, string $message): void {
+		try {
+			$server->get(\Psr\Log\LoggerInterface::class)->warning(
+				$message
+			);
+		} catch (\Throwable $inner) {
+			// Logger unavailable on this build — nothing to do.
+		}
+	}//end warnUnregistered()
 }//end class

@@ -36,6 +36,10 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @covers \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 
@@ -148,7 +152,7 @@ class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 		$actual = [];
 		foreach (array_keys(self::authorizations()) as $property) {
 			$log = [];
-			$read = $handler->canReadProperty($schema, $property, $object);
+			$read = $handler->canReadProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));
 			$readLog = $log;
 			$log = [];
 			$update = $handler->canUpdateProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));

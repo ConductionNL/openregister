@@ -38,6 +38,13 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\OpenProjectLinkService
+ * @uses \OCA\OpenRegister\Db\OpenProjectLink
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Support\FleetAppId
+ * @uses \OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue
+ * @uses \OCA\OpenRegister\Support\FleetApp\FleetAppProbe
  */
 class OpenProjectLinkInfoFallbackTest extends TestCase {
 	/**

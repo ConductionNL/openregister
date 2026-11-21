@@ -400,70 +400,20 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function mappedAddressOf(array $entry): ?array {
-		if ($this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
+		if (FlowScalarText::orNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
 			return null;
 		}
 
-		$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
+		$address = FlowScalarText::orNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
 		if ($address === null) {
 			return null;
 		}
 
 		return [
 			'address' => $address,
-			'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
+			'name' => (string)(FlowScalarText::orNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
 		];
 	}//end mappedAddressOf()
-
-	/**
-	 * A scalar as a non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string, or null when empty or not scalar.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_scalar($value) === false) {
-			return null;
-		}
-
-		$value = trim((string)$value);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
-
-	/**
-	 * Resolve a node's recipients config against one item.
-	 *
-	 * Entries are literal user or group ids, or a template resolving a field
-	 * on the item (`{{ assignee }}` / `{{ item.assignee }}`). Resolution goes
-	 * through the subsystem's recipient resolver — groups expanded, every uid
-	 * verified — and unknown ids are returned for the run log rather than
-	 * silently dropped.
-	 *
-	 * With `$acceptAddresses` (the email channel), an entry that is not a
-	 * user or group but holds an `@` is a candidate address, and so is a
-	 * field value that is one, or an object carrying `email` /
-	 * `emailAddress`. Candidates are screened by the caller; this method only
-	 * sorts them out.
-	 *
-	 * @param mixed $recipients The config value.
-	 * @param array $json The item's json.
-	 * @param bool $acceptAddresses Whether addresses are candidates (email) or unknowns.
-	 *
-	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
-	 * fact about the channel, not a mode of this method's own.
-	 *
-	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
-	 */
-	public function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
-		return $this->resolveAll(recipients: $recipients, lookup: new RecipientLookup(json: $json, acceptAddresses: $acceptAddresses));
-	}//end resolveRecipients()
 
 	/**
 	 * Resolve every recipient entry against one item, de-duplicated.

@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\TranslationStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * Records the provider, sidecar and log calls and the result of translateObject(), per scenario,
@@ -33,6 +34,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Translation
  * @uses   \OCA\OpenRegister\Service\ObjectTranslationRequest
+ * @uses \OCA\OpenRegister\Db\TranslationEdit
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Service\PropertyTranslation
+ * @uses \OCA\OpenRegister\Service\TranslationStores
+ * @uses \OCA\OpenRegister\Service\Translation\LanguagePair
  */
 class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 
@@ -131,7 +137,7 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 		$object->setSchema('7');
 		$object->setObject($s['data']);
 
-		$result = $this->service($s)->translateObject($object, $s['from'], $s['to'], $s['only']);
+		$result = $this->service($s)->translate(new ObjectTranslationRequest($object, $s['from'], $s['to']), $s['only']);
 		$this->calls[] = ['result', $result];
 
 		$file = __DIR__ . '/fixtures/bulk-translation-object-golden.json';

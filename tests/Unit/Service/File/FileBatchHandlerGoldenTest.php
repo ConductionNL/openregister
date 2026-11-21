@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use OCA\OpenRegister\Service\File\FileOverwrite;
 
 /**
  * Pins FileBatchHandler::executeBatch().
@@ -120,10 +121,10 @@ class FileBatchHandlerGoldenTest extends TestCase {
 				return $id !== 7;
 			}
 		);
-		$service->method('updateFile')->willReturnCallback(
-			function ($id, $content, $tags, $object) use ($check): File {
-				$this->trail[] = 'label content='.var_export($content, true).' tags='.json_encode($tags);
-				return $check('update', $id, $object);
+		$service->method('overwriteFile')->willReturnCallback(
+			function (FileOverwrite $overwrite) use ($check): File {
+				$this->trail[] = 'label content='.var_export($overwrite->content, true).' tags='.json_encode($overwrite->tags);
+				return $check('update', $overwrite->filePath, $overwrite->object);
 			}
 		);
 		return $service;

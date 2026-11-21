@@ -52,6 +52,7 @@ use OCA\OpenRegister\Tests\Support\BuildsReaderHistory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The feed assembly.
@@ -101,8 +102,8 @@ class ActivityFeedServiceTest extends TestCase {
 			->onlyMethods(['page'])
 			->getMock();
 		$history->method('page')->willReturnCallback(
-			static function (string $register, string $schema, string $id, array $params) use ($entries, &$capture): array {
-				$capture = ['register' => $register, 'schema' => $schema, 'id' => $id, 'params' => $params];
+			static function (ObjectRef $ref, array $params) use ($entries, &$capture): array {
+				$capture = ['register' => $ref->register, 'schema' => $ref->schema, 'id' => $ref->id, 'params' => $params];
 
 				return [
 					'results' => array_map(static fn (AuditTrail $entry): array => $entry->jsonSerialize(), $entries),

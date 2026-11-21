@@ -90,7 +90,7 @@ interface AuthorizationResolutionInterface {
 	 *
 	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function resolveDeclaredAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array;
 

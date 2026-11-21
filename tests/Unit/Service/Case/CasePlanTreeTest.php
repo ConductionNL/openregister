@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Case\CasePlanTree
  * @covers \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class CasePlanTreeTest extends TestCase {
 

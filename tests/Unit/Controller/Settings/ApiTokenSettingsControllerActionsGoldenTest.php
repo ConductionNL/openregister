@@ -50,6 +50,8 @@ use TypeError;
  *
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @uses \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ApiTokenProbe
+ * @uses \OCA\OpenRegister\Controller\Support\ConnectionReporting
  */
 class ApiTokenSettingsControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/api-token-actions-golden.json';
