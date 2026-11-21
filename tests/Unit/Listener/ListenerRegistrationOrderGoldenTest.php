@@ -28,15 +28,17 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 256;
+	private const LISTENER_COUNT = 257;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
-	 * Last changed when the NotifyPushBatchInterface alias moved to ListenerBootstrap; the
-	 * listener registrations themselves are unchanged.
+	 * Last changed when Search started contributing the widget declaration check: one
+	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
+	 * listeners; every other registration is unchanged and in the same order. Then two
+	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent).
 	 */
-	private const SEQUENCE_SHA256 = '0e7942aec0a68b53f4157349d4b0b9a6cb12d0bac2e0b1f9e31b99636e0e8d11';
+	private const SEQUENCE_SHA256 = '5fa38e2f26d0895bfe07d6ce3c5f25e7356dd3b78d5cb9ded93745b27bf47b31';
 
 	/**
 	 * The registration calls, in call order, with every argument.
