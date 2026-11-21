@@ -217,3 +217,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: 'Class ...\FileSettingsHandler not found' in a service now typed on a port, or ArgumentCountError on a constructor (e.g. DetectorVersionReader, AnonymisationBackendCollaborators) in the PR's own tests.
 - Cause: main moved the dependency behind a Kernel/Contracts port and the PR's new lines still use the old class, its constants or the old constructor arity.
 - Fix: read the constructor on main; pass the real adapter (e.g. new PatternSetVersion()) or a mock of the port in the PR's tests, as main's own tests do; restate constants the port does not expose as a private const rather than importing the concrete class across areas.
+
+## Concrete entity type left after main moved a class to a Kernel interface (or-fix-11)
+- Symptom: TypeError '... must be of type OCA\OpenRegister\Service\<Area>\<Entity>, OCA\OpenRegister\Db\<Entity> given'; phpstan argument.type naming a class in the file's own namespace.
+- Cause: main retyped the file on Kernel\Contracts\Core\<Entity>Interface and dropped 'use ...\Db\<Entity>'; the PR's new methods still say <Entity>, which now resolves to a non-existent same-namespace class. Auto-merges clean.
+- Fix: type the PR's methods (and @param) on the interface main uses; phpstan on changed lib files finds them all. (#10531 FederatedShare)
