@@ -83,7 +83,7 @@ class RegisterServiceFindAllGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $schemaMapper, db: $this->createMock(IDBConnection::class)),
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers($this->createMock(FileService::class), new RegisterSerializer($schemaMapper, $logger)),
 			organisationService: $this->createMock(OrganisationService::class),
 			logger: $logger
