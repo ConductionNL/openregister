@@ -2109,7 +2109,7 @@
     },
     "int uuid without filters": {
         "threw": "TypeError",
-        "message": "DeleteObject::deleteObject(): Argument #3 ($uuid) must be of type string, int given",
+        "message": "OCA\\OpenRegister\\Service\\Object\\DeletionRequest::__construct(): Argument #3 ($uuid) must be of type string, int given",
         "calls": [
             [
                 "objectMapper.findMultiple",

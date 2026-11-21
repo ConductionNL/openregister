@@ -159,61 +159,67 @@ class AnonymisationPlanner {
 	/**
 	 * Refuse one rule that cannot be carried out.
 	 *
-	 * @param string $property The property it is declared on.
-	 * @param mixed  $rule     The declared rule.
+	 * @param string               $property The property it is declared on.
+	 * @param array<string, mixed> $rule     The declared rule, as profileOf() reads it.
 	 *
 	 * @return string[] The refusals for this rule.
 	 */
-	private function refuseRule(string $property, mixed $rule): array {
-		$treatment = $rule;
-		if (is_array($rule) === true) {
-			$treatment = ($rule['treatment'] ?? null);
-		}
-
+	private function refuseRule(string $property, array $rule): array {
+		$treatment = ($rule['treatment'] ?? null);
 		if (in_array($treatment, AnonymisationProfile::TREATMENTS, true) === false) {
-			$format = 'The anonymisation profile gives "%s" the treatment "%s", which is not one of: %s.';
-			return [$this->notOneOf(format: $format, property: $property, value: $treatment, allowed: AnonymisationProfile::TREATMENTS)];
+			return [$this->unknownTreatment(property: $property, treatment: $treatment)];
 		}
 
-		return $this->refuseParameters(property: $property, treatment: $treatment, rule: (array)$rule);
+		return $this->refuseParameters(property: $property, rule: $rule);
 	}//end refuseRule()
 
 	/**
 	 * Refuse a known treatment declared without what it needs to be carried out.
 	 *
-	 * @param string               $property  The property it is declared on.
-	 * @param string               $treatment The declared treatment.
-	 * @param array<string, mixed> $rule      The declared rule.
+	 * @param string               $property The property it is declared on.
+	 * @param array<string, mixed> $rule     The declared rule, whose treatment is a known one.
 	 *
 	 * @return string[] The refusals for this rule.
 	 */
-	private function refuseParameters(string $property, string $treatment, array $rule): array {
+	private function refuseParameters(string $property, array $rule): array {
+		$treatment = $rule['treatment'];
 		if ($treatment === AnonymisationProfile::FIXED && array_key_exists('value', $rule) === false) {
 			return [sprintf('The anonymisation profile gives "%s" the treatment "fixed" without saying which value to write.', $property)];
 		}
 
 		$grain = ($rule['grain'] ?? null);
 		if ($treatment === AnonymisationProfile::GENERALISE && in_array($grain, AnonymisationProfile::GRAINS, true) === false) {
-			$format = 'The anonymisation profile generalises "%s" to "%s", which is not one of: %s.';
-			return [$this->notOneOf(format: $format, property: $property, value: $grain, allowed: AnonymisationProfile::GRAINS)];
+			return [$this->unknownGrain(property: $property, grain: $grain)];
 		}
 
 		return [];
 	}//end refuseParameters()
 
 	/**
-	 * A refusal naming a value that is not one of the allowed ones.
+	 * The refusal for a treatment the vocabulary does not know.
 	 *
-	 * @param string   $format   The sprintf format: property, value, allowed values.
-	 * @param string   $property The property the rule is declared on.
-	 * @param mixed    $value    The declared value.
-	 * @param string[] $allowed  The allowed values.
+	 * @param string $property  The property the rule is declared on.
+	 * @param mixed  $treatment The declared treatment.
 	 *
 	 * @return string The refusal.
 	 */
-	private function notOneOf(string $format, string $property, mixed $value, array $allowed): string {
-		return sprintf($format, $property, $this->describe(value: $value), implode(', ', $allowed));
-	}//end notOneOf()
+	private function unknownTreatment(string $property, mixed $treatment): string {
+		$format = 'The anonymisation profile gives "%s" the treatment "%s", which is not one of: %s.';
+		return sprintf($format, $property, $this->describe(value: $treatment), implode(', ', AnonymisationProfile::TREATMENTS));
+	}//end unknownTreatment()
+
+	/**
+	 * The refusal for a generalisation to a grain the vocabulary does not know.
+	 *
+	 * @param string $property The property the rule is declared on.
+	 * @param mixed  $grain    The declared grain.
+	 *
+	 * @return string The refusal.
+	 */
+	private function unknownGrain(string $property, mixed $grain): string {
+		$format = 'The anonymisation profile generalises "%s" to "%s", which is not one of: %s.';
+		return sprintf($format, $property, $this->describe(value: $grain), implode(', ', AnonymisationProfile::GRAINS));
+	}//end unknownGrain()
 
 	/**
 	 * One value as something a refusal can name.

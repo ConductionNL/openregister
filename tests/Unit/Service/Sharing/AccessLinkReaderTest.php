@@ -41,13 +41,17 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -64,6 +68,7 @@ class AccessLinkReaderTest extends TestCase {
 	private PropertyRbacHandler&MockObject $properties;
 	private PublicTimeline&MockObject $timeline;
 	private LoggerInterface&MockObject $logger;
+	private IUserManager&MockObject $users;
 	private AccessLinkReader $reader;
 
 	protected function setUp(): void {
@@ -76,11 +81,13 @@ class AccessLinkReaderTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->schemas->method('find')->willReturn($this->createMock(Schema::class));
+		$this->users = $this->createMock(IUserManager::class);
 
 		$this->reader = new AccessLinkReader(
 			sources: new AccessLinkReaderSources(
 				objects: $this->objects,
-				subjects: new AccessLinkSubject()
+				subjects: new AccessLinkSubject(),
+				users: $this->users
 			),
 			filters: new AccessLinkReaderFilters(
 				schemas: $this->schemas,
@@ -268,10 +275,29 @@ class AccessLinkReaderTest extends TestCase {
 
 	// ---- Task 1.1: a view link. --------------------------------------------
 
+	/**
+	 * The minter the link names, enabled or not, and the object path running as them.
+	 *
+	 * @param bool $enabled Whether the account is enabled.
+	 *
+	 * @return IUser
+	 */
+	private function minter(bool $enabled = true): IUser {
+		$minter = $this->createMock(IUser::class);
+		$minter->method('getUID')->willReturn('owner');
+		$minter->method('isEnabled')->willReturn($enabled);
+		$this->users->method('get')->willReturnCallback(static fn (string $uid): ?IUser => $uid === 'owner' ? $minter : null);
+		$this->objects->method('runAs')->willReturnCallback(static fn (IUser $user, callable $operation) => $operation());
+
+		return $minter;
+	}
+
 	public function testAViewLinkServesTheViewsObjectsEachFiltered(): void {
+		$minter = $this->minter();
+		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), false, false, null, null, ['view-uuid'])
+			->with($this->anything(), true, true, null, null, ['view-uuid'])
 			->willReturn([$this->object(), $this->object()]);
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
 
@@ -283,8 +309,59 @@ class AccessLinkReaderTest extends TestCase {
 		$this->assertArrayNotHasKey('owner', $body['results'][0]['@self']);
 	}
 
+	public function testAViewLinkKnownOnlyByItsKernelContractReadsAsItsMinter(): void {
+		$minter = $this->minter();
+		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
+		$this->objects->method('searchObjects')->willReturn([$this->object()]);
+		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
+		$link = new class implements AccessLinkInterface {
+			public function getSubjectType(): ?string {
+				return AccessLinkInterface::SUBJECT_VIEW;
+			}
+
+			public function getSubjectId(): ?string {
+				return 'view-uuid';
+			}
+
+			public function getCreatedBy(): ?string {
+				return 'owner';
+			}
+		};
+
+		$body = $this->reader->read(link: $link);
+
+		$this->assertIsArray($body);
+		$this->assertSame(1, $body['total']);
+	}
+
+	public function testTheEntityNamesTheSubjectKindsOfItsKernelContract(): void {
+		$this->assertSame(
+			[AccessLinkInterface::SUBJECT_OBJECT, AccessLinkInterface::SUBJECT_VIEW, AccessLinkInterface::SUBJECT_FILE],
+			AccessLink::SUBJECT_TYPES
+		);
+		$this->assertSame(['object', 'view', 'file'], AccessLink::SUBJECT_TYPES);
+		$this->assertSame('owner', $this->link(subjectType: AccessLink::SUBJECT_VIEW)->getCreatedBy());
+	}
+
 	public function testAViewThatNoLongerResolvesServesNothing(): void {
+		$this->minter();
 		$this->objects->method('searchObjects')->willThrowException(new RuntimeException('gone'));
+
+		$this->assertNull($this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid')));
+	}
+
+	public function testAViewLinkWhoseMinterIsGoneServesNothing(): void {
+		$this->minter();
+		$this->objects->expects($this->never())->method('searchObjects');
+		$link = $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid');
+		$link->setCreatedBy('someone-removed');
+
+		$this->assertNull($this->reader->read(link: $link));
+	}
+
+	public function testAViewLinkWhoseMinterIsDisabledServesNothing(): void {
+		$this->minter(enabled: false);
+		$this->objects->expects($this->never())->method('searchObjects');
 
 		$this->assertNull($this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid')));
 	}
@@ -300,7 +377,7 @@ class AccessLinkReaderTest extends TestCase {
 	public function testTheSubjectIsFetchedWithoutRbacBecauseThereIsNoPrincipalToJudge(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, false, false, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, false, false, false, false))
 			->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn([]);
 		$this->timeline->method('forObject')->willReturn([]);

@@ -18,7 +18,7 @@ final class TaskControllerFactory {
 	/**
 	 * The constructor arguments of TaskController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param TaskManagerInterface $tasks Constructor argument.
 	 * @param TaskInboxService $inbox Constructor argument.
@@ -46,7 +46,6 @@ final class TaskControllerFactory {
 		?\OCP\IGroupManager $groupManager = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TaskControllerServices(
 				work: new \OCA\OpenRegister\Controller\Support\TaskWork(

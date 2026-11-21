@@ -18,7 +18,7 @@ final class SourcesControllerFactory {
 	/**
 	 * The constructor arguments of SourcesController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param IAppConfig $config Constructor argument.
 	 * @param SourceMapper $sourceMapper Constructor argument.
@@ -50,7 +50,6 @@ final class SourcesControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SourcesControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

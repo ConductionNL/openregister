@@ -18,8 +18,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -40,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Unit tests for ReferentialIntegrityService
@@ -80,12 +85,12 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
-		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->auditTrailMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->db = $this->createMock(IDBConnection::class);
 
 		$this->service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createNullCacheFactory()),
 			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->db),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->logger
@@ -1294,7 +1299,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $trail->getObjectUuid() === 'obj-uuid';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockHandlesEmptyBlockers(): void {
@@ -1312,7 +1317,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerProperty'] === 'unknown';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockDeduplicatesSchemas(): void {
@@ -1332,7 +1337,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerSchema'] === '1';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockWithNullSchemaId(): void {
@@ -1347,7 +1352,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			->method('insert');
 
 		// Should not throw when schemaId is null.
-		$this->service->logRestrictBlock('obj-uuid', null, $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: null, userId: 'admin'), $analysis);
 	}
 
 	public function testLogRestrictBlockHandlesBlockersWithMissingKeys(): void {
@@ -1366,7 +1371,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 					&& $changed['blockerProperty'] === 'unknown';
 			}));
 
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -1389,7 +1394,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->logRestrictBlock('obj-uuid', '5', $analysis, 'admin');
+		$this->service->logRestrictBlock(new RefusedDeletion(objectUuid: 'obj-uuid', schemaId: '5', userId: 'admin'), $analysis);
 	}
 
 	// =========================================================================
@@ -1432,7 +1437,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsAppliesSetNullForArray(): void {
@@ -1477,7 +1485,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsSetNullHandlesException(): void {
@@ -1501,7 +1512,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1543,7 +1557,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsSetDefaultHandlesException(): void {
@@ -1566,7 +1583,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1601,7 +1621,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'trigger-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: 'trigger-slug', organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsGroupsCascadeByRegisterSchema(): void {
@@ -1642,7 +1665,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsCascadeFallbackForNoRegister(): void {
@@ -1670,7 +1696,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsCascadeHandlesDeleteException(): void {
@@ -1693,7 +1722,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		);
 
 		// Should not throw.
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1733,7 +1765,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'test-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: 'test-slug', organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsLogsSetDefaultAuditTrail(): void {
@@ -1766,7 +1801,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	public function testApplyDeletionActionsLogsCascadeDeleteAuditTrail(): void {
@@ -1798,7 +1836,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid', null, 'test-slug');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: 'test-slug', organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1816,7 +1857,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->objectMapper->expects($this->never())
 			->method('deleteObjects');
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1883,7 +1927,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 
 		// update called for SET_NULL, then for SET_DEFAULT, then deleteObjects for CASCADE.
 		$this->assertSame(['update', 'update', 'delete'], $callOrder);
@@ -1928,7 +1975,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -1975,7 +2025,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -2016,10 +2069,7 @@ class ReferentialIntegrityServiceTest extends TestCase {
 
 		$this->service->applyDeletionActions(
 			$analysis,
-			'admin',
-			'source-uuid',
-			'org-1',
-			'my-schema-slug'
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: 'my-schema-slug', organisationId: 'org-1')
 		);
 	}
 
@@ -2368,7 +2418,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -2412,7 +2465,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 
 	// =========================================================================
@@ -2547,7 +2603,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			)
 		);
 
-		$this->service->applyDeletionActions($analysis, 'admin', 'source-uuid');
+		$this->service->applyDeletionActions(
+			$analysis,
+			new CascadeDeleteOrigin(userId: 'admin', cascadeSource: 'source-uuid', triggerSchemaSlug: null, organisationId: null)
+		);
 	}
 	/**
 	 * A real ArchivalRetentionGuard over schemas that declare no archival annotation.
@@ -2578,6 +2637,6 @@ class ReferentialIntegrityServiceTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 }

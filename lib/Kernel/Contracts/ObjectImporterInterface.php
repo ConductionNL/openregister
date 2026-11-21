@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCP\IUser;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 /**
  * Imports objects into a register and schema from a file, and undoes an import by its job id. Implemented by ImportService.
@@ -33,51 +33,22 @@ interface ObjectImporterInterface {
 	/**
 	 * Import data from CSV file.
 	 *
-	 * @param string $filePath The path to the CSV file.
-	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
-	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
-	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
-	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
-	 * @param bool $_rbac Whether to enforce RBAC checks (default: true, unused).
-	 * @param bool $_multitenancy Whether to enable multi-tenancy (default: true, unused).
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
-	 * @param IUser|null $currentUser Current user for RBAC checks (default: null).
-	 * @param bool $enrich Whether to enrich objects with metadata (default: true).
-	 * @param array|null $pack Optional migration pack definition (decoded JSON). When given, each row is
-	 *                         mapped through `MappingEngine::mapRow()` before the normal validate/save
-	 *                         pipeline.
-	 * @param bool $dryRun When true, rows are mapped and validated but nothing is saved.
+	 * @param ImportRequest $request       The file, the register and schema (required), the user, the save options and the optional migration pack or
+	 *                               dry run.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
 	 *
 	 * @return array Import results by schema
 	 */
-	public function importFromCsv(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-		?array $pack = null,
-		bool $dryRun = false,
-	): array;
+	public function importFromCsv(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Import data from Excel file.
 	 *
-	 * @param string $filePath The path to the Excel file.
-	 * @param RegisterInterface|null $register Optional register to associate with imported objects.
-	 * @param SchemaInterface|null $schema Optional schema to associate with imported objects.
-	 * @param bool $validation Whether to validate objects against schema definitions (default: false).
-	 * @param bool $events Whether to dispatch object lifecycle events (default: false).
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true, unused).
-	 * @param bool $_multitenancy Whether to apply multitenancy checks (default: true, unused).
-	 * @param bool $publish DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
-	 * @param IUser|null $currentUser The current user performing the import (optional).
-	 * @param bool $enrich Whether to enrich objects with metadata (default: true).
+	 * @param ImportRequest $request       The file, the register and schema (a register alone imports one schema per sheet), the user and the save
+	 *                               options.
+	 * @param bool          $_rbac         Whether to enforce RBAC checks.
+	 * @param bool          $_multitenancy Whether to enable multi-tenancy.
 	 *
 	 * @return (array|int|null|string)[][]
 	 *
@@ -110,18 +81,7 @@ interface ObjectImporterInterface {
 	 *             schemaProperties: list<array-key>}
 	 * }>
 	 */
-	public function importFromExcel(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-	): array;
+	public function importFromExcel(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Import objects of a single schema from a JSON document
@@ -145,26 +105,11 @@ interface ObjectImporterInterface {
 	 * actionable error naming the missing slug rather than a silent no-op or
 	 * an opaque exception.
 	 *
-	 * @param string $filePath Path to the uploaded JSON file
-	 * @param RegisterInterface|null $register Register to import into. When null, the payload is checked for
-	 *                                a register-bundle envelope to auto-create it; see
-	 *                                `$registerSlug` and `@throws` below.
-	 * @param SchemaInterface|null $schema Target schema (required — JSON import is single-schema, like
-	 *                            CSV — unless resolved from a register-bundle's own schemas)
-	 * @param bool $validation Whether to validate objects against the schema
-	 * @param bool $events Whether to dispatch object lifecycle events
-	 * @param bool $_rbac Whether to apply RBAC permissions
-	 * @param bool $_multitenancy Whether to apply multi-tenancy filtering
-	 * @param bool $publish DEPRECATED no-op; publication is RBAC-driven
-	 * @param IUser|null $currentUser The current user performing the import
-	 * @param bool $enrich Whether to enrich objects with metadata
-	 * @param array|null $pack Optional migration pack definition (decoded JSON). When given, each JSON
-	 *                         object is mapped through `MappingEngine::mapRow()` (source resolved via
-	 *                         JSON-Pointer-style paths against the raw decoded object) before save.
-	 * @param bool $dryRun When true, rows are mapped and validated but nothing is saved.
-	 * @param string|null $registerSlug The register slug/id the caller originally requested, used ONLY to
-	 *                                  name the missing register in the clear-failure error when `$register`
-	 *                                  is null and the payload is not a creatable bundle (REQ-IMP-AC-02).
+	 * @param ImportRequest $request       The file; the register (null: the payload is checked for a register bundle, and the scope's registerSlug
+	 *                               names the missing register) and schema (required unless a bundle carries it); the user, save options and optional
+	 *                               migration pack or dry run.
+	 * @param bool          $_rbac         Whether to apply RBAC permissions.
+	 * @param bool          $_multitenancy Whether to apply multi-tenancy filtering.
 	 *
 	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
 	 *
@@ -173,21 +118,7 @@ interface ObjectImporterInterface {
 	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When `$register` is null and the payload is not a creatable
 	 *                                   register-bundle (REQ-IMP-AC-02)
 	 */
-	public function importFromJson(
-		string $filePath,
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		bool $validation = false,
-		bool $events = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		bool $publish = false,
-		?IUser $currentUser = null,
-		bool $enrich = true,
-		?array $pack = null,
-		bool $dryRun = false,
-		?string $registerSlug = null,
-	): array;
+	public function importFromJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
 	 * Serialize per-row import errors to a UTF-8 CSV blob with BOM.

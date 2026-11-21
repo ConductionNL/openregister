@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\NoteVersion;
 use OCA\OpenRegister\Files\Db\NoteVersionMapper;
@@ -56,6 +57,13 @@ class NoteVersionService {
 	 * @var string
 	 */
 	public const AUDIT_ACTION = 'note.edited';
+
+	/**
+	 * The audit action a note lock is recorded under.
+	 *
+	 * @var string
+	 */
+	public const LOCK_AUDIT_ACTION = 'note.locked';
 
 	/**
 	 * Constructor.
@@ -83,19 +91,31 @@ class NoteVersionService {
 	 * that silently failed to write would leave an edit with no history and
 	 * a note claiming, through its own `versionCount`, that there is none.
 	 *
-	 * @param integer  $noteId   The note being rewritten.
-	 * @param IComment $previous The note as it stands, before its text is replaced: its text, actor and actor type.
+	 * @param IComment $previous The note as it stands, before its text is replaced: its id, text, actor and actor type.
 	 * @param string   $editedBy The user replacing the text.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function record(int $noteId, IComment $previous, string $editedBy): void {
+	public function record(IComment $previous, string $editedBy): void {
+		$version = $this->versionOf(previous: $previous, editedBy: $editedBy);
+		$version->setCommentId((int)$previous->getId());
+		$this->mapper->insert($version);
+	}//end record()
+
+	/**
+	 * A new version row holding a note's text as it stands, not yet tied to the note.
+	 *
+	 * @param IComment $previous The note before its text is replaced: its text, actor and actor type.
+	 * @param string   $editedBy The user replacing the text.
+	 *
+	 * @return NoteVersion The unsaved version.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 */
+	private function versionOf(IComment $previous, string $editedBy): NoteVersion {
 		$version = new NoteVersion();
-		$version->setCommentId($noteId);
 		$version->setMessage($previous->getMessage());
 		$version->setAuthor($previous->getActorId());
 		$version->setAuthorType($previous->getActorType());
@@ -108,8 +128,8 @@ class NoteVersionService {
 		$version->setCreated(new DateTime());
 		$version->setUuid(Uuid::v4()->toRfc4122());
 
-		$this->mapper->insert($version);
-	}//end record()
+		return $version;
+	}//end versionOf()
 
 	/**
 	 * List a note's versions, newest first.
@@ -224,26 +244,65 @@ class NoteVersionService {
 	 * trail stays small and the text stays in the versions, which is what
 	 * ADR-003 asks of an immutable trail.
 	 *
-	 * @param ObjectEntity $object   The object the note hangs on.
-	 * @param integer      $noteId   The note that was rewritten.
-	 * @param integer      $versions The number of versions the note now has.
+	 * @param ObjectEntity         $object The object the note hangs on.
+	 * @param array<string, mixed> $note   The rewritten note, carrying its id and versionCount.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
+	public function auditEdit(ObjectEntity $object, array $note): bool {
+		return $this->writeEditEntry(
+			object: $object,
+			context: ['noteId' => (int)($note['id'] ?? 0), 'versionCount' => (int)($note['versionCount'] ?? 0)]
+		);
+	}//end auditEdit()
+
+	/**
+	 * Record on the object that one of its notes was locked, by whom and when.
+	 *
+	 * @param ObjectEntity         $object The object the note hangs on.
+	 * @param array<string, mixed> $note   The locked note.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function auditLock(ObjectEntity $object, array $note): bool {
+		return $this->writeEditEntry(
+			object: $object,
+			context: [
+				'noteId' => (int)($note['id'] ?? 0),
+				'lockedBy' => (string)($note['lockedBy'] ?? ''),
+				'lockedAt' => (string)($note['lockedAt'] ?? ''),
+			],
+			action: self::LOCK_AUDIT_ACTION
+		);
+	}//end auditLock()
+
+	/**
+	 * Write the note-edited entry on the object; a failure is logged, never thrown.
+	 *
+	 * @param ObjectEntity                             $object  The object the note hangs on.
+	 * @param array<string, int|string>              $context The note and what the entry says about it.
+	 * @param string                                 $action  The audit action.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 */
+	private function writeEditEntry(ObjectEntity $object, array $context, string $action = self::AUDIT_ACTION): bool {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: ['noteId' => $noteId, 'versionCount' => $versions]
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: $action,
+					context: $context
+				)
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already
 			// written; losing the trail entry must not lose the edit.
 			$this->logger->error(
-				'[NoteVersionService] Note ' . $noteId . ' was edited but the audit entry could not be written',
+				'[NoteVersionService] Note ' . $context['noteId'] . ' was ' . $this->pastTense(action: $action) . ' but the audit entry could not be written',
 				['exception' => $e]
 			);
 
@@ -251,7 +310,22 @@ class NoteVersionService {
 		}
 
 		return true;
-	}//end auditEdit()
+	}//end writeEditEntry()
+
+	/**
+	 * What happened to the note, in the words of the log line.
+	 *
+	 * @param string $action The audit action.
+	 *
+	 * @return string `locked` for a lock, `edited` for anything else.
+	 */
+	private function pastTense(string $action): string {
+		if ($action === self::LOCK_AUDIT_ACTION) {
+			return 'locked';
+		}
+
+		return 'edited';
+	}//end pastTense()
 
 	/**
 	 * Resolve a user id to a display name, falling back to the id.

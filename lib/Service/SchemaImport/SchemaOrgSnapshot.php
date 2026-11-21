@@ -159,18 +159,28 @@ class SchemaOrgSnapshot {
 		$guard = 0;
 		while ($current !== null && isset($this->classes[$current]) === true && $guard < 50) {
 			$chain[] = $current;
-			$parent = $this->classes[$current]['parent'];
-			if ($parent !== null) {
-				$current = $this->bareName(reference: $parent);
-			} else {
-				$current = null;
-			}
-
+			$current = $this->parentOf(className: $current);
 			$guard++;
 		}
 
 		return $chain;
 	}//end ancestryOf()
+
+	/**
+	 * The bare name of a parsed class's parent, or null for a root class.
+	 *
+	 * @param string $className A class present in the parsed snapshot.
+	 *
+	 * @return string|null The parent's bare name.
+	 */
+	private function parentOf(string $className): ?string {
+		$parent = $this->classes[$className]['parent'];
+		if ($parent !== null) {
+			return $this->bareName(reference: $parent);
+		}
+
+		return null;
+	}//end parentOf()
 
 	/**
 	 * Search classes by a case-insensitive name/comment substring.
@@ -188,7 +198,7 @@ class SchemaOrgSnapshot {
 		$needle = strtolower(trim($query));
 		$results = [];
 		foreach ($this->classes as $name => $class) {
-			if ($this->classMatches(name: (string)$name, class: $class, needle: $needle) === true) {
+			if ($this->classMatches(texts: [(string)$name, (string)($class['comment'] ?? '')], needle: $needle) === true) {
 				$results[] = $class;
 			}
 
@@ -203,16 +213,23 @@ class SchemaOrgSnapshot {
 	/**
 	 * Whether a class matches a lowercased search needle (empty matches all).
 	 *
-	 * @param string               $name   The bare class name.
-	 * @param array<string, mixed> $class  The class record.
-	 * @param string               $needle The lowercased, trimmed needle.
+	 * @param array<int, string> $texts  The bare class name and its comment.
+	 * @param string             $needle The lowercased, trimmed needle.
 	 *
 	 * @return bool True when the name or comment contains the needle.
 	 */
-	private function classMatches(string $name, array $class, string $needle): bool {
-		return $needle === ''
-			|| str_contains(strtolower($name), $needle) === true
-			|| str_contains(strtolower((string)$class['comment']), $needle) === true;
+	private function classMatches(array $texts, string $needle): bool {
+		if ($needle === '') {
+			return true;
+		}
+
+		foreach ($texts as $text) {
+			if (str_contains(strtolower($text), $needle) === true) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end classMatches()
 
 	/**
@@ -284,15 +301,7 @@ class SchemaOrgSnapshot {
 	 * @throws SchemaImportException When the file is missing or unparseable.
 	 */
 	private function decodeReleaseGraph(): mixed {
-		if (is_file($this->releaseFile) === false) {
-			throw new SchemaImportException(
-				message: 'Schema.org snapshot file is missing: ' . $this->releaseFile,
-				httpStatus: 500
-			);
-		}
-
-		$raw = (string)file_get_contents($this->releaseFile);
-		$decoded = json_decode($raw, associative: true);
+		$decoded = json_decode($this->releaseContents(), associative: true);
 		if (is_array($decoded) === false || isset($decoded['@graph']) === false) {
 			throw new SchemaImportException(
 				message: 'Schema.org snapshot is not a valid JSON-LD release file.',
@@ -302,6 +311,24 @@ class SchemaOrgSnapshot {
 
 		return $decoded['@graph'];
 	}//end decodeReleaseGraph()
+
+	/**
+	 * The release file's raw contents.
+	 *
+	 * @return string The file's contents.
+	 *
+	 * @throws SchemaImportException When the release file is missing.
+	 */
+	private function releaseContents(): string {
+		if (is_file($this->releaseFile) === false) {
+			throw new SchemaImportException(
+				message: 'Schema.org snapshot file is missing: ' . $this->releaseFile,
+				httpStatus: 500
+			);
+		}
+
+		return (string)file_get_contents($this->releaseFile);
+	}//end releaseContents()
 
 	/**
 	 * Index one `@graph` node as a class or property; other nodes are skipped.

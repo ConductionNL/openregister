@@ -51,48 +51,61 @@ class ProblemDetailsBuilder implements ProblemDetailsBuilderInterface {
 	public const DEFAULT_TYPE = 'about:blank';
 
 	/**
-	 * Build a problem document from the input parts.
+	 * Build a problem document from a stated problem.
 	 *
-	 * @param int $status HTTP status code (4xx / 5xx).
-	 * @param string $title Short summary.
-	 * @param ProblemDescription|null $description Detail, problem-class URI and instance URI; null = none of them.
-	 * @param array $extensions Free-form extension fields (e.g. `errors`, `code`).
+	 * @param ProblemStatement $statement Status, title, description and extension fields.
 	 *
 	 * @return array<string, mixed> The problem-json payload.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
 	 */
-	public function build(
-		int $status,
-		string $title,
-		?ProblemDescription $description = null,
-		array $extensions = [],
-	): array {
-		$description ??= new ProblemDescription();
-		$detail        = $description->detail;
-		$instance      = $description->instance;
-
-		$problemType = self::DEFAULT_TYPE;
-		if ($description->type !== '') {
-			$problemType = $description->type;
-		}
+	public function build(ProblemStatement $statement): array {
+		$description = ($statement->description ?? new ProblemDescription());
 
 		$problem = [
-			'type' => $problemType,
-			'title' => $title,
-			'status' => $status,
+			'type' => $this->problemType(description: $description),
+			'title' => $statement->title,
+			'status' => $statement->status,
 		];
 
-		if ($detail !== '') {
-			$problem['detail'] = $detail;
+		if ($description->detail !== '') {
+			$problem['detail'] = $description->detail;
 		}
 
-		if ($instance !== '') {
-			$problem['instance'] = $instance;
+		if ($description->instance !== '') {
+			$problem['instance'] = $description->instance;
 		}
 
-		// Extensions never overwrite the standard fields — RFC 7807
-		// says custom fields MUST NOT clash. Filter them.
+		return $this->withExtensions(problem: $problem, extensions: $statement->extensions);
+	}//end build()
+
+	/**
+	 * The problem-class URI, `about:blank` when the description names none.
+	 *
+	 * @param ProblemDescription $description The description.
+	 *
+	 * @return string
+	 */
+	private function problemType(ProblemDescription $description): string {
+		if ($description->type !== '') {
+			return $description->type;
+		}
+
+		return self::DEFAULT_TYPE;
+	}//end problemType()
+
+	/**
+	 * Append the extension fields to a problem document.
+	 *
+	 * Extensions never overwrite the standard fields — RFC 7807 says custom
+	 * fields MUST NOT clash. Filter them.
+	 *
+	 * @param array<string, mixed> $problem    The standard fields.
+	 * @param array                $extensions Free-form extension fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withExtensions(array $problem, array $extensions): array {
 		foreach ($extensions as $key => $value) {
 			if (in_array($key, ['type', 'title', 'status', 'detail', 'instance'], true) === true) {
 				continue;
@@ -102,25 +115,26 @@ class ProblemDetailsBuilder implements ProblemDetailsBuilderInterface {
 		}
 
 		return $problem;
-	}//end build()
+	}//end withExtensions()
 
 	/**
 	 * Wrap a list of validation errors as a 422 problem document.
 	 *
-	 * @param array $errors List of validation errors (each free-form, typically `{path, message}`).
-	 * @param string $detail Optional human-readable explanation.
-	 * @param string $instance Instance URI, '' = omit.
+	 * @param array              $errors      List of validation errors (each free-form, typically `{path, message}`).
+	 * @param ProblemDescription $description The optional explanation and instance URI ('' = omit); its type is ignored.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
 	 */
-	public function validationFailed(array $errors, string $detail = '', string $instance = ''): array {
+	public function validationFailed(array $errors, ProblemDescription $description = new ProblemDescription()): array {
 		return $this->build(
-			status: 422,
-			title: 'Validation failed',
-			description: new ProblemDescription(detail: $detail, type: 'about:blank', instance: $instance),
-			extensions: ['errors' => $errors]
+			statement: new ProblemStatement(
+				status: 422,
+				title: 'Validation failed',
+				description: new ProblemDescription(detail: $description->detail, type: 'about:blank', instance: $description->instance),
+				extensions: ['errors' => $errors]
+			)
 		);
 
 	}//end validationFailed()
@@ -137,9 +151,11 @@ class ProblemDetailsBuilder implements ProblemDetailsBuilderInterface {
 	 */
 	public function notFound(string $detail = '', string $instance = ''): array {
 		return $this->build(
-			status: 404,
-			title: 'Not found',
-			description: new ProblemDescription(detail: $detail, instance: $instance)
+			statement: new ProblemStatement(
+				status: 404,
+				title: 'Not found',
+				description: new ProblemDescription(detail: $detail, instance: $instance)
+			)
 		);
 
 	}//end notFound()
@@ -156,9 +172,11 @@ class ProblemDetailsBuilder implements ProblemDetailsBuilderInterface {
 	 */
 	public function conflict(string $detail = '', string $instance = ''): array {
 		return $this->build(
-			status: 409,
-			title: 'Conflict',
-			description: new ProblemDescription(detail: $detail, instance: $instance)
+			statement: new ProblemStatement(
+				status: 409,
+				title: 'Conflict',
+				description: new ProblemDescription(detail: $detail, instance: $instance)
+			)
 		);
 
 	}//end conflict()

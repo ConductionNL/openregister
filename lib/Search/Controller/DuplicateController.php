@@ -31,19 +31,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
+use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
+use OCA\OpenRegister\Search\Service\Quality\NearDuplicateScope;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -77,18 +82,26 @@ class DuplicateController extends Controller {
 	private readonly ControllerSession $session;
 
 	/**
+	 * The readable files of a near-duplicate scope; null when not wired.
+	 *
+	 * @var NearDuplicateScope|null
+	 */
+	private readonly ?NearDuplicateScope $nearDuplicates;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request  The current request.
 	 * @param DuplicateControllerServices $services The duplicate-detection API services.
 	 */
 	public function __construct(IRequest $request, DuplicateControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->duplicates    = $services->duplicates;
 		$this->dismissals    = $services->dismissals;
 		$this->objectService = $services->objectService;
 		$this->session       = $services->session;
+		$this->nearDuplicates = $services->nearDuplicates;
 	}//end __construct()
 
 	/**
@@ -124,10 +137,7 @@ class DuplicateController extends Controller {
 
 		try {
 			$pairs = $this->duplicates->findDuplicates(
-				register: $register,
-				schema: $schema,
-				matchRules: null,
-				threshold: $threshold
+				request: new DedupRun(register: $register, schema: $schema, matchRules: null, threshold: $threshold)
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -167,7 +177,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The matches, with score, matched fields and matched rules.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
@@ -178,10 +187,8 @@ class DuplicateController extends Controller {
 
 		try {
 			$matches = $this->duplicates->checkCandidate(
-				register: $register,
-				schema: $schema,
-				candidate: $candidate,
-				threshold: $threshold
+				request: new DedupRun(register: $register, schema: $schema, threshold: $threshold),
+				candidate: $candidate
 			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
@@ -194,9 +201,7 @@ class DuplicateController extends Controller {
 				'matches' => $matches,
 				'total' => count($matches),
 				'threshold' => $this->duplicates->effectiveThreshold(
-					register: $register,
-					schema: $schema,
-					threshold: $threshold
+					request: new DedupRun(register: $register, schema: $schema, threshold: $threshold)
 				),
 			]
 		);
@@ -280,7 +285,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The stored dismissal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
@@ -289,26 +293,71 @@ class DuplicateController extends Controller {
 		$objectB = (string)$this->request->getParam('objectB', '');
 		$reason = (string)$this->request->getParam('reason', '');
 
-		if ($objectA === '' || $objectB === '' || $objectA === $objectB) {
+		$pair    = new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema);
+		$refusal = $this->dismissRefusal(pair: $pair);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->storeDismissal(pair: $pair, reason: $reason);
+	}//end dismiss()
+
+	/**
+	 * Why a dismissal is refused: the pair is not two different objects (400),
+	 * or the caller is in none of the schema's dismiss groups (403).
+	 *
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the dismissal may proceed.
+	 */
+	private function dismissRefusal(ReviewedPair $pair): ?JSONResponse {
+		if ($this->isTwoDifferentObjects(pair: $pair) === false) {
 			return new JSONResponse(
 				['error' => 'A dismissal needs two different objects.'],
 				Http::STATUS_BAD_REQUEST
 			);
 		}
 
-		if ($this->mayDismiss(register: $register, schema: $schema) === false) {
-			return new JSONResponse(
-				['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
-				Http::STATUS_FORBIDDEN
-			);
+		if ($this->mayDismiss(register: $pair->registerSlug, schema: $pair->schemaSlug) === false) {
+			return $this->notInADismissGroup();
 		}
 
-		$fingerprint = $this->fingerprintOf(
-			register: $register,
-			schema: $schema,
-			objectA: $objectA,
-			objectB: $objectB
+		return null;
+	}//end dismissRefusal()
+
+	/**
+	 * Whether a pair names two objects, and not the same one twice.
+	 *
+	 * @param ReviewedPair $pair The two uuids.
+	 *
+	 * @return bool
+	 */
+	private function isTwoDifferentObjects(ReviewedPair $pair): bool {
+		return $pair->first !== '' && $pair->second !== '' && $pair->first !== $pair->second;
+	}//end isTwoDifferentObjects()
+
+	/**
+	 * The 403 for a caller in none of the groups the schema allows to dismiss pairs.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notInADismissGroup(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'You are not in a group this schema allows to dismiss duplicate pairs.'],
+			Http::STATUS_FORBIDDEN
 		);
+	}//end notInADismissGroup()
+
+	/**
+	 * Store the dismissal of an allowed pair, fingerprinted as the scorer will compare it.
+	 *
+	 * @param ReviewedPair $pair   The two uuids and the register and schema references.
+	 * @param string       $reason Why the reviewer judged them different.
+	 *
+	 * @return JSONResponse The stored dismissal, or 404 when either object cannot be read.
+	 */
+	private function storeDismissal(ReviewedPair $pair, string $reason): JSONResponse {
+		$fingerprint = $this->fingerprintOf(pair: $pair);
 		if ($fingerprint === null) {
 			return new JSONResponse(
 				['error' => 'One of the objects could not be read.'],
@@ -316,15 +365,25 @@ class DuplicateController extends Controller {
 			);
 		}
 
-		$row = $this->dismissals->dismiss(
-			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
+		$row = $this->dismissals->dismiss(pair: $pair, dismissal: $this->dismissalOf(fingerprint: $fingerprint, reason: $reason));
+		return new JSONResponse($row);
+	}//end storeDismissal()
+
+	/**
+	 * The dismissal record, made by the signed-in user.
+	 *
+	 * @param string $fingerprint The pair fingerprint.
+	 * @param string $reason      Why the reviewer judged them different.
+	 *
+	 * @return PairDismissal
+	 */
+	private function dismissalOf(string $fingerprint, string $reason): PairDismissal {
+		return new PairDismissal(
 			fingerprint: $fingerprint,
 			reason: $reason,
 			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
-
-		return new JSONResponse($row);
-	}//end dismiss()
+	}//end dismissalOf()
 
 	/**
 	 * Undo a dismissal, so the pair is offered again.
@@ -335,7 +394,6 @@ class DuplicateController extends Controller {
 	 * @return JSONResponse The updated dismissal, or 404 when there was none.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
@@ -385,9 +443,8 @@ class DuplicateController extends Controller {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function mayDismiss(string $register, string $schema): bool {
-		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
-		$groups = ($annotation['dismissGroups'] ?? null);
-		if (is_array($groups) === false || count($groups) === 0) {
+		$groups = $this->dismissGroups(register: $register, schema: $schema);
+		if ($groups === []) {
 			return false;
 		}
 
@@ -396,6 +453,36 @@ class DuplicateController extends Controller {
 			return false;
 		}
 
+		return $this->isInAnyGroup(user: $user, groups: $groups);
+	}//end mayDismiss()
+
+	/**
+	 * The schema's declared `dismissGroups`, or an empty list when it declares none.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema   Schema reference.
+	 *
+	 * @return array<mixed> The declared groups, unfiltered.
+	 */
+	private function dismissGroups(string $register, string $schema): array {
+		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
+		$groups     = ($annotation['dismissGroups'] ?? null);
+		if (is_array($groups) === false) {
+			return [];
+		}
+
+		return $groups;
+	}//end dismissGroups()
+
+	/**
+	 * Whether the user is in one of the named groups; names that are not a non-empty string are skipped.
+	 *
+	 * @param IUser        $user   The signed-in user.
+	 * @param array<mixed> $groups The declared group names.
+	 *
+	 * @return bool True at the first group the user is in.
+	 */
+	private function isInAnyGroup(IUser $user, array $groups): bool {
 		foreach ($groups as $group) {
 			if (is_string($group) === false || $group === '') {
 				continue;
@@ -407,16 +494,13 @@ class DuplicateController extends Controller {
 		}
 
 		return false;
-	}//end mayDismiss()
+	}//end isInAnyGroup()
 
 	/**
 	 * The fingerprint of the pair being dismissed, computed by the SAME
 	 * function the scorer will later compare against.
 	 *
-	 * @param string $register Register reference.
-	 * @param string $schema Schema reference.
-	 * @param string $objectA One uuid.
-	 * @param string $objectB The other uuid.
+	 * @param ReviewedPair $pair The two uuids and the register and schema references.
 	 *
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
@@ -424,10 +508,10 @@ class DuplicateController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
+	private function fingerprintOf(ReviewedPair $pair): ?string {
 		try {
-			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectA));
-			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $objectB));
+			$a = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->first));
+			$b = WriteCause::asLookup(fn () => $this->objectService->find(id: $pair->second));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -437,9 +521,110 @@ class DuplicateController extends Controller {
 		}
 
 		return $this->duplicates->pairFingerprint(
-			dataA: ($a->getObject() ?? []),
-			dataB: ($b->getObject() ?? []),
-			rules: $this->duplicates->effectiveRules(register: $register, schema: $schema)
+			payloads: [($a->getObject() ?? []), ($b->getObject() ?? [])],
+			rules: $this->duplicates->effectiveRules(register: $pair->registerSlug, schema: $pair->schemaSlug)
 		);
 	}//end fingerprintOf()
+
+	/**
+	 * Groups of near-identical files by their text, within one scope.
+	 *
+	 * Exactly one of `objectIds[]`, `folderId` or `fileIds[]` names the scope;
+	 * `threshold` optionally overrides `duplicates.textThreshold`. Every file the
+	 * caller may not read is dropped before anything is compared, so it appears
+	 * nowhere in the response. A scope above 5000 files is refused with 400.
+	 *
+	 * GET /api/files/near-duplicates
+	 *
+	 * @return JSONResponse `groups` and `notCompared`; 400 for a bad scope or threshold, 401 without a user.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/near-duplicate-documents-by-text/specs/duplicate-detection/spec.md#requirement-near-identical-documents-are-grouped-by-their-text-req-ndt-002
+	 */
+	public function nearDuplicates(): JSONResponse {
+		if ($this->session->userSession->getUser() === null) {
+			return new JSONResponse(['error' => 'Not authenticated'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->nearDuplicates === null) {
+			return new JSONResponse(['error' => 'Near-duplicate detection is not available'], Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		try {
+			$fileIds = $this->nearDuplicates->readableFileIds(
+				objectIds: $this->listParam(key: 'objectIds', ints: false),
+				folderId: $this->folderIdParam(),
+				fileIds: $this->listParam(key: 'fileIds', ints: true)
+			);
+			$found   = $this->duplicates->findTextGroups(fileIds: $fileIds, threshold: $this->thresholdFromRequest(key: 'threshold'));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(['groups' => $found['groups'], 'notCompared' => $found['notCompared']]);
+	}//end nearDuplicates()
+
+	/**
+	 * A list request parameter, given as `key[]=a&key[]=b` or as `key=a,b`.
+	 *
+	 * @param string $key  The parameter.
+	 * @param bool   $ints Whether the values are file ids: a value that is not a positive integer is refused.
+	 *
+	 * @return ($ints is true ? list<int> : list<string>) The values, without empties.
+	 *
+	 * @throws InvalidArgumentException When a file id is not a positive integer.
+	 */
+	private function listParam(string $key, bool $ints): array {
+		$raw = $this->request->getParam($key, []);
+		if (is_string($raw) === true) {
+			$raw = explode(',', $raw);
+		}
+
+		if (is_array($raw) === false) {
+			throw new InvalidArgumentException($key.' must be a list');
+		}
+
+		$values = [];
+		foreach ($raw as $value) {
+			if (is_scalar($value) === false || trim((string)$value) === '') {
+				continue;
+			}
+
+			$value = trim((string)$value);
+			if ($ints === false) {
+				$values[] = $value;
+				continue;
+			}
+
+			if (ctype_digit($value) === false || (int)$value <= 0) {
+				throw new InvalidArgumentException($key.' must hold file ids');
+			}
+
+			$values[] = (int)$value;
+		}
+
+		return $values;
+	}//end listParam()
+
+	/**
+	 * The `folderId` request parameter, or null when it is absent.
+	 *
+	 * @return int|null The folder id.
+	 *
+	 * @throws InvalidArgumentException When it is not a positive integer.
+	 */
+	private function folderIdParam(): ?int {
+		$raw = $this->request->getParam('folderId');
+		if ($raw === null || (is_string($raw) === true && trim($raw) === '')) {
+			return null;
+		}
+
+		if (is_scalar($raw) === false || ctype_digit(trim((string)$raw)) === false || (int)$raw <= 0) {
+			throw new InvalidArgumentException('folderId must be a folder id');
+		}
+
+		return (int)$raw;
+	}//end folderIdParam()
 }//end class

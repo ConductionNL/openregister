@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
@@ -70,6 +72,52 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\ExampleSet\CastOrganisationsRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastOrganisations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFields
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeFollower
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChangeReadBack
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCheckRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeopleRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRequiredRegister
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolveScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetResolvedObject
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetVouchedAccounts
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWrittenValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ObjectCheck
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
  */
 class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -107,7 +155,7 @@ class ExampleSetRegisterIdsTest extends ExampleSetTestCase {
 
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$catalog = $this->store->find(register: 'publication', schema: 'catalog', filters: [])[0];
+		$catalog = $this->store->find(table: new RegisterSchemaRef(register: 'publication', schema: 'catalog'), filters: [])[0];
 		$this->assertSame([31], $catalog['registers'], 'a whole-value placeholder keeps the integer');
 		$this->assertSame([1113], $catalog['schemas']);
 		$this->assertSame('register 31', $catalog['note']);

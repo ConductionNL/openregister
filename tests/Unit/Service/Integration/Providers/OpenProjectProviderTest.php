@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -61,7 +62,7 @@ class OpenProjectProviderTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		return new OpenProjectProvider(router: $router, appManager: $appManager, l10n: $l10n);
+		return new OpenProjectProvider(routing: new ConnectorRouting(router: $router, appManager: $appManager, l10n: $l10n));
 	}//end buildProvider()
 
 	/**

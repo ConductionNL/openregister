@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -179,8 +180,10 @@ class ReferenceTenantGuard {
 	 */
 	private function holdersFor(ObjectEntity $referenced, array $scope): array {
 		return $this->sharedMasterData->holdersForResource(
-			registerId: $this->numericId(value: $referenced->getRegister()),
-			schemaId: $this->numericId(value: $referenced->getSchema()),
+			pair: new DeclaredPair(
+				registerId: $this->numericId(value: $referenced->getRegister()),
+				schemaId: $this->numericId(value: $referenced->getSchema())
+			),
 			consumerOrgUuids: $scope
 		);
 	}//end holdersFor()

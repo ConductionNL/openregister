@@ -117,18 +117,18 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	public function coreFacts(ObjectEntity $object): array {
-		$annotation = $this->annotations->forObject(object: $object);
+		$source = $this->sourceOf(object: $object);
 
 		return [
-			'appraisal' => $this->declaredText(object: $object, abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie', annotation: $annotation),
-			'retentionPeriod' => $this->declaredText(object: $object, abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn', annotation: $annotation),
+			'appraisal' => $this->declaredText(source: $source, fact: new ArchivalFactKey(abstractKey: 'archiefnominatie', tmloKey: 'archiefnominatie')),
+			'retentionPeriod' => $this->declaredText(source: $source, fact: new ArchivalFactKey(abstractKey: 'bewaartermijn', tmloKey: 'bewaarTermijn')),
 			'disposalDate' => $this->values->matching(
-				value: $this->values->declared(object: $object, abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum', annotation: $annotation),
+				value: $this->values->declared(source: $source, fact: new ArchivalFactKey(abstractKey: 'archiefactiedatum', tmloKey: 'archiefactiedatum')),
 				pattern: MdtoValueReader::XSD_DATE
 			),
 			'disposalCategory' => $this->disposalCategory(object: $object),
 			'classification' => $this->values->textAt(value: $object->getTmlo(), key: 'classification'),
-			'description' => $this->declaredText(object: $object, abstractKey: 'toelichting', tmloKey: 'toelichting', annotation: $annotation),
+			'description' => $this->declaredText(source: $source, fact: new ArchivalFactKey(abstractKey: 'toelichting', tmloKey: 'toelichting')),
 		];
 	}//end coreFacts()
 
@@ -146,9 +146,9 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-generated-mdto-documents-must-validate-against-the-vendored-mdto-xml-1-0-1-xsd
 	 */
 	private function disposalCategory(ObjectEntity $object): ?array {
-		$annotation = $this->annotations->forObject(object: $object);
-		$label = $this->values->text(
-			value: $this->values->declared(object: $object, abstractKey: 'classification', tmloKey: 'vernietigingsCategorie', annotation: $annotation)
+		$label = $this->declaredText(
+			source: $this->sourceOf(object: $object),
+			fact: new ArchivalFactKey(abstractKey: 'classification', tmloKey: 'vernietigingsCategorie')
 		);
 		if ($label === null) {
 			return null;
@@ -201,7 +201,7 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function aggregationLevel(ObjectEntity $object): ?array {
-		$declared = $this->declaredFor(object: $object, abstractKey: 'aggregationLevel', tmloKey: 'aggregatieniveau');
+		$declared = $this->declaredFor(object: $object, fact: new ArchivalFactKey(abstractKey: 'aggregationLevel', tmloKey: 'aggregatieniveau'));
 
 		$label = $this->values->label(value: $declared);
 		if ($label === null) {
@@ -230,7 +230,7 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function temporalCoverage(ObjectEntity $object): array {
-		$declared = $this->declaredFor(object: $object, abstractKey: 'temporalCoverage', tmloKey: 'dekkingInTijd');
+		$declared = $this->declaredFor(object: $object, fact: new ArchivalFactKey(abstractKey: 'temporalCoverage', tmloKey: 'dekkingInTijd'));
 		if (is_array($declared) === false) {
 			return [];
 		}
@@ -254,7 +254,7 @@ class MdtoSourceReader {
 	 * 1. A declared restriction under `retention.useRestriction` or
 	 *    `tmlo.beperkingGebruik`.
 	 * 2. An ACTIVE legal hold in `retention.legalHold`, which
-	 *    `RetentionService::placeLegalHold()` does write, with a reason and a
+	 *    `RetentionService::placeHold()` does write, with a reason and a
 	 *    placed date. A hold restricts what may be done with the record, so it
 	 *    is reported as a restriction on use.
 	 *
@@ -271,19 +271,93 @@ class MdtoSourceReader {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	public function useRestriction(ObjectEntity $object): ?array {
-		$declared = $this->declaredFor(object: $object, abstractKey: 'useRestriction', tmloKey: 'beperkingGebruik');
+		$declared = $this->declaredFor(object: $object, fact: new ArchivalFactKey(abstractKey: 'useRestriction', tmloKey: 'beperkingGebruik'));
 
 		$label = $this->values->label(value: $declared);
 		if ($label !== null) {
 			return [
 				'type' => $label,
 				'description' => $this->values->textAt(value: $declared, key: 'description'),
-				'startDate' => $this->dateAt(value: $declared, key: 'startDate', pattern: MdtoValueReader::XSD_DATE_PREFIX),
+				'startDate' => $this->values->matching(
+					value: $this->values->textAt(value: $declared, key: 'startDate'),
+					pattern: MdtoValueReader::XSD_DATE_PREFIX
+				),
 			];
 		}
 
 		return $this->legalHoldRestriction(object: $object);
 	}//end useRestriction()
+
+	/**
+	 * The parties the schema's archival block names for this object, for `betrokkene`.
+	 *
+	 * Read from the evaluated annotation only: `parties` names the record's
+	 * own properties, so the evaluation is where the row's values are read.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{role: string, name: string, id: string|null}> The parties; empty when none is named.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	public function parties(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['parties'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parties = [];
+		foreach ($declared as $party) {
+			if (is_array($party) === false || is_string($party['name'] ?? null) === false || $party['name'] === '') {
+				continue;
+			}
+
+			$id = null;
+			if (isset($party['id']) === true) {
+				$id = (string) $party['id'];
+			}
+
+			$parties[] = ['role' => (string) ($party['role'] ?? ''), 'name' => $party['name'], 'id' => $id];
+		}
+
+		return $parties;
+	}//end parties()
+
+	/**
+	 * The parts the schema's declared containment relation holds for this record.
+	 *
+	 * Each part is its id, with its name when the row carried one. A schema
+	 * that declares no containment, or an annotation stored before it could,
+	 * yields none.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{id: string, name: string|null}> The parts.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function parts(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['containment']['parts'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parts = [];
+		foreach ($declared as $part) {
+			if (is_array($part) === false || is_string(($part['id'] ?? null)) === false || $part['id'] === '') {
+				continue;
+			}
+
+			$name = null;
+			if (is_string(($part['name'] ?? null)) === true && $part['name'] !== '') {
+				$name = $part['name'];
+			}
+
+			$parts[] = ['id' => $part['id'], 'name' => $name];
+		}
+
+		return $parts;
+	}//end parts()
 
 	/**
 	 * Report an ACTIVE legal hold as a use restriction.
@@ -327,60 +401,60 @@ class MdtoSourceReader {
 		}
 
 		$type  = $this->values->textAt(value: $entry, key: 'type');
-		$start = $this->dateAt(value: $entry, key: 'start', pattern: MdtoValueReader::XSD_DATE_UNION);
+		$start = $this->coverageDateAt(entry: $entry, key: 'start');
 		if ($type === null || $start === null) {
 			return null;
 		}
 
-		return ['type' => $type, 'start' => $start, 'end' => $this->dateAt(value: $entry, key: 'end', pattern: MdtoValueReader::XSD_DATE_UNION)];
+		return ['type' => $type, 'start' => $start, 'end' => $this->coverageDateAt(entry: $entry, key: 'end')];
 	}//end completeCoverageEntry()
+
+	/**
+	 * The object with its schema's evaluated archival annotation.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return ArchivalSource The source to read declared facts from.
+	 */
+	private function sourceOf(ObjectEntity $object): ArchivalSource {
+		return new ArchivalSource(object: $object, annotation: $this->annotations->forObject(object: $object));
+	}//end sourceOf()
 
 	/**
 	 * A declared value as text.
 	 *
-	 * @param ObjectEntity $object      The object.
-	 * @param string       $abstractKey The abstract key.
-	 * @param string       $tmloKey     The TMLO key.
-	 * @param array        $annotation  The object's annotation.
+	 * @param ArchivalSource  $source The object and its annotation.
+	 * @param ArchivalFactKey $fact   The fact's keys.
 	 *
 	 * @return string|null The text.
 	 */
-	private function declaredText(ObjectEntity $object, string $abstractKey, string $tmloKey, array $annotation): ?string {
-		return $this->values->text(
-			value: $this->values->declared(object: $object, abstractKey: $abstractKey, tmloKey: $tmloKey, annotation: $annotation)
-		);
+	private function declaredText(ArchivalSource $source, ArchivalFactKey $fact): ?string {
+		return $this->values->text(value: $this->values->declared(source: $source, fact: $fact));
 	}//end declaredText()
 
 	/**
 	 * A declared value, read with the object's own annotation.
 	 *
-	 * @param ObjectEntity $object      The object.
-	 * @param string       $abstractKey The abstract key.
-	 * @param string       $tmloKey     The TMLO key.
+	 * @param ObjectEntity    $object The object.
+	 * @param ArchivalFactKey $fact   The fact's keys.
 	 *
 	 * @return mixed The declared value.
 	 */
-	private function declaredFor(ObjectEntity $object, string $abstractKey, string $tmloKey): mixed {
-		return $this->values->declared(
-			object: $object,
-			abstractKey: $abstractKey,
-			tmloKey: $tmloKey,
-			annotation: $this->annotations->forObject(object: $object)
-		);
+	private function declaredFor(ObjectEntity $object, ArchivalFactKey $fact): mixed {
+		return $this->values->declared(source: $this->sourceOf(object: $object), fact: $fact);
 	}//end declaredFor()
 
 	/**
-	 * A date-shaped text at a key, or null.
+	 * A dekkingInTijd date at a key, in the date union the XSD declares, or null.
 	 *
-	 * @param mixed  $value   The container.
-	 * @param string $key     The key.
-	 * @param string $pattern The date pattern.
+	 * @param array<mixed> $entry The coverage entry.
+	 * @param string       $key   `start` or `end`.
 	 *
 	 * @return string|null The date.
 	 */
-	private function dateAt(mixed $value, string $key, string $pattern): ?string {
-		return $this->values->matching(value: $this->values->textAt(value: $value, key: $key), pattern: $pattern);
-	}//end dateAt()
+	private function coverageDateAt(array $entry, string $key): ?string {
+		return $this->values->matching(value: $this->values->textAt(value: $entry, key: $key), pattern: MdtoValueReader::XSD_DATE_UNION);
+	}//end coverageDateAt()
 
 	/**
 	 * The coverage entries of a declaration: one entry, or a list of them.

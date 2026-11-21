@@ -43,21 +43,13 @@ use Throwable;
 final class TalkRoomFields {
 
 	/**
-	 * Translator for the room-type labels.
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IL10N $l10n Translator for the room-type labels.
-	 *
-	 * @return void
 	 */
-	public function __construct(IL10N $l10n) {
-		$this->l10n = $l10n;
+	public function __construct(
+		private readonly IL10N $l10n,
+	) {
 	}//end __construct()
 
 	/**
@@ -72,18 +64,17 @@ final class TalkRoomFields {
 	 *   - `lastMessage`      — {actor:{type,id},text,timestamp} or null
 	 *   - `lastActivity`     — DateTime or null
 	 *
-	 * @param object      $room               Talk Room entity.
-	 * @param string      $userUid            User UID (for getDisplayName).
-	 * @param object|null $participantService Talk's ParticipantService, when resolvable.
+	 * @param object     $room   Talk Room entity.
+	 * @param TalkViewer $viewer The user (for getDisplayName) and Talk's ParticipantService, when resolvable.
 	 *
 	 * @return array{roomId:?int,roomName:?string,roomType:?int,subtitle:?string,participantCount:?int,lastMessage:?array,lastActivity:?DateTime}
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function cacheFields(object $room, string $userUid, ?object $participantService): array {
-		$fields = $this->identityFields(room: $room, userUid: $userUid);
+	public function cacheFields(object $room, TalkViewer $viewer): array {
+		$fields = $this->identityFields(room: $room, userUid: $viewer->userUid);
 		$fields['subtitle'] = $this->subtitle(room: $room, type: $fields['roomType']);
-		$fields['participantCount'] = $this->participantCount(participantService: $participantService, room: $room);
+		$fields['participantCount'] = $this->participantCount(participantService: $viewer->participantService, room: $room);
 		$lastActivity = $this->lastActivity(room: $room);
 		$fields['lastMessage'] = $this->lastMessage(room: $room);
 		$fields['lastActivity'] = $lastActivity;
@@ -116,24 +107,24 @@ final class TalkRoomFields {
 	 * Rooms without a token, not matching the search, or of the changelog /
 	 * note-to-self types are left out.
 	 *
-	 * @param array       $rooms              The user's Talk rooms.
-	 * @param string      $userUid            User UID (for getDisplayName).
-	 * @param string|null $search             Optional case-insensitive name filter.
-	 * @param object|null $participantService Talk's ParticipantService, when resolvable.
+	 * @param array           $rooms The user's Talk rooms.
+	 * @param RoomPickerQuery $query The viewer and the optional case-insensitive name filter.
 	 *
 	 * @return array<int,array{token:string,name:string,type:?int,participantCount:?int}>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function pickerRows(array $rooms, string $userUid, ?string $search, ?object $participantService): array {
+	public function pickerRows(array $rooms, RoomPickerQuery $query): array {
 		$needle = null;
-		if ($search !== null) {
-			$needle = mb_strtolower(trim($search));
+		if ($query->search !== null) {
+			$needle = mb_strtolower(trim($query->search));
 		}
 
+		$viewer = $query->viewer;
+		$run = new RoomPickerRun(userUid: $viewer->userUid, needle: $needle, participantService: $viewer->participantService);
 		$out = [];
 		foreach ($rooms as $room) {
-			$row = $this->pickerRow(room: $room, userUid: $userUid, needle: $needle, participantService: $participantService);
+			$row = $this->pickerRow(run: $run, room: $room);
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -158,15 +149,13 @@ final class TalkRoomFields {
 	/**
 	 * One picker row, or null when the room is left out.
 	 *
-	 * @param object      $room               Talk Room entity.
-	 * @param string      $userUid            User UID.
-	 * @param string|null $needle             Lower-cased, trimmed search, or null.
-	 * @param object|null $participantService Talk's ParticipantService, when resolvable.
+	 * @param RoomPickerRun $run  The picker pass: user, search and participant service.
+	 * @param object        $room Talk Room entity.
 	 *
 	 * @return array{token:string,name:string,type:?int,participantCount:?int}|null
 	 */
-	private function pickerRow(object $room, string $userUid, ?string $needle, ?object $participantService): ?array {
-		$row = $this->pickerIdentity(room: $room, userUid: $userUid, needle: $needle);
+	private function pickerRow(RoomPickerRun $run, object $room): ?array {
+		$row = $this->pickerIdentity(run: $run, room: $room);
 		if ($row === null) {
 			return null;
 		}
@@ -178,7 +167,7 @@ final class TalkRoomFields {
 		}
 
 		$row['type'] = $type;
-		$row['participantCount'] = $this->participantCount(participantService: $participantService, room: $room);
+		$row['participantCount'] = $this->participantCount(participantService: $run->participantService, room: $room);
 
 		return $row;
 	}//end pickerRow()
@@ -186,20 +175,19 @@ final class TalkRoomFields {
 	/**
 	 * The token and cleaned name of a picker room, or null when it has no token or misses the search.
 	 *
-	 * @param object      $room    Talk Room entity.
-	 * @param string      $userUid User UID.
-	 * @param string|null $needle  Lower-cased, trimmed search, or null.
+	 * @param RoomPickerRun $run  The picker pass: user and search.
+	 * @param object        $room Talk Room entity.
 	 *
 	 * @return array{token:string,name:string}|null
 	 */
-	private function pickerIdentity(object $room, string $userUid, ?string $needle): ?array {
+	private function pickerIdentity(RoomPickerRun $run, object $room): ?array {
 		$token = $this->token(room: $room);
 		if ($token === '') {
 			return null;
 		}
 
-		$name = $this->displayName(room: $room, userUid: $userUid);
-		if ($this->matchesSearch(name: $name, needle: $needle) === false) {
+		$name = $this->displayName(room: $room, userUid: $run->userUid);
+		if ($this->matchesSearch(name: $name, needle: $run->needle) === false) {
 			return null;
 		}
 

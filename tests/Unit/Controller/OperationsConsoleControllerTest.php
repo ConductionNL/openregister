@@ -131,7 +131,8 @@ final class OperationsConsoleControllerTest extends TestCase {
 			$this->console,
 			$this->jobsService,
 			$this->createMock(\OCA\OpenRegister\Service\Operations\JobAlertService::class),
-			$session
+			$session,
+			$this->createMock(\OCP\IGroupManager::class)
 		);
 	}
 
@@ -150,7 +151,6 @@ final class OperationsConsoleControllerTest extends TestCase {
 		}
 
 		return OperationsMaintenanceControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->maintenance,
 			$this->bundle,

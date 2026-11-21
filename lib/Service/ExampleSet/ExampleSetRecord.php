@@ -287,88 +287,107 @@ class ExampleSetRecord implements ExampleSetRecordInterface {
 	 * and remove leave what they wrote alone, and the report names each under `left`. An entry another part keys
 	 * by an object (`<app>/<key>#references`) is not a declaration of this part and stays.
 	 *
-	 * @param ExampleSetRecordPart $part     The record part, which is also the fragment's list of declarations, and its noun.
-	 * @param array<string, mixed> $fragment The fragment, as gathered for this run.
-	 * @param array<string, mixed> $report   The report; gains a `left` line per entry let go.
-	 * @param array<string, mixed> $record   The record; loses the entries let go.
+	 * @param FragmentPart $declaring The fragment, as gathered for this run, and the record part it declares.
+	 * @param RecordLedger $ledger    The report (gains a `left` line per entry let go) and the record (loses the entries let go).
 	 *
 	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 */
-	public static function letGoUndeclared(ExampleSetRecordPart $part, array $fragment, array &$report, array &$record): bool {
-		$prefix   = $fragment['app'].'/';
-		$declared = self::declared(fragment: $fragment, part: $part, prefix: $prefix);
-		$noun     = $part->noun;
-		$part     = $part->part;
-		$changed  = false;
-		foreach (array_keys((array) ($record[$part] ?? [])) as $name) {
-			$name = (string) $name;
-			if (self::isUndeclared(name: $name, prefix: $prefix, declared: $declared) === false) {
-				continue;
-			}
-
-			unset($record[$part][$name]);
-			$report['left'][] = $noun.' '.$name.': the set no longer declares it';
-			$changed          = true;
+	public static function letGoUndeclared(FragmentPart $declaring, RecordLedger $ledger): bool {
+		$part  = $declaring->part;
+		$held  = array_keys((array) ($ledger->record[$part->part] ?? []));
+		$names = self::undeclared(declared: self::declared(declaring: $declaring), held: $held);
+		foreach ($names as $name) {
+			unset($ledger->record[$part->part][$name]);
+			$ledger->report['left'][] = $part->noun.' '.$name.': the set no longer declares it';
 		}
 
-		return $changed;
+		return $names !== [];
 	}//end letGoUndeclared()
 
 	/**
-	 * The record keys of the declarations of one part in a fragment.
+	 * The held record keys, in order, that are the app's own declarations of the part and that the fragment no
+	 * longer declares.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param ExampleSetRecordPart $part     The part.
-	 * @param string               $prefix   The app's prefix, `<app>/`.
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
+	 * @param array<int, int|string> $held   The record keys the part holds.
 	 *
-	 * @return array<string, bool>
+	 * @return array<int, string>
 	 */
-	private static function declared(array $fragment, ExampleSetRecordPart $part, string $prefix): array {
+	private static function undeclared(FragmentDeclarations $declared, array $held): array {
+		$names = [];
+		foreach ($held as $name) {
+			if (self::isUndeclared(name: (string) $name, declared: $declared) === true) {
+				$names[] = (string) $name;
+			}
+		}
+
+		return $names;
+	}//end undeclared()
+
+	/**
+	 * The app's prefix, `<app>/`, and the record keys of the declarations of one part in a fragment.
+	 *
+	 * @param FragmentPart $declaring The fragment and the part.
+	 *
+	 * @return FragmentDeclarations
+	 */
+	private static function declared(FragmentPart $declaring): FragmentDeclarations {
+		$prefix   = $declaring->fragment['app'].'/';
 		$declared = [];
-		foreach ((array) ($fragment[$part->part] ?? []) as $entry) {
+		foreach ((array) ($declaring->fragment[$declaring->part->part] ?? []) as $entry) {
 			$declared[$prefix.($entry['key'] ?? '')] = true;
 		}
 
-		return $declared;
+		return new FragmentDeclarations(prefix: $prefix, keys: $declared);
 	}//end declared()
 
 	/**
 	 * Whether a held entry is one of the app's own declarations of this part that the fragment no longer declares.
 	 *
-	 * @param string              $name     The record key.
-	 * @param string              $prefix   The app's prefix, `<app>/`.
-	 * @param array<string, bool> $declared The record keys the fragment declares.
+	 * @param string               $name     The record key.
+	 * @param FragmentDeclarations $declared The app's prefix and the record keys the fragment declares.
 	 *
 	 * @return bool
 	 */
-	private static function isUndeclared(string $name, string $prefix, array $declared): bool {
-		return str_starts_with($name, $prefix) === true && str_contains($name, '#') === false && isset($declared[$name]) === false;
+	private static function isUndeclared(string $name, FragmentDeclarations $declared): bool {
+		return str_starts_with($name, $declared->prefix) === true && str_contains($name, '#') === false && isset($declared->keys[$name]) === false;
 	}//end isUndeclared()
 
 	/**
 	 * Hold what following a held change or preference made of its entry, and report a write or a failure.
 	 *
-	 * @param string                  $set      The set id.
 	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
-	 * @param array<string, mixed>    $report   The report so far.
-	 * @param array<string, mixed>    $record   The record; written when the entry changed.
+	 * @param RecordLedger            $ledger   The report, which gains the outcome, and the record, which takes the entry.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return bool Whether the record changed and is to be written.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
 	 */
-	public function hold(string $set, ExampleSetFollowedEntry $followed, array $report, array &$record): array {
-		$part = $followed->part;
-		$name = $followed->name;
-		if ($followed->made['entry'] !== $record[$part][$name]) {
-			$record[$part][$name] = $followed->made['entry'];
-			$this->write(set: $set, record: $record);
+	public function hold(ExampleSetFollowedEntry $followed, RecordLedger $ledger): bool {
+		$took           = self::took(followed: $followed, record: $ledger->record);
+		$ledger->report = self::reported(followed: $followed, report: $ledger->report);
+
+		return $took;
+	}//end hold()
+
+	/**
+	 * Put what following made of an entry into the record, when it differs from what the record holds.
+	 *
+	 * @param ExampleSetFollowedEntry $followed The entry's part and record key, and what follow() made.
+	 * @param array<string, mixed>    $record   The record; updated.
+	 *
+	 * @return bool Whether the record changed.
+	 */
+	private static function took(ExampleSetFollowedEntry $followed, array &$record): bool {
+		if ($followed->made['entry'] === $record[$followed->part][$followed->name]) {
+			return false;
 		}
 
-		return self::reported(followed: $followed, report: $report);
-	}//end hold()
+		$record[$followed->part][$followed->name] = $followed->made['entry'];
+		return true;
+	}//end took()
 
 	/**
 	 * The report with a followed entry's failure and write.

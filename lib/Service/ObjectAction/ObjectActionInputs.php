@@ -62,19 +62,18 @@ class ObjectActionInputs {
 	/**
 	 * The inputs with every declared default the caller left out filled in.
 	 *
-	 * @param array<string, mixed>|null $schema The declared input schema.
-	 * @param array<string, mixed>      $given  The inputs the caller sent.
-	 * @param ObjectEntity|null         $object The object, for `@object.*` defaults.
-	 * @param string|null               $userId The acting user, for `@user`.
+	 * @param ObjectActionInvocation $invocation The action (its declared input schema) and the inputs the caller sent.
+	 * @param DefaultScope           $scope      The object and acting user the defaults resolve against.
 	 *
 	 * @return array<string, mixed> The inputs.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
-	public function withDefaults(?array $schema, array $given, ?ObjectEntity $object, ?string $userId): array {
-		foreach ($this->propertiesWithDefault(schema: $schema) as $name => $property) {
+	public function withDefaults(ObjectActionInvocation $invocation, DefaultScope $scope): array {
+		$given = $invocation->inputs;
+		foreach ($this->propertiesWithDefault(schema: $invocation->definition->inputs) as $name => $property) {
 			if (array_key_exists($name, $given) === false) {
-				$given[$name] = $this->resolveDefault(property: $property, object: $object, userId: $userId);
+				$given[$name] = $this->resolveDefault(property: $property, scope: $scope);
 			}
 		}
 
@@ -243,23 +242,22 @@ class ObjectActionInputs {
 	 * Resolve one declared default.
 	 *
 	 * @param array<string, mixed> $property The input property.
-	 * @param ObjectEntity|null    $object   The object.
-	 * @param string|null          $userId   The acting user.
+	 * @param DefaultScope         $scope    The object and the acting user.
 	 *
 	 * @return mixed The value.
 	 */
-	private function resolveDefault(array $property, ObjectEntity|null $object, string|null $userId): mixed {
+	private function resolveDefault(array $property, DefaultScope $scope): mixed {
 		$default = $property['default'];
 		if ($default === '@now') {
 			return $this->now(format: ($property['format'] ?? null));
 		}
 
 		if ($default === '@user') {
-			return $userId;
+			return $scope->userId;
 		}
 
 		if (is_string($default) === true && str_starts_with($default, '@object.') === true) {
-			return $this->objectValue(path: substr($default, strlen('@object.')), object: $object);
+			return $this->objectValue(path: substr($default, strlen('@object.')), object: $scope->object);
 		}
 
 		return $default;

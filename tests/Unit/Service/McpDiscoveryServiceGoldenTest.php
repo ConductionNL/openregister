@@ -13,6 +13,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -46,7 +48,7 @@ class McpDiscoveryServiceGoldenTest extends TestCase {
 			static fn (string $route, array $args = []): string => '/route/' . $route . '?' . http_build_query($args)
 		);
 
-		$service = new McpDiscoveryService($registerMapper, $schemaMapper, $urlGenerator);
+		$service = new McpDiscoveryService(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), $urlGenerator);
 		$actual = ['catalog' => $service->getCatalog(), 'ids' => $service->getCapabilityIds(), 'unknown' => $service->getCapabilityDetail('nope')];
 		foreach ($service->getCapabilityIds() as $id) {
 			$actual['detail'][$id] = $service->getCapabilityDetail($id);

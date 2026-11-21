@@ -94,6 +94,66 @@ import { qualityStore } from '../../store/store.js'
  * rendered, and a missing map degrades to an explicit empty state rather
  * than erroring.
  */
+/**
+ * The provenance row of one attribute: a manual override names its actor, a
+ * recorded source names its source, and a plain value is the source itself.
+ *
+ * @param {Array} entry The attribute and its provenance value
+ * @return {object} The row
+ */
+function provenanceEntry([attribute, value]) {
+	if (value && typeof value === 'object') {
+		return value.override === true
+			? overrideEntry(attribute, value)
+			: recordedEntry(attribute, value)
+	}
+	return {
+		attribute,
+		source: value,
+		confidence: undefined,
+		timestamp: undefined,
+	}
+}
+
+/**
+ * The row of an attribute a steward overrode by hand, with its rationale.
+ *
+ * @param {string} attribute The attribute
+ * @param {object} value Its override record
+ * @return {object} The row
+ */
+function overrideEntry(attribute, value) {
+	return {
+		attribute,
+		source: t('openregister', 'Manual override ({actor})', {
+			actor: value.overriddenBy || t('openregister', 'unknown'),
+		}),
+		confidence: value.rationale,
+		timestamp: undefined,
+	}
+}
+
+/**
+ * The row of an attribute a source supplied: the first source name the
+ * record carries, its confidence and when.
+ *
+ * @param {string} attribute The attribute
+ * @param {object} value Its provenance record
+ * @return {object} The row
+ */
+function recordedEntry(attribute, value) {
+	return {
+		attribute,
+		source:
+			value.source
+			?? value.winningSource
+			?? value.sourceSystem
+			?? '—',
+		confidence: value.confidence,
+		timestamp: value.timestamp ?? value.at,
+	}
+}
+
 export default {
 	name: 'GoldenRecordDetail',
 
@@ -164,38 +224,7 @@ export default {
 		provenanceEntries() {
 			const provenance = this.object?.attributeProvenance
 			if (!provenance || typeof provenance !== 'object') return []
-			return Object.entries(provenance).map(([attribute, value]) => {
-				if (value && typeof value === 'object') {
-					if (value.override === true) {
-						return {
-							attribute,
-							source: t('openregister', 'Manual override ({actor})', {
-								actor:
-									value.overriddenBy
-									|| t('openregister', 'unknown'),
-							}),
-							confidence: value.rationale,
-							timestamp: undefined,
-						}
-					}
-					return {
-						attribute,
-						source:
-							value.source
-							?? value.winningSource
-							?? value.sourceSystem
-							?? '—',
-						confidence: value.confidence,
-						timestamp: value.timestamp ?? value.at,
-					}
-				}
-				return {
-					attribute,
-					source: value,
-					confidence: undefined,
-					timestamp: undefined,
-				}
-			})
+			return Object.entries(provenance).map(provenanceEntry)
 		},
 	},
 

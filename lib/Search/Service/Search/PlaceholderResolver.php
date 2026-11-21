@@ -115,11 +115,13 @@ final class PlaceholderResolver implements PlaceholderResolverInterface {
 			return $expr;
 		}
 
-		return $this->applyOffset(
-			dateTime: $this->baseDate(base: $parsed['base']),
-			sign: $parsed['sign'],
-			unit: $parsed['unit']
-		);
+		$dateTime = $this->baseDate(base: $parsed['base']);
+		$modifier = self::offsetModifier(sign: $parsed['sign'], unit: $parsed['unit']);
+		if ($modifier === null) {
+			return $dateTime;
+		}
+
+		return $dateTime->modify($modifier);
 	}//end resolveDate()
 
 	/**
@@ -169,17 +171,16 @@ final class PlaceholderResolver implements PlaceholderResolverInterface {
 	}//end baseDate()
 
 	/**
-	 * Shift an instant by a signed number of units.
+	 * The `modify()` string that shifts an instant by a signed number of units.
 	 *
-	 * @param DateTimeImmutable $dateTime The base instant.
-	 * @param int $sign Signed offset; 0 leaves the instant as it is.
+	 * @param int    $sign Signed offset; 0 means no shift.
 	 * @param string $unit One of `d`, `w`, `m`, `y`.
 	 *
-	 * @return DateTimeImmutable
+	 * @return string|null The modifier, or null when the instant stays as it is.
 	 */
-	private function applyOffset(DateTimeImmutable $dateTime, int $sign, string $unit): DateTimeImmutable {
+	private static function offsetModifier(int $sign, string $unit): ?string {
 		if ($sign === 0) {
-			return $dateTime;
+			return null;
 		}
 
 		$unitWord = match ($unit) {
@@ -195,8 +196,8 @@ final class PlaceholderResolver implements PlaceholderResolverInterface {
 			$signChar = '-';
 		}
 
-		return $dateTime->modify(sprintf('%s%d %s', $signChar, abs($sign), $unitWord));
-	}//end applyOffset()
+		return sprintf('%s%d %s', $signChar, abs($sign), $unitWord);
+	}//end offsetModifier()
 
 	/**
 	 * Pick the natural unit suffix for a date placeholder.

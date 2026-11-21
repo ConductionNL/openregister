@@ -101,11 +101,11 @@ class FlowEngine {
 	/**
 	 * Per-step error policies, ported from openconnector's `onError`.
 	 */
-	public const ON_ERROR_STOP = 'stop';
+	public const ON_ERROR_STOP = FlowErrorPolicy::STOP;
 
-	public const ON_ERROR_CONTINUE = 'continue';
+	public const ON_ERROR_CONTINUE = FlowErrorPolicy::CONTINUE;
 
-	public const ON_ERROR_DEAD_LETTER = 'dead_letter';
+	public const ON_ERROR_DEAD_LETTER = FlowErrorPolicy::DEAD_LETTER;
 
 	/**
 	 * Hard ceiling on transitions fired in one run.
@@ -123,26 +123,8 @@ class FlowEngine {
 	 */
 	private readonly FlowHopRouting $routing;
 
-	/**
-	 * Decides which exit a token takes.
-	 *
-	 * @var FlowTokenRouter
-	 */
-	private readonly FlowTokenRouter $router;
 
-	/**
-	 * Decides which items sit on which place.
-	 *
-	 * @var FlowItemPlacement
-	 */
-	private readonly FlowItemPlacement $placement;
 
-	/**
-	 * The ambient attribution stack, when there is one.
-	 *
-	 * @var FlowRunContext|null
-	 */
-	private readonly ?FlowRunContext $runContext;
 
 	/**
 	 * Constructor.
@@ -164,16 +146,9 @@ class FlowEngine {
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowOversightRegistry $oversight = null,
-		FlowEngineServices $services=new FlowEngineServices(),
+		private readonly FlowEngineServices $services=new FlowEngineServices(),
 	) {
-		$this->router     = $services->router;
-		$this->placement  = $services->placement;
-		$this->runContext = $services->runContext;
-		$this->routing    = new FlowHopRouting(
-			router: $services->router,
-			placement: $services->placement,
-			mootness: $services->mootness
-		);
+		$this->routing = new FlowHopRouting(router: $services->router, placement: $services->placement, mootness: $services->mootness);
 	}//end __construct()
 
 	/**
@@ -195,10 +170,12 @@ class FlowEngine {
 	 */
 	private function enterHop(FlowWalkHop|FlowStreamHop $hop): void {
 		$context = $hop->pass->context;
-		$this->runContext?->push(
-			runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
-			nodeId: $hop->name(),
-			sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+		$this->services->runContext?->push(
+			frame: new FlowRunFrame(
+				runUuid: ($context[FlowRunContext::CONTEXT_RUN] ?? null),
+				nodeId: $hop->name(),
+				sequence: ((int)($context[FlowRunContext::CONTEXT_BASE] ?? 0) + count($hop->pass->log))
+			)
 		);
 	}//end enterHop()
 
@@ -285,17 +262,17 @@ class FlowEngine {
 	 * `$start` ({@see FlowRunStart}); a null stream collaborator walks a single
 	 * in-memory stream exactly as before — a flow with one stream IS the run.
 	 *
-	 * @param FlowRunStart $start   The flow, its collaborators, the context and the streams.
-	 * @param array|null   $items   Seed items; defaults to one item from the subject.
-	 * @param string|null  $startAt Node to start from; defaults to the flow's own start.
+	 * @param FlowRunStart       $start  The flow, its collaborators, the context and the streams.
+	 * @param FlowRunOrigin|null $origin Seed items (default: one item from the subject) and the node to start
+	 *                                   from (default: the flow's own start).
 	 *
 	 * @return array The run result: `{status, log: [], context: [], items: []}`.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	public function run(FlowRunStart $start, ?array $items = null, ?string $startAt = null): array {
-		$begun = $start->startingAt(node: $startAt);
-		$begun->items = ($items ?? FlowItems::fromSubject(subject: $start->subject));
+	public function run(FlowRunStart $start, ?FlowRunOrigin $origin=null): array {
+		$begun = $start->startingAt(node: $origin?->startAt);
+		$begun->items = ($origin->items ?? FlowItems::fromSubject(subject: $start->subject));
 
 		return $this->startRun(start: $begun);
 	}//end run()
@@ -459,7 +436,7 @@ class FlowEngine {
 	 */
 	private function runSingleHop(FlowWalkHop $hop): array|null {
 		$pass = $hop->pass;
-		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned !== null) {
 			$pass->items = $pinned;
 			$pass->log[] = $hop->pinnedEntry();
@@ -503,7 +480,7 @@ class FlowEngine {
 			$pass->log[] = $hop->failedEntry(error: $e);
 			return $this->outcomeForFailedStep(hop: $hop, error: $e);
 		} finally {
-			$this->runContext?->pop();
+			$this->services->runContext?->pop();
 		}//end try
 
 		return null;
@@ -631,8 +608,7 @@ class FlowEngine {
 		}
 
 		// THE CLAIM, on every place this firing touches, before anything runs.
-		$places = array_map('strval', array_merge($transition->getFroms(), $transition->getTos()));
-		$claimed = $pass->streams->claim(id: $streamId, transition: $transition->getName(), places: $places);
+		$claimed = $pass->streams->claim(id: $streamId, transition: $transition);
 		if ($claimed === null) {
 			return null;
 		}
@@ -653,7 +629,7 @@ class FlowEngine {
 		$pass = $hop->pass;
 		$pass->items = $hop->itemsIn;
 
-		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
+		$pinned = $this->services->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned === null) {
 			return $this->dispatchOnStream(hop: $hop);
 		}
@@ -697,7 +673,7 @@ class FlowEngine {
 		} catch (Throwable $e) {
 			return $this->failOnStream(hop: $hop, error: $e);
 		} finally {
-			$this->runContext?->pop();
+			$this->services->runContext?->pop();
 		}//end try
 
 		$this->fireOnStream(hop: $hop, entry: $entry);
@@ -826,12 +802,14 @@ class FlowEngine {
 	 * @param FlowWalkHop|FlowStreamHop $hop   The failed hop.
 	 * @param Throwable                 $error The failure.
 	 *
-	 * @return string The step's onError policy; `stop` when it declares none.
+	 * @return string The step's onError policy through {@see FlowErrorPolicy::for()}; `stop` when it declares none or an unknown one.
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private function logStepFailure(FlowWalkHop|FlowStreamHop $hop, Throwable $error): string {
-		$policy = (string)($hop->step['onError'] ?? self::ON_ERROR_STOP);
+		// One reading of the policy for both walks and the worker; an unknown
+		// policy reads as `stop`, while the log still shows what was written.
+		$policy = FlowErrorPolicy::for(step: $hop->step);
 		$this->logger->warning(
 			message: '[FlowEngine] Flow step failed',
 			context: [
@@ -839,7 +817,7 @@ class FlowEngine {
 				'line' => __LINE__,
 				'flow' => ($hop->pass->flow['id'] ?? null),
 				'transition' => $hop->name(),
-				'policy' => $policy,
+				'policy' => FlowErrorPolicy::declared(step: $hop->step),
 				'error' => $error->getMessage(),
 			]
 		);
@@ -871,13 +849,13 @@ class FlowEngine {
 	 *
 	 * @return object|null The transition to fire, or null when none is eligible.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	private function selectTransition(array $enabled, FlowWalkPass|FlowStreamPass $pass): ?object {
 		$fallback = null;
 
 		foreach ($enabled as $transition) {
-			$condition = $this->router->conditionReaching(flow: $pass->flow, nodeId: $transition->getName());
+			$condition = $this->services->router->conditionReaching(flow: $pass->flow, nodeId: $transition->getName());
 
 			if (empty($condition) === true) {
 				// Remember the first default edge; keep looking for a match.
@@ -901,11 +879,14 @@ class FlowEngine {
 	 *
 	 * @return array<string, mixed> The expression data.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	private function conditionData(object $transition, FlowWalkPass|FlowStreamPass $pass): array {
-		$items = $this->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
+		$items = $this->services->placement->itemsForTransition(transition: $transition, placeItems: $pass->placeItems);
 
-		return FlowExpression::dataFor(item: ($items[0] ?? []), itemCount: count($items), context: $pass->context);
+		return FlowExpression::documentFor(
+			item: ($items[0] ?? []),
+			options: new FlowExpressionDataOptions(itemCount: count($items), context: $pass->context)
+		);
 	}//end conditionData()
 }//end class

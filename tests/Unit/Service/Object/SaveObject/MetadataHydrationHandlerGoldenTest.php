@@ -24,11 +24,25 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 
 /**
  * Pins the observable output of every public MetadataHydrationHandler method.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\LanguageKeyedMap
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FieldValue
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\LanguageMapText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MapFilterDefinition
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\MetadataField
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationPropertyShape
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\UuidReference
  */
 class MetadataHydrationHandlerGoldenTest extends TestCase {
 
@@ -220,15 +234,15 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 			'tags' => ['a', 'b'],
 			'owner' => self::UUID,
 		];
-		$this->assertSame($expected, $this->handler()->extractMetadataValue($data, $path));
+		$this->assertSame($expected, $this->handler()->metadataText(fieldPath: $path, source: new TemplateSource(data: $data, schemaProperties: [])));
 	}//end testExtractMetadataValue()
 
 	public function testExtractMetadataValueWithSchemaResolvesTemplateRelations(): void {
 		$props = ['owner' => ['format' => 'uuid']];
 		$handler = $this->handler();
-		$this->assertSame('Grace', $handler->extractMetadataValue(['owner' => self::UUID], '{{ owner }}', $props));
-		$this->assertSame(self::UUID, $handler->extractMetadataValue(['owner' => self::UUID], 'owner', $props));
-		$this->assertSame(self::UUID, $handler->extractMetadataValue(['owner' => self::UUID], 'x | owner', $props));
+		$this->assertSame('Grace', $handler->metadataText(fieldPath: '{{ owner }}', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $props)));
+		$this->assertSame(self::UUID, $handler->metadataText(fieldPath: 'owner', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $props)));
+		$this->assertSame(self::UUID, $handler->metadataText(fieldPath: 'x | owner', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: $props)));
 	}//end testExtractMetadataValueWithSchemaResolvesTemplateRelations()
 
 	/**
@@ -259,7 +273,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 	#[DataProvider('fallbacks')]
 	public function testProcessFieldWithFallbacks(array $data, string $chain, ?string $expected): void {
 		$props = ['owner' => ['$ref' => 'person']];
-		$this->assertSame($expected, $this->handler()->processFieldWithFallbacks($data, $chain, $props));
+		$this->assertSame($expected, $this->handler()->fallbackValue(fieldChain: $chain, source: new TemplateSource(data: $data, schemaProperties: $props)));
 	}//end testProcessFieldWithFallbacks()
 
 	/**
@@ -294,7 +308,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 	public function testRelationShapes(array $property, string $expected): void {
 		$this->assertSame(
 			$expected,
-			$this->handler()->processTwigLikeTemplate(['owner' => self::UUID], '{{ owner }}', ['owner' => $property])
+			$this->handler()->renderTemplate(template: '{{ owner }}', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: ['owner' => $property]))
 		);
 	}//end testRelationShapes()
 
@@ -327,7 +341,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 	public function testUuidValues(mixed $value, ?string $expected): void {
 		$this->assertSame(
 			$expected,
-			$this->handler()->processTwigLikeTemplate(['owner' => $value], '{{ owner }}', ['owner' => ['$ref' => 'p']])
+			$this->handler()->renderTemplate(template: '{{ owner }}', source: new TemplateSource(data: ['owner' => $value], schemaProperties: ['owner' => ['$ref' => 'p']]))
 		);
 	}//end testUuidValues()
 
@@ -344,16 +358,16 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 			)
 		);
 		$handler = new MetadataHydrationHandler($logger, $cache);
-		$this->assertSame(self::UUID, $handler->processFieldWithFallbacks(['owner' => self::UUID], 'owner', ['owner' => ['$ref' => 'p']]));
+		$this->assertSame(self::UUID, $handler->fallbackValue(fieldChain: 'owner', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: ['owner' => ['$ref' => 'p']])));
 	}//end testFailedNameLookupLogsAndFallsBackToUuid()
 
 	public function testNameLookupIsSkippedWithoutSchemaPropertiesOrForPlainFields(): void {
 		$cache = $this->createMock(CacheHandlerInterface::class);
 		$cache->expects($this->never())->method('getMultipleObjectNames');
 		$handler = new MetadataHydrationHandler($this->createMock(LoggerInterface::class), $cache);
-		$this->assertSame(self::UUID, $handler->processFieldWithFallbacks(['owner' => self::UUID], 'owner'));
-		$this->assertSame('x', $handler->processFieldWithFallbacks(['owner' => 'x'], 'owner', ['other' => ['$ref' => 'p']]));
-		$this->assertNull($handler->processTwigLikeTemplate(['owner' => ['id' => 'q']], '{{ owner }}', ['owner' => ['type' => 'string']]));
+		$this->assertSame(self::UUID, $handler->fallbackValue(fieldChain: 'owner', source: new TemplateSource(data: ['owner' => self::UUID], schemaProperties: [])));
+		$this->assertSame('x', $handler->fallbackValue(fieldChain: 'owner', source: new TemplateSource(data: ['owner' => 'x'], schemaProperties: ['other' => ['$ref' => 'p']])));
+		$this->assertNull($handler->renderTemplate(template: '{{ owner }}', source: new TemplateSource(data: ['owner' => ['id' => 'q']], schemaProperties: ['owner' => ['type' => 'string']])));
 	}//end testNameLookupIsSkippedWithoutSchemaPropertiesOrForPlainFields()
 
 	public function testAFilteredPlaceholderStillLooksUpThePlainPathFirst(): void {
@@ -362,7 +376,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 		$handler = new MetadataHydrationHandler($this->createMock(LoggerInterface::class), $cache);
 		$props = ['owner' => ['$ref' => 'p'], 'owner | map: a=b' => ['$ref' => 'p']];
 		$data = ['owner' => self::UUID, 'owner | map: a=b' => 'zz'];
-		$this->assertSame(self::UUID, $handler->processTwigLikeTemplate($data, '{{ owner | map: a=b }}', $props));
+		$this->assertSame(self::UUID, $handler->renderTemplate(template: '{{ owner | map: a=b }}', source: new TemplateSource(data: $data, schemaProperties: $props)));
 	}//end testAFilteredPlaceholderStillLooksUpThePlainPathFirst()
 
 	/**
@@ -393,7 +407,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 	 */
 	#[DataProvider('maps')]
 	public function testProcessMapFilter(array $data, string $map, ?string $expected): void {
-		$this->assertSame($expected, $this->handler()->processMapFilter($data, 'r', $map));
+		$this->assertSame($expected, $this->handler()->mapFilterValue(fieldValue: $this->handler()->getValueFromPath(data: $data, path: 'r'), mapDefinition: $map));
 	}//end testProcessMapFilter()
 
 	/**
@@ -426,7 +440,7 @@ class MetadataHydrationHandlerGoldenTest extends TestCase {
 	 */
 	#[DataProvider('ifFilled')]
 	public function testProcessIfFilledFilter(array $data, string $definition, ?string $expected): void {
-		$this->assertSame($expected, $this->handler()->processIfFilledFilter($data, 'f', $definition));
+		$this->assertSame($expected, $this->handler()->ifFilledValue(fieldValue: $this->handler()->getValueFromPath(data: $data, path: 'f'), definition: $definition));
 	}//end testProcessIfFilledFilter()
 
 	/**

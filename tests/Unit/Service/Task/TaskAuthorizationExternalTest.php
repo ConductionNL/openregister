@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
+use OCA\OpenRegister\Service\Task\TaskAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
@@ -32,6 +33,9 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskAuthorizationService
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
  */
 class TaskAuthorizationExternalTest extends TestCase {
 
@@ -94,7 +98,7 @@ class TaskAuthorizationExternalTest extends TestCase {
 	public function testPoolingAndMandateVerbsAreRefusedForEveryoneNamingTheType(string $verb, string $uid): void {
 		$service = new TaskAuthorizationService(groupManager: $this->adminIsRoot());
 		try {
-			$service->assertMay(verb: $verb, task: $this->externalTask(), uid: $uid);
+			$service->assertMay(act: new TaskAct(verb: $verb, actor: $uid), task: $this->externalTask());
 			$this->fail("$verb by $uid was admitted on an external task.");
 		} catch (TaskAccessDeniedException $refused) {
 			$this->assertStringContainsString("'external'", $refused->getMessage());
@@ -113,12 +117,12 @@ class TaskAuthorizationExternalTest extends TestCase {
 		$task = $this->externalTask();
 
 		foreach (['complete', 'resolve', 'checklist'] as $verb) {
-			$service->assertMay(verb: $verb, task: $task, uid: 'party:bsn-1');
+			$service->assertMay(act: new TaskAct(verb: $verb, actor: 'party:bsn-1'), task: $task);
 			$this->addToAssertionCount(1);
 
 			foreach (['party:bsn-2', 'caseworker', 'root', 'bsn-1', 'party:', 'PARTY:bsn-1', null, ''] as $uid) {
 				try {
-					$service->assertMay(verb: $verb, task: $task, uid: $uid);
+					$service->assertMay(act: new TaskAct(verb: $verb, actor: $uid), task: $task);
 					$this->fail("$verb by " . var_export($uid, true) . ' was admitted.');
 				} catch (TaskAccessDeniedException) {
 					$this->addToAssertionCount(1);
@@ -140,7 +144,7 @@ class TaskAuthorizationExternalTest extends TestCase {
 			$task->setAssignee($assignee);
 			foreach (['party:alice', 'alice', 'party:'] as $uid) {
 				try {
-					$service->assertMay(verb: 'complete', task: $task, uid: $uid);
+					$service->assertMay(act: new TaskAct(verb: 'complete', actor: $uid), task: $task);
 					$this->fail('An undeterminable comparison admitted ' . $uid);
 				} catch (TaskAccessDeniedException) {
 					$this->addToAssertionCount(1);
@@ -158,13 +162,13 @@ class TaskAuthorizationExternalTest extends TestCase {
 	public function testCancelIsTheRequestersOrAnAdministrators(): void {
 		$service = new TaskAuthorizationService(groupManager: $this->adminIsRoot());
 		$task = $this->externalTask();
-		$service->assertMay(verb: 'cancel', task: $task, uid: 'caseworker');
-		$service->assertMay(verb: 'cancel', task: $task, uid: 'root');
+		$service->assertMay(act: new TaskAct(verb: 'cancel', actor: 'caseworker'), task: $task);
+		$service->assertMay(act: new TaskAct(verb: 'cancel', actor: 'root'), task: $task);
 		$this->addToAssertionCount(2);
 
 		foreach (['party:bsn-1', 'stranger'] as $uid) {
 			try {
-				$service->assertMay(verb: 'cancel', task: $task, uid: $uid);
+				$service->assertMay(act: new TaskAct(verb: 'cancel', actor: $uid), task: $task);
 				$this->fail("cancel by $uid was admitted.");
 			} catch (TaskAccessDeniedException) {
 				$this->addToAssertionCount(1);
@@ -172,9 +176,9 @@ class TaskAuthorizationExternalTest extends TestCase {
 		}
 
 		// Creation needs an identity and nothing else; an unknown verb has no rule.
-		$service->assertMay(verb: 'create', task: $task, uid: 'caseworker');
+		$service->assertMay(act: new TaskAct(verb: 'create', actor: 'caseworker'), task: $task);
 		$this->expectException(TaskAccessDeniedException::class);
-		$service->assertMay(verb: 'frobnicate', task: $task, uid: 'caseworker');
+		$service->assertMay(act: new TaskAct(verb: 'frobnicate', actor: 'caseworker'), task: $task);
 	}//end testCancelIsTheRequestersOrAnAdministrators()
 
 	/**

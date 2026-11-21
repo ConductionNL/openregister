@@ -17,11 +17,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -34,9 +35,9 @@ class OutdatedTranslationsTest extends TestCase {
 
 	private TranslationHandler&MockObject $translations;
 
-	private TranslationProjectionService&MockObject $projection;
+	private SourceLanguagesInterface&MockObject $projection;
 
-	private TranslationStatusService&MockObject $status;
+	private DerivedTranslationsInterface&MockObject $status;
 
 	private LoggerInterface&MockObject $logger;
 
@@ -47,12 +48,12 @@ class OutdatedTranslationsTest extends TestCase {
 		parent::setUp();
 		$this->translations = $this->createMock(TranslationHandler::class);
 		$this->translations->method('getTranslatableProperties')->willReturn(['title']);
-		$this->projection = $this->createMock(TranslationProjectionService::class);
+		$this->projection = $this->createMock(SourceLanguagesInterface::class);
 		$this->projection->method('resolveSourceLanguage')->willReturn('nl');
-		$this->status = $this->createMock(TranslationStatusService::class);
+		$this->status = $this->createMock(DerivedTranslationsInterface::class);
 		$this->status->method('markDerivedTranslationsOutdated')->willReturnCallback(
-			function (string $objectUuid, string $property, string $sourceLanguage): int {
-				$this->marked[] = [$objectUuid, $property, $sourceLanguage];
+			function (TranslationSlot $source): int {
+				$this->marked[] = [$source->objectUuid, $source->property, $source->language];
 				return 1;
 			}
 		);
@@ -114,7 +115,7 @@ class OutdatedTranslationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testLogsAFailureWithoutThrowing(): void {
-		$projection = $this->createMock(TranslationProjectionService::class);
+		$projection = $this->createMock(SourceLanguagesInterface::class);
 		$projection->method('resolveSourceLanguage')->willThrowException(new RuntimeException('no language'));
 		$this->projection = $projection;
 		$this->logger->expects($this->once())->method('warning')->with('[SaveObject] failed to flag outdated translations: no language');

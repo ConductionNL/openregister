@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * What code outside the Notifications component calls to have a task transition
@@ -36,13 +36,12 @@ interface TaskTransitionNotifierInterface {
 	/**
 	 * Dispatch the `transition` trigger for one task through the task rule set.
 	 *
-	 * @param Task                 $task    The task, presented to the dispatcher as its inbox row.
-	 * @param array<string, mixed> $extra   Fields added to the task's notification payload.
-	 * @param array<string, mixed> $context The transition context the rules match on.
+	 * @param TaskInterface    $task   The task, presented to the dispatcher as its inbox row.
+	 * @param TransitionNotice $notice The payload fields the transition adds and the context the rules match on.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-task-lifecycle-delivery-is-automatic-and-declarative
 	 */
-	public function notifyTransition(Task $task, array $extra, array $context): void;
+	public function notifyTransition(TaskInterface $task, TransitionNotice $notice): void;
 }//end interface

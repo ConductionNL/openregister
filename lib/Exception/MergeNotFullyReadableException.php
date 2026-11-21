@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * A merge refused because the merger cannot see all of what is being merged.
@@ -68,22 +67,20 @@ class MergeNotFullyReadableException extends Exception {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $message The sentence naming the refusal.
+	 * The exception always carries HTTP 403.
+	 *
+	 * @param string             $message The sentence naming what was refused.
 	 * @param array<int, string> $properties The unreadable property names.
-	 * @param int $code HTTP status carried on the exception (default: 403).
-	 * @param Throwable|null $previous Previous exception, when chained.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'This merge touches properties you may not read.',
-		array $properties = [],
-		int $code = 403,
-		?Throwable $previous = null,
+		string $message='This merge touches properties you may not read.',
+		array $properties=[],
 	) {
 		$this->properties = array_values($properties);
 
-		parent::__construct(message: $message, code: $code, previous: $previous);
+		parent::__construct(message: $message, code: 403);
 	}//end __construct()
 
 	/**

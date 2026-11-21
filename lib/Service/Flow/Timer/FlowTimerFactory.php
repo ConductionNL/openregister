@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -47,17 +47,35 @@ final class FlowTimerFactory {
 	private readonly FlowTimerValues $values;
 
 	/**
+	 * Calendar resolution.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * Business-time arithmetic.
+	 *
+	 * @var SlaCalculatorInterface
+	 */
+	private readonly SlaCalculatorInterface $calculator;
+
+	/**
+	 * Normalises the escalation rules.
+	 *
+	 * @var EscalationLadderService
+	 */
+	private readonly EscalationLadderService $ladder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarService  $calendars  Calendar resolution.
-	 * @param SlaCalculatorInterface           $calculator Business-time arithmetic.
-	 * @param EscalationLadderService $ladder     Normalises the escalation rules.
+	 * @param FlowTimerArithmetic $arithmetic The calendar resolution, the business-time arithmetic and the ladder.
 	 */
-	public function __construct(
-		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculatorInterface $calculator,
-		private readonly EscalationLadderService $ladder,
-	) {
+	public function __construct(FlowTimerArithmetic $arithmetic) {
+		$this->calendars = $arithmetic->calendars;
+		$this->calculator = $arithmetic->calculator;
+		$this->ladder = $arithmetic->ladder;
 		$this->values = new FlowTimerValues();
 	}//end __construct()
 
@@ -71,7 +89,7 @@ final class FlowTimerFactory {
 	 *
 	 * @throws FlowTimerValidationException On any refused value.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function build(array $config, FlowTimerAct $act): FlowTimer {
 		$timer = new FlowTimer();
@@ -100,7 +118,7 @@ final class FlowTimerFactory {
 	 *
 	 * @return FlowTimer The successor.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function successor(FlowTimerScope $scope, FlowTimerAct $act): FlowTimer {
 		$prior = $scope->timer;
@@ -329,10 +347,12 @@ final class FlowTimerFactory {
 	private function shiftAnchor(FlowTimer $timer): void {
 		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
 		$anchorAt = $this->calculator->add(
-			from: DateTimeImmutable::createFromInterface($timer->getAnchorAt()),
-			value: (float)$timer->getAnchorOffset(),
-			unit: (string)$timer->getAnchorOffsetUnit(),
-			calendar: $calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($timer->getAnchorAt()),
+				value: (float)$timer->getAnchorOffset(),
+				unit: (string)$timer->getAnchorOffsetUnit(),
+				calendar: $calendar
+			)
 		);
 		$timer->setAnchorAt($this->values->mutable(value: $anchorAt));
 	}//end shiftAnchor()
@@ -372,10 +392,12 @@ final class FlowTimerFactory {
 		}
 
 		return $this->calculator->add(
-			from: $anchorAt,
-			value: (float)$prior->getAnchorOffset(),
-			unit: (string)$prior->getAnchorOffsetUnit(),
-			calendar: $scope->calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($anchorAt),
+				value: (float)$prior->getAnchorOffset(),
+				unit: (string)$prior->getAnchorOffsetUnit(),
+				calendar: $scope->calendar
+			)
 		);
 	}//end movedAnchor()
 

@@ -31,8 +31,9 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -75,14 +76,12 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects The object layer a party record lives in.
-	 * @param SchemaMapperInterface $schemas The schemas, for the party declaration.
-	 * @param RegisterMapperInterface|null $registers The registers carrying a party schema, so a lookup reads only
-	 *                                       the party tables; absent, every lookup searches the instance
+	 * @param SchemaCatalogInterface    $catalog The schemas, for the party declaration, and the registers
+	 *                                           carrying a party schema, so a lookup reads only the party tables.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly ?RegisterMapperInterface $registers = null,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()
 
@@ -121,7 +120,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 */
 	private function findOnInstance(string $partyUuid): ?ObjectEntity {
 		try {
-			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
+			return $this->objects->find(id: $partyUuid, options: new ObjectFindOptions(render: false, audit: false));
 		} catch (Throwable) {
 			return null;
 		}
@@ -139,10 +138,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		try {
 			return $this->objects->find(
 				id: $partyUuid,
-				register: $table['register'],
-				schema: $table['schema'],
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(register: $table['register'], schema: $table['schema'], render: false, audit: false)
 			);
 		} catch (Throwable) {
 			return null;
@@ -161,14 +157,9 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return $this->partyTables;
 		}
 
-		$tables = [];
-		if ($this->registers !== null) {
-			$tables = $this->readPartyTables(registers: $this->registers);
-		}
+		$this->partyTables = $this->readPartyTables(registers: $this->catalog->registers());
 
-		$this->partyTables = $tables;
-
-		return $tables;
+		return $this->partyTables;
 	}//end partyTables()
 
 	/**
@@ -214,7 +205,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		}
 
 		try {
-			return $this->objects->find(id: $uuid, _render: false, _audit: false, _rbac: false, _multitenancy: false);
+			return $this->objects->find(id: $uuid, options: new ObjectFindOptions(render: false, audit: false), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return null;
 		}
@@ -241,7 +232,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 
 		$definition = null;
 		try {
-			$definition = PartyDefinition::fromSchema(schema: $this->schemas->find($schemaId));
+			$definition = PartyDefinition::fromSchema(schema: $this->catalog->schemas()->find($schemaId));
 		} catch (Throwable) {
 			$definition = null;
 		}
@@ -260,7 +251,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 */
 	public function partySchemas(): array {
 		$found = [];
-		foreach ($this->schemas->findAll() as $schema) {
+		foreach ($this->catalog->schemas()->findAll() as $schema) {
 			$definition = PartyDefinition::fromSchema(schema: $schema);
 			if ($definition !== null) {
 				$found[] = ['schema' => $schema, 'definition' => $definition];
@@ -299,19 +290,19 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	/**
 	 * The addresses of one kind, in declaration order.
 	 *
-	 * @param ObjectEntity $party The party.
-	 * @param string $kind The address kind, `correspondence` / `case` / `location`.
-	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 * @param ObjectEntity          $party     The party.
+	 * @param PartyAddressSelection $selection The address kind (`correspondence` / `case` / `location`) and the declaration,
+	 *                                         resolved when null.
 	 *
 	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
-	public function addressesOfKind(ObjectEntity $party, string $kind, ?PartyDefinition $definition = null): array {
+	public function addressesOfKind(ObjectEntity $party, PartyAddressSelection $selection): array {
 		return array_values(
 			array_filter(
-				$this->addresses(party: $party, definition: $definition),
-				static fn (array $address): bool => $address['kind'] === $kind
+				$this->addresses(party: $party, definition: $selection->definition),
+				static fn (array $address): bool => $address['kind'] === $selection->kind
 			)
 		);
 	}//end addressesOfKind()
@@ -391,8 +382,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		foreach ($this->partySchemas() as $party) {
 			$holder = $this->firstHolder(
 				candidates: $this->addressCandidates(schema: $party['schema'], address: $address),
-				needle: $needle,
-				definition: $party['definition']
+				lookup: new PartyAddressLookup(needle: $needle, definition: $party['definition'])
 			);
 			if ($holder !== null) {
 				return $holder;
@@ -429,18 +419,17 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * The first candidate that holds the address exactly.
 	 *
 	 * @param array<int, mixed> $candidates The search results.
-	 * @param string $needle The normalised address.
-	 * @param PartyDefinition $definition The schema's party declaration.
+	 * @param PartyAddressLookup $lookup The normalised address and the schema's party declaration.
 	 *
 	 * @return ObjectEntity|null The holder.
 	 */
-	private function firstHolder(array $candidates, string $needle, PartyDefinition $definition): ?ObjectEntity {
+	private function firstHolder(array $candidates, PartyAddressLookup $lookup): ?ObjectEntity {
 		foreach ($candidates as $candidate) {
 			if ($candidate instanceof ObjectEntity === false) {
 				continue;
 			}
 
-			if ($this->holdsAddress(party: $candidate, needle: $needle, definition: $definition) === true) {
+			if ($this->holdsAddress(party: $candidate, lookup: $lookup) === true) {
 				return $candidate;
 			}
 		}
@@ -484,11 +473,10 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * @throws Exception 400 when the parent would close a cycle or exceed the depth.
 	 */
 	private function assertNoCycle(string $partyUuid, string $parentUuid): void {
-		$seen   = [$partyUuid => true];
+		$chain  = [$partyUuid];
 		$cursor = $parentUuid;
-		$depth  = 1;
 		while ($cursor !== null && $cursor !== '') {
-			if (isset($seen[$cursor]) === true) {
+			if (in_array($cursor, $chain, true) === true) {
 				throw new Exception(
 					'Party "' . $parentUuid . '" cannot be the parent of "' . $partyUuid
 					. '": it would close a cycle through "' . $cursor . '"',
@@ -496,9 +484,8 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 				);
 			}
 
-			$seen[$cursor] = true;
-			$cursor = $this->parentOf(cursor: $cursor, partyUuid: $partyUuid, depth: $depth);
-			$depth++;
+			$chain[] = $cursor;
+			$cursor  = $this->parentOf(chain: $chain);
 		}//end while
 	}//end assertNoCycle()
 
@@ -509,9 +496,11 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * schema declares no parent: both mean there is no further edge this
 	 * instance can follow, and neither is a cycle.
 	 *
-	 * @param string $cursor The party being stepped over.
-	 * @param string $partyUuid The party the walk started from, for the message.
-	 * @param int $depth How many steps have been taken.
+	 * The chain starts with the party the walk started from, named in the
+	 * message, and ends with the party being stepped over; the steps taken
+	 * are the chain's length less that first party.
+	 *
+	 * @param array<int, string> $chain The parties walked so far, the party itself first.
 	 *
 	 * @return string|null The next parent, or null when the chain ends.
 	 *
@@ -519,8 +508,8 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
-	private function parentOf(string $cursor, string $partyUuid, int $depth): ?string {
-		$ancestor = $this->find(partyUuid: $cursor);
+	private function parentOf(array $chain): ?string {
+		$ancestor = $this->find(partyUuid: $chain[(count($chain) - 1)]);
 		if ($ancestor === null) {
 			return null;
 		}
@@ -530,9 +519,9 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return null;
 		}
 
-		if ($depth >= $definition->maxDepth()) {
+		if ((count($chain) - 1) >= $definition->maxDepth()) {
 			throw new Exception(
-				'Party "' . $partyUuid . '" would sit deeper than the declared maximum of '
+				'Party "' . $chain[0] . '" would sit deeper than the declared maximum of '
 				. $definition->maxDepth(),
 				400
 			);
@@ -561,14 +550,13 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * Whether a party holds that exact address.
 	 *
 	 * @param ObjectEntity $party The party.
-	 * @param string $needle The normalised address.
-	 * @param PartyDefinition $definition The declaration.
+	 * @param PartyAddressLookup $lookup The normalised address and the declaration.
 	 *
 	 * @return bool True when one of its addresses matches.
 	 */
-	private function holdsAddress(ObjectEntity $party, string $needle, PartyDefinition $definition): bool {
-		foreach ($this->addresses(party: $party, definition: $definition) as $address) {
-			if (self::normaliseValue(value: $address['value']) === $needle) {
+	private function holdsAddress(ObjectEntity $party, PartyAddressLookup $lookup): bool {
+		foreach ($this->addresses(party: $party, definition: $lookup->definition) as $address) {
+			if (self::normaliseValue(value: $address['value']) === $lookup->needle) {
 				return true;
 			}
 		}

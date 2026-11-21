@@ -28,6 +28,7 @@ namespace Unit\Service\Operations;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Exception\RepairRefusedException;
+use OCA\OpenRegister\Service\Operations\OperatorAct;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
@@ -133,8 +134,8 @@ final class ConsistencyRepairServiceTest extends TestCase {
 
 		$recorder = $this->createMock(JobRunRecorder::class);
 		$recorder->method('recordAct')->willReturnCallback(
-			function (string $jobClass, string $actor, array $details, ?string $message = null): null {
-				$this->recorded[] = ['job' => $jobClass, 'actor' => $actor, 'details' => $details];
+			function (OperatorAct $act): null {
+				$this->recorded[] = ['job' => $act->jobClass, 'actor' => $act->actor, 'details' => $act->details];
 
 				return null;
 			}

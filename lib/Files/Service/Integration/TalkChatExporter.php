@@ -49,10 +49,7 @@ class TalkChatExporter {
 	/**
 	 * The transcript of a conversation.
 	 *
-	 * @param string                           $conversation The conversation's name.
-	 * @param array<int, array<string, mixed>> $messages     Each: `actorDisplayName`, `timestamp` (unix), `message`.
-	 * @param string                           $savedBy      Who saved it.
-	 * @param DateTimeImmutable                $savedAt      When.
+	 * @param ChatTranscriptRequest $request The conversation, its messages, and who saved it when.
 	 *
 	 * @return array{filename: string, content: string} The file.
 	 *
@@ -60,7 +57,33 @@ class TalkChatExporter {
 	 *
 	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md#requirement-a-talk-action-saves-a-conversation-to-a-register-object
 	 */
-	public function export(string $conversation, array $messages, string $savedBy, DateTimeImmutable $savedAt): array {
+	public function exportTranscript(ChatTranscriptRequest $request): array {
+		$title = $request->title();
+		$lines = [
+			$title,
+			sprintf('Saved by %s on %s', $request->savedBy, $request->savedAt->format('Y-m-d H:i T')),
+			'',
+		];
+		foreach ($this->sortedRows(messages: $request->messages) as $row) {
+			$lines[] = $this->line(row: $row);
+		}
+
+		return [
+			'filename' => sprintf('%s-%s.txt', $this->slug(title: $title), $request->savedAt->format('Y-m-d-His')),
+			'content' => implode("\n", $lines) . "\n",
+		];
+	}//end exportTranscript()
+
+	/**
+	 * The message rows, oldest first.
+	 *
+	 * @param array<int, mixed> $messages The posted messages; anything that is not a map is dropped.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws InvalidArgumentException When there are no messages or too many.
+	 */
+	private function sortedRows(array $messages): array {
 		$rows = array_values(array_filter($messages, 'is_array'));
 		if ($rows === []) {
 			throw new InvalidArgumentException('The conversation has no messages to save.');
@@ -71,37 +94,40 @@ class TalkChatExporter {
 		}
 
 		usort($rows, static fn (array $a, array $b): int => ((int)($a['timestamp'] ?? 0)) <=> ((int)($b['timestamp'] ?? 0)));
+		return $rows;
+	}//end sortedRows()
 
-		$title = trim($conversation);
-		if ($title === '') {
-			$title = 'Chat';
+	/**
+	 * One message as a transcript line, in UTC.
+	 *
+	 * @param array<string, mixed> $row The message.
+	 *
+	 * @return string
+	 */
+	private function line(array $row): string {
+		$time = (new DateTimeImmutable('@' . (int)($row['timestamp'] ?? 0)))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i');
+		$author = trim((string)($row['actorDisplayName'] ?? ''));
+		if ($author === '') {
+			$author = 'Unknown';
 		}
 
-		$lines = [
-			$title,
-			sprintf('Saved by %s on %s', $savedBy, $savedAt->format('Y-m-d H:i T')),
-			'',
-		];
-		$utc = new DateTimeZone('UTC');
-		foreach ($rows as $row) {
-			$time = (new DateTimeImmutable('@' . (int)($row['timestamp'] ?? 0)))->setTimezone($utc)->format('Y-m-d H:i');
-			$author = trim((string)($row['actorDisplayName'] ?? ''));
-			if ($author === '') {
-				$author = 'Unknown';
-			}
+		$text = str_replace(["\r\n", "\r", "\n"], "\n    ", (string)($row['message'] ?? ''));
+		return sprintf('[%s UTC] %s: %s', $time, $author, $text);
+	}//end line()
 
-			$text = str_replace(["\r\n", "\r", "\n"], "\n    ", (string)($row['message'] ?? ''));
-			$lines[] = sprintf('[%s UTC] %s: %s', $time, $author, $text);
-		}
-
+	/**
+	 * The file-name stem of a title.
+	 *
+	 * @param string $title The transcript's title.
+	 *
+	 * @return string
+	 */
+	private function slug(string $title): string {
 		$slug = trim((string)preg_replace('/[^A-Za-z0-9._-]+/', '-', $title), '-');
 		if ($slug === '') {
-			$slug = 'chat';
+			return 'chat';
 		}
 
-		return [
-			'filename' => sprintf('%s-%s.txt', $slug, $savedAt->format('Y-m-d-His')),
-			'content' => implode("\n", $lines) . "\n",
-		];
-	}//end export()
+		return $slug;
+	}//end slug()
 }//end class

@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Declaration lifetime around the engine's save.
@@ -93,7 +94,7 @@ class TransitionEngineActionContextTest extends TestCase {
 
 		$this->context = new LifecycleActionContext();
 		$this->engine = new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $schemaMapper, $this->createMock(RegisterMapper::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary($this->context), $this->createMock(LifecycleActionProviderRegistry::class)),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $appConfig, $this->createMock(LoggerInterface::class)),
 			$permission
@@ -106,7 +107,7 @@ class TransitionEngineActionContextTest extends TestCase {
 	public function testTheNamedActionIsDeclaredDuringTheSave(): void {
 		$seen = 'nothing';
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function () use (&$seen): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
 				// This is where the listeners run: inside saveObject.
 				$seen = $this->context->declaredFor(uuid: self::OBJ);
 				$saved = new ObjectEntity();
@@ -128,7 +129,7 @@ class TransitionEngineActionContextTest extends TestCase {
 	 */
 	public function testTheDeclarationIsReleasedAfterTheSave(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function (): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$saved = new ObjectEntity();
 				$saved->setUuid(self::OBJ);
 				$saved->setObject(['status' => 'verifying']);

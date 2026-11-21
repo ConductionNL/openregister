@@ -23,6 +23,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 class AuditFlowAttributionTest extends TestCase {
 
@@ -78,7 +79,7 @@ class AuditFlowAttributionTest extends TestCase {
 
 	public function testAnExecutingStepIsStampedOntoTheRow(): void {
 		$context = new FlowRunContext();
-		$context->push(runUuid: 'run-abc', nodeId: 'node-1', sequence: 7);
+		$context->push(frame: new FlowRunFrame(runUuid: 'run-abc', nodeId: 'node-1', sequence: 7));
 
 		$row = new AuditTrail();
 		$this->stamper($context)->apply(auditTrail: $row);
@@ -131,8 +132,8 @@ class AuditFlowAttributionTest extends TestCase {
 	 */
 	public function testTheInnermostFrameIsTheOneStamped(): void {
 		$context = new FlowRunContext();
-		$context->push(runUuid: 'parent', nodeId: 'call-sub', sequence: 1);
-		$context->push(runUuid: 'child', nodeId: 'child-node', sequence: 0);
+		$context->push(frame: new FlowRunFrame(runUuid: 'parent', nodeId: 'call-sub', sequence: 1));
+		$context->push(frame: new FlowRunFrame(runUuid: 'child', nodeId: 'child-node', sequence: 0));
 
 		$row = new AuditTrail();
 		$this->stamper($context)->apply(auditTrail: $row);
@@ -146,7 +147,7 @@ class AuditFlowAttributionTest extends TestCase {
 	 */
 	public function testStampingTwiceWritesTheSameValues(): void {
 		$context = new FlowRunContext();
-		$context->push(runUuid: 'run-1', nodeId: 'n', sequence: 3);
+		$context->push(frame: new FlowRunFrame(runUuid: 'run-1', nodeId: 'n', sequence: 3));
 
 		$stamper = $this->stamper($context);
 		$row = new AuditTrail();

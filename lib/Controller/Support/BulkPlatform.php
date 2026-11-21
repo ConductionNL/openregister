@@ -33,18 +33,32 @@ use OCP\IUserSession;
  */
 final class BulkPlatform {
 	/**
+	 * User session for admin/manage checks
+	 *
+	 * @var IUserSession
+	 */
+	public readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin/manage checks
+	 *
+	 * @var IGroupManager
+	 */
+	public readonly IGroupManager $groupManager;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param IUserSession  $userSession  User session for admin/manage checks
-	 * @param IGroupManager $groupManager Group manager for admin/manage checks
+	 * @param SessionPrincipal $principal The session and group manager, kept as userSession and groupManager.
 	 * @param IDBConnection $db           The connection an atomic batch runs its transaction on
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		SessionPrincipal $principal,
 		public readonly IDBConnection $db,
 	) {
+		$this->userSession  = $principal->userSession;
+		$this->groupManager = $principal->groupManager;
 	}//end __construct()
 }//end class

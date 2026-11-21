@@ -25,8 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
@@ -34,6 +36,7 @@ use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -120,6 +123,20 @@ class FileExtractionController extends Controller {
 	private readonly CallerFileAccess $fileAccess;
 
 	/**
+	 * Names the object that carries a file, or null when the finder is not wired.
+	 *
+	 * @var ManagedFileOwnerLookup|null
+	 */
+	private readonly ?ManagedFileOwnerLookup $ownerLookup;
+
+	/**
+	 * The root folder, to reach a listed file by id.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
 	 * Constructor
 	 *
 	 * @param IRequest $request HTTP request
@@ -131,7 +148,7 @@ class FileExtractionController extends Controller {
 		IRequest $request,
 		FileExtractionControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->vectorizationService = $services->domain->vectorizationService;
 		$this->chunkMapper = $services->mappers->chunkMapper;
@@ -139,6 +156,9 @@ class FileExtractionController extends Controller {
 		$this->riskLevelService = $services->domain->riskLevelService;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->rootFolder  = $services->platform->rootFolder;
+		$this->ownerLookup = self::ownerLookupFor(finder: $services->mappers->objectFinder);
+
 		$this->fileAccess = new CallerFileAccess(
 			fileReadScope: $services->domain->fileReadScope,
 			userSession: $services->platform->userSession,
@@ -204,30 +224,68 @@ class FileExtractionController extends Controller {
 			}
 
 			$listing->restrict(restricted: $this->isCurrentUserAdmin() === false);
-			$page       = $this->extractionSummaries(listing: $listing);
-			$data       = $this->extractionRows(summaries: $page['summaries']);
-			$totalCount = $page['total'];
-
-			$riskLevel = $listing->riskLevel;
-			if (in_array($riskLevel, [null, ''], true) === false) {
-				$data       = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
-				$totalCount = count($data);
-			}
-
-			if ($listing->sortsInPhp() === true) {
-				$data = $listing->sortRows(rows: $data);
-			}
-
-			if ($listing->cutsInPhp() === true) {
-				$totalCount = count($data);
-				$data       = array_slice($data, $listing->offset, $listing->limit);
-			}
-
-			return new JSONResponse(data: ['success' => true, 'data' => $data, 'count' => $totalCount]);
+			return new JSONResponse(data: $this->listingResult(listing: $listing));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['success' => false, 'error' => $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end index()
+
+	/**
+	 * One page of extraction rows for the listing, with its total count.
+	 *
+	 * @param FileExtractionListing $listing The listing request.
+	 *
+	 * @return array{success: true, data: array, count: int} The response body.
+	 */
+	private function listingResult(FileExtractionListing $listing): array {
+		$page = $this->extractionSummaries(listing: $listing);
+		$result = [
+			'success' => true,
+			'data' => $this->extractionRows(summaries: $page['summaries']),
+			'count' => $page['total'],
+		];
+
+		$result = self::filteredByRiskLevel(result: $result, riskLevel: $listing->riskLevel);
+		return self::sortedAndCut(result: $result, listing: $listing);
+	}//end listingResult()
+
+	/**
+	 * Keep only the rows of one risk level, recounting them; all rows without a risk level filter.
+	 *
+	 * @param array{success: true, data: array, count: int} $result    The response body.
+	 * @param mixed                                          $riskLevel The requested risk level.
+	 *
+	 * @return array{success: true, data: array, count: int} The filtered response body.
+	 */
+	private static function filteredByRiskLevel(array $result, mixed $riskLevel): array {
+		if (in_array($riskLevel, [null, ''], true) === false) {
+			$result['data']  = array_values(array_filter($result['data'], fn ($f) => $f['riskLevel'] === $riskLevel));
+			$result['count'] = count($result['data']);
+		}
+
+		return $result;
+	}//end filteredByRiskLevel()
+
+	/**
+	 * Sort and page the rows in PHP when the listing asks for it.
+	 *
+	 * @param array{success: true, data: array, count: int} $result  The response body.
+	 * @param FileExtractionListing                          $listing The listing request.
+	 *
+	 * @return array{success: true, data: array, count: int} The sorted and paged response body.
+	 */
+	private static function sortedAndCut(array $result, FileExtractionListing $listing): array {
+		if ($listing->sortsInPhp() === true) {
+			$result['data'] = $listing->sortRows(rows: $result['data']);
+		}
+
+		if ($listing->cutsInPhp() === true) {
+			$result['count'] = count($result['data']);
+			$result['data']  = array_slice($result['data'], $listing->offset, $listing->limit);
+		}
+
+		return $result;
+	}//end sortedAndCut()
 
 	/**
 	 * The chunked-file summaries of one listing, and their total, cut to what the caller may open.
@@ -271,7 +329,7 @@ class FileExtractionController extends Controller {
 			$entityCount = count($this->entityRelationMapper->findByFileId($summary['sourceId']));
 			$fileRisk    = $this->riskLevelService->getRiskLevel($summary['sourceId']);
 
-			$data[] = [
+			$row = [
 				'id'               => $summary['sourceId'],
 				'fileName'         => $summary['fileName'],
 				'mimeType'         => $summary['mimeType'],
@@ -283,10 +341,65 @@ class FileExtractionController extends Controller {
 				'entityCount'      => $entityCount,
 				'riskLevel'        => $fileRisk,
 			];
-		}
+
+			// A file an object carries is named by that object, so the row can be shared by link.
+			$objectUuid = $this->objectUuidOf(fileId: (int)$summary['sourceId']);
+			if ($objectUuid !== null) {
+				$row['objectUuid'] = $objectUuid;
+			}
+
+			$data[] = $row;
+		}//end foreach
 
 		return $data;
 	}//end extractionRows()
+
+	/**
+	 * The owner lookup over a finder, or null without one.
+	 *
+	 * @param MagicObjectFinderInterface|null $finder The object finder.
+	 *
+	 * @return ManagedFileOwnerLookup|null
+	 */
+	private static function ownerLookupFor(?MagicObjectFinderInterface $finder): ?ManagedFileOwnerLookup {
+		if ($finder === null) {
+			return null;
+		}
+
+		return new ManagedFileOwnerLookup(objects: $finder);
+	}//end ownerLookupFor()
+
+	/**
+	 * The uuid of the object that carries a file, or null when no object does.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	private function objectUuidOf(int $fileId): ?string {
+		if ($this->ownerLookup === null) {
+			return null;
+		}
+
+		try {
+			$node = $this->rootFolder->getFirstNodeById($fileId);
+			if ($node === null) {
+				return null;
+			}
+
+			$uuid = $this->ownerLookup->find(file: $node)?->getUuid();
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end objectUuidOf()
 
 	/**
 	 * Get a single file's extraction information by ID.
@@ -315,7 +428,7 @@ class FileExtractionController extends Controller {
 	 */
 	public function show(int $id): JSONResponse {
 		if ($this->hasFileAccess(fileId: $id) === false) {
-			return $this->failed(error: 'File not found in extraction system', message: 'File not found or access denied', status: 404);
+			return $this->notFound(error: 'File not found in extraction system', message: 'File not found or access denied');
 		}
 
 		try {
@@ -323,12 +436,12 @@ class FileExtractionController extends Controller {
 			$chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
 
 			if (empty($chunks) === true) {
-				return $this->failed(error: 'File not found in extraction system', message: 'No chunks found for file ID: ' . $id, status: 404);
+				return $this->notFound(error: 'File not found in extraction system', message: 'No chunks found for file ID: ' . $id);
 			}
 
 			return $this->succeeded(body: ['data' => array_map(fn ($chunk) => $chunk->jsonSerialize(), $chunks)]);
 		} catch (\Exception $e) {
-			return $this->failed(error: 'File not found in extraction system', message: $e->getMessage(), status: 404);
+			return $this->notFound(error: 'File not found in extraction system', message: $e->getMessage());
 		}//end try
 	}//end show()
 
@@ -344,8 +457,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing extraction result
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|404|500,
@@ -365,16 +476,16 @@ class FileExtractionController extends Controller {
 		// IDOR guard: only extract files the caller can actually access. 404
 		// (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $id) === false) {
-			return $this->failed(error: 'File not found in Nextcloud', message: 'File not found or access denied', status: 404);
+			return $this->notFound(error: 'File not found in Nextcloud', message: 'File not found or access denied');
 		}
 
 		try {
 			// ExtractFile returns void, not an object.
-			$this->textExtractor->extractFile(fileId: $id, forceReExtract: $forceReExtract);
+			$this->textExtractor->extractFile(fileId: $id, options: new FileExtractionOptions(forceReExtract: $forceReExtract));
 
 			return $this->succeeded(body: ['message' => 'File extraction completed']);
 		} catch (NotFoundException $e) {
-			return $this->failed(error: 'File not found in Nextcloud', message: $e->getMessage(), status: 404);
+			return $this->notFound(error: 'File not found in Nextcloud', message: $e->getMessage());
 		} catch (\Exception $e) {
 			return $this->failed(error: 'Extraction failed', message: $e->getMessage());
 		}//end try
@@ -391,8 +502,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing file discovery results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
@@ -438,8 +547,6 @@ class FileExtractionController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing batch extraction results
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
 	 *     array{success: false, error: string}|array{
@@ -478,8 +585,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing retry operation results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
@@ -559,8 +664,6 @@ class FileExtractionController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @return JSONResponse JSON response containing cleanup operation results
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<
 	 *     200|403|500,
@@ -644,8 +747,6 @@ class FileExtractionController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with vectorization result
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
@@ -691,15 +792,26 @@ class FileExtractionController extends Controller {
 	}//end succeeded()
 
 	/**
-	 * A failed response with an error and a message.
+	 * A failed response (500) with an error and a message.
 	 *
 	 * @param string $error   The error.
 	 * @param string $message The message.
-	 * @param int    $status  The HTTP status.
 	 *
 	 * @return JSONResponse
 	 */
-	private function failed(string $error, string $message, int $status=500): JSONResponse {
-		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: $status);
+	private function failed(string $error, string $message): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: 500);
 	}//end failed()
+
+	/**
+	 * A not-found response (404) with an error and a message.
+	 *
+	 * @param string $error   The error.
+	 * @param string $message The message.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notFound(string $error, string $message): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $error, 'message' => $message], statusCode: 404);
+	}//end notFound()
 }//end class

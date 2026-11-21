@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -56,22 +55,34 @@ abstract class AbstractTextExtractionJob extends QueuedJob {
 	protected const DISABLED_MESSAGE = '';
 
 	/**
+	 * Config, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	protected readonly IAppConfig $config;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	protected readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for parent class
-	 * @param IAppConfig $config Application configuration service
-	 * @param LoggerInterface $logger Logger service
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param TextExtractionServiceInterface $textExtractor Text extraction service
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		protected readonly IAppConfig $config,
-		protected readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
 		protected readonly TextExtractionServiceInterface $textExtractor,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->config = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
 	}//end __construct()
 
 	/**

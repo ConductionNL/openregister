@@ -83,7 +83,7 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	public function resolve(string $canonical, array $candidates=[]): RegisterSlugResolution {
 		$probe = $this->candidateList(canonical: $canonical, candidates: $candidates);
 		if ($probe === []) {
-			return $this->resolution(canonical: $canonical, state: RegisterSlugResolution::ABSENT, probe: [], matched: []);
+			return (new RegisterSlugProbe(canonical: $canonical, probe: []))->resolved(state: RegisterSlugResolution::ABSENT, matched: []);
 		}
 
 		$memoKey = implode('|', $probe);
@@ -92,7 +92,7 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 		}
 
 		$matched    = $this->matchingSlugs(candidates: $probe);
-		$resolution = $this->interpret(canonical: $canonical, probe: $probe, matched: $matched);
+		$resolution = $this->interpret(run: new RegisterSlugProbe(canonical: $canonical, probe: $probe), matched: $matched);
 
 		$this->memo[$memoKey] = $resolution;
 		return $resolution;
@@ -231,24 +231,23 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 	/**
 	 * Turn a match list into a resolution, logging the state that needs an operator.
 	 *
-	 * @param string       $canonical The canonical register slug.
-	 * @param list<string> $probe     The probe list, newest first.
-	 * @param list<string> $matched   The slugs that exist here, in probe order.
+	 * @param RegisterSlugProbe $run     The canonical slug and the probe list.
+	 * @param list<string>      $matched The slugs that exist here, in probe order.
 	 *
 	 * @return RegisterSlugResolution The resolution.
 	 */
-	private function interpret(string $canonical, array $probe, array $matched): RegisterSlugResolution {
+	private function interpret(RegisterSlugProbe $run, array $matched): RegisterSlugResolution {
 		if ($matched === []) {
-			return $this->resolution(canonical: $canonical, state: RegisterSlugResolution::ABSENT, probe: $probe, matched: []);
+			return $run->resolved(state: RegisterSlugResolution::ABSENT, matched: []);
 		}
 
 		if (count($matched) === 1) {
-			return $this->resolution(canonical: $canonical, state: RegisterSlugResolution::RESOLVED, probe: $probe, matched: $matched);
+			return $run->resolved(state: RegisterSlugResolution::RESOLVED, matched: $matched);
 		}
 
-		$this->warnAmbiguous(canonical: $canonical, matched: $matched);
+		$this->warnAmbiguous(canonical: $run->canonical, matched: $matched);
 
-		return $this->resolution(canonical: $canonical, state: RegisterSlugResolution::AMBIGUOUS, probe: $probe, matched: $matched);
+		return $run->resolved(state: RegisterSlugResolution::AMBIGUOUS, matched: $matched);
 	}//end interpret()
 
 	/**
@@ -275,24 +274,4 @@ class RegisterSlugResolver implements RegisterSlugResolverInterface {
 			]
 		);
 	}//end warnAmbiguous()
-
-	/**
-	 * Build a resolution; the slug is the first match, or null when none matched.
-	 *
-	 * @param string       $canonical The canonical register slug.
-	 * @param string       $state     One of the RegisterSlugResolution states.
-	 * @param list<string> $probe     The probe list, newest first.
-	 * @param list<string> $matched   The slugs that exist here, in probe order.
-	 *
-	 * @return RegisterSlugResolution The resolution.
-	 */
-	private function resolution(string $canonical, string $state, array $probe, array $matched): RegisterSlugResolution {
-		return new RegisterSlugResolution(
-			canonical: $canonical,
-			slug: ($matched[0] ?? null),
-			state: $state,
-			candidates: $probe,
-			matched: $matched
-		);
-	}//end resolution()
 }//end class

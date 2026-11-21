@@ -164,20 +164,22 @@ class ScopedPropertyGovernance {
 	}//end ceiling()
 
 	/**
-	 * How many scoped properties one scope already holds.
+	 * How many scoped properties one scope already holds, besides the given property.
 	 *
-	 * @param Schema $schema The schema.
-	 * @param string $scope  The scope.
-	 * @param string $except A property name to ignore, so an EDIT of an existing property is not counted twice.
+	 * The field's own property is ignored, so an EDIT of an existing property is
+	 * not counted twice; a field with an empty property name counts them all.
+	 *
+	 * @param Schema      $schema The schema.
+	 * @param ScopedField $field  The scope to count, and the property to ignore.
 	 *
 	 * @return int The count.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function countAtScope(Schema $schema, string $scope, string $except = ''): int {
+	public function countAtScope(Schema $schema, ScopedField $field): int {
 		$count = 0;
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
-			if ((string)$name !== $except && self::scopeOf(property: $property) === $scope) {
+			if ((string)$name !== $field->property && self::scopeOf(property: $property) === $field->scope) {
 				$count++;
 			}
 		}
@@ -213,9 +215,8 @@ class ScopedPropertyGovernance {
 	 * for a higher one or to retire a field they no longer use, which is the
 	 * decision the ceiling exists to force.
 	 *
-	 * @param Schema $schema   The schema being saved.
-	 * @param string $scope    The scope.
-	 * @param string $property The property being added.
+	 * @param Schema      $schema The schema being saved.
+	 * @param ScopedField $field  The property being added and its scope.
 	 *
 	 * @return void
 	 *
@@ -223,15 +224,15 @@ class ScopedPropertyGovernance {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function assertBelowCeiling(Schema $schema, string $scope, string $property): void {
+	public function assertBelowCeiling(Schema $schema, ScopedField $field): void {
 		$ceiling = $this->ceiling();
-		$already = $this->countAtScope(schema: $schema, scope: $scope, except: $property);
+		$already = $this->countAtScope(schema: $schema, field: $field);
 
 		if ($already < $ceiling) {
 			return;
 		}
 
-		throw new ScopedPropertyException(sprintf(self::MSG_CEILING, $scope, $already, $ceiling, $property));
+		throw new ScopedPropertyException(sprintf(self::MSG_CEILING, $field->scope, $already, $ceiling, $field->property));
 	}//end assertBelowCeiling()
 
 	/**
@@ -263,15 +264,14 @@ class ScopedPropertyGovernance {
 	 * unused. Absent evidence is not evidence of absence, and retiring a field
 	 * on it would delete data somebody is relying on.
 	 *
-	 * @param Schema                $schema   The schema.
-	 * @param array<string, int>    $counts   How many values each property holds.
-	 * @param DateTimeImmutable     $asOf     When the report is read.
+	 * @param Schema               $schema The schema.
+	 * @param ScopedPropertyCensus $census How many values each property holds, and when that was read.
 	 *
 	 * @return array<int, array{property: string, scope: string, values: int|null, state: string}> The report.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function unusedReport(Schema $schema, array $counts, DateTimeImmutable $asOf): array {
+	public function unusedReport(Schema $schema, ScopedPropertyCensus $census): array {
 		$report = [];
 
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
@@ -280,9 +280,10 @@ class ScopedPropertyGovernance {
 				continue;
 			}
 
-			$report[] = self::usageRow(key: (string)$name, scope: $scope, counts: $counts) + [
+			$field    = new ScopedField(property: (string)$name, scope: $scope);
+			$report[] = self::usageRow(field: $field, counts: $census->counts) + [
 				'unusedAfterDays' => $this->unusedAfterDays(),
-				'asOf'            => $asOf->format('c'),
+				'asOf'            => $census->asOf->format('c'),
 			];
 		}
 
@@ -292,14 +293,14 @@ class ScopedPropertyGovernance {
 	/**
 	 * What the counts say about one scoped property.
 	 *
-	 * @param string             $key    The property name.
-	 * @param string             $scope  Its trimmed scope.
+	 * @param ScopedField        $field  The property and its trimmed scope.
 	 * @param array<string, int> $counts How many values each property holds.
 	 *
 	 * @return array{property: string, scope: string, values: int|null, state: string} The row.
 	 */
-	private static function usageRow(string $key, string $scope, array $counts): array {
-		$row = ['property' => $key, 'scope' => $scope, 'values' => null, 'state' => 'unknown'];
+	private static function usageRow(ScopedField $field, array $counts): array {
+		$key = $field->property;
+		$row = ['property' => $key, 'scope' => $field->scope, 'values' => null, 'state' => 'unknown'];
 		if (array_key_exists($key, $counts) === false) {
 			return $row;
 		}
@@ -362,26 +363,19 @@ class ScopedPropertyGovernance {
 	 * without having the record in hand, and so a test can assert the record
 	 * without saving a schema.
 	 *
-	 * @param Schema            $schema   The schema.
-	 * @param string            $property The promoted property.
-	 * @param string            $scope    The scope it left.
-	 * @param DateTimeImmutable $stampedAt       When.
+	 * @param ScopedPropertyPromotion $promotion The schema, the promoted property and the scope it left.
+	 * @param DateTimeImmutable       $stampedAt When.
 	 *
 	 * @return array<string, mixed> The entry.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function promotionRecord(
-		Schema $schema,
-		string $property,
-		string $scope,
-		DateTimeImmutable $stampedAt,
-	): array {
+	public function promotionRecord(ScopedPropertyPromotion $promotion, DateTimeImmutable $stampedAt): array {
 		return [
 			'action'   => 'scoped_property_promoted',
-			'schema'   => $schema->getId(),
-			'property' => $property,
-			'fromScope' => $scope,
+			'schema'   => $promotion->schema->getId(),
+			'property' => $promotion->field->property,
+			'fromScope' => $promotion->field->scope,
 			// The actor is named rather than left to the log's own context,
 			// because "who promoted this" is the question anyone reading the
 			// trail later is actually asking.

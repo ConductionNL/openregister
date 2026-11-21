@@ -365,6 +365,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import ClearCacheDialog from '../../../dialogs/settings/ClearCacheDialog.vue'
+import { binarySize } from '../../../services/byteSize.js'
 import { settingsSectionState } from './settingsSectionState.js'
 
 /**
@@ -591,22 +592,7 @@ export default {
 			this.settingsStore.performClearCache()
 		},
 
-		/**
-		 * Format bytes to human readable format
-		 *
-		 * @param {number} bytes Number of bytes
-		 * @spec exclude UI plumbing — pure presentation helper
-		 * @return {string} Formatted string
-		 */
-		formatBytes(bytes) {
-			if (bytes === 0) return '0 B'
-
-			const k = 1024
-			const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-			const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-		},
+		formatBytes: binarySize,
 
 		/**
 		 * Get service hit rate
@@ -706,6 +692,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use './sectionStyles.scss' as *;
 @use '../../../styles/views.scss' as *;
 
 /* SettingsSection handles all action button positioning and spacing */
@@ -846,46 +833,7 @@ export default {
 	color: var(--color-text-light);
 }
 
-.performance-table-container {
-	overflow-x: auto;
-}
-
-.performance-table {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 14px;
-}
-
-.performance-table-header {
-	text-align: left;
-	padding: 12px 8px;
-	border-bottom: 2px solid var(--color-border);
-	background: var(--color-background-hover);
-	font-weight: 600;
-	color: var(--color-text-light);
-}
-
-.performance-table-row {
-	border-bottom: 1px solid var(--color-border-dark);
-}
-
-.performance-table-row:hover {
-	background: var(--color-background-hover);
-}
-
-.performance-table-label {
-	padding: 12px 8px;
-	color: var(--color-text-light);
-	font-weight: 500;
-}
-
-.performance-table-value {
-	padding: 12px 8px;
-	color: var(--color-text-maxcontrast);
-	text-align: right;
-	font-family: monospace;
-	font-size: 13px;
-}
+@include figures-table('.performance-table');
 
 .cache-warmup h4 {
 	margin: 0 0 8px 0;

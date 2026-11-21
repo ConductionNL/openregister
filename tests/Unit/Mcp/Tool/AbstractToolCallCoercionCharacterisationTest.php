@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\Tool;
 
 use BadMethodCallException;
 use OCA\OpenRegister\Mcp\Tool\AbstractTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +21,8 @@ use Psr\Log\LoggerInterface;
  * Pins how AbstractTool::__call matches and coerces LLM arguments.
  *
  * @covers \OCA\OpenRegister\Mcp\Tool\AbstractTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolArgumentCoercer
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCallTrail
  */
 class AbstractToolCallCoercionCharacterisationTest extends TestCase
 {
@@ -28,7 +31,7 @@ class AbstractToolCallCoercionCharacterisationTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->tool = new class($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class)) extends AbstractTool {
+        $this->tool = new class(new ToolCallTrail($this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class))) extends AbstractTool {
             public function getName(): string
             {
                 return 'probe';

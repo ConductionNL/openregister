@@ -47,6 +47,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit tests for SaveObject service
@@ -182,10 +184,8 @@ class SaveObjectTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->objectEntityMapper,
-						unifiedObjectMapper: $this->unifiedObjectMapper,
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->registerMapper
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->auditTrailMapper,
@@ -265,10 +265,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid)
 		);
 
 		// Assertions.
@@ -313,10 +311,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid)
 		);
 
 		// Assertions.
@@ -358,9 +354,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
-			data: $data
+			data: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema))
 		);
 
 		// Assertions.
@@ -460,10 +455,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -564,10 +557,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -655,10 +646,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -752,10 +741,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -861,10 +848,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -932,14 +917,14 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test - cascading silently skips invalid schema references.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Should still return an ObjectEntity, with the invalid ref stored as-is.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['name' => 'Invalid Child'], $result->getObject()['invalid']);
+		$this->assertSame('Parent Object', $result->getObject()['name']);
 	}
 
 	/**
@@ -1022,10 +1007,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -1120,10 +1103,8 @@ class SaveObjectTest extends TestCase {
 
 		// Execute test.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $this->mockSchema,
 			data: $data,
-			uuid: $parentUuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $parentUuid)
 		);
 
 		// Assertions.
@@ -1194,6 +1175,8 @@ class SaveObjectTest extends TestCase {
 		);
 
 		$this->assertIsArray($relations, 'scanForRelations should return an array.');
+		// Plain strings that are no references yield no relations.
+		$this->assertSame([], $relations);
 	}
 
 }

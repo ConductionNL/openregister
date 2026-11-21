@@ -92,6 +92,10 @@ class KnownTypeResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskFormReader
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */
 final class UserTaskTypedPerformersTest extends TestCase {
 
@@ -159,10 +163,7 @@ final class UserTaskTypedPerformersTest extends TestCase {
 			}
 		);
 
-		return new UserTaskPerformers(
-			config: $this->configReader(),
-			principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))
-		);
+		return new UserTaskPerformers(config: $this->configReader(), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: new PrincipalResolverRegistry($dispatcher, $this->createMock(LoggerInterface::class))));
 	}//end performers()
 
 	/**

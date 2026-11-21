@@ -10,6 +10,7 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="agents">
 			<h2>{{ t('openregister', 'Agents') }}</h2>
@@ -93,25 +94,54 @@ import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
+import { pageShellComponents } from '../pageShell.js'
+
+/**
+ * Fetch the agents, the tool catalogue and the views, in one go.
+ *
+ * @return {Promise<Array<object>>} The three axios responses.
+ */
+function fetchAgentsToolsAndViews() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/agents')),
+		axios.get(generateUrl('/apps/openregister/api/agents/tools')),
+		axios.get(generateUrl('/apps/openregister/api/views')),
+	])
+}
+
+/**
+ * The tool catalogue as select options, named where the catalogue names them.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<{id: string, label: string}>} The options.
+ */
+function toolOptionsOf(response) {
+	return Object.entries(response.data?.results || {}).map(([id, meta]) => ({
+		id,
+		label: meta?.name || id,
+	}))
+}
+
+/**
+ * The views as select options, by uuid and name.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<{id: string, label: string}>} The options.
+ */
+function viewOptionsOf(response) {
+	return (response.data?.results || []).map((view) => ({
+		id: view.uuid,
+		label: view.name || view.uuid,
+	}))
+}
 
 export default {
 	name: 'AgentsIndex',
 	components: {
 		CnDataTable,
 		EditAgentLimits,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {
@@ -157,19 +187,10 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const [agents, tools, views] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/agents')),
-					axios.get(generateUrl('/apps/openregister/api/agents/tools')),
-					axios.get(generateUrl('/apps/openregister/api/views')),
-				])
+				const [agents, tools, views] = await fetchAgentsToolsAndViews()
 				this.agents = agents.data?.results || []
-				this.toolOptions = Object.entries(tools.data?.results || {}).map(
-					([id, meta]) => ({ id, label: meta?.name || id }),
-				)
-				this.viewOptions = (views.data?.results || []).map((view) => ({
-					id: view.uuid,
-					label: view.name || view.uuid,
-				}))
+				this.toolOptions = toolOptionsOf(tools)
+				this.viewOptions = viewOptionsOf(views)
 			} catch {
 				this.error = t('openregister', 'Could not load the agents')
 			} finally {

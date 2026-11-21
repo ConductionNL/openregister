@@ -37,6 +37,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 
 /**
  * Pins every collaborator call and the response of each LLM settings action.
@@ -50,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe
  */
 class LlmSettingsControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/llm-actions-golden.json';
@@ -170,8 +172,8 @@ class LlmSettingsControllerActionsGoldenTest extends TestCase {
 
 	private function vectors(array $case): VectorizationService {
 		$vectors = $this->createMock(VectorizationService::class);
-		$vectors->method('testEmbedding')->willReturnCallback(function (string $provider, array $config, string $text) use ($case) {
-			$this->calls[] = ['vectors.testEmbedding' => [$provider, $config, $text]];
+		$vectors->method('testEmbedding')->willReturnCallback(function (EmbeddingProbe $probe) use ($case) {
+			$this->calls[] = ['vectors.testEmbedding' => [$probe->provider, $probe->config, $probe->testText]];
 			return $this->outcome($case, ['dimensions' => 3]);
 		});
 		$vectors->method('checkEmbeddingModelMismatch')->willReturnCallback(function () use ($case) {

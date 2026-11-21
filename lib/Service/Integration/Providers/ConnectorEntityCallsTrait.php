@@ -23,6 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+
 /**
  * Entity calls shared by the connector-backed providers that link external entities.
  *
@@ -41,9 +44,11 @@ trait ConnectorEntityCallsTrait {
 	private function listFromSource(array $query): array {
 		$response = $this->router->call(
 			provider: $this,
-			method: 'GET',
-			path: '',
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
+			request: new UpstreamRequest(
+				method: 'GET',
+				path: '',
+				options: ['query' => $query, 'headers' => $this->requestHeaders()]
+			)
 		);
 
 		return $this->normalizeList(response: $response);
@@ -52,9 +57,7 @@ trait ConnectorEntityCallsTrait {
 	/**
 	 * Fetch one linked external entity.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema   Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId External entity id.
 	 *
 	 * @return array<string,mixed>
@@ -62,24 +65,16 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: rawurlencode($entityId),
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
-		);
+	public function get(ObjectRef $ref, string $entityId): array {
+		$query = $this->contextQuery(ref: $ref, filters: []);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'GET', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end get()
 
 	/**
 	 * Link (or create) an external entity against an OR object.
 	 *
-	 * @param string              $register Register slug or numeric id.
-	 * @param string              $schema   Schema slug or numeric id.
-	 * @param string              $objectId Object uuid.
+	 * @param ObjectRef              $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload  Reference or new-entity fields.
 	 *
 	 * @return array<string,mixed>
@@ -87,24 +82,16 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'POST',
-			path: '',
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
+	public function create(ObjectRef $ref, array $payload): array {
+		$body = $this->contextQuery(ref: $ref, filters: $payload);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'POST', path: '', options: ['body' => $body]));
 	}//end create()
 
 	/**
 	 * Update a linked entity pairing.
 	 *
-	 * @param string              $register Register slug or numeric id.
-	 * @param string              $schema   Schema slug or numeric id.
-	 * @param string              $objectId Object uuid.
+	 * @param ObjectRef              $ref The owning object: register, schema and uuid.
 	 * @param string              $entityId External entity id.
 	 * @param array<string,mixed> $payload  Fields to update.
 	 *
@@ -113,24 +100,16 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		$body = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $payload);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'PUT',
-			path: rawurlencode($entityId),
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		$body = $this->contextQuery(ref: $ref, filters: $payload);
 
-		return $this->normalizeRow(row: $response);
+		return $this->entityRow(request: new UpstreamRequest(method: 'PUT', path: rawurlencode($entityId), options: ['body' => $body]));
 	}//end update()
 
 	/**
 	 * Unlink an external entity. The entity itself stays in the external system.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema   Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId External entity id.
 	 *
 	 * @return void
@@ -138,33 +117,49 @@ trait ConnectorEntityCallsTrait {
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->router->call(
-			provider: $this,
-			method: 'DELETE',
-			path: rawurlencode($entityId),
-			options: [
-				'query' => $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []),
-				'headers' => $this->requestHeaders(),
-			]
-		);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$query = $this->contextQuery(ref: $ref, filters: []);
+		$this->callEntity(request: new UpstreamRequest(method: 'DELETE', path: rawurlencode($entityId), options: ['query' => $query]));
 	}//end delete()
+
+	/**
+	 * One entity call, its answer normalised to a row.
+	 *
+	 * @param UpstreamRequest $request The method, the entity path and the query or body.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function entityRow(UpstreamRequest $request): array {
+		return $this->normalizeRow(row: $this->callEntity(request: $request));
+	}//end entityRow()
+
+	/**
+	 * Make one entity call with the standard headers: JSON responses, and a JSON body on writes.
+	 *
+	 * @param UpstreamRequest $request The method, the entity path and the query or body.
+	 *
+	 * @return array<string,mixed> The decoded response.
+	 */
+	private function callEntity(UpstreamRequest $request): array {
+		$options = $request->options;
+		$options['headers'] = $this->requestHeaders(withBody: array_key_exists('body', $options));
+
+		return $this->router->call(provider: $this, request: new UpstreamRequest(method: $request->method, path: $request->path, options: $options));
+	}//end callEntity()
 
 	/**
 	 * The standard `{register, schema, object, …filters}` context, used as the
 	 * query of reads and as the body of writes.
 	 *
-	 * @param string              $register Register slug or numeric id.
-	 * @param string              $schema   Schema slug or numeric id.
-	 * @param string              $objectId Object uuid.
-	 * @param array<string,mixed> $filters  Caller filters or payload merged in.
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters or payload merged in.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function contextQuery(string $register, string $schema, string $objectId, array $filters): array {
+	private function contextQuery(ObjectRef $ref, array $filters): array {
 		return array_merge(
 			$filters,
-			['register' => $register, 'schema' => $schema, 'object' => $objectId]
+			['register' => $ref->register, 'schema' => $ref->schema, 'object' => $ref->id]
 		);
 	}//end contextQuery()
 

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -23,32 +23,24 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 
 /**
  * The steps that build and narrow the items a run carries.
  *
  * Listed in registration order.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final readonly class DataShapingFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param SetFieldsNodeInterface $setFields The built-in "Edit fields" node.
-	 * @param ActionInputsNodeInterface $actionInputs The built-in step that makes an action's inputs readable.
-	 * @param ExplodeNodeInterface $explode The built-in "Explode" node.
-	 * @param FilterNodeInterface $filter The built-in "Filter" node.
+	 * @param FieldFlowNodes    $fields   The steps that write fields onto the items a run carries.
+	 * @param ItemListFlowNodes $itemList The steps that split and narrow the list of items a run carries.
 	 */
 	public function __construct(
-		private SetFieldsNodeInterface $setFields,
-		private ActionInputsNodeInterface $actionInputs,
-		private ExplodeNodeInterface $explode,
-		private FilterNodeInterface $filter,
+		private FieldFlowNodes $fields,
+		private ItemListFlowNodes $itemList,
 	) {
 	}//end __construct()
 
@@ -59,10 +51,8 @@ final readonly class DataShapingFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			$this->setFields,
-			$this->actionInputs,
-			$this->explode,
-			$this->filter,
+			...$this->fields->nodes(),
+			...$this->itemList->nodes(),
 		];
 
 	}//end nodes()

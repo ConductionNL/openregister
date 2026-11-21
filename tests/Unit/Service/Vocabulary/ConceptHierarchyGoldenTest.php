@@ -108,12 +108,12 @@ class ConceptHierarchyGoldenTest extends TestCase {
 	public function testBranchUrisAtEveryDepth(): void {
 		$cases = [];
 		foreach ([null, -3, 0, 1, 2, 3, 50] as $depth) {
-			$cases[] = $this->hierarchy->branchUris('urn:root', $this->scheme, $depth);
+			$cases[] = $this->hierarchy->branchUris(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:root', $this->scheme, $depth));
 		}
 
-		$cases[] = $this->hierarchy->branchUris('urn:a', $this->scheme);
-		$cases[] = $this->hierarchy->branchUris('urn:solo', $this->scheme);
-		$cases[] = $this->hierarchy->branchUris('urn:unknown', $this->scheme);
+		$cases[] = $this->hierarchy->branchUris(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:a', $this->scheme));
+		$cases[] = $this->hierarchy->branchUris(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:solo', $this->scheme));
+		$cases[] = $this->hierarchy->branchUris(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:unknown', $this->scheme));
 
 		$this->assertSame(
 			'[["urn:root","urn:a","urn:b","urn:c","urn:d","urn:a1","urn:e","urn:a2","urn:a3"],'
@@ -165,17 +165,17 @@ class ConceptHierarchyGoldenTest extends TestCase {
 
 		$this->assertSame(
 			$this->expectedFullTree(),
-			json_encode($this->hierarchy->tree('urn:root', $this->scheme, new ConceptReading('en', $at)))
+			json_encode($this->hierarchy->tree(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:root', $this->scheme), new ConceptReading('en', $at)))
 		);
 		$this->assertSame(
 			'{"value":"urn:root","label":"Root","notation":null,"offerable":true,"leaf":false,"children":[]}',
-			json_encode($this->hierarchy->tree('urn:root', $this->scheme, new ConceptReading('en', $at), 0))
+			json_encode($this->hierarchy->tree(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:root', $this->scheme, 0), new ConceptReading('en', $at)))
 		);
 		$this->assertSame(
 			'{"value":"urn:a2","label":"urn:a2","notation":"  ","offerable":true,"leaf":false,"children":['
 			.'{"value":"urn:a3","label":"urn:a3","notation":null,"offerable":true,"leaf":true,"children":[]},'
 			.'{"value":"urn:root","label":"Wortel","notation":null,"offerable":true,"leaf":false,"children":[]}]}',
-			json_encode($this->hierarchy->tree('urn:a2', $this->scheme, new ConceptReading('nl', $at), 1))
+			json_encode($this->hierarchy->tree(new \OCA\OpenRegister\Service\Vocabulary\ConceptBranch('urn:a2', $this->scheme, 1), new ConceptReading('nl', $at)))
 		);
 	}//end testTreeAtSeveralDepths()
 

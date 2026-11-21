@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -40,7 +41,7 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return FlowTimer The inserted timer, with its id.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function insert(Entity $entity): FlowTimer;
 
@@ -51,7 +52,7 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return FlowTimer The updated timer.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function update(Entity $entity): FlowTimer;
 
@@ -64,7 +65,7 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such timer exists.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findByUuid(string $uuid): FlowTimer;
 
@@ -81,7 +82,7 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The due expiry timers.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function findDueExpiries(DateTimeInterface $now, int $limit): array;
 
@@ -93,22 +94,21 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The timers with a due rung.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function findDueRungs(DateTimeInterface $now, int $limit): array;
 
 	/**
 	 * Every timer bound to a subject, optionally restricted to a state set.
 	 *
-	 * @param string $subjectType The subject type.
-	 * @param string $subjectUuid The subject uuid.
-	 * @param array<int, string> $states Restrict to these states; empty means all.
+	 * @param TimerSubject       $subject The subject's type and uuid.
+	 * @param array<int, string> $states  Restrict to these states; empty means all.
 	 *
 	 * @return array<int, FlowTimer> The subject's timers, oldest first.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findBySubject(string $subjectType, string $subjectUuid, array $states = []): array;
+	public function findBySubject(TimerSubject $subject, array $states = []): array;
 
 	/**
 	 * The OPEN timers a run terminality reaches: bound to the run as subject,
@@ -118,22 +118,21 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return array<int, FlowTimer> The open timers.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function findOpenByRun(string $runUuid): array;
 
 	/**
 	 * Every timer in a state, paged by id, for the invariant check.
 	 *
-	 * @param string $state The state.
-	 * @param int $afterId Return rows with an id above this.
-	 * @param int $limit The page size.
+	 * @param string   $state  The state.
+	 * @param IdCursor $cursor The rows after this id, and the page size.
 	 *
 	 * @return array<int, FlowTimer> The page.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	public function findByStatePaged(string $state, int $afterId, int $limit): array;
+	public function findByStatePaged(string $state, IdCursor $cursor): array;
 
 	/**
 	 * CLAIM the terminal fire of a timer: `SET state = 'fired' WHERE uuid = ?
@@ -145,7 +144,7 @@ interface FlowTimerMapperInterface {
 	 *
 	 * @return boolean True when this caller won the claim.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function claimFired(string $uuid, DateTimeInterface $firedAt): bool;
 

@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\EmailService
@@ -53,6 +54,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses   \OCA\OpenRegister\Db\Schema\LinkedTypesRule
+ * @uses \OCA\OpenRegister\Notifications\Service\EmailLinkRequest
  */
 final class EmailServiceSenderSearchTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -218,7 +220,7 @@ final class EmailServiceSenderSearchTest extends TestCase {
 		$this->links->expects($this->never())->method('insert');
 
 		$this->expectExceptionMessage('No user logged in');
-		$this->service()->linkEmail('o-1', 1, 3, 5);
+		$this->service()->linkEmail(new EmailLinkRequest(objectUuid: 'o-1', registerId: 1, mailAccountId: 3, mailMessageId: 5));
 	}
 
 	public function testLinkingAMessageOutsideTheAccountIsNotFound(): void {
@@ -227,7 +229,7 @@ final class EmailServiceSenderSearchTest extends TestCase {
 		$this->links->expects($this->never())->method('insert');
 
 		try {
-			$this->service()->linkEmail('o-1', 1, 3, 5);
+			$this->service()->linkEmail(new EmailLinkRequest(objectUuid: 'o-1', registerId: 1, mailAccountId: 3, mailMessageId: 5));
 			$this->fail('Expected a 404');
 		} catch (Exception $e) {
 			$this->assertSame(404, $e->getCode());
@@ -245,6 +247,6 @@ final class EmailServiceSenderSearchTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning')->with('Failed to fetch mail message: mail schema missing');
 
 		$this->expectExceptionCode(404);
-		$this->service()->linkEmail('o-1', 1, 3, 5);
+		$this->service()->linkEmail(new EmailLinkRequest(objectUuid: 'o-1', registerId: 1, mailAccountId: 3, mailMessageId: 5));
 	}
 }

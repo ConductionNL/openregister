@@ -23,9 +23,10 @@ namespace OCA\OpenRegister\Notifications\Controller\Support;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
+use OCP\IUserSession;
 
 /**
- * The stores a subscription and its permission check read.
+ * The stores a subscription and its permission check read, and the session.
  */
 final readonly class NotificationSubscriptionsControllerServices {
 	/**
@@ -34,11 +35,13 @@ final readonly class NotificationSubscriptionsControllerServices {
 	 * @param NotificationSubscriptionMapper $mapper         Subscription mapper.
 	 * @param RegisterMapperInterface        $registerMapper Register mapper for permission check.
 	 * @param SchemaMapperInterface          $schemaMapper   Schema mapper for permission check.
+	 * @param IUserSession                   $userSession    Current-user session.
 	 */
 	public function __construct(
 		public NotificationSubscriptionMapper $mapper,
 		public RegisterMapperInterface $registerMapper,
 		public SchemaMapperInterface $schemaMapper,
+		public IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class

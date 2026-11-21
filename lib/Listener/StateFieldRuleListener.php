@@ -29,22 +29,21 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\StateFieldVersion;
 use OCA\OpenRegister\Listener\Support\StateFieldWrite;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateCrossing;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateSave;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
@@ -93,27 +92,6 @@ class StateFieldRuleListener implements IEventListener {
 	public const CODE_HIDDEN = 'state-field-hidden';
 
 	/**
-	 * Resolves the object's schema.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Records a refusal for the rule run log.
-	 *
-	 * @var RuleRunRecorderInterface
-	 */
-	private readonly RuleRunRecorderInterface $ruleRuns;
-
-	/**
-	 * PSR logger for lookup failures.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param StateFieldRulePlatform $platform Schema lookup, rule-run recorder and logger.
@@ -123,13 +101,11 @@ class StateFieldRuleListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		StateFieldRulePlatform $platform,
+		private readonly StateFieldRulePlatform $platform,
 		private readonly StateFieldRuleResolverInterface $resolver,
 		private readonly StateConditionEvaluatorInterface $stateConditions,
 	) {
-		$this->schemaMapper = $platform->schemaMapper;
-		$this->ruleRuns = $platform->ruleRuns;
-		$this->logger = $platform->logger;
+
 	}//end __construct()
 
 	/**
@@ -144,12 +120,12 @@ class StateFieldRuleListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
-			$this->enforce(event: $event, newObject: $event->getObject(), oldObject: null);
+			$this->enforce(event: $event, newObject: $event->getObject());
 			return;
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
-			$this->enforce(event: $event, newObject: $event->getNewObject(), oldObject: $event->getOldObject());
+			$this->enforce(event: $event, newObject: $event->getNewObject());
 		}
 	}//end handle()
 
@@ -158,42 +134,59 @@ class StateFieldRuleListener implements IEventListener {
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event to stop when a rule refuses.
 	 * @param ObjectEntity $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as currently stored, null on a create.
 	 *
 	 * @return void
 	 */
-	private function enforce(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): void {
+	private function enforce(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject): void {
 		$schema = $this->loadSchema(object: $newObject);
 		if ($schema === null) {
 			return;
 		}
 
-		$refusal = $this->refusalForSave(schema: $schema, newObject: $newObject, oldObject: $oldObject);
+		$run = new StateFieldSaveRun();
+		$run->newObject = $newObject;
+		$run->oldObject = self::oldObjectOf(event: $event);
+		$run->schema = $schema;
+
+		$refusal = $this->refusalForSave(run: $run);
 		if ($refusal === null) {
 			return;
 		}
 
-		$this->record(object: $newObject, schema: $schema, refusal: $refusal);
+		$this->record(run: $run, refusal: $refusal);
 		$event->setErrors($refusal);
 		$event->stopPropagation();
 	}//end enforce()
 
 	/**
+	 * The object as currently stored on an update, null on a create.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
+	 *
+	 * @return ObjectEntity|null The stored object.
+	 */
+	private static function oldObjectOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?ObjectEntity {
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getOldObject();
+		}
+
+		return null;
+	}//end oldObjectOf()
+
+	/**
 	 * The refusal this save earns under the schema's state rules, or null.
 	 *
-	 * @param Schema $schema The object's schema.
-	 * @param ObjectEntity $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as currently stored, null on a create.
+	 * @param StateFieldSaveRun $run The save: both objects and the schema.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function refusalForSave(Schema $schema, ObjectEntity $newObject, ?ObjectEntity $oldObject): ?array {
-		$annotation = $this->stateAnnotationOf(schema: $schema);
+	private function refusalForSave(StateFieldSaveRun $run): ?array {
+		$annotation = $this->stateAnnotationOf(schema: $run->schema);
 		if ($annotation === null) {
 			return null;
 		}
 
-		return $this->refusalOf(write: $this->writeOf(annotation: $annotation, newObject: $newObject, oldObject: $oldObject));
+		return $this->refusalOf(write: $this->writeOf(run: $run, annotation: $annotation));
 	}//end refusalForSave()
 
 	/**
@@ -217,14 +210,14 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The save as the rules read it: both data sets and both states.
 	 *
+	 * @param StateFieldSaveRun $run The save: the object as it would be saved and as currently stored.
 	 * @param array<string, mixed> $annotation The lifecycle annotation.
-	 * @param ObjectEntity $newObject The object as it would be saved.
-	 * @param ObjectEntity|null $oldObject The object as currently stored, null on a create.
 	 *
 	 * @return StateFieldWrite The write.
 	 */
-	private function writeOf(array $annotation, ObjectEntity $newObject, ?ObjectEntity $oldObject): StateFieldWrite {
-		$newData = ($newObject->getObject() ?? []);
+	private function writeOf(StateFieldSaveRun $run, array $annotation): StateFieldWrite {
+		$newData = ($run->newObject->getObject() ?? []);
+		$oldObject = $run->oldObject;
 		$toState = $this->resolver->stateOf(annotation: $annotation, data: $newData);
 		$new = new StateFieldVersion(data: $newData, state: $toState);
 		if ($oldObject === null) {
@@ -245,10 +238,8 @@ class StateFieldRuleListener implements IEventListener {
 	 */
 	private function refusalOf(StateFieldWrite $write): ?array {
 		$refusal = $this->stateConditions->refusal(
-			annotation: $write->annotation,
-			newData: $write->newData,
-			from: $write->fromState,
-			to: $write->toState
+			save: new StateSave(annotation: $write->annotation, newData: $write->newData),
+			crossing: new StateCrossing(from: $write->fromState, to: $write->toState)
 		);
 		if ($refusal !== null) {
 			return $refusal;
@@ -336,24 +327,24 @@ class StateFieldRuleListener implements IEventListener {
 		}
 
 		$rules = $this->resolver->resolveFromAnnotation(annotation: $write->annotation, data: $write->newData, state: $state);
+		return self::requiredRefusalFor(rules: $rules, write: $write);
+	}//end requiredRefusal()
+
+	/**
+	 * The refusal the first required property the write leaves unanswered earns, or null.
+	 *
+	 * @param StateFieldRulesInterface $rules The rules of the state the object ends in.
+	 * @param StateFieldWrite          $write The save; it ends in a state.
+	 *
+	 * @return array<string, mixed>|null The structured refusal, or null.
+	 */
+	private static function requiredRefusalFor(StateFieldRulesInterface $rules, StateFieldWrite $write): ?array {
 		$property = self::firstUnanswered(required: $rules->getRequired(), data: $write->newData);
 		if ($property === null) {
 			return null;
 		}
 
-		return self::requiredRefusalFor(rules: $rules, property: $property, state: $state);
-	}//end requiredRefusal()
-
-	/**
-	 * The refusal an unanswered required property earns.
-	 *
-	 * @param StateFieldRulesInterface $rules    The rules of the state the object ends in.
-	 * @param string          $property The unanswered property.
-	 * @param string          $state    The state the object ends in.
-	 *
-	 * @return array<string, mixed> The structured refusal.
-	 */
-	private static function requiredRefusalFor(StateFieldRulesInterface $rules, string $property, string $state): array {
+		$state = (string)$write->toState;
 		return [
 			'code' => self::CODE_REQUIRED,
 			'field' => $property,
@@ -462,33 +453,31 @@ class StateFieldRuleListener implements IEventListener {
 	 * answers for this kind is "why was my save refused", and that is what is
 	 * written here.
 	 *
-	 * @param ObjectEntity $object The object being saved.
-	 * @param Schema $schema The schema the rule is declared on.
+	 * @param StateFieldSaveRun $run The save: the object being saved and the schema the rule is declared on.
 	 * @param array<string, mixed> $refusal The refusal as reported.
 	 *
 	 * @return void
 	 */
-	private function record(ObjectEntity $object, Schema $schema, array $refusal): void {
-		$slug = (string)($schema->getSlug() ?? '');
+	private function record(StateFieldSaveRun $run, array $refusal): void {
+		$slug = $run->slug();
 		$state = (string)($refusal['state'] ?? '');
 		if ($slug === '' || $state === '') {
 			return;
 		}
 
 		try {
-			$this->recordRefusal(object: $object, slug: $slug, refusal: $refusal);
+			$this->recordRefusal(run: $run, refusal: $refusal);
 		} catch (Throwable $e) {
 			// The run log is a courtesy on a decision already taken. Losing the
 			// row must never turn a refusal into a 500.
-			$this->logger->warning(sprintf('State field rule run could not be recorded: %s', $e->getMessage()));
+			$this->platform->logger->warning(sprintf('State field rule run could not be recorded: %s', $e->getMessage()));
 		}
 	}//end record()
 
 	/**
 	 * Write the refusal to the run log, against its state's rule.
 	 *
-	 * @param ObjectEntity $object The object being saved.
-	 * @param string $slug The schema's slug.
+	 * @param StateFieldSaveRun $run The save: the object being saved and its schema, which has a slug.
 	 * @param array<string, mixed> $refusal The refusal as reported; it names a state.
 	 *
 	 * @return void
@@ -496,8 +485,10 @@ class StateFieldRuleListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
 	 *   derivation of a rule id, and a rule id has no instance to derive it from.
 	 */
-	private function recordRefusal(ObjectEntity $object, string $slug, array $refusal): void {
-		$this->ruleRuns->record(
+	private function recordRefusal(StateFieldSaveRun $run, array $refusal): void {
+		$slug = $run->slug();
+		$object = $run->newObject;
+		$this->platform->ruleRuns->record(
 			subject: new RuleRunSubject(
 				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_STATE_FIELD_RULE, schemaSlug: $slug, key: (string)$refusal['state']),
 				schemaSlug: $slug,
@@ -537,9 +528,9 @@ class StateFieldRuleListener implements IEventListener {
 		}
 
 		try {
-			return $this->schemaMapper->find($schemaRef, _multitenancy: false);
+			return $this->platform->schemaMapper->find($schemaRef, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				sprintf('State field rule listener could not load schema "%s": %s', (string)$schemaRef, $e->getMessage())
 			);
 			return null;

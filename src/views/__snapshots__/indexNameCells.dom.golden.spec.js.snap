@@ -1,0 +1,75 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`index name cells ApplicationsIndex 1`] = `
+"<p class="column-name">
+<div class="titleContent"><strong>Named</strong><span class="textDescription textEllipsis">Says what it is</span></div>
+</p>
+<p class="column-name">
+<div class="titleContent"><strong>Bare</strong>
+  <!--v-if-->
+</div>
+</p>"
+`;
+
+exports[`index name cells OrganisationsIndex 1`] = `
+"<p class="column-name">
+<div class="titleContent">
+  <div class="titleWithBadges"><strong>Named</strong><span class="defaultBadge">t:Default</span>
+    <!--v-if-->
+  </div><span class="textDescription textEllipsis">Says what it is</span>
+</div>
+</p>
+<p class="column-name">
+<div class="titleContent">
+  <div class="titleWithBadges"><strong>Bare</strong>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+  <!--v-if-->
+</div>
+</p>"
+`;
+
+exports[`index name cells RegistersIndex 1`] = `
+"<p class="column-title">
+<div class="titleContent"><strong>Titled <!----></strong><span class="textDescription textEllipsis">Says what it is</span></div>
+</p>
+<p class="column-title">
+<div class="titleContent"><strong>Bare title <!----></strong>
+  <!--v-if-->
+</div>
+</p>"
+`;
+
+exports[`index name cells SchemasIndex 1`] = `
+"<p class="column-title">
+<div class="titleContent">
+  <div class="titleWithBadges"><strong>Titled</strong>
+    <!--v-if-->
+    <!--v-if-->
+    <!---->
+  </div><span class="textDescription textEllipsis">Says what it is</span>
+</div>
+</p>
+<p class="column-title">
+<div class="titleContent">
+  <div class="titleWithBadges"><strong>Bare title</strong>
+    <!--v-if-->
+    <!--v-if-->
+    <!---->
+  </div>
+  <!--v-if-->
+</div>
+</p>"
+`;
+
+exports[`index name cells SourcesIndex 1`] = `
+"<p class="column-title">
+<div class="titleContent"><strong>Titled</strong><span class="textDescription textEllipsis">Says what it is</span></div>
+</p>
+<p class="column-title">
+<div class="titleContent"><strong>Bare title</strong>
+  <!--v-if-->
+</div>
+</p>"
+`;

@@ -19,10 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -42,51 +41,9 @@ use Throwable;
  * well rather than served without the object's own read check.
  *
  * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
-class FileReadScope {
-
-	/**
-	 * The Nextcloud file tree.
-	 *
-	 * @var IRootFolder
-	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * The signed-in caller.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logs a lookup that failed, at debug level.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Finds an object's file in the openregister account's home.
-	 *
-	 * @var FileReaderInterface|null
-	 */
-	private readonly ?FileReaderInterface $fileService;
-
-	/**
-	 * The object read rule for an object's file.
-	 *
-	 * @var ObjectFileAccess|null
-	 */
-	private readonly ?ObjectFileAccess $objectFileAccess;
-
-	/**
-	 * Refuses a restricted file the caller is not admitted to.
-	 *
-	 * @var FileRestrictionGuard|null
-	 */
-	private readonly ?FileRestrictionGuard $restrictions;
+class FileReadScope implements ReadableFileHitsInterface {
 
 	/**
 	 * Wire the file tree and the session.
@@ -97,17 +54,11 @@ class FileReadScope {
 	 * @param FileReaderInterface|null $fileService Finds an object's file in the openregister account's home.
 	 */
 	public function __construct(
-		FileReadScopeTree $tree,
-		FileReadScopeRules $rules,
-		LoggerInterface $logger,
-		?FileReaderInterface $fileService = null,
+		private readonly FileReadScopeTree $tree,
+		private readonly FileReadScopeRules $rules,
+		private readonly LoggerInterface $logger,
+		private readonly ?FileReaderInterface $fileService = null,
 	) {
-		$this->rootFolder = $tree->rootFolder;
-		$this->userSession = $tree->userSession;
-		$this->objectFileAccess = $rules->objectFileAccess;
-		$this->restrictions = $rules->restrictions;
-		$this->logger = $logger;
-		$this->fileService = $fileService;
 	}//end __construct()
 
 	/**
@@ -120,13 +71,13 @@ class FileReadScope {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
 	 */
 	public function readableResults(array $results): array {
-		$user = $this->userSession->getUser();
+		$user = $this->tree->userSession->getUser();
 		if ($user === null || $results === []) {
 			return [];
 		}
 
 		try {
-			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+			$userFolder = $this->tree->rootFolder->getUserFolder($user->getUID());
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: '[FileReadScope] No file tree for the caller, nothing is readable',
@@ -165,16 +116,16 @@ class FileReadScope {
 	 *
 	 * @return bool True when the caller may read it.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function mayReadFile(int $fileId): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->tree->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
 		try {
-			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+			$userFolder = $this->tree->rootFolder->getUserFolder($user->getUID());
 		} catch (Throwable $e) {
 			return false;
 		}
@@ -215,7 +166,7 @@ class FileReadScope {
 	 * @return bool True when the caller can open it.
 	 */
 	private function mayRead(Folder $userFolder, int $fileId): bool {
-		if ($this->restrictions !== null && $this->restrictions->mayRead(fileId: $fileId) === false) {
+		if ($this->rules->restrictions !== null && $this->rules->restrictions->mayRead(fileId: $fileId) === false) {
 			return false;
 		}
 
@@ -244,10 +195,10 @@ class FileReadScope {
 	 *
 	 * @return bool|null True or false for an object's file, null when the file is not one.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function managedFileVerdict(int $fileId): ?bool {
-		if ($this->fileService === null || $this->objectFileAccess === null) {
+		if ($this->fileService === null || $this->rules->objectFileAccess === null) {
 			return null;
 		}
 
@@ -261,6 +212,6 @@ class FileReadScope {
 			return false;
 		}
 
-		return $this->objectFileAccess->mayRead(object: $object);
+		return $this->rules->objectFileAccess->mayRead(object: $object);
 	}//end managedFileVerdict()
 }//end class

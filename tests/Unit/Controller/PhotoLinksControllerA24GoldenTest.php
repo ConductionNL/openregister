@@ -52,7 +52,13 @@ class PhotoLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(PhotoLinkServiceInterface::class);
-		$this->controller = new PhotoLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new PhotoLinksController(
+			$this->request,
+			new \OCA\OpenRegister\Controller\Support\PhotoLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			)
+		);
 	}
 
 	private function link(): PhotoLink {

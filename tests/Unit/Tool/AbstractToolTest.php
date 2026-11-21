@@ -6,6 +6,9 @@ use BadMethodCallException;
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Tool\AbstractTool;
+use OCA\OpenRegister\Mcp\Tool\ToolCall;
+use OCA\OpenRegister\Mcp\Tool\ToolLogOptions;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -26,7 +29,7 @@ class AbstractToolTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Create a concrete subclass of AbstractTool for testing.
-		$this->tool = new class($this->userSession, $this->logger) extends AbstractTool {
+		$this->tool = new class(new ToolCallTrail($this->userSession, $this->logger)) extends AbstractTool {
 			public function getName(): string {
 				return 'test_tool';
 			}
@@ -75,7 +78,7 @@ class AbstractToolTest extends TestCase {
 			}
 
 			public function publicLog(string $functionName, array $parameters, string $level = 'info', string $message = ''): void {
-				$this->log($functionName, $parameters, $level, $message);
+				$this->log(new ToolCall($functionName, $parameters), new ToolLogOptions($level, $message));
 			}
 
 			// Methods for __call testing.
@@ -258,8 +261,9 @@ class AbstractToolTest extends TestCase {
 	// ------------------------------------------------------------------
 
 	public function testValidateParametersSuccess(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->tool->publicValidateParameters(['a' => 1, 'b' => 2], ['a', 'b']);
-		$this->assertTrue(true);
 	}
 
 	public function testValidateParametersMissing(): void {
@@ -369,7 +373,7 @@ class AbstractToolTest extends TestCase {
 	}
 
 	public function testCallReturnsNonArrayAsIs(): void {
-		$tool = new class($this->userSession, $this->logger) extends AbstractTool {
+		$tool = new class(new ToolCallTrail($this->userSession, $this->logger)) extends AbstractTool {
 			public function getName(): string {
 				return 'str_tool';
 			}

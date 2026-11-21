@@ -57,37 +57,64 @@ final class ObjectActionElevation {
 	/**
 	 * Refusals about one action's `elevate`.
 	 *
-	 * @param string                    $key           The action key.
-	 * @param array<string, mixed>      $definition    The declared entry.
+	 * @param ObjectActionEntry         $action        The action key and its declared entry.
 	 * @param array<string, mixed>|null $authorization The authorization block; null skips the grant check.
 	 *
 	 * @return list<string> The refusals.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function refusals(string $key, array $definition, ?array $authorization): array {
-		if (array_key_exists('elevate', $definition) === false) {
+	public static function refusals(ObjectActionEntry $action, ?array $authorization): array {
+		if (array_key_exists('elevate', $action->definition) === false) {
 			return [];
 		}
 
-		$elevate = $definition['elevate'];
+		$refusal = (self::shapeRefusal(action: $action) ?? self::firstEntryRefusal(key: $action->key, entries: $action->definition['elevate']));
+		if ($refusal !== null) {
+			return [$refusal];
+		}
+
+		return self::grantRefusals(key: $action->key, authorization: $authorization);
+	}//end refusals()
+
+	/**
+	 * Why the declared elevation has the wrong shape or mode, or null.
+	 *
+	 * @param ObjectActionEntry $action The action, declaring `elevate`.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function shapeRefusal(ObjectActionEntry $action): ?string {
+		$elevate = $action->definition['elevate'];
 		if (is_array($elevate) === false || array_is_list($elevate) === false || $elevate === []) {
-			return [sprintf('Action "%s": "elevate" must be a non-empty list of {register, schema, verbs}.', $key)];
+			return sprintf('Action "%s": "elevate" must be a non-empty list of {register, schema, verbs}.', $action->key);
 		}
 
-		if (($definition['mode'] ?? 'sync') === 'async') {
-			return [sprintf('Action "%s": an elevated action runs sync; a queued run would execute after its elevation has ended.', $key)];
+		if (($action->definition['mode'] ?? 'sync') === 'async') {
+			return sprintf('Action "%s": an elevated action runs sync; a queued run would execute after its elevation has ended.', $action->key);
 		}
 
-		foreach ($elevate as $entry) {
+		return null;
+	}//end shapeRefusal()
+
+	/**
+	 * The refusal of the first malformed elevation entry, or null.
+	 *
+	 * @param string            $key     The action key.
+	 * @param array<int, mixed> $entries The elevation entries.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function firstEntryRefusal(string $key, array $entries): ?string {
+		foreach ($entries as $entry) {
 			$refusal = self::entryRefusal(key: $key, entry: $entry);
 			if ($refusal !== null) {
-				return [$refusal];
+				return $refusal;
 			}
 		}
 
-		return self::grantRefusals(key: $key, authorization: $authorization);
-	}//end refusals()
+		return null;
+	}//end firstEntryRefusal()
 
 	/**
 	 * Refuse an elevation no authorization rule grants.

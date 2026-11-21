@@ -16,12 +16,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob;
 use OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,6 +37,13 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob
+ * @uses \OCA\OpenRegister\BackgroundJob\JobRuntime
+ * @uses \OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJobServices
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarBatch
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TimerChange
  */
 final class RecomputeTimersForCalendarJobTest extends TestCase {
 
@@ -82,9 +94,8 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 */
 	private function job(): RecomputeTimersForCalendarJob {
 		return new RecomputeTimersForCalendarJob(
-			$this->createMock(ITimeFactory::class),
-			new RecomputeTimersForCalendarJobServices($this->timers, $this->service, $this->recompute),
-			$this->logger
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->logger),
+			new RecomputeTimersForCalendarJobServices($this->timers, $this->service, $this->recompute)
 		);
 	}//end job()
 
@@ -105,7 +116,7 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnIncompleteArgumentDoesNothing(): void {
-		$this->recompute->expects($this->never())->method('recomputeBatch');
+		$this->recompute->expects($this->never())->method('recompute');
 		$this->recompute->expects($this->never())->method('markRan');
 		$this->logger->expects($this->exactly(3))->method('warning');
 
@@ -125,20 +136,18 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		$armed->setUuid('t-armed');
 		$armed->setAnchorAt(new DateTime('2026-01-05T09:00:00+00:00'));
 		$this->timers->method('findByStatePaged')->willReturnCallback(
-			static fn (string $state, int $afterId, int $limit): array => ($state === FlowTimer::STATE_ARMED && $afterId === 0 && $limit === 500) ? [$armed] : []
+			static fn (string $state, IdCursor $cursor): array => ($state === FlowTimer::STATE_ARMED && $cursor->afterId === 0 && $cursor->limit === 500) ? [$armed] : []
 		);
 		$this->service->expects($this->once())->method('supersede')->with(
-			't-armed',
-			$armed->getAnchorAt(),
-			'calendar-changed',
-			'calendar-recompute'
+			new TimerAnchorMove(uuid: 't-armed', anchorEventAt: $armed->getAnchorAt()),
+			new TimerChange(reason: 'calendar-changed', actor: 'calendar-recompute')
 		);
-		$this->recompute->expects($this->once())->method('recomputeBatch')->willReturnCallback(
-			function (string $slug, string $version, iterable $timers, callable $supersede): array {
-				$this->assertSame('nl', $slug);
-				$this->assertSame('2.0.0', $version);
-				foreach ($timers as $timer) {
-					$supersede($timer);
+		$this->recompute->expects($this->once())->method('recompute')->willReturnCallback(
+			function (CalendarBatch $batch): array {
+				$this->assertSame('nl', $batch->slug);
+				$this->assertSame('2.0.0', $batch->version);
+				foreach ($batch->timers as $timer) {
+					($batch->supersede)($timer);
 				}
 
 				return ['examined' => 1, 'moved' => 1, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];
@@ -155,7 +164,7 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testASkippedOrFailedPassIsNotMarked(): void {
-		$this->recompute->method('recomputeBatch')->willReturnOnConsecutiveCalls(
+		$this->recompute->method('recompute')->willReturnOnConsecutiveCalls(
 			['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => true],
 			$this->throwException(new RuntimeException('boom'))
 		);
@@ -165,4 +174,38 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
 		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
 	}//end testASkippedOrFailedPassIsNotMarked()
+
+	/**
+	 * A timer page that cannot be read ends the candidate list there, and says which state and calendar.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableTimerPageEndsTheCandidatesWithAnError(): void {
+		$asked = [];
+		$this->timers->method('findByStatePaged')->willReturnCallback(
+			static function (string $state, IdCursor $cursor) use (&$asked): array {
+				$asked[] = $state;
+				throw new RuntimeException('timeout');
+			}
+		);
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[RecomputeTimersForCalendarJob] could not page '.FlowTimer::STATE_ARMED.' timers for nl: timeout');
+		$offered = [];
+		$this->recompute->method('recompute')->willReturnCallback(
+			static function (CalendarBatch $batch) use (&$offered): array {
+				foreach ($batch->timers as $timer) {
+					$offered[] = $timer;
+				}
+
+				return ['examined' => 0, 'moved' => 0, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];
+			}
+		);
+
+		$this->runWith(['slug' => 'nl', 'version' => '2.0.0']);
+
+		// The failure stops the whole list: the suspended timers are not paged either.
+		$this->assertSame([FlowTimer::STATE_ARMED], $asked);
+		$this->assertSame([], $offered);
+	}//end testAnUnreadableTimerPageEndsTheCandidatesWithAnError()
 }//end class

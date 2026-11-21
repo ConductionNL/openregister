@@ -35,6 +35,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 class ExportServiceCoverageTest extends TestCase {
 	private ExportService $service;
@@ -236,6 +237,19 @@ class ExportServiceCoverageTest extends TestCase {
 		$this->assertSame(['Name 1', 'id2'], $decoded);
 	}
 
+	public function testResolveUuidsToNamesDropsEmptyStrings(): void {
+		$map = ['id1' => 'Name 1'];
+
+		$this->assertSame(
+			'["Name 1","id2"]',
+			$this->invokeMethod($this->service, 'resolveUuidsToNames', [['id1', '', 'id2', ''], $map])
+		);
+		$this->assertSame(
+			'["Name 1"]',
+			$this->invokeMethod($this->service, 'resolveUuidsToNames', [json_encode(['', 'id1']), $map])
+		);
+	}
+
 	// =========================================================================
 	// convertValueToString
 	// =========================================================================
@@ -251,8 +265,8 @@ class ExportServiceCoverageTest extends TestCase {
 	}
 
 	public function testConvertValueToStringBool(): void {
-		$result = $this->invokeMethod($this->service, 'convertValueToString', [true]);
-		$this->assertSame('1', $result);
+		$this->assertSame('true', $this->invokeMethod($this->service, 'convertValueToString', [true]));
+		$this->assertSame('false', $this->invokeMethod($this->service, 'convertValueToString', [false]));
 	}
 
 	public function testConvertValueToStringArray(): void {
@@ -327,6 +341,6 @@ class ExportServiceCoverageTest extends TestCase {
 		$register = new \OCA\OpenRegister\Db\Register();
 
 		$this->expectException(\InvalidArgumentException::class);
-		$this->service->exportToCsv($register, null);
+		$this->service->exportToCsv(request: new ObjectExportRequest(register: $register));
 	}
 }

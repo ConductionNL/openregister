@@ -27,6 +27,7 @@ namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
@@ -91,12 +92,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 			static fn (string $text, array $parameters = []): string => vsprintf($text, $parameters)
 		);
 
-		$this->evaluator = new LifecycleConditionEvaluator(
-			$this->userSession,
-			$groupManager,
-			new LifecycleConditionReporting($l10n, $this->logger),
-			$this->realConditionDialect()
-		);
+		$this->evaluator = new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $groupManager)));
 	}//end setUp()
 
 	/**
@@ -111,8 +107,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 	private function holds(mixed $rule, array $object = [], array $previous = []): bool {
 		return $this->evaluator->holds(
 			rule: $rule,
-			write: new LifecycleWrite(newData: $object, oldData: $previous, schemaSlug: 'bezwaar', field: 'status'),
-			move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten')
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: $object, oldData: $previous, schemaSlug: 'bezwaar', field: 'status'), move: new TransitionMove(action: 'beslissen', from: 'in-behandeling', to: 'besloten'))
 		);
 	}//end holds()
 

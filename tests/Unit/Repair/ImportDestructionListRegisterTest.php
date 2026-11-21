@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Repair\ImportDestructionListRegister;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\ConfigurationService;
@@ -52,9 +53,11 @@ class ImportDestructionListRegisterTest extends TestCase {
 		$appManager->method('getAppPath')->with('openregister')->willReturn($appPath);
 
 		return new ImportDestructionListRegister(
-			configurationService: $importer,
-			appManager: $appManager,
-			logger: $this->createMock(LoggerInterface::class)
+			import: new RegisterDescriptorImport(
+				configurationService: $importer,
+				appManager: $appManager,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 	}//end step()

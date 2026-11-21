@@ -55,7 +55,6 @@ class ManifestControllerGoldenTest extends TestCase {
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = ManifestControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->manifestService,
 			$this->appManager,
@@ -136,7 +135,7 @@ class ManifestControllerGoldenTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame($enriched, $response->getData());
-		$this->assertSame(md5('{"version":"1.0.0","menu":[],"runtime":{"user":null}}'), $response->getETag());
+		$this->assertSame(hash(algo: 'xxh128', data: '{"version":"1.0.0","menu":[],"runtime":{"user":null}}'), $response->getETag());
 		$this->assertSame('private, no-cache', $response->getHeaders()['Cache-Control']);
 	}
 

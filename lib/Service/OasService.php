@@ -33,12 +33,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Service\Oas\NlGovConformance;
+use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
+use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
+use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -116,29 +121,11 @@ class OasService implements OasServiceInterface {
 	private OasValidationReport $report;
 
 	/**
-	 * Standard HTTP methods an operation may use (NLGov API Design Rules 2.2.1).
-	 * Old numbering: API-01 here meant /core/http-methods, API-03 meant /core/http-response-code.
-	 * The rule table names GET, POST, PUT, PATCH and DELETE; HEAD and OPTIONS
-	 * are standard RFC 9110 methods the rule's note allows, so documenting them
-	 * is not a violation.
-	 *
-	 * @var list<string>
-	 */
-	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
-
-	/**
 	 * Path item keys that are not operations (OpenAPI 3.x Path Item Object).
 	 *
 	 * @var list<string>
 	 */
 	private const PATH_ITEM_FIELDS = ['parameters', 'summary', 'description', 'servers', '$ref'];
-
-	/**
-	 * NLGov-permitted HTTP response status codes (/core/http-response-code).
-	 *
-	 * @var list<string>
-	 */
-	private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
 
 	/**
 	 * Properties every object schema describes before its own.
@@ -350,6 +337,28 @@ class OasService implements OasServiceInterface {
 	];
 
 	/**
+	 * The condition tree of a collection operation: AND/OR groups of the same
+	 * filters the flat query parameters take, as URL-encoded JSON. A reserved
+	 * parameter, never a property filter.
+	 *
+	 * @var array<string, mixed>
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private const WHERE_QUERY_PARAMETER = [
+		'name' => '_where',
+		'in' => 'query',
+		'required' => false,
+		'description' => 'A condition tree as JSON: a group {"type": "AND"|"OR", "children": [...]} whose children are groups or '
+			. 'leaves {"field", "operator", "value"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, '
+			. 'notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or '
+			. 'encrypted property, is refused with 400 and the JSON path of the node.',
+		'schema' => ['type' => 'string'],
+		'example' => '{"type":"OR","children":[{"field":"place","operator":"eq","value":"Zuiddrecht"},'
+			. '{"field":"industry","operator":"isnull","value":true}]}',
+	];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -468,8 +477,10 @@ class OasService implements OasServiceInterface {
 		// register title, so two registers sharing a schema stay unique.
 		$prefixed = ($registerId === null && count($registers) > 1);
 		$this->addAllRegisterPaths(registers: $registers, context: ['schemas' => $schemas, 'prefixed' => $prefixed]);
+		$this->oas = OasExtendedTypes::withUsedComponents(oas: $this->oas);
 
 		$this->assertOasValid(strict: $strict);
+		$this->oas['x-nl-api-design-rules'] = (new NlGovConformance())->marker(report: $this->report);
 
 		return $this->oas;
 	}//end createOas()
@@ -1017,35 +1028,42 @@ class OasService implements OasServiceInterface {
 	private function addJsonLdContextPaths(object $register, object $schema): void {
 		$registerSlug = $this->slugOf(entity: $register);
 		$schemaSlug   = $this->slugOf(entity: $schema);
-		$operationId  = 'getContext' . $this->propertySanitizer->names->pascalCase(string: $registerSlug);
 
 		// Register-wide context document (idempotent across schemas of a register).
-		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = $this->contextOperation(
-			subject: 'register ' . $registerSlug,
-			operationId: $operationId,
-			scope: 'register-wide'
-		);
+		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = $this->contextOperation(registerSlug: $registerSlug, schemaSlug: null);
 
 		// Per-schema context document.
 		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug]['get'] = $this->contextOperation(
-			subject: $schemaSlug,
-			operationId: $operationId . $this->propertySanitizer->names->pascalCase(string: $schemaSlug),
-			scope: 'per-schema'
+			registerSlug: $registerSlug,
+			schemaSlug: $schemaSlug
 		);
 	}//end addJsonLdContextPaths()
 
 	/**
 	 * The GET operation of one dereferenceable JSON-LD context document.
 	 *
-	 * @param string $subject     What the context is for, as the summary names it.
-	 * @param string $operationId The operationId.
-	 * @param string $scope       The scope the description names (register-wide or per-schema).
+	 * The register-wide document (no schema) is summarised as `register <slug>`
+	 * and named `getContext<Register>`; a per-schema one is summarised by the
+	 * schema slug and named `getContext<Register><Schema>`.
+	 *
+	 * @param string      $registerSlug The register's slug.
+	 * @param string|null $schemaSlug   The schema's slug, or null for the register-wide document.
 	 *
 	 * @return array<string, mixed> The operation.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	private function contextOperation(string $subject, string $operationId, string $scope): array {
+	private function contextOperation(string $registerSlug, ?string $schemaSlug): array {
+		$names       = $this->propertySanitizer->names;
+		$operationId = 'getContext' . $names->pascalCase(string: $registerSlug);
+		$subject     = 'register ' . $registerSlug;
+		$scope       = 'register-wide';
+		if ($schemaSlug !== null) {
+			$operationId .= $names->pascalCase(string: $schemaSlug);
+			$subject      = $schemaSlug;
+			$scope        = 'per-schema';
+		}
+
 		return [
 			'summary' => 'JSON-LD context for ' . $subject,
 			'operationId' => $operationId,
@@ -1120,7 +1138,7 @@ class OasService implements OasServiceInterface {
 			return self::COMMON_QUERY_PARAMETERS;
 		}
 
-		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER];
+		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER, self::WHERE_QUERY_PARAMETER];
 		if ($schema === null) {
 			return $parameters;
 		}
@@ -1464,14 +1482,14 @@ class OasService implements OasServiceInterface {
 	 *
 	 * @return array<string, mixed> The operation, with the upsert documented when it applies.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function withUpsertOnKey(array $operation, object $schema): array {
-		if (method_exists($schema, 'getUpsertKeys') === false) {
+		if (method_exists($schema, 'getConfiguration') === false) {
 			return $operation;
 		}
 
-		$keys = $schema->getUpsertKeys();
+		$keys = (new UniqueConstraintEvaluator())->upsertKeys(configuration: $schema->getConfiguration());
 
 		if ($keys === []) {
 			return $operation;
@@ -1488,7 +1506,7 @@ class OasService implements OasServiceInterface {
 	 *
 	 * @return array<string, mixed> The operation with the upsert documented.
 	 *
-	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function documentUpsert(array $operation, array $keys): array {
 		$operation['parameters'][] = (self::UPSERT_ON_PARAMETER + ['schema' => ['type' => 'string', 'enum' => $keys]]);
@@ -1715,9 +1733,11 @@ class OasService implements OasServiceInterface {
 	private function reportMetaSchemaErrors(array $errors): void {
 		foreach ($errors as $err) {
 			$this->report->addError(
-				path: $err['path'],
-				message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
-				code: 'meta-schema-violation'
+				issue: new OasIssue(
+					path: $err['path'],
+					message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
+					code: 'meta-schema-violation'
+				)
 			);
 		}
 	}//end reportMetaSchemaErrors()
@@ -1753,9 +1773,11 @@ class OasService implements OasServiceInterface {
 	private function validateServerUrl(int|string $idx, string $url): void {
 		if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
 			$this->report->addError(
-				path: 'servers.' . $idx . '.url',
-				message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
-				code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
+				issue: new OasIssue(
+					path: 'servers.' . $idx . '.url',
+					message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
+					code: OasValidationReport::CODE_RELATIVE_SERVER_URL
+				)
 			);
 		}
 	}//end validateServerUrl()
@@ -1799,31 +1821,14 @@ class OasService implements OasServiceInterface {
 			$candidate = $this->claimOperationId(seen: $seen, operationId: $original);
 			if ($candidate !== $original) {
 				$operation['operationId'] = $candidate;
-				$this->reportRenamedOperationId(path: 'paths.' . $pathName . '.' . $method, original: $original, renamed: $candidate);
+				$message = 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".';
+				$path    = 'paths.' . $pathName . '.' . $method . '.operationId';
+				$this->report->addAutoCorrection(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID));
 			}
 		}
 
 		unset($operation);
 	}//end dedupeOperationIds()
-
-	/**
-	 * Record the auto-rename of a duplicate operationId.
-	 *
-	 * @param string $path     The operation's path in the document.
-	 * @param string $original The duplicate operationId.
-	 * @param string $renamed  The operationId it was renamed to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function reportRenamedOperationId(string $path, string $original, string $renamed): void {
-		$this->report->addAutoCorrection(
-			path: $path . '.operationId',
-			message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $renamed . '".',
-			code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
-		);
-	}//end reportRenamedOperationId()
 
 	/**
 	 * Take an operationId: the id itself when free, otherwise the first free `_2`, `_3`, ... form.
@@ -1953,9 +1958,11 @@ class OasService implements OasServiceInterface {
 
 			$this->oas['tags'][] = ['name' => $tagName, 'description' => 'Operations for ' . $tagName];
 			$this->report->addAutoCorrection(
-				path: $usages[0],
-				message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
-				code: OasValidationReport::CODE_ORPHAN_TAG,
+				issue: new OasIssue(
+					path: $usages[0],
+					message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
+					code: OasValidationReport::CODE_ORPHAN_TAG
+				)
 			);
 		}
 	}//end addOrphanTags()
@@ -1971,9 +1978,11 @@ class OasService implements OasServiceInterface {
 	private function reportUnusedTags(array $declaredTags, array $usedTags): void {
 		foreach (array_diff_key($declaredTags, $usedTags) as $tagName => $idx) {
 			$this->report->addWarning(
-				path: 'tags[' . $idx . '].name',
-				message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
-				code: OasValidationReport::CODE_UNUSED_TAG,
+				issue: new OasIssue(
+					path: 'tags[' . $idx . '].name',
+					message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
+					code: OasValidationReport::CODE_UNUSED_TAG
+				)
 			);
 		}
 	}//end reportUnusedTags()
@@ -1986,10 +1995,19 @@ class OasService implements OasServiceInterface {
 	 *   methods on documented operations: GET, POST, PUT, PATCH, DELETE, and
 	 *   the RFC 9110 methods HEAD and OPTIONS.
 	 * - /core/http-response-code: only standard HTTP status codes on responses.
+	 * - /core/no-trailing-slash, /core/path-segments-kebab-case,
+	 *   /core/query-keys-camel-case and /core/uri-version, through
+	 *   {@see \OCA\OpenRegister\Service\Oas\NlGovDocumentRules}.
+	 * - the date and time, error handling and document rules; all of them run
+	 *   through {@see NlGovConformance}.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
 	 */
 	private function validateNlGovRules(): void {
+		(new NlGovConformance())->check(report: $this->report, oas: $this->oas);
+
 		$paths = ($this->oas['paths'] ?? null);
 		if (is_array($paths) === false) {
 			return;
@@ -2033,10 +2051,10 @@ class OasService implements OasServiceInterface {
 		}
 
 		$path = 'paths.' . $pathName . '.' . $method;
-		if (isset(array_flip(self::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
+		if (isset(array_flip(NlGovRuleCatalogue::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
 			$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
 			$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
-			$this->report->addError(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD);
+			$this->report->addError(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD));
 			return;
 		}
 
@@ -2056,13 +2074,15 @@ class OasService implements OasServiceInterface {
 			return;
 		}
 
-		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
+		$allowedCodes = array_flip(NlGovRuleCatalogue::ALLOWED_STATUS_CODES);
 		foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
 			if (isset($allowedCodes[(string)$statusCode]) === false) {
 				$this->report->addWarning(
-					path: $path . '.responses.' . $statusCode,
-					message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
-					code: OasValidationReport::CODE_INVALID_STATUS_CODE,
+					issue: new OasIssue(
+						path: $path . '.responses.' . $statusCode,
+						message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
+						code: OasValidationReport::CODE_INVALID_STATUS_CODE
+					)
 				);
 			}
 		}

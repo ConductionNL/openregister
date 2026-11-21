@@ -26,7 +26,10 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Controller\RegistryUpdatesController;
+use OCA\OpenRegister\Controller\Support\RegistryUpdatesControllerServices;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -52,10 +55,11 @@ class RegistryUpdatesControllerTest extends TestCase {
 		$this->subscriptions = $this->createMock(RegistrySubscriptionService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = new RegistryUpdatesController(
-			'openregister',
 			$this->request,
-			$this->subscriptions,
-			$this->logger
+			new RegistryUpdatesControllerServices(
+				$this->subscriptions,
+				$this->logger
+			)
 		);
 	}
 
@@ -93,7 +97,7 @@ class RegistryUpdatesControllerTest extends TestCase {
 		$this->givenParams(['identity' => 123, 'properties' => ['naam' => 'x'], 'eventReference' => 'ev-1']);
 		$this->subscriptions->expects($this->once())
 			->method('applyInboundUpdate')
-			->with('brp', '123', ['naam' => 'x'], 'ev-1')
+			->with(new InboundUpdate(new RegistryIdentity('brp', '123'), ['naam' => 'x'], 'ev-1'))
 			->willReturn([
 				'matched' => 2,
 				'applied' => [],
@@ -119,7 +123,7 @@ class RegistryUpdatesControllerTest extends TestCase {
 		$this->givenParams(['identity' => '123']);
 		$this->subscriptions->expects($this->once())
 			->method('applyInboundUpdate')
-			->with('kvk', '123', [], '')
+			->with(new InboundUpdate(new RegistryIdentity('kvk', '123'), [], ''))
 			->willReturn(['matched' => 0, 'applied' => [], 'rejected' => []]);
 		$this->logger->expects($this->once())
 			->method('warning')

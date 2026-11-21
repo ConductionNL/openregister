@@ -32,11 +32,22 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Pins that storage, search and statistics are passed through unchanged.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest
  */
 final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 
@@ -195,12 +206,12 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 		$weights = ['keyword' => 0.25, 'vector' => 0.75];
 		$this->search->expects($this->once())
 			->method('hybridSearch')
-			->with([0.5, 0.25], $keyword, 7, $weights)
+			->with(new VectorQuery(embedding: [0.5, 0.25], limit: 7), new KeywordFusion(results: $keyword, weights: $weights))
 			->willReturn(['results' => [['id' => 'k1']]]);
 
 		$this->assertSame(
 			['results' => [['id' => 'k1']]],
-			$this->service($settings)->hybridSearch(query: 'needle', keywordResults: $keyword, limit: 7, weights: $weights)
+			$this->service($settings)->hybridSearch(request: new HybridSearchRequest(query: 'needle', keywordResults: $keyword, limit: 7, weights: $weights))
 		);
 	}//end testHybridSearchEmbedsWithTheConfiguredProviderAndFuses()
 

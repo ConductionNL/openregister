@@ -23,13 +23,18 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
+use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -181,16 +186,14 @@ class SettingsController extends Controller {
 	/**
 	 * SettingsController constructor.
 	 *
-	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
 	 * @param SettingsControllerServices $services The settings controller services.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		SettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->config = $services->store->config;
 		$this->db = $services->store->db;
 		$this->container = $services->store->container;
@@ -219,8 +222,6 @@ class SettingsController extends Controller {
 
 	/**
 	 * Handle the PUT request to update settings.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated settings
 	 *
@@ -259,8 +260,6 @@ class SettingsController extends Controller {
 	 *
 	 * This method recalculates deletion times for all objects and logs based on current retention settings.
 	 * It also assigns default owners and organizations to objects that don't have them assigned.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with rebase result
 	 *
@@ -335,6 +334,39 @@ class SettingsController extends Controller {
 	}//end getSearchBackend()
 
 	/**
+	 * Change the search backend settings: whether object search ignores accents.
+	 *
+	 * Takes `accentInsensitive` as a boolean. Enabling it where the database
+	 * cannot fold accents answers 400 naming the reason. Administrators only,
+	 * as every other settings write.
+	 *
+	 * @return JSONResponse 200 with the backend configuration, 400 on a refused or malformed value.
+	 *
+	 * @psalm-return JSONResponse<200|400|500, array, array<never, never>>
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function updateSearchBackend(): JSONResponse {
+		$value = $this->request->getParam(key: 'accentInsensitive');
+		if (is_bool($value) === false && in_array($value, ['true', 'false', '1', '0'], true) === false) {
+			return new JSONResponse(data: ['error' => 'accentInsensitive must be true or false.'], statusCode: 400);
+		}
+
+		$enabled = ($value === true || $value === 'true' || $value === '1');
+
+		try {
+			$handler = $this->container->get(SearchBackendSettingsInterface::class);
+			$handler->setAccentInsensitive(enabled: $enabled);
+			return new JSONResponse(data: $handler->getSearchBackendConfig());
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		} catch (Exception $e) {
+			$this->logger->error('Search backend settings could not be stored', ['exception' => $e->getMessage()]);
+			return new JSONResponse(data: ['error' => 'The search settings could not be stored.'], statusCode: 500);
+		}
+	}//end updateSearchBackend()
+
+	/**
 	 * Read the state of the indexes behind object search.
 	 *
 	 * Admin-only by default: no `@NoAdminRequired` here, so Nextcloud's
@@ -386,6 +418,44 @@ class SettingsController extends Controller {
 			'lastRun' => $maintenance->lastRun(),
 		] + $maintenance->rowCounts();
 	}//end searchIndexReport()
+
+	/**
+	 * Queue a search index maintenance run as a background job.
+	 *
+	 * Admin-only by default, like the status this run reports into: no
+	 * `@NoAdminRequired`, so Nextcloud's middleware refuses an ordinary account
+	 * before the method runs. A state change, so CSRF stays required.
+	 *
+	 * The run itself is `SearchIndexRebuildJob`, the same rebuild that
+	 * `occ openregister:tables:search-index rebuild` starts; its report becomes
+	 * `lastRun` on GET /api/settings/search-index once it has run. A run that is
+	 * already waiting is not queued twice: the answer says so and stays 202.
+	 *
+	 * @return JSONResponse 202 with `queued` (true when this call added the job), or 500 with `error`.
+	 *
+	 * @psalm-return JSONResponse<202|500, array, array<never, never>>
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function queueSearchIndexRun(): JSONResponse {
+		try {
+			$jobList = $this->container->get(IJobList::class);
+			if ($jobList->has(SearchIndexRebuildJob::class, null) === true) {
+				return new JSONResponse(data: ['queued' => false, 'alreadyQueued' => true], statusCode: 202);
+			}
+
+			$jobList->add(SearchIndexRebuildJob::class, null);
+
+			return new JSONResponse(data: ['queued' => true, 'alreadyQueued' => false], statusCode: 202);
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[SettingsController] Could not queue the search index run',
+				context: ['exception' => $e->getMessage()]
+			);
+
+			return new JSONResponse(data: ['error' => 'The search index run could not be queued.'], statusCode: 500);
+		}
+	}//end queueSearchIndexRun()
 
 	/**
 	 * Get database information and vector search capabilities
@@ -475,8 +545,6 @@ class SettingsController extends Controller {
 	 *
 	 * Forces a refresh of the cached database information including
 	 * PostgreSQL extensions. This clears the cache and re-queries the database.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with refreshed database info
 	 *

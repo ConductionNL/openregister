@@ -40,9 +40,13 @@ use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
-use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
+use OCA\OpenRegister\Service\Object\QueryRefinements;
 
 /**
  * The read path used to int-cast a register or schema reference.
@@ -146,11 +150,7 @@ class SearchReferenceResolutionTest extends TestCase {
 	 * @return SearchReferenceResolver
 	 */
 	private function resolver(): SearchReferenceResolver {
-		return new SearchReferenceResolver(
-			$this->registerMapper(),
-			$this->schemaMapper(),
-			$this->createMock(LoggerInterface::class)
-		);
+		return new SearchReferenceResolver(new SchemaCatalog(registers: $this->registerMapper(), schemas: $this->schemaMapper(), tables: $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class));
 	}//end resolver()
 
 	/**
@@ -201,16 +201,22 @@ class SearchReferenceResolutionTest extends TestCase {
 	 */
 	private function queryHandler(MagicMapper $mapper, ?SearchReferenceResolver $resolver): QueryHandler {
 		return new QueryHandler(
-			$mapper,
-			$this->createMock(RenderObject::class),
-			$this->createMock(SearchQueryHandler::class),
-			$this->createMock(FacetHandler::class),
-			$this->createMock(PerformanceOptimizationHandler::class),
-			$this->createMock(ContentSearchHandler::class),
-			$this->createMock(IAppContainer::class),
-			null,
-			null,
-			$resolver
+			platform: new QueryPlatform(
+				objectMapper: $mapper,
+				renderHandler: $this->createMock(RenderObject::class),
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $this->createMock(FacetHandler::class),
+				performanceHandler: $this->createMock(PerformanceOptimizationHandler::class),
+				contentSearchHandler: $this->createMock(ContentSearchHandler::class)
+			),
+			refinements: new QueryRefinements(
+				historyNarrowing: null,
+				dictionary: null,
+				referenceResolver: $resolver
+			)
 		);
 	}//end queryHandler()
 
@@ -225,7 +231,6 @@ class SearchReferenceResolutionTest extends TestCase {
 			$this->schemaMapper(),
 			$this->createMock(SettingsService::class),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$this->createMock(SearchTrailService::class),
 			null,
 			null,
@@ -328,11 +333,7 @@ class SearchReferenceResolutionTest extends TestCase {
 			->getMock();
 		$schemaMapper->expects($this->never())->method('find');
 
-		$resolver = new SearchReferenceResolver(
-			$registerMapper,
-			$schemaMapper,
-			$this->createMock(LoggerInterface::class)
-		);
+		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), $this->createMock(LoggerInterface::class));
 
 		$query = $resolver->normaliseQuery(
 			query: ['@self' => ['register' => self::REGISTER_ID, 'schema' => (string)self::SCHEMA_ID]]

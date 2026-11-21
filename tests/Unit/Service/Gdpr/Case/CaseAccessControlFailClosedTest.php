@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -34,6 +35,7 @@ use RuntimeException;
  * An unreadable officer-group setting denies the override and says so; the handler still acts.
  *
  * @covers \OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl
+ * @uses \OCA\OpenRegister\Service\Gdpr\GdprCallerMembership
  */
 final class CaseAccessControlFailClosedTest extends TestCase {
 
@@ -58,7 +60,7 @@ final class CaseAccessControlFailClosedTest extends TestCase {
 		$config->method('getValueString')->willThrowException(new RuntimeException('config table locked'));
 		$this->groups = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->control = new CaseAccessControl(userSession: $session, groupManager: $this->groups, appConfig: $config, logger: $this->logger);
+		$this->control = new CaseAccessControl(membership: new GdprCallerMembership(userSession: $session, groupManager: $this->groups, logger: $this->logger), appConfig: $config);
 	}//end setUp()
 
 	/**

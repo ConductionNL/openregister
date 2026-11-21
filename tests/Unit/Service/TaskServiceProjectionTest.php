@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * The CalDAV leaf as a projection writer: an engine identity cannot be
- * forged through createTask(); a projected VTODO's update goes through the
+ * forged through createObjectTask(); a projected VTODO's update goes through the
  * gate and stores the engine's rendering; without a gate it is refused;
  * findUserCalendar() resolves the NAMED user; and standalone VTODOs behave
  * exactly as before.
@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IURLGenerator;
@@ -65,7 +68,7 @@ class TaskServiceProjectionTest extends TestCase {
 
 		foreach ([['X-OPENREGISTER-TASK' => self::UUID], ['taskUuid' => self::UUID], ['fields' => ['X-OPENREGISTER-TASK' => self::UUID]]] as $forged) {
 			try {
-				$this->service()->createTask(1, 2, 'obj', 'Object', array_merge(['summary' => 'Forged'], $forged));
+				$this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'obj'), draft: new LinkedTaskDraft(objectTitle: 'Object', data: array_merge(['summary' => 'Forged'], $forged)));
 				$this->fail('expected a refusal');
 			} catch (TaskAccessDeniedException $refused) {
 				$this->assertStringContainsString('engine task', $refused->getMessage());
@@ -84,7 +87,7 @@ class TaskServiceProjectionTest extends TestCase {
 			}
 		);
 
-		$result = $this->service()->createTask(1, 2, 'obj', 'Object', ['summary' => 'Buy milk']);
+		$result = $this->service()->createObjectTask(ref: new ObjectRef(register: 1, schema: 2, id: 'obj'), draft: new LinkedTaskDraft(objectTitle: 'Object', data: ['summary' => 'Buy milk']));
 
 		$this->assertSame('Buy milk', $result['summary']);
 		$this->assertStringNotContainsString('X-OPENREGISTER-TASK:', (string)$written);
@@ -110,7 +113,7 @@ class TaskServiceProjectionTest extends TestCase {
 			->willReturn($this->projected('COMPLETED'));
 		$this->backend->expects($this->once())->method('updateCalendarObject')->with(9, 'x.ics', $this->projected('COMPLETED'));
 
-		$result = $this->service($gate)->updateTask('9', 'x.ics', ['status' => 'completed', 'summary' => 'ignored by the engine']);
+		$result = $this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'x.ics'), data: ['status' => 'completed', 'summary' => 'ignored by the engine']);
 
 		$this->assertSame('completed', $result['status']);
 		$this->assertSame('Approve', $result['summary'], 'the stored document is the rendering, not the request');
@@ -121,7 +124,7 @@ class TaskServiceProjectionTest extends TestCase {
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service()->updateTask('9', 'x.ics', ['status' => 'completed']);
+		$this->service()->changeTask(at: new TaskLocation(calendarId: '9', uri: 'x.ics'), data: ['status' => 'completed']);
 	}
 
 	public function testAGateRefusalSurfacesAndNothingIsWritten(): void {
@@ -131,7 +134,7 @@ class TaskServiceProjectionTest extends TestCase {
 		$this->backend->expects($this->never())->method('updateCalendarObject');
 
 		$this->expectException(TaskAccessDeniedException::class);
-		$this->service($gate)->updateTask('9', 'x.ics', ['status' => 'completed']);
+		$this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'x.ics'), data: ['status' => 'completed']);
 	}
 
 	public function testAStandaloneUpdateNeverTouchesTheGate(): void {
@@ -141,7 +144,7 @@ class TaskServiceProjectionTest extends TestCase {
 		$gate->expects($this->never())->method('handleWrite');
 		$this->backend->expects($this->once())->method('updateCalendarObject')->with(9, 'x.ics', $this->stringContains('STATUS:COMPLETED'));
 
-		$result = $this->service($gate)->updateTask('9', 'x.ics', ['status' => 'completed']);
+		$result = $this->service($gate)->changeTask(at: new TaskLocation(calendarId: '9', uri: 'x.ics'), data: ['status' => 'completed']);
 
 		$this->assertSame('completed', $result['status']);
 	}

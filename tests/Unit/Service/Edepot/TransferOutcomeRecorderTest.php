@@ -37,6 +37,13 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Edepot\ObjectConfirmation
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferAuditLog
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferContext
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferSettings
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferOutcomeRecorderTest extends TestCase {
 
@@ -75,14 +82,9 @@ class TransferOutcomeRecorderTest extends TestCase {
 			);
 		}
 
-		$auditLog = new TransferAuditLog(
-			$this->createMock(AuditTrailMapperInterface::class),
-			new TransferSettings($this->createMock(IAppConfig::class), new NullLogger()),
-			$this->createMock(INotificationManager::class),
-			new NullLogger()
-		);
+		$auditLog = new TransferAuditLog(new \OCA\OpenRegister\Service\Edepot\AuditRecording($this->createMock(AuditTrailMapperInterface::class), new NullLogger()), new TransferSettings($this->createMock(IAppConfig::class), new NullLogger()), $this->createMock(INotificationManager::class));
 
-		return new TransferOutcomeRecorder($mapper, $records, $auditLog, $logger);
+		return new TransferOutcomeRecorder(new \OCA\OpenRegister\Service\Edepot\TransferStores(objects: $mapper, records: $records, settings: $this->createMock(\OCP\IAppConfig::class), logger: $logger), $auditLog);
 	}//end recorder()
 
 	public function testAFailingWriteIsLoggedAndNeverThrown(): void {

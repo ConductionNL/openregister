@@ -31,16 +31,13 @@ interface ObjectCalendarTasksInterface {
 	 * Builds a VCALENDAR/VTODO string with X-OPENREGISTER-* properties and
 	 * an RFC 9253 LINK property, then stores it in the user's calendar.
 	 *
-	 * @param int $registerId The register ID to link
-	 * @param int $schemaId The schema ID to link
-	 * @param string $objectUuid The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array $data Task data: summary, description, priority, due, status
-	 *
 	 * A payload that carries an engine task identity is REFUSED: a projected
 	 * VTODO is created only by the projection, so a VTODO carrying
 	 * `X-OPENREGISTER-TASK` always corresponds to a task the engine
 	 * authorized into existence.
+	 *
+	 * @param ObjectRef       $ref   The object to link: its register id, schema id and uuid.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data: summary, description, priority, due, status.
 	 *
 	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
 	 *
@@ -50,13 +47,7 @@ interface ObjectCalendarTasksInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
-	public function createTask(
-		int $registerId,
-		int $schemaId,
-		string $objectUuid,
-		string $objectTitle,
-		array $data,
-	): ?array;
+	public function createObjectTask(ObjectRef $ref, LinkedTaskDraft $draft): ?array;
 
 	/**
 	 * Get all tasks linked to a specific OpenRegister object.
@@ -85,9 +76,8 @@ interface ObjectCalendarTasksInterface {
 	 * what is stored afterwards is the engine's own rendering. Without a
 	 * gate the update is refused, never applied unchecked.
 	 *
-	 * @param string $calendarId The calendar ID containing the task
-	 * @param string $taskUri The URI of the task to update
-	 * @param array $data Fields to update: summary, description, priority, due, status
+	 * @param TaskLocation $at   The calendar and URI of the task to update
+	 * @param array        $data Fields to update: summary, description, priority, due, status
 	 *
 	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
 	 *
@@ -97,20 +87,19 @@ interface ObjectCalendarTasksInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
-	public function updateTask(string $calendarId, string $taskUri, array $data): ?array;
+	public function changeTask(TaskLocation $at, array $data): ?array;
 
 	/**
 	 * Refuse a task that is not one of the caller's tasks on the given object.
 	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $taskUri    The task the caller named.
+	 * @param string       $objectUuid The object the caller addressed.
+	 * @param TaskLocation $at         The calendar and task the caller named.
 	 *
 	 * @return void
 	 *
 	 * @throws \Exception With code 404 when it is not.
 	 */
-	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void;
+	public function requireTaskAt(string $objectUuid, TaskLocation $at): void;
 
 	/**
 	 * Delete a CalDAV task.

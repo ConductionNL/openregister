@@ -66,8 +66,12 @@ class EffectiveAuthorization {
 		$authorization = $schema->getAuthorization();
 
 		// If schema has its own authorization, expand roles and return.
+		if ($this->isConfigured(block: $authorization) === true && $this->hasRoleBlock(authorization: $authorization) === false) {
+			return $authorization;
+		}
+
 		if ($this->isConfigured(block: $authorization) === true) {
-			return $this->expandRoles(authorization: $authorization, schema: $schema);
+			return $this->expandRoles(authorization: $authorization, register: $this->registerOf(schema: $schema));
 		}
 
 		return $this->registerAuthorizationFor(schema: $schema);
@@ -88,11 +92,11 @@ class EffectiveAuthorization {
 				$register = $this->registerMapper->find(id: $registerId);
 				$registerAuth = $register->getAuthorization();
 				if ($this->isConfigured(block: $registerAuth) === true) {
-					return $this->expandRoles(authorization: $registerAuth, schema: $schema, register: $register);
+					return $this->expandRoles(authorization: $registerAuth, register: $register);
 				}
 			}
 		} catch (\Throwable $e) {
-			// Fallback: no register authorization available.
+			// An unreadable register means no register authorization to fall back to.
 		}
 
 		return null;
@@ -112,9 +116,8 @@ class EffectiveAuthorization {
 	/**
 	 * Expand role references into the action-level entries they stand for.
 	 *
-	 * @param array $authorization The authorization block.
-	 * @param object $schema The schema object.
-	 * @param object|null $register The register object (optional, looked up if needed).
+	 * @param array       $authorization The authorization block.
+	 * @param object|null $register      The register whose role definitions apply, or null when there is none.
 	 *
 	 * @return array The authorization with roles expanded.
 	 *
@@ -122,7 +125,7 @@ class EffectiveAuthorization {
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function expandRoles(array $authorization, object $schema, ?object $register = null): array {
+	private function expandRoles(array $authorization, ?object $register): array {
 		if ($this->hasRoleBlock(authorization: $authorization) === false) {
 			return $authorization;
 		}
@@ -133,15 +136,13 @@ class EffectiveAuthorization {
 		// No register, an unreadable one, or one without role definitions
 		// leaves an empty map, and the block then grants only what it names
 		// outside its roles.
-		$roleMap = $this->roleMapFor(schema: $schema, register: $register);
+		$roleMap = $this->roleMapFor(register: $register);
 
 		// Expand roles to action-level entries.
 		foreach ($roleAssignments as $roleName => $groups) {
-			if (isset($roleMap[$roleName]) === false) {
-				continue;
+			foreach (($roleMap[$roleName] ?? []) as $action) {
+				$authorization[$action] = $this->withGroups(granted: ($authorization[$action] ?? []), groups: (array)$groups);
 			}
-
-			$authorization = $this->grantRole(authorization: $authorization, actions: $roleMap[$roleName], groups: $groups);
 		}
 
 		return RoleBlockExpander::grantNothingWhenEmpty(authorization: $authorization);
@@ -161,16 +162,11 @@ class EffectiveAuthorization {
 	/**
 	 * Role name => actions, from the register's role definitions.
 	 *
-	 * @param object $schema The schema object.
-	 * @param object|null $register The register, or null to look it up from the schema.
+	 * @param object|null $register The register, or null when there is none.
 	 *
 	 * @return array<string, mixed> The role map, empty when there is no register or no definitions.
 	 */
-	private function roleMapFor(object $schema, ?object $register): array {
-		if ($register === null) {
-			$register = $this->registerOf(schema: $schema);
-		}
-
+	private function roleMapFor(?object $register): array {
 		if ($register === null) {
 			return [];
 		}
@@ -223,27 +219,20 @@ class EffectiveAuthorization {
 	}//end roleMapOf()
 
 	/**
-	 * Add a role's groups to every action the role carries, without duplicates.
+	 * Add a role's groups to the entries of one action, without duplicates.
 	 *
-	 * @param array $authorization The authorization block.
-	 * @param mixed $actions The role's actions.
-	 * @param mixed $groups The groups assigned the role.
+	 * @param array $granted The action's entries so far.
+	 * @param array $groups  The groups assigned the role.
 	 *
-	 * @return array The block with the role's grants added.
+	 * @return array The entries with the role's groups added.
 	 */
-	private function grantRole(array $authorization, mixed $actions, mixed $groups): array {
-		foreach ($actions as $action) {
-			if (isset($authorization[$action]) === false) {
-				$authorization[$action] = [];
-			}
-
-			foreach ((array)$groups as $group) {
-				if (in_array($group, $authorization[$action], true) === false) {
-					$authorization[$action][] = $group;
-				}
+	private function withGroups(array $granted, array $groups): array {
+		foreach ($groups as $group) {
+			if (in_array($group, $granted, true) === false) {
+				$granted[] = $group;
 			}
 		}
 
-		return $authorization;
-	}//end grantRole()
+		return $granted;
+	}//end withGroups()
 }//end class

@@ -20,12 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use OCA\OpenRegister\BackgroundJob\ConfigurationCheckJob;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -373,13 +375,9 @@ class SelectiveImportTest extends TestCase {
 		$notifications->expects($this->never())->method('notifyConfigurationUpdate');
 
 		$job = new ConfigurationCheckJob(
-			$this->createMock(ITimeFactory::class),
-			$this->configurationMapper,
+			new ConfiguredJobRuntime($this->createMock(ITimeFactory::class), $appConfig, $this->createMock(LoggerInterface::class)),
 			// One response for the version check, one for the import's fetch.
-			$this->service([self::remote(), self::remote()]),
-			$notifications,
-			$appConfig,
-			$this->createMock(LoggerInterface::class)
+			new ConfigurationCheckServices($this->configurationMapper, $this->service([self::remote(), self::remote()]), $notifications)
 		);
 
 		$run = new \ReflectionMethod($job, 'run');

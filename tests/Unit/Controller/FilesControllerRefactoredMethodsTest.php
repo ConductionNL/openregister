@@ -80,7 +80,6 @@ class FilesControllerRefactoredMethodsTest extends TestCase {
 
 		// Create FilesController instance.
 		$this->filesController = FilesControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			fileService: $this->fileService,
 			objectService: $this->objectService,

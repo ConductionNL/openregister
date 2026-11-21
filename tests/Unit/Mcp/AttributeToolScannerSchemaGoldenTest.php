@@ -16,6 +16,7 @@ use Countable;
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
 use OCA\OpenRegister\Mcp\Attribute\McpToolTitle;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Stringable;
@@ -117,6 +118,14 @@ class AttributeToolScannerSchemaFixture
  * AttributeToolScannerSchemaFixture; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Mcp\AttributeToolScanner
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpTool
+ * @uses \OCA\OpenRegister\Mcp\Attribute\McpToolTitle
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
+ * @uses \OCA\OpenRegister\Mcp\ToolScanSubject
  */
 class AttributeToolScannerSchemaGoldenTest extends TestCase
 {
@@ -139,7 +148,7 @@ class AttributeToolScannerSchemaGoldenTest extends TestCase
             }
         };
 
-        $descriptors = (new AttributeToolScanner())->scanClass('demo', AttributeToolScannerSchemaFixture::class, $logger);
+        $descriptors = (new AttributeToolScanner())->scanClass(new ToolScanSubject('demo', AttributeToolScannerSchemaFixture::class, $logger));
         $actual      = json_decode((string) json_encode(['descriptors' => $descriptors, 'log' => $logger->records]), true);
 
         if (getenv('UPDATE_GOLDEN') === '1') {

@@ -43,6 +43,8 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
@@ -97,7 +99,7 @@ class MagicMapperCreateTableIndexesGoldenTest extends TestCase {
 			$schema->method('getProperties')->willReturn($properties);
 			$method = new ReflectionMethod(MagicMapper::class, 'createTableIndexes');
 			$method->setAccessible(true);
-			$method->invokeArgs($mapper, ['openregister_table_1_2', $this->createMock(Register::class), $schema]);
+			$method->invokeArgs($mapper, ['openregister_table_1_2', $schema]);
 			$actual[$name] = $this->events;
 		}
 

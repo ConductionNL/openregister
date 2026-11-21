@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Archival\RecordDating;
 
 /**
  * Golden outcomes of ArchiveActionDateCalculator.
@@ -266,7 +267,7 @@ class ArchiveActionDateCalculatorGoldenTest extends TestCase {
 	}
 
 	private function caseDetermineBrondatum(): mixed {
-		$c = $this->calculator(["u" => ["e" => "2001-01-01"]]); $o = $this->record(["d" => "2005-05-05", "r" => "u"]); $out = []; foreach (["eigenschap", "ander_datumkenmerk", "afgehandeld", "termijn", "hoofdzaak", "onbekend"] as $m) { $d = $c->determineBrondatum($o, $this->schema(["bronEigenschap" => "d", "sourceDateProperty" => "d", "closureField" => "d", "sourceRelation" => "r", "sourceRelationProperty" => "e"]), $m); $out[$m] = $d === null ? null : $d->format("Y-m-d"); } return $out;
+		$c = $this->calculator(["u" => ["e" => "2001-01-01"]]); $o = $this->record(["d" => "2005-05-05", "r" => "u"]); $out = []; foreach (["eigenschap", "ander_datumkenmerk", "afgehandeld", "termijn", "hoofdzaak", "onbekend"] as $m) { $d = $c->determineBrondatum(new RecordDating(object: $o, archive: $this->schema(["bronEigenschap" => "d", "sourceDateProperty" => "d", "closureField" => "d", "sourceRelation" => "r", "sourceRelationProperty" => "e"])->getArchive(), afleidingswijze: $m)); $out[$m] = $d === null ? null : $d->format("Y-m-d"); } return $out;
 	}
 
 	private function caseSourcePropertyOf(): mixed {

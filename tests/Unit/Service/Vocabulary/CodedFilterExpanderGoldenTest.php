@@ -39,6 +39,19 @@ use PHPUnit\Framework\TestCase;
  * fixtures/coded-filter-expander-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Vocabulary\BranchFilter
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedNarrowing
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedValueRules
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptBranch
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptRelations
+ * @uses \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess
  */
 class CodedFilterExpanderGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/coded-filter-expander-golden.json';
@@ -126,11 +139,10 @@ class CodedFilterExpanderGoldenTest extends TestCase {
 			}
 		);
 
+		$lifecycle = new ConceptLifecycle();
 		$expander = new CodedFilterExpander(
-			concepts: $concepts,
-			hierarchy: new ConceptHierarchy(lifecycle: new ConceptLifecycle()),
-			schemas: $schemas,
-			declarationFactory: new CodedPropertyDeclarationFactory()
+			scheme: new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess(concepts: $concepts, hierarchy: new ConceptHierarchy(lifecycle: $lifecycle), lifecycle: $lifecycle),
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(schemas: $schemas, declarations: new CodedPropertyDeclarationFactory(), objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))
 		);
 
 		try {

@@ -18,7 +18,6 @@ final class TimelineEntriesControllerFactory {
 	/**
 	 * The constructor arguments of TimelineEntriesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objects Constructor argument.
 	 * @param TimelineEntryService $entries Constructor argument.
@@ -31,7 +30,6 @@ final class TimelineEntriesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objects,
 		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService $entries,
@@ -42,7 +40,6 @@ final class TimelineEntriesControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices(
 				domain: new \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesDomain(

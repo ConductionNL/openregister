@@ -31,7 +31,7 @@ use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;

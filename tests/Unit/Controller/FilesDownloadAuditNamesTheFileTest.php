@@ -58,7 +58,6 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 		);
 
 		$controller = FilesControllerFactory::create(
-			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			fileService: $this->createMock(FileService::class),
 			objectService: $this->createMock(ObjectService::class),
