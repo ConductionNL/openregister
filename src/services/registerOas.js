@@ -6,6 +6,7 @@
  * open it in the ReDoc viewer.
  */
 import axios from '@nextcloud/axios'
+import { saveJson } from './saveFile.js'
 
 /**
  * The absolute URL of a register's generated OpenAPI specification.
@@ -29,16 +30,7 @@ export function registerOasUrl(id) {
  */
 export async function downloadRegisterOas(register) {
 	const response = await axios.get(registerOasUrl(register.id))
-	const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-		type: 'application/json',
-	})
-	const downloadLink = document.createElement('a')
-	downloadLink.href = URL.createObjectURL(blob)
-	downloadLink.download = `${register.title.toLowerCase()}-api-specification.json`
-	document.body.appendChild(downloadLink)
-	downloadLink.click()
-	document.body.removeChild(downloadLink)
-	URL.revokeObjectURL(downloadLink.href)
+	saveJson(response.data, `${register.title.toLowerCase()}-api-specification.json`)
 }
 
 /**

@@ -31,13 +31,12 @@ interface ChunkVectorFactoryInterface {
 	/**
 	 * The vector row of a chunk: its source, its embedding and its place among its source's chunks.
 	 *
-	 * @param ChunkVectorSourceInterface $source        The chunk's source, place and text.
-	 * @param array<string, mixed> $embeddingData Its embedding, model and dimensions.
-	 * @param int                  $totalChunks   How many chunks its source has.
+	 * @param ChunkVectorSourceInterface $source        The chunk's source, place, text and its source's chunk count.
+	 * @param array<string, mixed>       $embeddingData Its embedding, model and dimensions.
 	 *
 	 * @return StoredVector
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function forChunk(ChunkVectorSourceInterface $source, array $embeddingData, int $totalChunks): StoredVector;
+	public function forChunk(ChunkVectorSourceInterface $source, array $embeddingData): StoredVector;
 }//end interface

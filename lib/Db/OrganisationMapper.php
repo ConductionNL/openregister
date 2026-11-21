@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -509,7 +510,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 *
-	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 * @spec openspec/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function findLocalTenants(int $limit = 50, int $offset = 0, ?array $filters = []): array {
 		return $this->findLocalTenantList(query: new ListQuery(limit: $limit, offset: $offset, filters: ($filters ?? [])));
@@ -526,7 +527,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 *
-	 * @spec openspec/changes/organisation-as-federated-counterparty/specs/organisation-tenancy-scope/spec.md
+	 * @spec openspec/specs/organisation-tenancy-scope/spec.md
 	 */
 	public function findLocalTenantList(ListQuery $query): array {
 		$qb = $this->orderedPage(query: $query);
@@ -582,21 +583,6 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 
 		return $this->findEntities(query: $qb);
 	}//end findList()
-
-	/**
-	 * Find organisations by name with pagination
-	 *
-	 * @param string $name The name pattern to search for
-	 * @param int $limit Maximum number of results to return
-	 * @param int $offset Number of results to skip
-	 *
-	 * @return Organisation[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
-	 */
-	public function findByName(string $name, int $limit = 50, int $offset = 0): array {
-		return $this->findListByName(name: $name, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end findByName()
 
 	/**
 	 * Find the organisations whose name contains a pattern, one page at a time.

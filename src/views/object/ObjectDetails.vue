@@ -7,6 +7,12 @@
 						{{ objectStore.objectItem.id }}
 					</h1>
 
+					<CnFollowToggle
+						v-if="followToggle"
+						v-bind="followToggle"
+						@error="onFollowError"
+						@notFound="onRecordGone" />
+
 					<NcActions
 						:primary="true"
 						:menuName="t('openregister', 'Actions')">
@@ -60,6 +66,15 @@
 								<FolderOutline :size="20" />
 							</template>
 							Open Folder
+						</NcActionButton>
+						<NcActionButton
+							v-if="followToggle"
+							closeAfterClick
+							@click="markUnread">
+							<template #icon>
+								<EmailMarkAsUnread :size="20" />
+							</template>
+							Mark as unread
 						</NcActionButton>
 					</NcActions>
 				</div>
@@ -370,6 +385,28 @@
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
+						<!--
+							Tasks (record-tasks-tab): the flow tasks anchored on this
+							record, from the library's tab with the flow-task source.
+							It lists GET /api/flow-tasks?objectUuid=, creates with the
+							record as anchor and shows only the verbs each row's `can`
+							allows. VTODO reminders stay in the Integrations tab (D-3).
+						-->
+						<AppTab v-if="relationContext" data-testid="record-tasks-tab">
+							<template #title>
+								{{ t('openregister', 'Tasks') }}
+								<NcCounterBubble
+									v-if="openTaskCount"
+									:count="openTaskCount"
+									data-testid="record-tasks-count" />
+							</template>
+							<CnTasksTab
+								source="flow-tasks"
+								:objectId="String(relationContext.id)"
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								@count="onTaskCount" />
+						</AppTab>
 						<AppTab
 							v-if="
 								relationContext
@@ -511,13 +548,18 @@
 
 <script>
 import {
+	CnFollowToggle,
 	CnIntegrationWidget,
 	CnObjectAccessTab,
 	CnObjectMetadataWidget,
 	CnPagination,
+	CnTasksTab,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import {
 	NcActionButton,
 	NcActions,
@@ -529,6 +571,7 @@ import {
 } from '@nextcloud/vue'
 import { computed } from 'vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import EmailMarkAsUnread from 'vue-material-design-icons/EmailMarkAsUnread.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
@@ -551,6 +594,78 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { followProps, recordAddress, sendReadState } from './recordFollow.js'
+
+/**
+ * Register the live target's object type with the store, once.
+ *
+ * @param {object} target The live target: its type and its register and schema
+ * @return {void}
+ */
+function registerLiveType(target) {
+	if (!objectStore.objectTypes.includes(target.type)) {
+		objectStore.registerObjectType(
+			target.type,
+			target.ctx.schema,
+			target.ctx.register,
+		)
+	}
+}
+
+/**
+ * The live-updates state the view starts from.
+ *
+ * Live-updates handle for the or-object-{uuid} subscription of the
+ * currently opened object (adopt-live-updates-ui). Managed by
+ * syncLiveSubscription(); liveKey is `${type}::${uuid}` so a re-render for
+ * the same object is a no-op. livePendingKey marks an in-flight subscribe so
+ * a concurrent same-key call doesn't double-subscribe; liveEpoch invalidates
+ * in-flight resolutions after a release (object switch / destroy).
+ *
+ * @return {object} The state.
+ */
+function liveState() {
+	return {
+		liveHandle: null,
+		liveKey: '',
+		livePendingKey: '',
+		liveEpoch: 0,
+		liveUnwatch: null,
+	}
+}
+
+/**
+ * The pages the files, audit trail and relations tabs start on.
+ *
+ * Guard against the race where deep-link navigation primes
+ * objectStore.objectItem before its sub-resource plugins (filesPlugin /
+ * auditTrailsPlugin / relationsPlugin) have populated their backing state.
+ * Under the original click-through nav flow these are always set by the time
+ * the user opens an object's detail; the deep-link route
+ * (/objects/:register/:schema/:id) skips that warm-up.
+ *
+ * @return {object} The pagination per tab.
+ */
+function initialPagination() {
+	return {
+		files: tabPage(objectStore.files?.page),
+		auditTrails: tabPage(objectStore.auditTrails?.page),
+		relations: tabPage(objectStore.used?.page),
+	}
+}
+
+/**
+ * A tab's pagination: 200 per page, from the stored page or the first.
+ *
+ * @param {number|undefined} page The page the store holds
+ * @return {{limit: number, currentPage: number}} The pagination
+ */
+function tabPage(page) {
+	return {
+		limit: 200,
+		currentPage: page || 1,
+	}
+}
 
 export default {
 	name: 'ObjectDetails',
@@ -564,8 +679,11 @@ export default {
 		NcLoadingIcon,
 		AppTabs,
 		AppTab,
+		CnFollowToggle,
 		CnPagination,
+		CnTasksTab,
 		DotsHorizontal,
+		EmailMarkAsUnread,
 		Pencil,
 		TrashCanOutline,
 		TimelineQuestionOutline,
@@ -626,50 +744,31 @@ export default {
 	data() {
 		return {
 			currentActiveObject: undefined,
-			// Live-updates handle for the or-object-{uuid} subscription of the
-			// currently opened object (adopt-live-updates-ui). Managed by
-			// syncLiveSubscription(); liveKey is `${type}::${uuid}` so a
-			// re-render for the same object is a no-op. livePendingKey marks
-			// an in-flight subscribe so a concurrent same-key call doesn't
-			// double-subscribe; liveEpoch invalidates in-flight resolutions
-			// after a release (object switch / destroy).
-			liveHandle: null,
-			liveKey: '',
-			livePendingKey: '',
-			liveEpoch: 0,
-			liveUnwatch: null,
+			...liveState(),
 			auditTrailLoading: false,
 			auditTrails: [],
 			relationsLoading: false,
 			activeAttachment: null,
 			fileLoading: false,
-			// Guard against the race where deep-link navigation primes
-			// objectStore.objectItem before its sub-resource plugins
-			// (filesPlugin / auditTrailsPlugin / relationsPlugin) have
-			// populated their backing state. Under the original
-			// click-through nav flow these are always set by the time
-			// the user opens an object's detail; the deep-link route
-			// (/objects/:register/:schema/:id) skips that warm-up.
-			pagination: {
-				files: {
-					limit: 200,
-					currentPage: objectStore.files?.page || 1,
-				},
-
-				auditTrails: {
-					limit: 200,
-					currentPage: objectStore.auditTrails?.page || 1,
-				},
-
-				relations: {
-					limit: 200,
-					currentPage: objectStore.used?.page || 1,
-				},
-			},
+			pagination: initialPagination(),
+			readMarkedFor: null,
+			// Open flow tasks on this record, for the Tasks tab badge; null until known.
+			openTaskCount: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The Follow toggle's props from the record's `@self`, or null when
+		 * the record has no address (design D-1, D-6).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {object|null}
+		 */
+		followToggle() {
+			return followProps(objectStore?.objectItem)
+		},
+
 		/**
 		 * Build the (register, schema, id) triple used by the entity-relations
 		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
@@ -792,6 +891,8 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.markReadAfterRender()
+			this.countOpenTasks()
 		}
 		this.syncLiveSubscription()
 	},
@@ -808,7 +909,9 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.countOpenTasks()
 			this.syncLiveSubscription()
+			this.markReadAfterRender()
 		}
 	},
 
@@ -823,6 +926,108 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Mark the shown record read once its data has rendered, once per
+		 * record (design D-3). A page without a record (a failed load) sends
+		 * nothing.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async markReadAfterRender() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null || this.readMarkedFor === address.id) {
+				return
+			}
+
+			this.readMarkedFor = address.id
+			await this.$nextTick()
+			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * "Mark as unread": send `DELETE .../read-state` and leave the page,
+		 * so the list the user returns to shows the record unread (design D-3).
+		 * When the server refuses, the user stays on the record.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async markUnread() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null) {
+				return
+			}
+
+			// On a failure the user stays on the record, which is still read.
+			if (await sendReadState(address, 'DELETE') === false) {
+				return
+			}
+
+			objectStore.setObjectItem(null)
+		},
+
+		/**
+		 * Show the server's message when a Follow change failed; the toggle
+		 * has flipped itself back already (design D-2).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @param {string} message The server's message
+		 * @return {void}
+		 */
+		onFollowError(message) {
+			showError(message)
+		},
+
+		/**
+		 * The record went away or access was withdrawn: reload the page (design D-2).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {void}
+		 */
+		onRecordGone() {
+			window.location.reload()
+		},
+
+		/**
+		 * Count the open flow tasks on this record for the Tasks tab badge.
+		 *
+		 * Asks the server rather than the tab: the tab only mounts when it is
+		 * opened, and which states are terminal is the server's to say. Same
+		 * audience as the tab (`scope=all`), one row fetched, `total` read.
+		 * A failure leaves the badge off rather than showing a wrong number.
+		 *
+		 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md#requirement-a-records-page-lists-and-creates-the-flow-tasks-anchored-on-it
+		 * @return {Promise<void>}
+		 */
+		async countOpenTasks() {
+			const context = this.relationContext
+			if (!context) {
+				this.openTaskCount = null
+				return
+			}
+
+			try {
+				const { data } = await axios.get(generateUrl('/apps/openregister/api/flow-tasks'), {
+					params: { objectUuid: String(context.id), scope: 'all', isTerminal: 'false', limit: 1 },
+				})
+				this.openTaskCount = Number(data?.total) || 0
+			} catch {
+				this.openTaskCount = null
+			}
+		},
+
+		/**
+		 * Take the open count the Tasks tab reports once it has loaded or changed.
+		 *
+		 * @spec openspec/changes/record-tasks-tab/specs/flow-tasks/spec.md#requirement-a-records-page-lists-and-creates-the-flow-tasks-anchored-on-it
+		 * @param {number} count The open tasks the tab lists.
+		 * @return {void}
+		 */
+		onTaskCount(count) {
+			this.openTaskCount = Number(count) || 0
+		},
+
 		/**
 		 * Subscribe to live updates for the currently opened object
 		 * (adopt-live-updates-ui): or-object-{uuid} via notify_push with
@@ -848,6 +1053,17 @@ export default {
 			if (this.isLiveFor(target.key)) {
 				return
 			}
+			await this.resubscribeLive(target)
+		},
+
+		/**
+		 * Drop the current subscription and subscribe to the target; a failed
+		 * subscribe is reported.
+		 *
+		 * @param {object} target The live target
+		 * @return {Promise<void>}
+		 */
+		async resubscribeLive(target) {
 			this.releaseLiveSubscription()
 			try {
 				await this.subscribeLive(target)
@@ -900,13 +1116,7 @@ export default {
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 */
 		async subscribeLive(target) {
-			if (!objectStore.objectTypes.includes(target.type)) {
-				objectStore.registerObjectType(
-					target.type,
-					target.ctx.schema,
-					target.ctx.register,
-				)
-			}
+			registerLiveType(target)
 			const epoch = this.liveEpoch
 			this.livePendingKey = target.key
 			this.liveKey = target.key
@@ -1035,11 +1245,7 @@ export default {
 			}
 			this.auditTrailLoading = true
 
-			objectStore
-				.getAuditTrails(objectStore.objectItem.id, {
-					limit: this.pagination.auditTrails.limit,
-					page: this.pagination.auditTrails.currentPage,
-				})
+			this.fetchAuditTrailPage()
 				.then(({ data }) => {
 					this.auditTrails = data
 					this.auditTrailLoading = false
@@ -1048,6 +1254,19 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+
+		/**
+		 * Fetch the current audit trail page of the object.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 */
+		fetchAuditTrailPage() {
+			return objectStore.getAuditTrails(objectStore.objectItem.id, {
+				limit: this.pagination.auditTrails.limit,
+				page: this.pagination.auditTrails.currentPage,
+			})
+		},
+
 
 		/**
 		 * Fetch the object's relations for display (race-safe).
@@ -1065,29 +1284,47 @@ export default {
 				return
 			}
 
+			this.relationsLoading = true
+			this.fetchRelations(objectId).finally(() => {
+				this.relationsLoading = false
+			})
+		},
+
+		/**
+		 * Fetch the relations page in both directions: the objects that use
+		 * this one, and the ones it uses where the store can fetch those.
+		 *
+		 * `_limit` / `_offset`, not `limit` / `page`: RelationHandler reads the
+		 * underscored names and silently paginates at its own defaults for
+		 * anything else.
+		 *
+		 * @param {string} objectId The object id
+		 * @return {Promise<Array>} Settles when both have loaded
+		 */
+		fetchRelations(objectId) {
 			const type = objectStore.currentType
 			const limit = this.pagination.relations.limit
 			const offset = (this.pagination.relations.currentPage - 1) * limit
-
-			// `_limit` / `_offset`, not `limit` / `page`: RelationHandler reads
-			// the underscored names and silently paginates at its own defaults
-			// for anything else.
-			this.relationsLoading = true
-
 			const incoming = objectStore.fetchUsed(type, objectId, {
 				_limit: limit,
 				_offset: offset,
 			})
+			const outgoing = this.fetchOutgoingRelations(objectId)
+			return Promise.all([incoming, outgoing])
+		},
 
-			let outgoing = Promise.resolve([])
-			if (typeof objectStore.fetchUses === 'function') {
-				outgoing = objectStore.fetchUses(type, objectId, {
-					_limit: limit,
-				})
+		/**
+		 * Fetch the objects this one uses, or nothing when the store cannot.
+		 *
+		 * @param {string} objectId The object id
+		 * @return {Promise<Array>} The request
+		 */
+		fetchOutgoingRelations(objectId) {
+			if (typeof objectStore.fetchUses !== 'function') {
+				return Promise.resolve([])
 			}
-
-			Promise.all([incoming, outgoing]).finally(() => {
-				this.relationsLoading = false
+			return objectStore.fetchUses(objectStore.currentType, objectId, {
+				_limit: this.pagination.relations.limit,
 			})
 		},
 

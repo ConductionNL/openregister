@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -79,6 +80,36 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Exception\BrokenReference
+ * @uses   \OCA\OpenRegister\Exception\ReferenceCycle
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Exception\BrokenReference
+ * @uses \OCA\OpenRegister\Exception\ReferenceCycle
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers
  */
 final class SaveObjectReferenceExistsTest extends TestCase {
 
@@ -120,6 +151,10 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 
 			if ($lookup === 'fails') {
 				throw new RuntimeException('database down');
+			}
+
+			if ($lookup === 'lookup failed') {
+				throw new ObjectLookupFailedException('database down');
 			}
 
 			return new ObjectEntity();
@@ -229,6 +264,17 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 			],
 			$this->checkTwice($this->handler(lookup: 'fails'), null)
 		);
+	}
+
+	public function testAFailedStoreLookupRefusesTheSave(): void {
+		try {
+			$this->checkTwice($this->handler(lookup: 'lookup failed'), null);
+			$this->fail('A failed store lookup must not let the reference pass.');
+		} catch (ObjectLookupFailedException $e) {
+			$this->assertSame('database down', $e->getMessage());
+		}
+
+		$this->assertSame([['find', self::UUID, null, 2, false, false, false]], $this->trace);
 	}
 
 	public function testAnUnknownRegisterSkipsTheLookup(): void {

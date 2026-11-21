@@ -1,0 +1,31 @@
+# lock-needs-update-permission Specification
+
+## Purpose
+A user who may not update a stored object cannot lock it. The lock is checked against the schema's update rule before anything is written, for a person and for a flow run alike.
+
+## Requirements
+
+### Requirement: A user lock needs update permission on the object
+
+Before a user takes a lock on a stored object, the system SHALL check that the user may update that object under the schema's RBAC, including conditional rules matched against the object, and SHALL refuse the lock with HTTP 403 when they may not. Nothing SHALL be written when the lock is refused. A lock taken by a flow run SHALL be checked the same way, against the user the run acts as.
+
+#### Scenario: A reader cannot freeze a record
+@e2e exclude unit; tests/Unit/Service/Object/LockHandlerUpdatePermissionTest.php
+
+- **GIVEN** a user who may read a ticket but not update it
+- **WHEN** they POST its lock route
+- **THEN** the answer is 403 and the ticket carries no lock
+
+#### Scenario: A handler locks a finished ticket
+@e2e exclude unit; tests/Unit/Service/Object/LockHandlerUpdatePermissionTest.php
+
+- **GIVEN** a user who may update the ticket
+- **WHEN** they POST its lock route without a duration
+- **THEN** the ticket is locked until it is unlocked
+
+#### Scenario: A flow run cannot lock what its user may not update
+@e2e exclude unit; tests/Unit/Service/Object/LockHandlerUpdatePermissionTest.php
+
+- **GIVEN** a flow run whose acting user may read a ticket but not update it
+- **WHEN** a lock step locks the ticket
+- **THEN** the lock is refused and the ticket carries no lock

@@ -98,12 +98,31 @@ class RsaJwsVerifier {
 	 * @return JWK|null The key, or null when it is not an RSA public key.
 	 */
 	private function rsaPublicKey(string $key, string $algorithm): ?JWK {
-		$pem = $key;
-		if (str_contains($key, '-----BEGIN') === false) {
-			$pem = (string)base64_decode($key, true);
+		$rsa = $this->rsaComponents(key: $key);
+		if ($rsa === null) {
+			return null;
 		}
 
-		$resource = openssl_pkey_get_public($pem);
+		return new JWK(
+			[
+				'kty' => 'RSA',
+				'n' => $this->base64Url(raw: $rsa['n']),
+				'e' => $this->base64Url(raw: $rsa['e']),
+				'alg' => $algorithm,
+				'use' => 'sig',
+			]
+		);
+	}//end rsaPublicKey()
+
+	/**
+	 * The modulus and exponent of an RSA public key, or null when the key is not one.
+	 *
+	 * @param string $key The PEM, or its base64-encoded form.
+	 *
+	 * @return array{n: string, e: string}|null The raw RSA components.
+	 */
+	private function rsaComponents(string $key): ?array {
+		$resource = openssl_pkey_get_public($this->pemOf(key: $key));
 		if ($resource === false) {
 			return null;
 		}
@@ -113,16 +132,32 @@ class RsaJwsVerifier {
 			return null;
 		}
 
-		$encode = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+		return $rsa;
+	}//end rsaComponents()
 
-		return new JWK(
-			[
-				'kty' => 'RSA',
-				'n' => $encode($rsa['n']),
-				'e' => $encode($rsa['e']),
-				'alg' => $algorithm,
-				'use' => 'sig',
-			]
-		);
-	}//end rsaPublicKey()
+	/**
+	 * A key as PEM: as given when it carries a PEM header, else base64-decoded.
+	 *
+	 * @param string $key The PEM, or its base64-encoded form.
+	 *
+	 * @return string The PEM.
+	 */
+	private function pemOf(string $key): string {
+		if (str_contains($key, '-----BEGIN') === false) {
+			return (string)base64_decode($key, true);
+		}
+
+		return $key;
+	}//end pemOf()
+
+	/**
+	 * Base64url without padding, as a JWK carries its numbers.
+	 *
+	 * @param string $raw The raw bytes.
+	 *
+	 * @return string The encoded value.
+	 */
+	private function base64Url(string $raw): string {
+		return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+	}//end base64Url()
 }//end class

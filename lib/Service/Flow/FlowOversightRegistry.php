@@ -164,16 +164,8 @@ class FlowOversightRegistry {
 				// treating its failure as consent would mean an oversight
 				// outage silently disables oversight — precisely when it is
 				// most likely to matter.
-				$this->logger->error(
-					message: '[FlowOversight] Check "' . $id . '" threw; refusing the hop: ' . $e->getMessage(),
-					context: ['exception' => $e, 'file' => __FILE__, 'line' => __LINE__]
-				);
-
-				return [
-					'checkId' => $id,
-					'reason' => 'Oversight check "' . $id . '" could not complete, so the hop was refused.',
-				];
-			}//end try
+				return $this->failedCheck(checkId: $id, error: $e);
+			}
 
 			if ($reason !== null && trim($reason) !== '') {
 				return ['checkId' => $id, 'reason' => $reason];
@@ -182,4 +174,24 @@ class FlowOversightRegistry {
 
 		return null;
 	}//end firstRefusal()
+
+	/**
+	 * Log a check that threw, and refuse the hop in its name.
+	 *
+	 * @param int|string $checkId The check's id.
+	 * @param Throwable  $error   What it threw.
+	 *
+	 * @return array{checkId: string, reason: string} The refusal.
+	 */
+	private function failedCheck(int|string $checkId, Throwable $error): array {
+		$this->logger->error(
+			message: '[FlowOversight] Check "' . $checkId . '" threw; refusing the hop: ' . $error->getMessage(),
+			context: ['exception' => $error, 'file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return [
+			'checkId' => $checkId,
+			'reason' => 'Oversight check "' . $checkId . '" could not complete, so the hop was refused.',
+		];
+	}//end failedCheck()
 }//end class

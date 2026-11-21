@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
@@ -110,7 +110,7 @@ class LlmSettingsController extends Controller {
 		IRequest $request,
 		LlmSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->container = $services->platform->container;
 		$this->settingsService = $services->domain->settingsService;
 		$this->vectorizationService = $services->domain->vectorizationService;
@@ -139,8 +139,6 @@ class LlmSettingsController extends Controller {
 
 	/**
 	 * Update LLM (Large Language Model) settings
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated LLM settings
 	 *
@@ -187,8 +185,6 @@ class LlmSettingsController extends Controller {
 	 * It provides the same functionality but is registered under a different route name
 	 * to ensure PATCH verb is properly registered in Nextcloud routing.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Updated LLM settings
 	 *
 	 * @psalm-return JSONResponse<200|500,
@@ -209,8 +205,6 @@ class LlmSettingsController extends Controller {
 	 * by generating a test embedding vector.
 	 * Accepts provider and config from the request to allow testing
 	 * before saving the configuration.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with embedding test result
 	 *
@@ -241,8 +235,6 @@ class LlmSettingsController extends Controller {
 	 * by sending a simple test message and receiving a response.
 	 * Accepts provider and config from the request to allow testing
 	 * before saving the configuration.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result with chat response
 	 *
@@ -538,8 +530,6 @@ class LlmSettingsController extends Controller {
 
 	/**
 	 * Clear all embeddings from the database
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Result with deleted count
 	 *

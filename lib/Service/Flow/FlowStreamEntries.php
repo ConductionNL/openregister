@@ -106,19 +106,29 @@ final class FlowStreamEntries {
 		$entries = [];
 		foreach ($rows as $row) {
 			if ($row->isTerminal() === false) {
-				$id = (string)$row->getStreamId();
-				$entries[$id] = [
-					'id' => $id,
-					'path' => (string)$row->getOrdinalPath(),
-					'parent' => $row->getParentStreamId(),
-					'place' => $row->getPlace(),
-					'status' => (string)$row->getStatus(),
-				];
+				$entries[(string)$row->getStreamId()] = self::entryOf(row: $row);
 			}
 		}
 
 		return $entries;
 	}//end live()
+
+	/**
+	 * One stream as the live list carries it.
+	 *
+	 * @param FlowStream $row The stream row.
+	 *
+	 * @return array{id: string, path: string, parent: mixed, place: mixed, status: string} The entry.
+	 */
+	private static function entryOf(FlowStream $row): array {
+		return [
+			'id' => (string)$row->getStreamId(),
+			'path' => (string)$row->getOrdinalPath(),
+			'parent' => $row->getParentStreamId(),
+			'place' => $row->getPlace(),
+			'status' => (string)$row->getStatus(),
+		];
+	}//end entryOf()
 
 	/**
 	 * How many entries sit on each place.

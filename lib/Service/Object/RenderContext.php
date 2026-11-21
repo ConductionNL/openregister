@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+
 /**
  * The options one RenderObject::renderEntity() call renders an object with.
  *

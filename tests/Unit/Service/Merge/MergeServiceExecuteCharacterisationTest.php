@@ -3,7 +3,7 @@
 /**
  * MergeServiceExecuteCharacterisationTest
  *
- * Pins what MergeService::executeMerge() writes, in which order: the loser's
+ * Pins what MergeService::merge() writes, in which order: the loser's
  * merged status, the survivor's golden record, provenance and active status,
  * the merge-operation row, the log line and the event.
  *
@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeReportingServices;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Merge\MergeSurvivorshipServices;
@@ -34,9 +35,11 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeServiceExecuteCharacterisationTest extends TestCase {
 
@@ -89,15 +92,17 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 		$into = $this->object(uuid: 'into-uuid', sources: [['sourceSystem' => 'kvk-api', 'lastUpdated' => '2026-05-01', 'values' => ['name' => 'Voorbeeld B.V.']]]);
 
 		$objects = $this->createMock(ObjectService::class);
-		$objects->method('find')->willReturnMap(
+		$objects->method('find')->willReturnCallback(FindCallShape::returnMap(
 			[
 				['from-uuid', [], false, null, null, true, true, true, true, $from],
 				['into-uuid', [], false, null, null, true, true, true, true, $into],
 			]
-		);
+		));
 		$objects->method('findAll')->willReturn([]);
 		$objects->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$payload = $object instanceof ObjectEntity ? $object->getObject() : $object;
 				$this->saves[] = ['payload' => $payload, 'register' => $register, 'schema' => $schema];
 				if ($object instanceof ObjectEntity) {
@@ -159,7 +164,7 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 
 	public function testTheDefaultStatusesAreWrittenToTheLoserAndTheSurvivorInOrder(): void {
 		$operation = $this->service(mergeConfig: ['sourceLinkField' => 'sources', 'entityType' => 'organisation'])
-			->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+			->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertCount(3, $this->saves);
 
@@ -197,7 +202,7 @@ class MergeServiceExecuteCharacterisationTest extends TestCase {
 	public function testTheAnnotationNamesTheStatusFieldAndBothStatuses(): void {
 		$this->service(
 			mergeConfig: ['sourceLinkField' => 'sources', 'statusField' => 'state', 'survivorStatus' => 'live', 'mergedStatus' => 'gone']
-		)->executeMerge('from-uuid', 'into-uuid', 'duplicate', 'alice');
+		)->merge(instruction: new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'duplicate', mergedBy: 'alice'));
 
 		$this->assertSame('gone', $this->saves[0]['payload']['state']);
 		$this->assertSame('active', $this->saves[0]['payload']['status']);

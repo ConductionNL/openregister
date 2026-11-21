@@ -94,7 +94,8 @@ class DuplicateCandidateCheckTest extends TestCase {
 			$this->objectService,
 			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)), new SimilarityCalculator()),
 			$this->dismissals,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Search\Service\Quality\TextGroupFinder::class)
 		);
 	}//end setUp()
 
@@ -166,8 +167,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 		);
 
 		$matches = $this->service->checkCandidate(
-			1,
-			1,
+			new DedupRun(1, 1),
 			['requester' => 'bsn:123', 'subject' => 'kapvergunning eik']
 		);
 
@@ -209,7 +209,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 		);
 
 		$pairs = $this->service->findDuplicates(request: new DedupRun(register: 1, schema: 1));
-		$matches = $this->service->checkCandidate(1, 1, $left);
+		$matches = $this->service->checkCandidate(new DedupRun(1, 1), $left);
 
 		$this->assertCount(1, $pairs);
 		// Two stored objects pair with each other; the candidate IS `a`, so it
@@ -240,7 +240,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->service->checkCandidate(1, 1, ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'])
+			$this->service->checkCandidate(new DedupRun(1, 1), ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'])
 		);
 	}//end testCandidateBelowTheThresholdIsNotReturned()
 
@@ -283,8 +283,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 		);
 
 		$matches = $this->service->checkCandidate(
-			1,
-			1,
+			new DedupRun(1, 1),
 			['postalCode' => '  1234 ab ', 'requester' => 'bsn:123', 'subject' => 'Kapvergunning']
 		);
 
@@ -311,7 +310,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$this->assertSame([], $this->service->checkCandidate(1, 1, ['requester' => 'bsn:123']));
+		$this->assertSame([], $this->service->checkCandidate(new DedupRun(1, 1), ['requester' => 'bsn:123']));
 	}//end testCandidateWithoutABlockingValueMatchesNothingAndReadsNothing()
 
 	/**
@@ -325,7 +324,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 		$this->stubSchema([]);
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$this->assertSame([], $this->service->checkCandidate(1, 1, ['requester' => 'bsn:123']));
+		$this->assertSame([], $this->service->checkCandidate(new DedupRun(1, 1), ['requester' => 'bsn:123']));
 	}//end testSchemaWithoutRulesReturnsNoMatches()
 
 	/**

@@ -195,10 +195,17 @@ survives even where the priority moved.
 
 ## Phase 2 — the write itself
 
-- [ ] **Task 5 — stop probing `information_schema.tables` per insert.**
+- [x] **Task 5 — stop probing `information_schema.tables` per insert.**
       9 probes, 4.7 ms per create, asking whether a magic table exists. The
       answer changes only when a register/schema pair is created or dropped.
       Cache it for the request and invalidate on table create/drop.
+      > 2026-11-13: `checkTableExistsInDatabase()` already remembers a positive answer per
+      > request (`tableExistsMemo`), and `invalidateTableMemos()` clears it on create. The
+      > drop half was missing: `dropTable()` left the table remembered as existing, so a
+      > probe later in the same request said "exists" for a dropped table. It now takes the
+      > table out of the memo and drops the enumeration memo. Pinned in
+      > `tests/Unit/Db/MagicMapper/MagicMapperTableExistsMemoTest` (one probe for an existing
+      > table, a missing one asked again, a dropped one asked again).
 
 - [ ] **Task 6 — one transaction per write.**
       ~135 commits → **1**. Wrap the create/update path in a single
@@ -277,12 +284,22 @@ survives even where the priority moved.
       where the cost is bounded. One cleared config key is currently the
       difference between free and a repair step per request.
 
-- [ ] **Task 13 — justify the cron intervals.**
+- [x] **Task 13 — justify the cron intervals.**
       31 registered jobs, 8 at 60 s. An idle instance does 18 schema sequential
       scans and 356 commits per 4 seconds, which is the noise floor every
       measurement in this change fights. For each 60 s job, state the drift rate
       that requires 60 s or widen it. `ConfigurationCheckJob` is already at
       `86400 * 365`, which shows the range is deliberate elsewhere.
+      > 2026-11-13: re-counted from source: **4** jobs run at 60 s, not 8. Each
+      > one's contract needs that drift bound, so none was widened.
+      > `FlowRunWorker`: a triggered flow waits for this drain. `NotificationQueueFlushJob`:
+      > it releases held notifications at their due minute. `PresenceExpiryJob`: it must
+      > sweep faster than the 90 s presence window. `ScheduledNotificationJob`: declared
+      > `intervalSec` goes down to 60 s. The reasons are pinned in
+      > `tests/Unit/Architecture/MinuteCronJobsAreJustifiedTest`. It fails on a new job at
+      > ≤ 60 s with no reason, on a stale reason, and on a run-time interval whose default
+      > is not checked to be over a minute.
+
 
 ## Phase 5 — verification
 

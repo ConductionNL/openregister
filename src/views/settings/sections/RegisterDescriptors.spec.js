@@ -26,7 +26,6 @@ jest.mock('@nextcloud/router', () => ({
 jest.mock(
 	'vue-material-design-icons/Download.vue',
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
-	{ virtual: true },
 )
 jest.mock('../../../components/shared/SettingsSection.vue', () => {
 	const { h } = jest.requireActual('vue')
@@ -216,5 +215,42 @@ describe('the Register descriptors panel', () => {
 		expect(note.text()).not.toContain('Authorization taken')
 		expect(note.classes()).toContain('descriptors__outcome--good')
 		wrapper.unmount()
+	})
+})
+
+describe('RegisterDescriptors display helpers', () => {
+	/**
+	 * A bare context with the panel's methods bound and a plain t().
+	 *
+	 * @return {object} The context
+	 */
+	function helpers() {
+		const ctx = { t: (app, text, vars) => (vars ? text.replace(/\{(\w+)\}/g, (_, k) => vars[k]) : text) }
+		for (const [name, fn] of Object.entries(RegisterDescriptors.methods)) {
+			if (typeof fn === 'function') ctx[name] = fn.bind(ctx)
+		}
+		return ctx
+	}
+
+	it('keys a row by app and slug and highlights anything not current', () => {
+		const ctx = helpers()
+		expect(ctx.rowKey({ appId: 'dossiq', slug: 'zaak' })).toBe('dossiq/zaak')
+		expect(ctx.rowClass({ state: 'current' })).toBe('')
+		expect(ctx.rowClass({ state: 'behind' })).toBe('descriptors__row--attention')
+		expect(ctx.rowClass({ state: 'absent' })).toBe('descriptors__row--attention')
+	})
+
+	it('labels each state distinctly', () => {
+		const ctx = helpers()
+		expect(ctx.stateLabel('absent')).toBe('Missing')
+		expect(ctx.stateLabel('behind')).toBe('Out of date')
+		expect(ctx.stateLabel('current')).toBe('Present')
+	})
+
+	it('summarises the installed and shipped versions', () => {
+		const ctx = helpers()
+		expect(ctx.versionLabel({ installedVersion: null, shippedVersion: '2.0' })).toBe('ships v2.0')
+		expect(ctx.versionLabel({ installedVersion: '1.0', shippedVersion: '2.0', state: 'behind' })).toBe('v1.0 → ships v2.0')
+		expect(ctx.versionLabel({ installedVersion: '2.0', state: 'current' })).toBe('v2.0')
 	})
 })

@@ -38,6 +38,11 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\ObjectFavouriteController
  * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class ObjectFavouriteControllerTest extends TestCase {
 

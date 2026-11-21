@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
  */
 class MdtoEventMapperBoundTest extends TestCase {
 
@@ -70,7 +72,7 @@ class MdtoEventMapperBoundTest extends TestCase {
 	 */
 	private function events(array $recent, array $creation, array &$logged): array {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willReturnOnConsecutiveCalls($recent, $creation);
+		$mapper->method('findTrail')->willReturnOnConsecutiveCalls($recent, $creation);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('info')->willReturnCallback(
 			function (string $message, array $context) use (&$logged): void {

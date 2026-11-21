@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -63,14 +64,14 @@ final class DestructionRecordShapeGoldenTest extends TestCase {
 		$call   = [];
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->expects(self::once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (...$args) use (&$call): AuditTrail {
 					$call = $args;
 
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$recorder = new DestructionRecorder($mapper, $this->session('rm-1'), new NullLogger());
 		$record   = $recorder->recordDestruction(command: new RecordDestructionCommand(object: $this->object(), scope: ['scope' => ['notes'], 'destroyed' => ['notes' => 1], 'total' => 1, 'failed' => ['files']], rule: 'retention-sweep', context: ['rule' => 'overridden', 'window' => ['days' => 30]]));
@@ -117,7 +118,7 @@ final class DestructionRecordShapeGoldenTest extends TestCase {
 	public function testAnUnwritableRecordRefusesWithTheCauseChained(): void {
 		$cause  = new RuntimeException('db down');
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('createAuditTrailEntry')->willThrowException($cause);
+		$mapper->method('recordObjectEvent')->willThrowException($cause);
 
 		$recorder = new DestructionRecorder($mapper, $this->session('rm-1'), new NullLogger());
 		try {

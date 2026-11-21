@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -56,7 +57,7 @@ use OCP\IUserSession;
  *   across classes would put the schema's grammar in two places, which is the drift the
  *   single-reading rule in the docblock above exists to prevent.
  */
-class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
+class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRulesSourceInterface {
 
 	/**
 	 * The three rule kinds a state's `fields` block may declare.
@@ -454,17 +455,9 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function document(array $data, string $state): array {
-		$user = $this->userSession->getUser();
-		$uid = '';
-		$groups = [];
-		if ($user !== null) {
-			$uid = $user->getUID();
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
 		return [
 			'object' => $data,
-			'user' => ['uid' => $uid, 'groups' => $groups],
+			'user' => ConditionUser::of(userSession: $this->userSession, groupManager: $this->groupManager),
 			'state' => $state,
 		];
 	}//end document()
