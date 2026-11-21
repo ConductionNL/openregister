@@ -117,15 +117,30 @@ class CallerRateLimiter implements CallerRateLimiterInterface {
 			return null;
 		}
 
-		$window = $ceiling['windowSeconds'];
-		$limit = $ceiling['limit'];
+		$windowStart = ($now - ($now % $ceiling['windowSeconds']));
+		$used        = $this->countCall(
+			key: $this->keyFor(principal: $principal, windowStart: $windowStart),
+			window: $ceiling['windowSeconds']
+		);
+		if ($used === null) {
+			return null;
+		}
 
-		$windowStart = ($now - ($now % $window));
-		$resetAt = ($windowStart + $window);
-		$key = $this->keyFor(principal: $principal, windowStart: $windowStart);
+		return $this->usage(limit: $ceiling['limit'], used: $used) + ['resetAt' => ($windowStart + $ceiling['windowSeconds'])];
 
+	}//end consume()
+
+	/**
+	 * Count one call in a window's counter; null when the counter cannot count.
+	 *
+	 * @param string $key    The window's cache key.
+	 * @param int    $window The window length in seconds.
+	 *
+	 * @return int|null The calls counted in the window so far, this one included.
+	 */
+	private function countCall(string $key, int $window): ?int {
 		try {
-			$used = $this->cache->inc($key);
+			$used = $this->cache?->inc($key);
 			if (is_int($used) === false) {
 				return null;
 			}
@@ -133,20 +148,30 @@ class CallerRateLimiter implements CallerRateLimiterInterface {
 			// The counter has to expire, or a caller's first window would bound
 			// it forever. Set the lifetime once, on the call that created it.
 			if ($used === 1) {
-				$this->cache->set($key, 1, ($window + 1));
+				$this->cache?->set($key, 1, ($window + 1));
 			}
 		} catch (Throwable) {
 			return null;
 		}
 
+		return $used;
+	}//end countCall()
+
+	/**
+	 * Whether a count is within its limit, and what is left of it.
+	 *
+	 * @param int $limit The calls a window allows.
+	 * @param int $used  The calls counted so far.
+	 *
+	 * @return array{allowed: bool, limit: int, remaining: int} The verdict.
+	 */
+	private function usage(int $limit, int $used): array {
 		return [
 			'allowed' => ($used <= $limit),
 			'limit' => $limit,
 			'remaining' => max(0, ($limit - $used)),
-			'resetAt' => $resetAt,
 		];
-
-	}//end consume()
+	}//end usage()
 
 	/**
 	 * The cache key for one caller's window.

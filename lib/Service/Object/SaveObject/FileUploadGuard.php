@@ -208,7 +208,7 @@ final class FileUploadGuard {
 		}
 
 		$context = ['filename' => $fileData['filename'], 'extension' => $extension, 'mimeType' => $fileData['mimeType'] ?? 'unknown'];
-		$this->log->write(level: 'warning', message: '[FilePropertyHandler] Executable file upload blocked', context: $context);
+		$this->log->warning(message: '[FilePropertyHandler] Executable file upload blocked', context: $context);
 		throw new Exception(
 			"$errorPrefix is an executable file (.$extension). Executable files are blocked for security reasons. "
 			. 'Allowed formats: documents, images, archives, data files.'
@@ -232,7 +232,7 @@ final class FileUploadGuard {
 			return;
 		}
 
-		$this->log->write(level: 'warning', message: '[FilePropertyHandler] Executable MIME type blocked', context: ['mimeType' => $mimeType]);
+		$this->log->warning(message: '[FilePropertyHandler] Executable MIME type blocked', context: ['mimeType' => $mimeType]);
 		throw new Exception(
 			"$errorPrefix has executable MIME type '$mimeType'. " . 'Executable files are blocked for security reasons.'
 		);
@@ -254,7 +254,7 @@ final class FileUploadGuard {
 			return;
 		}
 
-		$this->log->write(level: 'warning', message: '[FilePropertyHandler] Executable magic bytes detected', context: ['type' => $description]);
+		$this->log->warning(message: '[FilePropertyHandler] Executable magic bytes detected', context: ['type' => $description]);
 		$msg = "$errorPrefix contains executable code ($description). ";
 		throw new Exception($msg . 'Executable files are blocked for security reasons.');
 	}//end blockExecutableSignature()

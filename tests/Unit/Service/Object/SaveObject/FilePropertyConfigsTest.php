@@ -22,6 +22,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 final class FilePropertyConfigsTest extends TestCase {
 

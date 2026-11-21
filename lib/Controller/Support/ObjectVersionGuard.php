@@ -27,6 +27,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
+use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -37,7 +38,7 @@ use Psr\Log\LoggerInterface;
  * A caller that read the object sends the `updated` it saw as `_expectedUpdated`
  * or `If-Match`. A write that names no version is not checked.
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+ * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
  */
 final class ObjectVersionGuard {
 	/**
@@ -50,7 +51,7 @@ final class ObjectVersionGuard {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function __construct(
 		private readonly VersionClaim $claim,
@@ -68,7 +69,7 @@ final class ObjectVersionGuard {
 	 *
 	 * @return JSONResponse|null The 409, or null when the caller may write.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
 	 */
 	public function refusal(ObjectEntity $stored, SentWrite $write): ?JSONResponse {
 		$expected = $this->claim->version();
@@ -125,14 +126,12 @@ final class ObjectVersionGuard {
 	 *
 	 * @return array<string, mixed>|null The report.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	private function report(VersionMismatch $mismatch, SentWrite $write): ?array {
 		try {
 			return $this->container->get(ConflictReportInterface::class)->build(
-				stored: $mismatch->stored,
-				schema: $write->schema,
-				sent: $write->data,
+				write: new RefusedWrite(stored: $mismatch->stored, schema: $write->schema, sent: $write->data),
 				intervening: $this->trail->interveningChanges(mismatch: $mismatch)
 			);
 		} catch (\Throwable $e) {

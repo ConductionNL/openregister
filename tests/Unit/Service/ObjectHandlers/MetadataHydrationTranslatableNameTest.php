@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\TemplateSource;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -68,10 +69,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	public function testASingleLanguageMapResolvesToItsValue(): void {
 		$name = 'Rijkswaterstaat - Onderhoudscontract software 2026';
 
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['nl' => $name]],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['nl' => $name]], schemaProperties: []));
 
 		$this->assertSame(expected: $name, actual: $result);
 		// The exact shape a user was shown on the page.
@@ -90,10 +88,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAMultiLanguageMapTakesTheFirstDeclared(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['en' => 'Maintenance contract', 'nl' => 'Onderhoudscontract']],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['en' => 'Maintenance contract', 'nl' => 'Onderhoudscontract']], schemaProperties: []));
 
 		$this->assertSame(expected: 'Maintenance contract', actual: $result);
 	}//end testAMultiLanguageMapTakesTheFirstDeclared()
@@ -106,10 +101,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAnEmptyLeadingLanguageIsSkipped(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['en' => '   ', 'nl' => 'Onderhoudscontract']],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['en' => '   ', 'nl' => 'Onderhoudscontract']], schemaProperties: []));
 
 		$this->assertSame(expected: 'Onderhoudscontract', actual: $result);
 	}//end testAnEmptyLeadingLanguageIsSkipped()
@@ -122,10 +114,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testARegionalSubtagIsRecognised(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['nl-BE' => 'Onderhoudscontract']],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['nl-BE' => 'Onderhoudscontract']], schemaProperties: []));
 
 		$this->assertSame(expected: 'Onderhoudscontract', actual: $result);
 	}//end testARegionalSubtagIsRecognised()
@@ -141,10 +130,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testANonLanguageArrayStillEncodes(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['street' => 'Industrieweg', 'number' => 12]],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['street' => 'Industrieweg', 'number' => 12]], schemaProperties: []));
 
 		$this->assertSame(expected: '{"street":"Industrieweg","number":12}', actual: $result);
 	}//end testANonLanguageArrayStillEncodes()
@@ -160,10 +146,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAListStillEncodes(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['one', 'two']],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['one', 'two']], schemaProperties: []));
 
 		$this->assertSame(expected: '["one","two"]', actual: $result);
 	}//end testAListStillEncodes()
@@ -179,10 +162,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testANestedValueUnderALanguageKeyStillEncodes(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => ['nl' => ['first' => 'a']]],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => ['nl' => ['first' => 'a']]], schemaProperties: []));
 
 		$this->assertSame(expected: '{"nl":{"first":"a"}}', actual: $result);
 	}//end testANestedValueUnderALanguageKeyStillEncodes()
@@ -195,10 +175,7 @@ class MetadataHydrationTranslatableNameTest extends TestCase {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testAPlainStringIsUnchanged(): void {
-		$result = $this->handler->extractMetadataValue(
-			data: ['title' => 'Zonnepanelen op monument Grote Kerk'],
-			fieldPath: 'title'
-		);
+		$result = $this->handler->metadataText(fieldPath: 'title', source: new TemplateSource(data: ['title' => 'Zonnepanelen op monument Grote Kerk'], schemaProperties: []));
 
 		$this->assertSame(expected: 'Zonnepanelen op monument Grote Kerk', actual: $result);
 	}//end testAPlainStringIsUnchanged()

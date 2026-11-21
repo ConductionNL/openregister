@@ -49,6 +49,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Unit tests for the repaired SchemaMapper::delete() guard.
@@ -83,14 +85,18 @@ class SchemaMapperDeleteGuardTest extends TestCase {
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->mapper = new SchemaMapper(
-			$this->db,
-			$this->eventDispatcher,
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->db,
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->eventDispatcher,
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->schema = new Schema();

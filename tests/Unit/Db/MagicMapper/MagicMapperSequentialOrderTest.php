@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use DateTime;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -99,7 +100,7 @@ class MagicMapperSequentialOrderTest extends TestCase {
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs(
 				[
-					$this->createMock(IDBConnection::class),
+					$this->mysqlConnection(),
 					new MagicMapperLookups(
 						$this->createMock(SchemaMapper::class),
 						$this->createMock(RegisterMapper::class),
@@ -250,8 +251,7 @@ class MagicMapperSequentialOrderTest extends TestCase {
 		$rows = $method->invoke(
 			$this->mapper(),
 			array_merge(self::ROWS['zaak'], self::ROWS['taak']),
-			$query,
-			false
+			$query
 		);
 
 		return array_column($rows, '_uuid');
@@ -327,4 +327,15 @@ class MagicMapperSequentialOrderTest extends TestCase {
 			$this->sequentialPage(query: ['_recentViews' => $views, '_offset' => 2, '_limit' => 2])
 		);
 	}//end testTheRecentLensOrdersByTheReadHistory()
+	/**
+	 * A connection on a MySQL platform, the non-PostgreSQL dialect the union merge assertions are written for.
+	 *
+	 * @return IDBConnection The connection.
+	 */
+	private function mysqlConnection(): IDBConnection {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractMySQLPlatform::class));
+
+		return $db;
+	}//end mysqlConnection()
 }//end class

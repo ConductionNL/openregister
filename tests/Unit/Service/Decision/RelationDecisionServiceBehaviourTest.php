@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
@@ -48,6 +49,10 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Exception\CustomValidationException
  * @uses   \OCA\OpenRegister\Db\Decision
  * @uses   \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\DecisionMetadataEdit
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\GivenDecision
  */
 class RelationDecisionServiceBehaviourTest extends TestCase
 {
@@ -95,7 +100,8 @@ class RelationDecisionServiceBehaviourTest extends TestCase
             ['policy' => ReviewPolicy::fromDeclaration(declaration: ['ownership' => 'decider']), 'subject' => ['subjectId' => '5']]
         );
         $this->relations->method('updateDecisionMetadata')->willReturnCallback(
-            static function (EntityRelation $relation, array $fields): EntityRelation {
+            static function (DecisionMetadataEdit $edit): EntityRelation {
+                [$relation, $fields] = [$edit->relation, $edit->fields];
                 if (array_key_exists('bases', $fields) === true) {
                     $relation->setBases($fields['bases']);
                 }

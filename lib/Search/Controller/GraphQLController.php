@@ -29,14 +29,14 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
 /**
@@ -48,6 +48,7 @@ use OCP\IRequest;
  * @psalm-suppress UnusedClass - Registered via routes.php
  */
 class GraphQLController extends Controller {
+
 	/**
 	 * GraphQLController constructor.
 	 *
@@ -58,7 +59,7 @@ class GraphQLController extends Controller {
 		IRequest $request,
 		private readonly GraphQLControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -88,17 +89,7 @@ class GraphQLController extends Controller {
 		$data = json_decode($body, true);
 
 		if ($data === null || isset($data['query']) === false) {
-			return new JSONResponse(
-				[
-					'errors' => [
-						[
-							'message' => 'Request body must be JSON with a "query" field',
-							'extensions' => ['code' => 'BAD_REQUEST'],
-						],
-					],
-				],
-				400
-			);
+			return $this->badRequestResponse();
 		}
 
 		$query = $data['query'];
@@ -107,149 +98,112 @@ class GraphQLController extends Controller {
 
 		$result = $this->services->graphQLService->execute($query, $variables, $operationName);
 
-		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
-		$status = 200;
-		$headers = [];
-		if (isset($result['data']) === false && isset($result['errors']) === true) {
-			$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
-			$status = 400;
-			if ($firstCode === 'RATE_LIMITED') {
-				$status = 429;
-				$retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);
-				$headers['Retry-After'] = (string)$retryAfter;
-			}
-		}
+		return $this->resultResponse(result: $result);
+	}//end execute()
+
+	/**
+	 * The 400 for a request body that is not JSON with a `query` field.
+	 *
+	 * @return JSONResponse
+	 */
+	private function badRequestResponse(): JSONResponse {
+		return new JSONResponse(
+			[
+				'errors' => [
+					[
+						'message' => 'Request body must be JSON with a "query" field',
+						'extensions' => ['code' => 'BAD_REQUEST'],
+					],
+				],
+			],
+			400
+		);
+	}//end badRequestResponse()
+
+	/**
+	 * The response for an executed query, with a Retry-After header when it was rate limited.
+	 *
+	 * @param array<string, mixed> $result The GraphQL result.
+	 *
+	 * @return JSONResponse
+	 */
+	private function resultResponse(array $result): JSONResponse {
+		$status = $this->statusOf(result: $result);
 
 		$response = new JSONResponse($result, $status);
-		foreach ($headers as $name => $value) {
-			$response->addHeader($name, $value);
+		if ($status === 429) {
+			$retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);
+			$response->addHeader('Retry-After', (string)$retryAfter);
 		}
 
 		return $response;
-	}//end execute()
+	}//end resultResponse()
+
+	/**
+	 * The HTTP status of a GraphQL result.
+	 *
+	 * 200 for data, even with partial errors. 400 for errors without data, or for a
+	 * request the first error refuses. 429 when that error is a rate limit.
+	 *
+	 * @param array<string, mixed> $result The GraphQL result.
+	 *
+	 * @return int The status.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function statusOf(array $result): int {
+		$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
+		if (isset($result['errors']) === false
+			|| (isset($result['data']) === true && $firstCode !== 'BAD_REQUEST')
+		) {
+			return 200;
+		}
+
+		if ($firstCode === 'RATE_LIMITED') {
+			return 429;
+		}
+
+		return 400;
+	}//end statusOf()
 
 	/**
 	 * Serve the GraphiQL interactive explorer.
 	 *
-	 * @return Response The HTML response with GraphiQL
+	 * The explorer is bundled with the app (`openregister-graphqlExplorer.js`), so the page runs under
+	 * Nextcloud's default policy: no outside script domain, no inline or eval script. Only the editor's
+	 * workers, which the bundle starts from this instance, are allowed explicitly.
 	 *
-	 * @NoAdminRequired
+	 * @return TemplateResponse The explorer page
+	 *
+	 * @auth admin-only the explorer runs any query the administrator types, so only an administrator opens it
 	 *
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt No per-object resource: returns the static GraphiQL explorer HTML page; no data access.
+	 * @no-admin-idor-exempt No per-object resource: returns the explorer page shell; no data access.
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+	 *
+	 * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.2
 	 */
-	public function explorer(): Response {
-		$html = $this->getGraphiQLHtml();
-
-		// Create a response that renders raw HTML.
-		// @psalm-suppress MissingTemplateParam.
-		$response = new class($html) extends Response {
-
-			/**
-			 * The HTML content to render.
-			 *
-			 * @var string
-			 */
-			private string $html;
-
-			/**
-			 * Constructor.
-			 *
-			 * @param string $html The HTML content
-			 */
-			public function __construct(string $html) {
-				parent::__construct();
-				$this->html = $html;
-				// @phpcs:ignore CustomSniffs.Functions.NamedParameters
-				$this->addHeader('Content-Type', 'text/html; charset=utf-8');
-			}//end __construct()
-
-			/**
-			 * Render the HTML body.
-			 *
-			 * @return string The HTML
-			 *
-			 * @spec exclude Framework Response::render() override on an inline anonymous class for the GraphiQL
-			 *              explorer; the explorer route is owned by retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2.
-			 */
-			public function render(): string {
-				return $this->html;
-			}//end render()
-		};
-
-		// Relax CSP to allow CDN-hosted GraphiQL assets.
-		$csp = new ContentSecurityPolicy();
-		$csp->addAllowedScriptDomain('https://unpkg.com');
-		$csp->addAllowedScriptDomain('\'unsafe-inline\'');
-		$csp->addAllowedStyleDomain('https://unpkg.com');
-		$csp->addAllowedFontDomain('https://unpkg.com');
-		$csp->addAllowedConnectDomain('\'self\'');
-		$csp->allowInlineStyle(true);
-		$csp->allowEvalScript(true);
-		$response->setContentSecurityPolicy($csp);
+	public function explorer(): TemplateResponse {
+		$response = new TemplateResponse(appName: AppIdentity::APP_ID, templateName: 'graphqlExplorer', params: []);
+		$response->setContentSecurityPolicy($this->explorerPolicy());
 
 		return $response;
 	}//end explorer()
 
 	/**
-	 * Get the GraphiQL HTML page.
+	 * The explorer's content security policy: Nextcloud's default, plus workers from this instance.
 	 *
-	 * Uses the CDN-hosted GraphiQL for simplicity.
+	 * @return ContentSecurityPolicy
 	 *
-	 * @return string The HTML content
+	 * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.2
 	 */
-	private function getGraphiQLHtml(): string {
-		$endpoint = $this->services->urlGenerator->linkToRoute('openregister.graphQL.execute');
+	private function explorerPolicy(): ContentSecurityPolicy {
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedWorkerSrcDomain(domain: '\'self\'');
 
-		// Ensure /index.php is included for environments without URL rewriting.
-		if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
-			$endpoint = '/index.php' . $endpoint;
-		}
-
-		// Get CSP nonce for inline scripts and CSRF request token for auth.
-		$nonce = $this->services->nonceManager->getNonce();
-		$requestToken = $this->services->csrfManager->getToken()->getEncryptedValue();
-
-		return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenRegister GraphQL Explorer</title>
-    <style nonce="{$nonce}">
-        body { height: 100vh; margin: 0; overflow: hidden; }
-        #graphiql { height: 100vh; }
-    </style>
-    <link rel="stylesheet" href="https://unpkg.com/graphiql@3/graphiql.min.css" />
-</head>
-<body>
-    <div id="graphiql">Loading...</div>
-    <script nonce="{$nonce}" src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script nonce="{$nonce}" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script nonce="{$nonce}" src="https://unpkg.com/graphiql@3/graphiql.min.js" crossorigin></script>
-    <script nonce="{$nonce}">
-        const fetcher = GraphiQL.createFetcher({
-            url: '{$endpoint}',
-            headers: {
-                'requesttoken': '{$requestToken}',
-            },
-        });
-
-        const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-        root.render(
-            React.createElement(GraphiQL, {
-                fetcher: fetcher,
-                defaultEditorToolsVisibility: true,
-            })
-        );
-    </script>
-</body>
-</html>
-HTML;
-
-	}//end getGraphiQLHtml()
+		return $csp;
+	}//end explorerPolicy()
 }//end class

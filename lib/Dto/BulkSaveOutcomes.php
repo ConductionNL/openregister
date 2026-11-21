@@ -39,34 +39,28 @@ final class BulkSaveOutcomes {
 	/**
 	 * Summarise a raw `ObjectService::saveObjects()` result.
 	 *
-	 * @param array $bulkResult     Raw result from ObjectService::saveObjects().
-	 * @param int   $requestedCount Rows the caller submitted.
-	 * @param int   $accountedCount Rows the result accounts for (saved + updated + unchanged).
+	 * @param array        $bulkResult Raw result from ObjectService::saveObjects().
+	 * @param BulkRowCount $rows       Rows the caller submitted and rows the result accounts for.
 	 *
 	 * @return BulkSaveOutcomeInterface The summarised outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public static function fromBulkResult(array $bulkResult, int $requestedCount, int $accountedCount): BulkSaveOutcomeInterface {
-		return BulkSaveOutcome::fromBulkResult(bulkResult: $bulkResult, requestedCount: $requestedCount, accountedCount: $accountedCount);
+	public static function fromBulkResult(array $bulkResult, BulkRowCount $rows): BulkSaveOutcomeInterface {
+		return BulkSaveOutcome::fromSaveResult(bulkResult: $bulkResult, rows: $rows);
 	}//end fromBulkResult()
 
 	/**
 	 * Summarise a streaming batch status into the same shape.
 	 *
-	 * @param BatchOperationStatusInterface $status         Per-row outcomes from the streaming save.
-	 * @param int                           $requestedCount Rows the caller submitted.
-	 * @param int                           $accountedCount Rows the status accounts for (created + updated + unchanged).
+	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
+	 * @param StreamedRowCount              $rows   Rows the caller submitted and rows the status accounts for.
 	 *
 	 * @return BulkSaveOutcomeInterface The summarised outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public static function fromBatchStatus(
-		BatchOperationStatusInterface $status,
-		int $requestedCount,
-		int $accountedCount
-	): BulkSaveOutcomeInterface {
-		return BulkSaveOutcome::fromBatchStatus(status: $status, requestedCount: $requestedCount, accountedCount: $accountedCount);
+	public static function fromBatchStatus(BatchOperationStatusInterface $status, StreamedRowCount $rows): BulkSaveOutcomeInterface {
+		return BulkSaveOutcome::fromStreamedBatch(status: $status, rows: $rows);
 	}//end fromBatchStatus()
 }//end class

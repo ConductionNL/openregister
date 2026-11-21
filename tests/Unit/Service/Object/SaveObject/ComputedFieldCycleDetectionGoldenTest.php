@@ -32,6 +32,8 @@ use Twig\Environment;
  * Pins the exact cycles, their order and their paths, for a range of graphs.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
  */
 class ComputedFieldCycleDetectionGoldenTest extends TestCase {
 

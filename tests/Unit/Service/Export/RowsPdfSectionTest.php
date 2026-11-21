@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Export\RowsPdfSection
+ * @uses \OCA\OpenRegister\Service\Export\RowsTable
  */
 class RowsPdfSectionTest extends TestCase {
 

@@ -1,0 +1,707 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects 7, the store answering alreadyListed 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": 7,
+    "label": "Seven",
+    "name": "Seven",
+    "uuid": "u-7",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects 7, the store answering bare 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": 7,
+    "label": "Seven",
+    "name": "Seven",
+    "uuid": "u-7",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects 7, the store answering full 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": 7,
+    "label": "Seven",
+    "name": "Seven",
+    "uuid": "u-7",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects 7, the store answering none 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": 7,
+    "label": "Seven",
+    "name": "Seven",
+    "uuid": "u-7",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects 7, the store answering thrown 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": 7,
+    "label": "Seven",
+    "name": "Seven",
+    "uuid": "u-7",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-1, the store answering alreadyListed 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "u-1",
+    "label": "One",
+    "name": "One",
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-1, the store answering bare 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "u-1",
+    "label": "One",
+    "name": "One",
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-1, the store answering full 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "u-1",
+    "label": "One",
+    "name": "One",
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-1, the store answering none 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "u-1",
+    "label": "One",
+    "name": "One",
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-1, the store answering thrown 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "u-1",
+    "label": "One",
+    "name": "One",
+    "uuid": "u-1",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-2, the store answering alreadyListed 1`] = `
+{
+  "calls": [
+    [
+      "u-2",
+    ],
+  ],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "description": undefined,
+    "id": "u-9",
+    "isDefault": undefined,
+    "label": "Nine fetched",
+    "name": "Nine fetched",
+    "users": [],
+    "uuid": "u-9",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-2, the store answering bare 1`] = `
+{
+  "calls": [
+    [
+      "u-2",
+    ],
+  ],
+  "logged": [],
+  "options": [
+    {
+      "description": undefined,
+      "id": "u-3",
+      "isDefault": undefined,
+      "label": "Three",
+      "name": "Three",
+      "users": [],
+      "uuid": "u-3",
+    },
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "description": undefined,
+    "id": "u-3",
+    "isDefault": undefined,
+    "label": "Three",
+    "name": "Three",
+    "users": [],
+    "uuid": "u-3",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-2, the store answering full 1`] = `
+{
+  "calls": [
+    [
+      "u-2",
+    ],
+  ],
+  "logged": [],
+  "options": [
+    {
+      "description": "Second",
+      "id": "u-2",
+      "isDefault": false,
+      "label": "Two",
+      "name": "Two",
+      "users": [
+        "b",
+      ],
+      "uuid": "u-2",
+    },
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "description": "Second",
+    "id": "u-2",
+    "isDefault": false,
+    "label": "Two",
+    "name": "Two",
+    "users": [
+      "b",
+    ],
+    "uuid": "u-2",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-2, the store answering none 1`] = `
+{
+  "calls": [
+    [
+      "u-2",
+    ],
+  ],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": "kept",
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-2, the store answering thrown 1`] = `
+{
+  "calls": [
+    [
+      "u-2",
+    ],
+  ],
+  "logged": [
+    [
+      "Error loading preselected organisation:",
+      "Error(Not found)",
+    ],
+  ],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": "kept",
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-9, the store answering alreadyListed 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "x",
+    "label": "Nine loaded",
+    "name": "Nine loaded",
+    "uuid": "u-9",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-9, the store answering bare 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "x",
+    "label": "Nine loaded",
+    "name": "Nine loaded",
+    "uuid": "u-9",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-9, the store answering full 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "x",
+    "label": "Nine loaded",
+    "name": "Nine loaded",
+    "uuid": "u-9",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-9, the store answering none 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "x",
+    "label": "Nine loaded",
+    "name": "Nine loaded",
+    "uuid": "u-9",
+  },
+}
+`;
+
+exports[`JoinOrganisation.loadPreselectedOrganisation (golden) preselects u-9, the store answering thrown 1`] = `
+{
+  "calls": [],
+  "logged": [],
+  "options": [
+    {
+      "id": "u-1",
+      "label": "One",
+      "name": "One",
+      "uuid": "u-1",
+    },
+    {
+      "id": 7,
+      "label": "Seven",
+      "name": "Seven",
+      "uuid": "u-7",
+    },
+    {
+      "id": "x",
+      "label": "Nine loaded",
+      "name": "Nine loaded",
+      "uuid": "u-9",
+    },
+  ],
+  "selected": {
+    "id": "x",
+    "label": "Nine loaded",
+    "name": "Nine loaded",
+    "uuid": "u-9",
+  },
+}
+`;

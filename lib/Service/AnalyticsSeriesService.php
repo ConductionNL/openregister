@@ -143,11 +143,7 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 	 */
 	public function registerSeries(AnalyticsSeriesDraft $draft): array {
 		$this->assertRegistrable(draft: $draft);
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new InvalidArgumentException('A logged-in user is required to register a series');
-		}
+		$userUid = $this->registeringUserUid();
 
 		$now = new DateTime();
 		$existing = $this->mapper->findByKey($draft->seriesKey);
@@ -156,7 +152,7 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 		$entity->setUpdatedAt($now);
 
 		if ($existing === null) {
-			$entity->setCreatedBy($user->getUID());
+			$entity->setCreatedBy($userUid);
 			$entity->setCreatedAt($now);
 		}
 
@@ -168,6 +164,22 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 
 		return $saved->jsonSerialize();
 	}//end registerSeries()
+
+	/**
+	 * The UID of the user registering a series.
+	 *
+	 * @return string
+	 *
+	 * @throws InvalidArgumentException When no user is logged in.
+	 */
+	private function registeringUserUid(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new InvalidArgumentException('A logged-in user is required to register a series');
+		}
+
+		return $user->getUID();
+	}//end registeringUserUid()
 
 	/**
 	 * Refuse a series without a key, or with an unknown visibility or chart type.

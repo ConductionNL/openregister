@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -128,7 +129,7 @@ class ContactLinkMapperQueriesTest extends TestCase {
 	public function testNullRoleMatchesRolelessLinks(): void {
 		$this->results[] = [['id' => 4]];
 
-		$link = $this->mapper->findByObjectContactAndRole('obj-1', 'card-1', null);
+		$link = $this->mapper->findByObjectContactAndRole(new PersonLinkRef('obj-1', 'card-1', null));
 
 		$this->assertSame(4, $link?->getId());
 		$this->assertStringContainsString('andWhere(isNull(role))', $this->sql());
@@ -141,7 +142,7 @@ class ContactLinkMapperQueriesTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyRoleMatchesRolelessLinks(): void {
-		$this->mapper->findByObjectContactAndRole('obj-1', 'card-1', '');
+		$this->mapper->findByObjectContactAndRole(new PersonLinkRef('obj-1', 'card-1', ''));
 
 		$this->assertStringContainsString('andWhere(isNull(role))', $this->sql());
 		$this->assertCount(2, $this->params);
@@ -153,7 +154,7 @@ class ContactLinkMapperQueriesTest extends TestCase {
 	 * @return void
 	 */
 	public function testNamedRoleBindsTheRole(): void {
-		$result = $this->mapper->findByObjectContactAndRole('obj-1', 'card-1', 'witness');
+		$result = $this->mapper->findByObjectContactAndRole(new PersonLinkRef('obj-1', 'card-1', 'witness'));
 
 		$this->assertNull($result);
 		$this->assertStringContainsString('andWhere(eq(role, :p2))', $this->sql());

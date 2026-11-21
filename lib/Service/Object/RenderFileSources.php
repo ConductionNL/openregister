@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Service\FileReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileNodeLookupInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 
@@ -36,16 +36,16 @@ final class RenderFileSources {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FileMapperInterface         $fileMapper       The file metadata store.
-	 * @param FileReaderInterface         $fileService      The file reader.
+	 * @param ObjectFileRecordsInterface  $fileMapper       The file metadata store.
+	 * @param FileNodeLookupInterface     $fileService      The file reader.
 	 * @param ISystemTagManager           $systemTagManager The system tag manager.
 	 * @param ISystemTagObjectMapper      $systemTagMapper  The system tag object mapper.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
-		public readonly FileMapperInterface $fileMapper,
-		public readonly FileReaderInterface $fileService,
+		public readonly ObjectFileRecordsInterface $fileMapper,
+		public readonly FileNodeLookupInterface $fileService,
 		public readonly ISystemTagManager $systemTagManager,
 		public readonly ISystemTagObjectMapper $systemTagMapper,
 	) {

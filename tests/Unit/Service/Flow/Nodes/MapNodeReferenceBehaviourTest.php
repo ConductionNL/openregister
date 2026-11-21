@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -38,6 +39,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class MapNodeReferenceBehaviourTest extends TestCase {
 
@@ -62,7 +65,7 @@ class MapNodeReferenceBehaviourTest extends TestCase {
 		$this->mapper->expects(self::once())->method('findByRef')->with('zgw-zaak')->willReturn([$mapping]);
 		$this->mappings->expects(self::once())->method('executeMapping')->with($mapping, ['a' => 1])->willReturn(['b' => 1]);
 
-		$out = $this->node->execute([FlowItems::item(json: ['a' => 1])], ['mapping' => ' zgw-zaak '], []);
+		$out = $this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['a' => 1])], config: ['mapping' => ' zgw-zaak '], context: []));
 
 		self::assertSame(['b' => 1], $out[0][FlowItems::JSON]);
 	}//end testAMappingKnownOnlyByItsReferenceIsUsed()
@@ -74,7 +77,7 @@ class MapNodeReferenceBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('No mapping matches "zgw-zaak" by id, uuid, slug or reference.');
 
-		$this->node->execute([FlowItems::item(json: ['a' => 1])], ['mapping' => 'zgw-zaak'], []);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['a' => 1])], config: ['mapping' => 'zgw-zaak'], context: []));
 	}//end testAReferenceNothingAnswersToIsRefusedEvenWhenTheLookupFails()
 
 	public function testAnEmptyReferenceAnswerIsRefused(): void {
@@ -83,6 +86,6 @@ class MapNodeReferenceBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('No mapping matches "nope" by id, uuid, slug or reference.');
 
-		$this->node->execute([FlowItems::item(json: [])], ['mapping' => 'nope'], []);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: [])], config: ['mapping' => 'nope'], context: []));
 	}//end testAnEmptyReferenceAnswerIsRefused()
 }//end class

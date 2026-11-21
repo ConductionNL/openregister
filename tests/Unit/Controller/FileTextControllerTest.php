@@ -22,6 +22,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use Psr\Log\LoggerInterface;
 
 class FileTextControllerTest extends TestCase {
@@ -87,30 +88,38 @@ class FileTextControllerTest extends TestCase {
 	// =========================================================================
 	public function testGetFileTextReturnsTheExtractedText(): void {
 		$this->textExtractor->expects($this->once())
-			->method('getExtractedText')
+			->method('readExtractedText')
 			->with(1)
-			->willReturn('The extracted text.');
+			->willReturn(['text' => 'The extracted text.', 'chunkCount' => 2, 'extractedAt' => '2026-11-01T10:00:00+00:00']);
 
 		$result = $this->controller->getFileText(1);
 
 		$this->assertInstanceOf(JSONResponse::class, $result);
 		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame('The extracted text.', $data['text']);
-		$this->assertEquals(1, $data['file_id']);
+		$this->assertSame(
+			[
+				'success'     => true,
+				'fileId'      => 1,
+				'text'        => 'The extracted text.',
+				'chunkCount'  => 2,
+				'extractedAt' => '2026-11-01T10:00:00+00:00',
+				'file_id'     => 1,
+				'length'      => 19,
+			],
+			$result->getData()
+		);
 	}//end testGetFileTextReturnsTheExtractedText()
 
 	public function testGetFileTextIs404WhenNothingWasExtracted(): void {
-		$this->textExtractor->method('getExtractedText')->willReturn(null);
+		$this->textExtractor->method('readExtractedText')->willReturn(null);
 
 		$result = $this->controller->getFileText(42);
 
 		$this->assertEquals(404, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertEquals(42, $data['file_id']);
-		$this->assertStringContainsString('extract', $data['message']);
+		$this->assertSame(
+			['success' => false, 'message' => 'No text has been extracted from this file yet.', 'fileId' => 42, 'file_id' => 42],
+			$result->getData()
+		);
 	}//end testGetFileTextIs404WhenNothingWasExtracted()
 
 	public function testGetFileTextRefusesAFileTheCallerCannotOpen(): void {
@@ -123,7 +132,7 @@ class FileTextControllerTest extends TestCase {
 		$rootFolder = $this->createMock(IRootFolder::class);
 		$rootFolder->method('getUserFolder')->willReturn($emptyFolder);
 
-		$this->textExtractor->expects($this->never())->method('getExtractedText');
+		$this->textExtractor->expects($this->never())->method('readExtractedText');
 
 		$controller = FileTextControllerFactory::create(
 			'openregister',
@@ -141,7 +150,7 @@ class FileTextControllerTest extends TestCase {
 		$result = $controller->getFileText(7);
 
 		$this->assertEquals(404, $result->getStatus());
-		$this->assertArrayNotHasKey('text', $result->getData());
+		$this->assertSame(['success' => false, 'message' => 'File not found.', 'fileId' => 7, 'file_id' => 7], $result->getData());
 	}//end testGetFileTextRefusesAFileTheCallerCannotOpen()
 
 	// =========================================================================
@@ -421,7 +430,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						return count($entities) === 2
 						&& $entities[0]['text'] === 'John Doe'
 						&& $entities[0]['entityType'] === 'PERSON'
@@ -471,7 +481,12 @@ class FileTextControllerTest extends TestCase {
 		$anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
 		$this->fileService->expects($this->once())
 			->method('anonymizeDocument')
-			->with($fileNode, $this->anything(), $expected[0], $expected[1], $expected[2])
+			->with(
+				$fileNode,
+				$this->callback(
+					fn (DocumentAnonymization $anonymization): bool => [$anonymization->scope, $anonymization->fileKey, $anonymization->preserveStructure] === $expected
+				)
+			)
 			->willReturn($anonymizedFileNode);
 
 		$this->assertSame(200, $this->controller->anonymizeFile(10)->getStatus());
@@ -523,7 +538,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						// Should be deduplicated: 2 unique entities, not 3.
 						return count($entities) === 2;
 					}

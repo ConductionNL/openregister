@@ -171,17 +171,28 @@ class RegisterConfigResolver {
 		try {
 			return $this->container->get(self::REGISTER_RESOLVER_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				sprintf('[AppHost:%s] RegisterResolverService unresolvable — register config resolution refused (fail-closed)', $this->appId),
-				['exception' => $e]
-			);
-			throw new FoundationUnavailableException(
-				appId: $this->appId,
-				detail: 'RegisterResolverService could not be resolved from the container.',
-				previous: $e
-			);
+			throw $this->resolverUnresolvable(error: $e);
 		}
 	}//end getResolver()
+
+	/**
+	 * Log, and build, the refusal for a RegisterResolverService the container cannot give.
+	 *
+	 * @param Throwable $error Why it could not be resolved.
+	 *
+	 * @return FoundationUnavailableException
+	 */
+	private function resolverUnresolvable(Throwable $error): FoundationUnavailableException {
+		$this->logger->error(
+			sprintf('[AppHost:%s] RegisterResolverService unresolvable — register config resolution refused (fail-closed)', $this->appId),
+			['exception' => $error]
+		);
+		return new FoundationUnavailableException(
+			appId: $this->appId,
+			detail: 'RegisterResolverService could not be resolved from the container.',
+			previous: $error
+		);
+	}//end resolverUnresolvable()
 
 	/**
 	 * Run a resolver callback, translating OR's MissingConfigException (and an

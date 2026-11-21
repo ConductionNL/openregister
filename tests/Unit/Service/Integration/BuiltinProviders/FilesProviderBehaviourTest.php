@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\BuiltinProviders;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
@@ -125,7 +126,7 @@ class FilesProviderBehaviourTest extends TestCase {
 		$this->guard->expects($this->once())->method('readableNodes')->with($all)
 			->willReturn([$node, ['id' => 8, 'name' => 'raw'], 'skip-me']);
 
-		$rows = $this->provider()->list('r', 's', 'obj-1');
+		$rows = $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame([['id' => 7, 'name' => 'a.pdf', 'size' => 12], ['id' => 8, 'name' => 'raw']], $rows);
 		$this->assertSame(['obj-1'], $finder->asked);
@@ -138,33 +139,33 @@ class FilesProviderBehaviourTest extends TestCase {
 		$this->files->method('getFilesForEntity')->willReturn([]);
 		$this->guard->method('readableNodes')->willReturn([]);
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAServiceWithoutFindIsSkippedForTheNextCandidate()
 
 	public function testWhenNoMapperResolvesTheObjectNothingIsListed(): void {
 		$this->files->expects($this->never())->method('getFilesForEntity');
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testWhenNoMapperResolvesTheObjectNothingIsListed()
 
 	public function testAMapperFindingNothingListsNothing(): void {
 		$this->services['\OCA\OpenRegister\Db\AbstractObjectMapper'] = self::finder(null);
 		$this->files->expects($this->never())->method('getFilesForEntity');
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAMapperFindingNothingListsNothing()
 
 	public function testAFailingFileLookupListsNothing(): void {
 		$this->services['\OCA\OpenRegister\Db\ObjectEntityMapper'] = self::finder(new ObjectEntity());
 		$this->files->method('getFilesForEntity')->willThrowException(new RuntimeException('no folder'));
 
-		$this->assertSame([], $this->provider()->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider()->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAFailingFileLookupListsNothing()
 
 	public function testCreatingAFileHereIsNotImplemented(): void {
 		$this->expectException(NotImplementedException::class);
 		$this->expectExceptionMessage('FilesProvider write path delegates to FileController');
 
-		$this->provider()->create('r', 's', 'obj-1', []);
+		$this->provider()->create(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), []);
 	}//end testCreatingAFileHereIsNotImplemented()
 }//end class

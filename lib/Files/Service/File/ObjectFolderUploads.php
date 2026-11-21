@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use OCP\Files\NotFoundException;
  * Each uploaded file goes through ObjectFolderBrowser::upload() on its own,
  * so one refused file does not stop the rest of the batch.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderUploads {
 
@@ -61,7 +61,7 @@ class ObjectFolderUploads {
 	 * @throws InvalidArgumentException When the path could leave the object folder.
 	 * @throws NotFoundException        When the path is not a folder of the object.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function uploadAll(ObjectFolderPath $folder, array $uploads): array {
 		$stored = [];
