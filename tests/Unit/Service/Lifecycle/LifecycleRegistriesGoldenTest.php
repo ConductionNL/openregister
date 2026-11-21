@@ -50,6 +50,7 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry
+ * @uses \OCA\OpenRegister\Service\Lifecycle\ContainerLookup
  */
 class LifecycleRegistriesGoldenTest extends TestCase {
 

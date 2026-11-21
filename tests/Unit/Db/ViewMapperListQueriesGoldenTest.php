@@ -39,6 +39,13 @@ use RuntimeException;
  * Golden queries, ordering of the guards and the visible set of the view lists.
  *
  * @covers \OCA\OpenRegister\Search\Db\ViewMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\ViewFormatting
+ * @uses \OCA\OpenRegister\Search\Db\ViewMapperAccess
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  */
 final class ViewMapperListQueriesGoldenTest extends TestCase {
 	use RecordsQueries;

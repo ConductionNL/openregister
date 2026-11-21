@@ -31,6 +31,14 @@ use Psr\Log\LoggerInterface;
  * The fields a created view carries, the default it takes over, and the refusals before the insert.
  *
  * @covers \OCA\OpenRegister\Search\Service\ViewService
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Search\Service\PresentationCheck
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
+ * @uses \OCA\OpenRegister\Service\View\ViewAlertLine
+ * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
  */
 final class ViewServiceCreateGoldenTest extends TestCase {
 

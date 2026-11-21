@@ -160,6 +160,7 @@
 </template>
 
 <script>
+import { translate as t } from '@nextcloud/l10n'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import ApplicationCog from 'vue-material-design-icons/ApplicationCog.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -290,6 +291,7 @@ export default {
 				editAction(() => this.handleEdit()),
 				exportAction(this),
 				publishAction(this),
+				gitlabPublishAction(this),
 				deleteAction(() => this.handleDelete()),
 			]
 		},
@@ -729,6 +731,16 @@ export default {
 		},
 
 		/**
+		 * Open the GitLab publish dialog for this configuration.
+		 *
+		 * @spec openspec/changes/capability-rows-verified-b/tasks.md#task-2.1
+		 */
+		handlePublishGitLab() {
+			configurationStore.setConfigurationItem(this.existingConfiguration || this.displayConfiguration)
+			navigationStore.setModal('publishConfigurationGitLab')
+		},
+
+		/**
 		 * Handle delete action
 		 *
 		 * @spec exclude emit/store-dispatch UI handler opening delete dialog
@@ -827,6 +839,23 @@ function publishAction(card) {
 		icon: CloudUploadOutline,
 		run: () => card.handlePublish(),
 		hidden: !card.isPublished && !card.isLocalConfiguration,
+	}
+}
+
+/**
+ * The Publish to GitLab action, shown for a local configuration only: the
+ * server publishes local configurations and refuses any other.
+ *
+ * @param {object} card The configuration card
+ * @return {object} The action
+ * @spec openspec/changes/capability-rows-verified-b/tasks.md#task-2.1
+ */
+function gitlabPublishAction(card) {
+	return {
+		label: t('openregister', 'Publish Configuration to GitLab'),
+		icon: CloudUploadOutline,
+		run: () => card.handlePublishGitLab(),
+		hidden: !card.isLocalConfiguration,
 	}
 }
 
@@ -1078,12 +1107,7 @@ function githubRepoIn(sourceUrl) {
 
 /* Sync status badges */
 @include config-badge-sync-success-rules;
-
-.configBadge--sync-pending,
-.configBadge--sync-never {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
-}
+@include config-badge-sync-idle;
 
 /* Update available badge */
 @include config-badge-update;

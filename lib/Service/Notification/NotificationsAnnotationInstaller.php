@@ -36,6 +36,8 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -50,10 +52,14 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 	 *
 	 * @param WebhookMapperInterface $webhookMapper Mapper used to upsert Webhook rows.
 	 * @param LoggerInterface $logger Logger for installer diagnostics.
+	 * @param IUserSession $userSession The user the schema is saved for.
+	 * @param IGroupManager $groupManager Says whether that user is an administrator.
 	 */
 	public function __construct(
 		private readonly WebhookMapperInterface $webhookMapper,
 		private readonly LoggerInterface $logger,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
 	) {
 	}//end __construct()
 
@@ -119,12 +125,38 @@ class NotificationsAnnotationInstaller implements IEventListener, NotificationsA
 				continue;
 			}
 
+			if ($this->mayWriteWebhooks() === false) {
+				$this->logger->warning(
+					sprintf('[NotificationsAnnotationInstaller] skipped Webhook for "%s": only an administrator installs webhooks', (string)$name)
+				);
+				continue;
+			}
+
 			$this->upsertWebhook(
 				webhookName: sprintf('or-notif-%s-%s', $schemaSlug, (string)$name),
 				hookSpec: $hook
 			);
 		}//end foreach
 	}//end installSchema()
+
+	/**
+	 * Whether this save may write instance webhooks: as an administrator, or without a signed-in user.
+	 *
+	 * A run without a user is the app itself (install, repair, background
+	 * import). Webhooks direct outbound requests from the server, so a
+	 * signed-in user who is not an administrator writes none, the same rule
+	 * the webhook routes apply.
+	 *
+	 * @return bool
+	 */
+	private function mayWriteWebhooks(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return true;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID()) === true;
+	}//end mayWriteWebhooks()
 
 	/**
 	 * Upsert a single Webhook row from one notification's `webhook` spec.

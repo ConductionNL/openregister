@@ -51,6 +51,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
@@ -68,6 +70,24 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePayload
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlan
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores
  */
 final class ObjectWriteAccessGoldenTest extends TestCase {
 
@@ -376,13 +396,14 @@ final class ObjectWriteAccessGoldenTest extends TestCase {
 			}
 		);
 		$store->method('saveObjects')->willReturnCallback(
-			function (array $objects, mixed $register, mixed $schema, bool $_rbac, bool $_multitenancy, bool $validation, bool $events): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): array {
 				$this->calls[] = ['saveObjects' => $objects, 'as' => $this->acting, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 				return [];
 			}
 		);
 		$store->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, mixed ...$rest): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = [
 					'saveObject' => $object, 'as' => $this->acting, 'uuid' => ($rest[3] ?? null), 'currentUser' => $rest[9]?->getUID(),
 					'failIfExists' => ($rest[10] ?? null), 'rbac' => ($rest[4] ?? null), 'multitenancy' => ($rest[5] ?? null),

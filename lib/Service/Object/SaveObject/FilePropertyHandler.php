@@ -482,12 +482,49 @@ class FilePropertyHandler {
 			return $this->storeFiles(target: $target, fileValue: $fileValue);
 		}
 
+		if (self::isFileId(value: $fileValue) === true) {
+			return $this->ownFileId(target: $target, fileId: $fileValue);
+		}
+
 		if ($this->isFileValue(value: $fileValue) === false) {
 			return $fileValue;
 		}
 
 		return $this->processSingleFileProperty(request: $this->storeRequest(target: $target, index: null), fileInput: $fileValue);
 	}//end storedValue()
+
+	/**
+	 * Whether a value is a bare file id: a positive integer or a string of digits.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isFileId(mixed $value): bool {
+		if (is_int($value) === true) {
+			return $value > 0;
+		}
+
+		return is_string($value) === true && ctype_digit($value) === true && (int)$value > 0;
+	}//end isFileId()
+
+	/**
+	 * A bare file id, kept only when the object's own folder holds that file.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 * @param int|string         $fileId The file id.
+	 *
+	 * @return int|string The file id as sent.
+	 *
+	 * @throws Exception When the object's folder does not hold the file.
+	 */
+	private function ownFileId(FilePropertyTarget $target, int|string $fileId): int|string {
+		if ($this->parts->files->holdsFile(request: $this->storeRequest(target: $target, index: null), fileId: $fileId) === true) {
+			return $fileId;
+		}
+
+		throw new Exception("File property '{$target->name}' only accepts files in the object's folder");
+	}//end ownFileId()
 
 	/**
 	 * Whether an incoming value deletes the stored files: null, or an empty array.

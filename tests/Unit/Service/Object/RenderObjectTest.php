@@ -47,6 +47,11 @@ use ReflectionClass;
 class RenderObjectTest extends TestCase {
 	use InverseRelationAccess;
 
+	/**
+	 * The files the rendered test objects hold in their own folder.
+	 */
+	private const OWN_FILE_IDS = [10 => 10, 20 => 20, 42 => 42, 99 => 99, 123 => 123, 999 => 999];
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -1924,6 +1929,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesHydratesFileId(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -1967,6 +1973,7 @@ class RenderObjectTest extends TestCase {
 	}
 
 	public function testRenderFilePropertiesArrayOfFiles(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'docs' => ['10', '20'],
@@ -2081,7 +2088,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'some-string',
 			['type' => 'file'],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('some-string', $result);
@@ -2091,7 +2098,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'not-array',
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('not-array', $result);
@@ -2116,7 +2123,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -2142,7 +2149,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'99',
 			['type' => 'file'],
-			'document',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -2158,12 +2165,24 @@ class RenderObjectTest extends TestCase {
 	}
 
 	private function renderFilesOf(array $objectData, array $properties): array {
+		$this->holdOwnFiles();
 		$schema = $this->createSchema(1);
 		$schema->setProperties($properties);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $objectData);
 		return $this->invokePrivate('renderFileProperties', [$entity])->getObject();
+	}
+
+	/**
+	 * Let every rendered object's own folder hold the OWN_FILE_IDS files.
+	 *
+	 * @return void
+	 */
+	private function holdOwnFiles(): void {
+		$this->fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, array_values(self::OWN_FILE_IDS))
+		);
 	}
 
 	public function testAFileOverTheCapIsNotEmbedded(): void {
@@ -3137,7 +3156,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			10,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertStringStartsWith('data:text/plain;base64,', $result);
@@ -3154,7 +3173,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10, 20],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3169,7 +3188,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		// Null results are filtered out.
@@ -3194,7 +3213,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3210,7 +3229,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[999],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame([], $result);
@@ -3296,6 +3315,17 @@ class RenderObjectTest extends TestCase {
 		// Items should still have the data.
 		$this->assertIsArray($result['items']);
 		$this->assertCount(2, $result['items']);
+	}
+
+	public function testHandleWildcardExtendsLeavesScalarEntriesAsTheyAre(): void {
+		$uuid = '12345678-1234-1234-1234-123456789012';
+		$objectData = ['items' => [$uuid, ['ref' => 'val']]];
+		$extend = ['items.$.ref'];
+
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
+
+		$this->assertSame($uuid, $result['items'][0]);
+		$this->assertSame('val', $result['items'][1]['ref']);
 	}
 
 	public function testHandleWildcardExtendsWithNonIterableRoot(): void {
@@ -4160,6 +4190,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesSkipsUnconfiguredProperties(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -4428,7 +4459,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -4445,7 +4476,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -5348,7 +5379,7 @@ class RenderObjectTest extends TestCase {
 
 	public function testHydrateFilePropertyNonNumericStringUnchanged(): void {
 		$config = ['type' => 'file'];
-		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('not-a-number', $result);
 	}
@@ -5367,7 +5398,7 @@ class RenderObjectTest extends TestCase {
 		$this->fileService->method('getFileById')
 			->willReturn($mockNode);
 
-		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, 'images']);
+		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, self::OWN_FILE_IDS]);
 
 		$this->assertIsArray($result);
 		$this->assertCount(1, $result);
@@ -5381,7 +5412,7 @@ class RenderObjectTest extends TestCase {
 		];
 
 		// Non-array value for array property — should be returned unchanged.
-		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('single-string', $result);
 	}

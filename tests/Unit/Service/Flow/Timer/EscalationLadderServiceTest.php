@@ -52,6 +52,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationAudience
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\MomentShift
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\RungTimeline
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
  */
 class EscalationLadderServiceTest extends TestCase {
 

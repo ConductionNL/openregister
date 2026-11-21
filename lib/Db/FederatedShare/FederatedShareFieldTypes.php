@@ -52,5 +52,6 @@ final class FederatedShareFieldTypes {
 		'owner' => 'string',
 		'created' => 'datetime',
 		'updated' => 'datetime',
+		'expiresAt' => 'datetime',
 	];
 }//end class

@@ -21,6 +21,8 @@ use Psr\Log\LoggerInterface;
  * Pins how AbstractTool::__call matches and coerces LLM arguments.
  *
  * @covers \OCA\OpenRegister\Mcp\Tool\AbstractTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolArgumentCoercer
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCallTrail
  */
 class AbstractToolCallCoercionCharacterisationTest extends TestCase
 {

@@ -34,10 +34,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ReadScope;
@@ -47,7 +46,8 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -159,7 +159,7 @@ class GraphQLResolver {
 
 		// Multitenancy is handled by the query context (ObjectService checks active org).
 		// RBAC is handled by checkSchemaPermission above.
-		$result = $this->objects->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		$result = $this->searchPage(query: $query);
 
 		// Convert results to arrays and apply property-level RBAC.
 		$filteredResults = [];
@@ -202,7 +202,7 @@ class GraphQLResolver {
 	 * @return ListAggregations The aggregations.
 	 */
 	private function aggregations(): ListAggregations {
-		return new ListAggregations(runner: $this->shaping->aggregationRunner, validator: $this->shaping->timeseriesValidator);
+		return $this->shaping->aggregations;
 	}//end aggregations()
 
 	/**
@@ -228,7 +228,10 @@ class GraphQLResolver {
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -266,7 +269,10 @@ class GraphQLResolver {
 				)
 			);
 
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+			));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
@@ -406,8 +412,50 @@ class GraphQLResolver {
 			$schemaTitle = $schema->getSlug();
 		}
 
-		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
+		return self::recordNotFound(type: $schemaTitle, id: $id);
 	}//end notFoundError()
+
+	/**
+	 * The NOT_FOUND error for a record of a type, as the resolver raises it.
+	 *
+	 * @param string $type The object type.
+	 * @param string $id   The requested id.
+	 *
+	 * @return Error The GraphQL error, with extension code NOT_FOUND.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+	 */
+	public static function recordNotFound(string $type, string $id): Error {
+		return new Error(
+			"$type with ID '$id' not found",
+			null,
+			null,
+			[],
+			null,
+			null,
+			['code' => 'NOT_FOUND']
+		);
+	}//end recordNotFound()
+
+	/**
+	 * One page of a list query, RBAC and multitenancy on.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return array<string, mixed> The paginated result.
+	 *
+	 * @throws Error When the query filters or sorts on an encrypted property.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 */
+	private function searchPage(array $query): array {
+		try {
+			return $this->objects->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		} catch (EncryptedFieldFilterException $e) {
+			$extensions = ['code' => 'BAD_REQUEST', 'reason' => $e->getReason(), 'property' => $e->getProperty()];
+			throw new Error($e->getMessage(), null, null, [], null, null, $extensions);
+		}
+	}//end searchPage()
 
 	/**
 	 * The VALIDATION_ERROR error for a failed save.

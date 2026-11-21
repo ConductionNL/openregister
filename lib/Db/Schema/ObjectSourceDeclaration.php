@@ -47,7 +47,7 @@ final class ObjectSourceDeclaration {
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
-	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function declared(?array $configuration): ?array {
 		$source = ($configuration['x-openregister-object-source'] ?? null);

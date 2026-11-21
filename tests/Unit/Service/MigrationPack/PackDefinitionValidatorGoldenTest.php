@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  * rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator
+ * @uses \OCA\OpenRegister\Service\MigrationPack\PackTransformValidator
+ * @uses \OCA\OpenRegister\Exception\InvalidPackDefinitionException
  */
 class PackDefinitionValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/pack-definition-validator-golden.json';

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * The occ runner has no session, and the guard refuses a reset without an actor, so the
  * administrator is named explicitly and the trail records that name.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ResetSchemaToShippedCommand extends Command {
 
@@ -66,7 +66,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:schema:reset-to-shipped')
@@ -87,7 +87,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return int The exit code.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$run = new ResetToShippedRun(input: $input, output: $output);
@@ -113,7 +113,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return int FAILURE when the part has nothing to reset, SUCCESS otherwise.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	private function showPreview(ResetToShippedRun $run): int {
 		$preview = $this->reset->preview(schema: $run->schema(), path: $run->part());
@@ -134,7 +134,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return array<string, mixed>|null The outcome, or null after printing the refusal.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	private function applyReset(ResetToShippedRun $run): ?array {
 		$user = $this->administrator(actor: $run->actor());
@@ -158,7 +158,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return IUser|null The administrator.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	private function administrator(string $actor): ?IUser {
 		if ($actor === '') {
@@ -181,7 +181,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return int FAILURE when the reset was refused or the part was not reset, SUCCESS otherwise.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	private function reportReset(ResetToShippedRun $run, ?array $outcome): int {
 		if ($outcome === null) {

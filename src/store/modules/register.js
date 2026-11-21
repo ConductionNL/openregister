@@ -9,6 +9,7 @@ import {
 	sendJson,
 	withoutReadOnly,
 } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions, listStateFields } from './listState.js'
 
 /**
@@ -61,11 +62,11 @@ async function postImport(request) {
 		5 * 60 * 1000,
 	) // 5 minutes warning
 
-	const response = await fetch(request.endpoint, {
+	const response = await fetch(request.endpoint, withRequestToken({
 		method: 'POST',
 		body: request.formData,
 		signal: controller.signal,
-	})
+	}))
 
 	clearTimeout(timeoutId)
 	const responseData = await importAnswer(response)
@@ -386,9 +387,9 @@ export const useRegisterStore = defineStore('register', {
 				failure: 'Failed to delete register',
 				log: (error) => console.error('Error deleting register:', error),
 				run: async () => {
-					const response = await fetch(registerUrl(registerItem), {
+					const response = await fetch(registerUrl(registerItem), withRequestToken({
 						method: 'DELETE',
-					})
+					}))
 					const responseData = await objectAnswer(response)
 					this.refreshRegisterList()
 					this.setRegisterItem(null)

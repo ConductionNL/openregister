@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Controller\ObjectPermissionsController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -75,6 +76,20 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFa
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
  */
 class ObjectPermissionsControllerTest extends TestCase {
 
@@ -176,7 +191,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
 		$report = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $auditTrailMapper),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrail: new ObjectTrailReader(mapper: $auditTrailMapper)),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())

@@ -37,8 +37,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AdminGroupMembership;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\DsarServiceInterface;
 use OCA\OpenRegister\Service\DsarSubjectQuery;
@@ -91,7 +91,7 @@ class DsarController extends Controller {
 		IRequest $request,
 		DsarControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->dsarService = $services->dsarService;
 		$this->complianceService = $services->complianceService;
 		$this->userSession = $services->userSession;
@@ -187,8 +187,6 @@ class DsarController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function erasure(): JSONResponse {
@@ -221,8 +219,6 @@ class DsarController extends Controller {
 	 * activity via the per-action override on `ObjectEntity`.
 	 *
 	 * @return JSONResponse
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */

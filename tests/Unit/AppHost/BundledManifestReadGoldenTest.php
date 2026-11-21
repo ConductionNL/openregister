@@ -27,6 +27,14 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\AppHost\Observability\ManifestLoader
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader
+ * @uses \OCA\OpenRegister\AppHost\Observability\BundledManifestFile
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthCheckTarget
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy
+ * @uses \OCA\OpenRegister\AppHost\Observability\ManifestLookup
+ * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityManifest
+ * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityProbes
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest
  */
 class BundledManifestReadGoldenTest extends TestCase
 {

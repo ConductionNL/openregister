@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCP\Files\IRootFolder;
 /**
  * Finds a file by id and the object that owns it.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class ReviewPolicyFileOwners {
 	/**
@@ -39,7 +39,7 @@ final class ReviewPolicyFileOwners {
 	 * @param IRootFolder            $rootFolder The root folder, for finding a file by id.
 	 * @param ManagedFileOwnerLookup $owners     The object that owns a managed file.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public readonly IRootFolder $rootFolder,

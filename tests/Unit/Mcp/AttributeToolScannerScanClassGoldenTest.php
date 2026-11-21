@@ -81,6 +81,11 @@ abstract class ScanClassGoldenFixture {
  * @uses   \OCA\OpenRegister\Mcp\Attribute\McpTool
  * @uses   \OCA\OpenRegister\Mcp\ToolScanSubject
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Mcp\MethodScanRun
+ * @uses \OCA\OpenRegister\Mcp\ReflectionJsonType
+ * @uses \OCA\OpenRegister\Mcp\ToolDeclarationCheck
+ * @uses \OCA\OpenRegister\Mcp\ToolDescriptorExtras
+ * @uses \OCA\OpenRegister\Mcp\ToolDocblock
  */
 class AttributeToolScannerScanClassGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/attribute-tool-scanner-scan-class-golden.json';

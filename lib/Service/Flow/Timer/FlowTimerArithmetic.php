@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 /**
  * The collaborators of FlowTimerService that compute a deadline, wired by DI autowiring.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md
+ * @spec openspec/specs/flow-business-timers/spec.md
  */
 final class FlowTimerArithmetic {
 	/**
