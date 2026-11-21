@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -75,6 +76,8 @@ use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUser;
@@ -348,12 +351,12 @@ class RulesServicesGoldenTest extends TestCase {
 		];
 		foreach ($cases as $name => [$ruleId, $enabled]) {
 			$this->calls = [];
-			$actual[$name] = ['outcome' => $this->enablement()->setEnabled($schema, $ruleId, $enabled), 'calls' => $this->calls];
+			$actual[$name] = ['outcome' => $this->enablement()->setEnabled(new RuleSwitch($schema, $ruleId, $enabled)), 'calls' => $this->calls];
 		}
 
 		$this->calls = [];
 		$actual['write fails'] = [
-			'outcome' => $this->enablement(failWrite: true)->setEnabled($schema, 'calculation:bezwaar:kapot', true),
+			'outcome' => $this->enablement(failWrite: true)->setEnabled(new RuleSwitch($schema, 'calculation:bezwaar:kapot', true)),
 			'calls' => $this->calls,
 		];
 		$this->assertGolden('enablement', $actual);
@@ -405,7 +408,7 @@ class RulesServicesGoldenTest extends TestCase {
 		foreach ($cases as $name => [$count, $target, $ruleId, $selection, $registerId]) {
 			$this->calls = [];
 			try {
-				$outcome = $this->replay($count)->preview($target, $ruleId, $selection, 'jan', 'reden', $registerId);
+				$outcome = $this->replay($count)->previewReplay(new RuleReplayRequest($ruleId, 'jan', 'reden'), new RuleReplaySelection($target, $registerId, $selection));
 			} catch (Throwable $e) {
 				$outcome = [get_class($e), $e->getMessage()];
 			}

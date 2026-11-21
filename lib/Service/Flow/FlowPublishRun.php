@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Flow;
 /**
  * The flow being published, how, and what the publish has worked out so far.
  *
- * Built by {@see FlowVersionService::publishWith()} and never leaves that class.
+ * Built by {@see FlowVersionService::publish()} and never leaves that class.
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */

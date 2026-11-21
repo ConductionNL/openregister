@@ -28,9 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -48,7 +51,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The step type.
@@ -141,6 +146,41 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 	}//end configKeys()
 
 	/**
+	 * The fields of a transition step.
+	 *
+	 * `data` holds the transition's inputs, keyed by their own names, a shape
+	 * the field vocabulary cannot describe: it stays in the JSON pane.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'action',
+				'label' => $this->l10n->t('Transition'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The lifecycle action to run, such as "submit". Placeholders such as {{action}} are filled in from each item. '
+						. 'The action\'s inputs are edited in the JSON pane as "data".'
+				),
+				'required' => true,
+			],
+			[
+				'key' => 'object',
+				'label' => $this->l10n->t('Object'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Which object to move. Leave empty to move the item\'s own object; placeholders such as {{uuid}} are '
+						. 'filled in from each item.'
+				),
+			],
+		];
+	}//end configForm()
+
+	/**
 	 * Refuse a step that names no transition.
 	 *
 	 * @param array $config The step configuration.
@@ -164,19 +204,17 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 	/**
 	 * Take the transition on each item's object.
 	 *
-	 * @param array $items   The input items.
-	 * @param array $config  The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per moved object, carrying the saved object.
 	 *
 	 * @throws RuntimeException When an item names no object or the engine refuses the move.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$this->validateConfig(config: $config);
 
 		return $this->transitionAll(items: $items, config: $config);
@@ -196,7 +234,7 @@ class TransitionNode extends ObjectNodeBase implements IFlowNode, TransitionNode
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $this->transitioned(json: $json, config: $config), options: new FlowItemOptions(fromItemIndex: $index));
 		}
 
 		return $out;

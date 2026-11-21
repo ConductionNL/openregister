@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 /**
  * Object operations plus the mappers that resolve a step's register and schema.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final class ObjectNodeSources {
 	/**
@@ -39,7 +39,7 @@ final class ObjectNodeSources {
 	 * @param RegisterMapperInterface   $registers Resolves the configured register.
 	 * @param SchemaMapperInterface     $schemas   Resolves the configured schema.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objects,

@@ -246,8 +246,7 @@ class ObjectActionsControllerTest extends TestCase {
 						&& $selection->schemaRef === 'ticket'
 						&& $selection->ids === $ids
 				),
-				'assign-to-me',
-				[]
+				new ObjectActionRequest('assign-to-me', [])
 			)
 			->willReturn($job);
 		$this->runner->expects($this->never())->method('run');

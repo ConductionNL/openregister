@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector;
 use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
@@ -51,7 +53,7 @@ use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
  *
  * @spec openspec/specs/calendar-integration/spec.md
  */
-class CalendarEventService implements ObjectCalendarEventsInterface {
+class CalendarEventService implements ObjectCalendarEventsInterface, ObjectCalendarLinkInterface, UserCalendarEventsInterface {
 
 	/**
 	 * CalDAV backend.
@@ -353,7 +355,7 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	/**
 	 * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
 	 *
-	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+	 * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::listUserTasks()}
 	 * for events: it enumerates every calendar the user owns (not just the pinned
 	 * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
 	 * start date (soonest first, undated last). Backs the `calendar-event-source`
@@ -461,26 +463,6 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 
 	/**
 	 * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
-	 *
-	 * @param int $calendarId The calendar ID
-	 * @param string $eventUri The event URI
-	 * @param int $registerId The register ID
-	 * @param int $schemaId The schema ID
-	 * @param string $objectUuid The object UUID
-	 *
-	 * @return array|null The updated event
-	 *
-	 * @throws Exception If the event is not found
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function linkEvent(int $calendarId, string $eventUri, int $registerId, int $schemaId, string $objectUuid): ?array {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkEventTo(event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri), target: $target);
-	}//end linkEvent()
-
-	/**
-	 * Tag a stored VEVENT with the register, schema and object it is linked to, as {@see linkEvent()} describes.
 	 *
 	 * @param CalendarObjectRef $event  The stored event.
 	 * @param LinkTarget        $target The object, register and schema.

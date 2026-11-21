@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
-use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use Psr\Log\LoggerInterface;
 
@@ -39,13 +39,13 @@ final readonly class AggregationPresentation {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param TranslationHandler   $translationHandler Resolves translatable group keys to the negotiated language.
-	 * @param LanguageService      $languageService    Request-scoped language negotiation (Accept-Language / _lang).
-	 * @param LoggerInterface|null $logger             Optional logger for diagnostics.
+	 * @param TranslationHandler        $translationHandler Resolves translatable group keys to the negotiated language.
+	 * @param RequestLanguagesInterface $languageService    Request-scoped language negotiation (Accept-Language / _lang).
+	 * @param LoggerInterface|null      $logger             Optional logger for diagnostics.
 	 */
 	public function __construct(
 		public TranslationHandler $translationHandler,
-		public LanguageService $languageService,
+		public RequestLanguagesInterface $languageService,
 		public ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()

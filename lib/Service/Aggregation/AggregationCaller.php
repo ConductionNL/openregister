@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IUserSession;
 
@@ -41,12 +41,12 @@ final readonly class AggregationCaller {
 	 *
 	 * @param IUserSession                 $userSession         Active session, for the RBAC and cache-key user scope.
 	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
-	 * @param PlaceholderResolverInterface $placeholders        Resolves dynamic placeholders inside filters.
+	 * @param FilterPlaceholdersInterface  $placeholders        Resolves dynamic placeholders inside filters.
 	 */
 	public function __construct(
 		public IUserSession $userSession,
 		public OrganisationServiceInterface $organisationService,
-		public PlaceholderResolverInterface $placeholders,
+		public FilterPlaceholdersInterface $placeholders,
 	) {
 	}//end __construct()
 }//end class

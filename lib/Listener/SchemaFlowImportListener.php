@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
@@ -464,7 +464,7 @@ class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListen
 		}
 
 		try {
-			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow, publishedBy: null);
+			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow);
 		} catch (Throwable $e) {
 			$this->warnUnpublished(flow: $flow, wording: self::unpublishedWording(kind: 'versionOne', error: $e));
 		}

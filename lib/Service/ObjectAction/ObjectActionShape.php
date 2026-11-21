@@ -173,12 +173,24 @@ final class ObjectActionShape {
 			return $prefix.' must name its node "type".';
 		}
 
+		return self::configRefusal(prefix: $prefix, step: $step);
+	}//end stepRefusal()
+
+	/**
+	 * Why a step's config is malformed, or null.
+	 *
+	 * @param string $prefix The refusal's opening, naming the action and the step's position from 1.
+	 * @param array  $step   The step, which names its type.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function configRefusal(string $prefix, array $step): ?string {
 		if (array_key_exists('config', $step) === true && is_array($step['config']) === false) {
 			return $prefix.' has a "config" that is not an object.';
 		}
 
 		return null;
-	}//end stepRefusal()
+	}//end configRefusal()
 
 	/**
 	 * Whether a step names its node type.

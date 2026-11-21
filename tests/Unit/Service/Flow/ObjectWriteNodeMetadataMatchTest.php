@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
@@ -54,6 +55,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Locks metadata routing in ObjectWriteNode::findMatch().
@@ -221,7 +223,7 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 	 * @return void
 	 */
 	private function runNode(array $config, array $record): void {
-		$this->node->execute([FlowItems::item(json: $record)], $config, $this->runContext);
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: $record)], config: $config, context: $this->runContext));
 	}//end runNode()
 
 	/**
@@ -266,7 +268,8 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase {
 
 		$deleted = null;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (...$args) use (&$deleted): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted): bool {
+				$args = [$deletion->uuid, $deletion->target->register, $deletion->target->schema, $_rbac, $_multitenancy, $_retentionSweep, $deletion->currentUser, $deletion->permanent];
 				$deleted = ($args[0] ?? null);
 
 				return true;

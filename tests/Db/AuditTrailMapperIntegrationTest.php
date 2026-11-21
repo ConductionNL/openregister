@@ -16,13 +16,14 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -325,7 +326,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	// =========================================================================
 
 	public function testGetStatisticsReturnsExpectedKeys(): void {
-		$stats = $this->mapper->getStatistics();
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope());
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertArrayHasKey('size', $stats);
@@ -336,7 +337,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics($register->getId());
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope($register->getId()));
 		$this->assertIsArray($stats);
 		$this->assertArrayHasKey('total', $stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
@@ -347,7 +348,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'update', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics(null, $schema->getId());
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope(null, $schema->getId()));
 		$this->assertIsArray($stats);
 		$this->assertGreaterThanOrEqual(1, $stats['total']);
 	}
@@ -357,9 +358,9 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$stats = $this->mapper->getStatistics(null, null, [
+		$stats = $this->mapper->statisticsTotals(AuditStatisticsCalls::scope(null, null, [
 			['register' => $register->getId(), 'schema' => $schema->getId()],
-		]);
+		]));
 		$this->assertIsArray($stats);
 	}
 
@@ -448,7 +449,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 	public function testGetActionChartDataReturnsExpectedStructure(): void {
 		$this->createTestAuditTrail(null, null, 'create');
 
-		$data = $this->mapper->getActionChartData();
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window());
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('labels', $data);
 		$this->assertArrayHasKey('series', $data);
@@ -460,7 +461,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$from = new DateTime('-7 days');
 		$till = new DateTime('+1 day');
 
-		$data = $this->mapper->getActionChartData($from, $till);
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window($from, $till));
 		$this->assertIsArray($data);
 		$this->assertArrayHasKey('labels', $data);
 	}
@@ -470,7 +471,7 @@ class AuditTrailMapperIntegrationTest extends TestCase {
 		$schema = $this->createTestSchema();
 		$this->createTestAuditTrail(null, null, 'create', $register->getId(), $schema->getId());
 
-		$data = $this->mapper->getActionChartData(null, null, $register->getId(), $schema->getId());
+		$data = $this->mapper->actionChartData(AuditStatisticsCalls::window(null, null, $register->getId(), $schema->getId()));
 		$this->assertIsArray($data);
 	}
 

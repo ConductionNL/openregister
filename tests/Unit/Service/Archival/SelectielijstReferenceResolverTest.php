@@ -160,4 +160,49 @@ class SelectielijstReferenceResolverTest extends TestCase {
 		$this->assertNull($resolver->resolve(url: self::URL));
 		$this->assertNull($resolver->resolve(url: self::URL));
 	}//end testAnUnusableRowGivesNull()
+
+	/**
+	 * A row without a full number falls back to its number, a row with only a name resolves with an empty
+	 * code, and a failed fetch logs the URL and the reason; refused URLs, failed fetches and rows without
+	 * code or name are never cached.
+	 *
+	 * @return void
+	 */
+	public function testTheRowFallbacksAndTheFailureLogArePinned(): void {
+		$resolver = $this->resolver();
+		$this->cache->method('get')->willReturn(null);
+		$set = [];
+		$this->cache->method('set')->willReturnCallback(
+			static function (string $key, mixed $value, int $ttl) use (&$set): bool {
+				$set[] = [$key, $value, $ttl];
+				return true;
+			}
+		);
+		$this->client->method('get')->willReturnOnConsecutiveCalls(
+			$this->response(json_encode(['nummer' => 7, 'naam' => 'Vernietigen'])),
+			$this->response(json_encode(['naam' => 'Alleen een naam'])),
+			$this->response(json_encode(['volledigNummer' => '', 'nummer' => '3'])), // An empty full number does not fall back.
+			$this->response('null'),
+			$this->throwException(new RuntimeException('connection refused'))
+		);
+		$this->logger->expects($this->once())->method('warning')->with(
+			'[SelectielijstReferenceResolver] The selectielijst row could not be read',
+			['url' => self::URL, 'exception' => 'connection refused']
+		);
+
+		$this->assertSame(['url' => self::URL, 'code' => '7', 'name' => 'Vernietigen'], $resolver->resolve(url: self::URL));
+		$this->assertSame(['url' => self::URL, 'code' => '', 'name' => 'Alleen een naam'], $resolver->resolve(url: self::URL));
+		$this->assertNull($resolver->resolve(url: self::URL));
+		$this->assertNull($resolver->resolve(url: self::URL));
+		$this->assertNull($resolver->resolve(url: self::URL));
+		$this->assertNull($resolver->resolve(url: 'http://selectielijst.openzaak.nl/api/v1/resultaten/0e4d4fe1-1a1b-4c37-b1c1-2f6a3f3a9a10'));
+
+		$this->assertSame(
+			[
+				[hash('sha256', self::URL), ['url' => self::URL, 'code' => '7', 'name' => 'Vernietigen'], 86400],
+				[hash('sha256', self::URL), ['url' => self::URL, 'code' => '', 'name' => 'Alleen een naam'], 86400],
+			],
+			$set
+		);
+	}//end testTheRowFallbacksAndTheFailureLogArePinned()
 }//end class

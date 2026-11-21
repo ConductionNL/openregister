@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\BulkAction\BulkObjectAccess;
@@ -64,7 +65,7 @@ class RunActionActionTest extends TestCase {
 			->willReturn(['refusal' => null, 'definition' => null, 'inputs' => []]);
 		$this->runner->expects($this->never())->method('run');
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me'], false);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me'], commit: false, actor: null));
 
 		$this->assertTrue($result->isApplied());
 	}//end testThePreviewAsksTheRunsChecksAndRunsNothing()
@@ -74,7 +75,7 @@ class RunActionActionTest extends TestCase {
 			['refusal' => ['status' => Http::STATUS_CONFLICT, 'body' => ['message' => 'Already assigned.']], 'definition' => null, 'inputs' => []]
 		);
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me'], false);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me'], commit: false, actor: null));
 
 		$this->assertSame('skipped', $result->getOutcome());
 		$this->assertSame('Already assigned.', $result->getReason());
@@ -87,7 +88,7 @@ class RunActionActionTest extends TestCase {
 			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 't-1', 'register' => 'tickets', 'schema' => 'ticket']), new ObjectActionRequest('assign-to-me', ['note' => 'x']))
 			->willReturn(['status' => Http::STATUS_OK, 'body' => []]);
 
-		$result = $this->action->apply($this->object(), ['action' => 'assign-to-me', 'inputs' => ['note' => 'x'], 'register' => 'tickets', 'schema' => 'ticket'], true, $actor);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'assign-to-me', 'inputs' => ['note' => 'x'], 'register' => 'tickets', 'schema' => 'ticket'], commit: true, actor: $actor));
 
 		$this->assertTrue($result->isApplied());
 	}//end testTheCommitRunsAsThePersonWhoStartedTheJob()
@@ -95,7 +96,7 @@ class RunActionActionTest extends TestCase {
 	public function testAFailedRunIsAFailedMember(): void {
 		$this->runner->method('run')->willReturn(['status' => Http::STATUS_UNPROCESSABLE_ENTITY, 'body' => ['error' => 'not-available']]);
 
-		$result = $this->action->apply($this->object(), ['action' => 'hand-over'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(), parameters: ['action' => 'hand-over'], commit: true, actor: null));
 
 		$this->assertSame('failed', $result->getOutcome());
 	}//end testAFailedRunIsAFailedMember()

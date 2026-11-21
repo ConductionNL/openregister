@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ use OCP\Files\Node;
 /**
  * Finds the object whose folder a file sits in.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ManagedFileOwnerLookup {
 
@@ -58,7 +58,7 @@ class ManagedFileOwnerLookup {
 	 *
 	 * @throws \Throwable When the file's folder or the object lookup fails.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function find(Node $file): ?ObjectEntity {
 		$parent = $file->getParent();

@@ -32,7 +32,9 @@ namespace Unit\Service\BulkJob;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
+use OCA\OpenRegister\BulkAction\StepBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -186,7 +188,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 	 * @return ReversibleBulkActionInterface The action double.
 	 */
 	private function reversibleAction(): ReversibleBulkActionInterface {
-		$action = $this->createMock(ReversibleBulkActionInterface::class);
+		$action = $this->createMock(ReversibleStepBulkAction::class);
 		$action->method('getId')->willReturn('openregister:set-properties');
 		$action->method('getGuards')->willReturn([]);
 		$action->method('requiresJustification')->willReturn(false);
@@ -205,7 +207,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 	}
 
 	private function plainAction(): BulkActionInterface {
-		$action = $this->createMock(BulkActionInterface::class);
+		$action = $this->createMock(StepBulkActionInterface::class);
 		$action->method('getId')->willReturn('openregister:apply-rule');
 		$action->method('getGuards')->willReturn([]);
 		$action->method('requiresJustification')->willReturn(false);
@@ -355,7 +357,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		$actor->method('getUID')->willReturn('coordinator');
 
 		$seen = [];
-		$action = $this->createMock(ReversibleBulkActionInterface::class);
+		$action = $this->createMock(ReversibleStepBulkAction::class);
 		$action->method('getGuards')->willReturn([]);
 		$action->method('reversalPlanFor')->willReturn(
 			[
@@ -364,8 +366,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			]
 		);
 		$action->method('apply')->willReturnCallback(
-			static function (ObjectEntity $object, array $parameters, bool $commit, ?IUser $user = null) use (&$seen): BulkActionResult {
-				$seen[] = $user?->getUID();
+			static function (BulkStep $step) use (&$seen): BulkActionResult {
+				$seen[] = $step->actor?->getUID();
 
 				return BulkActionResult::applied();
 			}
@@ -379,3 +381,9 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		$this->assertSame(['coordinator'], $seen);
 	}
 }//end class
+
+/**
+ * A reversible bulk action in the BulkStep form, for the doubles above.
+ */
+interface ReversibleStepBulkAction extends ReversibleBulkActionInterface, StepBulkActionInterface {
+}

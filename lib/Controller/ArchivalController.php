@@ -32,24 +32,27 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewEntry;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
+use OCA\OpenRegister\Service\Archival\DestructionListConflictRefresh;
 use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
+use OCA\OpenRegister\Service\Archival\LinkConflictsNotAcknowledgedException;
 use OCA\OpenRegister\Service\Archival\NominationRecompute;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCP\AppFramework\Controller;
@@ -186,6 +189,13 @@ class ArchivalController extends Controller {
 	private readonly DestructionListCreatorInterface $creator;
 
 	/**
+	 * Recomputes the entries' link conflicts on a read; null when not wired.
+	 *
+	 * @var DestructionListConflictRefresh|null
+	 */
+	private readonly ?DestructionListConflictRefresh $conflictRefresh;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request object.
@@ -195,7 +205,7 @@ class ArchivalController extends Controller {
 		IRequest $request,
 		ArchivalControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->lists = $services->mappers->lists;
 		$this->reviews = $services->decisions->reviews;
 		$this->outcomes = $services->decisions->outcomes;
@@ -203,6 +213,7 @@ class ArchivalController extends Controller {
 		$this->nominations = $services->nomination->nominations;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->creator = $services->nomination->creator;
+		$this->conflictRefresh = $services->decisions->conflictRefresh;
 
 		$this->destructionService = $services->decisions->destructionService;
 		$this->legalHoldService = $services->decisions->legalHoldService;
@@ -234,15 +245,7 @@ class ArchivalController extends Controller {
 		// so a records officer had no way to tell the two apart, and neither
 		// did anything built on top.
 		if ($this->lists->isConfigured() === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'configured' => false,
-					'error' => 'No destruction list register and schema are configured',
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->notConfigured(empty: ['results' => [], 'total' => 0]);
 		}
 
 		$status = $this->request->getParam('status');
@@ -311,6 +314,7 @@ class ArchivalController extends Controller {
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-conflicts-are-current-when-a-reviewer-reads-them
 	 */
 	public function getDestructionList(string $id): JSONResponse {
 		$authCheck = $this->checkArchivistRole();
@@ -321,10 +325,7 @@ class ArchivalController extends Controller {
 		try {
 			$list = $this->lists->find(uuid: $id);
 			if ($list === null) {
-				return new JSONResponse(
-					data: ['error' => 'Destruction list not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
+				return $this->listNotFound();
 			}
 
 			$listData = ($list->getObject() ?? []);
@@ -335,19 +336,42 @@ class ArchivalController extends Controller {
 			// whole point of a named reviewer is that the list can be chased.
 			$serialised['unassignedEntries'] = $this->reviews->unassignedEntries(listData: $listData);
 			$serialised['decisions'] = ($listData['decisions'] ?? []);
+			$serialised = $this->withCurrentConflicts(serialised: $serialised, listData: $listData);
 
 			return new JSONResponse(
 				data: $serialised,
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['error' => 'Destruction list could not be read'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unreadableList(id: $id, e: $e);
 		}//end try
 	}//end getDestructionList()
+
+	/**
+	 * The list as read, with its entries' link conflicts recomputed now.
+	 *
+	 * Not saved: the stored list keeps the conflicts it was made with, and the
+	 * read says when it checked them (`linkConflictsCheckedAt`).
+	 *
+	 * @param array<string, mixed> $serialised The list as the response carries it.
+	 * @param array<string, mixed> $listData   The list's stored data.
+	 *
+	 * @return array<string, mixed> The response data.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-conflicts-are-current-when-a-reviewer-reads-them
+	 */
+	private function withCurrentConflicts(array $serialised, array $listData): array {
+		if ($this->conflictRefresh === null) {
+			return $serialised;
+		}
+
+		$fresh = $this->conflictRefresh->refresh(entries: $this->reviews->entries(listData: $listData));
+		$serialised['objects'] = $fresh['entries'];
+		$serialised['linkConflictCount'] = $fresh['count'];
+		$serialised['linkConflictsCheckedAt'] = $fresh['checkedAt'];
+
+		return $serialised;
+	}//end withCurrentConflicts()
 
 	/**
 	 * Approve a destruction list (full or partial).
@@ -411,19 +435,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to approve destruction list',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to approve destruction list: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'approve destruction list', e: $e, context: ['id' => $id]);
 		}//end try
 	}//end approveDestructionList()
 
@@ -440,19 +452,11 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function rejectDestructionList(string $id): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor afwijzing is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor afwijzing is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -466,19 +470,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to reject destruction list',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to reject destruction list: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'reject destruction list', e: $e, context: ['id' => $id]);
 		}//end try
 	}//end rejectDestructionList()
 
@@ -493,36 +485,17 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function createLegalHold(): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor de bewaarplicht is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor de bewaarplicht is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
 			return $this->placeLegalHold(params: $params, reason: $reason);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to create legal hold',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to create legal hold: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'create legal hold', e: $e);
 		}//end try
 	}//end createLegalHold()
 
@@ -603,19 +576,11 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function releaseLegalHold(string $id): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor het opheffen van de bewaarplicht is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor het opheffen van de bewaarplicht is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -693,16 +658,7 @@ class ArchivalController extends Controller {
 		}
 
 		if ($this->lists->isConfigured() === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'missing' => [],
-					'configured' => false,
-					'error' => 'No destruction list register and schema are configured',
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->notConfigured(empty: ['results' => [], 'total' => 0, 'missing' => []]);
 		}
 
 		$listUuid = $this->request->getParam('destructionList');
@@ -835,10 +791,7 @@ class ArchivalController extends Controller {
 
 		$list = $this->lists->find(uuid: $id);
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->listNotFound();
 		}
 
 		$reviewer = $this->request->getParam('reviewer');
@@ -881,13 +834,15 @@ class ArchivalController extends Controller {
 
 		$this->lists->save(list: $target->list, listData: $listData);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_assigned',
-			[
-				'entry' => $entryId,
-				'reviewer' => $reviewer,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_assigned',
+				context: [
+					'entry' => $entryId,
+					'reviewer' => $reviewer,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -923,10 +878,7 @@ class ArchivalController extends Controller {
 	public function decideEntry(string $id, string $entryId): JSONResponse {
 		$userId = $this->currentUserId();
 		if ($userId === null) {
-			return new JSONResponse(
-				data: ['error' => 'Niet geauthenticeerd'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->notAuthenticated();
 		}
 
 		$read = $this->readEntry(id: $id, entryId: $entryId);
@@ -959,18 +911,11 @@ class ArchivalController extends Controller {
 			$listData = (($list?->getObject()) ?? []);
 			$entry = $this->reviews->entry(listData: $listData, entryUuid: $entryId);
 		} catch (Throwable $e) {
-			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['error' => 'Destruction list could not be read'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unreadableList(id: $id, e: $e);
 		}
 
 		if ($list === null) {
-			return new JSONResponse(
-				data: ['error' => 'Destruction list not found'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->listNotFound();
 		}
 
 		if ($entry === null) {
@@ -1024,6 +969,7 @@ class ArchivalController extends Controller {
 	 * @return JSONResponse The recorded decision.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
 	private function recordDecision(ArchivalReviewEntry $target, string $userId): JSONResponse {
 		$answer = $this->readAnswer(userId: $userId);
@@ -1031,7 +977,14 @@ class ArchivalController extends Controller {
 			return $answer;
 		}
 
-		$listData = $this->carryOutAnswer(target: $target, answer: $answer);
+		// Before anything happens to the record: a destroy over a link
+		// conflict is a stated decision, or it is refused.
+		$overridden = $this->acknowledgedConflicts(target: $target, answer: $answer);
+		if ($overridden instanceof JSONResponse) {
+			return $overridden;
+		}
+
+		$listData = $this->carryOutAnswer(target: $target, answer: $answer, overridden: $overridden);
 		if ($listData instanceof JSONResponse) {
 			return $listData;
 		}
@@ -1041,14 +994,22 @@ class ArchivalController extends Controller {
 		$decisions = ($listData['decisions'] ?? []);
 		$decision = end($decisions);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_decided',
-			[
-				'entry' => $target->entryId,
-				'answer' => $answer->answer,
-				'reviewer' => $userId,
-			]
+		$context = [
+			'entry' => $target->entryId,
+			'answer' => $answer->answer,
+			'reviewer' => $userId,
+		];
+		// A destroy says how many link conflicts it overrode; the other answers destroy nothing.
+		if ($answer->answer === DestructionReviewServiceInterface::ANSWER_DESTROY) {
+			$context['overriddenConflicts'] = count($overridden);
+		}
+
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_decided',
+				context: $context
+			)
 		);
 
 		return new JSONResponse(
@@ -1059,6 +1020,36 @@ class ArchivalController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end recordDecision()
+
+	/**
+	 * The link conflicts a destroy answer overrides, or 422 when they were not acknowledged.
+	 *
+	 * @param ArchivalReviewEntry  $target The list and the entry answered.
+	 * @param ArchivalReviewAnswer $answer The reviewer's answer.
+	 *
+	 * @return array|JSONResponse The overridden conflicts (empty when none), or 422 listing them.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	private function acknowledgedConflicts(ArchivalReviewEntry $target, ArchivalReviewAnswer $answer): array|JSONResponse {
+		$acknowledged = filter_var($this->request->getParam('acknowledgeConflicts', false), FILTER_VALIDATE_BOOLEAN);
+		try {
+			return $this->reviews->assertConflictsAcknowledged(
+				entryUuid: $target->entryId,
+				answer: $answer->answer,
+				acknowledged: $acknowledged
+			);
+		} catch (LinkConflictsNotAcknowledgedException $e) {
+			return new JSONResponse(
+				data: [
+					'error' => $e->getMessage(),
+					'linkConflicts' => $e->getConflicts(),
+					'linkConflictsTruncated' => $e->isTruncated(),
+				],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+	}//end acknowledgedConflicts()
 
 	/**
 	 * Read the reviewer's answer from the request and refuse one that is not an answer.
@@ -1094,12 +1085,13 @@ class ArchivalController extends Controller {
 	/**
 	 * Carry the answer out on the record, then write it into the list's data.
 	 *
-	 * @param ArchivalReviewEntry  $target The list and the entry answered.
-	 * @param ArchivalReviewAnswer $answer The reviewer's answer.
+	 * @param ArchivalReviewEntry              $target     The list and the entry answered.
+	 * @param ArchivalReviewAnswer             $answer     The reviewer's answer.
+	 * @param array<int, array<string, mixed>> $overridden The link conflicts an acknowledged destroy overrides.
 	 *
 	 * @return array|JSONResponse The list data with the decision, or 400 / 500.
 	 */
-	private function carryOutAnswer(ArchivalReviewEntry $target, ArchivalReviewAnswer $answer): array|JSONResponse {
+	private function carryOutAnswer(ArchivalReviewEntry $target, ArchivalReviewAnswer $answer, array $overridden = []): array|JSONResponse {
 		try {
 			$given = $this->reviews->reviewerAnswer(
 				answer: $answer->answer,
@@ -1113,7 +1105,8 @@ class ArchivalController extends Controller {
 				listData: $target->listData,
 				entryUuid: $target->entryId,
 				given: $given,
-				transferRef: $transferRef
+				transferRef: $transferRef,
+				overriddenConflicts: $overridden
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(
@@ -1140,6 +1133,7 @@ class ArchivalController extends Controller {
 	 * @return JSONResponse The caller's pending entries.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-conflicts-are-current-when-a-reviewer-reads-them
 	 */
 	#[NoAdminRequired]
 	public function myPendingReviews(): JSONResponse {
@@ -1161,6 +1155,11 @@ class ArchivalController extends Controller {
 					reviewer: $userId
 				)
 			);
+		}
+
+		// Each row's link conflicts as they stand now, with the moment of the check.
+		if ($this->conflictRefresh !== null && $pending !== []) {
+			$pending = $this->conflictRefresh->refresh(entries: $pending)['entries'];
 		}
 
 		return new JSONResponse(
@@ -1275,14 +1274,16 @@ class ArchivalController extends Controller {
 			);
 		}//end try
 
-		$this->auditMapper->createAuditTrailEntry(
-			$object,
-			'archival.nomination_recomputed',
-			[
-				'status' => ($nomination['status'] ?? null),
-				'rule' => ($nomination['rule'] ?? null),
-				'reason' => $reason,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'archival.nomination_recomputed',
+				context: [
+					'status' => ($nomination['status'] ?? null),
+					'rule' => ($nomination['rule'] ?? null),
+					'reason' => $reason,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -1290,6 +1291,50 @@ class ArchivalController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end recompute()
+
+	/**
+	 * The 404 for a destruction list that does not exist.
+	 *
+	 * @return JSONResponse
+	 */
+	private function listNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Destruction list not found'],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end listNotFound()
+
+	/**
+	 * The 401 for a caller who is not signed in.
+	 *
+	 * @return JSONResponse
+	 */
+	private function notAuthenticated(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Niet geauthenticeerd'],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end notAuthenticated()
+
+	/**
+	 * The answer of a listing while no destruction-list register and schema are configured.
+	 *
+	 * @param array<string,mixed> $empty The listing's empty fields, in the order the response lists them.
+	 *
+	 * @return JSONResponse A 200 saying the listing is not configured.
+	 */
+	private function notConfigured(array $empty): JSONResponse {
+		return new JSONResponse(
+			data: array_merge(
+				$empty,
+				[
+					'configured' => false,
+					'error' => 'No destruction list register and schema are configured',
+				]
+			),
+			statusCode: Http::STATUS_OK
+		);
+	}//end notConfigured()
 
 	/**
 	 * The user id of whoever is asking, or null when nobody is signed in.
@@ -1315,10 +1360,7 @@ class ArchivalController extends Controller {
 	private function checkArchivistRole(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Niet geauthenticeerd'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->notAuthenticated();
 		}
 
 		// Check if user is in the archivaris group or is an admin.
@@ -1334,4 +1376,63 @@ class ArchivalController extends Controller {
 
 		return null;
 	}//end checkArchivistRole()
+
+	/**
+	 * Refuse a caller who is not an archivist, then a missing or blank reason.
+	 *
+	 * @param mixed  $reason  The reason as sent.
+	 * @param string $missing The 400 message for a missing or blank reason.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the request may proceed.
+	 */
+	private function requireArchivistWithReason(mixed $reason, string $missing): ?JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		if ($reason === null || trim($reason) === '') {
+			return new JSONResponse(data: ['error' => $missing], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		return null;
+	}//end requireArchivistWithReason()
+
+	/**
+	 * Log a failed archival write and answer 500 naming it.
+	 *
+	 * @param string               $action  What failed, after "Failed to ".
+	 * @param \Exception           $e       The failure.
+	 * @param array<string, mixed> $context Log context between the line and the exception.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function failedWrite(string $action, \Exception $e, array $context = []): JSONResponse {
+		$this->logger->error(
+			message: '[ArchivalController] Failed to ' . $action,
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context, ['exception' => $e->getMessage()])
+		);
+
+		return new JSONResponse(
+			data: ['error' => 'Failed to ' . $action . ': ' . $e->getMessage()],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end failedWrite()
+
+	/**
+	 * Log a destruction list that could not be read and answer 500.
+	 *
+	 * @param string    $id The destruction list uuid.
+	 * @param Throwable $e  The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function unreadableList(string $id, Throwable $e): JSONResponse {
+		$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
+
+		return new JSONResponse(
+			data: ['error' => 'Destruction list could not be read'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unreadableList()
 }//end class

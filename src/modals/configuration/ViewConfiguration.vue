@@ -61,38 +61,22 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 							}}</pre>
 						</div>
 					</div>
-					<div v-else class="emptyTabContent">
-						<NcEmptyContent
-							:name="t('openregister', 'No configuration data')"
-							:description="
-								t(
-									'openregister',
-									'This configuration has no data defined.',
-								)
-							">
-							<template #icon>
-								<CogOutline :size="64" />
-							</template>
-						</NcEmptyContent>
-					</div>
+					<TabEmptyContent
+						v-else
+						:name="t('openregister', 'No configuration data')"
+						:description="
+							t(
+								'openregister',
+								'This configuration has no data defined.',
+							)
+						">
+						<CogOutline :size="64" />
+					</TabEmptyContent>
 				</div>
 
 				<!-- Logs Tab -->
 				<div v-if="activeTab === 1" class="tabPanel">
-					<div class="emptyTabContent">
-						<NcEmptyContent
-							:name="t('openregister', 'No logs found')"
-							:description="
-								t(
-									'openregister',
-									'No logs are available for this configuration.',
-								)
-							">
-							<template #icon>
-								<PostOutline :size="64" />
-							</template>
-						</NcEmptyContent>
-					</div>
+					<EmptyLogsTab subject="configuration" />
 				</div>
 			</ViewDialogTabs>
 		</div>
@@ -122,13 +106,14 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcActionButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
+import { NcActionButton, NcDialog } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import EmptyLogsTab from '../shared/EmptyLogsTab.vue'
+import TabEmptyContent from '../shared/TabEmptyContent.vue'
 import TimestampProperties from '../shared/TimestampProperties.vue'
 import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
 
@@ -139,13 +124,13 @@ export default {
 		ViewDialogTabs,
 		NcDialog,
 		NcActionButton,
-		NcEmptyContent,
 		CloseCancelButton,
+		TabEmptyContent,
+		EmptyLogsTab,
 		Pencil,
 		TrashCanOutline,
 		Download,
 		CogOutline,
-		PostOutline,
 	},
 
 	data() {

@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -28,6 +30,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\Response;
@@ -68,6 +71,34 @@ use OCA\OpenRegister\Service\File\FileRename;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileObjectRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Event\AbstractObjectFileEvent
+ * @uses \OCA\OpenRegister\Exception\ObjectFileAccessDeniedException
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Files\Db\File
+ * @uses \OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler
+ * @uses \OCA\OpenRegister\Files\Service\File\PreviewSize
+ * @uses \OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter
+ * @uses \OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest
+ * @uses \OCA\OpenRegister\Files\Service\Integration\TalkChatExporter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\File\FileBatchRequest
+ * @uses \OCA\OpenRegister\Service\File\FileMetadataChange
+ * @uses \OCA\OpenRegister\Service\File\FileOverwrite
+ * @uses \OCA\OpenRegister\Service\File\FileRename
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Support\ContentDisposition
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class FilesControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-actions-golden.json';
@@ -490,6 +521,7 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			$folder = $this->createMock(Folder::class);
 			$folder->method('getById')->willReturn($this->nodesInFolder());
+			$folder->method('getFirstNodeById')->willReturn(($this->nodesInFolder()[0] ?? null));
 			return $folder;
 		});
 		return $root;
@@ -646,7 +678,7 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->object;
 		});
-		$service->method('find')->willReturnCallback(fn (string $id, mixed ...$rest): ?ObjectEntity => $this->found(id: $id, rest: $rest));
+		$service->method('find')->willReturnCallback(fn (string $id, mixed ...$rest): ?ObjectEntity => $this->found(id: $id, rest: array_slice(FindCallShape::find(args: [$id, ...$rest]), 1)));
 		return $service;
 	}//end objectService()
 
@@ -684,7 +716,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 	 * @param FileService&\PHPUnit\Framework\MockObject\MockObject $service The fake.
 	 */
 	private function stubStorage(FileService $service): void {
-		$service->method('addFile')->willReturnCallback(function (ObjectEntity|string $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
+		$service->method('addFile')->willReturnCallback(function (FileTarget $target, FileUpload $upload): File {
+			[$fileName, $content, $share, $tags] = [$upload->fileName, $upload->content, $upload->share, $upload->tags];
 			if ($this->action === 'saveChat') {
 				$fileName = (string)preg_replace('/\d/', '#', $fileName);
 				$content = (string)preg_replace('/^Saved by.*$/m', 'Saved by', (string)$content);
@@ -698,8 +731,8 @@ class FilesControllerActionsGoldenTest extends TestCase {
 
 			return $this->file;
 		});
-		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, string $fileName, mixed $content, bool $share = false, array $tags = []): File {
-			$this->note(call: 'saveFile', detail: [$fileName, $content, $share, $tags]);
+		$service->method('saveFile')->willReturnCallback(function (ObjectEntity $objectEntity, FileUpload $upload): File {
+			$this->note(call: 'saveFile', detail: [$upload->fileName, $upload->content, $upload->share, $upload->tags]);
 			$this->work(call: 'saveFile');
 			return $this->file;
 		});

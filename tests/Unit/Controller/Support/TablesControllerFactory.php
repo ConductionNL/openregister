@@ -24,6 +24,8 @@ final class TablesControllerFactory {
 	 * @param RegisterMapperInterface $registerMapper Constructor argument.
 	 * @param SchemaMapperInterface $schemaMapper Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param IUserSession $userSession Constructor argument.
+	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -34,6 +36,8 @@ final class TablesControllerFactory {
 		\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper,
 		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
 		\Psr\Log\LoggerInterface $logger,
+		\OCP\IUserSession $userSession,
+		\OCP\IGroupManager $groupManager,
 	): array {
 		return [
 			$appName,
@@ -44,6 +48,8 @@ final class TablesControllerFactory {
 				schemaMapper: $schemaMapper,
 			),
 			$logger,
+			$userSession,
+			$groupManager,
 		];
 	}
 

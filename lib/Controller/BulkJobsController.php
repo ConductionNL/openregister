@@ -33,11 +33,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
@@ -55,6 +55,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * BulkJobsController.
@@ -134,7 +135,7 @@ class BulkJobsController extends Controller {
 		IRequest $request,
 		BulkJobsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->reversal = $services->domain->reversal;
 		$this->jobMapper = $services->domain->jobMapper;
@@ -191,7 +192,7 @@ class BulkJobsController extends Controller {
 		// rather than an else so neither arm can fall into the other.
 		if ($wantsAll === true && $this->isAdmin() === true) {
 			return $this->jobList(
-				jobs: $this->jobMapper->findAllJobs(state: $state, limit: $limit, offset: $offset)
+				jobs: $this->jobMapper->findJobs(query: new ListQuery(limit: $limit, offset: $offset, filters: ['state' => $state]))
 			);
 		}
 

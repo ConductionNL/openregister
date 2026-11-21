@@ -24,7 +24,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "null:NULL",
@@ -51,7 +53,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -80,7 +85,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:1",
@@ -117,7 +124,10 @@
             },
             "createdBy": "string:'alice'",
             "created": "string:'2001-02-03T04:05:06+00:00'",
-            "updated": "string:'2001-02-03T05:05:06+01:00'"
+            "updated": "string:'2001-02-03T05:05:06+01:00'",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": true
     },
@@ -146,7 +156,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:2",
@@ -173,7 +185,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -202,7 +217,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -229,7 +246,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": true
     },
@@ -258,7 +278,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -285,7 +307,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -314,7 +339,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -341,7 +368,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -370,7 +400,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -397,7 +429,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -426,7 +461,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -453,7 +490,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     },
@@ -482,7 +522,9 @@
             "report": "json",
             "createdBy": "string",
             "created": "datetime",
-            "updated": "datetime"
+            "updated": "datetime",
+            "causeRun": "string",
+            "rowsPrunedAt": "datetime"
         },
         "json": {
             "id": "int:3",
@@ -509,7 +551,10 @@
             "report": [],
             "createdBy": "null:NULL",
             "created": "null:NULL",
-            "updated": "null:NULL"
+            "updated": "null:NULL",
+            "causeRun": "null:NULL",
+            "rowsPruned": "bool:false",
+            "rowsPrunedAt": "null:NULL"
         },
         "committable": false
     }

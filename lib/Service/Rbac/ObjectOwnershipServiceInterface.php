@@ -115,6 +115,20 @@ interface ObjectOwnershipServiceInterface {
 	public function assign(OwnedRecord $record, OwnershipHandover $handover): array;
 
 	/**
+	 * Hand a stored record to the system identity; only inside a system operation, audited.
+	 *
+	 * @param OwnedRecord $record The record, its register and schema.
+	 *
+	 * @throws NotAuthorizedException When no system operation is running.
+	 * @throws InvalidArgumentException When the record carries no uuid.
+	 *
+	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool}
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function releaseToSystem(OwnedRecord $record): array;
+
+	/**
 	 * Reassign many records to one owner, in one action.
 	 *
 	 * ONE AUDIT ENTRY PER RECORD, never one for the batch. A single entry for
@@ -125,24 +139,6 @@ interface ObjectOwnershipServiceInterface {
 	 * whose write fails, is reported in `failed` and the remaining records are
 	 * still moved — a bulk reassignment that stops halfway leaves an
 	 * administrator with no way to know how far it got.
-	 *
-	 * @param string[] $identifiers The records, by uuid, id, slug or uri.
-	 * @param string $newOwner The uid of the new owner.
-	 * @param bool $cascade Whether the change carries to each record's children.
-	 *
-	 * @throws NotAuthorizedException When the caller is not an administrator.
-	 * @throws InvalidArgumentException When no such user exists, or no record was named.
-	 *
-	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
-	 *
-	 * @spec openspec/specs/object-ownership/spec.md
-	 */
-	public function reassignMany(array $identifiers, string $newOwner, bool $cascade = false): array;
-
-	/**
-	 * Reassign many records to one owner, as reassignMany() does, for a reassignment already built.
 	 *
 	 * @param string[]              $identifiers  The records, by uuid, id, slug or uri.
 	 * @param OwnershipReassignment $reassignment The new owner and whether the change carries to each record's children.

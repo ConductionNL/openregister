@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -33,15 +33,16 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
@@ -72,7 +73,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return array<string, Flow> The flows. A flow an author drew is never among them.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function ofApplication(string $application): array {
 		$flows = [];
@@ -96,7 +97,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return bool True when one does.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function hasFlowsNamedFor(string $slug): bool {
 		$selection = new FlowSelection(app: Flow::APP_MANIFEST_SCHEDULE);
@@ -119,7 +120,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @throws \InvalidArgumentException When the trigger rejects its config.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function write(CompiledScheduleFlow $compiled, ?Flow $stored): void {
 		if ($stored === null) {
@@ -143,7 +144,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function remove(Flow $flow): void {
 		$this->flows->deleteStored(flow: $flow);
@@ -164,7 +165,7 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 		$this->validator->validate(flow: $flow);
 
 		$stored = $this->mapper->insert($flow);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end create()
 
 	/**
@@ -183,6 +184,6 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 		$compiled->applyTo(flow: $stored);
 		$this->validator->validate(flow: $stored);
 		$this->mapper->update($stored);
-		$this->versions->publish(flow: $stored, publishedBy: $compiled->release->publisher);
+		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $compiled->release->publisher));
 	}//end republish()
 }//end class

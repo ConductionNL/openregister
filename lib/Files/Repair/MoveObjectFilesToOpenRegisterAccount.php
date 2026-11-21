@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Repair step: move object files into the openregister account's home.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+ * @spec openspec/specs/file-actions/spec.md
  */
 class MoveObjectFilesToOpenRegisterAccount implements IRepairStep {
 
@@ -59,7 +59,7 @@ class MoveObjectFilesToOpenRegisterAccount implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getName(): string {
 		return 'Move object files into the OpenRegister account';
@@ -72,17 +72,13 @@ class MoveObjectFilesToOpenRegisterAccount implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {
 			$tally = $this->container->get(ObjectFileMigration::class)->run();
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[MoveObjectFilesToOpenRegisterAccount] Skipped: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$output->warning('Object files: not moved (' . $e->getMessage() . ')');
+			$this->reportSkipped(output: $output, error: $e);
 			return;
 		}
 
@@ -90,14 +86,22 @@ class MoveObjectFilesToOpenRegisterAccount implements IRepairStep {
 			$output->warning(ObjectFileMigration::REFUSAL_MESSAGE);
 		}
 
-		$output->info(
-			sprintf(
-				'Object files: %d folders moved, %d files moved, %d published links re-owned, %d left where they are',
-				$tally['foldersMoved'],
-				$tally['filesMoved'],
-				$tally['sharesReowned'],
-				$tally['foldersLeft']
-			)
-		);
+		$output->info('Object files: ' . (new ObjectFileMoveCounts())->sentence(tally: $tally));
 	}//end run()
+
+	/**
+	 * Log and report a move that could not run.
+	 *
+	 * @param IOutput   $output The repair output.
+	 * @param Throwable $error  Why the move could not run.
+	 *
+	 * @return void
+	 */
+	private function reportSkipped(IOutput $output, Throwable $error): void {
+		$this->logger->warning(
+			message: '[MoveObjectFilesToOpenRegisterAccount] Skipped: ' . $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$output->warning('Object files: not moved (' . $error->getMessage() . ')');
+	}//end reportSkipped()
 }//end class

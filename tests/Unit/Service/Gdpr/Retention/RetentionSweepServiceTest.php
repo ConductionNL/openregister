@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 
 /**
  * Test class for RetentionSweepService.
@@ -135,7 +136,7 @@ class RetentionSweepServiceTest extends TestCase {
 
 		$dsr->expects($this->once())
 			->method('erase')
-			->with('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+			->with(new ErasureRequest('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE))
 			->willReturn([]);
 
 		$accessor->expects($this->once())

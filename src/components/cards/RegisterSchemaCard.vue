@@ -670,16 +670,7 @@ function conversionNotice(schema, configurationType) {
  */
 function hardDeletionPrompt(counts) {
 	if (counts.active > 0 && counts.deleted > 0) {
-		return t(
-			'openregister',
-			'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
-			{
-				active: counts.active,
-				deleted: counts.deleted,
-				total: counts.total,
-				schema: counts.schema,
-			},
-		)
+		return allObjectsDeletionPrompt(counts)
 	}
 	return t(
 		'openregister',
@@ -711,6 +702,61 @@ function softDeletionPrompt(counts) {
 		'Are you sure you want to soft-delete {count} active objects for schema "{schema}"?\n\nThey will be marked as deleted but can be permanently removed later.',
 		{ count: counts.active, schema: counts.schema },
 	)
+}
+
+/**
+ * Say a schema's objects are about to be deleted, permanently or softly.
+ *
+ * @param {object} schema The schema
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {void}
+ */
+function announceDeletionStart(schema, hardDelete) {
+	const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
+	showSuccess(
+		t('openregister', 'Starting {action} for {schema}...', {
+			action,
+			schema: schema.title,
+		}),
+	)
+}
+
+/**
+ * Why deleting a schema's objects failed.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function deletionFailureText(schema, error) {
+	return t(
+		'openregister',
+		'Failed to delete objects for {schema}: {error}',
+		schemaFailure(schema, error),
+	)
+}
+
+/**
+ * Ask the server to delete a schema's objects.
+ *
+ * @param {string} url The bulk delete URL
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {Promise<object>} The axios response
+ */
+function postDeletion(url, hardDelete) {
+	return axios.post(url, { hardDelete }, { headers: JSON_HEADERS })
+}
+
+/**
+ * Refresh the register list and the dashboard's registers together.
+ *
+ * @return {Promise<void>}
+ */
+async function refreshRegisterViews() {
+	await Promise.all([
+		registerStore.refreshRegisterList(),
+		dashboardStore.fetchRegisters(),
+	])
 }
 
 /**
@@ -1189,12 +1235,7 @@ export default {
 		 * @spec exclude UI plumbing: confirmation text for a bulk delete
 		 */
 		deletionPrompt(schema, hardDelete) {
-			const counts = {
-				total: schema.stats?.objects?.total || 0,
-				active: this.getSchemaObjectCount(schema),
-				deleted: this.deletedCount(schema),
-				schema: schema.title,
-			}
+			const counts = this.objectCounts(schema)
 			if (counts.total === 0) {
 				showError(
 					t('openregister', 'No objects to delete for schema {schema}', {
@@ -1209,6 +1250,22 @@ export default {
 		},
 
 		/**
+		 * How many objects a schema holds in this register: in total, active
+		 * and soft-deleted.
+		 *
+		 * @param {object} schema The schema
+		 * @return {{total: number, active: number, deleted: number, schema: string}} The counts
+		 */
+		objectCounts(schema) {
+			return {
+				total: schema.stats?.objects?.total || 0,
+				active: this.getSchemaObjectCount(schema),
+				deleted: this.deletedCount(schema),
+				schema: schema.title,
+			}
+		},
+
+		/**
 		 * Delete a schema's objects on the server and refresh the lists.
 		 *
 		 * @param {object} schema The schema
@@ -1218,32 +1275,13 @@ export default {
 		async runSchemaDeletion(schema, hardDelete) {
 			const url = apiUrl(`bulk/${this.item.id}/${schema.id}/delete-objects`)
 			try {
-				const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
-				showSuccess(
-					t('openregister', 'Starting {action} for {schema}...', {
-						action,
-						schema: schema.title,
-					}),
-				)
-				const response = await axios.post(
-					url,
-					{ hardDelete },
-					{ headers: JSON_HEADERS },
-				)
+				announceDeletionStart(schema, hardDelete)
+				const response = await postDeletion(url, hardDelete)
 				showSuccess(deletionResult(response.data, schema))
-				await Promise.all([
-					registerStore.refreshRegisterList(),
-					dashboardStore.fetchRegisters(),
-				])
+				await refreshRegisterViews()
 			} catch (error) {
 				console.error('Error deleting schema objects:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to delete objects for {schema}: {error}',
-						schemaFailure(schema, error),
-					),
-				)
+				showError(deletionFailureText(schema, error))
 			}
 		},
 
@@ -1310,6 +1348,26 @@ export default {
 			)
 		},
 	},
+}
+
+/**
+ * The warning before permanently deleting both the active and the
+ * soft-deleted objects of a schema.
+ *
+ * @param {{total: number, active: number, deleted: number, schema: string}} counts The counts
+ * @return {string} The warning
+ */
+function allObjectsDeletionPrompt(counts) {
+	return t(
+		'openregister',
+		'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
+		{
+			active: counts.active,
+			deleted: counts.deleted,
+			total: counts.total,
+			schema: counts.schema,
+		},
+	)
 }
 </script>
 

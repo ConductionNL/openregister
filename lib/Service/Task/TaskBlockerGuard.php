@@ -153,16 +153,8 @@ class TaskBlockerGuard {
 	 * @throws TaskValidationException When the chain leads back to the task.
 	 */
 	private function assertNoLoop(Task $task, string $next): void {
-		$own = (string)$task->getUuid();
-		for ($step = 1; $next !== $own; $step++) {
-			if ($step >= self::MAX_CHAIN || $next === '') {
-				return;
-			}
-
-			$next = $this->nextInChain(uuid: $next);
-			if ($next === null) {
-				return;
-			}
+		if ($this->chainReaches(own: (string)$task->getUuid(), next: $next) === false) {
+			return;
 		}
 
 		throw new TaskValidationException(
@@ -172,6 +164,32 @@ class TaskBlockerGuard {
 			)
 		);
 	}//end assertNoLoop()
+
+	/**
+	 * Whether walking the blocker chain from $next comes back to the task itself.
+	 *
+	 * The walk stops, answering no, at the end of the chain, at a removed task,
+	 * or after {@see self::MAX_CHAIN} steps.
+	 *
+	 * @param string $own  The task's own uuid.
+	 * @param string $next The first blocker in the chain.
+	 *
+	 * @return bool True when the chain loops back to the task.
+	 */
+	private function chainReaches(string $own, string $next): bool {
+		for ($step = 1; $next !== $own; $step++) {
+			if ($step >= self::MAX_CHAIN || $next === '') {
+				return false;
+			}
+
+			$next = $this->nextInChain(uuid: $next);
+			if ($next === null) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end chainReaches()
 
 	/**
 	 * What the given task waits on, or null when it no longer exists.

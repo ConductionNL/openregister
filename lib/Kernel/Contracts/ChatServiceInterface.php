@@ -70,6 +70,18 @@ interface ChatServiceInterface {
 	): array;
 
 	/**
+	 * The special right a caller lacks to send a message in one of its conversations, or null.
+	 *
+	 * @param int    $conversationId The conversation.
+	 * @param string $userId         The caller.
+	 *
+	 * @return string|null The right's key (`llm_use` or `agent_use`), or null when the caller holds both.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function missingRightIn(int $conversationId, string $userId): ?string;
+
+	/**
 	 * Ensure conversation title is unique
 	 *
 	 * Delegates to ConversationManagementHandler.

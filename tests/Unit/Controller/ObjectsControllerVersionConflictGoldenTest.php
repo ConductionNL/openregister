@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\Object\ConflictReportInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
@@ -58,6 +59,11 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectsExtensions
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\RefusedWrite
  */
 class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-version-conflict-golden.json';
@@ -201,14 +207,14 @@ class ObjectsControllerVersionConflictGoldenTest extends TestCase {
 			$this->trail[] = ['findAll' => $args];
 			return [$before, $after, $undated, 'not an entry'];
 		}));
-		$mapper->method('createAuditTrailEntry')->willReturnCallback(function (...$args) use ($fails) {
+		$mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(function (...$args) use ($fails) {
 			if ($fails !== null) {
 				throw $fails;
 			}
 
 			$this->trail[] = ['entry' => array_slice($args, 1)];
 			return new AuditTrail();
-		});
+		}));
 		return $mapper;
 	}
 
