@@ -24,11 +24,12 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 
 /**
  * Links Nextcloud Flow (workflow engine) operations to objects.
  */
-interface FlowLinkServiceInterface {
+interface FlowLinkServiceInterface extends LinkedFlowOperationsInterface {
 
 	/**
 	 * Return Flow operations visible to the current user (picker source).
@@ -46,23 +47,6 @@ interface FlowLinkServiceInterface {
 	public function getAvailableOperations(?string $search = null): array;
 
 	/**
-	 * Return the linked Flow operations for an object, refreshing the
-	 * cached `enabled` / `operation_name` / `entity_type` columns from
-	 * `flow_operations` on every call.
-	 *
-	 * Available to everyone (read-only) — non-admins still see which
-	 * automations are bound to an OR object even though they can't
-	 * change them.
-	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 *
-	 * @return array<int,array<string,mixed>>
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function getLinkedOperations(string $objectUuid): array;
-
-	/**
 	 * Whether the current user is an administrator.
 	 *
 	 * NC Flow operations are admin-configured globally, so we gate the
@@ -75,21 +59,12 @@ interface FlowLinkServiceInterface {
 	public function isCurrentUserAdmin(): bool;
 
 	/**
-	 * Whether NC WorkflowEngine is installed.
-	 *
-	 * @return bool
-	 */
-	public function isFlowAvailable(): bool;
-
-	/**
 	 * Link an existing Flow operation to an OR object.
 	 *
 	 * Admin-only. Idempotent: a duplicate link raises a 409 Exception.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
-	 * @param int $operationId workflowengine operation id.
+	 * @param LinkTarget $target      The parent OR object: its uuid, register id and schema id.
+	 * @param int        $operationId workflowengine operation id.
 	 *
 	 * @return FlowLink The persisted link row.
 	 *
@@ -98,7 +73,7 @@ interface FlowLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkOperation(string $objectUuid, int $registerId, int $schemaId, int $operationId): FlowLink;
+	public function linkOperation(LinkTarget $target, int $operationId): FlowLink;
 
 	/**
 	 * Unlink an operation from an object.

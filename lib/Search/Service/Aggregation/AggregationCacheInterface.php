@@ -35,31 +35,25 @@ interface AggregationCacheInterface {
 	 * Returns the cached associative array (with the same shape
 	 * AggregationRunner emits) or null on miss.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot $slot The register, schema, aggregation name and resolved filter (placeholders concrete).
 	 *
 	 * @return array<string, mixed>|null Cached result or null on miss.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
 	 */
-	public function get(string $registerSlug, string $schemaSlug, string $name, array $filter): ?array;
+	public function get(AggregationSlot $slot): ?array;
 
 	/**
 	 * Store an aggregation result.
 	 *
-	 * @param string $registerSlug Register slug component of the cache key.
-	 * @param string $schemaSlug Schema slug component of the cache key.
-	 * @param string $name Aggregation name component of the cache key.
-	 * @param array<string, mixed> $filter Resolved filter (placeholders concrete).
+	 * @param AggregationSlot      $slot   The register, schema, aggregation name and resolved filter.
 	 * @param array<string, mixed> $result Result envelope to store.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
-	public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void;
+	public function set(AggregationSlot $slot, array $result): void;
 
 	/**
 	 * Look up a cached ad-hoc aggregation result.

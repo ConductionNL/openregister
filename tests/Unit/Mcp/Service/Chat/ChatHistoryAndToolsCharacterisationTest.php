@@ -11,8 +11,6 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\Service\Chat;
 
 use LLPhant\Chat\Message as LLPhantMessage;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
@@ -30,6 +28,11 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class ChatHistoryAndToolsCharacterisationTest extends TestCase
 {
@@ -76,7 +79,7 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
                 $this->message('user', '0'),
             ]
         );
-        $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
+        $handler = new MessageHistoryHandler($mapper, $this->logger());
 
         $history = $handler->buildMessageHistory(7);
 
@@ -119,7 +122,7 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
     {
         $mapper = $this->createMock(MessageMapperInterface::class);
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
-        $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
+        $handler = new MessageHistoryHandler($mapper, $this->logger());
 
         $request = new ChatMessageRequest(5, 'u1', 'body');
         $request->cnAiContext = ($context ?? []);
@@ -145,7 +148,7 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
     {
         $mapper = $this->createMock(MessageMapperInterface::class);
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
-        $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
+        $handler = new MessageHistoryHandler($mapper, $this->logger());
 
         $message = $handler->storeAssistantMessage(5, new ChatReply('body', ['s']));
 
@@ -165,7 +168,7 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
     {
         $reg = $this->createMock(ToolRegistry::class);
         $reg->method('getTool')->willReturnCallback(fn (string $id) => $registry[$id] ?? null);
-        return new ToolManagementHandler($this->createMock(AgentMapper::class), $reg, $this->logger());
+        return new ToolManagementHandler($reg, $this->logger());
     }
 
     public function testNoAgentOrNoToolsGivesNothing(): void

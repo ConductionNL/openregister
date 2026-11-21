@@ -37,7 +37,8 @@
 
 - [x] 5.1 Add an Office service that, after the read guard, checks richdocuments is enabled (409 otherwise), the mimetype opens in Office (415 otherwise) and the person may use Office (403 otherwise), and creates a guest-type WOPI token with owner `openregister`, editor the acting person and `canWrite` = object `update` AND `userCanEdit()`
 - [x] 5.2 Add `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/office` returning `urlSrc`, `wopiSrc`, `token`, `tokenTtl` and `readOnly`, and the page `GET /apps/openregister/office/{register}/{schema}/{id}/{fileId}` that posts the token into the Collabora frame
-- [ ] 5.3 Add `officeUrl` to formatted file metadata for mimetypes Office opens
+- [x] 5.3 Add `officeUrl` to formatted file metadata for mimetypes Office opens
+  - `FilesController::index()` adds `officeUrl` (the `files#officePage` route for that object and file) to each listed file whose MIME type richdocuments opens, for a signed-in caller only; `OfficeSessionService::opensInOffice()` asks richdocuments once per type. Tests: `OfficeSessionServiceOfficeUrlTest`, `FilesControllerObjectAccessTest::testAListedOfficeDocumentCarriesItsOfficeUrl`.
   - Not added: the formatted file has no object context. The page URL is fixed (`/apps/openregister/office/{register}/{schema}/{id}/{fileId}`), so the follow-up `CnFilesTab` action builds it.
 - [ ] 5.4 Integration test pinned to richdocuments 12.0.x: edit with update saves a new version attributed to the editor, read-only PutFile is refused, no read gets 404 and no token row
   - Covered by `OfficeSessionServiceTest` and `FilesControllerObjectAccessTest`, and live against richdocuments 12.0.1 and Collabora CODE 26.04.4.2 (`orf-live` runs 13 to 16).

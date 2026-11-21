@@ -149,9 +149,11 @@ class OasReferenceRepair {
 	 */
 	private function reportRemovedAllOf(string $context): void {
 		$this->report->addAutoCorrection(
-			path: $context . '.allOf',
-			message: 'allOf with no valid items was removed.',
-			code: OasValidationReport::CODE_INVALID_ALLOF,
+			issue: new OasIssue(
+				path: $context . '.allOf',
+				message: 'allOf with no valid items was removed.',
+				code: OasValidationReport::CODE_INVALID_ALLOF
+			)
 		);
 	}//end reportRemovedAllOf()
 
@@ -250,9 +252,11 @@ class OasReferenceRepair {
 		}
 
 		$this->report->addError(
-			path: $context . '.$ref',
-			message: 'Dangling $ref to "' . self::COMPONENT_PREFIX . $refPath . '"; substituted with type=string.',
-			code: OasValidationReport::CODE_DANGLING_REF,
+			issue: new OasIssue(
+				path: $context . '.$ref',
+				message: 'Dangling $ref to "' . self::COMPONENT_PREFIX . $refPath . '"; substituted with type=string.',
+				code: OasValidationReport::CODE_DANGLING_REF
+			)
 		);
 	}//end replaceDanglingRef()
 

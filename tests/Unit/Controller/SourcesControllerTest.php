@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SourcesControllerFactory;
 use OCA\OpenRegister\Controller\SourcesController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
@@ -95,7 +96,7 @@ class SourcesControllerTest extends TestCase {
 	public function testIndexReturnsSourcesWithEmptyParams(): void {
 		$source = new Source();
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findAll')->willReturn([$source]);
+		$this->sourceMapper->method('findList')->willReturn([$source]);
 
 		$result = $this->controller->index();
 
@@ -108,7 +109,7 @@ class SourcesControllerTest extends TestCase {
 
 	public function testIndexReturnsEmptyResults(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findAll')->willReturn([]);
+		$this->sourceMapper->method('findList')->willReturn([]);
 
 		$result = $this->controller->index();
 
@@ -123,12 +124,8 @@ class SourcesControllerTest extends TestCase {
 			'_offset' => '5',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->equalTo(10),
-				$this->equalTo(5),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(10, 5, [])))
 			->willReturn([]);
 
 		$result = $this->controller->index();
@@ -143,12 +140,8 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// page 3 with limit 10 => offset = (3-1)*10 = 20
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->equalTo(10),
-				$this->equalTo(20),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(10, 20, [])))
 			->willReturn([]);
 
 		$result = $this->controller->index();
@@ -163,12 +156,8 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// page 1 with limit 5 => offset = (1-1)*5 = 0
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->equalTo(5),
-				$this->equalTo(0),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(5, 0, [])))
 			->willReturn([]);
 
 		$this->controller->index();
@@ -180,12 +169,8 @@ class SourcesControllerTest extends TestCase {
 		]);
 		// Without _limit, page should not be converted to offset
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->isNull(),
-				$this->isNull(),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(ListQuery::UNBOUNDED, null, [])))
 			->willReturn([]);
 
 		$this->controller->index();
@@ -202,12 +187,8 @@ class SourcesControllerTest extends TestCase {
 			'status' => 'active',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->equalTo(10),
-				$this->equalTo(0),
-				$this->equalTo(['type' => 'api', 'status' => 'active'])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(10, 0, ['type' => 'api', 'status' => 'active'])))
 			->willReturn([]);
 
 		$result = $this->controller->index();
@@ -220,12 +201,8 @@ class SourcesControllerTest extends TestCase {
 			'_limit' => '25',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->equalTo(25),
-				$this->isNull(),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(25, null, [])))
 			->willReturn([]);
 
 		$this->controller->index();
@@ -236,12 +213,8 @@ class SourcesControllerTest extends TestCase {
 			'_offset' => '15',
 		]);
 		$this->sourceMapper->expects($this->once())
-			->method('findAll')
-			->with(
-				$this->isNull(),
-				$this->equalTo(15),
-				$this->equalTo([])
-			)
+			->method('findList')
+			->with($this->equalTo(new ListQuery(ListQuery::UNBOUNDED, 15, [])))
 			->willReturn([]);
 
 		$this->controller->index();
@@ -252,7 +225,7 @@ class SourcesControllerTest extends TestCase {
 		$source2 = new Source();
 		$source3 = new Source();
 		$this->request->method('getParams')->willReturn([]);
-		$this->sourceMapper->method('findAll')->willReturn([$source1, $source2, $source3]);
+		$this->sourceMapper->method('findList')->willReturn([$source1, $source2, $source3]);
 
 		$result = $this->controller->index();
 
@@ -999,5 +972,111 @@ class SourcesControllerTest extends TestCase {
 		$result = $controller->syncStatus(5);
 
 		$this->assertSame(404, $result->getStatus());
+	}
+
+	// -------------------------------------------------------------------------
+	// queryPreview() — dbal-query-schema-guarded-and-previewed (design D-3)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Ask the controller to preview a query.
+	 *
+	 * @param string $query The query parameter.
+	 *
+	 * @return void
+	 */
+	private function previewing(string $query): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $key === 'query' ? $query : $default
+		);
+	}
+
+	/**
+	 * A join previews its columns and at most 50 rows.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewAnswersColumnsAndRows(): void {
+		$this->sourceMapper->method('find')->willReturn($this->sqliteDatabaseSource());
+		$this->previewing('SELECT p.reference, t.name AS type FROM permits p JOIN permit_types t ON t.id = p.permit_type_id');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(Http::STATUS_OK, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame(['reference', 'type'], array_column($data['columns'], 'name'));
+		$this->assertNotSame([], $data['rows']);
+		$this->assertLessThanOrEqual(50, count($data['rows']));
+		$this->assertSame(['reference', 'type'], array_keys($data['rows'][0]));
+	}
+
+	/**
+	 * A non-administrator is refused before the source is read.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRequiresAdmin(): void {
+		$controller = $this->buildController(isAdmin: false);
+		$this->sourceMapper->expects($this->never())->method('find');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->queryPreview(5)->getStatus());
+	}
+
+	/**
+	 * Another organisation's source is not found.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewOfAnotherOrganisationsSourceIs404(): void {
+		$this->sourceMapper->method('find')->willThrowException(new DoesNotExistException('other organisation'));
+		$this->previewing('SELECT 1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->queryPreview(7)->getStatus());
+	}
+
+	/**
+	 * A data-changing statement is a 400 naming the rule, and nothing is written.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRefusesAStatementThatIsNotARead(): void {
+		$source = $this->sqliteDatabaseSource();
+		$this->sourceMapper->method('find')->willReturn($source);
+		$this->previewing('SELECT 1; DELETE FROM permits');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['error' => 'A query-backed schema may contain only one statement.'], $result->getData());
+		$check = \Doctrine\DBAL\DriverManager::getConnection(['driver' => 'pdo_sqlite', 'path' => $source->getAuthConfig()['path']]);
+		$this->assertGreaterThan(0, (int)$check->fetchOne('SELECT COUNT(*) FROM permits'));
+	}
+
+	/**
+	 * A database error answers a fixed sentence and its class, never the database's message.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewKeepsTheDatabaseMessageOut(): void {
+		$this->sourceMapper->method('find')->willReturn($this->sqliteDatabaseSource());
+		$this->previewing('SELECT salary FROM payroll');
+
+		$result = $this->controller->queryPreview(5);
+
+		$this->assertSame(502, $result->getStatus());
+		$this->assertSame(['error' => 'The database refused the query.', 'errorClass' => 'TableNotFoundException'], $result->getData());
+	}
+
+	/**
+	 * A source that is not a database source is refused.
+	 *
+	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
+	 */
+	public function testQueryPreviewRejectsANonDatabaseSource(): void {
+		$source = new Source();
+		$source->setType('internal');
+		$this->sourceMapper->method('find')->willReturn($source);
+
+		$this->assertSame(422, $this->controller->queryPreview(1)->getStatus());
 	}
 }

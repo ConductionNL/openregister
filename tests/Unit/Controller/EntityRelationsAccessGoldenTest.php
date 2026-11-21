@@ -46,6 +46,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -123,7 +124,8 @@ class EntityRelationsAccessGoldenTest extends TestCase {
 			$this->emailLinks,
 			$this->createMock(LoggerInterface::class),
 			$this->decisions,
-			$visibility
+			$visibility,
+			$this->createMock(IGroupManager::class)
 		);
 	}
 

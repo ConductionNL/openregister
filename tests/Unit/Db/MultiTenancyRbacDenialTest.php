@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -48,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * The organisation-membership branch of entity RBAC.
@@ -89,15 +91,15 @@ class MultiTenancyRbacDenialTest extends TestCase {
 		$this->organisationMapper->method('isEntityRbacEnforcementEnabled')->willReturn(true);
 
 		return new RegisterMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 
@@ -189,15 +191,15 @@ class MultiTenancyRbacDenialTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn(['users']);
 
 		$mapper = new RegisterMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$organisationMapper,
-			$userSession,
-			$groupManager,
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices($organisationMapper, $userSession, $groupManager),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertTrue(
@@ -300,15 +302,15 @@ class MultiTenancyRbacDenialTest extends TestCase {
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
 		$mapper = new RegisterMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertTrue($this->decide($mapper));

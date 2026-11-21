@@ -32,8 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Quality\QualityListingRequest;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Quality\QualityListingWindow;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCP\AppFramework\Controller;
@@ -53,7 +54,7 @@ class QualityController extends Controller {
 		IRequest $request,
 		private readonly QualityStatisticsServiceInterface $statistics,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -105,14 +106,16 @@ class QualityController extends Controller {
 	 */
 	private function lowestQuality(string $register, string $schema): array {
 		return $this->statistics->lowestQuality(
-			register: $register,
-			schema: $schema,
-			qualityStatus: $this->qualityStatusParam(),
-			window: new QualityListingWindow(
-				sort: (string)$this->request->getParam('sort', 'qualityScore'),
-				order: (string)$this->request->getParam('order', 'asc'),
-				limit: $this->limitParam(),
-				offset: max(0, (int)$this->request->getParam('offset', 0))
+			request: new QualityListingRequest(
+				register: $register,
+				schema: $schema,
+				qualityStatus: $this->qualityStatusParam(),
+				window: new QualityListingWindow(
+					sort: (string)$this->request->getParam('sort', 'qualityScore'),
+					order: (string)$this->request->getParam('order', 'asc'),
+					limit: $this->limitParam(),
+					offset: max(0, (int)$this->request->getParam('offset', 0))
+				)
 			)
 		);
 	}//end lowestQuality()

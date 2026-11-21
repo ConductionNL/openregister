@@ -26,6 +26,7 @@ use Doctrine\DBAL\Platforms\MySQL57Platform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
 use OCP\DB\IPreparedStatement;
@@ -38,6 +39,16 @@ use Psr\Log\NullLogger;
  * Pins the statements that repoint the moved rows at the new schema id, per dialect.
  *
  * @covers \OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\RowRestamp
+ * @uses   \OCA\OpenRegister\Service\SharedSchema\TableCopy
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\SharedSchema\RowRestamp
+ * @uses \OCA\OpenRegister\Service\SharedSchema\TableCopy
  */
 class SchemaTableMigratorRestampGoldenTest extends TestCase {
 
@@ -77,7 +88,7 @@ class SchemaTableMigratorRestampGoldenTest extends TestCase {
 		$schema->setId(9);
 
 		$migrator = new SchemaTableMigrator(db: $db, config: $config, magicMapper: $magic, logger: new NullLogger());
-		$result   = $migrator->migrate(register: $register, schema: $schema, oldId: 2);
+		$result   = $migrator->migrate(table: new RegisterSchema(register: $register, schema: $schema), oldId: 2);
 
 		return ['rows' => $result['rows'], 'statements' => $statements];
 	}//end migrate()

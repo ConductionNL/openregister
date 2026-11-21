@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Controller\RegisterDescriptorController;
 use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCP\IGroupManager;
@@ -63,11 +64,10 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->descriptors = $this->createMock(RegisterDescriptorServiceInterface::class);
 		$this->descriptors->method('inventory')->willReturn([["state" => "absent"], ["state" => "current"]]);
-		$this->descriptors->method('reimport')->willReturnCallback(fn (
-			string $appId,
-			string $slug,
+		$this->descriptors->method('reimportShipped')->willReturnCallback(fn (
+			ShippedRegister $register,
 			string $via
-		): array => ["outcome" => $slug, "via" => $via]);
+		): array => ["outcome" => $register->slug, "via" => $via]);
 	}//end setUp()
 
 	/**

@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
  * @uses   \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
  */
 class MdtoPreconditionsRefusalTest extends TestCase {
 
@@ -62,7 +63,7 @@ class MdtoPreconditionsRefusalTest extends TestCase {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturn('org-1');
 
-		return new MdtoPreconditions($config, $this->createMock(LoggerInterface::class), new MdtoInputReaders($source, $bestand, $resolver));
+		return new MdtoPreconditions(new MdtoInputReaders($source, $bestand, $resolver), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($config, $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 	}//end preconditions()
 
 	/**

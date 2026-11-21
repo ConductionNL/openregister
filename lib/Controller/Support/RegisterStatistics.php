@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
 
 /**
@@ -79,7 +80,7 @@ final class RegisterStatistics {
 	 */
 	public function objectTotals(int $registerId, ?array $schemaStats): array {
 		if ($schemaStats === null) {
-			return $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+			return $this->services->mappers->objectEntityMapper->getStatistics(scope: new StatisticsScope(registerId: $registerId));
 		}
 
 		$totals = ['total' => 0, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];

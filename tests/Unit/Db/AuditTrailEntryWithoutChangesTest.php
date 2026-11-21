@@ -20,8 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
+use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
@@ -52,9 +58,7 @@ final class AuditTrailEntryWithoutChangesTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 	}//end setUp()
 
@@ -65,25 +69,20 @@ final class AuditTrailEntryWithoutChangesTest extends TestCase {
 	 */
 	public static function entries(): array {
 		return [
-			'purpose refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->createPurposeRefusalEntry(rule: 'purpose-missing', register: 1, schema: 2)],
-			'party query refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->createPartyQueryRefusalEntry(query: 'jansen', cap: 10, would: 40)],
+			'purpose refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->recordPurposeRefusal(refusal: new PurposeRefusal(rule: 'purpose-missing', target: new AuditedObject(register: 1, schema: 2)))],
+			'party query refusal' => [static fn (AuditTrailMapper $mapper) => $mapper->recordPartyQueryRefusal(refusal: new PartyQueryRefusal(query: 'jansen', cap: 10, would: 40))],
 			'shared master data refusal' => [
-				static fn (AuditTrailMapper $mapper) => $mapper->createSharedMasterDataRefusalEntry(
-					holderOrganisation: 'org-a',
-					sourceOrganisation: 'org-b',
-					resourceType: 'object'
+				static fn (AuditTrailMapper $mapper) => $mapper->recordSharedMasterDataRefusal(
+					refusal: new SharedMasterDataRefusal(holderOrganisation: 'org-a', sourceOrganisation: 'org-b', resourceType: 'object')
 				),
 			],
 			'hardening change' => [
-				static fn (AuditTrailMapper $mapper) => $mapper->createHardeningChangeEntry(
-					control: 'lockout',
-					before: 5,
-					after: 3,
-					accepted: false,
-					refusal: 'weaker'
+				static fn (AuditTrailMapper $mapper) => $mapper->recordHardeningChange(
+					change: new HardeningChange(control: 'lockout', before: 5, after: 3, refusal: 'weaker'),
+					accepted: false
 				),
 			],
-			'export' => [static fn (AuditTrailMapper $mapper) => $mapper->createExportEntry(outcome: 'completed', summary: ['rows' => 3])],
+			'export' => [static fn (AuditTrailMapper $mapper) => $mapper->recordExport(export: new ExportOutcome(outcome: 'completed', summary: ['rows' => 3]))],
 		];
 	}//end entries()
 

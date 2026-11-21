@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Task\WriteBack;
 
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -87,10 +88,10 @@ final class WriteBackRefusalNotice {
 	 */
 	private function dispatch(WriteBackAttempt $attempt, string $reason): void {
 		$actor = (string)$attempt->actor;
-		$this->notifier->notifyTransition(
-			task: $attempt->task,
+		$notice = new TransitionNotice(
 			extra: ['writeBackActor' => $actor, 'writeBackReason' => $reason],
 			context: ['action' => TaskNotificationRulesInterface::ACTION_WRITE_BACK_REFUSED, 'actor' => $actor]
 		);
+		$this->notifier->notifyTransition(task: $attempt->task, notice: $notice);
 	}//end dispatch()
 }//end class

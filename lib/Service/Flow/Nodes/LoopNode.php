@@ -22,15 +22,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
@@ -40,7 +43,7 @@ use UnexpectedValueException;
 /**
  * Batches an item list into slices of a configured size.
  */
-class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowNodeConfigForm {
 	/**
 	 * Constructor.
 	 *
@@ -95,11 +98,34 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['batchSize'];
 	}//end configKeys()
+
+	/**
+	 * The batch size of a batch step.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'batchSize',
+				'label' => $this->l10n->t('Batch size'),
+				'type' => 'number',
+				'help' => $this->l10n->t(
+					'How many items each batch carries under "items". The next step runs once per batch instead of once '
+						. 'per item.'
+				),
+				'required' => true,
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a non-positive batch size.
@@ -125,13 +151,13 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 	 * `items`, so a downstream step can act on the slice and know where it is in
 	 * the sequence. An empty input yields no batches, which ends the branch.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per batch.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		return $this->batched(items: $items, size: max(1, (int)($config['batchSize'] ?? 1)));
 	}//end execute()
 
@@ -160,8 +186,7 @@ class LoopNode extends ObjectNodeBase implements IFlowNode, LoopNodeInterface, I
 						$batch
 					),
 				],
-				binary: [],
-				fromItemIndex: ($batchIndex * $size)
+				options: new FlowItemOptions(binary: [], fromItemIndex: ($batchIndex * $size))
 			);
 		}
 

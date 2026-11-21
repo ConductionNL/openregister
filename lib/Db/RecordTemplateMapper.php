@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -94,15 +95,35 @@ class RecordTemplateMapper extends QBMapper implements RecordTemplateMapperInter
 	 * reading of `sharedWith` is safer than four JSON dialects agreeing on an
 	 * authorization question.
 	 *
-	 * @param string      $userId   The caller.
-	 * @param string|null $register Only templates for this register id.
-	 * @param string|null $schema   Only templates for this schema id.
+	 * @param string         $userId The caller.
+	 * @param ListQuery|null $query  The `register` and `schema` filters: only templates for this register id
+	 *                               and this schema id; null, or an absent or empty filter, narrows nothing.
 	 *
 	 * @return RecordTemplate[] The candidates, newest first.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
-	public function findCandidates(string $userId, ?string $register=null, ?string $schema=null): array {
+	public function findCandidates(string $userId, ?ListQuery $query=null): array {
+		$qb = $this->selectReachableBy(userId: $userId);
+
+		foreach (['register', 'schema'] as $column) {
+			$value = ($query?->filters[$column] ?? null);
+			if ($value !== null && $value !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR)));
+			}
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findCandidates()
+
+	/**
+	 * The templates a user owns, the public ones and every shared one, newest first.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return IQueryBuilder The query, open for narrowing.
+	 */
+	private function selectReachableBy(string $userId): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -115,16 +136,8 @@ class RecordTemplateMapper extends QBMapper implements RecordTemplateMapperInter
 			)
 			->orderBy('created', 'DESC');
 
-		if ($register !== null && $register !== '') {
-			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register, IQueryBuilder::PARAM_STR)));
-		}
-
-		if ($schema !== null && $schema !== '') {
-			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schema, IQueryBuilder::PARAM_STR)));
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findCandidates()
+		return $qb;
+	}//end selectReachableBy()
 
 	/**
 	 * Store a new template with its uuid and timestamps.

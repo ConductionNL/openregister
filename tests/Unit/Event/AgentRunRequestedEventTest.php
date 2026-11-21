@@ -9,23 +9,19 @@
 
 namespace Unit\Event;
 
+use OCA\OpenRegister\Event\AgentRunDispatch;
+use OCA\OpenRegister\Event\AgentRunInstruction;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 
 class AgentRunRequestedEventTest extends TestCase {
 	private function makeEvent(): AgentRunRequestedEvent {
 		return new AgentRunRequestedEvent(
-			subjectUuid: 'obj-uuid-1',
-			subjectRegister: '1',
-			subjectSchema: '10',
-			agent: 'agent-uuid-1',
-			skill: 'classify-tender',
-			prompt: 'Classify this tender: Rex',
-			resultField: 'categorySlug',
-			requiresApproval: true,
-			mode: 'async',
-			flowName: 'classify-tender'
+			subject: new ObjectRef(register: '1', schema: '10', id: 'obj-uuid-1'),
+			instruction: new AgentRunInstruction(agent: 'agent-uuid-1', skill: 'classify-tender', prompt: 'Classify this tender: Rex', resultField: 'categorySlug'),
+			dispatch: new AgentRunDispatch(requiresApproval: true, mode: 'async', flowName: 'classify-tender')
 		);
 	}
 
@@ -80,16 +76,9 @@ class AgentRunRequestedEventTest extends TestCase {
 
 	public function testOptionalSkillDefaultsToNull(): void {
 		$event = new AgentRunRequestedEvent(
-			subjectUuid: 'obj-uuid-1',
-			subjectRegister: '1',
-			subjectSchema: '10',
-			agent: 'agent-uuid-1',
-			skill: null,
-			prompt: 'hi',
-			resultField: 'result',
-			requiresApproval: false,
-			mode: 'async',
-			flowName: 'x'
+			subject: new ObjectRef(register: '1', schema: '10', id: 'obj-uuid-1'),
+			instruction: new AgentRunInstruction(agent: 'agent-uuid-1', skill: null, prompt: 'hi', resultField: 'result'),
+			dispatch: new AgentRunDispatch(requiresApproval: false, mode: 'async', flowName: 'x')
 		);
 
 		$this->assertNull($event->getSkill());

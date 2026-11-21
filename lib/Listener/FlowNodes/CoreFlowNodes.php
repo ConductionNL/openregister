@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,22 +29,18 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
  *
  * Listed in registration order.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final readonly class CoreFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param DataShapingFlowNodes $dataShaping The steps that build and narrow items.
-	 * @param WaitAndBranchFlowNodes $waitAndBranch The steps that wait, branch or end a run.
-	 * @param RoutingFlowNodes $routing The steps that join, repeat, delegate and route.
-	 * @param ObjectFlowNodes $objects The steps that work on objects.
+	 * @param ItemHandlingFlowNodes $itemHandling The steps that shape the items of a run and decide whether it waits, branches or ends.
+	 * @param DestinationFlowNodes  $destination  The steps that send items on, to a path, a flow or an object.
 	 */
 	public function __construct(
-		private DataShapingFlowNodes $dataShaping,
-		private WaitAndBranchFlowNodes $waitAndBranch,
-		private RoutingFlowNodes $routing,
-		private ObjectFlowNodes $objects,
+		private ItemHandlingFlowNodes $itemHandling,
+		private DestinationFlowNodes $destination,
 	) {
 	}//end __construct()
 
@@ -55,10 +51,8 @@ final readonly class CoreFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			...$this->dataShaping->nodes(),
-			...$this->waitAndBranch->nodes(),
-			...$this->routing->nodes(),
-			...$this->objects->nodes(),
+			...$this->itemHandling->nodes(),
+			...$this->destination->nodes(),
 		];
 
 	}//end nodes()

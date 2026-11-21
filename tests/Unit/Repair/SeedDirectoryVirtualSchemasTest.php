@@ -25,6 +25,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
@@ -104,6 +105,18 @@ class SeedDirectoryVirtualSchemasTest extends TestCase {
 	}//end virtualSchema()
 
 	/**
+	 * A schema catalog serving the current mapper doubles.
+	 *
+	 * @return SchemaCatalogInterface The catalog.
+	 */
+	private function catalog(): SchemaCatalogInterface {
+		$catalog = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('registers')->willReturn($this->registerMapper);
+		$catalog->method('schemas')->willReturn($this->schemaMapper);
+		return $catalog;
+	}//end catalog()
+
+	/**
 	 * Build the repair step over the current doubles.
 	 *
 	 * @param LoggerInterface|null $logger An explicit logger, for the error case.
@@ -112,8 +125,7 @@ class SeedDirectoryVirtualSchemasTest extends TestCase {
 	 */
 	private function step(?LoggerInterface $logger = null): SeedDirectoryVirtualSchemas {
 		return new SeedDirectoryVirtualSchemas(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: $this->catalog(),
 			logger: ($logger ?? $this->createMock(LoggerInterface::class))
 		);
 	}//end step()

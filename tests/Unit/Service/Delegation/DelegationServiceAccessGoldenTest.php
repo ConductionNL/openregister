@@ -204,8 +204,8 @@ final class DelegationServiceAccessGoldenTest extends TestCase {
 	private function service(DelegationVerdict $verdict, bool $resolvable = true): DelegationService {
 		$resolver = $this->createMock(DelegationResolver::class);
 		$resolver->method('resolve')->willReturnCallback(
-			function (string $principal, string $actingAs, DateTime $now, array $scope = []) use ($verdict): DelegationVerdict {
-				$this->resolved[] = ['principal' => $principal, 'actingAs' => $actingAs, 'now' => $now, 'scope' => $scope];
+			function (DelegationRequest $request) use ($verdict): DelegationVerdict {
+				$this->resolved[] = ['principal' => $request->principal, 'actingAs' => $request->actingAs, 'now' => $request->now, 'scope' => $request->scope];
 
 				return $verdict;
 			}

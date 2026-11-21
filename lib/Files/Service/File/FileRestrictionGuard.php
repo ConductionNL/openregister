@@ -25,8 +25,6 @@ namespace OCA\OpenRegister\Files\Service\File;
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Node;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -51,41 +49,6 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	private array $memo = [];
 
 	/**
-	 * The rows.
-	 *
-	 * @var FileRestrictionStore
-	 */
-	private readonly FileRestrictionStore $store;
-
-	/**
-	 * The caller.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * The caller's groups.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Asks apps to admit a caller who is not listed.
-	 *
-	 * @var IEventDispatcher
-	 */
-	private readonly IEventDispatcher $dispatcher;
-
-	/**
-	 * Where a failed lookup is noted.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param FileRestrictionStore  $store      The rows.
@@ -94,16 +57,11 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	 * @param LoggerInterface       $logger     Where a failed lookup is noted.
 	 */
 	public function __construct(
-		FileRestrictionStore $store,
-		FileRestrictionCaller $caller,
-		IEventDispatcher $dispatcher,
-		LoggerInterface $logger,
+		private readonly FileRestrictionStore $store,
+		private readonly FileRestrictionCaller $caller,
+		private readonly IEventDispatcher $dispatcher,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->store = $store;
-		$this->userSession = $caller->userSession;
-		$this->groupManager = $caller->groupManager;
-		$this->dispatcher = $dispatcher;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -134,53 +92,99 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 			return [];
 		}
 
-		$userId = $this->userSession->getUser()?->getUID();
-		$memoKey = static fn (int $fileId): string => ($userId ?? '') . ':' . $fileId;
+		$check = new FileReadCheck(userId: $this->caller->userSession->getUser()?->getUID());
+		$this->recall(check: $check, fileIds: $fileIds);
 
-		$verdicts = [];
-		$unknown = [];
+		if ($check->unknown !== [] && $this->loadRestrictions(check: $check) === true) {
+			$this->decideUnknown(check: $check);
+		}
+
+		return $check->verdicts;
+	}//end readable()
+
+	/**
+	 * Take the memoised verdicts; queue the other files as unknown.
+	 *
+	 * @param FileReadCheck $check   The read check; receives verdicts and unknown ids.
+	 * @param list<int>     $fileIds The normalised file ids.
+	 *
+	 * @return void
+	 */
+	private function recall(FileReadCheck $check, array $fileIds): void {
 		foreach ($fileIds as $fileId) {
-			if (array_key_exists($memoKey($fileId), $this->memo) === true) {
-				$verdicts[$fileId] = $this->memo[$memoKey($fileId)];
+			if (array_key_exists($check->memoKey(fileId: $fileId), $this->memo) === true) {
+				$check->verdicts[$fileId] = $this->memo[$check->memoKey(fileId: $fileId)];
 				continue;
 			}
 
-			$unknown[] = $fileId;
+			$check->unknown[] = $fileId;
 		}
+	}//end recall()
 
-		if ($unknown === []) {
-			return $verdicts;
-		}
-
+	/**
+	 * Read the unknown files' restrictions in one lookup; on failure refuse them all (not memoised).
+	 *
+	 * @param FileReadCheck $check The read check; receives the restrictions, or refusals.
+	 *
+	 * @return bool False when the lookup failed.
+	 */
+	private function loadRestrictions(FileReadCheck $check): bool {
 		try {
-			$restrictions = $this->store->findMany(fileIds: $unknown);
+			$check->restrictions = $this->store->findMany(fileIds: $check->unknown);
+			return true;
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FileRestrictionGuard] Could not read file restrictions, refusing the files',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			foreach ($unknown as $fileId) {
-				$verdicts[$fileId] = false;
+			foreach ($check->unknown as $fileId) {
+				$check->verdicts[$fileId] = false;
 			}
 
-			return $verdicts;
+			return false;
+		}
+	}//end loadRestrictions()
+
+	/**
+	 * Decide and memoise the verdict of every unknown file.
+	 *
+	 * @param FileReadCheck $check The read check with the restrictions loaded.
+	 *
+	 * @return void
+	 */
+	private function decideUnknown(FileReadCheck $check): void {
+		foreach ($check->unknown as $fileId) {
+			$verdict = $this->verdictFor(check: $check, fileId: $fileId);
+			$check->verdicts[$fileId] = $verdict;
+			$this->memo[$check->memoKey(fileId: $fileId)] = $verdict;
+		}
+	}//end decideUnknown()
+
+	/**
+	 * The verdict on one file: open when unrestricted, else whether the named caller is admitted.
+	 *
+	 * @param FileReadCheck $check  The read check.
+	 * @param int           $fileId The file id.
+	 *
+	 * @return bool
+	 */
+	private function verdictFor(FileReadCheck $check, int $fileId): bool {
+		$restriction = ($check->restrictions[$fileId] ?? null);
+		if ($restriction === null) {
+			return true;
 		}
 
-		$groups = null;
-		foreach ($unknown as $fileId) {
-			$restriction = ($restrictions[$fileId] ?? null);
-			$verdict = true;
-			if ($restriction !== null) {
-				$groups ??= $this->callerGroups();
-				$verdict = $this->admits(fileId: $fileId, restriction: $restriction, userId: $userId, groups: $groups);
-			}
-
-			$verdicts[$fileId] = $verdict;
-			$this->memo[$memoKey($fileId)] = $verdict;
+		$check->groups ??= $this->callerGroups();
+		// An anonymous caller is never admitted to a restricted file.
+		if ($check->callerIsNamed() === false) {
+			return false;
 		}
 
-		return $verdicts;
-	}//end readable()
+		return $this->admits(
+			question: new FileRestrictionAdmitEvent(fileId: $fileId, userId: $check->userId, restriction: $restriction),
+			groups: $check->groups
+		);
+	}//end verdictFor()
 
 	/**
 	 * Keep only the nodes the caller may read, in their order.
@@ -243,20 +247,19 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	}//end forget()
 
 	/**
-	 * Whether the caller is admitted to one restricted file.
+	 * Whether a named caller is admitted to one restricted file.
 	 *
-	 * @param int                  $fileId      The file.
-	 * @param array<string, mixed> $restriction The stored restriction.
-	 * @param string|null          $userId      The caller, null when anonymous.
-	 * @param list<string>         $groups      The caller's groups.
+	 * Listed users and groups and administrators are admitted here; anyone
+	 * else only when an app's listener admits them on the same question.
+	 *
+	 * @param FileRestrictionAdmitEvent $question The file, the caller and the stored restriction.
+	 * @param list<string>              $groups   The caller's groups.
 	 *
 	 * @return bool True when admitted.
 	 */
-	private function admits(int $fileId, array $restriction, ?string $userId, array $groups): bool {
-		if ($userId === null || $userId === '') {
-			return false;
-		}
-
+	private function admits(FileRestrictionAdmitEvent $question, array $groups): bool {
+		$userId = $question->getUserId();
+		$restriction = $question->getRestriction();
 		if (in_array('admin', $groups, true) === true
 			|| in_array($userId, (array)($restriction['users'] ?? []), true) === true
 			|| array_intersect($groups, (array)($restriction['groups'] ?? [])) !== []
@@ -264,20 +267,30 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 			return true;
 		}
 
-		try {
-			$event = new FileRestrictionAdmitEvent(fileId: $fileId, userId: $userId, restriction: $restriction);
-			$this->dispatcher->dispatchTyped($event);
+		return $this->admittedByListener(question: $question);
+	}//end admits()
 
-			return $event->isAdmitted();
+	/**
+	 * Whether an app's listener admits the caller; a failing listener refuses.
+	 *
+	 * @param FileRestrictionAdmitEvent $question The file, the caller and the stored restriction.
+	 *
+	 * @return bool True when admitted.
+	 */
+	private function admittedByListener(FileRestrictionAdmitEvent $question): bool {
+		try {
+			$this->dispatcher->dispatchTyped($question);
+
+			return $question->isAdmitted();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FileRestrictionGuard] An admit listener failed, refusing the file',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $question->getFileId(), 'error' => $e->getMessage()]
 			);
 
 			return false;
 		}
-	}//end admits()
+	}//end admittedByListener()
 
 	/**
 	 * The caller's group ids, empty when anonymous.
@@ -285,11 +298,11 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	 * @return list<string> The groups.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return array_values(array_map('strval', $this->groupManager->getUserGroupIds($user)));
+		return array_values(array_map('strval', $this->caller->groupManager->getUserGroupIds($user)));
 	}//end callerGroups()
 }//end class

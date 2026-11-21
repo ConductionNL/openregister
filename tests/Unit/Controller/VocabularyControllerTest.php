@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\AppFramework\Http;
@@ -84,8 +85,11 @@ class VocabularyControllerTest extends TestCase {
 				objectService: $this->objectService,
 				options: $this->options,
 				declarationResolver: new \OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver(
-					schemaMapper: $this->schemaMapper,
-					declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+					tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(
+						schemas: $this->schemaMapper,
+						declarations: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(),
+						objects: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)
+					),
 					request: $request
 				)
 			)
@@ -511,11 +515,11 @@ class VocabularyControllerTest extends TestCase {
 
 		$asked = [];
 		$this->options->method('options')->willReturnCallback(
-			function (CodedPropertyDeclaration $declaration, string $language = 'nl', ?string $context = null) use (&$asked): array {
+			function (CodedPropertyDeclaration $declaration, CodedOptionScope $scope) use (&$asked): array {
 				$asked = [
 					'scheme' => $declaration->scheme,
-					'language' => $language,
-					'context' => $context,
+					'language' => $scope->language,
+					'context' => $scope->context,
 				];
 
 				return [['value' => 'urn:test:kap', 'label' => 'Felling permit']];

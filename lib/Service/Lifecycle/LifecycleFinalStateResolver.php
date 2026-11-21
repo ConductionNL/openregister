@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -50,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class LifecycleFinalStateResolver {
+class LifecycleFinalStateResolver implements LifecycleFinalStatesInterface {
 
 	/**
 	 * Answers already read this request, keyed by declaration and state.
@@ -63,22 +64,48 @@ class LifecycleFinalStateResolver {
 	private array $memo = [];
 
 	/**
+	 * Tells the two forms of `final` apart.
+	 *
+	 * @var LifecycleDeclarationForms
+	 */
+	private readonly LifecycleDeclarationForms $declaration;
+
+	/**
 	 * Constructor.
 	 *
-	 * The declaration reader is defaulted rather than required because it is a
-	 * pure shape check with no collaborators; the parameter exists so a test
-	 * can substitute one.
+	 * The declaration reader is a pure shape check with no collaborators, so
+	 * the resolver builds it itself.
 	 *
-	 * @param MagicObjectFinderInterface                $objects     Loads the referenced row.
-	 * @param LoggerInterface            $logger      Where an unresolvable reference is reported.
-	 * @param LifecycleDeclarationForms  $declaration Tells the two forms of `final` apart.
+	 * @param MagicObjectFinderInterface $objects Loads the referenced row.
+	 * @param LoggerInterface            $logger  Where an unresolvable reference is reported.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
 		private readonly LoggerInterface $logger,
-		private readonly LifecycleDeclarationForms $declaration = new LifecycleDeclarationForms(),
 	) {
+		$this->declaration = new LifecycleDeclarationForms();
 	}//end __construct()
+
+	/**
+	 * Does the declared `final`, a list of states or a `{ from, field }` reference, end at this state?
+	 *
+	 * The list form is a strict membership test; the reference form reads the
+	 * referenced row through {@see isFinalByReference()}.
+	 *
+	 * @param array  $final The schema's declared `final` value.
+	 * @param string $state The lifecycle value the object reached.
+	 *
+	 * @return bool True when the state is final; an unresolvable reference is not.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	public function isFinalState(array $final, string $state): bool {
+		if ($this->isReferenceForm(final: $final) === true) {
+			return $this->isFinalByReference(declaration: $final, state: $state);
+		}
+
+		return in_array($state, $final, true);
+	}//end isFinalState()
 
 	/**
 	 * Is this value the reference form of `final` rather than a list of states?
@@ -144,16 +171,27 @@ class LifecycleFinalStateResolver {
 		}
 
 		if ($this->belongsTo(schema: ($resolved['schema'] ?? null), from: $from) === false) {
-			$this->logger->warning(
-				'[LifecycleFinalStateResolver] lifecycle value "' . $state
-				. '" resolves to a row outside the declared schema "' . $from . '".'
-			);
+			$this->warnOutsideSchema(reference: $reference);
 
 			return false;
 		}
 
 		return $this->flagOn(row: $resolved['object'], reference: $reference);
 	}//end read()
+
+	/**
+	 * Say that a lifecycle value resolves to a row outside its declared schema.
+	 *
+	 * @param FinalStateReference $reference The declared schema and the value.
+	 *
+	 * @return void
+	 */
+	private function warnOutsideSchema(FinalStateReference $reference): void {
+		$this->logger->warning(
+			'[LifecycleFinalStateResolver] lifecycle value "' . $reference->state
+			. '" resolves to a row outside the declared schema "' . $reference->from . '".'
+		);
+	}//end warnOutsideSchema()
 
 	/**
 	 * Look the row behind a lifecycle value up, as the system.

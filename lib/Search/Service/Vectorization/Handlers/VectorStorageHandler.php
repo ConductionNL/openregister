@@ -268,28 +268,54 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 		}
 
 		try {
-			$this->db->executeStatement(
-				'INSERT INTO ' . PgVectorPlatform::SIDECAR_TABLE . ' (vector_id, embedding) '
-				. 'VALUES (?, ?::vector) '
-				. 'ON CONFLICT (vector_id) DO UPDATE SET embedding = EXCLUDED.embedding',
-				[(string)$vectorId, $this->pgVector->formatVector($embedding)]
-			);
+			$this->upsertSidecarRow(vectorId: $vectorId, embedding: $embedding);
 
 			return true;
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[VectorStorageHandler] Failed to write pgvector ANN sidecar row',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'vector_id' => $vectorId,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logSidecarWriteFailure(vectorId: $vectorId, error: $e);
 
 			return false;
 		}//end try
 	}//end populateVectorColumn()
+
+	/**
+	 * Insert or replace a vector's pgvector ANN sidecar row.
+	 *
+	 * @param int   $vectorId  Vector row id
+	 * @param array $embedding Embedding (array of floats), of the sidecar's dimension
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the write fails.
+	 */
+	private function upsertSidecarRow(int $vectorId, array $embedding): void {
+		$this->db->executeStatement(
+			'INSERT INTO ' . PgVectorPlatform::SIDECAR_TABLE . ' (vector_id, embedding) '
+			. 'VALUES (?, ?::vector) '
+			. 'ON CONFLICT (vector_id) DO UPDATE SET embedding = EXCLUDED.embedding',
+			[(string)$vectorId, $this->pgVector->formatVector($embedding)]
+		);
+	}//end upsertSidecarRow()
+
+	/**
+	 * Log a failed sidecar write; the BLOB row stays the storage of record.
+	 *
+	 * @param int       $vectorId Vector row id
+	 * @param Exception $error    Why the write failed
+	 *
+	 * @return void
+	 */
+	private function logSidecarWriteFailure(int $vectorId, Exception $error): void {
+		$this->logger->warning(
+			message: '[VectorStorageHandler] Failed to write pgvector ANN sidecar row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'vector_id' => $vectorId,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logSidecarWriteFailure()
 
 	/**
 	 * Warm-up backfill: convert existing BLOB rows to pgvector ANN sidecar rows.
@@ -311,12 +337,7 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	public function backfillEmbeddingVectors(int $batchSize = 100, int $afterId = 0): array {
-		$tally = [
-			'converted' => 0,
-			'failed' => 0,
-			'last_id' => $afterId,
-			'remaining' => 0,
-		];
+		$tally = $this->emptyTally(afterId: $afterId);
 
 		$columnDimension = $this->pgVector->getVectorColumnDimension();
 
@@ -325,21 +346,14 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 		}
 
 		try {
-			foreach ($this->selectBackfillRows(columnDimension: $columnDimension, batchSize: $batchSize, afterId: $afterId) as $row) {
+			foreach ($this->selectBackfillRows(batchSize: $batchSize, afterId: $afterId) as $row) {
 				$tally['last_id'] = (int)$row['id'];
 				$tally[$this->backfillRow(row: $row, columnDimension: $columnDimension)]++;
 			}
 
 			$tally['remaining'] = $this->countRemainingBackfill(columnDimension: $columnDimension);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorStorageHandler] pgvector warm-up backfill batch failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logBackfillFailure(error: $e);
 
 			$tally['remaining'] = 0;
 		}//end try
@@ -348,15 +362,51 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	}//end backfillEmbeddingVectors()
 
 	/**
+	 * The tally of a backfill batch before any row is processed.
+	 *
+	 * @param int $afterId The cursor the batch starts after
+	 *
+	 * @return array{converted: int, failed: int, last_id: int, remaining: int}
+	 */
+	private function emptyTally(int $afterId): array {
+		return [
+			'converted' => 0,
+			'failed' => 0,
+			'last_id' => $afterId,
+			'remaining' => 0,
+		];
+	}//end emptyTally()
+
+	/**
+	 * Log a failed warm-up backfill batch.
+	 *
+	 * @param Exception $error Why the batch failed
+	 *
+	 * @return void
+	 */
+	private function logBackfillFailure(Exception $error): void {
+		$this->logger->error(
+			message: '[VectorStorageHandler] pgvector warm-up backfill batch failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logBackfillFailure()
+
+	/**
 	 * Select the next batch of sidecar-less, dimension-matched vector rows.
 	 *
-	 * @param int $columnDimension Sidecar column dimension
+	 * Only called once the sidecar column dimension is known.
+	 *
 	 * @param int $batchSize Maximum rows to select
-	 * @param int $afterId Only rows with id > this cursor
+	 * @param int $afterId   Only rows with id > this cursor
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private function selectBackfillRows(int $columnDimension, int $batchSize, int $afterId): array {
+	private function selectBackfillRows(int $batchSize, int $afterId): array {
+		$columnDimension = (int)$this->pgVector->getVectorColumnDimension();
 		$sidecar = PgVectorPlatform::SIDECAR_TABLE;
 		$result = $this->db->executeQuery(
 			'SELECT v.id, v.embedding FROM *PREFIX*openregister_vectors v '
@@ -404,14 +454,7 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 		$embedding = $this->decodeEmbeddingBlob(blob: $row['embedding']);
 
 		if (is_array($embedding) === false || count($embedding) !== $columnDimension) {
-			$this->logger->warning(
-				message: '[VectorStorageHandler] Skipping backfill for unparseable embedding BLOB',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'vector_id' => $row['id'],
-				]
-			);
+			$this->logUnparseableBlob(vectorId: $row['id']);
 
 			return 'failed';
 		}
@@ -423,6 +466,24 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 
 		return 'failed';
 	}//end backfillRow()
+
+	/**
+	 * Log a vector row skipped by the backfill because its BLOB does not decode to a matching embedding.
+	 *
+	 * @param mixed $vectorId The row's id, as selected
+	 *
+	 * @return void
+	 */
+	private function logUnparseableBlob(mixed $vectorId): void {
+		$this->logger->warning(
+			message: '[VectorStorageHandler] Skipping backfill for unparseable embedding BLOB',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'vector_id' => $vectorId,
+			]
+		);
+	}//end logUnparseableBlob()
 
 	/**
 	 * Decode a stored embedding BLOB.
@@ -449,6 +510,7 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 			return false;
 		}
 
+		// NOSEMGREP: php.lang.security.unserialize-use.unserialize-use -- Allowed_classes is false, so no object can be created.
 		return @unserialize($blob, ['allowed_classes' => false]);
 	}//end decodeEmbeddingBlob()
 

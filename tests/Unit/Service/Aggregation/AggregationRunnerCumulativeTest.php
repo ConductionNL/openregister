@@ -356,9 +356,7 @@ class AggregationRunnerCumulativeTest extends TestCase {
 		$mysqlDb->method('prepare')->willReturn($stmt);
 
 		$mysqlRunner = new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: $this->placeholderResolver,
 			db: $mysqlDb,
 			cache: $this->cache,
@@ -514,9 +512,7 @@ class AggregationRunnerCumulativeTest extends TestCase {
 
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: $this->placeholderResolver,
 			db: $this->db,
 			cache: $this->cache,

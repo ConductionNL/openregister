@@ -83,7 +83,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 	}
@@ -286,7 +287,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -312,7 +314,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -344,7 +347,8 @@ class AnonymisationBackendServiceTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->fileSettingsHandler,
 				$this->logger,
-				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class)
+				$this->createMock(originalClassName: \OCA\OpenRegister\Service\Connection\ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 
@@ -381,6 +385,7 @@ class AnonymisationBackendServiceTest extends TestCase {
 				fileSettingsHandler: $this->fileSettingsHandler,
 				logger: $this->logger,
 				connectionReporter: $reporter,
+				patterns: new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion(),
 			)
 		);
 	}
@@ -441,5 +446,43 @@ class AnonymisationBackendServiceTest extends TestCase {
 		$service->getState();
 
 		$this->assertSame(expected: [], actual: $reports);
+	}
+
+	/**
+	 * Every OpenAnonymiser outcome is reported with its status and its exact message.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 */
+	public function testEveryOpenAnonymiserOutcomeIsReportedWithItsMessage(): void {
+		$this->withSettings();
+		$reports = [];
+		$service = $this->serviceReportingTo(reports: $reports);
+		$report  = new \ReflectionMethod($service, 'reportOpenAnonymiser');
+
+		$outcomes = [
+			new ProbeResult(reachable: true, latencyMs: 0, error: null, probedAt: 'now'),
+			new ProbeResult(reachable: false, latencyMs: null, error: ProbeResult::ERROR_APPAPI_MISSING, probedAt: 'now'),
+			new ProbeResult(reachable: false, latencyMs: null, error: ProbeResult::ERROR_EXAPP_NOT_INSTALLED, probedAt: 'now'),
+			new ProbeResult(reachable: false, latencyMs: null, error: ProbeResult::ERROR_EXAPP_DISABLED, probedAt: 'now'),
+			new ProbeResult(reachable: false, latencyMs: 12, error: ProbeResult::ERROR_HTTP_5XX, probedAt: 'now'),
+			new ProbeResult(reachable: false, latencyMs: null, error: null, probedAt: 'now'),
+		];
+		foreach ($outcomes as $outcome) {
+			$report->invoke($service, $outcome);
+		}
+
+		$this->assertSame(
+			expected: [
+				['anonymiser', 'configured', 'The OpenAnonymiser ExApp is enabled and detected through AppAPI.'],
+				['anonymiser', 'unconfigured', 'AppAPI is not installed. Install AppAPI, then the OpenAnonymiser ExApp.'],
+				['anonymiser', 'unconfigured', 'The OpenAnonymiser ExApp is not installed. Install it through AppAPI.'],
+				['anonymiser', 'unconfigured', 'The OpenAnonymiser ExApp is installed and disabled. Enable it through AppAPI.'],
+				['anonymiser', 'error', 'The OpenAnonymiser connection test failed: ' . ProbeResult::ERROR_HTTP_5XX . '.'],
+				['anonymiser', 'error', 'The OpenAnonymiser connection test failed: unknown error.'],
+			],
+			actual: $reports
+		);
 	}
 }

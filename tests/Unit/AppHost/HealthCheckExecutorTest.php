@@ -22,7 +22,11 @@ use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckDescriptor;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckTarget;
+use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
+use OCA\OpenRegister\AppHost\Observability\AppStateHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\LocalHealthChecks;
+use OCA\OpenRegister\AppHost\Observability\StorageHealthChecks;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
 use OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
@@ -59,15 +63,17 @@ class HealthCheckExecutorTest extends TestCase {
 		$this->tempManager->method('getTemporaryFile')->willReturnCallback(fn () => tempnam(sys_get_temp_dir(), 'tst'));
 
 		$this->executor = new HealthCheckExecutor(
-			$this->db,
-			$this->tempManager,
-			$this->appManager,
-			$this->appConfig,
-			$this->container,
-			// No app-specific container, so the executor falls back to the one
-			// these tests build — the topology is stated here rather than read
-			// from whichever apps the developer has installed.
-			$this->locatorReturning(null),
+			new LocalHealthChecks(
+				new StorageHealthChecks($this->db, $this->tempManager),
+				new AppStateHealthChecks($this->appManager, $this->appConfig)
+			),
+			new AppProviderResolver(
+				$this->container,
+				// No app-specific container, so the executor falls back to the one
+				// these tests build — the topology is stated here rather than read
+				// from whichever apps the developer has installed.
+				$this->locatorReturning(null)
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 	}

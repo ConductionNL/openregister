@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Middleware;
@@ -106,15 +107,7 @@ class OasValidationMiddleware extends Middleware {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware interface requires $controller + $methodName.
 	 */
-	public function afterException(
-		mixed $controller,
-		string $methodName,
-		\Throwable $exception,
-	): \OCP\AppFramework\Http\Response {
-		if ($exception instanceof OasValidationFailureException === false) {
-			throw $exception;
-		}
-
+	public function afterException(mixed $controller, string $methodName, \Throwable $exception): \OCP\AppFramework\Http\Response {
 		return $this->failureResponse(exception: $exception);
 	}//end afterException()
 
@@ -138,15 +131,20 @@ class OasValidationMiddleware extends Middleware {
 	/**
 	 * The RFC 7807 422 response for a body that failed validation.
 	 *
-	 * @param OasValidationFailureException $exception The failure.
+	 * @param \Throwable $exception The exception a controller raised.
 	 *
 	 * @return JSONResponse The problem details, as application/problem+json.
+	 *
+	 * @throws \Throwable When the exception is not ours; rethrown for upstream handling.
 	 */
-	private function failureResponse(OasValidationFailureException $exception): JSONResponse {
+	private function failureResponse(\Throwable $exception): JSONResponse {
+		if ($exception instanceof OasValidationFailureException === false) {
+			throw $exception;
+		}
+
 		$problem = $this->problems->validationFailed(
 			errors: $exception->getErrors(),
-			detail: 'Request body failed OAS schema validation',
-			instance: (string)$this->request->getRequestUri()
+			description: new ProblemDescription(detail: 'Request body failed OAS schema validation', instance: (string)$this->request->getRequestUri())
 		);
 		$response = new JSONResponse(data: $problem, statusCode: 422);
 		$response->addHeader('Content-Type', ProblemDetailsBuilderInterface::CONTENT_TYPE);

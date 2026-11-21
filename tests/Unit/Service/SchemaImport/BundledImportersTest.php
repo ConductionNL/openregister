@@ -27,6 +27,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SchemaImport\BundledImporters
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmSnapshot
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgSnapshot
  */
 class BundledImportersTest extends TestCase {
 

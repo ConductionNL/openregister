@@ -43,8 +43,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -79,7 +81,7 @@ class NotificationPreferencesController extends Controller {
 		IRequest $request,
 		NotificationPreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->preferenceService = $services->preferenceService;
 		$this->userSession = $services->userSession;
@@ -126,7 +128,6 @@ class NotificationPreferencesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-preference-may-be-scoped-to-a-register-a-schema-or-a-declared-domain-req-nrg-003
 	 */
@@ -148,7 +149,7 @@ class NotificationPreferencesController extends Controller {
 		// Absent means global, which is what every stored preference is.
 		$scope = $this->stringParam(params: $params, key: 'scope');
 
-		return $this->writeOverride(userId: $userId, target: ['schema' => $schema, 'notification' => $notification, 'scope' => $scope], params: $params);
+		return $this->writeOverride(userId: $userId, target: ['schema' => $schema, 'notification' => $notification, 'scope' => $scope]);
 	}//end update()
 
 	/**
@@ -160,20 +161,19 @@ class NotificationPreferencesController extends Controller {
 	 *
 	 * @param string                                                      $userId The current user.
 	 * @param array{schema: string, notification: string, scope: ?string} $target What the override is for.
-	 * @param array<string, mixed>                                        $params The request payload.
 	 *
 	 * @return JSONResponse The stored override.
 	 */
-	private function writeOverride(string $userId, array $target, array $params): JSONResponse {
-		[$schema, $notification, $scope] = [$target['schema'], $target['notification'], $target['scope']];
-		$override = $this->requestedSetting(params: $params);
-		$this->preferenceService->setOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, override: $override, scope: $scope);
+	private function writeOverride(string $userId, array $target): JSONResponse {
+		$address = new PreferenceAddress(schemaSlug: $target['schema'], notificationKey: $target['notification'], scope: $target['scope']);
+		$override = $this->requestedSetting(params: $this->request->getParams());
+		$this->preferenceService->storeOverride(write: new PreferenceWrite(party: $userId, address: $address, value: $override));
 
 		$stored = null;
 		if ($override !== null) {
-			$stored = $this->preferenceService->getOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
+			$stored = $this->preferenceService->overrideAt(userId: $userId, address: $address);
 		}
 
-		return $this->settingResponse(target: $target, key: 'override', stored: $stored);
+		return $this->settingResponse(target: $target, stored: ['override' => $stored]);
 	}//end writeOverride()
 }//end class

@@ -25,8 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -103,15 +105,31 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
+		$selection = new RuleRunSelection(ruleId: $ruleId, filter: new RuleRunFilter(verdict: $verdict, since: $since, until: $until));
+		return $this->findRuns(selection: $selection, page: new ListQuery(limit: $limit, offset: $offset));
+
+	}//end findByRule()
+
+	/**
+	 * One rule's runs, newest first, narrowed by the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 * @param ListQuery        $page      The limit (capped at MAX_LIMIT) and offset; other fields are ignored.
+	 *
+	 * @return array<int, RuleRun> The rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function findRuns(RuleRunSelection $selection, ListQuery $page): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
-		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $limit, offset: $offset));
-		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($selection->ruleId)));
+		$this->newestFirstPage(qb: $qb, page: self::clampedPage(limit: $page->limit, offset: $page->offset ?? 0));
+		$selection->filter->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 
-	}//end findByRule()
+	}//end findRuns()
 
 	/**
 	 * The most recent runs across every rule.
@@ -161,14 +179,29 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		?DateTime $since = null,
 		?DateTime $until = null,
 	): int {
+		$filter = new RuleRunFilter(verdict: $verdict, since: $since, until: $until);
+		return $this->countRuns(selection: new RuleRunSelection(ruleId: $ruleId, filter: $filter));
+
+	}//end countByRule()
+
+	/**
+	 * How many runs one rule has in the log, under the selection's filter.
+	 *
+	 * @param RuleRunSelection $selection The rule and its filter.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	public function countRuns(RuleRunSelection $selection): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'run_count')->from($this->getTableName())
-			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($ruleId)));
-		(new RuleRunFilter(verdict: $verdict, since: $since, until: $until))->applyTo(qb: $qb);
+			->where($qb->expr()->eq('rule_id', $qb->createNamedParameter($selection->ruleId)));
+		$selection->filter->applyTo(qb: $qb);
 
 		return $this->fetchRunCount(qb: $qb);
 
-	}//end countByRule()
+	}//end countRuns()
 
 	/**
 	 * Run a count query and read its `run_count` column; no row counts as zero.
@@ -233,13 +266,7 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 				break;
 			}
 
-			$del = $this->db->getQueryBuilder();
-			$del->delete($this->getTableName())
-				->where(
-					$del->expr()->in('id', $del->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
-				);
-
-			$deleted += (int)$del->executeStatement();
+			$deleted += $this->deleteIds(ids: $ids);
 			if (count($ids) < self::PRUNE_BATCH) {
 				break;
 			}
@@ -275,7 +302,18 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 			->orderBy('created', 'ASC')
 			->setMaxResults($limit);
 
-		$result = $qb->executeQuery();
+		return $this->intIdsOf(result: $qb->executeQuery());
+
+	}//end idsBefore()
+
+	/**
+	 * The ids a result holds, as integers; the result is closed after.
+	 *
+	 * @param IResult $result The result.
+	 *
+	 * @return array<int, int> The ids.
+	 */
+	private function intIdsOf(IResult $result): array {
 		$ids = [];
 		while (($row = $result->fetch()) !== false) {
 			$ids[] = (int)$row['id'];
@@ -284,6 +322,22 @@ class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 		$result->closeCursor();
 
 		return $ids;
+	}//end intIdsOf()
 
-	}//end idsBefore()
+	/**
+	 * Delete runs by id.
+	 *
+	 * @param array<int, int> $ids The run ids.
+	 *
+	 * @return int How many rows were deleted.
+	 */
+	private function deleteIds(array $ids): int {
+		$del = $this->db->getQueryBuilder();
+		$del->delete($this->getTableName())
+			->where(
+				$del->expr()->in('id', $del->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		return (int)$del->executeStatement();
+	}//end deleteIds()
 }//end class

@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -76,14 +78,14 @@ final class TriggerNodesGoldenTest extends TestCase {
 		$nodes = [
 			new TriggerManualNode($l10n, $urls),
 			new TriggerObjectNode($l10n, $urls),
-			new TriggerScheduleNode($l10n, $urls, $users),
+			new TriggerScheduleNode(new FlowNodePresentation($l10n, $urls), $users),
 		];
 
 		$items = [['json' => ['a' => 1]]];
 		$actual = [];
 		foreach ($nodes as $node) {
 			$surface = $this->surface(node: $node, configs: $this->configs());
-			$surface['execute'] = $node->execute($items, ['x' => 1], ['runId' => 1]);
+			$surface['execute'] = $node->execute(new FlowNodeCall(items: $items, config: ['x' => 1], context: ['runId' => 1]));
 			$surface['events'] = defined(get_class($node) . '::EVENTS') ? constant(get_class($node) . '::EVENTS') : null;
 			$actual[] = $surface;
 		}

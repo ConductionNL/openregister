@@ -144,48 +144,55 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	/**
 	 * Determine the brondatum (source date) based on afleidingswijze.
 	 *
-	 * @param ObjectEntity $object The object
-	 * @param Schema $schema The schema
-	 * @param string $afleidingswijze The derivation method
+	 * @param RecordDating $dating The record, its schema's archive configuration and the derivation method.
 	 *
 	 * @return DateTime|null The source date or null
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
-	public function determineBrondatum(ObjectEntity $object, Schema $schema, string $afleidingswijze): ?DateTime {
-		$archiveConfig = $schema->getArchive();
-		$objectData = $object->getObject();
+	public function determineBrondatum(RecordDating $dating): ?DateTime {
+		return $this->brondatumOf(dating: $dating);
+	}//end determineBrondatum()
+
+	/**
+	 * The brondatum of one record under its derivation method, or null.
+	 *
+	 * @param RecordDating $dating The record, its archive configuration and its derivation method (a string).
+	 *
+	 * @return DateTime|null The brondatum, or null when it cannot be determined.
+	 */
+	private function brondatumOf(RecordDating $dating): ?DateTime {
+		$objectData = $dating->object->getObject();
 
 		// Every method is the same two questions: which property holds the
 		// date, and is it on this record or on one this record points at.
-		if (array_key_exists($afleidingswijze, self::DATE_PROPERTY_KEYS) === true) {
-			return $this->brondatumFromOwnProperty(objectData: $objectData, archiveConfig: $archiveConfig, afleidingswijze: $afleidingswijze);
+		if (array_key_exists($dating->afleidingswijze, self::DATE_PROPERTY_KEYS) === true) {
+			return $this->brondatumFromOwnProperty(objectData: $objectData, dating: $dating);
 		}
 
-		if ($this->isRelationMethod(afleidingswijze: $afleidingswijze) === true) {
-			return $this->brondatumFromRelation(objectData: $objectData, archiveConfig: $archiveConfig);
+		if ($this->isRelationMethod(afleidingswijze: $dating->afleidingswijze) === true) {
+			return $this->brondatumFromRelation(objectData: $objectData, archiveConfig: $dating->archive);
 		}
 
 		return null;
-	}//end determineBrondatum()
+	}//end brondatumOf()
 
 	/**
 	 * Read the brondatum off the property on this record that the method's config key names.
 	 *
-	 * @param array  $objectData      The record's own data
-	 * @param array  $archiveConfig   The schema's archive block
-	 * @param string $afleidingswijze A key of DATE_PROPERTY_KEYS
+	 * @param array<string, mixed> $objectData The record's own data.
+	 * @param RecordDating         $dating     The archive configuration and the derivation method, one of DATE_PROPERTY_KEYS.
 	 *
 	 * @return DateTime|null The date, or null
 	 */
-	private function brondatumFromOwnProperty(array $objectData, array $archiveConfig, string $afleidingswijze): ?DateTime {
-		$key = self::DATE_PROPERTY_KEYS[$afleidingswijze][0];
-		$property = ($archiveConfig[$key] ?? null);
-		if (self::DATE_PROPERTY_KEYS[$afleidingswijze][1] === true) {
-			return $this->brondatumFromProperty(objectData: $objectData, property: $property, label: $key);
+	private function brondatumFromOwnProperty(array $objectData, RecordDating $dating): ?DateTime {
+		[$key, $required] = self::DATE_PROPERTY_KEYS[$dating->afleidingswijze];
+		$source = new DateSource(property: ($dating->archive[$key] ?? null), label: $key);
+		if ($required === true) {
+			return $this->brondatumFromProperty(objectData: $objectData, source: $source);
 		}
 
-		return $this->brondatumFromOptionalProperty(objectData: $objectData, property: $property, label: $key);
+		return $this->brondatumFromOptionalProperty(objectData: $objectData, source: $source);
 	}//end brondatumFromOwnProperty()
 
 	/**
@@ -267,38 +274,37 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	 * field both have a creation-date fallback, so an unconfigured one is a
 	 * schema that chose the fallback, not a mistake to shout about.
 	 *
-	 * @param array       $objectData The record's own data
-	 * @param string|null $property   The configured property name, if any
-	 * @param string      $label      The config key's name, for the log line
+	 * @param array<string, mixed> $objectData The record's data.
+	 * @param DateSource           $source     The property, null when none is configured, and its configuration key.
 	 *
 	 * @return DateTime|null The date, or null when it is absent or unparseable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	private function brondatumFromOptionalProperty(array $objectData, ?string $property, string $label): ?DateTime {
-		if ($property === null) {
+	private function brondatumFromOptionalProperty(array $objectData, DateSource $source): ?DateTime {
+		if ($source->property === null) {
 			return null;
 		}
 
-		return $this->brondatumFromProperty(objectData: $objectData, property: $property, label: $label);
+		return $this->brondatumFromProperty(objectData: $objectData, source: $source);
 	}//end brondatumFromOptionalProperty()
 
 	/**
 	 * Read a brondatum from a named date property on this record.
 	 *
-	 * @param array       $objectData The record's own data
-	 * @param string|null $property   The configured property name
-	 * @param string      $label      The config key's name, for the log line
+	 * @param array<string, mixed> $objectData The record's data.
+	 * @param DateSource           $source     The property, null when none is configured, and its configuration key.
 	 *
 	 * @return DateTime|null The date, or null when it is absent or unparseable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	private function brondatumFromProperty(array $objectData, ?string $property, string $label): ?DateTime {
+	private function brondatumFromProperty(array $objectData, DateSource $source): ?DateTime {
+		$property = $source->property;
 		if ($property === null) {
 			$this->logger->error(
 				'[RetentionService] Derivation method needs a date property and none is configured',
-				['expectedConfigKey' => $label]
+				['expectedConfigKey' => $source->label]
 			);
 
 			return null;
@@ -308,24 +314,23 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 			return null;
 		}
 
-		return $this->parsedDate(value: $objectData[$property], property: $property, label: $label);
+		return $this->parsedDate(value: $objectData[$property], source: $source);
 	}//end brondatumFromProperty()
 
 	/**
 	 * A stored date value as a DateTime, or null when it does not parse.
 	 *
-	 * @param mixed  $value    The stored value
-	 * @param string $property The property it was read from, for the log line
-	 * @param string $label    The config key's name, for the log line
+	 * @param mixed      $value  The stored value.
+	 * @param DateSource $source The property it came from and its configuration key, for the log line.
 	 *
 	 * @return DateTime|null The date
 	 */
-	private function parsedDate(mixed $value, string $property, string $label): ?DateTime {
+	private function parsedDate(mixed $value, DateSource $source): ?DateTime {
 		try {
 			return new DateTime((string)$value);
 		} catch (Exception $e) {
 			$this->logger->warning(
-				'[RetentionService] Cannot parse brondatum from ' . $label . ': ' . $property,
+				'[RetentionService] Cannot parse brondatum from ' . $source->label . ': ' . (string)$source->property,
 				['exception' => $e]
 			);
 
@@ -369,7 +374,7 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 			return null;
 		}
 
-		return $this->brondatumFromProperty(objectData: $relatedData, property: $property, label: 'sourceRelationProperty');
+		return $this->brondatumFromProperty(objectData: $relatedData, source: new DateSource(property: $property, label: 'sourceRelationProperty'));
 	}//end brondatumFromRelation()
 
 	/**
@@ -452,32 +457,43 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function calculate(ObjectEntity $object, Schema $schema, string $retentionPeriod): ?string {
-		$archiveConfig = $schema->getArchive();
-		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
-		$interval = $this->intervalFor(afleidingswijze: $afleidingswijze, object: $object, retentionPeriod: $retentionPeriod);
+		$archive = $schema->getArchive();
+		$dating = new RecordDating(object: $object, archive: $archive, afleidingswijze: ($archive['afleidingswijze'] ?? 'afgehandeld'));
+		return $this->dated(dating: $dating, retentionPeriod: $retentionPeriod);
+	}//end calculate()
+
+	/**
+	 * The archiefactiedatum of one record: its brondatum, plus the procestermijn under `termijn`, plus the period.
+	 *
+	 * @param RecordDating $dating          The record, its archive configuration and its derivation method.
+	 * @param string       $retentionPeriod ISO 8601 duration (bewaartermijn).
+	 *
+	 * @return string|null The archiefactiedatum (Y-m-d), or null when it cannot be calculated.
+	 */
+	private function dated(RecordDating $dating, string $retentionPeriod): ?string {
+		$interval = $this->intervalFor(dating: $dating, retentionPeriod: $retentionPeriod);
 		if ($interval === null) {
 			return null;
 		}
 
-		$brondatum = $this->sourceDateFor(object: $object, schema: $schema, afleidingswijze: $afleidingswijze);
+		$brondatum = $this->sourceDateFor(dating: $dating);
 		if ($brondatum === null) {
 			return null;
 		}
 
-		return $this->counted(brondatum: $brondatum, archiveConfig: $archiveConfig, afleidingswijze: $afleidingswijze, interval: $interval);
-	}//end calculate()
+		return $this->counted(dating: $dating, brondatum: $brondatum)->add($interval)->format('Y-m-d');
+	}//end dated()
 
 	/**
 	 * The retention period as an interval, or null when the method is unsupported or the period invalid.
 	 *
-	 * @param mixed        $afleidingswijze The configured derivation method
-	 * @param ObjectEntity $object          The object being dated
-	 * @param string       $retentionPeriod The retention period
+	 * @param RecordDating $dating          The record and its derivation method.
+	 * @param string       $retentionPeriod ISO 8601 duration (bewaartermijn).
 	 *
 	 * @return DateInterval|null The interval
 	 */
-	private function intervalFor(mixed $afleidingswijze, ObjectEntity $object, string $retentionPeriod): ?DateInterval {
-		if ($this->isSupported(afleidingswijze: $afleidingswijze, object: $object) === false) {
+	private function intervalFor(RecordDating $dating, string $retentionPeriod): ?DateInterval {
+		if ($this->isSupported(dating: $dating) === false) {
 			return null;
 		}
 
@@ -497,22 +513,21 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	 * Refusing is the honest answer. No date at all is a visible gap a
 	 * records officer can act on; a plausible wrong date is not.
 	 *
-	 * @param mixed        $afleidingswijze The configured derivation method
-	 * @param ObjectEntity $object          The object being dated
+	 * @param RecordDating $dating The record and its derivation method.
 	 *
 	 * @return bool True when the method is supported
 	 */
-	private function isSupported(mixed $afleidingswijze, ObjectEntity $object): bool {
-		if (in_array($afleidingswijze, self::VALID_AFLEIDINGSWIJZEN, true) === true) {
+	private function isSupported(RecordDating $dating): bool {
+		if (in_array($dating->afleidingswijze, self::VALID_AFLEIDINGSWIJZEN, true) === true) {
 			return true;
 		}
 
 		$this->logger->error(
 			'[ArchiveActionDateCalculator] Unsupported afleidingswijze; no archiefactiedatum calculated',
 			[
-				'afleidingswijze' => $afleidingswijze,
+				'afleidingswijze' => $dating->afleidingswijze,
 				'supported' => self::VALID_AFLEIDINGSWIJZEN,
-				'objectUuid' => $object->getUuid(),
+				'objectUuid' => $dating->object->getUuid(),
 			]
 		);
 
@@ -541,47 +556,41 @@ class ArchiveActionDateCalculator implements ArchiveReferenceReaderInterface {
 	/**
 	 * The date the period counts from: the method's source date, else its fallback.
 	 *
-	 * @param ObjectEntity $object          The object being dated
-	 * @param Schema       $schema          Its schema
-	 * @param string       $afleidingswijze The derivation method
+	 * @param RecordDating $dating The record, its archive configuration and its derivation method.
 	 *
 	 * @return DateTime|null The date, or null to refuse
 	 */
-	private function sourceDateFor(ObjectEntity $object, Schema $schema, string $afleidingswijze): ?DateTime {
-		$brondatum = $this->determineBrondatum(object: $object, schema: $schema, afleidingswijze: $afleidingswijze);
+	private function sourceDateFor(RecordDating $dating): ?DateTime {
+		$brondatum = $this->brondatumOf(dating: $dating);
 		if ($brondatum !== null) {
 			return $brondatum;
 		}
 
-		return $this->brondatumFallback(object: $object, afleidingswijze: $afleidingswijze);
+		return $this->brondatumFallback(object: $dating->object, afleidingswijze: $dating->afleidingswijze);
 	}//end sourceDateFor()
 
 	/**
-	 * Count the period (and, for `termijn`, the process term) from the source date.
+	 * A copy of the source date, moved by the process term under `termijn`; the caller adds the period.
 	 *
-	 * Never mutate the entity's own DateTime: `->add()` below is in-place,
+	 * Never mutate the entity's own DateTime: `->add()` is in-place,
 	 * and getCreated() hands back the LIVE object, so a disposal-date
 	 * calculation would silently move the object's created timestamp.
 	 * `clone` rather than DateTime::createFromInterface() because phpmd
 	 * refuses static access and every path here already yields a DateTime.
 	 *
-	 * @param DateTime     $brondatum       The source date; not modified
-	 * @param array        $archiveConfig   The schema's archive block
-	 * @param string       $afleidingswijze The derivation method
-	 * @param DateInterval $interval        The retention period
+	 * @param RecordDating $dating    The archive configuration and the derivation method.
+	 * @param DateTime     $brondatum The brondatum.
 	 *
-	 * @return string The disposal date, `Y-m-d`
+	 * @return DateTime The date the period is counted from, a copy of the brondatum.
 	 */
-	private function counted(DateTime $brondatum, array $archiveConfig, string $afleidingswijze, DateInterval $interval): string {
+	private function counted(RecordDating $dating, DateTime $brondatum): DateTime {
 		$date = clone $brondatum;
 
-		if ($afleidingswijze === 'termijn') {
-			$this->addProcestermijn(brondatum: $date, archiveConfig: $archiveConfig);
+		if ($dating->afleidingswijze === 'termijn') {
+			$this->addProcestermijn(brondatum: $date, archiveConfig: $dating->archive);
 		}
 
-		$date->add($interval);
-
-		return $date->format('Y-m-d');
+		return $date;
 	}//end counted()
 
 	/**

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -23,32 +23,24 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 
 /**
  * The steps that wait, branch or end a run.
  *
  * Listed in registration order.
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 final readonly class WaitAndBranchFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param WaitNodeInterface $wait The built-in "Wait" node.
-	 * @param AwaitSignalNodeInterface $awaitSignal The built-in "Wait for an answer" node.
-	 * @param SwitchNodeInterface $switch The built-in "Switch" node.
-	 * @param EndNodeInterface $end The built-in "End" node.
+	 * @param WaitFlowNodes   $wait   The steps that pause a run until a moment or an answer.
+	 * @param BranchFlowNodes $branch The steps that pick the path a run takes or end it.
 	 */
 	public function __construct(
-		private WaitNodeInterface $wait,
-		private AwaitSignalNodeInterface $awaitSignal,
-		private SwitchNodeInterface $switch,
-		private EndNodeInterface $end,
+		private WaitFlowNodes $wait,
+		private BranchFlowNodes $branch,
 	) {
 	}//end __construct()
 
@@ -59,10 +51,8 @@ final readonly class WaitAndBranchFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			$this->wait,
-			$this->awaitSignal,
-			$this->switch,
-			$this->end,
+			...$this->wait->nodes(),
+			...$this->branch->nodes(),
 		];
 
 	}//end nodes()

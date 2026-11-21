@@ -28,12 +28,11 @@ namespace Unit\Service\BulkJob;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -71,7 +70,7 @@ final class BulkActionRegistryTest extends TestCase {
 			public function validateParameters(array $parameters): void {
 			}
 
-			public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
+			public function apply(BulkStep $step): BulkActionResult {
 				return BulkActionResult::applied();
 			}
 		};

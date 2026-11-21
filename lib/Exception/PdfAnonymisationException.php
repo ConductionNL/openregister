@@ -111,22 +111,6 @@ class PdfAnonymisationException extends \Exception {
 	public const REASON_VALIDATION_FAILED_AFTER_FALLBACK = 'validation_failed_after_fallback';
 
 	/**
-	 * The structured reason code (one of the REASON_* constants).
-	 *
-	 * @var string
-	 */
-	private readonly string $reason;
-
-	/**
-	 * Free-form structured diagnostic surface, safe for logging.
-	 *
-	 * MUST NOT contain operator-supplied entity text (PII).
-	 *
-	 * @var array<string, mixed>
-	 */
-	private readonly array $diagnostic;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $reason One of the REASON_* constants
@@ -140,21 +124,29 @@ class PdfAnonymisationException extends \Exception {
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 */
 	public function __construct(
-		string $reason,
-		string $message = '',
-		array $diagnostic = [],
-		?Throwable $previous = null,
+		private readonly string $reason,
+		string $message='',
+		private readonly array $diagnostic=[],
+		?Throwable $previous=null,
 	) {
-		$this->reason = $reason;
-		$this->diagnostic = $diagnostic;
+		parent::__construct(message: self::describe(reason: $reason, message: $message), code: 0, previous: $previous);
+	}//end __construct()
 
-		$finalMessage = $message;
+	/**
+	 * The caller's message, or the default sentence naming the reason when it is empty.
+	 *
+	 * @param string $reason  One of the REASON_* constants.
+	 * @param string $message The caller's message, possibly empty.
+	 *
+	 * @return string The message.
+	 */
+	private static function describe(string $reason, string $message): string {
 		if ($message === '') {
-			$finalMessage = sprintf('PDF anonymisation failed: %s', $reason);
+			return sprintf('PDF anonymisation failed: %s', $reason);
 		}
 
-		parent::__construct(message: $finalMessage, code: 0, previous: $previous);
-	}//end __construct()
+		return $message;
+	}//end describe()
 
 	/**
 	 * Get the structured reason code.

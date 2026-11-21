@@ -7,7 +7,7 @@
  * @copyright 2026 Conduction B.V.
  */
 import { showError } from '@nextcloud/dialogs'
-import ObjectAccessLinks from './ObjectAccessLinks.vue'
+import SubjectAccessLinks from './SubjectAccessLinks.vue'
 import {
 	revokeAccessLink,
 	setAccessLinkDisabled,
@@ -41,7 +41,7 @@ jest.mock('../../services/accessLinks.js', () => ({
  */
 function panel(state = {}) {
 	const ctx = { busy: false, created: null, loads: [], ...state }
-	for (const [name, method] of Object.entries(ObjectAccessLinks.methods)) {
+	for (const [name, method] of Object.entries(SubjectAccessLinks.methods)) {
 		ctx[name] = method.bind(ctx)
 	}
 	ctx.load = jest.fn(async () => ctx.loads.push(ctx.busy))

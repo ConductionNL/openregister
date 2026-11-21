@@ -78,22 +78,31 @@ final class LifecycleStateValidator {
 	 * nothing reads as enforced and is not — the same reason a malformed
 	 * transition `condition` is refused.
 	 *
-	 * @param array<string, mixed> $annotation The normalised annotation block.
-	 * @param array<string, mixed> $schema Full schema definition.
-	 * @param array<string, int>|null $enumSet The declared states, or null when the mode does not publish them.
+	 * @param array<string, mixed>  $annotation The normalised annotation block.
+	 * @param StateDeclarationScope $scope      The schema's declared properties and the declared states.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateStates(array $annotation, array $schema, ?array $enumSet): array {
+	public function validateStates(array $annotation, StateDeclarationScope $scope): array {
 		$states = ($annotation['states'] ?? null);
-		return (self::statesShapeErrors(states: $states)
-			?? $this->validateStateMap(
-				states: $states,
-				scope: new StateDeclarationScope(properties: self::declaredProperties(schema: $schema), enumSet: $enumSet)
-			));
+		return (self::statesShapeErrors(states: $states) ?? $this->validateStateMap(states: $states, scope: $scope));
 	}//end validateStates()
+
+	/**
+	 * What a `states` block is checked against: the schema's declared properties and the declared states.
+	 *
+	 * @param array<string, mixed>    $schema  Full schema definition.
+	 * @param array<string, int>|null $enumSet The declared states, or null when the mode does not publish them.
+	 *
+	 * @return StateDeclarationScope The scope.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function scopeOf(array $schema, ?array $enumSet): StateDeclarationScope {
+		return new StateDeclarationScope(properties: self::declaredProperties(schema: $schema), enumSet: $enumSet);
+	}//end scopeOf()
 
 	/**
 	 * Validate every block of a well-shaped `states` map.
@@ -186,10 +195,33 @@ final class LifecycleStateValidator {
 		}
 
 		return array_merge(
+			self::freezesObjectErrors(block: $block, state: $site->state),
 			$this->validateStateFields(block: $block, site: $site),
 			$this->conditions->validateBlock(block: $block, site: $site)
 		);
 	}//end validateStateBlock()
+
+	/**
+	 * The refusal for a `freezesObject` that is present and not a boolean.
+	 *
+	 * A string `"true"` would read as a freeze to a person and as nothing to
+	 * the listener, so it is refused instead of silently ignored.
+	 *
+	 * @param array<string, mixed> $block The state block.
+	 * @param string               $state The state name.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private static function freezesObjectErrors(array $block, string $state): array {
+		if (array_key_exists('freezesObject', $block) === false || is_bool($block['freezesObject']) === true) {
+			return [];
+		}
+
+		$message = sprintf('x-openregister-lifecycle.states."%s".freezesObject must be true or false.', $state);
+		return [self::error(code: 'lifecycle-state-freezes-object-malformed', message: $message)];
+	}//end freezesObjectErrors()
 
 	/**
 	 * Validate one state's `fields` block.

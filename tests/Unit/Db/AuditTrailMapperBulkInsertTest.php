@@ -112,9 +112,7 @@ class AuditTrailMapperBulkInsertTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			$this->db,
-			$userSession,
-			$request,
-			new AuditTrailMapperServices($this->container, $logger)
+			new AuditTrailMapperServices($this->container, $logger, $userSession, $request)
 		);
 	}//end setUp()
 

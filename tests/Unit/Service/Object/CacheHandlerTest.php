@@ -730,6 +730,8 @@ class CacheHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testClearSearchCacheWithoutDistributedCache(): void {
+		$this->expectNotToPerformAssertions();
+
 		$handler = new CacheHandler(
 			stores: new CacheHandlerStores(
 				organisationMapper: $this->organisationMapper
@@ -746,7 +748,6 @@ class CacheHandlerTest extends TestCase {
 		// Should not throw.
 		$handler->clearSearchCache();
 		$handler->clearSearchCache('pattern');
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -919,6 +920,8 @@ class CacheHandlerTest extends TestCase {
 		// Should not throw, just logs.
 		$stats = $this->handler->getStats();
 		$this->assertIsArray($stats);
+		// The created object's name is cached under its UUID and its id.
+		$this->assertSame(2, $stats['name_cache_size']);
 	}
 
 	/**
@@ -930,10 +933,17 @@ class CacheHandlerTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'uuid-1');
 		// Don't set register/schema on entity, but pass explicit IDs.
 
-		$this->handler->invalidateForObjectChange($entity, 'update', 7, 14);
+		$facts = [];
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$facts): void {
+				if (str_contains($message, 'Schema-wide cache invalidated') === true) {
+					$facts = [$context['operation'], $context['registerId'], $context['schemaId']];
+				}
+			}
+		);
 
-		// Should use provided IDs instead of entity IDs.
-		$this->assertTrue(true);
+		$this->handler->invalidateForObjectChange($entity, 'update', 7, 14);
+		$this->assertSame(['update', 7, 14], $facts);
 	}
 
 	/**
@@ -1488,6 +1498,7 @@ class CacheHandlerTest extends TestCase {
 		// This avoids the null registerMapper issue.
 		$result = $this->handler->getMultipleObjectNames([42]);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -1584,6 +1595,7 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $handler->getMultipleObjectNames(['some-uuid-val']);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	// =========================================================================
@@ -1598,11 +1610,13 @@ class CacheHandlerTest extends TestCase {
 	public function testGetAllObjectNamesTriggersWarmupWhenEmpty(): void {
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$result = $this->handler->getAllObjectNames();
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
 	}
 
 	/**
@@ -1616,11 +1630,13 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$result = $this->handler->getAllObjectNames(true);
 		$this->assertIsArray($result);
+		$this->assertSame(['uuid-1' => 'Name 1'], $result);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
 	}
 
 	/**
@@ -1673,7 +1689,7 @@ class CacheHandlerTest extends TestCase {
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([$org]);
 
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([$entity]);
 
 		$count = $this->handler->warmupNameCache();
@@ -1694,7 +1710,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([$org]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([$entity]);
 
 		$this->handler->warmupNameCache();
@@ -1728,7 +1744,7 @@ class CacheHandlerTest extends TestCase {
 	public function testWarmupNameCacheUpdatesStats(): void {
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$this->handler->warmupNameCache();
@@ -1749,7 +1765,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([$entity]);
 
 		$count = $this->handler->warmupNameCache();
@@ -1767,7 +1783,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([$org]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$count = $this->handler->warmupNameCache();
@@ -1786,7 +1802,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Set up a register with schema that has magic mapping.
@@ -1829,7 +1845,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Create a register with magic mapping enabled via configuration.
@@ -1879,7 +1895,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$register = $this->createRegister(1, [5], [
@@ -1917,7 +1933,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$registerMapper->method('findAll')
@@ -1944,7 +1960,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		$register = $this->createRegister(1, [5]);
@@ -2240,7 +2256,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// warmupNameCache calls persistNameCacheToDistributed.
@@ -2284,7 +2300,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Should not throw, returns 1 (the pre-set name).
@@ -2304,7 +2320,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([$org]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Make distributed cache set fail.
@@ -2407,6 +2423,7 @@ class CacheHandlerTest extends TestCase {
 
 		$result = $handler->getMultipleObjectNames(['skip-uuid-val']);
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -2488,6 +2505,7 @@ class CacheHandlerTest extends TestCase {
 		$result = $handler->getMultipleObjectNames(['fail-uuid-val']);
 		// Should return empty (no match found).
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -2586,7 +2604,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($this->handler, 'test_table', []);
+		$result = $method->invoke($this->handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: [], source: null));
 		$this->assertSame([], $result);
 	}
 
@@ -2629,7 +2647,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Pre-populate a name.
@@ -2638,8 +2656,10 @@ class CacheHandlerTest extends TestCase {
 		// Warmup triggers persist.
 		$this->handler->warmupNameCache();
 
-		// Should not throw.
-		$this->assertTrue(true);
+		// The metadata write failed, but the warmup ran and the name stays cached.
+		$this->assertGreaterThan(0, $callCount);
+		$this->assertSame(1, $this->handler->getStats()['name_warmups']);
+		$this->assertSame(1, $this->handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================
@@ -2958,7 +2978,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'test_table', ['fallback-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'test_table', uuids: ['fallback-uuid-1'], source: null));
 
 		// After 2 failures + 1 success, should have found the name.
 		$this->assertIsArray($result);
@@ -3009,7 +3029,7 @@ class CacheHandlerTest extends TestCase {
 		$method = $ref->getMethod('queryTableForNames');
 		$method->setAccessible(true);
 
-		$result = $method->invoke($handler, 'oc_test_table', ['direct-uuid-1']);
+		$result = $method->invoke($handler, new \OCA\OpenRegister\Service\Object\NameTableQuery(tableName: 'oc_test_table', uuids: ['direct-uuid-1'], source: null));
 
 		$this->assertIsArray($result);
 		// If mock worked correctly, name should be resolved.
@@ -3084,7 +3104,7 @@ class CacheHandlerTest extends TestCase {
 
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([]);
 
 		// Register with magic mapping enabled.
@@ -3145,7 +3165,7 @@ class CacheHandlerTest extends TestCase {
 		$org->setName('Org One');
 		$this->organisationMapper->method('findAllWithUserCount')
 			->willReturn([$org]);
-		$this->objectMapper->method('findAll')
+		$this->objectMapper->method('findAllListed')
 			->willReturn([$this->createObjectEntity(1, 'obj-uuid-1'), $this->createObjectEntity(2, 'org-uuid-1')]);
 
 		$registerMapper->method('findAll')

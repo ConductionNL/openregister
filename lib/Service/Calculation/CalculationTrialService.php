@@ -27,8 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Try an expression before you save it.
@@ -94,21 +92,20 @@ final class CalculationTrialService implements CalculationTrialServiceInterface 
 	 * tenancy on, so only an object the acting user may read arrives here.
 	 *
 	 * @param array<string, mixed> $declaration The `{type, expression}` declaration.
-	 * @param ObjectEntity $object The object, already resolved for the acting user.
-	 * @param Schema $schema The object's schema.
+	 * @param TrialObject $target The object and its schema, already resolved for the acting user.
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function tryObject(array $declaration, ObjectEntity $object, Schema $schema): array {
-		$properties = ($schema->getProperties() ?? []);
+	public function tryObject(array $declaration, TrialObject $target): array {
+		$properties = ($target->schema->getProperties() ?? []);
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($properties));
 		if ($errors !== []) {
 			return $this->failure(error: $errors[0], declaration: $declaration);
 		}
 
-		$payload = $this->payloadBuilder->build(object: $object, schema: $schema);
+		$payload = $this->payloadBuilder->build(object: $target->object, schema: $target->schema);
 
 		return $this->run(declaration: $declaration, payload: $payload);
 	}//end tryObject()
@@ -120,18 +117,17 @@ final class CalculationTrialService implements CalculationTrialServiceInterface 
 	 * whether an object the caller may not read exists.
 	 *
 	 * @param array<string, mixed> $declaration The declaration under trial.
-	 * @param string $objectId The object id the caller named.
-	 * @param string $reason Why the lookup failed.
+	 * @param UnresolvedTrialObject $target The object id the caller named, and why the lookup failed.
 	 *
 	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	public function objectNotFound(array $declaration, string $objectId, string $reason): array {
+	public function objectNotFound(array $declaration, UnresolvedTrialObject $target): array {
 		return $this->failure(
 			error: [
 				'code' => 'calculation-trial-object-not-found',
-				'message' => sprintf('Could not resolve object "%s": %s', $objectId, $reason),
+				'message' => sprintf('Could not resolve object "%s": %s', $target->objectId, $target->reason),
 			],
 			declaration: $declaration
 		);

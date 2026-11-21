@@ -110,12 +110,25 @@ class JwtValidator {
 			throw $this->invalid(reason: 'Invalid JWT format');
 		}
 
-		$header = json_decode((string)base64_decode(strtr($parts[0], '-_', '+/')), true);
+		$header = $this->decodedSegment(segment: $parts[0]);
 		if (is_array($header) === false || isset($header['alg']) === false) {
 			throw $this->invalid(reason: 'Invalid header');
 		}
 
-		$payload = json_decode((string)base64_decode(strtr($parts[1], '-_', '+/')), true);
+		return [$header, $this->payloadOf(segment: $parts[1])];
+	}//end decode()
+
+	/**
+	 * A token's payload segment, decoded; it must be an object that names its issuer.
+	 *
+	 * @param string $segment The base64url payload segment.
+	 *
+	 * @return array The payload.
+	 *
+	 * @throws AuthenticationException When the payload is unreadable or names no issuer.
+	 */
+	private function payloadOf(string $segment): array {
+		$payload = $this->decodedSegment(segment: $segment);
 		if (is_array($payload) === false) {
 			throw $this->invalid(reason: 'Invalid payload');
 		}
@@ -124,8 +137,19 @@ class JwtValidator {
 			throw $this->invalid(reason: 'No issuer mentioned');
 		}
 
-		return [$header, $payload];
-	}//end decode()
+		return $payload;
+	}//end payloadOf()
+
+	/**
+	 * One base64url token segment, JSON-decoded.
+	 *
+	 * @param string $segment The segment.
+	 *
+	 * @return mixed The decoded value, or null when it is not JSON.
+	 */
+	private function decodedSegment(string $segment): mixed {
+		return json_decode((string)base64_decode(strtr($segment, '-_', '+/')), true);
+	}//end decodedSegment()
 
 	/**
 	 * Verify the token under the algorithm the consumer's configuration pins.
@@ -135,9 +159,8 @@ class JwtValidator {
 	 * key be used as an HMAC secret (algorithm confusion). The header's alg
 	 * must equal the pinned one.
 	 *
-	 * @param string $token         The compact JWS.
-	 * @param array  $header        The decoded header.
-	 * @param array  $configuration The consumer's authorization configuration (algorithm, publicKey).
+	 * @param DecodedJwt $jwt           The compact JWS and its decoded header.
+	 * @param array      $configuration The consumer's authorization configuration (algorithm, publicKey).
 	 *
 	 * @return void
 	 *
@@ -145,7 +168,27 @@ class JwtValidator {
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verifyPinned(string $token, array $header, array $configuration): void {
+	public function verifyPinned(DecodedJwt $jwt, array $configuration): void {
+		$key = new JwsKey(
+			algorithm: $this->pinnedAlgorithm(header: $jwt->header, configuration: $configuration),
+			material: (string)($configuration['publicKey'] ?? '')
+		);
+		$this->verifyWithKey(token: $jwt->token, key: $key);
+	}//end verifyPinned()
+
+	/**
+	 * The algorithm the configuration pins, refused unless the header names the same supported one.
+	 *
+	 * @param array $header        The decoded header.
+	 * @param array $configuration The consumer's authorization configuration.
+	 *
+	 * @return string The pinned algorithm.
+	 *
+	 * @throws AuthenticationException When no algorithm is pinned, the header differs or the algorithm is unsupported.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function pinnedAlgorithm(array $header, array $configuration): string {
 		$algorithm = ($configuration['algorithm'] ?? null);
 		if (is_string($algorithm) === false || $algorithm === '') {
 			throw $this->invalid(reason: 'No verification algorithm configured for issuer');
@@ -155,22 +198,50 @@ class JwtValidator {
 			throw $this->invalid(reason: 'Token algorithm does not match issuer configuration');
 		}
 
+		$this->assertSupported(algorithm: $algorithm);
+
+		return $algorithm;
+	}//end pinnedAlgorithm()
+
+	/**
+	 * Refuse an algorithm this validator cannot verify.
+	 *
+	 * @param string $algorithm The issuer's pinned algorithm.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the algorithm is not supported.
+	 */
+	private function assertSupported(string $algorithm): void {
 		if (in_array($algorithm, self::SUPPORTED_ALGORITHMS, true) === false) {
 			throw new AuthenticationException(
 				message: 'The token algorithm is not supported',
 				details: ['algorithm' => $algorithm]
 			);
 		}
+	}//end assertSupported()
 
-		$key = (string)($configuration['publicKey'] ?? '');
-		if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+	/**
+	 * Refuse a token whose signature does not verify with the pinned key.
+	 *
+	 * @param string $token The compact JWS.
+	 * @param JwsKey $key   The pinned algorithm and its key material.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the HMAC secret is too short or the signature fails.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function verifyWithKey(string $token, JwsKey $key): void {
+		if ($this->hmacKeyTooShort(algorithm: $key->algorithm, key: $key->material) === true) {
 			throw $this->invalid(reason: 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output');
 		}
 
-		if ($this->verifySignature(token: $token, algorithm: $algorithm, key: $key) === false) {
+		if ($this->verifySignature(token: $token, key: $key) === false) {
 			throw $this->invalid(reason: 'The token does not match the public key');
 		}
-	}//end verifyPinned()
+	}//end verifyWithKey()
 
 
 	/**
@@ -208,30 +279,29 @@ class JwtValidator {
 	 * HS* uses the key as the shared secret; RS* and PS* use it as an RSA
 	 * public key: a PEM, or a base64-encoded PEM (the form integriq stores).
 	 *
-	 * @param string $token     The compact JWS.
-	 * @param string $algorithm The pinned algorithm.
-	 * @param string $key       The secret or public key.
+	 * @param string $token The compact JWS.
+	 * @param JwsKey $key   The pinned algorithm and the secret or public key.
 	 *
 	 * @return bool True when the signature is valid.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
-	public function verifySignature(string $token, string $algorithm, string $key): bool {
+	public function verifySignature(string $token, JwsKey $key): bool {
 		$parts = explode('.', $token);
 		if (count($parts) !== 3) {
 			return false;
 		}
 
-		if (isset(self::HMAC_MAP[$algorithm]) === true) {
-			if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+		if (isset(self::HMAC_MAP[$key->algorithm]) === true) {
+			if ($this->hmacKeyTooShort(algorithm: $key->algorithm, key: $key->material) === true) {
 				return false;
 			}
 
-			$expected = hash_hmac(self::HMAC_MAP[$algorithm], $parts[0] . '.' . $parts[1], $key, true);
+			$expected = hash_hmac(self::HMAC_MAP[$key->algorithm], $parts[0] . '.' . $parts[1], $key->material, true);
 			return hash_equals($expected, (string)base64_decode(strtr($parts[2], '-_', '+/')));
 		}
 
-		return (new RsaJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: $key);
+		return (new RsaJwsVerifier())->verify(token: $token, key: $key);
 	}//end verifySignature()
 
 	/**
@@ -252,54 +322,125 @@ class JwtValidator {
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
 	 */
 	public function validateClaims(array $payload): void {
-		$now = new DateTime();
+		$run = new ClaimValidationRun(payload: $payload, now: new DateTime());
 
+		$this->refuseMissingIssueTime(payload: $payload);
+		$run->iat = new DateTime('@' . $payload['iat']);
+
+		$this->refuseFutureIssueTime(run: $run);
+		$run->exp = $this->expiryOf(run: $run);
+
+		$this->refuseExpired(run: $run);
+		$this->refuseNotYetValid(run: $run);
+
+		$this->refuseReplay(payload: $payload, lifetime: ($run->exp->getTimestamp() - $run->now->getTimestamp()));
+	}//end validateClaims()
+
+	/**
+	 * Refuse a token without an iat.
+	 *
+	 * @param array $payload The token payload.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token has no time of creation.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseMissingIssueTime(array $payload): void {
 		if (isset($payload['iat']) === false) {
 			throw new AuthenticationException(
 				message: 'The token has no time of creation',
 				details: ['iat' => null]
 			);
 		}
+	}//end refuseMissingIssueTime()
 
-		$iat = new DateTime('@' . $payload['iat']);
-
-		// A token issued in the future (beyond the skew) is pre-generated:
-		// accepting it would stretch its usable window past its stated life.
-		if ($iat->getTimestamp() > ($now->getTimestamp() + self::CLOCK_SKEW_SECONDS)) {
+	/**
+	 * Refuse a token issued in the future beyond the skew: it is pre-generated,
+	 * and accepting it would stretch its usable window past its stated life.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the iat and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the issue time lies beyond the skew.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseFutureIssueTime(ClaimValidationRun $run): void {
+		if ($run->iat->getTimestamp() > ($run->now->getTimestamp() + self::CLOCK_SKEW_SECONDS)) {
 			throw new AuthenticationException(
 				message: 'The token has an invalid issue time',
-				details: ['iat' => $iat->getTimestamp(), 'time checked' => $now->getTimestamp()]
+				details: ['iat' => $run->iat->getTimestamp(), 'time checked' => $run->now->getTimestamp()]
 			);
 		}
+	}//end refuseFutureIssueTime()
 
-		$exp = clone $iat;
+	/**
+	 * The token's expiry: its exp claim, else one hour after its iat.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the payload and the iat.
+	 *
+	 * @return DateTime The expiry.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function expiryOf(ClaimValidationRun $run): DateTime {
+		$exp = clone $run->iat;
 		$exp->modify('+1 Hour');
-		if (isset($payload['exp']) === true) {
-			$exp = new DateTime('@' . $payload['exp']);
+		if (isset($run->payload['exp']) === true) {
+			$exp = new DateTime('@' . $run->payload['exp']);
 		}
 
-		if ($exp->diff($now)->format('%R') === '+') {
+		return $exp;
+	}//end expiryOf()
+
+	/**
+	 * Refuse a token whose expiry has passed.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the iat, the expiry and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token has expired.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseExpired(ClaimValidationRun $run): void {
+		if ($run->exp->diff($run->now)->format('%R') === '+') {
 			throw new AuthenticationException(
 				message: 'The token has expired',
 				details: [
-					'iat' => $iat->getTimestamp(),
-					'exp' => $exp->getTimestamp(),
-					'time checked' => $now->getTimestamp(),
+					'iat' => $run->iat->getTimestamp(),
+					'exp' => $run->exp->getTimestamp(),
+					'time checked' => $run->now->getTimestamp(),
 				]
 			);
 		}
+	}//end refuseExpired()
 
-		if (isset($payload['nbf']) === true
-			&& $now->getTimestamp() < ((int)$payload['nbf'] - self::CLOCK_SKEW_SECONDS)
+	/**
+	 * Refuse a token whose nbf, when present, has not been reached within the skew.
+	 *
+	 * @param ClaimValidationRun $run The pass, carrying the payload and the moment checked.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When the token is not yet valid.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	private function refuseNotYetValid(ClaimValidationRun $run): void {
+		if (isset($run->payload['nbf']) === true
+			&& $run->now->getTimestamp() < ((int)$run->payload['nbf'] - self::CLOCK_SKEW_SECONDS)
 		) {
 			throw new AuthenticationException(
 				message: 'The token is not yet valid',
-				details: ['nbf' => (int)$payload['nbf'], 'time checked' => $now->getTimestamp()]
+				details: ['nbf' => (int)$run->payload['nbf'], 'time checked' => $run->now->getTimestamp()]
 			);
 		}
-
-		$this->refuseReplay(payload: $payload, expiresAt: $exp->getTimestamp(), now: $now->getTimestamp());
-	}//end validateClaims()
+	}//end refuseNotYetValid()
 
 	/**
 	 * Accept a token's jti once: remember it until the token expires.
@@ -307,37 +448,56 @@ class JwtValidator {
 	 * Fails closed: a token that carries a jti on an instance without a
 	 * distributed cache cannot be checked for replay and is refused.
 	 *
-	 * @param array $payload   The token payload.
-	 * @param int   $expiresAt When the token expires (unix time).
-	 * @param int   $now       Now (unix time).
+	 * @param array $payload  The token payload.
+	 * @param int   $lifetime Seconds until the token expires.
 	 *
 	 * @return void
 	 *
 	 * @throws AuthenticationException When the jti was used before, or cannot be checked.
 	 */
-	private function refuseReplay(array $payload, int $expiresAt, int $now): void {
+	private function refuseReplay(array $payload, int $lifetime): void {
 		if (isset($payload['jti']) === false || $payload['jti'] === '') {
 			return;
 		}
 
 		$cache = $this->jtiCache();
 		if ($cache === null) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'A token id (jti) cannot be checked for replay on this instance']
-			);
+			throw $this->replayUncheckable();
 		}
 
 		$cacheKey = 'jti:' . hash('sha256', (string)$payload['jti']);
 		if ($cache->get($cacheKey) !== null) {
-			throw new AuthenticationException(
-				message: 'The token has already been used (jti replay)',
-				details: ['jti' => $payload['jti']]
-			);
+			throw $this->replayed(jti: $payload['jti']);
 		}
 
-		$cache->set($cacheKey, 1, max(1, ($expiresAt - $now) + self::CLOCK_SKEW_SECONDS));
+		$cache->set($cacheKey, 1, max(1, $lifetime + self::CLOCK_SKEW_SECONDS));
 	}//end refuseReplay()
+
+	/**
+	 * The refusal of a token whose jti was already used.
+	 *
+	 * @param mixed $jti The token id.
+	 *
+	 * @return AuthenticationException The refusal.
+	 */
+	private function replayed(mixed $jti): AuthenticationException {
+		return new AuthenticationException(
+			message: 'The token has already been used (jti replay)',
+			details: ['jti' => $jti]
+		);
+	}//end replayed()
+
+	/**
+	 * The refusal of a token with a jti on an instance that cannot check it for replay (fail closed).
+	 *
+	 * @return AuthenticationException The refusal.
+	 */
+	private function replayUncheckable(): AuthenticationException {
+		return new AuthenticationException(
+			message: 'The token could not be validated',
+			details: ['reason' => 'A token id (jti) cannot be checked for replay on this instance']
+		);
+	}//end replayUncheckable()
 
 	/**
 	 * The distributed cache that remembers used token ids, or null without one.

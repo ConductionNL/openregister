@@ -115,6 +115,11 @@
 			</div>
 		</div>
 
+		<FileAccessLinksModal
+			v-if="sharingFile"
+			:file="sharingFile"
+			@close="sharingFile = null" />
+
 		<!-- Search Sidebar -->
 		<template #details>
 			<FilesSidebar
@@ -134,8 +139,10 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { defineAsyncComponent } from 'vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
@@ -162,6 +169,9 @@ export default {
 		NcEmptyContent,
 		FileDocumentOutline,
 		FilesSidebar,
+		FileAccessLinksModal: defineAsyncComponent(
+			() => import('../../modals/file/FileAccessLinksModal.vue'),
+		),
 	},
 
 	mixins: [offsetPaging('totalFiles', 'loadFiles')],
@@ -169,6 +179,8 @@ export default {
 	data() {
 		return {
 			filesList: [],
+			// The file row whose access links are open, or null.
+			sharingFile: null,
 			loading: false,
 			totalFiles: 0,
 			limit: 50,
@@ -231,6 +243,13 @@ export default {
 					icon: AlertCircleOutline,
 					run: () => this.showError(file),
 					hidden: !file.extractionError,
+				},
+				{
+					// A file link names its object, so only a file an object carries can be shared.
+					label: t('openregister', 'Share by link'),
+					icon: LinkVariant,
+					run: () => { this.sharingFile = file },
+					hidden: !file.objectUuid,
 				},
 			]
 		},
@@ -305,39 +324,64 @@ export default {
 		async loadFiles() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: this.offset,
-					sort: this.sortField,
-					order: this.sortOrder,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.statusFilter) {
-					params.status = this.statusFilter
-				}
-
-				if (this.riskLevelFilter) {
-					params.riskLevel = this.riskLevelFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/files'),
-					{ params },
+					{ params: this.fileListParams() },
 				)
-
-				if (response.data.success) {
-					this.filesList = response.data.data
-					this.totalFiles = response.data.count || this.filesList.length
-				}
+				this.showFileList(response.data)
 			} catch (error) {
 				console.error('Failed to load files:', error)
 				showError(t('openregister', 'Failed to load files'))
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * The page of files to ask for, in the chosen order, narrowed by the
+		 * filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The query parameters
+		 */
+		fileListParams() {
+			return {
+				limit: this.limit,
+				offset: this.offset,
+				sort: this.sortField,
+				order: this.sortOrder,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, status and risk-level filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				status: this.statusFilter,
+				riskLevel: this.riskLevelFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
+		},
+
+		/**
+		 * Take the page of files and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showFileList(data) {
+			if (data.success) {
+				this.filesList = data.data
+				this.totalFiles = data.count || this.filesList.length
 			}
 		},
 

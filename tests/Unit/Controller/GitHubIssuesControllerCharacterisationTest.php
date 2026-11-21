@@ -40,12 +40,16 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\GitHubIssuesControllerFactory
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueText;
 
 /**
  * Characterisation of GitHubIssuesController.
@@ -102,7 +106,8 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 			rateLimiter: $this->rateLimiter,
 			userSession: $this->userSession,
 			cacheFactory: $cacheFactory,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}
 
@@ -149,7 +154,7 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 		$this->params = ['repo' => 'ConductionNL/openregister', 'labels' => 'b,a', 'state' => 'all', 'sort' => 'created'];
 		$this->cache->method('get')->willReturn(null);
 		$this->github->expects($this->once())->method('listIssues')
-			->with('ConductionNL', 'openregister', 'all', 'created', 30, ['b', 'a'])->willReturn(['items' => []]);
+			->with(new GitHubIssueSelection(owner: 'ConductionNL', repo: 'openregister', state: 'all', sort: 'created', labels: ['b', 'a']))->willReturn(['items' => []]);
 		$this->cache->expects($this->once())->method('set')
 			->with('list:ConductionNL/openregister:all:created:30:a,b', ['items' => []], 900);
 
@@ -163,7 +168,7 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 		$this->params = ['repo' => 'ConductionNL/openregister'];
 		$this->cache->expects($this->once())->method('get')->with('list:ConductionNL/openregister:open:reactions-+1:30')->willReturn(null);
 		$this->github->expects($this->once())->method('listIssues')
-			->with('ConductionNL', 'openregister', 'open', 'reactions-+1', 30, null)->willReturn([]);
+			->with(new GitHubIssueSelection(owner: 'ConductionNL', repo: 'openregister'))->willReturn([]);
 
 		$this->controller()->index();
 	}
@@ -234,7 +239,7 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 		$this->signIn();
 		$this->params = ['repo' => 'ConductionNL/openregister', 'title' => 'T', 'body' => 'B', 'specRef' => ''];
 		$this->github->expects($this->once())->method('createIssue')
-			->with('ConductionNL', 'openregister', 'T', 'B', null, 'alice')->willReturn(['number' => 9]);
+			->with(new GitHubIssueSubmission(owner: 'ConductionNL', repo: 'openregister', userId: 'alice', specRef: null), new GitHubIssueText(title: 'T', body: 'B'))->willReturn(['number' => 9]);
 		$this->rateLimiter->expects($this->once())->method('markFixedWindow')->with('feature_submission:alice', 60);
 
 		$response = $this->controller()->create();
@@ -247,7 +252,7 @@ class GitHubIssuesControllerCharacterisationTest extends TestCase {
 		$this->signIn();
 		$this->params = ['repo' => 'ConductionNL/openregister', 'title' => 'T', 'body' => 'B', 'specRef' => 'spec-x'];
 		$this->github->expects($this->once())->method('createIssue')
-			->with('ConductionNL', 'openregister', 'T', 'B', 'spec-x', 'alice')->willReturn([]);
+			->with(new GitHubIssueSubmission(owner: 'ConductionNL', repo: 'openregister', userId: 'alice', specRef: 'spec-x'), new GitHubIssueText(title: 'T', body: 'B'))->willReturn([]);
 
 		$this->controller()->create();
 	}

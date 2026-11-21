@@ -63,50 +63,35 @@ class CasePlanStateMachine {
 	private array $pending = [];
 
 	/**
+	 * The lifecycle table.
+	 *
+	 * @var CasePlanTransitions
+	 */
+	private readonly CasePlanTransitions $table;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CasePlanStore $store The plan-item table, the audit, the one transaction per transition and the failure log.
-	 * @param CasePlanTransitions $table The lifecycle table.
 	 * @param CaseTransitionEffects $effects The realiser, the write-through and the event dispatcher.
 	 */
 	public function __construct(
 		private readonly CasePlanStore $store,
-		private readonly CasePlanTransitions $table,
 		private readonly CaseTransitionEffects $effects,
 	) {
-
+		$this->table = new CasePlanTransitions();
 	}//end __construct()
 
 	/**
-	 * Move one item, with everything that entails, in one transaction.
+	 * The plan-item table, the audit, the transaction and the failure log this machine writes through.
 	 *
-	 * @param CaseItem $item The item, as read.
-	 * @param string $to The target state.
-	 * @param string $cause sentry | user | realisation | cascade | import.
-	 * @param string|null $causeRef The sentry id, task/run uuid or parent uuid.
-	 * @param string|null $actor The acting identity, or null for the system.
-	 * @param string|null $reason Free text; becomes `terminated_reason` on a termination.
-	 * @param CasePlanTree|null $tree The plan, when the caller has it (for the cascade).
-	 *
-	 * @return CaseItem The item as persisted.
-	 *
-	 * @throws CaseTransitionException When illegal, or when another mover won.
+	 * @return CasePlanStore The store.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
-	public function transition(
-		CaseItem $item,
-		string $to,
-		string $cause,
-		?string $causeRef,
-		?string $actor,
-		?string $reason = null,
-		?CasePlanTree $tree = null,
-	): CaseItem {
-		$why = new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: $reason);
-
-		return $this->commit(move: new CasePlanMove(item: $item, to: $to, why: $why, tree: $tree));
-	}//end transition()
+	public function store(): CasePlanStore {
+		return $this->store;
+	}//end store()
 
 	/**
 	 * Move one item, with everything that entails, in one transaction: the
@@ -169,24 +154,7 @@ class CasePlanStateMachine {
 
 	/**
 	 * Record a refused attempt. Mutates nothing; appended outside any verb
-	 * transaction, and a failure to record it is logged, not converted.
-	 *
-	 * @param CaseItem $item The item acted on.
-	 * @param string $to The requested state (or the verb, for enable/attach).
-	 * @param string|null $actor The acting identity.
-	 * @param string $reason The denial message.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
-	 */
-	public function recordDenial(CaseItem $item, string $to, ?string $actor, string $reason): void {
-		$denial = new CaseTransitionCause(cause: CaseItemAudit::CAUSE_USER, causeRef: null, actor: $actor, reason: $reason);
-		$this->recordRefusal(attempt: new CasePlanMove(item: $item, to: $to, why: $denial, tree: null));
-	}//end recordDenial()
-
-	/**
-	 * Record a refused attempt as one value: see {@see recordDenial()}. An
+	 * transaction, and a failure to record it is logged, not converted. An
 	 * unsaved item is ignored.
 	 *
 	 * @param CasePlanMove $attempt The item acted on, the requested state (or the verb) and the denial's cause.
@@ -235,7 +203,7 @@ class CasePlanStateMachine {
 	 */
 	private static function denialOf(CasePlanMove $attempt): CaseItemAudit {
 		$item = $attempt->item;
-		$entry = $attempt->why->auditFor(item: $item, fromState: (string)$item->getState(), toState: $attempt->to);
+		$entry = $attempt->why->auditFor(item: $item, change: new CaseStateChange(from: (string)$item->getState(), to: $attempt->to));
 		$entry->setAuthorized(false);
 
 		return $entry;
@@ -243,24 +211,8 @@ class CasePlanStateMachine {
 
 	/**
 	 * Audit a row's creation: `from_state` null, `to_state` its initial state.
-	 * Called inside the creator's transaction, right after the insert.
-	 *
-	 * @param CaseItem $item The inserted item.
-	 * @param string $cause import | user | realisation (a repetition).
-	 * @param string|null $causeRef The definition, the actor's verb, or the previous realisation.
-	 * @param string|null $actor The acting identity.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
-	 */
-	public function recordCreation(CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
-		$this->recordCreationOf(item: $item, why: new CaseTransitionCause(cause: $cause, causeRef: $causeRef, actor: $actor, reason: null));
-	}//end recordCreation()
-
-	/**
-	 * Audit a row's creation with its cause as one value: see {@see recordCreation()}.
-	 * A cause without an actor is recorded as the system.
+	 * Called inside the creator's transaction, right after the insert. A cause
+	 * without an actor is recorded as the system.
 	 *
 	 * @param CaseItem            $item The inserted item.
 	 * @param CaseTransitionCause $why  The cause, its reference and the acting identity.
@@ -272,7 +224,7 @@ class CasePlanStateMachine {
 	public function recordCreationOf(CaseItem $item, CaseTransitionCause $why): void {
 		$actor = ($why->actor ?? self::SYSTEM_ACTOR);
 		$why = new CaseTransitionCause(cause: $why->cause, causeRef: $why->causeRef, actor: $actor, reason: null);
-		$this->store->audits->insert($why->auditFor(item: $item, fromState: '', toState: (string)$item->getState()));
+		$this->store->audits->insert($why->auditFor(item: $item, change: new CaseStateChange(from: '', to: (string)$item->getState())));
 	}//end recordCreationOf()
 
 	/**
@@ -402,7 +354,7 @@ class CasePlanStateMachine {
 	private function afterUpdate(CasePlanMove $move, string $from): void {
 		$item = $move->item;
 		$why = $move->why;
-		$this->store->audits->insert($why->auditFor(item: $item, fromState: $from, toState: (string)$item->getState()));
+		$this->store->audits->insert($why->auditFor(item: $item, change: new CaseStateChange(from: $from, to: (string)$item->getState())));
 		$this->closeRealisation(item: $item, why: $why);
 		$this->mirrorMilestone(item: $item);
 		$this->pending[] = new CaseItemTransitionedEvent(item: $item, fromState: $from);

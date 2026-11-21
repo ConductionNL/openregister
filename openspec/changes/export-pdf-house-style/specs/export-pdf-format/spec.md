@@ -26,3 +26,22 @@ NOT fail the export.
 - **WHEN** the same export runs
 - **THEN** the file has the current layout and the export succeeds
 - @e2e exclude {specified only; covered by the unchanged-output test in task 2.3}
+
+### Requirement: A single record exports as a PDF
+
+A user who may read a record SHALL be able to export that one record as a PDF from the record
+page. The PDF SHALL list the record's fields with their labels and values, and SHALL leave out
+every field the user may not read. It SHALL carry the house style when one is set, as a list
+export does.
+
+#### Scenario: A caseworker prints one case
+- **GIVEN** a case `Z-2026-0042` with the fields `omschrijving`, `status` and `startdatum`
+- **WHEN** a caseworker chooses "Export as PDF" on the record page
+- **THEN** the browser saves a PDF that shows the three fields with their labels and values
+- @e2e exclude {specified only; task 2.4 adds the record export test}
+
+#### Scenario: A hidden field stays out of the PDF
+- **GIVEN** a case whose `bsn` field the caseworker may not read
+- **WHEN** the caseworker exports the case as a PDF
+- **THEN** the PDF does not contain the `bsn` field or its value
+- @e2e exclude {specified only; task 2.4 adds the record export test}

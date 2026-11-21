@@ -56,23 +56,35 @@ class ActivityEventListener implements IEventListener {
 	}//end __construct()
 
 	/**
+	 * The single-entity events, in the order they are checked, each with the
+	 * getter for its entity and the ActivityService method that publishes it.
+	 *
+	 * @var array<class-string<Event>, array{0: string, 1: string}>
+	 */
+	private const PUBLISHERS = [
+		ObjectCreatedEvent::class => ['getObject', 'publishObjectCreated'],
+		ObjectDeletedEvent::class => ['getObject', 'publishObjectDeleted'],
+		RegisterCreatedEvent::class => ['getRegister', 'publishRegisterCreated'],
+		RegisterUpdatedEvent::class => ['getNewRegister', 'publishRegisterUpdated'],
+		RegisterDeletedEvent::class => ['getRegister', 'publishRegisterDeleted'],
+		SchemaCreatedEvent::class => ['getSchema', 'publishSchemaCreated'],
+		SchemaUpdatedEvent::class => ['getNewSchema', 'publishSchemaUpdated'],
+		SchemaDeletedEvent::class => ['getSchema', 'publishSchemaDeleted'],
+	];
+
+	/**
 	 * Handle an incoming event and delegate to the appropriate ActivityService method.
+	 *
+	 * An object update is the one event that publishes two entities, the new
+	 * and the old object; every other event publishes the one entity it carries.
 	 *
 	 * @param Event $event The dispatched event.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatedEvent) {
-			$this->activityService->publishObjectCreated($event->getObject());
-			return;
-		}
-
 		if ($event instanceof ObjectUpdatedEvent) {
 			$this->activityService->publishObjectUpdated(
 				$event->getNewObject(),
@@ -81,38 +93,11 @@ class ActivityEventListener implements IEventListener {
 			return;
 		}
 
-		if ($event instanceof ObjectDeletedEvent) {
-			$this->activityService->publishObjectDeleted($event->getObject());
-			return;
-		}
-
-		if ($event instanceof RegisterCreatedEvent) {
-			$this->activityService->publishRegisterCreated($event->getRegister());
-			return;
-		}
-
-		if ($event instanceof RegisterUpdatedEvent) {
-			$this->activityService->publishRegisterUpdated($event->getNewRegister());
-			return;
-		}
-
-		if ($event instanceof RegisterDeletedEvent) {
-			$this->activityService->publishRegisterDeleted($event->getRegister());
-			return;
-		}
-
-		if ($event instanceof SchemaCreatedEvent) {
-			$this->activityService->publishSchemaCreated($event->getSchema());
-			return;
-		}
-
-		if ($event instanceof SchemaUpdatedEvent) {
-			$this->activityService->publishSchemaUpdated($event->getNewSchema());
-			return;
-		}
-
-		if ($event instanceof SchemaDeletedEvent) {
-			$this->activityService->publishSchemaDeleted($event->getSchema());
+		foreach (self::PUBLISHERS as $eventClass => [$getter, $publish]) {
+			if ($event instanceof $eventClass) {
+				$this->activityService->{$publish}($event->{$getter}());
+				return;
+			}
 		}
 	}//end handle()
 }//end class

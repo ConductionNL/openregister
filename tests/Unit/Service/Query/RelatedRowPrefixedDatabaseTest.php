@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
@@ -61,6 +62,15 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Db\MagicMapper\AliasedRows
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowApplyRun
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
  */
 class RelatedRowPrefixedDatabaseTest extends TestCase {
 
@@ -132,7 +142,7 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
 			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
-		))->apply(qb: $qb, query: $query, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+		))->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: $query);
 
 		return [$where, $parameters];
 	}

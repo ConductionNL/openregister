@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
@@ -32,6 +33,12 @@ use PHPUnit\Framework\TestCase;
  * With one, the store is asked for that register and schema.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class ObjectSlugStoreScopeTest extends TestCase {
 
@@ -76,8 +83,8 @@ class ObjectSlugStoreScopeTest extends TestCase {
 		$this->magic->expects($this->never())->method('findSlugState');
 		$scope = new ObjectSlugScope(null, new Schema());
 
-		$this->assertNull($this->store()->holderOf($scope, 'jan', 'u-1'));
-		$this->assertSame(['holders' => [], 'stored' => []], $this->store()->state($scope, ['jan'], ['u-1']));
+		$this->assertNull($this->store()->holderOf(want: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant(slug: 'jan', scope: $scope, objectUuid: 'u-1', path: 'save'), slug: 'jan'));
+		$this->assertSame(['holders' => [], 'stored' => []], $this->store()->state(scope: $scope, claims: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims(slugs: ['jan'], uuids: ['u-1'])));
 
 	}//end testARegisterlessScopeAsksNothing()
 
@@ -91,16 +98,16 @@ class ObjectSlugStoreScopeTest extends TestCase {
 		$schema   = new Schema();
 		$this->magic->expects($this->once())
 			->method('findSlugHolders')
-			->with($register, $schema, 'jan', 'u-1')
+			->with(new RegisterSchema($register, $schema), 'jan', 'u-1')
 			->willReturn(['u-9', 'u-8']);
 		$this->magic->expects($this->once())
 			->method('findSlugState')
-			->with($register, $schema, ['jan'], ['u-1'])
+			->with(new RegisterSchema($register, $schema), ['jan'], ['u-1'])
 			->willReturn(['holders' => ['jan' => 'u-9'], 'stored' => []]);
 		$scope = new ObjectSlugScope($register, $schema);
 
-		$this->assertSame('u-9', $this->store()->holderOf($scope, 'jan', 'u-1'));
-		$this->assertSame(['jan' => 'u-9'], $this->store()->state($scope, ['jan'], ['u-1'])['holders']);
+		$this->assertSame('u-9', $this->store()->holderOf(want: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant(slug: 'jan', scope: $scope, objectUuid: 'u-1', path: 'save'), slug: 'jan'));
+		$this->assertSame(['jan' => 'u-9'], $this->store()->state(scope: $scope, claims: new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims(slugs: ['jan'], uuids: ['u-1']))['holders']);
 
 	}//end testAScopedLookupAsksTheStore()
 }//end class

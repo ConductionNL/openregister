@@ -35,8 +35,7 @@ final class AuditQueryControllerFactory {
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AuditQueryControllerServices(
 				auditQueryService: $auditQueryService,
-				userSession: $userSession,
-				groupManager: $groupManager,
+				principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 			),
 		];
 	}//end args()

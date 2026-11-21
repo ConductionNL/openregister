@@ -32,13 +32,13 @@ final class EdepotSettingsControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param EdepotSettingsDomain   $domain   The domain bundle.
-	 * @param EdepotSettingsPlatform $platform The platform bundle.
+	 * @param ConnectionReporting $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
 	 */
 	public function __construct(
 		public readonly EdepotSettingsDomain $domain,
-		public readonly EdepotSettingsPlatform $platform,
+		public readonly ConnectionReporting $platform,
 	) {
 	}//end __construct()
 }//end class

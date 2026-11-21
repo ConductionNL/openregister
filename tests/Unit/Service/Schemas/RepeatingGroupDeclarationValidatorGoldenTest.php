@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\RepeatingGroupDeclarationValidator
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Schemas\RepeatingGroupDeclarationRun
  */
 final class RepeatingGroupDeclarationValidatorGoldenTest extends TestCase {
 

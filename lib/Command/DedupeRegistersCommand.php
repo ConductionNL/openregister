@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Command;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,19 +50,37 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DedupeRegistersCommand extends Command {
 	/**
+	 * Register lookup/mutation mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic table resolver for object counts.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
 	 * Wire the mappers used by the command.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup/mutation mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table resolver for object counts.
+	 * @param SchemaCatalogInterface $catalog Register, schema and magic table mappers.
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
+		$this->magicMapper = $catalog->tables();
 		parent::__construct();
 	}//end __construct()
 
@@ -111,12 +130,7 @@ class DedupeRegistersCommand extends Command {
 		$apply = (bool)$input->getOption('apply');
 		$run = new DedupeRegistersRun(dryRun: ($apply === false), force: (bool)$input->getOption('force'));
 
-		if ($run->dryRun === true) {
-			$output->writeln(
-				'<comment>Running in DRY-RUN mode — no registers will be deleted. '
-				. 'Re-run with --apply to perform deletions.</comment>'
-			);
-		}
+		self::announceDryRun(run: $run, output: $output);
 
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
@@ -129,23 +143,49 @@ class DedupeRegistersCommand extends Command {
 			return Command::SUCCESS;
 		}
 
+		$output->writeln(self::doneLine(run: $run));
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Say, on a dry run, that nothing will be deleted.
+	 *
+	 * @param DedupeRegistersRun $run    The run.
+	 * @param OutputInterface    $output The console output.
+	 *
+	 * @return void
+	 */
+	private static function announceDryRun(DedupeRegistersRun $run, OutputInterface $output): void {
+		if ($run->dryRun === true) {
+			$output->writeln(
+				'<comment>Running in DRY-RUN mode — no registers will be deleted. '
+				. 'Re-run with --apply to perform deletions.</comment>'
+			);
+		}
+	}//end announceDryRun()
+
+	/**
+	 * The closing line: the duplicate groups, the deletions and the duplicates kept for holding objects.
+	 *
+	 * @param DedupeRegistersRun $run The finished run.
+	 *
+	 * @return string The line.
+	 */
+	private static function doneLine(DedupeRegistersRun $run): string {
 		$suffix = '';
 		if ($run->dryRun === true) {
 			$suffix = ' (dry run — no writes performed)';
 		}
 
-		$output->writeln(
-			sprintf(
-				'<info>Done. Duplicate slug groups=%d, deleted=%d, kept-non-empty=%d%s</info>',
-				$run->duplicateGroups,
-				$run->deleted,
-				$run->keptNonEmpty,
-				$suffix
-			)
+		return sprintf(
+			'<info>Done. Duplicate slug groups=%d, deleted=%d, kept-non-empty=%d%s</info>',
+			$run->duplicateGroups,
+			$run->deleted,
+			$run->keptNonEmpty,
+			$suffix
 		);
-
-		return Command::SUCCESS;
-	}//end execute()
+	}//end doneLine()
 
 	/**
 	 * Group registers by lowercased slug, ignoring registers without one.

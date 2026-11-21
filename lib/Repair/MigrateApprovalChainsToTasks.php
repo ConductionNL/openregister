@@ -64,6 +64,8 @@ use Symfony\Component\Uid\Uuid;
 use Throwable;
 use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\ChainMigrationRun;
+use OCA\OpenRegister\Repair\Support\SequenceMigrationRun;
 
 /**
  * Converts chains to templates, step sets to sequences and steps to tasks.
@@ -100,6 +102,18 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @var string
 	 */
 	private const TEMPLATE_ID_NS = 'or-approval-template';
+
+	/**
+	 * The task state a legacy step status migrates to.
+	 *
+	 * @var array<string, string>
+	 */
+	private const STATE_BY_STATUS = [
+		'pending' => Task::STATE_ENABLED,
+		'waiting' => Task::STATE_AVAILABLE,
+		'approved' => 'approved',
+		'rejected' => 'rejected',
+	];
 
 	/**
 	 * Reads the legacy tables and writes the reconciliation column.
@@ -151,17 +165,24 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * Validates and builds each migrated task. Stateless and dependency-free,
+	 * so the step owns its instance instead of taking it from the container.
+	 *
+	 * @var TaskBuilder
+	 */
+	private readonly TaskBuilder $builder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RepairPlatform $platform Database connection, app config and logger.
-	 * @param TaskBuilder $builder Validates and builds each migrated task.
-	 * @param ApprovalTaskStores $stores Task, candidate, audit and sequence stores.
+	 * @param RepairPlatform     $platform Database connection, app config and logger.
+	 * @param ApprovalTaskStores $stores   Task, candidate, audit and sequence stores.
 	 */
 	public function __construct(
 		RepairPlatform $platform,
-		private readonly TaskBuilder $builder,
 		ApprovalTaskStores $stores,
 	) {
+		$this->builder = new TaskBuilder();
 		$this->db = $platform->db;
 		$this->tasks = $stores->tasks;
 		$this->candidates = $stores->candidates;
@@ -236,15 +257,10 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$byObject[(string)$step['object_uuid']][] = $step;
 		}
 
-		$template = $this->templateFor(chain: $chain);
+		$run = new ChainMigrationRun(chain: $chain, template: $this->templateFor(chain: $chain));
 		$migrated = 0;
-		foreach ($byObject as $objectUuid => $objectSteps) {
-			$migrated += $this->migrateStepSet(
-				chain: $chain,
-				template: $template,
-				objectUuid: (string)$objectUuid,
-				steps: $objectSteps
-			);
+		foreach ($byObject as $objectSteps) {
+			$migrated += $this->migrateStepSet(run: $run, steps: $objectSteps);
 		}
 
 		return $migrated;
@@ -255,50 +271,39 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 *
 	 * Idempotent per step: a step carrying `migrated_task_uuid` is never
 	 * touched again, and the sequence is recovered from an already-migrated
-	 * sibling rather than opened a second time.
+	 * sibling rather than opened a second time; the first pending step's
+	 * ordinal is a new sequence's cursor.
 	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 * @param array<string, mixed> $template The derived template.
-	 * @param string $objectUuid The object the approval is about.
-	 * @param array<int, array<string, mixed>> $steps The object's step rows, ordinal order.
+	 * @param ChainMigrationRun                $run   The chain and its derived template.
+	 * @param array<int, array<string, mixed>> $steps One object's step rows, ordinal order.
 	 *
 	 * @return int How many steps were migrated this run.
 	 */
-	private function migrateStepSet(array $chain, array $template, string $objectUuid, array $steps): int {
+	private function migrateStepSet(ChainMigrationRun $run, array $steps): int {
 		$unmigrated = array_filter($steps, static fn (array $step): bool => trim((string)($step['migrated_task_uuid'] ?? '')) === '');
 		if ($unmigrated === []) {
 			return 0;
 		}
 
-		$sequence = $this->sequenceFor(
-			chain: $chain,
-			template: $template,
-			objectUuid: $objectUuid,
-			steps: $steps
+		$sequenceRun = new SequenceMigrationRun(
+			sequence: ($this->recoveredSequence(steps: $steps) ?? $this->openSequence(run: $run, steps: $steps)),
+			chainName: (string)$run->chain['name']
 		);
-
-		$count = 0;
 		foreach ($unmigrated as $step) {
-			$this->migrateStep(sequence: $sequence, step: $step, chainName: (string)$chain['name']);
-			$count++;
+			$this->migrateStep(run: $sequenceRun, step: $step);
 		}
 
-		return $count;
+		return count($unmigrated);
 	}//end migrateStepSet()
 
 	/**
-	 * Recover or open the sequence for a step set.
+	 * The sequence an already-migrated sibling step belongs to, or null.
 	 *
-	 * @param array<string, mixed> $chain The legacy chain row.
-	 * @param array<string, mixed> $template The derived template.
-	 * @param string $objectUuid The anchor.
-	 * @param array<int, array<string, mixed>> $steps All the set's step rows; the
-	 *                                               first pending one's ordinal is
-	 *                                               the new sequence's cursor.
+	 * @param array<int, array<string, mixed>> $steps The set's step rows.
 	 *
-	 * @return TaskSequence The sequence the set's tasks belong to.
+	 * @return TaskSequence|null The recovered sequence.
 	 */
-	private function sequenceFor(array $chain, array $template, string $objectUuid, array $steps): TaskSequence {
+	private function recoveredSequence(array $steps): ?TaskSequence {
 		foreach ($steps as $step) {
 			$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
 			if ($taskUuid === '') {
@@ -316,8 +321,22 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 					'[MigrateApprovalChainsToTasks] Reconciliation points at a missing task or sequence: ' . $gone->getMessage()
 				);
 			}
-		}
+		}//end foreach
 
+		return null;
+	}//end recoveredSequence()
+
+	/**
+	 * Open and insert a new sequence for a step set.
+	 *
+	 * @param ChainMigrationRun                $run   The chain and its derived template.
+	 * @param array<int, array<string, mixed>> $steps The set's step rows, all about one object.
+	 *
+	 * @return TaskSequence The inserted sequence.
+	 */
+	private function openSequence(ChainMigrationRun $run, array $steps): TaskSequence {
+		$chain = $run->chain;
+		$template = $run->template;
 		[$status, $outcome] = $this->sequenceOutcome(steps: $steps);
 		$requester = $this->firstRequester(steps: $steps);
 
@@ -326,7 +345,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		$sequence->setTemplateId((string)$template['templateId']);
 		$sequence->setTemplateVersion((int)$template['templateVersion']);
 		$sequence->setTemplateSnapshot($template);
-		$sequence->setAnchorObjectUuid($objectUuid);
+		$sequence->setAnchorObjectUuid((string)$steps[0]['object_uuid']);
 		$schemaId = ($chain['schema_id'] ?? null);
 		if ($schemaId !== null) {
 			$schemaId = (int)$schemaId;
@@ -345,7 +364,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		}
 
 		return $this->sequences->insert($sequence);
-	}//end sequenceFor()
+	}//end openSequence()
 
 	/**
 	 * The (status, outcome) a migrated step set closes with.
@@ -396,53 +415,39 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	/**
 	 * Convert ONE step row into a task, its candidates and its audit.
 	 *
-	 * @param TaskSequence $sequence The owning sequence.
+	 * @param SequenceMigrationRun $run  The owning sequence and the chain's name.
 	 * @param array<string, mixed> $step The legacy step row.
-	 * @param string $chainName The chain's name, for the task title.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-decided-approval-keeps-its-decision-its-actor-and-its-comment
 	 */
-	private function migrateStep(TaskSequence $sequence, array $step, string $chainName): void {
-		$status = (string)$step['status'];
-		$role = trim((string)$step['role']);
-		$candidateGroups = null;
-		if ($role !== '') {
-			$candidateGroups = [$role];
+	private function migrateStep(SequenceMigrationRun $run, array $step): void {
+		$persisted = $this->tasks->insert($this->taskFor(run: $run, step: $step));
+		$this->indexCandidates(task: $persisted);
+		$this->auditMigration(task: $persisted, step: $step);
+
+		if ($persisted->isInTerminalState() === true) {
+			$this->auditDecision(task: $persisted, step: $step);
 		}
 
-		$stateByStatus = [
-			'pending' => Task::STATE_ENABLED,
-			'waiting' => Task::STATE_AVAILABLE,
-			'approved' => 'approved',
-			'rejected' => 'rejected',
-		];
+		$update = $this->db->getQueryBuilder();
+		$update->update('openregister_approval_steps')
+			->set('migrated_task_uuid', $update->createNamedParameter((string)$persisted->getUuid()))
+			->where($update->expr()->eq('id', $update->createNamedParameter((int)$step['id'])));
+		$update->executeStatement();
+	}//end migrateStep()
 
-		$task = $this->builder->fromData(
-			data: [
-				'title' => sprintf('Approve %s (step %d)', $chainName, (int)$step['step_order']),
-				'description' => sprintf(
-					'Approval step %d for %s on object %s, migrated from the retired approval chain engine.',
-					(int)$step['step_order'],
-					$chainName,
-					(string)$step['object_uuid']
-				),
-				'state' => ($stateByStatus[$status] ?? Task::STATE_AVAILABLE),
-				'performerType' => Task::PERFORMER_GROUP,
-				'candidateGroups' => $candidateGroups,
-				'routingStrategy' => 'single-role',
-				'requester' => $sequence->getRequesterId(),
-				'objectUuid' => (string)$step['object_uuid'],
-				'schemaId' => $sequence->getSchemaId(),
-				'templateId' => $sequence->getTemplateId(),
-				'templateVersion' => $sequence->getTemplateVersion(),
-				'sequenceUuid' => $sequence->getUuid(),
-				'sequencePosition' => (int)$step['step_order'],
-				'legacyStepId' => (int)$step['id'],
-			],
-			actor: self::ACTOR
-		);
+	/**
+	 * Build the task one step row becomes, keeping its original provenance.
+	 *
+	 * @param SequenceMigrationRun $run  The owning sequence and the chain's name.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return Task The unsaved task.
+	 */
+	private function taskFor(SequenceMigrationRun $run, array $step): Task {
+		$task = $this->builder->fromData(data: $this->taskData(run: $run, step: $step), actor: self::ACTOR);
 
 		// Provenance the builder does not take from boundary data: the
 		// ORIGINAL creation time, decider and decision time survive.
@@ -453,36 +458,59 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$task->setComment($this->nullableString(value: ($step['comment'] ?? null)));
 		}
 
-		$persisted = $this->tasks->insert($task);
-		$this->indexCandidates(task: $persisted);
+		return $task;
+	}//end taskFor()
 
-		$this->appendAudit(
-			task: $persisted,
-			action: 'create',
-			actor: self::ACTOR,
-			reason: sprintf('Migrated from approval step %d.', (int)$step['id'])
-		);
-
-		if ($persisted->isInTerminalState() === true) {
-			$decisionActor = self::ACTOR;
-			if ((string)($step['decided_by'] ?? '') !== '') {
-				$decisionActor = (string)$step['decided_by'];
-			}
-
-			$this->appendAudit(
-				task: $persisted,
-				action: 'complete',
-				actor: $decisionActor,
-				reason: trim(sprintf('[migrated decision] %s', (string)($step['comment'] ?? '')))
-			);
+	/**
+	 * The boundary data the task builder validates for one step row.
+	 *
+	 * @param SequenceMigrationRun $run  The owning sequence and the chain's name.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return array<string, mixed> The task data.
+	 */
+	private function taskData(SequenceMigrationRun $run, array $step): array {
+		$sequence = $run->sequence;
+		$role = trim((string)$step['role']);
+		$candidateGroups = null;
+		if ($role !== '') {
+			$candidateGroups = [$role];
 		}
 
-		$update = $this->db->getQueryBuilder();
-		$update->update('openregister_approval_steps')
-			->set('migrated_task_uuid', $update->createNamedParameter((string)$persisted->getUuid()))
-			->where($update->expr()->eq('id', $update->createNamedParameter((int)$step['id'])));
-		$update->executeStatement();
-	}//end migrateStep()
+		return [
+			'title' => sprintf('Approve %s (step %d)', $run->chainName, (int)$step['step_order']),
+			'description' => $this->taskDescription(run: $run, step: $step),
+			'state' => (self::STATE_BY_STATUS[(string)$step['status']] ?? Task::STATE_AVAILABLE),
+			'performerType' => Task::PERFORMER_GROUP,
+			'candidateGroups' => $candidateGroups,
+			'routingStrategy' => 'single-role',
+			'requester' => $sequence->getRequesterId(),
+			'objectUuid' => (string)$step['object_uuid'],
+			'schemaId' => $sequence->getSchemaId(),
+			'templateId' => $sequence->getTemplateId(),
+			'templateVersion' => $sequence->getTemplateVersion(),
+			'sequenceUuid' => $sequence->getUuid(),
+			'sequencePosition' => (int)$step['step_order'],
+			'legacyStepId' => (int)$step['id'],
+		];
+	}//end taskData()
+
+	/**
+	 * The description a migrated task carries.
+	 *
+	 * @param SequenceMigrationRun $run  The owning sequence and the chain's name.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return string The description.
+	 */
+	private function taskDescription(SequenceMigrationRun $run, array $step): string {
+		return sprintf(
+			'Approval step %d for %s on object %s, migrated from the retired approval chain engine.',
+			(int)$step['step_order'],
+			$run->chainName,
+			(string)$step['object_uuid']
+		);
+	}//end taskDescription()
 
 	/**
 	 * Verify the migration reconciles, or STOP naming the failure.
@@ -516,58 +544,139 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @throws RuntimeException Naming the chain, the object and the step.
 	 */
 	private function verifyStep(array $step): int {
-		$status = (string)$step['status'];
-		$where = sprintf(
+		$task = $this->migratedTask(step: $step);
+		self::assertSameOrdinal(task: $task, step: $step);
+		self::assertOpenStepIsNotTerminal(task: $task, step: $step);
+
+		if ((string)$step['status'] !== 'pending') {
+			return 0;
+		}
+
+		self::assertPendingStepIsEnabled(task: $task, step: $step);
+
+		return 1;
+	}//end verifyStep()
+
+	/**
+	 * The step's place, as every reconciliation failure names it.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return string The chain, object and step.
+	 */
+	private static function stepLabel(array $step): string {
+		return sprintf(
 			'chain %d, object %s, step %d',
 			(int)$step['chain_id'],
 			(string)$step['object_uuid'],
 			(int)$step['id']
 		);
+	}//end stepLabel()
 
+	/**
+	 * The task the step was migrated onto, or STOP when none is recorded or it is gone.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return Task The migrated task.
+	 *
+	 * @throws RuntimeException Naming the chain, the object and the step.
+	 */
+	private function migratedTask(array $step): Task {
+		$taskUuid = self::migratedTaskUuid(step: $step);
+
+		try {
+			return $this->tasks->findByUuid(uuid: $taskUuid);
+		} catch (Throwable $gone) {
+			throw new RuntimeException(
+				'Approval migration failed: migrated task ' . $taskUuid . ' for ' . self::stepLabel(step: $step)
+				. ' does not exist. The migration did NOT succeed.'
+			);
+		}
+	}//end migratedTask()
+
+	/**
+	 * The uuid of the task a step was migrated into.
+	 *
+	 * @param array $step The approval_steps row.
+	 *
+	 * @return string The recorded task uuid.
+	 *
+	 * @throws RuntimeException When the step records no migrated task.
+	 */
+	private static function migratedTaskUuid(array $step): string {
 		$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
 		if ($taskUuid === '') {
 			throw new RuntimeException(
-				'Approval migration failed: no migrated task recorded for ' . $where . '. The migration did NOT succeed.'
+				'Approval migration failed: no migrated task recorded for ' . self::stepLabel(step: $step) . '. The migration did NOT succeed.'
 			);
 		}
 
-		try {
-			$task = $this->tasks->findByUuid(uuid: $taskUuid);
-		} catch (Throwable $gone) {
-			throw new RuntimeException(
-				'Approval migration failed: migrated task ' . $taskUuid . ' for ' . $where . ' does not exist. The migration did NOT succeed.'
-			);
+		return $taskUuid;
+	}//end migratedTaskUuid()
+
+	/**
+	 * STOP when the task does not sit at its step's ordinal.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the task, both ordinals and the step.
+	 */
+	private static function assertSameOrdinal(Task $task, array $step): void {
+		if ((int)$task->getSequencePosition() === (int)$step['step_order']) {
+			return;
 		}
 
-		if ((int)$task->getSequencePosition() !== (int)$step['step_order']) {
-			throw new RuntimeException(sprintf(
-				'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
-				$taskUuid,
-				(int)$task->getSequencePosition(),
-				(int)$step['step_order'],
-				$where
-			));
-		}
+		throw new RuntimeException(sprintf(
+			'Approval migration failed: task %s sits at ordinal %d while its step holds %d (%s). The migration did NOT succeed.',
+			trim((string)($step['migrated_task_uuid'] ?? '')),
+			(int)$task->getSequencePosition(),
+			(int)$step['step_order'],
+			self::stepLabel(step: $step)
+		));
+	}//end assertSameOrdinal()
 
+	/**
+	 * STOP when a pending or waiting step maps to a terminal task.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the step and the task.
+	 */
+	private static function assertOpenStepIsNotTerminal(Task $task, array $step): void {
+		$status = (string)$step['status'];
 		$openStep = ($status === 'pending' || $status === 'waiting');
 		if ($openStep === true && $task->isInTerminalState() === true) {
 			throw new RuntimeException(
-				'Approval migration failed: non-terminal ' . $where . ' maps to terminal task ' . $taskUuid . '. The migration did NOT succeed.'
+				'Approval migration failed: non-terminal ' . self::stepLabel(step: $step) . ' maps to terminal task '
+				. trim((string)($step['migrated_task_uuid'] ?? '')) . '. The migration did NOT succeed.'
 			);
 		}
+	}//end assertOpenStepIsNotTerminal()
 
-		if ($status !== 'pending') {
-			return 0;
-		}
-
+	/**
+	 * STOP when a pending step's task is not the enabled one.
+	 *
+	 * @param Task                 $task The migrated task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException Naming the step.
+	 */
+	private static function assertPendingStepIsEnabled(Task $task, array $step): void {
 		if ((string)$task->getState() !== Task::STATE_ENABLED) {
 			throw new RuntimeException(
-				'Approval migration failed: pending ' . $where . ' maps to a task that is not enabled. The migration did NOT succeed.'
+				'Approval migration failed: pending ' . self::stepLabel(step: $step) . ' maps to a task that is not enabled. The migration did NOT succeed.'
 			);
 		}
-
-		return 1;
-	}//end verifyStep()
+	}//end assertPendingStepIsEnabled()
 
 	/**
 	 * No (anchor, template) may hold two running sequences.
@@ -655,6 +764,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			$schemaPart = (string)$schemaId;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaPart . ':' . (string)$chain['name']);
 
 		return [
@@ -697,39 +807,62 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	}//end indexCandidates()
 
 	/**
-	 * Append one audit entry on a migrated task.
+	 * Append the audit entry recording that a step was migrated onto a task.
 	 *
-	 * The entry records the task's state after migration, and the moment
-	 * that action originally happened: the task's creation time for
-	 * `create`, its decision time (the migrated `completedAt`) for
-	 * `complete`.
-	 *
-	 * @param Task $task The task audited, as persisted.
-	 * @param string $action The audited action: `create` or `complete`.
-	 * @param string $actor The acting identity — the ORIGINAL decider for a
-	 *                      migrated decision, kept even when no such user
-	 *                      exists any more.
-	 * @param string $reason The reason or migrated comment.
+	 * @param Task                 $task The persisted task.
+	 * @param array<string, mixed> $step The legacy step row.
 	 *
 	 * @return void
 	 */
-	private function appendAudit(Task $task, string $action, string $actor, string $reason): void {
-		$created = $task->getCreated();
-		if ($action === 'complete') {
-			$created = $task->getCompletedAt();
+	private function auditMigration(Task $task, array $step): void {
+		$entry = $this->auditEntry(task: $task, action: 'create');
+		$entry->setActor(self::ACTOR);
+		$entry->setReason(sprintf('Migrated from approval step %d.', (int)$step['id']));
+		$entry->setCreated($task->getCreated());
+		$this->audits->insert($entry);
+	}//end auditMigration()
+
+	/**
+	 * Append the audit entry carrying a decided step's original decision.
+	 *
+	 * The decider is the actor when one was recorded, the migration otherwise.
+	 *
+	 * @param Task                 $task The persisted, terminal task.
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return void
+	 */
+	private function auditDecision(Task $task, array $step): void {
+		$actor = self::ACTOR;
+		if ((string)($step['decided_by'] ?? '') !== '') {
+			$actor = (string)$step['decided_by'];
 		}
 
+		$entry = $this->auditEntry(task: $task, action: 'complete');
+		$entry->setActor($actor);
+		$entry->setReason(trim(sprintf('[migrated decision] %s', (string)($step['comment'] ?? ''))));
+		$entry->setCreated($task->getCompletedAt());
+		$this->audits->insert($entry);
+	}//end auditDecision()
+
+	/**
+	 * An authorised group-performer audit entry for a task, before actor, reason and time.
+	 *
+	 * @param Task   $task   The persisted task.
+	 * @param string $action The audited action.
+	 *
+	 * @return TaskAudit The entry.
+	 */
+	private function auditEntry(Task $task, string $action): TaskAudit {
 		$entry = new TaskAudit();
 		$entry->setTaskId((int)$task->getId());
 		$entry->setAction($action);
 		$entry->setStateAfter((string)$task->getState());
-		$entry->setActor($actor);
 		$entry->setPerformerType(Task::PERFORMER_GROUP);
-		$entry->setReason($reason);
 		$entry->setAuthorized(true);
-		$entry->setCreated($created);
-		$this->audits->insert($entry);
-	}//end appendAudit()
+
+		return $entry;
+	}//end auditEntry()
 
 	/**
 	 * The lowest ordinal among a set of step rows, or null.

@@ -49,34 +49,33 @@ class FormUploadClaims {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The clock.
+	 * @param ITimeFactory       $time   The clock.
+	 * @param ISimpleFolder|null $folder The store folder; null when the store holds nothing yet.
 	 */
 	public function __construct(
 		private readonly ITimeFactory $time,
+		private readonly ?ISimpleFolder $folder = null,
 	) {
-
 	}//end __construct()
 
 	/**
 	 * Write the record of a claimed token.
 	 *
-	 * @param ISimpleFolder        $folder  The store folder.
-	 * @param string               $token   The token.
-	 * @param array<string, mixed> $meta    The token's record (formId, property).
-	 * @param string               $draftId The draft that claimed it.
+	 * @param string          $token The token.
+	 * @param FormUploadClaim $claim The form, property and draft that claimed it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function record(ISimpleFolder $folder, string $token, array $meta, string $draftId): void {
-		$folder->newFile(
+	public function record(string $token, FormUploadClaim $claim): void {
+		$this->folder?->newFile(
 			$token . self::SUFFIX,
 			(string)json_encode(
 				[
-					'formId' => $meta['formId'] ?? '',
-					'property' => $meta['property'] ?? '',
-					'draftId' => $draftId,
+					'formId' => $claim->formId,
+					'property' => $claim->property,
+					'draftId' => $claim->draftId,
 					'expiresAt' => $this->time->getTime() + FormUploadStore::TTL,
 				]
 			)
@@ -86,39 +85,22 @@ class FormUploadClaims {
 	/**
 	 * Whether a token was already claimed by this draft for this property of this form, and the record is still live.
 	 *
-	 * @param ISimpleFolder|null $folder The store folder; null when it does not exist yet.
-	 * @param string             $token  The token.
-	 * @param FormUploadClaim    $claim  The form, property and draft; a claim of no draft claims nothing.
+	 * @param string          $token The token.
+	 * @param FormUploadClaim $claim The form, property and draft; a claim of no draft claims nothing.
 	 *
 	 * @return bool True when the draft already holds the file this token named.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function isClaimedBy(?ISimpleFolder $folder, string $token, FormUploadClaim $claim): bool {
-		if ($claim->draftId === null || $folder === null) {
+	public function isClaimedBy(string $token, FormUploadClaim $claim): bool {
+		if ($claim->draftId === null || $this->folder === null) {
 			return false;
 		}
 
-		return $this->recordMatches(folder: $folder, token: $token, claim: $claim);
+		$record = $this->recordOf(folder: $this->folder, token: $token);
+
+		return $record !== null && $this->matches(record: $record, claim: $claim);
 	}//end isClaimedBy()
-
-	/**
-	 * Whether a token's claim record exists and names exactly the expected form, property and draft.
-	 *
-	 * @param ISimpleFolder   $folder The store folder.
-	 * @param string          $token  The token.
-	 * @param FormUploadClaim $claim  The form, property and draft the record must name.
-	 *
-	 * @return bool True when the record matches and is still live.
-	 */
-	private function recordMatches(ISimpleFolder $folder, string $token, FormUploadClaim $claim): bool {
-		$record = $this->recordOf(folder: $folder, token: $token);
-		if ($record === null) {
-			return false;
-		}
-
-		return $this->matches(record: $record, claim: $claim);
-	}//end recordMatches()
 
 	/**
 	 * The claim record of a token, or null when the token is malformed, unclaimed or the record unreadable.

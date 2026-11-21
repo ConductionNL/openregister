@@ -22,6 +22,7 @@ use OCP\ITempManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
 
 /**
  * Test class for SipPackageBuilder.
@@ -62,7 +63,7 @@ class SipPackageBuilderTest extends TestCase {
 	 */
 	public function testBuildEmptyObjectsThrows(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->builder->build('transfer-1', []);
+		$this->builder->package(new TransferPackageRequest('transfer-1', []));
 	}
 
 	/**
@@ -88,7 +89,7 @@ class SipPackageBuilderTest extends TestCase {
 			],
 		];
 
-		$result = $this->builder->build('transfer-1', $objectsWithFiles);
+		$result = $this->builder->package(new TransferPackageRequest('transfer-1', $objectsWithFiles));
 
 		$this->assertCount(1, $result);
 		$this->assertFileExists($result[0]);
@@ -120,7 +121,7 @@ class SipPackageBuilderTest extends TestCase {
 			],
 		];
 
-		$result = $this->builder->build('transfer-1', $objectsWithFiles);
+		$result = $this->builder->package(new TransferPackageRequest('transfer-1', $objectsWithFiles));
 
 		$zip = new \ZipArchive();
 		$zip->open($result[0]);
@@ -167,7 +168,7 @@ class SipPackageBuilderTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/no retention period/');
 
-		$this->builder->build('transfer-x', [['object' => $object, 'files' => []]], 0, 'zip');
+		$this->builder->package(new TransferPackageRequest('transfer-x', [['object' => $object, 'files' => []]], 0, 'zip'));
 	}
 
 	/**
@@ -206,7 +207,7 @@ class SipPackageBuilderTest extends TestCase {
 			],
 		];
 
-		$result = $this->builder->build('transfer-bag', $objectsWithFiles, 0, 'bagit');
+		$result = $this->builder->package(new TransferPackageRequest('transfer-bag', $objectsWithFiles, 0, 'bagit'));
 
 		$zip = new \ZipArchive();
 		$zip->open($result[0]);
@@ -313,7 +314,7 @@ class SipPackageBuilderTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 		try {
-			$builder->build('transfer-bag', $objectsWithFiles, 0, 'bagit');
+			$builder->package(new TransferPackageRequest('transfer-bag', $objectsWithFiles, 0, 'bagit'));
 		} finally {
 			rmdir($dirPath);
 			unlink($vanishing);
@@ -333,7 +334,7 @@ class SipPackageBuilderTest extends TestCase {
 		$object->method('jsonSerialize')->willReturn(['uuid' => 'obj-uuid-1']);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->builder->build('transfer-1', [['object' => $object, 'files' => []]], 0, 'tar');
+		$this->builder->package(new TransferPackageRequest('transfer-1', [['object' => $object, 'files' => []]], 0, 'tar'));
 	}
 
 	/**
@@ -373,7 +374,7 @@ class SipPackageBuilderTest extends TestCase {
 		}
 
 		// Set max size to 1.5 GB to force splitting.
-		$result = $this->builder->build('transfer-1', $objects, 1610612736);
+		$result = $this->builder->package(new TransferPackageRequest('transfer-1', $objects, 1610612736));
 
 		$this->assertGreaterThanOrEqual(2, count($result));
 

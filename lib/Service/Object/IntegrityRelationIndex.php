@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\ICacheFactory;
 
@@ -33,18 +34,32 @@ use OCP\ICacheFactory;
  */
 final class IntegrityRelationIndex {
 	/**
+	 * Schema data mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register data mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaMapperInterface   $schemaMapper   Schema data mapper.
-	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param ICacheFactory           $cacheFactory   Distributed cache for the relation index.
+	 * @param SchemaCatalogInterface $catalog      The register and schema stores.
+	 * @param ICacheFactory          $cacheFactory Distributed cache for the relation index.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly ICacheFactory $cacheFactory,
 	) {
+		$this->schemaMapper   = $catalog->schemas();
+		$this->registerMapper = $catalog->registers();
 	}//end __construct()
 }//end class

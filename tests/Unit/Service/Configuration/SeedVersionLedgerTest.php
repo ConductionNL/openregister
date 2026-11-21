@@ -67,7 +67,7 @@ class SeedVersionLedgerTest extends TestCase {
 		$ledger = $this->ledger($store, $writes);
 
 		for ($i = 0; $i < 100; $i++) {
-			$ledger->record(appId: 'dossiq', seed: '1/2/seed-' . $i, version: '1.4.8');
+			$ledger->recordVersions(appId: 'dossiq', versions: ['1/2/seed-' . $i => '1.4.8']);
 		}
 
 		$this->assertSame(0, $writes, 'nothing is written per seed');
@@ -91,13 +91,13 @@ class SeedVersionLedgerTest extends TestCase {
 		$writes = 0;
 		$ledger = $this->ledger($store, $writes);
 
-		$ledger->record(appId: 'dossiq', seed: '1/2/a', version: '1.0.0');
+		$ledger->recordVersions(appId: 'dossiq', versions: ['1/2/a' => '1.0.0']);
 		$ledger->flush();
 		$this->assertSame(0, $writes);
 
-		$ledger->record(appId: 'dossiq', seed: '1/2/a', version: '1.1.0');
-		$ledger->record(appId: 'pipelinq', seed: '1/2/b', version: '2.0.0');
-		$ledger->record(appId: str_repeat('x', 60), seed: '1/2/c', version: '3.0.0');
+		$ledger->recordVersions(appId: 'dossiq', versions: ['1/2/a' => '1.1.0']);
+		$ledger->recordVersions(appId: 'pipelinq', versions: ['1/2/b' => '2.0.0']);
+		$ledger->recordVersions(appId: str_repeat('x', 60), versions: ['1/2/c' => '3.0.0']);
 		$ledger->flush();
 
 		$this->assertSame(3, $writes);

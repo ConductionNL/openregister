@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -71,22 +70,34 @@ class ConfigurationCheckJob extends TimedJob {
 	private readonly NotificationServiceInterface $notificationService;
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory                $time      Time factory for job scheduling
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
 	 * @param ConfigurationCheckServices $services  Configuration mapper, configuration service and notification service
-	 * @param IAppConfig                  $appConfig App configuration
-	 * @param LoggerInterface             $logger    Logger
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
+		ConfiguredJobRuntime $runtime,
 		ConfigurationCheckServices $services,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
 		$this->configurationMapper = $services->configurationMapper;
 		$this->configurationService = $services->configurationService;
 		$this->notificationService = $services->notificationService;

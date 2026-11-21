@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
 use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
 use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
@@ -178,7 +179,7 @@ final class BulkJobServiceTest extends TestCase {
 		$this->jobMapper->expects($this->never())->method('createFromArray');
 
 		try {
-			$this->service(1000)->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['x']], 1, 2), 'coordinator', null);
+			$this->service(1000)->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['x']], 1, 2), 'coordinator', null));
 			$this->fail('The ceiling should have refused this selection.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('ceiling', $exception->getReason());
@@ -202,7 +203,7 @@ final class BulkJobServiceTest extends TestCase {
 			}
 		);
 
-		$job = $this->service(1000)->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['x']], 1, 2), 'coordinator', null);
+		$job = $this->service(1000)->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['x']], 1, 2), 'coordinator', null));
 
 		$this->assertSame(1000, $job->getTotal());
 		$this->assertSame(BulkJob::STATE_PREVIEWED, $job->getState());
@@ -244,7 +245,7 @@ final class BulkJobServiceTest extends TestCase {
 		);
 		$this->executor->expects($this->once())->method('refreshCounts');
 
-		$job = $this->service(1000)->create(new BulkJobActionCall('openregister:assign', ['assignee' => 'bob']), new BulkJobSelection(['ids' => ['o1', 'o2']], 1, 2), 'coordinator', 'why');
+		$job = $this->service(1000)->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', ['assignee' => 'bob']), new BulkJobSelection(['ids' => ['o1', 'o2']], 1, 2), 'coordinator', 'why'));
 
 		$this->assertSame([['ids' => ['o1', 'o2']]], $resolved);
 		$this->assertSame(
@@ -294,7 +295,7 @@ final class BulkJobServiceTest extends TestCase {
 		);
 
 		$before = new \DateTime();
-		$this->service(1000)->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['o1']], 1, 2), 'coordinator', null);
+		$this->service(1000)->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['o1']], 1, 2), 'coordinator', null));
 
 		$this->assertSame(3600, $row['reversalWindow']);
 		$this->assertInstanceOf(\DateTime::class, $row['reversibleUntil']);
@@ -309,7 +310,7 @@ final class BulkJobServiceTest extends TestCase {
 		$this->jobMapper->expects($this->never())->method('createFromArray');
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->service(1000)->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['o1']], null, 2), 'coordinator', null);
+		$this->service(1000)->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['o1']], null, 2), 'coordinator', null));
 	}
 
 	public function testACommitWithoutAReasonIsRefusedAndNothingIsQueued(): void {
@@ -432,7 +433,7 @@ final class BulkJobServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('either an ids array or a query object');
 
-		$this->service()->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection([], 1, 2), 'coordinator', null);
+		$this->service()->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection([], 1, 2), 'coordinator', null));
 	}
 
 	public function testAJobWithoutARegisterAndSchemaIsRefusedRatherThanEmpty(): void {
@@ -443,7 +444,7 @@ final class BulkJobServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('needs both a register and a schema');
 
-		$this->service()->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['a']], null, null), 'coordinator', null);
+		$this->service()->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['a']], null, null), 'coordinator', null));
 	}
 
 	public function testASelectionThatIsBothIsRefused(): void {
@@ -452,6 +453,6 @@ final class BulkJobServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('never both');
 
-		$this->service()->create(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['a'], 'query' => []], 1, 2), 'coordinator', null);
+		$this->service()->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:assign', []), new BulkJobSelection(['ids' => ['a'], 'query' => []], 1, 2), 'coordinator', null));
 	}
 }

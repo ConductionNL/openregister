@@ -19,7 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionShape;
+use OCA\OpenRegister\Service\ObjectAction\SchemaRules;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -80,6 +82,6 @@ class ObjectActionShapeRefusalCasesTest extends TestCase {
 	 */
 	#[DataProvider('cases')]
 	public function testEachDefinitionDrawsExactlyItsRefusals(array $definition, array $lifecycle, array $expected): void {
-		$this->assertSame($expected, ObjectActionShape::refusals(key: 'act', definition: $definition, lifecycle: $lifecycle, authorization: null));
+		$this->assertSame($expected, ObjectActionShape::refusals(action: new ObjectActionEntry(key: 'act', definition: $definition), rules: new SchemaRules(lifecycle: $lifecycle, authorization: null)));
 	}//end testEachDefinitionDrawsExactlyItsRefusals()
 }//end class

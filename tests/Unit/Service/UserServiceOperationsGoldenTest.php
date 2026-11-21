@@ -24,7 +24,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
+use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
@@ -43,6 +46,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 
 /**
  * Pins what the public operations return and refuse before their bodies move
@@ -78,7 +86,8 @@ class UserServiceOperationsGoldenTest extends TestCase {
 			$this->audit,
 			$this->random,
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			$this->createMock(IFactory::class),
+			$this->createMock(AuditEntryWriterInterface::class)
 		);
 	}
 
@@ -93,7 +102,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$this->config->expects($this->never())->method('setUserValue');
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->createApiToken($this->user(), 'CI', '5x');
+		$this->service->issueApiToken($this->user(), new ApiTokenRequest('CI', '5x'));
 	}
 
 	public function testAnEmptyExpiryMintsANonExpiringTokenAndStoresOnlyItsHash(): void {
@@ -104,7 +113,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 				$stored = json_decode($value, true);
 			});
 
-		$result = $this->service->createApiToken($this->user(), 'CI', '');
+		$result = $this->service->issueApiToken($this->user(), new ApiTokenRequest('CI', ''));
 
 		$this->assertSame(str_repeat('k', 16), $result['id']);
 		$this->assertSame('CI', $result['name']);
@@ -120,7 +129,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 
 	public function testAValidExpiryIsInTheFuture(): void {
 		$this->config->method('getUserValue')->willReturn('');
-		$result = $this->service->createApiToken($this->user(), 'CI', '2h');
+		$result = $this->service->issueApiToken($this->user(), new ApiTokenRequest('CI', '2h'));
 		$this->assertGreaterThan(time(), strtotime($result['expires']));
 	}
 
@@ -128,11 +137,11 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setAction('update');
 		$entry->setObjectUuid('o-1');
-		$this->audit->expects($this->once())->method('findByActor')
-			->with('jan', 5, 10, 'update', '2026-01-01', '2026-02-01')
+		$this->audit->expects($this->once())->method('findActorTrail')
+			->with(new ActorTrailQuery('jan', 5, 10, new ActionWindow('update', '2026-01-01', '2026-02-01')))
 			->willReturn(['results' => [$entry], 'total' => 7]);
 
-		$result = $this->service->getUserActivity($this->user(), 5, 10, 'update', '2026-01-01', '2026-02-01');
+		$result = $this->service->activity($this->user(), new ActivityQuery(5, 10, 'update', new ActivityPeriod('2026-01-01', '2026-02-01')));
 
 		$this->assertSame(7, $result['total']);
 		$this->assertSame('update', $result['results'][0]['type']);
@@ -141,11 +150,11 @@ class UserServiceOperationsGoldenTest extends TestCase {
 	}
 
 	public function testActivityDefaultsToTheFirstPageWithoutFilters(): void {
-		$this->audit->expects($this->once())->method('findByActor')
-			->with('jan', 25, 0, null, null, null)
+		$this->audit->expects($this->once())->method('findActorTrail')
+			->with(new ActorTrailQuery('jan', 25, 0, new ActionWindow(null, null, null)))
 			->willReturn(['results' => [], 'total' => 0]);
 
-		$this->assertSame(['results' => [], 'total' => 0], $this->service->getUserActivity($this->user()));
+		$this->assertSame(['results' => [], 'total' => 0], $this->service->activity($this->user(), new ActivityQuery()));
 	}
 
 	public function testAnAllowedAvatarIsStoredAndARefusedOneIsNot(): void {
@@ -157,11 +166,11 @@ class UserServiceOperationsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['success' => true, 'avatarUrl' => '/avatar/jan/128'],
-			$this->service->uploadAvatar($user, 'bytes', 'image/png', 5242880)
+			$this->service->setAvatar($user, new AvatarUpload('bytes', 'image/png', 5242880))
 		);
 
 		try {
-			$this->service->uploadAvatar($user, 'bytes', 'image/png', 5242881);
+			$this->service->setAvatar($user, new AvatarUpload('bytes', 'image/png', 5242881));
 			$this->fail('An avatar over the limit must be refused.');
 		} catch (RuntimeException $exception) {
 			$this->assertSame(400, $exception->getCode());
@@ -177,7 +186,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$user->expects($this->once())->method('setPassword')->with('new')->willReturn(true);
 
 		try {
-			$this->service->changePassword($user, 'wrong', 'new');
+			$this->service->applyPasswordChange($user, new PasswordChange('wrong', 'new'));
 			$this->fail('A wrong current password must be refused.');
 		} catch (RuntimeException $exception) {
 			$this->assertSame(403, $exception->getCode());
@@ -185,7 +194,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['success' => true, 'message' => 'Password updated successfully'],
-			$this->service->changePassword($user, 'right', 'new')
+			$this->service->applyPasswordChange($user, new PasswordChange('right', 'new'))
 		);
 	}
 }

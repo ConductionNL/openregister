@@ -4,12 +4,12 @@
 
 ## 1. Reader
 
-- [ ] 1.1 `lib/Service/Gdpr/ProcessingAnnotationReader.php` from `ProcessingLogService::readAnnotation()` (D-3); `ProcessingLogService` uses it, its tests unchanged.
+- [x] 1.1 `lib/Service/Gdpr/ProcessingAnnotationReader.php` from `ProcessingLogService::readAnnotation()` (D-3); `ProcessingLogService` uses it, its tests unchanged.
 
 ## 2. Discovery
 
-- [ ] 2.1 `DataSubjectRequestService::matchDeclaredFields()` and the merge in `discover()` (D-1, D-2): exact match, type filter, list fields, `_rbac` and `_multitenancy` on. Verify: `tests/Unit/Service/Gdpr/DataSubjectRequestServiceTest.php` for a declared-field-only hit, a hit from both sources, the type filter, no `ilike` on ids, and a tenant-scoped refusal.
-- [ ] 2.2 `erase()` and the erasure preview over the merged set (D-4), legal hold honoured. Verify: same test file.
+- [x] 2.1 `DataSubjectRequestService::matchDeclaredFields()` and the merge in `discover()` (D-1, D-2): exact match, type filter, list fields, `_rbac` and `_multitenancy` on. Verify: `tests/Unit/Service/Gdpr/DataSubjectRequestServiceTest.php` for a declared-field-only hit, a hit from both sources, the type filter, no `ilike` on ids, and a tenant-scoped refusal.
+- [x] 2.2 `erase()` and the erasure preview over the merged set (D-4), legal hold honoured. Verify: same test file.
 - [ ] 2.3 Newman: an access export for a subject found only through `subjectIdFields`.
 
 ## 3. Close

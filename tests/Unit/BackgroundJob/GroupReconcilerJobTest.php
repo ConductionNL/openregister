@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\GroupReconcilerJob;
 use OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -35,9 +36,8 @@ class GroupReconcilerJobTest extends TestCase {
 
 	public function testIntervalIsHourly(): void {
 		$job = new GroupReconcilerJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(GroupReconcilerInterface::class),
-			$this->createMock(LoggerInterface::class)
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->createMock(LoggerInterface::class)),
+			$this->createMock(GroupReconcilerInterface::class)
 		);
 
 		$this->assertSame(3600, $job->getInterval());
@@ -49,7 +49,7 @@ class GroupReconcilerJobTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('error');
 
-		$job = new GroupReconcilerJob($this->createMock(ITimeFactory::class), $reconciler, $logger);
+		$job = new GroupReconcilerJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $reconciler);
 		(new ReflectionMethod(GroupReconcilerJob::class, 'run'))->invoke($job, null);
 	}
 
@@ -62,7 +62,7 @@ class GroupReconcilerJobTest extends TestCase {
 			$this->callback(fn (array $context): bool => isset($context['file'], $context['line']) === true)
 		);
 
-		$job = new GroupReconcilerJob($this->createMock(ITimeFactory::class), $reconciler, $logger);
+		$job = new GroupReconcilerJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $reconciler);
 		(new ReflectionMethod(GroupReconcilerJob::class, 'run'))->invoke($job, null);
 	}
 }

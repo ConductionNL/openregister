@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\ReadableObject;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -99,8 +100,7 @@ final class HistoryEntryRedactorMutationTest extends TestCase {
 	private function changed(array $changed, array $configuration=[]): array {
 		$entries = (new HistoryEntryRedactor($this->properties))->redact(
 			[$this->row($changed)],
-			$this->schema($configuration),
-			$this->object()
+			new ReadableObject($this->object(), $this->schema($configuration))
 		);
 
 		return $entries[0]['changed'];
@@ -174,8 +174,7 @@ final class HistoryEntryRedactorMutationTest extends TestCase {
 
 		$entries = (new HistoryEntryRedactor($this->properties))->redact(
 			[$this->row(['@self' => ['old' => ['relations' => ['geheim' => 'a', 'naam' => 'b']]]])],
-			$schema,
-			$this->object()
+			new ReadableObject($this->object(), $schema)
 		);
 
 		$this->assertSame(['naam' => 'b'], $entries[0]['changed']['@self']['old']['relations']);
@@ -184,8 +183,7 @@ final class HistoryEntryRedactorMutationTest extends TestCase {
 	public function testEveryRowComesBack(): void {
 		$entries = (new HistoryEntryRedactor($this->properties))->redact(
 			[$this->row(['naam' => ['old' => 'a', 'new' => 'b']]), $this->row(['naam' => ['old' => 'b', 'new' => 'c']])],
-			$this->schema(),
-			$this->object()
+			new ReadableObject($this->object(), $this->schema())
 		);
 
 		$this->assertSame(

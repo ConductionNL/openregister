@@ -27,7 +27,9 @@ use OCA\OpenRegister\Controller\VocabularyController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
+use OCA\OpenRegister\Service\Vocabulary\DeclarationLookup;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -131,8 +133,8 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 
 		$this->params = ['scheme' => ' urn:s ', 'context' => ' a '];
 		$declaration = new CodedPropertyDeclaration(scheme: 'urn:s');
-		$this->resolver->expects($this->once())->method('resolveDeclaration')->with('', '', 'urn:s')->willReturn($declaration);
-		$this->options->expects($this->once())->method('options')->with($declaration, 'nl', 'a')->willReturn([['v' => 1]]);
+		$this->resolver->expects($this->once())->method('resolveDeclaration')->with(new DeclarationLookup('', '', 'urn:s'))->willReturn($declaration);
+		$this->options->expects($this->once())->method('options')->with($declaration, new CodedOptionScope(language: 'nl', context: 'a'))->willReturn([['v' => 1]]);
 
 		$this->assertSame(
 			['property' => 'scheme', 'scheme' => 'urn:s', 'language' => 'nl', 'context' => 'a', 'results' => [['v' => 1]], 'total' => 1],
@@ -144,7 +146,7 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 		$this->params = ['schema' => 's', 'property' => 'p', 'tree' => 'yes', 'context' => 'c'];
 		$declaration = new CodedPropertyDeclaration(scheme: 'urn:s');
 		$this->resolver->method('resolveDeclaration')->willReturnOnConsecutiveCalls(null, $declaration);
-		$this->options->method('tree')->with($declaration, 'nl')->willReturn([['t']]);
+		$this->options->method('tree')->with($declaration, new CodedOptionScope(language: 'nl'))->willReturn([['t']]);
 		$this->options->expects($this->never())->method('options');
 
 		$missing = $this->controller->propertyOptions();

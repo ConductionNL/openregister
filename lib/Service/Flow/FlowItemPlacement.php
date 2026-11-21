@@ -22,19 +22,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use Symfony\Component\Workflow\Workflow;
 
 /**
  * Holds the per-place item buffers and moves items as transitions fire.
  *
- * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+ * @spec openspec/specs/flow-per-item-routing/spec.md
  */
 class FlowItemPlacement {
 	/**
@@ -50,7 +49,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, mixed> The gathered input items.
 	 *
-	 * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+	 * @spec openspec/specs/flow-logic/spec.md
 	 */
 	public function itemsForTransition(object $transition, array $placeItems): array {
 		$items = [];
@@ -77,28 +76,11 @@ class FlowItemPlacement {
 	 * suspended, and either way the stored items land on the place that holds
 	 * the token.
 	 *
-	 * @param Workflow $workflow The workflow.
-	 * @param object $subject The subject holding the marking.
-	 * @param array $items The seed items.
-	 * @param array<string, array>|null $stored The per-place items persisted by the last commit, or null when none.
-	 *
-	 * @return array<string, array> Items keyed by place.
-	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function seedPlaceItems(Workflow $workflow, object $subject, array $items, ?array $stored = null): array {
-		return $this->seed(seed: new ItemSeed(workflow: $workflow, subject: $subject, items: $items, stored: $stored));
-	}//end seedPlaceItems()
-
-	/**
-	 * Seed the per-place item buffers; see {@see self::seedPlaceItems()}.
-	 *
 	 * @param ItemSeed $seed The workflow, subject, seed items and stored per-place items.
 	 *
 	 * @return array<string, array> Items keyed by place.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function seed(ItemSeed $seed): array {
@@ -148,30 +130,13 @@ class FlowItemPlacement {
 	 * several steps converging on one node without a join (an OR-merge) each
 	 * deliver their items instead of the last one overwriting the rest.
 	 *
-	 * @param object $transition The fired transition.
-	 * @param array<string, array> $placeItems The current per-place buffers.
-	 * @param array $items What the step produced.
-	 * @param array<string> $taken The output places the exit claimed.
-	 *
-	 * @return array<string, array> The updated buffers.
-	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
-	 */
-	public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array {
-		return $this->advance(firing: new ItemFiring(transition: $transition, items: $items, taken: $taken), placeItems: $placeItems);
-	}//end advanceItems()
-
-	/**
-	 * Move a fired transition's items; see {@see self::advanceItems()}.
-	 *
 	 * @param ItemFiring           $firing     The transition, the items it produced and the exits it took.
 	 * @param array<string, array> $placeItems The current per-place buffers.
 	 *
 	 * @return array<string, array> The updated buffers.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
-	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	public function advance(ItemFiring $firing, array $placeItems): array {
 		// A FIRING THAT PRODUCED NOTHING PLACES NOTHING AND DESTROYS NOTHING.
@@ -222,7 +187,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<string, array> The buffers with the outputs written.
 	 *
-	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function land(ItemFiring $firing, array $placeItems): array {
 		foreach ($firing->transition->getTos() as $to) {
@@ -262,7 +227,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, array> The items for that output, tag removed.
 	 *
-	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/specs/flow-per-item-routing/spec.md
 	 */
 	public function itemsForOutput(array $items, string $output): array {
 		// A routing step tags an item with the NODE it is routing to, and a
@@ -272,11 +237,7 @@ class FlowItemPlacement {
 		// on each. Comparing the raw place name there would match nothing and
 		// silently drop every routed item into an empty branch, which is the
 		// failure mode this engine exists to refuse rather than produce.
-		$target = $output;
-		$split = strpos($output, '#');
-		if ($split !== false) {
-			$target = substr($output, 0, $split);
-		}
+		$target = self::nodeOfPlace(place: $output);
 
 		$out = [];
 		foreach ($items as $item) {
@@ -294,6 +255,22 @@ class FlowItemPlacement {
 	}//end itemsForOutput()
 
 	/**
+	 * The node a place belongs to: the place itself, or the part before `#` for a join's edge place.
+	 *
+	 * @param string $place The place name.
+	 *
+	 * @return string The node.
+	 */
+	private static function nodeOfPlace(string $place): string {
+		$split = strpos($place, '#');
+		if ($split !== false) {
+			return substr($place, 0, $split);
+		}
+
+		return $place;
+	}//end nodeOfPlace()
+
+	/**
 	 * The pinned output for a step, or null when it is not pinned.
 	 *
 	 * Pins are a map of step name to an item list. A run carries them in its
@@ -307,7 +284,7 @@ class FlowItemPlacement {
 	 *
 	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
 	 *
-	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+	 * @spec openspec/specs/flow-pins/spec.md
 	 */
 	public function pinnedItems(FlowWalkPass|FlowStreamPass $pass, string $transitionName): ?array {
 		$pins = (array)($pass->context['pins'] ?? ($pass->flow['pins'] ?? []));

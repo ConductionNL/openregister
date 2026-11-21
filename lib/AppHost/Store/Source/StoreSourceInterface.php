@@ -38,7 +38,7 @@ use OCA\OpenRegister\AppHost\Store\StoreManifest;
  * outcome and an empty card list instead. The only exceptions worth raising
  * are programming errors in the caller.
  *
- * @spec openspec/changes/store-plane-declarative-sources/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+ * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
  */
 interface StoreSourceInterface {
 	/**
@@ -62,4 +62,16 @@ interface StoreSourceInterface {
 	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
 	 */
 	public function search(StoreManifest $manifest, string $query, ?string $kind): array;
+
+	/**
+	 * Search this source for store items.
+	 *
+	 * @param StoreManifest $manifest The declaring app's store block.
+	 * @param StoreSearch   $search   The free text and the kind filter.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-store-must-declare-its-discovery-source-defaulting-to-openregister
+	 */
+	public function find(StoreManifest $manifest, StoreSearch $search): array;
 }

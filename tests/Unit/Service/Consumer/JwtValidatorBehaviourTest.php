@@ -28,12 +28,14 @@ use Jose\Component\Signature\Algorithm\RS512;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\OpenRegister\Exception\AuthenticationException;
+use OCA\OpenRegister\Service\Consumer\JwsKey;
 use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\RsaJwsVerifier;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Consumer\DecodedJwt;
 
 /**
  * Times are relative to the real clock with margins far beyond the 60 s skew,
@@ -44,6 +46,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Consumer\JwtValidator
  * @covers \OCA\OpenRegister\Service\Consumer\RsaJwsVerifier
  * @uses   \OCA\OpenRegister\Exception\AuthenticationException
+ * @uses \OCA\OpenRegister\Service\Consumer\ClaimValidationRun
+ * @uses \OCA\OpenRegister\Service\Consumer\DecodedJwt
+ * @uses \OCA\OpenRegister\Service\Consumer\JwsKey
  */
 class JwtValidatorBehaviourTest extends TestCase
 {
@@ -145,7 +150,7 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $token = self::hs256(['iss' => 'app-1']);
 
-        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned($token, $header, $configuration));
+        $e = $this->refusal(static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt($token, $header), $configuration));
 
         $this->assertSame(['reason' => $reason], $e->getDetails());
     }//end testVerifyPinnedRefusesWithTheReason()
@@ -153,7 +158,7 @@ class JwtValidatorBehaviourTest extends TestCase
     public function testVerifyPinnedRefusesAnUnsupportedAlgorithmByName(): void
     {
         $e = $this->refusal(
-            static fn() => (new JwtValidator())->verifyPinned('a.b.c', ['alg' => 'ES256'], ['algorithm' => 'ES256', 'publicKey' => 'k'])
+            static fn() => (new JwtValidator())->verifyPinned(new DecodedJwt('a.b.c', ['alg' => 'ES256']), ['algorithm' => 'ES256', 'publicKey' => 'k'])
         );
 
         $this->assertSame(['The token algorithm is not supported', ['algorithm' => 'ES256']], [$e->getMessage(), $e->getDetails()]);
@@ -163,10 +168,10 @@ class JwtValidatorBehaviourTest extends TestCase
     {
         $validator = new JwtValidator();
 
-        $validator->verifyPinned(self::hs256(['iss' => 'a']), ['alg' => 'HS256'], ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
-        $validator->verifyPinned(self::rs256(['iss' => 'a']), ['alg' => 'RS256'], ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
+        $validator->verifyPinned(new DecodedJwt(self::hs256(['iss' => 'a']), ['alg' => 'HS256']), ['algorithm' => 'HS256', 'publicKey' => self::SECRET]);
+        $validator->verifyPinned(new DecodedJwt(self::rs256(['iss' => 'a']), ['alg' => 'RS256']), ['algorithm' => 'RS256', 'publicKey' => self::$publicPem]);
 
-        $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), 'RS256', base64_encode(self::$publicPem)));
+        $this->assertTrue($validator->verifySignature(self::rs256(['iss' => 'a']), new JwsKey('RS256', base64_encode(self::$publicPem))));
     }//end testVerifyPinnedAcceptsMatchingHmacAndRsaSignatures()
 
     public function testVerifySignatureRefusesWrongShapesKeysAndAlgorithms(): void
@@ -174,12 +179,12 @@ class JwtValidatorBehaviourTest extends TestCase
         $validator = new JwtValidator();
         $rs        = self::rs256(['iss' => 'a']);
 
-        $this->assertFalse($validator->verifySignature('only.two', 'HS256', self::SECRET));
-        $this->assertFalse($validator->verifySignature(self::hs256(['iss' => 'a'], 'short'), 'HS256', 'short'));
-        $this->assertFalse($validator->verifySignature($rs, 'RS384', self::$publicPem));
-        $this->assertFalse($validator->verifySignature($rs, 'RS256', 'not a key at all'));
-        $this->assertFalse((new RsaJwsVerifier())->verify($rs, 'ES256', self::$publicPem));
-        $this->assertFalse((new RsaJwsVerifier())->verify('###.###.###', 'RS256', self::$publicPem));
+        $this->assertFalse($validator->verifySignature('only.two', new JwsKey('HS256', self::SECRET)));
+        $this->assertFalse($validator->verifySignature(self::hs256(['iss' => 'a'], 'short'), new JwsKey('HS256', 'short')));
+        $this->assertFalse($validator->verifySignature($rs, new JwsKey('RS384', self::$publicPem)));
+        $this->assertFalse($validator->verifySignature($rs, new JwsKey('RS256', 'not a key at all')));
+        $this->assertFalse((new RsaJwsVerifier())->verify($rs, new JwsKey('ES256', self::$publicPem)));
+        $this->assertFalse((new RsaJwsVerifier())->verify('###.###.###', new JwsKey('RS256', self::$publicPem)));
     }//end testVerifySignatureRefusesWrongShapesKeysAndAlgorithms()
 
     /**
@@ -203,8 +208,8 @@ class JwtValidatorBehaviourTest extends TestCase
             ->build();
         $token = (new CompactSerializer())->serialize($jws, 0);
 
-        $this->assertTrue((new RsaJwsVerifier())->verify($token, $alg, self::$publicPem));
-        $this->assertFalse((new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), $alg, self::$publicPem));
+        $this->assertTrue((new RsaJwsVerifier())->verify($token, new JwsKey($alg, self::$publicPem)));
+        $this->assertFalse((new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), new JwsKey($alg, self::$publicPem)));
     }//end testEachRsaAlgorithmVerifiesItsOwnSignatureOnly()
 
     public function testANonRsaPublicKeyIsRefused(): void
@@ -212,7 +217,7 @@ class JwtValidatorBehaviourTest extends TestCase
         $ec = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
 
         $this->assertFalse(
-            (new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), 'RS256', (string) openssl_pkey_get_details($ec)['key'])
+            (new RsaJwsVerifier())->verify(self::rs256(['iss' => 'a']), new JwsKey('RS256', (string) openssl_pkey_get_details($ec)['key']))
         );
     }//end testANonRsaPublicKeyIsRefused()
 
@@ -226,23 +231,27 @@ class JwtValidatorBehaviourTest extends TestCase
     }//end testHmacKeyLengthIsOnlyCheckedForHmacAlgorithms()
 
     /**
-     * @return array<string, array{0: array, 1: string}>
+     * Claim times as offsets in seconds from the moment the test runs.
+     *
+     * @return array<string, array{0: array<string, int>, 1: string}>
      */
     public static function claimRefusalProvider(): array
     {
-        $now = time();
         return [
             'no iat'          => [[], 'The token has no time of creation'],
-            'iat in future'   => [['iat' => $now + 600], 'The token has an invalid issue time'],
-            'default expiry'  => [['iat' => $now - 7200], 'The token has expired'],
-            'explicit expiry' => [['iat' => $now - 600, 'exp' => $now - 300], 'The token has expired'],
-            'not yet valid'   => [['iat' => $now, 'nbf' => $now + 600], 'The token is not yet valid'],
+            'iat in future'   => [['iat' => 600], 'The token has an invalid issue time'],
+            'default expiry'  => [['iat' => -7200], 'The token has expired'],
+            'explicit expiry' => [['iat' => -600, 'exp' => -300], 'The token has expired'],
+            'not yet valid'   => [['iat' => 0, 'nbf' => 600], 'The token is not yet valid'],
         ];
     }//end claimRefusalProvider()
 
     #[DataProvider('claimRefusalProvider')]
-    public function testValidateClaimsRefusesWithTheMessage(array $payload, string $message): void
+    public function testValidateClaimsRefusesWithTheMessage(array $offsets, string $message): void
     {
+        $now     = time();
+        $payload = array_map(static fn(int $offset): int => $now + $offset, $offsets);
+
         $e = $this->refusal(static fn() => (new JwtValidator())->validateClaims($payload));
 
         $this->assertSame($message, $e->getMessage());

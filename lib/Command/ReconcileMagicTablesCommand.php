@@ -56,6 +56,21 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
  */
 class ReconcileMagicTablesCommand extends Command {
+
+	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'apply' => [
+			InputOption::VALUE_NONE,
+			'Create the missing columns. Without this flag the command runs in dry-run mode and '
+			. 'only reports the drift it would repair.',
+		],
+		'register' => [
+			InputOption::VALUE_REQUIRED,
+			'Limit to a single register id (default: every register).',
+		],
+	];
 	/**
 	 * Constructor.
 	 *
@@ -83,20 +98,10 @@ class ReconcileMagicTablesCommand extends Command {
 				'Detect and repair magic-table column drift: physical columns missing for schema '
 				. 'properties that were added to an existing schema without a subsequent write, and '
 				. 'metadata columns (_archived, _frozen, _status, ...) missing from any magic table.'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Create the missing columns. Without this flag the command runs in dry-run mode and '
-				. 'only reports the drift it would repair.'
-			)
-			->addOption(
-				'register',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit to a single register id (default: every register).'
 			);
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 
 	}//end configure()
 
@@ -114,12 +119,8 @@ class ReconcileMagicTablesCommand extends Command {
 		$apply = (bool)$input->getOption('apply');
 		$registerFilter = $input->getOption('register');
 
-		$counts = $this->reconcileMetadataColumns(output: $output, apply: $apply, registerFilter: $registerFilter);
-		$pass = new SchemaColumnDriftPass(
-			output: $output,
-			magicMapper: $this->magicMapper,
-			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
-		);
+		$counts = $this->reconcileMetadataColumns(run: new MetadataReconcileRun(output: $output, apply: $apply), registerFilter: $registerFilter);
+		$pass = $this->schemaPass(output: $output, apply: $apply);
 		foreach ($this->registersToReconcile(registerFilter: $registerFilter) as $register) {
 			foreach ($this->schemasOf(register: $register) as $schema) {
 				$counts = $this->addCounts(counts: $counts, delta: $pass->reconcile(register: $register, schema: $schema));
@@ -128,6 +129,22 @@ class ReconcileMagicTablesCommand extends Command {
 
 		return $pass->summarise(counts: $counts);
 	}//end execute()
+
+	/**
+	 * The schema-column pass, told the metadata columns it must leave to the metadata pass.
+	 *
+	 * @param OutputInterface $output Console output.
+	 * @param bool            $apply  Whether to repair.
+	 *
+	 * @return SchemaColumnDriftPass The pass.
+	 */
+	private function schemaPass(OutputInterface $output, bool $apply): SchemaColumnDriftPass {
+		return new SchemaColumnDriftPass(
+			output: $output,
+			magicMapper: $this->magicMapper,
+			options: ['apply' => $apply, 'metadata' => array_keys($this->magicMapper->getMetadataColumnDefinitions())]
+		);
+	}//end schemaPass()
 
 	/**
 	 * The registers the schema pass walks: every register, or the filtered one.
@@ -192,62 +209,72 @@ class ReconcileMagicTablesCommand extends Command {
 	 * Walks the physical tables rather than the register to schema links, so a
 	 * table no register lists any more is still reconciled.
 	 *
-	 * @param OutputInterface $output         Console output.
-	 * @param bool            $apply          Whether to add the missing columns.
-	 * @param mixed           $registerFilter The --register option, null for every register.
+	 * @param MetadataReconcileRun $run            The pass.
+	 * @param mixed                $registerFilter The --register option, null for every register.
 	 *
 	 * @return array{tables: int, columns: int, repaired: int, failed: int} The counts for the summary.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
-	private function reconcileMetadataColumns(OutputInterface $output, bool $apply, mixed $registerFilter): array {
-		$counts = ['tables' => 0, 'columns' => 0, 'repaired' => 0, 'failed' => 0];
-
+	private function reconcileMetadataColumns(MetadataReconcileRun $run, mixed $registerFilter): array {
 		foreach ($this->magicMapper->listMagicTableNames() as $tableName) {
-			if ($this->tableBelongsToRegister(tableName: $tableName, registerFilter: $registerFilter) === false) {
-				continue;
+			if ($this->tableBelongsToRegister(tableName: $tableName, registerFilter: $registerFilter) === true) {
+				$this->reconcileTableMetadata(run: $run, tableName: $tableName);
 			}
+		}
 
-			try {
-				$missing = $this->magicMapper->inspectMetadataColumns(tableName: $tableName);
-			} catch (\Throwable $e) {
-				$output->writeln(sprintf('<comment>skip %s: %s</comment>', $tableName, $e->getMessage()));
-				continue;
-			}
-
-			if ($missing === []) {
-				continue;
-			}
-
-			$counts['tables']++;
-			$counts['columns'] += count($missing);
-			$output->writeln(
-				sprintf(
-					'%s metadata missing %d: %s',
-					$tableName,
-					count($missing),
-					implode(', ', array_keys($missing))
-				)
-			);
-
-			if ($apply === false) {
-				continue;
-			}
-
-			$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
-			if ($result['failed'] === []) {
-				$counts['repaired']++;
-				continue;
-			}
-
-			$counts['failed']++;
-			foreach ($result['failed'] as $column => $reason) {
-				$output->writeln(sprintf('  <error>%s: %s</error>', $column, $reason));
-			}
-		}//end foreach
-
-		return $counts;
+		return $run->counts;
 	}//end reconcileMetadataColumns()
+
+	/**
+	 * Report one table's missing metadata columns and, with --apply, add them.
+	 *
+	 * @param MetadataReconcileRun $run       The pass.
+	 * @param string               $tableName Bare magic table name.
+	 *
+	 * @return void
+	 */
+	private function reconcileTableMetadata(MetadataReconcileRun $run, string $tableName): void {
+		try {
+			$missing = $this->magicMapper->inspectMetadataColumns(tableName: $tableName);
+		} catch (\Throwable $e) {
+			$run->output->writeln(sprintf('<comment>skip %s: %s</comment>', $tableName, $e->getMessage()));
+			return;
+		}
+
+		if ($missing === []) {
+			return;
+		}
+
+		$run->counts['tables']++;
+		$run->counts['columns'] += count($missing);
+		$run->output->writeln(sprintf('%s metadata missing %d: %s', $tableName, count($missing), implode(', ', array_keys($missing))));
+
+		if ($run->apply === true) {
+			$this->healTableMetadata(run: $run, tableName: $tableName);
+		}
+	}//end reconcileTableMetadata()
+
+	/**
+	 * Add one table's missing metadata columns and print what could not be added.
+	 *
+	 * @param MetadataReconcileRun $run       The pass.
+	 * @param string               $tableName Bare magic table name.
+	 *
+	 * @return void
+	 */
+	private function healTableMetadata(MetadataReconcileRun $run, string $tableName): void {
+		$result = $this->magicMapper->healMetadataColumns(tableName: $tableName);
+		if ($result['failed'] === []) {
+			$run->counts['repaired']++;
+			return;
+		}
+
+		$run->counts['failed']++;
+		foreach ($result['failed'] as $column => $reason) {
+			$run->output->writeln(sprintf('  <error>%s: %s</error>', $column, $reason));
+		}
+	}//end healTableMetadata()
 
 	/**
 	 * Whether a table belongs to the register the --register option names.

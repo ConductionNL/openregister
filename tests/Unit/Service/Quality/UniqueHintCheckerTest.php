@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
+use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -128,7 +129,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testASecondRecordOnTheSameValueWarns(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '69599084']);
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], null));
 
 		$warnings = $this->warnings->drain();
 		$this->assertCount(1, $warnings);
@@ -147,7 +148,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testTheWarningFiresOnAnUpdate(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], 'second');
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], 'second'));
 
 		$this->assertSame(['first'], $this->warnings->drain()[0]['matches']);
 	}//end testTheWarningFiresOnAnUpdate()
@@ -163,7 +164,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testAnObjectDoesNotCollideWithItself(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], 'first');
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], 'first'));
 
 		$this->assertSame([], $this->warnings->drain());
 	}//end testAnObjectDoesNotCollideWithItself()
@@ -180,7 +181,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testAnUnreadableHolderIsReportedWithoutBeingNamed(): void {
 		$this->answerReads([], [$this->stored('hidden')]);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '69599084']);
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], null));
 
 		$warnings = $this->warnings->drain();
 		$this->assertCount(1, $warnings);
@@ -199,7 +200,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testAnUnheldValueIsSilent(): void {
 		$this->answerReads([], []);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '00000000']);
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '00000000'], null));
 
 		$this->assertSame([], $this->warnings->drain());
 	}//end testAnUnheldValueIsSilent()
@@ -214,7 +215,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testNoNominationReadsNothing(): void {
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$this->checker->check([], new UniqueHintScope(1, 1), ['kvkNumber' => '69599084']);
+		$this->checker->check([], new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], null));
 
 		$this->assertSame([], $this->warnings->drain());
 	}//end testNoNominationReadsNothing()
@@ -230,7 +231,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testAnEmptyValueIsNotACollision(): void {
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '']);
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => ''], null));
 
 		$this->assertSame([], $this->warnings->drain());
 	}//end testAnEmptyValueIsNotACollision()
@@ -246,7 +247,7 @@ class UniqueHintCheckerTest extends TestCase {
 	public function testWarningsAreDrainedOnRead(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
 
-		$this->checker->check($this->configuration(), new UniqueHintScope(1, 1), ['kvkNumber' => '69599084']);
+		$this->checker->check($this->configuration(), new UniqueHintCandidate(new UniqueHintScope(1, 1), ['kvkNumber' => '69599084'], null));
 
 		$this->assertCount(1, $this->warnings->drain());
 		$this->assertSame([], $this->warnings->drain());

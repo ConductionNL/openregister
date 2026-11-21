@@ -129,7 +129,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertArrayHasKey(
 			'wijk',
@@ -158,7 +158,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			2000,
@@ -185,10 +185,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(
-			baseline: $baseline,
-			live: $live,
-			incoming: $incoming,
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming),
 			decisions: ['properties.toelichting.maxLength']
 		);
 
@@ -216,10 +214,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 
-		$result = $this->merge->merge(
-			baseline: $baseline,
-			live: $live,
-			incoming: $incoming,
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming),
 			decisions: ['properties.toelichting.maxLength']
 		);
 
@@ -243,7 +239,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		unset($incoming['properties']['toelichting']);
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertArrayNotHasKey(
 			'toelichting',
@@ -267,7 +263,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		unset($incoming['properties']['toelichting']);
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			4000,
@@ -291,7 +287,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame([], $result['conflicts'], 'there is nothing to resolve');
 		$this->assertSame(1000, $result['merged']['properties']['toelichting']['maxLength']);
@@ -314,7 +310,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			'Zaak-ID',
@@ -438,7 +434,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testAnAuthorizationBlockIsNeverMergedKeyByKey(): void {
 		$case = $this->portaliqUpgrade();
-		$result = $this->merge->merge(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']));
 
 		$this->assertEquals(
 			['read' => ['authenticated'], 'export' => ['authenticated']],
@@ -462,10 +458,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testADecisionOnTheBlockTakesTheShippedPolicyWhole(): void {
 		$case = $this->portaliqUpgrade();
-		$result = $this->merge->merge(
-			baseline: $case['baseline'],
-			live: $case['live'],
-			incoming: $case['incoming'],
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']),
 			decisions: ['authorization']
 		);
 
@@ -484,10 +478,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testAnUpstreamOnlyBlockChangeIsTakenWhole(): void {
 		$block = ['read' => ['authenticated'], 'export' => ['authenticated']];
-		$result = $this->merge->merge(
-			baseline: ['authorization' => $block],
-			live: ['authorization' => $block],
-			incoming: ['authorization' => ['read' => ['staff']]]
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: ['authorization' => $block], live: ['authorization' => $block], incoming: ['authorization' => ['read' => ['staff']]])
 		);
 
 		$this->assertSame(['read' => ['staff']], $result['merged']['authorization']);
@@ -505,10 +497,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 	public function testAPropertyAuthorizationIsItsOwnBlock(): void {
 		$property = static fn (array $auth): array => ['properties' => ['bsn' => ['type' => 'string', 'authorization' => $auth]]];
 
-		$result = $this->merge->merge(
-			baseline: $property(['read' => ['a']]),
-			live: $property(['read' => ['a'], 'update' => ['b']]),
-			incoming: $property(['read' => ['c'], 'update' => ['c']])
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $property(['read' => ['a']]), live: $property(['read' => ['a'], 'update' => ['b']]), incoming: $property(['read' => ['c'], 'update' => ['c']]))
 		);
 
 		$this->assertEquals(['read' => ['a'], 'update' => ['b']], $result['merged']['properties']['bsn']['authorization']);
@@ -531,10 +521,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 
 		$result = $decision->run(
 			via: 'import',
-			operation: static fn (): array => $merge->merge(
-				baseline: ['title' => 'T'],
-				live: ['title' => 'T', 'authorization' => $local],
-				incoming: ['title' => 'T2']
+			operation: static fn (): array => $merge->mergeRevisions(
+				revisions: new DescriptorRevisions(baseline: ['title' => 'T'], live: ['title' => 'T', 'authorization' => $local], incoming: ['title' => 'T2'])
 			)
 		);
 

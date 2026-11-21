@@ -220,16 +220,15 @@ final class MagicNumberColumn {
 	 *
 	 * Never narrower than the live column, so widening cannot change a stored value.
 	 *
-	 * @param array $currentColumn The live column (type, precision, scale).
-	 * @param int   $precision     The required precision.
-	 * @param int   $scale         The required scale.
+	 * @param array                             $currentColumn The live column (type, precision, scale).
+	 * @param array{precision: int, scale: int} $required      The required size.
 	 *
 	 * @return array{precision: int, scale: int}|null The widened size, or null.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
-	public function widening(array $currentColumn, int $precision, int $scale): ?array {
-		return $this->widenedSize(live: $this->decimalSize(column: $currentColumn), required: ['precision' => $precision, 'scale' => $scale]);
+	public function widening(array $currentColumn, array $required): ?array {
+		return $this->widenedSize(live: $this->decimalSize(column: $currentColumn), required: $required);
 	}//end widening()
 
 	/**

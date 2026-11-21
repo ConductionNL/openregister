@@ -19,24 +19,27 @@ final class ContextsControllerFactory {
 	 * The constructor arguments of ContextsController.
 	 *
 	 * @param IRequest $request Constructor argument.
-	 * @param RegisterMapperInterface $registerMapper Constructor argument.
-	 * @param SchemaMapperInterface $schemaMapper Constructor argument.
+	 * @param SchemaCatalogInterface $catalog Constructor argument.
 	 * @param JsonLdContextServiceInterface $contextService Constructor argument.
+	 * @param IUserSession $userSession Constructor argument.
+	 * @param PermissionCheckInterface $permissions Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
 	public static function args(
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper,
-		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
+		\OCA\OpenRegister\Db\SchemaCatalogInterface $catalog,
 		\OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface $contextService,
+		\OCP\IUserSession $userSession,
+		\OCA\OpenRegister\Service\Object\PermissionCheckInterface $permissions,
 	): array {
 		return [
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ContextsControllerServices(
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
+				catalog: $catalog,
 				contextService: $contextService,
+				userSession: $userSession,
+				permissions: $permissions,
 			),
 		];
 	}//end args()

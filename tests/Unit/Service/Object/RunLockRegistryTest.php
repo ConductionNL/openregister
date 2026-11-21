@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -40,6 +41,12 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\RunLockRegistry
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\RunObjectLock
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  */
 final class RunLockRegistryTest extends TestCase {
 
@@ -73,12 +80,7 @@ final class RunLockRegistryTest extends TestCase {
 	 * @return RunLockRegistry The service.
 	 */
 	private function registry(): RunLockRegistry {
-		return new RunLockRegistry(
-			$this->rows,
-			$this->magic,
-			$this->audit,
-			$this->createMock(LoggerInterface::class)
-		);
+		return new RunLockRegistry($this->rows, new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->magic, $this->audit, $this->createMock(LoggerInterface::class), $this->createStub(\OCP\EventDispatcher\IEventDispatcher::class)));
 	}//end registry()
 
 	/**
@@ -304,7 +306,7 @@ final class RunLockRegistryTest extends TestCase {
 	 */
 	public function testAUserLockIsNotRecorded(): void {
 		$this->rows->expects($this->never())->method('record');
-		$this->registry()->record($this->lockedObject(null), null, 'lock-1');
+		$this->registry()->record($this->lockedObject(null), new LockRunStep(null, 'lock-1'));
 	}//end testAUserLockIsNotRecorded()
 
 	/**
@@ -320,7 +322,7 @@ final class RunLockRegistryTest extends TestCase {
 			}
 		);
 
-		$this->registry()->record($this->lockedObject(self::RUN_A), self::RUN_A, 'lock-1');
+		$this->registry()->record($this->lockedObject(self::RUN_A), new LockRunStep(self::RUN_A, 'lock-1'));
 
 		$this->assertSame(self::RUN_A, $captured->getRunUuid());
 		$this->assertSame(self::OBJ, $captured->getObjectUuid());
@@ -339,7 +341,7 @@ final class RunLockRegistryTest extends TestCase {
 	public function testAFailedRecordDoesNotUndoTheLock(): void {
 		$this->rows->method('record')->willThrowException(new RuntimeException('table missing'));
 
-		$this->registry()->record($this->lockedObject(self::RUN_A), self::RUN_A, 'lock-1');
+		$this->registry()->record($this->lockedObject(self::RUN_A), new LockRunStep(self::RUN_A, 'lock-1'));
 		$this->addToAssertionCount(1);
 	}//end testAFailedRecordDoesNotUndoTheLock()
 }//end class

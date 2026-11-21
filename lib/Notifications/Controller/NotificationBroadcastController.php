@@ -41,13 +41,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -88,7 +88,7 @@ class NotificationBroadcastController extends Controller {
 		IRequest $request,
 		NotificationBroadcastControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->broadcastService = $services->broadcastService;
 		$this->session = $services->session;
@@ -123,8 +123,6 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
-	 *
-	 * @NoCSRFRequired
 	 */
 	public function create(): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -153,7 +151,10 @@ class NotificationBroadcastController extends Controller {
 			return $window;
 		}
 
-		return $this->sendBroadcast(subject: $subject, body: $this->stringParam(params: $params, key: 'body'), window: $window);
+		return $this->sendBroadcast(
+			message: new BroadcastMessage(subject: $subject, body: $this->stringParam(params: $params, key: 'body')),
+			window: new BroadcastWindow(startsAt: $window[0], endsAt: $window[1])
+		);
 	}//end createFrom()
 
 	/**
@@ -181,21 +182,16 @@ class NotificationBroadcastController extends Controller {
 	}//end requestedWindow()
 
 	/**
-	 * Send the broadcast as the current administrator.
+	 * Send the broadcast as the caller, answering 422 when the service refuses it.
 	 *
-	 * @param string                           $subject The subject.
-	 * @param string|null                      $body    The body, or null.
-	 * @param array{0: DateTime, 1: DateTime} $window  The start and end.
+	 * @param BroadcastMessage $message The subject and body.
+	 * @param BroadcastWindow  $window  The moments it runs between.
 	 *
-	 * @return JSONResponse The created broadcast, or a 422 when the service refuses it.
+	 * @return JSONResponse The created broadcast, or a 422.
 	 */
-	private function sendBroadcast(string $subject, ?string $body, array $window): JSONResponse {
+	private function sendBroadcast(BroadcastMessage $message, BroadcastWindow $window): JSONResponse {
 		try {
-			$broadcast = $this->broadcastService->send(
-				message: new BroadcastMessage(subject: $subject, body: $body),
-				sender: (string)$this->resolveUserId(),
-				window: new BroadcastWindow(startsAt: $window[0], endsAt: $window[1])
-			);
+			$broadcast = $this->broadcastService->send(message: $message, sender: (string)$this->resolveUserId(), window: $window);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
@@ -211,8 +207,6 @@ class NotificationBroadcastController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
-	 *
-	 * @NoCSRFRequired
 	 */
 	public function destroy(string $uuid): JSONResponse {
 		$refusal = $this->requireAdmin();
@@ -261,7 +255,6 @@ class NotificationBroadcastController extends Controller {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 */
 	public function acknowledge(string $uuid): JSONResponse {
 		$userId = $this->resolveUserId();

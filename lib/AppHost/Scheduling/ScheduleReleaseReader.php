@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Throwable;
@@ -40,7 +41,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup is the ambient audit-cause frame.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleReleaseReader {
 	/**
@@ -75,7 +76,7 @@ class ScheduleReleaseReader {
 	 *
 	 * @return ScheduleRelease|null The publish, or null when this write is none.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function releaseOf(ObjectEntity $object, ?ObjectEntity $before): ?ScheduleRelease {
 		$after = $object->getObject();
@@ -103,7 +104,7 @@ class ScheduleReleaseReader {
 	 *
 	 * @return ScheduleRelease|null The release, or null when it is no application.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function releaseOfDeleted(ObjectEntity $object): ?ScheduleRelease {
 		if ($this->productionOf(data: $object->getObject()) === ''
@@ -170,7 +171,12 @@ class ScheduleReleaseReader {
 		}
 
 		try {
-			return WriteCause::asLookup(fn () => $this->objects->find(id: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false));
+			return WriteCause::asLookup(fn () => $this->objects->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: $register, schema: $schema),
+				_rbac: false,
+				_multitenancy: false
+			));
 		} catch (Throwable $e) {
 			return null;
 		}

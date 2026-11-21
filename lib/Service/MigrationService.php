@@ -110,23 +110,34 @@ class MigrationService implements MigrationServiceInterface {
 	 * @spec exclude Reporting shim: assembles register/schema/magic-table-count read into a response array; no business rule.
 	 */
 	public function getStorageStatus(Register $register, Schema $schema): array {
-		$magicTableExists = $this->catalog->tables()->existsTableForRegisterSchema(
-			register: $register,
-			schema: $schema
-		);
-
 		return [
 			'register' => $this->identity(entity: $register),
 			'schema' => $this->identity(entity: $schema),
-			'magicTable' => [
-				'exists' => $magicTableExists,
-				'count' => $this->magicCount(
-					table: new RegisterSchema(register: $register, schema: $schema),
-					exists: $magicTableExists
-				),
-			],
+			'magicTable' => $this->magicTableStatus(table: new RegisterSchema(register: $register, schema: $schema)),
 		];
 	}//end getStorageStatus()
+
+	/**
+	 * Whether a register and schema have a magic table, and how many rows it holds.
+	 *
+	 * @param RegisterSchema $table The register and schema.
+	 *
+	 * @return array{exists: bool, count: int}
+	 */
+	private function magicTableStatus(RegisterSchema $table): array {
+		$magicTableExists = $this->catalog->tables()->existsTableForRegisterSchema(
+			register: $table->register,
+			schema: $table->schema
+		);
+
+		return [
+			'exists' => $magicTableExists,
+			'count' => $this->magicCount(
+				table: $table,
+				exists: $magicTableExists
+			),
+		];
+	}//end magicTableStatus()
 
 	/**
 	 * Migrate objects from blob storage to a magic table.
@@ -146,12 +157,7 @@ class MigrationService implements MigrationServiceInterface {
 	 *
 	 * @spec exclude Deprecated no-op stub; blob storage retired, returns a static report pointing to BlobMigrationJob.
 	 */
-	public function migrateToMagicTable(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
+	public function migrateToMagicTable(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
 		return $this->retiredReport(direction: 'to-magic', dryRun: $dryRun);
 	}//end migrateToMagicTable()
 
@@ -172,12 +178,7 @@ class MigrationService implements MigrationServiceInterface {
 	 *
 	 * @spec exclude Deprecated no-op stub; reverse migration to retired blob storage is no longer supported.
 	 */
-	public function migrateToBlobStorage(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
+	public function migrateToBlobStorage(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
 		return $this->retiredReport(direction: 'to-blob', dryRun: $dryRun);
 	}//end migrateToBlobStorage()
 

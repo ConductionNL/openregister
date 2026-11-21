@@ -31,6 +31,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserManager;
 
 /**
  * Drives the services through the collaborators they build.
@@ -174,7 +176,7 @@ class TimelineKindGoldenTest extends TestCase {
 	}//end testAnUnusableDeclarationNeverReachesTheMapper()
 
 	private function blockService(TextBlockMapper $mapper): TextBlockService {
-		return new TextBlockService($mapper, $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class));
+		return new TextBlockService($mapper, new PrincipalDirectory($this->createMock(IUserManager::class), $this->createMock(IGroupManager::class), $this->createMock(IUserSession::class)));
 	}//end blockService()
 
 	public function testATextBlockIsStoredNormalisedWithItsBodyAsWritten(): void {

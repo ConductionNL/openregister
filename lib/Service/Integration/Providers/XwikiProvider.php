@@ -45,13 +45,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Throwable;
 
 /**
@@ -84,9 +82,7 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouterInterface $router External-call router.
-	 * @param IAppManager $appManager NC app manager (isEnabled check).
-	 * @param IL10N $l10n Localisation.
+	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
 	 * @param XwikiLinkMapperInterface|null $xwikiLinkMapper Tier-2 local link table
 	 *                                              (nullable so the Tier-1
 	 *                                              external-only wiring + the
@@ -96,11 +92,10 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouterInterface $router,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		ConnectorRouting $routing,
 		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**
@@ -175,24 +170,34 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * raises ProviderUnavailableException which the controller maps to
 	 * details.cause).
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional: `_search`, `_limit`, `_page`.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->xwikiLinkMapper !== null && $objectId !== '') {
-			$scope = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedOrSourced(ref: $ref, filters: $filters);
+	}//end list()
+
+	/**
+	 * The object's pages: the link table when there is one, else the external source.
+	 *
+	 * @param ObjectRef           $ref     The owning object.
+	 * @param array<string,mixed> $filters Caller filters, passed to the source.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedOrSourced(ObjectRef $ref, array $filters): array {
+		if ($this->xwikiLinkMapper !== null && $ref->id !== '') {
+			$scope = $this->contextQuery(ref: $ref, filters: []);
 			return $this->listLinkedPages(mapper: $this->xwikiLinkMapper, scope: $scope);
 		}
 
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
+		$query = $this->contextQuery(ref: $ref, filters: $filters);
 		return $this->listFromSource(query: $query);
-	}//end list()
+	}//end linkedOrSourced()
 
 	/**
 	 * List the locally-linked xWiki pages for an object, enriching each
@@ -230,7 +235,10 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private function linkedPageRow(XwikiLink $link, array $scope): array {
 		$row = $this->cachedLinkRow(link: $link);
 		try {
-			$enriched = $this->get(register: $scope['register'], schema: $scope['schema'], objectId: $scope['object'], entityId: $row['reference']);
+			$enriched = $this->get(
+				ref: new ObjectRef(register: $scope['register'], schema: $scope['schema'], id: $scope['object']),
+				entityId: $row['reference']
+			);
 		} catch (Throwable $e) {
 			// Upstream unreachable — fall back to the cached row.
 			return $this->normalizeRow(row: $row);

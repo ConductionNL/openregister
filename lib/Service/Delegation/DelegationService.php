@@ -115,6 +115,20 @@ class DelegationService {
 
 		$user = $this->actedAsUser(request: $request, verdict: $verdict);
 
+		$this->logActingOnBehalf(request: $request, verdict: $verdict);
+
+		return $this->objectService->runAs(user: $user, operation: $operation);
+	}//end runAsDelegated()
+
+	/**
+	 * Record that work runs on behalf of another user, with the grant that allows it.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return void
+	 */
+	private function logActingOnBehalf(DelegationRequest $request, DelegationVerdict $verdict): void {
 		$this->logger->info(
 			message: '[DelegationService] Acting on behalf of another user',
 			context: [
@@ -128,9 +142,7 @@ class DelegationService {
 				'scope' => $request->scope,
 			]
 		);
-
-		return $this->objectService->runAs(user: $user, operation: $operation);
-	}//end runAsDelegated()
+	}//end logActingOnBehalf()
 
 	/**
 	 * Log and throw a refused delegation.
@@ -179,15 +191,26 @@ class DelegationService {
 			return $user;
 		}
 
+		$this->refuseUnresolvedAccount(request: $request, verdict: $verdict);
+	}//end actedAsUser()
+
+	/**
+	 * Log and throw a permitted delegation whose acted-as uid resolves to no account.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return never
+	 *
+	 * @throws DelegationRefused Always.
+	 */
+	private function refuseUnresolvedAccount(DelegationRequest $request, DelegationVerdict $verdict): never {
 		// A grant naming an account that no longer exists is not a licence
 		// to run as nobody. `runAs(null)` is not even expressible, but the
 		// tempting repair — fall back to the principal — would silently
 		// execute the work under the WRONG identity while the audit trail
 		// said otherwise.
-		$gone = DelegationVerdict::refused(
-			reason: DelegationVerdict::REASON_UNNAMED,
-			detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $request->actingAs)
-		);
+		$gone = $this->unresolvedAccountVerdict(request: $request);
 
 		$this->logger->error(
 			message: '[DelegationService] A live grant names an account that does not resolve',
@@ -201,7 +224,21 @@ class DelegationService {
 		);
 
 		throw new DelegationRefused(principal: $request->principal, actingAs: $request->actingAs, verdict: $gone);
-	}//end actedAsUser()
+	}//end refuseUnresolvedAccount()
+
+	/**
+	 * The refusal for an acted-as uid that resolves to no account.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 *
+	 * @return DelegationVerdict The refusal.
+	 */
+	private function unresolvedAccountVerdict(DelegationRequest $request): DelegationVerdict {
+		return DelegationVerdict::refused(
+			reason: DelegationVerdict::REASON_UNNAMED,
+			detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $request->actingAs)
+		);
+	}//end unresolvedAccountVerdict()
 
 	/**
 	 * Would this delegation be permitted, without performing it?
@@ -224,11 +261,6 @@ class DelegationService {
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function verdictFor(DelegationRequest $request): DelegationVerdict {
-		return $this->resolver->resolve(
-			principal: $request->principal,
-			actingAs: $request->actingAs,
-			now: $request->now,
-			scope: $request->scope
-		);
+		return $this->resolver->resolve(request: $request);
 	}//end verdictFor()
 }//end class

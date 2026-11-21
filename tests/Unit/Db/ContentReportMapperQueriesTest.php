@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -124,8 +125,8 @@ class ContentReportMapperQueriesTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindAllIgnoresEmptyFilters(): void {
-		$this->mapper->findAll();
-		$this->mapper->findAll('', '', 0);
+		$this->mapper->findAll(ListQuery::unbounded());
+		$this->mapper->findAll(new ListQuery(0, null, ['status' => '', 'organisation_id' => '']));
 
 		$expected = 'select(*) from(openregister_content_reports) orderBy(id, DESC) executeQuery()';
 		$this->assertSame($expected, $this->sql(0));
@@ -139,7 +140,7 @@ class ContentReportMapperQueriesTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindAllAppliesEveryFilter(): void {
-		$this->mapper->findAll('open', 'org-1', 25);
+		$this->mapper->findAll(new ListQuery(25, null, ['status' => 'open', 'organisation_id' => 'org-1']));
 
 		$this->assertSame(
 			'select(*) from(openregister_content_reports) orderBy(id, DESC) andWhere(eq(status, :p0)) andWhere(eq(organisation_id, :p1)) setMaxResults(25) executeQuery()',

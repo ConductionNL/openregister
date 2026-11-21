@@ -128,8 +128,19 @@ class NameCacheWarmupJobTest extends TestCase {
 		$this->cacheHandler->method('warmupNameCache')->willReturn(0);
 
 		// Should not throw.
+		$loaded = null;
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$loaded): void {
+				if (str_contains($message, 'Warmup Job Completed') === true) {
+					$loaded = $context['names_loaded'];
+				}
+			}
+		);
+		$this->logger->expects($this->never())->method('error');
+
 		$this->runJob();
-		$this->assertTrue(true);
+
+		$this->assertSame(0, $loaded);
 	}
 
 	// -------------------------------------------------------------------------
@@ -154,8 +165,11 @@ class NameCacheWarmupJobTest extends TestCase {
 			->willThrowException(new \RuntimeException('Database offline'));
 
 		// PHPUnit will catch any uncaught exception and fail the test.
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed', $this->callback(fn (array $context): bool => $context['error'] === 'Database offline'));
+
 		$this->runJob();
-		$this->assertTrue(true);
 	}
 
 	public function testRunLogsExceptionMessageInErrorContext(): void {

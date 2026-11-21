@@ -202,9 +202,25 @@ class ContactService implements ContactServiceInterface {
 			contactUid: $link->getContactUid()
 		);
 
-		// Persist the freshened values + bump linkedAt so
-		// the next read can rely on the cache. Best-effort;
-		// a DB failure here doesn't break the list call.
+		$this->persistReEnriched(link: $link, vfields: $vfields);
+
+		$row['phone'] = $vfields['phone'];
+		$row['org'] = $vfields['org'];
+		$row['avatarUrl'] = $vfields['avatarUrl'];
+		return $row;
+	}//end reEnrichedRow()
+
+	/**
+	 * Persist the freshened values + bump linkedAt so the next read can rely on the cache.
+	 *
+	 * Best-effort; a DB failure here doesn't break the list call.
+	 *
+	 * @param ContactLink          $link    The link row.
+	 * @param array<string, mixed> $vfields The freshened phone, org and avatar.
+	 *
+	 * @return void
+	 */
+	private function persistReEnriched(ContactLink $link, array $vfields): void {
 		try {
 			$link->setPhone($vfields['phone']);
 			$link->setOrg($vfields['org']);
@@ -215,12 +231,7 @@ class ContactService implements ContactServiceInterface {
 				'Failed to persist re-enriched vCard fields: ' . $e->getMessage()
 			);
 		}
-
-		$row['phone'] = $vfields['phone'];
-		$row['org'] = $vfields['org'];
-		$row['avatarUrl'] = $vfields['avatarUrl'];
-		return $row;
-	}//end reEnrichedRow()
+	}//end persistReEnriched()
 
 	/**
 	 * Add the deep-link to the specific contact in the Contacts app, when it resolves.
@@ -549,36 +560,12 @@ class ContactService implements ContactServiceInterface {
 	}//end contactPhotoRoute()
 
 	/**
-	 * Link an existing contact to an object.
+	 * Tag an existing vCard with its object and role, and save the link row of it.
 	 *
 	 * Tier-2: the call is idempotent — if a link row already exists for
 	 * `(objectUuid, contactUid)` (enforced by the
 	 * `idx_contact_object_uid_uniq` index) the row is updated in-place
-	 * with the freshened cached fields and the new role. Callers that
-	 * relied on the previous "always-insert" semantics still get a
-	 * persisted entity back.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $addressbookId The addressbook ID.
-	 * @param string $contactUri The contact URI in the addressbook.
-	 * @param string|null $role The role of this contact on the object.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created or updated link.
-	 *
-	 * @throws Exception If the contact does not exist.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function linkContact(string $objectUuid, int $registerId, int $addressbookId, string $contactUri, ?string $role = null,
-		?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $role);
-		return $this->linkCard(card: new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri), placement: $placement);
-	}//end linkContact()
-
-	/**
-	 * Tag an existing vCard with its object and role, and save the link row of it.
+	 * with the freshened cached fields and the new role.
 	 *
 	 * @param ContactCardRef   $card      The vCard to link.
 	 * @param ContactPlacement $placement Where it is linked, and in what role.
@@ -776,31 +763,10 @@ class ContactService implements ContactServiceInterface {
 	/**
 	 * Create a new contact and link it to an object.
 	 *
-	 * Tier-2: extended to persist `phone` / `org` straight from the
-	 * caller-supplied payload, and to accept an optional `schemaId`
-	 * + free-form `org` field. The avatar URL falls back to the
-	 * per-uid Contacts route (no PHOTO is set on freshly-created
-	 * vCards yet).
-	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param array $data Contact data: `fullName` or `displayName`, `email`,
-	 *                    `phone`, `org`, `role`.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
-	 *
-	 * @return ContactLink The created link.
-	 *
-	 * @throws Exception If no user or addressbook.
-	 *
-	 * @spec openspec/specs/contacts-actions/spec.md
-	 */
-	public function createAndLinkContact(string $objectUuid, int $registerId, array $data, ?int $schemaId = null): ContactLink {
-		$placement = new ContactPlacement(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, role: $data['role'] ?? null);
-		return $this->createCard(placement: $placement, data: $data);
-	}//end createAndLinkContact()
-
-	/**
-	 * Create a vCard in the user's first addressbook and insert the link row of it.
+	 * Creates a vCard in the user's first addressbook and inserts the link row of it.
+	 * Tier-2: persists `phone` / `org` straight from the caller-supplied payload. The
+	 * avatar URL falls back to the per-uid Contacts route (no PHOTO is set on
+	 * freshly-created vCards yet).
 	 *
 	 * @param ContactPlacement $placement Where it is linked, and in what role.
 	 * @param array            $data      Contact data: `fullName` or `displayName`, `email`, `phone`, `org`.
@@ -811,13 +777,9 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createCard(ContactPlacement $placement, array $data): ContactLink {
+	public function createAndLinkContact(ContactPlacement $placement, array $data): ContactLink {
 		$user = $this->requireUser();
-
-		$addressbook = $this->findUserAddressbook();
-		if ($addressbook === null) {
-			throw new Exception('No addressbook found');
-		}
+		$addressbook = $this->requireUserAddressbook();
 
 		$contact = ['uid' => strtoupper(bin2hex(random_bytes(16)))] + $this->newContactFields(data: $data);
 		$contactUri = $contact['uid'] . '.vcf';
@@ -828,14 +790,44 @@ class ContactService implements ContactServiceInterface {
 			$this->newCardData(placement: $placement, contact: $contact)
 		);
 
-		// Create DB record.
+		$link = $this->newContactLink(placement: $placement, contact: $contact + ['addressbookId' => $addressbook['id'], 'contactUri' => $contactUri]);
+		$this->stampLinkedBy(link: $link, uid: $user->getUID());
+
+		return $this->contactLinkMapper->insert($link);
+	}//end createAndLinkContact()
+
+	/**
+	 * The user's addressbook a new contact is created in.
+	 *
+	 * @return array The addressbook.
+	 *
+	 * @throws Exception When the user has none.
+	 */
+	private function requireUserAddressbook(): array {
+		$addressbook = $this->findUserAddressbook();
+		if ($addressbook === null) {
+			throw new Exception('No addressbook found');
+		}
+
+		return $addressbook;
+	}//end requireUserAddressbook()
+
+	/**
+	 * The DB record of a contact just created in an addressbook, before who linked it.
+	 *
+	 * @param ContactPlacement     $placement The object, register, schema and role.
+	 * @param array<string, mixed> $contact   The contact's uid and fields, its addressbook id and its URI.
+	 *
+	 * @return ContactLink The unsaved link.
+	 */
+	private function newContactLink(ContactPlacement $placement, array $contact): ContactLink {
 		$link = new ContactLink();
 		$link->setObjectUuid($placement->objectUuid);
 		$this->place(link: $link, placement: $placement);
 
 		$link->setContactUid($contact['uid']);
-		$link->setAddressbookId($addressbook['id']);
-		$link->setContactUri($contactUri);
+		$link->setAddressbookId($contact['addressbookId']);
+		$link->setContactUri($contact['contactUri']);
 		$link->setDisplayName($contact['displayName']);
 		$link->setEmail($contact['email']);
 		$link->setPhone($contact['phone']);
@@ -843,10 +835,9 @@ class ContactService implements ContactServiceInterface {
 		// PHOTO not set yet — fall back to the per-uid Contacts route.
 		$link->setAvatarUrl('/index.php/apps/contacts/photo/' . rawurlencode($contact['uid']));
 		$link->setRole($placement->role);
-		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 
-		return $this->contactLinkMapper->insert($link);
-	}//end createCard()
+		return $link;
+	}//end newContactLink()
 
 	/**
 	 * The display name, email, phone and organisation of a new contact.
@@ -876,12 +867,27 @@ class ContactService implements ContactServiceInterface {
 	 * @return string
 	 */
 	private function newCardData(ContactPlacement $placement, array $contact): string {
-		$lines = [];
-		$lines[] = 'BEGIN:VCARD';
-		$lines[] = 'VERSION:3.0';
-		$lines[] = 'UID:' . $contact['uid'];
-		$lines[] = 'FN:' . $contact['displayName'];
+		$lines = [
+			'BEGIN:VCARD',
+			'VERSION:3.0',
+			'UID:' . $contact['uid'],
+			'FN:' . $contact['displayName'],
+		];
+		$lines = array_merge($lines, self::optionalCardLines(contact: $contact), self::objectCardLines(placement: $placement));
+		$lines[] = 'END:VCARD';
 
+		return implode("\r\n", $lines) . "\r\n";
+	}//end newCardData()
+
+	/**
+	 * The email, phone and organisation lines of a new card, for the fields that are set.
+	 *
+	 * @param array<string, mixed> $contact The contact's fields.
+	 *
+	 * @return list<string>
+	 */
+	private static function optionalCardLines(array $contact): array {
+		$lines = [];
 		if (empty($contact['email']) === false) {
 			$lines[] = 'EMAIL;TYPE=INTERNET:' . $contact['email'];
 		}
@@ -894,15 +900,24 @@ class ContactService implements ContactServiceInterface {
 			$lines[] = 'ORG:' . $contact['org'];
 		}
 
-		$lines[] = 'X-OPENREGISTER-OBJECT:' . $placement->objectUuid;
+		return $lines;
+	}//end optionalCardLines()
+
+	/**
+	 * The lines that tie a new card to its object and role.
+	 *
+	 * @param ContactPlacement $placement The object and role.
+	 *
+	 * @return list<string>
+	 */
+	private static function objectCardLines(ContactPlacement $placement): array {
+		$lines = ['X-OPENREGISTER-OBJECT:' . $placement->objectUuid];
 		if ($placement->role !== null) {
 			$lines[] = 'X-OPENREGISTER-ROLE:' . $placement->role;
 		}
 
-		$lines[] = 'END:VCARD';
-
-		return implode("\r\n", $lines) . "\r\n";
-	}//end newCardData()
+		return $lines;
+	}//end objectCardLines()
 
 	/**
 	 * Update the role on a contact-object link.
@@ -948,10 +963,7 @@ class ContactService implements ContactServiceInterface {
 	 */
 	private function retagRole(ContactLink $link, string $role): void {
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
@@ -964,6 +976,21 @@ class ContactService implements ContactServiceInterface {
 			$this->runtime->logger->warning('Failed to update vCard role: ' . $e->getMessage());
 		}
 	}//end retagRole()
+
+	/**
+	 * The CardDAV card behind a link; a user link has none.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return array<string, mixed>|false The card, or false when the link is a user link or the card is gone.
+	 */
+	private function linkedCard(ContactLink $link): array|false {
+		if ($link->isUserLink() === true) {
+			return false;
+		}
+
+		return $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+	}//end linkedCard()
 
 	/**
 	 * Remove a contact link.
@@ -994,10 +1021,7 @@ class ContactService implements ContactServiceInterface {
 		// the link-row delete — orphan link rows would otherwise only
 		// be cleanable via direct DB DELETE.
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
@@ -1098,6 +1122,18 @@ class ContactService implements ContactServiceInterface {
 
 		$links = $this->contactLinkMapper->findByContactUid($contactUid);
 
+		return self::visibleLinkRows(links: $links, allowedAddressbookIds: $allowedAddressbookIds);
+	}//end getObjectsForContact()
+
+	/**
+	 * The link rows the caller may see: user links, and links into the caller's own addressbooks.
+	 *
+	 * @param array<int, ContactLink> $links                 The contact's links.
+	 * @param array<int, int>         $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function visibleLinkRows(array $links, array $allowedAddressbookIds): array {
 		return array_values(
 			array_map(
 				static function (ContactLink $link): array {
@@ -1105,17 +1141,27 @@ class ContactService implements ContactServiceInterface {
 				},
 				array_filter(
 					$links,
-					static function (ContactLink $link) use ($allowedAddressbookIds): bool {
-						if ($link->isUserLink() === true) {
-							return true;
-						}
-
-						return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
-					}
+					static fn (ContactLink $link): bool => self::isVisibleLink(link: $link, allowedAddressbookIds: $allowedAddressbookIds)
 				)
 			)
 		);
-	}//end getObjectsForContact()
+	}//end visibleLinkRows()
+
+	/**
+	 * Whether the caller may see a link: a user link, or one into the caller's own addressbooks.
+	 *
+	 * @param ContactLink     $link                  The link.
+	 * @param array<int, int> $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return bool
+	 */
+	private static function isVisibleLink(ContactLink $link, array $allowedAddressbookIds): bool {
+		if ($link->isUserLink() === true) {
+			return true;
+		}
+
+		return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
+	}//end isVisibleLink()
 
 	/**
 	 * Collect the addressbook IDs owned by the current session user.
@@ -1155,33 +1201,57 @@ class ContactService implements ContactServiceInterface {
 		$links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
 
 		foreach ($links as $link) {
-			try {
-				if ($link->isUserLink() === true) {
-					$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
-					continue;
-				}
-
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-				if ($card !== false) {
-					$vcard = Reader::read($card['carddata']);
-					// Remove properties matching this object only.
-					unset($vcard->{'X-OPENREGISTER-OBJECT'});
-					unset($vcard->{'X-OPENREGISTER-ROLE'});
-					$this->cardDavBackend->updateCard(
-						$link->getAddressbookId(),
-						$link->getContactUri(),
-						$vcard->serialize()
-					);
-				}
-			} catch (Exception $e) {
-				$this->runtime->logger->warning(
-					'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
-				);
-			}
+			$this->cleanVcardOf(link: $link);
 		}//end foreach
 
 		$this->contactLinkMapper->deleteByObjectUuid($objectUuid);
 	}//end deleteLinksForObject()
+
+	/**
+	 * Remove an object's properties from the vCard behind one of its links, best-effort; a user link has no vCard.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return void
+	 */
+	private function cleanVcardOf(ContactLink $link): void {
+		try {
+			if ($link->isUserLink() === true) {
+				$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
+				return;
+			}
+
+			$this->removeObjectProperties(link: $link);
+		} catch (Exception $e) {
+			$this->runtime->logger->warning(
+				'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
+			);
+		}
+	}//end cleanVcardOf()
+
+	/**
+	 * Remove the object and role properties from the vCard behind an addressbook link, when the card still exists.
+	 *
+	 * @param ContactLink $link The addressbook link row.
+	 *
+	 * @return void
+	 */
+	private function removeObjectProperties(ContactLink $link): void {
+		$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+		if ($card === false) {
+			return;
+		}
+
+		$vcard = Reader::read($card['carddata']);
+		// Remove properties matching this object only.
+		unset($vcard->{'X-OPENREGISTER-OBJECT'});
+		unset($vcard->{'X-OPENREGISTER-ROLE'});
+		$this->cardDavBackend->updateCard(
+			$link->getAddressbookId(),
+			$link->getContactUri(),
+			$vcard->serialize()
+		);
+	}//end removeObjectProperties()
 
 	/**
 	 * Find the user's default addressbook.

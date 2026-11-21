@@ -38,15 +38,13 @@ final class ObjectOwnershipControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices(
 				objectService: $objectService,
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
+				catalog: new MapperBackedSchemaCatalog(registers: $registerMapper, schemas: $schemaMapper),
 				ownership: $ownership,
+				logger: $logger,
 			),
-			$logger,
 		];
 	}
 

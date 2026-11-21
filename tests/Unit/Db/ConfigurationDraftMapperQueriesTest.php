@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ConfigurationDraft;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
@@ -92,6 +93,24 @@ class ConfigurationDraftMapperQueriesTest extends TestCase {
 		$this->assertStringNotContainsString('isNull(layer_ref)', $this->sql());
 		$this->assertSame('reg-7', $this->bound(':p3'));
 	}//end testFindAtAddressWithLayerRefBindsIt()
+
+	/**
+	 * findAt() reads one address object and builds the same query.
+	 *
+	 * @return void
+	 */
+	public function testFindAtTakesTheAddressObject(): void {
+		$this->results[] = [['id' => 4, 'layer' => 'register']];
+
+		$draft = $this->mapper->findAt('set-1', new ConfigurationAddress('register', 'reg-7', 'title'));
+
+		$this->assertSame(4, $draft?->getId());
+		$this->assertSame(
+			'select(*) from(openregister_config_drafts) where(eq(set_uuid, :p0)) andWhere(eq(layer, :p1)) andWhere(eq(config_key, :p2)) setMaxResults(1) andWhere(eq(layer_ref, :p3)) executeQuery()',
+			$this->sql()
+		);
+		$this->assertSame('reg-7', $this->bound(':p3'));
+	}//end testFindAtTakesTheAddressObject()
 
 	/**
 	 * findByUuid() throws when the draft is gone.

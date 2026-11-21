@@ -2,13 +2,17 @@
 
 ## 1. Parse and map
 
-- [ ] 1.1 Reader for CSV/TSV, XLSX and JSON-lines producing an `iterable` of rows,
+- [x] 1.1 Reader for CSV/TSV, XLSX and JSON-lines producing an `iterable` of rows,
       never loading the whole file. The streaming write path is pointless if the
       parser buffers.
-- [ ] 1.2 Header → schema-property mapping proposal (exact, then case- and
+- [x] 1.2 Header → schema-property mapping proposal (exact, then case- and
       separator-insensitive). Unmatched columns are reported as unmatched.
-- [ ] 1.3 Confirmation step that refuses to proceed while any column is neither
+- [x] 1.3 Confirmation step that refuses to proceed while any column is neither
       mapped nor explicitly ignored.
+  - Built (13 Nov) as services under `lib/Service/Import/RecordImport/`:
+    `RecordFileReader` (CSV with comma/semicolon sniffing, TSV, JSON lines one line
+    at a time; XLSX in chunks of 500 rows through a read filter), `ColumnMapper`
+    (proposal, confirmation, `ConfirmedMapping`). No route or UI yet.
 
 ## 2. Dry run
 
@@ -19,12 +23,16 @@
 
 ## 3. Write
 
-- [ ] 3.1 Import service calling `ObjectService::saveObjectsStreaming()`, which
+- [x] 3.1 Import service calling `ObjectService::saveObjectsStreaming()`, which
       already clears the reference cache at the batch boundary.
-- [ ] 3.2 Identity handling: use the nominated identifying column to update;
+- [x] 3.2 Identity handling: use the nominated identifying column to update;
       with none nominated, create only, and say so at confirmation time.
-- [ ] 3.3 Surface `BatchOperationStatus` — created/updated/unchanged/failed and
+- [x] 3.3 Surface `BatchOperationStatus` — created/updated/unchanged/failed and
       the reference-cache counters — as the result payload.
+  - Built (13 Nov): `RecordImportService::import()`. An identifier value matching
+    one object updates it; matching more than one refuses that row with its line;
+    failures carry the file line. No route yet: the route that exposes it must be
+    administrator-only, like `BulkController`'s `stream`.
 
 ## 4. Results
 

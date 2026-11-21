@@ -22,11 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -85,7 +86,7 @@ class ContentReportController extends Controller {
 		IRequest $request,
 		ContentReportControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->reports = $services->reports;
 		$this->service = $services->service;
 		$this->objects = $services->objects;
@@ -102,7 +103,6 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The filed report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
@@ -171,10 +171,8 @@ class ContentReportController extends Controller {
 			return $this->forbidden();
 		}
 
-		$rows = $this->reports->findAll(
-			status: $this->optionalParam(key: 'status'),
-			organisationId: $this->optionalParam(key: 'organisation')
-		);
+		$filters = ['status' => $this->optionalParam(key: 'status'), 'organisation_id' => $this->optionalParam(key: 'organisation')];
+		$rows = $this->reports->findAll(query: ListQuery::unbounded(filters: $filters));
 
 		$results = [];
 		foreach ($rows as $row) {
@@ -280,15 +278,33 @@ class ContentReportController extends Controller {
 	 * @return JSONResponse The report, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 * @SuppressWarnings(PHPMD.StaticAccess) ContentReport::isValidStatus is the entity's own vocabulary
-	 *   check, the same shape ProcessingPurposeController uses.
 	 * @no-admin-idor-exempt Guarded by the reviewer-group check below. Reviewing is the
 	 *   only write this endpoint allows, and it is the reviewer group's job by definition.
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function update(string $id): JSONResponse {
+		$refusal = $this->reviewRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$report = $this->resolve(identifier: $id);
+		if ($report === null) {
+			return $this->notFound(identifier: $id);
+		}
+
+		return $this->recordReview(report: $report);
+	}//end update()
+
+	/**
+	 * Why the caller may not record a review: no session, or not in the reviewer group.
+	 *
+	 * @return JSONResponse|null The refusal, or null for a reviewer.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function reviewRefusal(): ?JSONResponse {
 		if ($this->userSession->getUser() === null) {
 			return $this->unauthorized();
 		}
@@ -297,11 +313,22 @@ class ContentReportController extends Controller {
 			return $this->forbidden();
 		}
 
-		$report = $this->resolve(identifier: $id);
-		if ($report === null) {
-			return $this->notFound(identifier: $id);
-		}
+		return null;
+	}//end reviewRefusal()
 
+	/**
+	 * Record the requested outcome on a report, when it is in the status vocabulary.
+	 *
+	 * @param ContentReport $report The report under review.
+	 *
+	 * @return JSONResponse The report, or the refusal.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ContentReport::isValidStatus is the entity's own vocabulary
+	 *   check, the same shape ProcessingPurposeController uses.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function recordReview(ContentReport $report): JSONResponse {
 		$status = $this->optionalParam(key: 'status');
 		if ($status === null || ContentReport::isValidStatus(status: $status) === false) {
 			return new JSONResponse(
@@ -313,7 +340,19 @@ class ContentReportController extends Controller {
 		}
 
 		$report->setStatus($status);
+		return $this->persistReview(report: $report);
+	}//end recordReview()
 
+	/**
+	 * Write a reviewed report, refusing with the write's own message when it fails.
+	 *
+	 * @param ContentReport $report The report with its new status.
+	 *
+	 * @return JSONResponse The persisted report, or the refusal.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function persistReview(ContentReport $report): JSONResponse {
 		try {
 			$persisted = $this->reports->update($report);
 		} catch (Throwable $writeFailed) {
@@ -324,7 +363,7 @@ class ContentReportController extends Controller {
 		}
 
 		return new JSONResponse(data: $persisted->jsonSerialize());
-	}//end update()
+	}//end persistReview()
 
 	/**
 	 * Resolve a path identifier that may be an id or a uuid.

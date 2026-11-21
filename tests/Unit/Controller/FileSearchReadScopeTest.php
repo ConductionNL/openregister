@@ -35,6 +35,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * A signed-in user cannot read the text of a file they cannot open through search.
@@ -132,8 +133,8 @@ class FileSearchReadScopeTest extends TestCase {
 
 		$fusedInput = null;
 		$this->vectorService->method('hybridSearch')->willReturnCallback(
-			function (string $query, array $keywordResults = [], int $limit = 20, array $weights = []) use (&$fusedInput): array {
-				$fusedInput = $keywordResults;
+			function (HybridSearchRequest $request) use (&$fusedInput): array {
+				$fusedInput = $request->keywordResults;
 				return ['results' => $this->hits(), 'total' => 3];
 			}
 		);

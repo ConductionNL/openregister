@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -129,27 +130,14 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	/**
 	 * Why a filled link cannot be minted in this run, or '': refusal(), then the object and the expiry.
 	 *
-	 * @param array<string, mixed> $data    The filled link fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled link fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The context: the set's `objects` and the install day.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
-		return $this->refusalOf(row: new FilledRow(data: $data, users: $users), context: $context);
-	}//end refusalIn()
-
-	/**
-	 * Why a filled link cannot be minted in this run, or '': refusal(), then the object and the expiry.
-	 *
-	 * @param FilledRow            $row     The filled link fields and the account ids the set creates or adopts.
-	 * @param array<string, mixed> $context The context: the set's `objects` and the install day.
-	 *
-	 * @return string
-	 */
-	private function refusalOf(FilledRow $row, array $context): string {
+	protected function refusalIn(FilledRow $row, array $context): string {
 		$data = $row->data;
 		$why  = $this->refusal(data: $data, users: $row->users);
 		if ($why !== '') {
@@ -165,7 +153,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 		}
 
 		return $this->dateRefusal(field: 'expiresAt', value: $data['expiresAt'], context: $context, isEnd: true);
-	}//end refusalOf()
+	}//end refusalIn()
 
 	/**
 	 * Mint one link as its declared account, once the mint guard admits that account to the object.
@@ -207,13 +195,15 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 		}
 
 		return $this->links()->mint(
-			userId: $createdBy,
-			subjectType: AccessLink::SUBJECT_OBJECT,
-			subjectId: $object,
-			terms: new AccessLinkTerms(
-				capabilities: array_values((array) ($data['capabilities'] ?? [])),
-				expiresAt: (string) $data['expiresAt'],
-				label: $this->labelOf(data: $data)
+			new LinkMintRequest(
+				minter: $createdBy,
+				subjectType: AccessLink::SUBJECT_OBJECT,
+				subjectId: $object,
+				terms: new AccessLinkTerms(
+					capabilities: array_values((array) ($data['capabilities'] ?? [])),
+					expiresAt: (string) $data['expiresAt'],
+					label: $this->labelOf(data: $data)
+				)
 			)
 		);
 	}//end mint()
@@ -323,6 +313,7 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	 * @return array{id: int, uuid: string, url: string}
 	 */
 	private static function standIn(string $app, string $key): array {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5($app.'/'.$key);
 
 		return [

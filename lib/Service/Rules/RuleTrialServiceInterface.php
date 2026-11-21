@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Trying a rule without writing, as the rules controller uses it. Only the
@@ -40,31 +40,20 @@ interface RuleTrialServiceInterface {
 	/**
 	 * Try a rule against a stored object, without writing.
 	 *
-	 * @param Schema                    $schema   The schema the rule belongs to.
-	 * @param string                    $ruleId   The derived rule id.
-	 * @param string                    $register Register id, uuid or slug.
-	 * @param string                    $objectId Object id, uuid, slug or uri.
-	 * @param array<string, mixed>|null $override An unsaved declaration to try in the rule's place.
+	 * @param RuleTrialRequest $request The rule to try: schema, rule id and optional unsaved declaration.
+	 * @param ObjectRef        $ref     The register (id, uuid or slug) and object (id, uuid, slug or uri); the schema is the request's.
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 */
-	public function tryObject(
-		Schema $schema,
-		string $ruleId,
-		string $register,
-		string $objectId,
-		?array $override = null,
-	): array;
+	public function tryObject(RuleTrialRequest $request, ObjectRef $ref): array;
 
 	/**
 	 * Try a rule against a sample payload, without writing.
 	 *
-	 * @param Schema                    $schema   The schema the rule belongs to.
-	 * @param string                    $ruleId   The derived rule id.
-	 * @param array<string, mixed>      $sample   The object payload to evaluate against.
-	 * @param array<string, mixed>|null $override An unsaved declaration to try in the rule's place.
+	 * @param RuleTrialRequest     $request The rule to try: schema, rule id and optional unsaved declaration.
+	 * @param array<string, mixed> $sample  The object payload to evaluate against.
 	 *
 	 * @return array<string, mixed> The verdict, the trace and the writes it would make.
 	 */
-	public function trySample(Schema $schema, string $ruleId, array $sample, ?array $override = null): array;
+	public function trySample(RuleTrialRequest $request, array $sample): array;
 }//end interface

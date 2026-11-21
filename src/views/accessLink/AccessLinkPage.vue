@@ -222,16 +222,29 @@ export default {
 				this.body = response.data
 				this.state = 'open'
 			} catch (e) {
-				const status = e?.response?.status
-				if (status === 401) {
-					if (this.state === 'password') {
-						this.error = t('openregister', 'That password is not right.')
-					}
-					this.state = 'password'
-					return
-				}
-				this.state = 'gone'
+				this.showOpenRefusal(e)
 			}
+		},
+
+		/**
+		 * Show why the link did not open: a 401 asks for the password (and,
+		 * when one was already asked for, says it was wrong); anything else
+		 * means the link is gone.
+		 *
+		 * @spec exclude UI plumbing — public access link page states
+		 * @param {object} e The failed request
+		 * @return {void}
+		 */
+		showOpenRefusal(e) {
+			const status = e?.response?.status
+			if (status !== 401) {
+				this.state = 'gone'
+				return
+			}
+			if (this.state === 'password') {
+				this.error = t('openregister', 'That password is not right.')
+			}
+			this.state = 'password'
 		},
 
 		/**

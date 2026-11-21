@@ -3,6 +3,8 @@
 namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -23,8 +25,7 @@ class McpDiscoveryServiceTest extends TestCase {
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 
 		$this->service = new McpDiscoveryService(
-			$this->registerMapper,
-			$this->schemaMapper,
+			new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			$this->urlGenerator
 		);
 	}

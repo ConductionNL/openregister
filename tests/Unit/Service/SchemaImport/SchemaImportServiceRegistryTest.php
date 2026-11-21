@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\SchemaImport;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\SchemaImport\SourceUpdate;
 use OCA\OpenRegister\Service\SchemaImport\BundledImporters;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
@@ -42,6 +43,18 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SchemaImport\SchemaImportService
+ * @uses \OCA\OpenRegister\Service\SchemaImport\BundledImporters
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\GgmSnapshot
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportOptions
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchema
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchemaDefinition
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ImportedSchemaHeading
+ * @uses \OCA\OpenRegister\Service\SchemaImport\MergeInstruction
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgImporter
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SchemaOrgSnapshot
+ * @uses \OCA\OpenRegister\Service\SchemaImport\SourceUpdate
+ * @uses \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge
  */
 class SchemaImportServiceRegistryTest extends TestCase {
 
@@ -106,10 +119,7 @@ class SchemaImportServiceRegistryTest extends TestCase {
 		$service = $this->service();
 		$service->register($this->importer('fake', 'v1'));
 
-		$preview = $service->previewUpdateFromSource(
-			['dialect' => 'fake', 'reference' => 'Thing', 'baseline' => 'corrupt'],
-			['name' => ['type' => 'string']]
-		);
+		$preview = $service->previewUpdateFromSource(new SourceUpdate(['dialect' => 'fake', 'reference' => 'Thing', 'baseline' => 'corrupt'], ['name' => ['type' => 'string']]));
 
 		$this->assertSame(['dialect' => 'fake', 'reference' => 'Thing'], $preview['incomingSource']);
 		$this->assertSame(['@type' => 'Thing'], $preview['jsonld']);

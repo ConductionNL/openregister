@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -120,9 +121,7 @@ class AggregationRegisterScopeTest extends TestCase {
 		$this->db->method('getDatabasePlatform')->willReturn($platform);
 
 		$this->runner = new AggregationRunner(
-			magicMapper: $this->magicMapper,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
 			placeholders: $this->placeholderResolver,
 			db: $this->db,
 			cache: $this->cache,
@@ -248,7 +247,7 @@ class AggregationRegisterScopeTest extends TestCase {
 
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturn([$this->row(['hours' => 3])]);
 
-		$result = $this->runner->run(registerRef: 'hrmq', schemaRef: 'TimeEntry', name: 'totalCount');
+		$result = $this->runner->run(ref: new NamedAggregationRef(register: 'hrmq', schema: 'TimeEntry', name: 'totalCount'));
 
 		$this->assertSame(1, $result['value']);
 	}//end testNamedAggregationResolvesSchemaWithinTheNamedRegisterOnly()

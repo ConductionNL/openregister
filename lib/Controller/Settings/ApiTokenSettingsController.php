@@ -20,9 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApiTokenProbe;
 use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\AppFramework\Controller;
@@ -102,22 +102,28 @@ class ApiTokenSettingsController extends Controller {
 	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
 	 * @param ApiTokenSettingsControllerServices $services The api token settings controller services.
-	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		IRequest $request,
 		ApiTokenSettingsControllerServices $services,
-		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
-		$this->config = $services->config;
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		$this->config = $services->reporting->appConfig;
 		$this->settingsService = $services->settingsService;
 		$this->clientService = $services->clientService;
-		$this->connectionReporter = $services->connectionReporter;
+		$this->connectionReporter = $services->reporting->connectionReporter;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -163,8 +169,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Save API tokens for GitHub and GitLab
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with save result
 	 *
@@ -246,8 +250,6 @@ class ApiTokenSettingsController extends Controller {
 	/**
 	 * Test GitHub API token
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Test result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -328,8 +330,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Test GitLab API token
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result
 	 *

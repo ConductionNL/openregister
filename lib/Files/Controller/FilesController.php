@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Controller\Support\FileActionTarget;
@@ -46,15 +47,24 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeOpenRequest;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FetchedFile;
+use OCA\OpenRegister\Service\File\UrlFetchRefused;
+use OCA\OpenRegister\Service\File\UrlFileSource;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -72,6 +82,11 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
+use OCA\OpenRegister\Support\ContentDisposition;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -207,6 +222,13 @@ class FilesController extends Controller {
 	private readonly ?FileRestrictionGuard $fileRestrictions;
 
 	/**
+	 * Fetches a file to create from a URL (files-create-from-url).
+	 *
+	 * @var ?UrlFileSource
+	 */
+	private readonly ?UrlFileSource $urlFileSource;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for file operations.
@@ -222,11 +244,12 @@ class FilesController extends Controller {
 		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->rootFolder = $services->store->rootFolder;
 		$this->userManager = $services->platform->userManager;
 		$this->eventDispatcher = $services->platform->eventDispatcher;
 		$this->fileMapper = $services->store->fileMapper;
+		$this->urlFileSource = $services->store->urlFileSource;
 		$this->fileAuditHandler = $services->guards->fileAuditHandler;
 		$this->userSession = $services->platform->userSession;
 		$this->l10n = $services->platform->l10n;
@@ -346,7 +369,7 @@ class FilesController extends Controller {
 	 *                           schema (so a slug is this schema's object, #4037); null for an
 	 *                           anonymous caller, who is gated on publication instead.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
+	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
@@ -409,13 +432,11 @@ class FilesController extends Controller {
 	private function objectUnderRule(FileAccessCheck $check): ObjectEntity {
 		$route = $check->route;
 		if ($check->change === false) {
-			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+			return $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		}
 
 		$object = $this->objectFileAccess->changeable(
-			register: $route->register,
-			schema: $route->schema,
-			id: $route->id,
+			ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id),
 			verb: $check->verb
 		);
 		// REQ-OAS-007: a frozen or archived object's files do not change
@@ -439,7 +460,11 @@ class FilesController extends Controller {
 	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
 		$route = $check->route;
 		$object = WriteCause::asLookup(
-			fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true)
+			fn () => $this->objectService->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
+				_rbac: true
+			)
 		);
 		if ($object instanceof ObjectEntity === false) {
 			return null;
@@ -560,14 +585,17 @@ class FilesController extends Controller {
 	 */
 	private function savePostedChat(ObjectEntity $object): JSONResponse {
 		$user = $this->userSession?->getUser();
-		$transcript = (new TalkChatExporter())->export(
+		$transcript = (new TalkChatExporter())->exportTranscript(request: new ChatTranscriptRequest(
 			conversation: (string)$this->request->getParam('conversation', ''),
 			messages: (array)$this->request->getParam('messages', []),
 			savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
 			savedAt: new DateTimeImmutable()
-		);
+		));
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $transcript['filename'], content: $transcript['content'], share: false)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end savePostedChat()
@@ -606,7 +634,7 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse The error response.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function accessDenied(NotAuthorizedException $e): JSONResponse {
 		if ($e instanceof ObjectFileAccessDeniedException === true
@@ -695,6 +723,11 @@ class FilesController extends Controller {
 
 		if ($e instanceof ObjectStateWriteException) {
 			return $this->stateRefused(e: $e);
+		}
+
+		if ($e instanceof UrlFetchRefused) {
+			// REQ-FCU-002: a failed fetch names its reason, and nothing was created.
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'reason' => $e->reason], statusCode: 422);
 		}
 
 		return null;
@@ -803,7 +836,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(string $register, string $schema, string $id): JSONResponse {
@@ -845,8 +878,52 @@ class FilesController extends Controller {
 			$files = $this->fileRestrictions->readableNodes(nodes: $files);
 		}
 
-		return $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		$page = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+		if ($isAnonymous === true) {
+			return $page;
+		}
+
+		return $this->withOfficeUrls(route: $route, object: $object, page: $page);
 	}//end listedFiles()
+
+	/**
+	 * The page with `officeUrl` on every file Nextcloud Office opens: the page
+	 * that opens it, which runs its own read and update checks. A file of
+	 * another type, or every file when Office is not available, gets none.
+	 *
+	 * @param FileObjectRoute      $route  The object, as the route names it.
+	 * @param ObjectEntity|null    $object The object the access check resolved.
+	 * @param array<string, mixed> $page   The formatted page of files.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	private function withOfficeUrls(FileObjectRoute $route, ?ObjectEntity $object, array $page): array {
+		if ($this->officeSessionService === null || is_array(($page['results'] ?? null)) === false) {
+			return $page;
+		}
+
+		$objectId = (string)($object?->getUuid() ?? $route->id);
+		foreach ($page['results'] as $index => $file) {
+			if (is_array($file) === false) {
+				continue;
+			}
+
+			$url = $this->officeSessionService->officePageUrl(
+				register: $route->register,
+				schema: $route->schema,
+				objectId: $objectId,
+				fileId: (int)($file['id'] ?? 0),
+				mimeType: (string)($file['type'] ?? '')
+			);
+			if ($url !== null) {
+				$page['results'][$index]['officeUrl'] = $url;
+			}
+		}
+
+		return $page;
+	}//end withOfficeUrls()
 
 	/**
 	 * Answer a failed listing; anything unforeseen answers 500 without its detail (SEC-CTRL-7).
@@ -909,11 +986,9 @@ class FilesController extends Controller {
 		return WriteCause::asLookup(
 			fn () => $this->objectService->find(
 				id: $route->id,
-				register: $route->register,
-				schema: $route->schema,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_audit: false
+				_multitenancy: false
 			)
 		);
 	}//end objectWithoutChecks()
@@ -1037,7 +1112,7 @@ class FilesController extends Controller {
 	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
 		$response = new StreamResponse($file->fopen('r'));
 		$response->addHeader('Content-Type', $file->getMimeType());
-		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Disposition', (new ContentDisposition(disposition: 'inline', filename: $file->getName()))->headerValue());
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		// Record download (counter + audit). Best-effort.
@@ -1143,8 +1218,6 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400|403|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
@@ -1166,35 +1239,124 @@ class FilesController extends Controller {
 	}//end create()
 
 	/**
-	 * Add the file the request posts.
+	 * Add the file the request posts: its content, or the bytes fetched from its source URL.
 	 *
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return JSONResponse The added file.
 	 *
-	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 * @throws FileActionRefusal With 400 when the name is missing, or not exactly one of content and source is sent.
+	 * @throws UrlFetchRefused   When the source URL produced no bytes; answered with 422.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
 	 */
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
+		$fileName = $this->postedFileName(data: $data);
+		$share = $this->parseBool(value: $data['share'] ?? false);
+		$tags = $this->normalizeTags(tags: $data['tags'] ?? []);
+
+		if (array_key_exists('source', $data) === true) {
+			return $this->addFetchedFile(object: $object, fileName: $fileName, url: $this->postedSourceUrl(data: $data), share: $share, tags: $tags);
+		}
+
 		$file = $this->fileService->addFile(
-			objectEntity: $object,
-			fileName: $this->postedFileName(data: $data),
-			content: (string)$data['content'],
-			share: $this->parseBool(value: $data['share'] ?? false),
-			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(
+				fileName: $fileName,
+				content: (string)$data['content'],
+				share: $share,
+				tags: $tags
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end addPostedFile()
 
 	/**
-	 * The name of a posted file, once the request holds a name and content.
+	 * Fetch the bytes at a URL and add them as a file, with where they came from.
+	 *
+	 * A failed fetch or a failed upload check throws before anything is written.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param string       $fileName The file name.
+	 * @param string       $url      The source URL.
+	 * @param bool         $share    Whether to share the file.
+	 * @param array        $tags     The tags.
+	 *
+	 * @return JSONResponse The added file, its provenance under `metadata`.
+	 *
+	 * @throws UrlFetchRefused When the URL produced no bytes.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
+	 */
+	private function addFetchedFile(ObjectEntity $object, string $fileName, string $url, bool $share, array $tags): JSONResponse {
+		if ($this->urlFileSource === null) {
+			throw new FileActionRefusal(message: 'Creating a file from a URL is not available', code: 400);
+		}
+
+		$fetched = $this->urlFileSource->fetch(url: $url, fileName: $fileName);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
+		);
+		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
+
+		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
+	}//end addFetchedFile()
+
+	/**
+	 * A formatted file with the provenance of its fetch under `metadata`.
+	 *
+	 * @param array       $formatted The formatted file.
+	 * @param FetchedFile $fetched   What was fetched.
+	 *
+	 * @return array The file.
+	 */
+	private function withProvenance(array $formatted, FetchedFile $fetched): array {
+		$metadata = [];
+		if (is_array($formatted['metadata'] ?? null) === true) {
+			$metadata = $formatted['metadata'];
+		}
+
+		$formatted['metadata'] = array_merge($metadata, $fetched->metadata());
+		return $formatted;
+	}//end withProvenance()
+
+	/**
+	 * The URL of a posted `source`.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return string The URL.
+	 *
+	 * @throws FileActionRefusal With 400 when `source` holds no URL.
+	 */
+	private function postedSourceUrl(array $data): string {
+		$source = $data['source'];
+		$url = null;
+		if (is_array($source) === true) {
+			$url = $source['url'] ?? null;
+		}
+
+		if (is_string($url) === false || trim($url) === '') {
+			throw new FileActionRefusal(message: 'File source must hold a url', code: 400);
+		}
+
+		return trim($url);
+	}//end postedSourceUrl()
+
+	/**
+	 * The name of a posted file, once the request holds a name and exactly one of content and source.
 	 *
 	 * @param array<string, mixed> $data The request parameters.
 	 *
 	 * @return string The file name.
 	 *
-	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 * @throws FileActionRefusal With 400 when the name is missing, or content and source are both or neither sent.
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs
 	 */
 	private function postedFileName(array $data): string {
 		// Support both 'name' and 'filename' for compatibility.
@@ -1203,7 +1365,13 @@ class FilesController extends Controller {
 			throw new FileActionRefusal(message: 'File name is required (use "name" or "filename")', code: 400);
 		}
 
-		if (array_key_exists('content', $data) === false) {
+		$hasContent = array_key_exists('content', $data);
+		$hasSource = array_key_exists('source', $data);
+		if ($hasContent === true && $hasSource === true) {
+			throw new FileActionRefusal(message: 'Send either content or source, not both', code: 400);
+		}
+
+		if ($hasContent === false && $hasSource === false) {
 			throw new FileActionRefusal(message: 'File content is required', code: 400);
 		}
 
@@ -1224,8 +1392,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|403|404,
 	 *     array{error?: mixed|string, labels?: list<string>,...},
@@ -1263,10 +1429,12 @@ class FilesController extends Controller {
 		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
-			fileName: $data['name'],
-			content: (string)$data['content'],
-			share: (($data['share'] ?? false) === true),
-			tags: $this->savedTags(tags: $data['tags'] ?? [])
+			upload: new FileUpload(
+				fileName: $data['name'],
+				content: (string)$data['content'],
+				share: (($data['share'] ?? false) === true),
+				tags: $this->savedTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1322,8 +1490,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|207|400|403|404,
 	 *     array{error?: string, rejected?: list<array{name: string, error: string}>,
@@ -1620,7 +1786,10 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags']);
+		return $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
+		);
 	}//end storeUpload()
 
 	/**
@@ -1663,7 +1832,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse JSON response with updated file or error.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -1678,7 +1846,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->objectService->setObject($id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -1696,11 +1864,13 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 
 		// Content is optional for metadata-only updates.
-		$result = $this->fileService->updateFile(
-			filePath: $fileId,
-			content: $data['content'] ?? null,
-			tags: $data['tags'] ?? [],
-			object: $this->objectService->getObject()
+		$result = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(
+				filePath: $fileId,
+				content: $data['content'] ?? null,
+				tags: $data['tags'] ?? [],
+				object: $this->objectService->getObject()
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($result));
@@ -1717,8 +1887,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|404,
 	 *     array{error?: string, success?: bool},
@@ -1836,6 +2004,7 @@ class FilesController extends Controller {
 		$object = $this->managedFileObject(file: $file);
 		if ($object === false
 			|| $this->refusesManagedFile(object: $object) === true
+			|| $this->refusesUnmanagedFile(file: $file, object: $object) === true
 			|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
 		) {
 			throw new FileActionRefusal(message: 'File not found', code: 404);
@@ -1843,6 +2012,35 @@ class FilesController extends Controller {
 
 		return $object;
 	}//end downloadableFileObject()
+
+	/**
+	 * Whether a download by id must be refused for a file outside the managed tree.
+	 *
+	 * Such a file belongs to a Nextcloud user, so a signed-in caller gets it only
+	 * when it is reachable in their own file tree, where Nextcloud's sharing rules
+	 * apply. An anonymous caller is already held to a published file.
+	 *
+	 * @param File              $file   The file.
+	 * @param ObjectEntity|null $object The object; null for a file outside the managed tree.
+	 *
+	 * @return bool True when the caller cannot reach the file in their own tree.
+	 */
+	private function refusesUnmanagedFile(File $file, ?ObjectEntity $object): bool {
+		if ($object !== null || $this->isAnonymousRequest() === true) {
+			return false;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($uid === null) {
+			return true;
+		}
+
+		try {
+			return $this->rootFolder->getUserFolder($uid)->getFirstNodeById((int)$file->getId()) === null;
+		} catch (\Throwable $e) {
+			return true;
+		}
+	}//end refusesUnmanagedFile()
 
 	/**
 	 * The object an OpenRegister-managed file belongs to.
@@ -1881,7 +2079,7 @@ class FilesController extends Controller {
 	 *
 	 * @return bool True only when an object was found and its read rule allows the caller.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function mayReadObject(ObjectEntity $object): bool {
 		if ($this->objectFileAccess === null) {
@@ -1890,39 +2088,6 @@ class FilesController extends Controller {
 
 		return $this->objectFileAccess->mayRead(object: $object);
 	}//end mayReadObject()
-
-	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
-	 * bytes that break the header or allow header/response splitting. This emits a
-	 * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		// Strip control characters (incl. CR/LF) that could split headers.
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		// ASCII fallback: replace non-ASCII and quote/backslash with underscore.
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-
-		// RFC 5987 / 6266 UTF-8 encoded form for capable clients.
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
 
 	/**
 	 * Get a human-readable error message for PHP file upload errors
@@ -2021,7 +2186,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2052,7 +2216,7 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 		$newName = $data['name'] ?? '';
 		$names = ['oldName' => $data['oldName'] ?? '', 'newName' => $newName];
-		$file = $this->fileService->renameFile(object: $target->object, fileId: $target->fileId, newName: $newName);
+		$file = $this->fileService->renameAttachedFile(rename: new FileRename(object: $target->object, fileId: $target->fileId, newName: $newName));
 
 		// Audit trail entry (best-effort -- handler swallows failures).
 		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.renamed', data: $names);
@@ -2089,7 +2253,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2125,7 +2288,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2274,10 +2436,14 @@ class FilesController extends Controller {
 	 */
 	private function transferredFile(FileTransfer $transfer): File {
 		if ($transfer->isMove() === true) {
-			return $this->fileService->moveFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+			return $this->fileService->moveAttachedFile(
+				transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+			);
 		}
 
-		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+		return $this->fileService->copyAttachedFile(
+			transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+		);
 	}//end transferredFile()
 
 	/**
@@ -2350,7 +2516,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 *
@@ -2423,7 +2588,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2486,7 +2650,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2570,7 +2733,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -2609,7 +2771,10 @@ class FilesController extends Controller {
 		}
 
 		$handler = $this->fileService->getBatchHandler();
-		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+		$result = $handler->runBatch(
+			request: new FileBatchRequest(object: $object, action: $data['action'] ?? '', params: $data),
+			fileIds: $fileIds
+		);
 
 		$statusCode = 200;
 		if ($result['summary']['failed'] > 0) {
@@ -2705,7 +2870,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse The updated metadata, 403, or 404.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -2717,7 +2881,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies; metadata is no less a mutation for being descriptive.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedObject(id: $id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updatePostedMetadata(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
@@ -2742,11 +2906,13 @@ class FilesController extends Controller {
 			$labels = (array)$data['labels'];
 		}
 
-		$entity = $this->fileService->updateFileMetadata(
-			fileId: $fileId,
-			description: $this->postedText(data: $data, key: 'description'),
-			category: $this->postedText(data: $data, key: 'category'),
-			labels: $labels
+		$entity = $this->fileService->changeFileMetadata(
+			change: new FileMetadataChange(
+				fileId: $fileId,
+				description: $this->postedText(data: $data, key: 'description'),
+				category: $this->postedText(data: $data, key: 'category'),
+				labels: $labels
+			)
 		);
 
 		return new JSONResponse(data: $entity->jsonSerialize());
@@ -2791,7 +2957,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse What changed, what did not, and what was refused.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/Unit/Service/File/FileMetadataFormHandlerTest.php
 	 *
@@ -2842,7 +3007,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -2856,7 +3020,9 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			return $this->labelTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
+			$object = $this->routedObject(id: $id);
+			$this->routedFile(object: $object, fileId: $fileId);
+			return $this->labelTarget(target: new FileActionTarget(object: $object, fileId: $fileId));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}
@@ -2875,7 +3041,9 @@ class FilesController extends Controller {
 			$labels = [];
 		}
 
-		$file = $this->fileService->updateFile(filePath: $target->fileId, content: null, tags: $labels, object: $target->object);
+		$file = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $target->fileId, content: null, tags: $labels, object: $target->object)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end labelTarget()
@@ -2895,7 +3063,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
@@ -2926,7 +3094,7 @@ class FilesController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -2978,15 +3146,15 @@ class FilesController extends Controller {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
-		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		$object = $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
-		return $this->officeSessions()->open(
+		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(
 			file: $file,
 			editorUid: $user->getUID(),
 			displayName: $user->getDisplayName(),
 			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
-		);
+		));
 	}//end openOfficeSession()
 
 	/**

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -82,17 +83,27 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?JobRunFilter $filter = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array {
-		$qb = $this->newestFirst(limit: $limit, offset: $offset);
-		$this->narrow(qb: $qb, filter: $filter ?? new JobRunFilter());
+	public function findRecent(?JobRunFilter $filter = null, int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
+		return $this->findPage(filter: $filter ?? new JobRunFilter(), query: new ListQuery(limit: $limit, offset: $offset));
+	}//end findRecent()
+
+	/**
+	 * One page of the most recent runs, narrowed by job, outcome and period.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $query  The page: its limit is capped at MAX_LIMIT, a missing offset reads as zero.
+	 *
+	 * @return array<int, JobRun> The rows, newest first.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findPage(JobRunFilter $filter, ListQuery $query): array {
+		$qb = $this->newestFirst(limit: $query->limit, offset: ($query->offset ?? 0));
+		$this->narrow(qb: $qb, filter: $filter);
 
 		return $this->findEntities(query: $qb);
 
-	}//end findRecent()
+	}//end findPage()
 
 	/**
 	 * Every run, newest first (id breaks ties), one page with the limit clamped to 1..MAX_LIMIT.
@@ -127,20 +138,28 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function countRecent(
-		string|null $jobClass = null,
-		string|null $outcome = null,
-		DateTime|null $since = null,
-		DateTime|null $until = null,
-	): int {
+	public function countRecent(?string $jobClass = null, ?string $outcome = null, ?DateTime $since = null, ?DateTime $until = null): int {
+		return $this->countMatching(filter: new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until));
+	}//end countRecent()
+
+	/**
+	 * How many runs match a narrowing.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countMatching(JobRunFilter $filter): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());
 
-		$this->narrow(qb: $qb, filter: new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until));
+		$this->narrow(qb: $qb, filter: $filter);
 
 		return $this->fetchTotal(qb: $qb);
 
-	}//end countRecent()
+	}//end countMatching()
 
 	/**
 	 * Run a count query and read its `total` column; no row counts as zero.

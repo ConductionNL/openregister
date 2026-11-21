@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Declares only what callers outside the component use of ExportProfileWriter; the rest
@@ -46,15 +45,14 @@ interface ExportProfileWriterInterface {
 	 * already open, so it needs the row without the envelope the request path
 	 * builds around it.
 	 *
-	 * @param ExportProfile $profile The profile.
-	 * @param ObjectEntity  $object  The object.
-	 * @param Schema|null   $schema  The schema, when it resolves.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves.
+	 * @param ObjectEntity      $object     The object.
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string;
+	public function csvLineFor(ProfileProjection $projection, ObjectEntity $object): string;
 
 	/**
 	 * The CSV header line for a profile, with its metadata line above it.

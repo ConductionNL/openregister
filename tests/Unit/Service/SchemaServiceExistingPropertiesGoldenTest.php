@@ -13,12 +13,15 @@ use OCA\OpenRegister\Service\SchemaService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Records the improvements analyzeExistingProperties() reports, per scenario, against
  * fixtures/schema-existing-properties-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\SchemaService
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 class SchemaServiceExistingPropertiesGoldenTest extends TestCase {
 
@@ -110,8 +113,7 @@ class SchemaServiceExistingPropertiesGoldenTest extends TestCase {
 	 */
 	public function testExistingPropertiesGolden(array $existing, array $discovered): void {
 		$service = new SchemaService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(MagicMapper::class),
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$actual = (new ReflectionMethod(SchemaService::class, 'analyzeExistingProperties'))->invoke($service, $existing, $discovered);

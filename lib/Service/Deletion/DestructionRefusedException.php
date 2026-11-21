@@ -24,8 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use Exception;
-use Throwable;
+use OCA\OpenRegister\Exception\RuleRefusedException;
 
 /**
  * A destruction that was refused, carrying the rule that refused it.
@@ -35,65 +34,15 @@ use Throwable;
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
-class DestructionRefusedException extends Exception {
+class DestructionRefusedException extends RuleRefusedException {
 	/**
-	 * Build a refusal.
+	 * The fields that name the refused act.
 	 *
-	 * @param string               $rule       Machine-readable rule id, e.g. `destroy-right-missing`.
-	 * @param string               $reason     The sentence a person reads.
-	 * @param int                  $statusCode The HTTP status the caller should answer with.
-	 * @param array<string, mixed> $context    Anything else the caller needs to act.
-	 * @param Throwable|null       $previous   Previous exception.
-	 *
-	 * @return void
-	 */
-	public function __construct(
-		private readonly string $rule,
-		private readonly string $reason,
-		private readonly int $statusCode = 403,
-		private readonly array $context = [],
-		?Throwable $previous = null,
-	) {
-		parent::__construct(message: $reason, code: $statusCode, previous: $previous);
-	}//end __construct()
-
-	/**
-	 * The rule that refused.
-	 *
-	 * @return string The rule id.
+	 * @return array<string, string> The labels.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function getRule(): string {
-		return $this->rule;
-	}//end getRule()
-
-	/**
-	 * The HTTP status the caller should answer with.
-	 *
-	 * @return int The status code.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function getStatusCode(): int {
-		return $this->statusCode;
-	}//end getStatusCode()
-
-	/**
-	 * The refusal as the API publishes it.
-	 *
-	 * @return array<string, mixed> The response body.
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function toResponseBody(): array {
-		return array_merge(
-			[
-				'error' => 'DESTRUCTION_REFUSED',
-				'rule' => $this->rule,
-				'message' => $this->reason,
-			],
-			$this->context
-		);
-	}//end toResponseBody()
+	protected function responseLabels(): array {
+		return ['error' => 'DESTRUCTION_REFUSED'];
+	}//end responseLabels()
 }//end class

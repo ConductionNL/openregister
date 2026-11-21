@@ -135,6 +135,18 @@ import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { isValidJson } from '../../composables/jsonText.js'
 import { getTheme } from '../../services/getTheme.js'
 
+/**
+ * Register the object type an upload goes to, and name it.
+ *
+ * @param {{register: number|string, schema: number|string}} newObject The upload
+ * @return {string} The object type
+ */
+function registerUploadType(newObject) {
+	const type = `${newObject.register}-${newObject.schema}`
+	objectStore.registerObjectType(type, newObject.schema, newObject.register)
+	return type
+}
+
 export default {
 	name: 'UploadObject',
 	components: {
@@ -267,38 +279,58 @@ export default {
 		async uploadObject() {
 			this.loading = true
 
-			const newObject = {
+			const newObject = this.uploadPayload()
+			const type = registerUploadType(newObject)
+			objectStore
+				.saveObject(type, newObject)
+				.then((data) => this.showUploaded(data))
+				.catch((error) => this.showUploadFailure(error))
+				.finally(() => {
+					this.loading = false
+				})
+		},
+
+		/**
+		 * The object to upload, with its register, schema and mapping.
+		 *
+		 * @return {object} The upload
+		 * @throws {SyntaxError} When the object is not JSON
+		 */
+		uploadPayload() {
+			return {
 				object: JSON.parse(this.object) || '',
 				register: this.registers.value.id || '',
 				schema: this.schemas.value.id || '',
 				mapping: this.mappings?.value?.id || null,
 				schemas: '',
 			}
+		},
 
-			const type = `${newObject.register}-${newObject.schema}`
-			objectStore.registerObjectType(
-				type,
-				newObject.schema,
-				newObject.register,
-			)
-			objectStore
-				.saveObject(type, newObject)
-				.then((data) => {
-					this.success = !!data
-					this.error = false
-					if (data) {
-						setTimeout(this.closeModal, 2000)
-					}
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'An error occurred while uploading the object'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+		/**
+		 * Say whether the upload saved an object; close after two seconds when
+		 * it did.
+		 *
+		 * @param {object|null} data The saved object
+		 * @return {void}
+		 */
+		showUploaded(data) {
+			this.success = !!data
+			this.error = false
+			if (data) {
+				setTimeout(this.closeModal, 2000)
+			}
+		},
+
+		/**
+		 * Say why the upload failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showUploadFailure(error) {
+			this.success = false
+			this.error =
+				error.message || 'An error occurred while uploading the object'
 		},
 
 		/**

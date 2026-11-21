@@ -31,15 +31,18 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+ * @spec openspec/specs/flow-merge/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -48,7 +51,9 @@ use UnexpectedValueException;
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys,
+	IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowSideEffectFree
+{
 
 	/**
 	 * The modes this node understands.
@@ -98,11 +103,39 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['mode', 'key'];
 	}//end configKeys()
+
+	/**
+	 * How the arriving branches are combined, and the field they are matched on.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'mode',
+				'label' => $this->l10n->t('How to combine'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'"append" keeps every item in branch order (the default), "mergeByKey" joins '
+						. 'the items that share a key into one, "unique" keeps only the first item per key.'
+				),
+			],
+			[
+				'key' => 'key',
+				'label' => $this->l10n->t('Key field'),
+				'type' => 'text',
+				'help' => $this->l10n->t('The field items are matched on. Needed for '
+					. '"mergeByKey" and "unique"; when two branches set the same field, the later branch wins.'),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject an unknown mode, or a keyed mode with no key.
@@ -130,13 +163,25 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	/**
 	 * Combine the already-concatenated branch items.
 	 *
-	 * @param array $items The input items (all branches, concatenated).
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The combined items.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		return $this->merged(items: $items, config: $config);
+	}//end execute()
+
+	/**
+	 * The items combined the way the configured mode says.
+	 *
+	 * @param array $items  The input items.
+	 * @param array $config The step configuration.
+	 *
+	 * @return array The combined items.
+	 */
+	private function merged(array $items, array $config): array {
 		$key = (string)($config['key'] ?? '');
 
 		return match ((string)($config['mode'] ?? 'append')) {
@@ -144,7 +189,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			'unique' => $this->unique(items: $items, key: $key),
 			default => $this->append(items: $items),
 		};
-	}//end execute()
+	}//end merged()
 
 	/**
 	 * Append: the engine already concatenated the branches; re-pair each
@@ -159,8 +204,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
@@ -175,7 +219,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, array> One item per distinct key value.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function mergeByKey(array $items, string $key): array {
 		$groups = [];
@@ -195,7 +239,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 
 		$out = [];
 		foreach ($order as $value) {
-			$out[] = FlowItems::item(json: $groups[$value]['json'], binary: [], fromItemIndex: $groups[$value]['from']);
+			$out[] = FlowItems::item(json: $groups[$value]['json'], options: new FlowItemOptions(binary: [], fromItemIndex: $groups[$value]['from']));
 		}
 
 		return $out;
@@ -209,7 +253,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 	 *
 	 * @return array<int, array> The deduplicated items.
 	 *
-	 * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+	 * @spec openspec/specs/flow-merge/spec.md
 	 */
 	private function unique(array $items, string $key): array {
 		$seen = [];
@@ -224,8 +268,7 @@ class MergeNode extends LogicNodeBase implements IFlowNode, MergeNodeInterface, 
 			$seen[$value] = true;
 			$out[] = FlowItems::item(
 				json: $json,
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
