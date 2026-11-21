@@ -31,11 +31,21 @@ namespace OCA\OpenRegister\Kernel\Contracts\Value;
  */
 final class NoteDraft {
 	/**
+	 * The visibility that lets a note reach a citizen on the public timeline.
+	 *
+	 * @var string
+	 */
+	public const PUBLIC_VISIBILITY = 'public';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string      $objectUuid The object the note is written on.
 	 * @param string      $message    The note text.
 	 * @param string|null $visibility Requested visibility; null for the default.
+	 * @param int|null    $parentId   The note this one replies to; null for a top-level note.
+	 * @param string|null $readable   The visibility the writer may read (`public` for a caller
+	 *                                who may not manage the object); null when they may read every note.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -43,6 +53,8 @@ final class NoteDraft {
 		public readonly string $objectUuid,
 		public readonly string $message,
 		public readonly ?string $visibility = null,
+		public readonly ?int $parentId = null,
+		public readonly ?string $readable = null,
 	) {
 	}//end __construct()
 }//end class

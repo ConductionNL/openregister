@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return array{expiriesFired: int, rungsFired: int, taskTimeouts: int, truncated: bool, errors: int} Work performed.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function run(DateTimeInterface $now, int $batch): array {
 		$tally = new FlowTimerSweepTally(now: $now, batch: max(1, $batch));
@@ -102,7 +102,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireExpiries(FlowTimerSweepTally $tally): void {
 		$expiries = $this->timers->timers->findDueExpiries(now: $tally->now, limit: $tally->batch);
@@ -121,7 +121,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireExpiry(FlowTimer $timer, FlowTimerSweepTally $tally): void {
 		try {
@@ -145,7 +145,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireRungs(FlowTimerSweepTally $tally): void {
 		$rungs = $this->timers->timers->findDueRungs(now: $tally->now, limit: $tally->batch);
@@ -164,7 +164,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function fireRungsOf(FlowTimer $timer, FlowTimerSweepTally $tally): void {
 		try {
@@ -189,7 +189,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function sweepTaskTimeouts(FlowTimerSweepTally $tally): void {
 		$tasks = $this->tasks?->tasks;
@@ -213,7 +213,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function applyTimeout(Task $task, FlowTimerSweepTally $tally): void {
 		try {
@@ -239,7 +239,7 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	 *
 	 * @return string The reason.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	private function timeoutReason(Task $task): string {
 		return sprintf(

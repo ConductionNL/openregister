@@ -268,4 +268,32 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 
 		return $occurrences;
 	}//end collectOccurrences()
+
+	/**
+	 * Validate a `calendar-range` value.
+	 *
+	 * @param mixed             $value    The range submitted by the client.
+	 * @param FormattedProperty $property The property name and its declared `format`.
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
+	 */
+	public function validateCalendarRange(mixed $value, FormattedProperty $property): ?string {
+		return (new CalendarRangeValue())->validate(value: $value, property: $property);
+	}//end validateCalendarRange()
+
+	/**
+	 * Validate an `image-url` value.
+	 *
+	 * @param mixed  $value        The image submitted by the client.
+	 * @param string $propertyName The property name (for the error message).
+	 *
+	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
+	 */
+	public function validateImageUrl(mixed $value, string $propertyName): ?string {
+		return (new ImageUrlValue())->validate(value: $value, propertyName: $propertyName);
+	}//end validateImageUrl()
 }//end class

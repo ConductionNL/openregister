@@ -100,4 +100,49 @@ class SchemaChangelogMapper extends QBMapper implements SchemaChangelogMapperInt
 
 		return $this->insert(entity: $entry);
 	}//end createFromArray()
+
+	/**
+	 * The newest breaking entry of a schema created since a moment, or null.
+	 *
+	 * @param int      $schemaId The schema.
+	 * @param DateTime $since    The earliest creation.
+	 *
+	 * @return SchemaChangelog|null The entry.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-clients-see-a-breaking-change-on-the-schemas-responses
+	 */
+	public function findLatestBreakingSince(int $schemaId, DateTime $since): ?SchemaChangelog {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('classification', $qb->createNamedParameter('breaking')))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$entries = $this->findEntities(query: $qb);
+		if ($entries === []) {
+			return null;
+		}
+
+		return $entries[0];
+	}//end findLatestBreakingSince()
+
+	/**
+	 * Record on an entry how many the breaking-change notice told, and when.
+	 *
+	 * @param SchemaChangelog $entry The entry.
+	 * @param int             $count How many were told.
+	 *
+	 * @return SchemaChangelog The updated entry.
+	 *
+	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-an-acknowledged-breaking-change-tells-the-people-who-build-on-the-schema
+	 */
+	public function recordNotice(SchemaChangelog $entry, int $count): SchemaChangelog {
+		$entry->setNoticeSentTo($count);
+		$entry->setNoticeSentAt(new DateTime());
+
+		return $this->update(entity: $entry);
+	}//end recordNotice()
 }//end class

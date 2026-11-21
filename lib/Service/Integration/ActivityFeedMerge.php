@@ -100,7 +100,7 @@ class ActivityFeedMerge {
 	 * @return array{rows:array<int,array<string,mixed>>,nextCursor:?int,counts:array<string,int>}
 	 *         The page, the cursor the next page asks every source for, and how many rows each kind contributed.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	public function page(array $bySource, array $options = []): array {
 		$pageSize = $this->pageSize(options: $options);
@@ -187,7 +187,7 @@ class ActivityFeedMerge {
 	 *
 	 * @return array<string,mixed> The merged row.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	public function normalise(array $row, string $kind): array {
 		return [
@@ -355,7 +355,7 @@ class ActivityFeedMerge {
 	 *
 	 * @return array<int,array<string,mixed>> The rows, newest first.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	private function newestFirst(array $rows): array {
 		usort($rows, self::compareNewestFirst(...));
@@ -414,7 +414,7 @@ class ActivityFeedMerge {
 	 *
 	 * @return int The per-source bound.
 	 *
-	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
+	 * @spec openspec/specs/integration-activity/spec.md
 	 */
 	public function boundPerSource(array $options = []): int {
 		return $this->pageSize(options: $options);

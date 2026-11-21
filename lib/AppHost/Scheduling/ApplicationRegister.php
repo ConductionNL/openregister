@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use Throwable;
 /**
  * Places an object in the applications register.
  *
- * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ApplicationRegister {
 	/**
@@ -60,7 +60,7 @@ class ApplicationRegister {
 	 *
 	 * @return string|null The slug, or null when the instance has none.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function slug(): ?string {
 		return $this->slugs->slugOrNull(canonical: self::CANONICAL);
@@ -74,7 +74,7 @@ class ApplicationRegister {
 	 *
 	 * @return bool False for a same-named schema in any other register.
 	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function holds(ObjectEntity $object, string $schema): bool {
 		try {

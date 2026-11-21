@@ -115,7 +115,10 @@ final class ConceptRepositorySchemeGoldenTest extends TestCase {
 		$this->assertNull($repository->scheme('https://x/none'));
 		$this->assertNull($repository->scheme('https://x/none'));
 		$this->assertNull($repository->scheme('https://x/other'));
-		$this->assertCount(2, $this->queries);
+		// A uri miss falls back to the slug (property-code-list-from-concept-scheme 4.4);
+		// neither reference is uuid-shaped, so no uuid read follows. The repeat is cached.
+		$this->assertCount(4, $this->queries);
+		$this->assertSame(['@self' => ['slug' => 'https://x/none', 'register' => 7, 'schema' => 8], '_limit' => 1], $this->queries[1]);
 	}//end testAMissAnswersNullAndIsCached()
 
 	/**

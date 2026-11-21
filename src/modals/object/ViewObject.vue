@@ -85,6 +85,11 @@ import {
 
 				<!-- Display Object -->
 				<div v-else>
+					<RecordTemplatePicker
+						v-if="isNewObject"
+						:register="currentRegister?.id || null"
+						:schema="currentSchema"
+						@apply="applyRecordTemplate" />
 					<div class="tabContainer">
 						<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 							<AppTab :title="t('openregister', 'Properties')" active>
@@ -1024,6 +1029,7 @@ import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
 import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+import RecordTemplatePicker from '../../components/object/RecordTemplatePicker.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
@@ -1494,6 +1500,7 @@ function removeElement(element) {
 export default {
 	name: 'ViewObject',
 	components: {
+		RecordTemplatePicker,
 		NcDialog,
 		NcButton,
 		NcNoteCard,
@@ -2148,6 +2155,20 @@ export default {
 			if (objectStore.objectItem) {
 				this.fetchObjectFiles(objectStore.objectItem)
 			}
+		},
+
+		/**
+		 * Start the new record from a template: a blank record with the
+		 * template's values that still fit the schema. The record is saved
+		 * through the normal save, so validation and RBAC apply as always.
+		 *
+		 * @param {object} applied The applied template.
+		 * @param {object} applied.values The values that still fit.
+		 * @return {void}
+		 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md
+		 */
+		applyRecordTemplate({ values }) {
+			this.formData = { ...this.blankObjectData(), ...(values || {}) }
 		},
 
 		/**

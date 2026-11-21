@@ -2,7 +2,7 @@
 
 ## 1. Engine
 
-- [ ] 1.1 `FlowErrorPolicy::for()` used by both walks and `FlowRunWorker`; behaviour unchanged for stop, continue and dead_letter. Verify: existing `FlowEngineTest` cases pass unchanged, plus one per policy through the helper.
+- [x] 1.1 `FlowErrorPolicy::for()` used by both walks and `FlowRunWorker`; behaviour unchanged for stop, continue and dead_letter. Verify: existing `FlowEngineTest` cases pass unchanged, plus one per policy through the helper.
 - [ ] 1.2 Step retry through `FlowSuspension` with the attempt on the resume state, fixed and exponential delay, caps refused at save. Verify: `tests/Unit/Service/Flow/FlowEngineRetryTest.php` fails twice then succeeds, and a fourth failure with `attempts: 3` counts as failed.
 - [ ] 1.3 `ON_ERROR_BRANCH` with `errorTo`, failed items carrying `json.error`, preflight refusal without an `error` edge. Verify: `tests/Unit/Service/Flow/FlowEngineErrorBranchTest.php` with a per-item node where one of three items fails.
 

@@ -154,5 +154,6 @@ history route as well. The declared-actions event still fires for every attempt,
 
 - [Workflow Automation](workflow-automation.md): lifecycle transitions (`x-openregister-lifecycle`)
 - [Workflow Operations](workflow-operations.md): flow runs and their operation
+- [Flows](flows.md): the built-in flow engine that runs a stored or inline flow
 - [Registers & Schemas](registers-and-schemas.md): where actions are declared
 - [Versioning & Audit](versioning-and-audit.md): the audit trail the runs write to

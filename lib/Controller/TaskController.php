@@ -44,7 +44,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Controller\Support\TaskInboxRequest;
@@ -62,6 +61,7 @@ use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
@@ -187,7 +187,7 @@ class TaskController extends Controller {
 		IRequest $request,
 		TaskControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->tasks = $services->work->tasks;
 		$this->inbox = $services->work->inbox;
 		$this->authorization = $services->work->authorization;
@@ -455,7 +455,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->enrich(task: $task),
+				$this->inbox->enrich(task: $task, caller: $this->uid()),
 				$this->forms->describe(task: $task)
 			)
 		);

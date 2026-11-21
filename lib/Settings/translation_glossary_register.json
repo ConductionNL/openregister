@@ -1,0 +1,320 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Translation Glossary",
+        "description": "The shared glossary and style guides AI translation follows: terms per language pair with their required translation or that they stay untranslated, and one style guide per target language. Read by GlossaryService; a translation that misses a matched term is stored as a draft for a person to check.",
+        "version": "1.0.0"
+    },
+    "x-openregister": {
+        "type": "core",
+        "app": "openregister",
+        "openregister": "^v0.2.10",
+        "description": "Translation glossary register shipped by OpenRegister with example terms and style guides to replace (ai-translation-with-a-glossary)."
+    },
+    "paths": {},
+    "components": {
+        "registers": {
+            "translation-glossary": {
+                "slug": "translation-glossary",
+                "title": "Translation Glossary",
+                "version": "1.0.0",
+                "description": "Glossary terms and style guides that steer machine translation of register objects.",
+                "published": "2026-11-13T00:00:00+00:00",
+                "schemas": [
+                    "translation-term",
+                    "translation-style-guide"
+                ],
+                "folder": "Open Registers/Translation Glossary"
+            }
+        },
+        "schemas": {
+            "translation-term": {
+                "slug": "translation-term",
+                "type": "object",
+                "x-openregister-demo-data": "Glossary terms and style guides are rules an organisation administers, not sample content: a generated entry would steer real translations. The register ships a few example- entries to replace.",
+                "title": "Translation term",
+                "version": "1.0.0",
+                "published": "2026-11-13T00:00:00+00:00",
+                "summary": "A term and the translation it must get, or that it stays as it is.",
+                "description": "One glossary entry for a language pair. When the term occurs in a text being translated, the translation must use the required translation, or keep the term unchanged when it is marked do not translate. A term limited to a register applies only to that register's objects; without one it applies everywhere. One entry per term, language pair and register.",
+                "required": [
+                    "term",
+                    "sourceLanguage",
+                    "targetLanguage"
+                ],
+                "properties": {
+                    "term": {
+                        "type": "string",
+                        "title": "Term",
+                        "description": "The source term as it appears in text.",
+                        "maxLength": 255,
+                        "facetable": true
+                    },
+                    "sourceLanguage": {
+                        "type": "string",
+                        "title": "Source language",
+                        "description": "BCP 47 code of the text's language, for example `nl`.",
+                        "maxLength": 35,
+                        "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                        "facetable": true
+                    },
+                    "targetLanguage": {
+                        "type": "string",
+                        "title": "Target language",
+                        "description": "BCP 47 code of the translation's language, for example `en`.",
+                        "maxLength": 35,
+                        "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                        "facetable": true
+                    },
+                    "translation": {
+                        "type": "string",
+                        "title": "Translation",
+                        "description": "The required translation. Required unless the term is not translated.",
+                        "maxLength": 255
+                    },
+                    "doNotTranslate": {
+                        "type": "boolean",
+                        "title": "Do not translate",
+                        "description": "A product or proper name kept as is.",
+                        "default": false,
+                        "facetable": true
+                    },
+                    "caseSensitive": {
+                        "type": "boolean",
+                        "title": "Case sensitive",
+                        "description": "Match the term only with exactly this capitalisation.",
+                        "default": false
+                    },
+                    "register": {
+                        "type": "string",
+                        "title": "Register",
+                        "description": "The register the term applies to, as the object names it (its id); empty for every register.",
+                        "maxLength": 255,
+                        "default": "",
+                        "facetable": true
+                    },
+                    "note": {
+                        "type": "string",
+                        "title": "Note",
+                        "description": "Why this translation, for the people maintaining the glossary.",
+                        "maxLength": 2000
+                    }
+                },
+                "configuration": {
+                    "uniqueConstraints": [
+                        {
+                            "name": "one-entry-per-term",
+                            "properties": [
+                                "term",
+                                "sourceLanguage",
+                                "targetLanguage",
+                                "register"
+                            ],
+                            "action": "refuse"
+                        }
+                    ]
+                },
+                "authorization": {
+                    "scope": "private",
+                    "read": [
+                        "authenticated"
+                    ],
+                    "create": [
+                        "admin",
+                        "translation-editors"
+                    ],
+                    "update": [
+                        "admin",
+                        "translation-editors"
+                    ],
+                    "delete": [
+                        "admin",
+                        "translation-editors"
+                    ]
+                }
+            },
+            "translation-style-guide": {
+                "slug": "translation-style-guide",
+                "type": "object",
+                "x-openregister-demo-data": "Glossary terms and style guides are rules an organisation administers, not sample content: a generated entry would steer real translations. The register ships a few example- entries to replace.",
+                "title": "Translation style guide",
+                "version": "1.0.0",
+                "published": "2026-11-13T00:00:00+00:00",
+                "summary": "How translations into one language should read.",
+                "description": "The formality and instructions every translation into this target language follows. One per target language.",
+                "required": [
+                    "language"
+                ],
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "title": "Language",
+                        "description": "BCP 47 code of the target language, for example `en`.",
+                        "maxLength": 35,
+                        "pattern": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+                        "facetable": true
+                    },
+                    "formality": {
+                        "type": "string",
+                        "title": "Formality",
+                        "description": "How the reader is addressed.",
+                        "enum": [
+                            "formal",
+                            "informal"
+                        ],
+                        "default": "formal",
+                        "facetable": true
+                    },
+                    "instructions": {
+                        "type": "string",
+                        "title": "Instructions",
+                        "description": "Further instructions for translations into this language.",
+                        "maxLength": 2000
+                    }
+                },
+                "configuration": {
+                    "uniqueConstraints": [
+                        {
+                            "name": "one-guide-per-language",
+                            "properties": [
+                                "language"
+                            ],
+                            "action": "refuse"
+                        }
+                    ]
+                },
+                "authorization": {
+                    "scope": "private",
+                    "read": [
+                        "authenticated"
+                    ],
+                    "create": [
+                        "admin",
+                        "translation-editors"
+                    ],
+                    "update": [
+                        "admin",
+                        "translation-editors"
+                    ],
+                    "delete": [
+                        "admin",
+                        "translation-editors"
+                    ]
+                }
+            }
+        },
+        "objects": [
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-term",
+                    "slug": "example-omgevingsvergunning",
+                    "version": "1.0.0"
+                },
+                "term": "omgevingsvergunning",
+                "sourceLanguage": "nl",
+                "targetLanguage": "en",
+                "doNotTranslate": false,
+                "caseSensitive": false,
+                "register": "",
+                "note": "Example seed data, shipped to show the shape of an entry: replace or delete it. The permit for activities affecting the physical living environment.",
+                "translation": "environmental permit"
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-term",
+                    "slug": "example-wet-open-overheid",
+                    "version": "1.0.0"
+                },
+                "term": "Wet open overheid",
+                "sourceLanguage": "nl",
+                "targetLanguage": "en",
+                "doNotTranslate": false,
+                "caseSensitive": false,
+                "register": "",
+                "note": "Example seed data, shipped to show the shape of an entry: replace or delete it. The Dutch act on public access to government information.",
+                "translation": "Open Government Act"
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-term",
+                    "slug": "example-gemeente",
+                    "version": "1.0.0"
+                },
+                "term": "gemeente",
+                "sourceLanguage": "nl",
+                "targetLanguage": "en",
+                "doNotTranslate": false,
+                "caseSensitive": false,
+                "register": "",
+                "note": "Example seed data, shipped to show the shape of an entry: replace or delete it. A Dutch local authority.",
+                "translation": "municipality"
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-term",
+                    "slug": "example-digid",
+                    "version": "1.0.0"
+                },
+                "term": "DigiD",
+                "sourceLanguage": "nl",
+                "targetLanguage": "en",
+                "doNotTranslate": true,
+                "caseSensitive": true,
+                "register": "",
+                "note": "Example seed data, shipped to show the shape of an entry: replace or delete it. A product name: stays as it is."
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-term",
+                    "slug": "example-digid-de",
+                    "version": "1.0.0"
+                },
+                "term": "DigiD",
+                "sourceLanguage": "nl",
+                "targetLanguage": "de",
+                "doNotTranslate": true,
+                "caseSensitive": true,
+                "register": "",
+                "note": "Example seed data, shipped to show the shape of an entry: replace or delete it. A product name: stays as it is."
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-style-guide",
+                    "slug": "example-en",
+                    "version": "1.0.0"
+                },
+                "language": "en",
+                "formality": "formal",
+                "instructions": "Example seed data, shipped to show the shape of an entry: replace or delete it. Use British English spelling and address the reader directly as you."
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-style-guide",
+                    "slug": "example-de",
+                    "version": "1.0.0"
+                },
+                "language": "de",
+                "formality": "formal",
+                "instructions": "Example seed data, shipped to show the shape of an entry: replace or delete it. Address the reader formally with Sie."
+            },
+            {
+                "@self": {
+                    "register": "translation-glossary",
+                    "schema": "translation-style-guide",
+                    "slug": "example-fr",
+                    "version": "1.0.0"
+                },
+                "language": "fr",
+                "formality": "formal",
+                "instructions": "Example seed data, shipped to show the shape of an entry: replace or delete it. Address the reader formally with vous."
+            }
+        ]
+    }
+}
