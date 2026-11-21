@@ -11,6 +11,8 @@
  *   destination: { register, schema }   or   writes: [ { as, register, schema, mapping? } ]
  *   mapping?: { fields, fixed }
  *   audience?: "public" (default) | "authenticated"
+ *   access?: "anonymous" opens it to visitors without an account; any other
+ *            value closes it to them, whatever the audience says
  *
  * Callers holding their form elsewhere skip this class and call
  * FormSubmitService with the resolved destination (ADR-117 D3).
@@ -121,13 +123,25 @@ class FormDefinitionResolver implements FormDefinitionResolverInterface {
 	}//end isPublished()
 
 	/**
-	 * A form's audience: as declared, `public` when it declares none.
+	 * A form's audience: `public` for `access: anonymous`, `authenticated` for any
+	 * other declared `access`; without `access`, as declared, `public` when it
+	 * declares none.
 	 *
 	 * @param array<string, mixed> $body The form body.
 	 *
 	 * @return string The audience.
+	 *
+	 * @spec openspec/changes/capability-rows-verified-a/specs/form-and-journey-registry/spec.md
 	 */
 	private function audienceOf(array $body): string {
+		if (array_key_exists('access', $body) === true) {
+			if ($body['access'] === PublicFormDefinition::ACCESS_ANONYMOUS) {
+				return 'public';
+			}
+
+			return 'authenticated';
+		}
+
 		$audience = (string)($body['audience'] ?? 'public');
 		if ($audience === '') {
 			return 'public';

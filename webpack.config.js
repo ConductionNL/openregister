@@ -319,6 +319,12 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'access-link.js'),
 		filename: appId + '-access-link.js',
 	},
+	// The public page of a form open to visitors without an account.
+	// Loaded by templates/publicForm.php from PublicFormPageController::show().
+	publicForm: {
+		import: path.join(__dirname, 'src', 'public-form.js'),
+		filename: appId + '-public-form.js',
+	},
 	// The GraphQL explorer, bundled so the page loads no script from outside the
 	// instance (api-explorer-in-the-app). Loaded by templates/graphqlExplorer.php
 	// from GraphQLController::explorer().
