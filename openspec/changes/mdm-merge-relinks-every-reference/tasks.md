@@ -10,12 +10,14 @@
 
 ## 2. Page
 
-- [ ] 2.1 `/duplicates?register=&schema=` preselects the pair, slugs or ids, notice on unknown values. Verify: component test for both, and a Playwright step in 3.1.
+- [x] 2.1 `/duplicates?register=&schema=` preselects the pair, slugs or ids, notice on unknown values. Verify: component test for both, and a Playwright step in 3.1.
+  - Done: the shared `RegisterSchemaSelector` resolves each query value by id, uuid or slug against the loaded registers and that register's schemas, and selects their ids, so `DuplicatesIndex` (and the other data quality pages on the picker) load that pair with no clicks. An unknown register clears the selection and an unknown schema keeps only the register; either shows a warning notice naming the value (existing keys `Unknown Register` / `Unknown Schema`, `Choose a register` / `Choose a schema`) and nothing is loaded or guessed. The merge wizard lists the preview's `references` by schema (title where the store knows it) and count under `Referenced by` (existing keys; design D-3). Tests: `DuplicatesIndex.spec.js` (slug, id, unknown register, unknown schema), `RegisterSchemaSelector.spec.js` (route cases reworked and extended), `MdmMergeWizardModal.spec.js` (reference list). The Playwright step is part of 3.1, still open.
 
 ## 3. Proof and docs
 
 - [ ] 3.1 Add `tests/e2e/ci/merge-relinks-references.spec.ts`: open `/duplicates` with query parameters, merge two modules referenced from a suite, reverse the merge, and assert the suite's list each time.
-- [ ] 3.2 Document relink, reversal and the deep link in `docs/`.
+- [x] 3.2 Document relink, reversal and the deep link in `docs/`.
+  - Done: `docs/Features/master-data-management.md` gains "Merging duplicates": the endpoints, the relink of every reference (scalar, list, nested; as the steward; `skippedReferences`), the 5,000 cap, the preview's `references`, reversal with `keptReferenceEdits`, and the `/duplicates?register=&schema=` deep link. `docs/user/finding-and-merging-objects.md` points to it.
 
 Acceptance:
 - After a merge, no object the actor may update still points at the losing record.

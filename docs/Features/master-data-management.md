@@ -115,6 +115,78 @@ A **manual override** (`overridesField`) beats all of it. A human who has picked
 
 Trust rules resolve most disagreements automatically. What they cannot resolve is a real-world conflict — two sources, both plausible, both current, both gold. Open Register surfaces these rather than guessing: the duplicate-detection and quality stack scores records, flags likely duplicates, and raises conflicts to a human through the MDM conflict-resolution UI. Merging two entities is an explicit, audited act.
 
+## Merging duplicates
+
+A merge folds one record (the **loser**) into another (the **survivor**). The steward starts it from **Duplicate Candidates**, previews it, gives a reason, and confirms. Open Register snapshots both records, relinks everything that pointed at the loser, recomputes the survivor's golden record, and writes a `mergeOperation` row that **Merge Operations** lists and can reverse.
+
+| Step | Endpoint |
+|---|---|
+| Preview, writes nothing | `POST /api/objects/merge/preview` |
+| Execute | `POST /api/objects/merge/execute` |
+| Reverse | `POST /api/objects/merge/{id}/reverse` |
+
+### Every reference moves with the merge
+
+Other records point at the loser: a suite lists its applications, a connection names the module it calls, a contract names its supplier. A merge moves **every** such reference onto the survivor, on any schema, without that schema declaring anything. Open Register finds them through its relation index, across the whole instance:
+
+| Reference | What the merge does |
+|---|---|
+| A single reference (`"module": "<loser>"`) | Points it at the survivor. |
+| A list of references (`"applications": ["<loser>", "<survivor>"]`) | Replaces the loser with the survivor and drops the duplicate that leaves, so the list holds the survivor once. |
+| A reference nested deeper in the record | Found and replaced where it sits. |
+
+Each change is saved **as the steward who merges**, through the normal save path, so their rights, validation and audit trail all apply. A record the steward may not update is left as it is and listed under `skippedReferences` in the merge result; nothing is forced. The result's `references` lists what moved, by schema and count.
+
+References that a schema's own merge configuration (`x-openregister-merge`) already relinks are moved by that first; the general relink only picks up what is left, so nothing moves twice.
+
+:::note A limit of 5,000 references
+One merge moves at most **5,000** references. A record referenced from more places than that is not merged at all: the execute call is refused before anything is written, naming the record and the limit. Merge such a record with a bulk job instead.
+:::
+
+### The preview shows what will move
+
+The preview answers with a `references` list beside the post-merge golden record:
+
+```json
+{
+  "postMergeGoldenRecord": { "name": "Zaaksysteem" },
+  "references": [
+    { "schema": "42", "count": 1 },
+    { "schema": "57", "count": 12 }
+  ]
+}
+```
+
+The merge wizard shows it under **Referenced by**, one row per schema with the number of references that will move, so the steward sees how far a merge reaches before confirming it. When nothing references the loser, the list is left out.
+
+### Reversing a merge
+
+Inside the reversal window (`reversalWindowDays`, 30 days by default) **Merge Operations** offers **Reverse**. A reversal restores both records and puts every moved reference back where it was: the suite lists both applications again, and each connection points where it pointed before.
+
+Every move is kept in the merge snapshot as the field's value before and after the merge. A reversal restores a field only if it **still holds what the merge wrote**. If someone edited that field after the merge, their edit wins: the field is kept as it is, and the reversal reports it in `keptReferenceEdits`:
+
+```json
+{
+  "keptReferenceEdits": [
+    { "object": "9f1c…", "path": "applications" }
+  ]
+}
+```
+
+So a reversal never silently undoes work done since the merge; it tells you which references to look at.
+
+### Opening Duplicate Candidates from a link
+
+**Duplicate Candidates** takes the register and schema from the address, so an app can send a steward straight to the right list:
+
+```
+/apps/openregister/duplicates?register=catalogus&schema=module
+```
+
+Each of `register` and `schema` may be an **id or a slug**. The page opens with that pair selected and its candidate pairs loaded; the steward picks nothing. A value that matches no register, or no schema of that register, is not guessed at: the page shows a notice naming the value it did not find and leaves the picker for the steward. With an unknown schema, the register stays selected.
+
+The same parameters work on the other data quality pages that share the register and schema picker (**Data Quality**, **Master entities**).
+
 ## Related
 
 - **Data quality** — scoring, duplicate detection, and similarity, which feed the same pipeline.
