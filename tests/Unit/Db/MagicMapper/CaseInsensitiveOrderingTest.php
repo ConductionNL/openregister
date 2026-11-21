@@ -117,7 +117,7 @@ class CaseInsensitiveOrderingTest extends TestCase {
 		$this->assertSame(
 			[
 				['LOWER(CAST("t"."title" AS TEXT))', 'ASC'],
-				['"t"."title"', 'ASC'],
+				['t.title', 'ASC'],
 				['t._id', 'ASC'],
 			],
 			$this->orderTerms(['title' => 'asc'], new PostgreSQLPlatform())
@@ -128,7 +128,7 @@ class CaseInsensitiveOrderingTest extends TestCase {
 		$this->assertSame(
 			[
 				['LOWER("t"."title")', 'DESC'],
-				['"t"."title"', 'DESC'],
+				['t.title', 'DESC'],
 				['t._id', 'ASC'],
 			],
 			$this->orderTerms(['title' => 'desc'], new MariaDBPlatform())
@@ -155,7 +155,7 @@ class CaseInsensitiveOrderingTest extends TestCase {
 		// "besluit" and "Besluit" lower-case alike, so the raw value decides
 		// between them, and _id closes the order so paging never repeats a row.
 		$this->assertSame('LOWER("t"."title")', $terms[0][0]);
-		$this->assertSame(['"t"."title"', 'ASC'], $terms[1]);
+		$this->assertSame(['t.title', 'ASC'], $terms[1]);
 		$this->assertSame(['t._id', 'ASC'], $terms[2]);
 		$this->assertCount(3, $terms);
 	}//end testTiesAreBrokenByRawValueThenId()
@@ -164,7 +164,7 @@ class CaseInsensitiveOrderingTest extends TestCase {
 		$this->assertSame(
 			[
 				['LOWER(CAST("t"."_name" AS TEXT))', 'ASC'],
-				['"t"."_name"', 'ASC'],
+				['t._name', 'ASC'],
 				['t._id', 'ASC'],
 			],
 			$this->orderTerms(['@self.name' => 'asc'], new PostgreSQLPlatform())
