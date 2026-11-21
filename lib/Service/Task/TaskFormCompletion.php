@@ -76,19 +76,101 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	/**
 	 * Complete a task, writing its form payload to the subject first.
 	 *
-	 * @param FormCompletionRequest $request The task uuid, the completion outcome, result and comment, and the
-	 *                                       declared field values (empty for a form-less completion).
-	 * @param string|null           $actor   The completing identity.
+	 * Takes a FormCompletionRequest (as `$request`, or positionally in place of `$uuid`, then the
+	 * actor), the answer form (`uuid:`, `answer:`, `data:`, `actor:`), or the separate arguments
+	 * of the published contract. A request object wins over an answer, an answer over `$outcome`.
+	 *
+	 * @param string|FormCompletionRequest|null $uuid       The task uuid, or the completion request.
+	 * @param string|null                       $outcome    The completion outcome; the actor when `$uuid` is a request.
+	 * @param string|null                       $resultText Free-text result.
+	 * @param string|null                       $comment    Completion comment.
+	 * @param array<string, mixed>              $data       The declared field values; empty for a form-less completion.
+	 * @param string|null                       $actor      The completing identity.
+	 * @param TaskAnswer|null                   $answer     The completion outcome, result and comment.
+	 * @param FormCompletionRequest|null        $request    The task uuid, the completion outcome, result and comment, and the
+	 *                                                      declared field values (empty for a form-less completion).
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @throws TaskFormRefusedException When the payload violates the form (400, fields named).
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write (422).
 	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException When the task verb or the object write is not authorized.
+	 * @throws \InvalidArgumentException When neither a request, nor a uuid with an outcome or answer, is given.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate arguments plus both value objects.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
-	public function complete(FormCompletionRequest $request, ?string $actor): Task {
+	public function complete(
+		string|FormCompletionRequest|null $uuid=null,
+		?string $outcome=null,
+		?string $resultText=null,
+		?string $comment=null,
+		array $data=[],
+		?string $actor=null,
+		?TaskAnswer $answer=null,
+		?FormCompletionRequest $request=null,
+	): Task {
+		if ($uuid instanceof FormCompletionRequest) {
+			$request ??= $uuid;
+			$actor   ??= $outcome;
+			$uuid      = null;
+			$outcome   = null;
+		}
+
+		$answer  ??= $this->legacyAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+		$request ??= $this->legacyRequest(uuid: $uuid, answer: $answer, data: $data);
+
+		return $this->completeRequest(request: $request, actor: $actor);
+	}//end complete()
+
+	/**
+	 * The answer of a completion given as separate arguments, or null without an outcome.
+	 *
+	 * @param string|null $outcome    The completion outcome.
+	 * @param string|null $resultText Free-text result.
+	 * @param string|null $comment    Completion comment.
+	 *
+	 * @return TaskAnswer|null The answer.
+	 */
+	private function legacyAnswer(?string $outcome, ?string $resultText, ?string $comment): ?TaskAnswer {
+		if ($outcome === null) {
+			return null;
+		}
+
+		return new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+	}//end legacyAnswer()
+
+	/**
+	 * The completion request of a call that gave a uuid and an answer.
+	 *
+	 * @param string|null          $uuid   The task uuid.
+	 * @param TaskAnswer|null      $answer The answer.
+	 * @param array<string, mixed> $data   The declared field values.
+	 *
+	 * @return FormCompletionRequest The request.
+	 *
+	 * @throws \InvalidArgumentException When the uuid or the answer is missing.
+	 */
+	private function legacyRequest(?string $uuid, ?TaskAnswer $answer, array $data): FormCompletionRequest {
+		if ($uuid === null || $answer === null) {
+			throw new \InvalidArgumentException('complete() needs a FormCompletionRequest, or a uuid with an outcome or answer.');
+		}
+
+		return new FormCompletionRequest(uuid: $uuid, answer: $answer, data: $data);
+	}//end legacyRequest()
+
+	/**
+	 * Complete a task once its arguments are a FormCompletionRequest.
+	 *
+	 * @param FormCompletionRequest $request The task uuid, answer and declared field values.
+	 * @param string|null           $actor   The completing identity.
+	 *
+	 * @return Task The completed task.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	private function completeRequest(FormCompletionRequest $request, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
 		// denial, before a single byte reaches the subject object.
 		$task = $this->tasks->authorizedOpenTask(act: new TaskAct(verb: 'complete', actor: $actor), uuid: $request->uuid);
@@ -100,7 +182,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 			answer: new TaskAnswer(outcome: $answer->outcome, resultText: $answer->resultText, comment: $answer->comment),
 			actor: $actor
 		);
-	}//end complete()
+	}//end completeRequest()
 
 	/**
 	 * Check the form and the checklist, then write the submitted values onto

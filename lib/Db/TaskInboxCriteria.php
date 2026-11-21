@@ -198,17 +198,81 @@ final class TaskInboxCriteria {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskInboxAudience       $audience  The caller and the scope of the read.
-	 * @param TaskInboxSelection|null $selection The filters, due window, anchor and sort; the defaults when null.
+	 * Takes the audience and selection value objects (named, or positionally in the first two
+	 * slots) or the separate criteria of the published contract; value objects win.
+	 *
+	 * @param string|TaskInboxAudience|null  $uid            The caller, or the audience.
+	 * @param array|TaskInboxSelection|null  $groupIds       The caller's groups, or the selection.
+	 * @param bool                           $isAdmin        Whether the caller is an administrator.
+	 * @param string                         $scope          One of the SCOPE_* constants.
+	 * @param array                          $states         The task states to list; empty for all.
+	 * @param bool|null                      $isTerminal     Only finished (true) or open (false) tasks.
+	 * @param string|null                    $priority       Only tasks of this priority.
+	 * @param string|null                    $objectUuid     Only tasks on this object.
+	 * @param string|null                    $runUuid        Only tasks of this flow run.
+	 * @param DateTime|null                  $overdueAt      Only tasks due before this moment and still open.
+	 * @param DateTime|null                  $dueAfter       Only tasks due after this moment.
+	 * @param DateTime|null                  $dueBefore      Only tasks due before this moment.
+	 * @param string                         $sort           One of the SORT_* constants.
+	 * @param bool                           $sortDescending Whether the sort runs descending.
+	 * @param string|null                    $kind           Only tasks of this kind.
+	 * @param bool                           $includeBlocked Whether tasks whose blocker is still open are listed.
+	 * @param bool                           $openFirst      Whether open tasks sort before finished ones.
+	 * @param string|null                    $term           Only tasks matching this search term.
+	 * @param TaskInboxAudience|null         $audience       The caller and the scope of the read.
+	 * @param TaskInboxSelection|null        $selection      The filters, due window, anchor and sort; the defaults when null.
+	 *
+	 * @throws \InvalidArgumentException When neither a uid nor an audience is given.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The published contract's separate criteria plus both value objects.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The published contract's criteria include flags.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct(
-		TaskInboxAudience $audience,
+		string|TaskInboxAudience|null $uid = null,
+		array|TaskInboxSelection|null $groupIds = [],
+		bool $isAdmin = false,
+		string $scope = self::SCOPE_ASSIGNED,
+		array $states = [],
+		?bool $isTerminal = null,
+		?string $priority = null,
+		?string $objectUuid = null,
+		?string $runUuid = null,
+		?DateTime $overdueAt = null,
+		?DateTime $dueAfter = null,
+		?DateTime $dueBefore = null,
+		string $sort = self::SORT_DUE,
+		bool $sortDescending = false,
+		?string $kind = null,
+		bool $includeBlocked = false,
+		bool $openFirst = false,
+		?string $term = null,
+		?TaskInboxAudience $audience = null,
 		?TaskInboxSelection $selection = null,
 	) {
-		$selection = ($selection ?? new TaskInboxSelection());
+		if ($uid instanceof TaskInboxAudience) {
+			$audience ??= $uid;
+			$uid = null;
+		}
+
+		if ($groupIds instanceof TaskInboxSelection) {
+			$selection ??= $groupIds;
+			$groupIds = [];
+		}
+
+		if ($audience === null && $uid === null) {
+			throw new \InvalidArgumentException('TaskInboxCriteria needs a uid or a TaskInboxAudience.');
+		}
+
+		$audience ??= new TaskInboxAudience(uid: (string) $uid, groupIds: ($groupIds ?? []), isAdmin: $isAdmin, scope: $scope);
+		$selection ??= new TaskInboxSelection(
+			filter: new TaskInboxFilter(states: $states, isTerminal: $isTerminal, priority: $priority, kind: $kind, term: $term),
+			window: new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $dueAfter, dueBefore: $dueBefore),
+			anchor: new TaskInboxAnchor(objectUuid: $objectUuid, runUuid: $runUuid, includeBlocked: $includeBlocked),
+			order: new TaskInboxOrder(sort: $sort, sortDescending: $sortDescending, openFirst: $openFirst)
+		);
 		$order = $selection->order;
 		$this->uid = $audience->uid;
 		$this->groupIds = $audience->groupIds;

@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
+use Throwable;
 
 /**
  * Exception thrown when a schema hook stops event propagation
@@ -34,18 +35,20 @@ class HookStoppedException extends Exception {
 	/**
 	 * Constructor for HookStoppedException
 	 *
-	 * The exception code is always 0.
-	 *
-	 * @param string               $message Error message
-	 * @param array<string, mixed> $errors Hook validation errors
+	 * @param string               $message  Error message
+	 * @param array<string, mixed> $errors   Hook validation errors
+	 * @param int                  $code     The exception code
+	 * @param Throwable|null       $previous The exception that caused this one
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $message='Operation blocked by schema hook',
 		private readonly array $errors=[],
+		int $code=0,
+		?Throwable $previous=null,
 	) {
-		parent::__construct(message: $message, code: 0);
+		parent::__construct(message: $message, code: $code, previous: $previous);
 	}//end __construct()
 
 	/**

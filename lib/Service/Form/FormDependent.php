@@ -65,17 +65,41 @@ final class FormDependent {
 	/**
 	 * Constructor.
 	 *
-	 * @param PublishedForm        $form      Which form, in which app, its title and its audience.
-	 * @param string|null          $author    The user id to notify, when known.
-	 * @param array<string, mixed> $mapping   The form's mapping into the schema.
-	 * @param Closure|null         $unpublish Unpublishes the form in its owning app.
+	 * Takes a PublishedForm (as `$form`, or positionally in place of `$id`) or the id, app, title
+	 * and audience of the published contract; a PublishedForm wins.
+	 *
+	 * @param string|PublishedForm|null $id        The form's id in its owning app, or the published form.
+	 * @param string|null               $app       The owning app's id.
+	 * @param string|null               $title     The form's title.
+	 * @param string|null               $author    The user id to notify, when known.
+	 * @param array<string, mixed>      $mapping   The form's mapping into the schema.
+	 * @param Closure|null              $unpublish Unpublishes the form in its owning app.
+	 * @param string|null               $audience  `public` or `authenticated`, when the form is not internal.
+	 * @param PublishedForm|null        $form      Which form, in which app, its title and its audience.
+	 *
+	 * @throws \InvalidArgumentException When neither an id, app and title nor a PublishedForm is given.
 	 */
 	public function __construct(
-		PublishedForm $form,
-		public readonly ?string $author,
-		public readonly array $mapping,
+		string|PublishedForm|null $id = null,
+		?string $app = null,
+		?string $title = null,
+		public readonly ?string $author = null,
+		public readonly array $mapping = [],
 		public readonly ?Closure $unpublish = null,
+		?string $audience = null,
+		?PublishedForm $form = null,
 	) {
+		if ($id instanceof PublishedForm) {
+			$form ??= $id;
+			$id = null;
+		}
+
+		if ($form === null && ($id === null || $app === null || $title === null)) {
+			throw new \InvalidArgumentException('FormDependent needs an id, app and title, or a PublishedForm.');
+		}
+
+		$form ??= new PublishedForm(id: (string) $id, app: (string) $app, title: (string) $title, audience: $audience);
+
 		$this->id       = $form->id;
 		$this->app      = $form->app;
 		$this->title    = $form->title;
