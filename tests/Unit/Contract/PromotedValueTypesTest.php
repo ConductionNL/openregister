@@ -32,6 +32,13 @@ class PromotedValueTypesTest extends TestCase {
 	 * @return array<string, array{0: string, 1: array<string, mixed>}>
 	 */
 	public static function promotedTypes(): array {
+		$target   = new Value\ObjectFindTarget(register: 'publications', schema: 'person');
+		$policy   = new Value\SavePolicy(silent: true);
+		$actor    = new Value\SaveActor(owner: 'portal:abc');
+		$defaults = new Value\BulkBatchDefaults(register: 3);
+		$runStep  = new Value\LockRunStep(runUuid: 'run-1', nodeId: 'node-2');
+		$reach    = static fn (string $uuid): bool => $uuid !== '';
+
 		return [
 			'ObjectFindTarget'  => ['ObjectFindTarget', ['register' => 'publications', 'schema' => 7]],
 			'SaveActor'         => ['SaveActor', ['owner' => 'portal:abc', 'unowned' => true]],
@@ -41,6 +48,45 @@ class PromotedValueTypesTest extends TestCase {
 			],
 			'BulkBatchDefaults' => ['BulkBatchDefaults', ['register' => 3, 'schema' => 'person']],
 			'LockRunStep'       => ['LockRunStep', ['runUuid' => 'run-1', 'nodeId' => 'node-2']],
+			'ObjectSaveOptions' => [
+				'ObjectSaveOptions',
+				[
+					'target'        => $target,
+					'uuid'          => 'abc-123',
+					'extend'        => ['owner'],
+					'uploadedFiles' => ['file' => ['name' => 'a.txt']],
+					'policy'        => $policy,
+					'actor'         => $actor,
+				],
+			],
+			'BulkSaveOptions'   => [
+				'BulkSaveOptions',
+				['defaults' => $defaults, 'validation' => true, 'events' => true, 'audit' => false],
+			],
+			'LockRequest'       => [
+				'LockRequest',
+				['identifier' => 'abc-123', 'process' => 'import', 'duration' => 60, 'runStep' => $runStep],
+			],
+			'UnlockRequest'     => [
+				'UnlockRequest',
+				['identifier' => 'abc-123', 'advisory' => true, 'runUuid' => 'run-1', 'break' => true],
+			],
+			'ObjectFindOptions' => [
+				'ObjectFindOptions',
+				['register' => 'publications', 'schema' => 7, 'extend' => ['owner'], 'files' => true, 'render' => false, 'audit' => false],
+			],
+			'ObjectDeletion'    => [
+				'ObjectDeletion',
+				['uuid' => 'abc-123', 'target' => $target, 'permanent' => true, 'reach' => $reach],
+			],
+			'ObjectPatch'       => [
+				'ObjectPatch',
+				['objectId' => '42', 'data' => ['title' => 'New'], 'target' => $target],
+			],
+			'ObjectValidationVerdict' => [
+				'ObjectValidationVerdict',
+				['errors' => [['property' => 'title', 'message' => 'Required', 'rule' => 'schema']]],
+			],
 		];
 	}//end promotedTypes()
 
@@ -119,7 +165,61 @@ class PromotedValueTypesTest extends TestCase {
 		$this->assertSame(expected: get_object_vars(new Contract\SaveActor()), actual: get_object_vars(new Value\SaveActor()));
 		$this->assertSame(expected: get_object_vars(new Contract\ObjectFindTarget()), actual: get_object_vars(new Value\ObjectFindTarget()));
 		$this->assertSame(expected: get_object_vars(new Contract\BulkBatchDefaults()), actual: get_object_vars(new Value\BulkBatchDefaults()));
+		$this->assertEquals(expected: get_object_vars(new Contract\ObjectSaveOptions()), actual: get_object_vars(new Value\ObjectSaveOptions()));
+		$this->assertEquals(expected: get_object_vars(new Contract\BulkSaveOptions()), actual: get_object_vars(new Value\BulkSaveOptions()));
+		$this->assertEquals(expected: get_object_vars(new Contract\LockRequest(identifier: 'a')), actual: get_object_vars(new Value\LockRequest(identifier: 'a')));
+		$this->assertSame(expected: get_object_vars(new Contract\UnlockRequest(identifier: 'a')), actual: get_object_vars(new Value\UnlockRequest(identifier: 'a')));
+		$this->assertSame(expected: get_object_vars(new Contract\ObjectFindOptions()), actual: get_object_vars(new Value\ObjectFindOptions()));
+		$this->assertEquals(expected: get_object_vars(new Contract\ObjectDeletion(uuid: 'a')), actual: get_object_vars(new Value\ObjectDeletion(uuid: 'a')));
+		$this->assertEquals(expected: get_object_vars(new Contract\ObjectPatch(objectId: 'a', data: [])), actual: get_object_vars(new Value\ObjectPatch(objectId: 'a', data: [])));
+		$this->assertSame(expected: get_object_vars(new Contract\ObjectValidationVerdict()), actual: get_object_vars(new Value\ObjectValidationVerdict()));
 	}//end testBothNamesHaveTheSameDefaults()
+
+	/**
+	 * Positional construction under the old name keeps working, as fleet apps write it.
+	 *
+	 * @return void
+	 */
+	public function testPositionalConstructionKeepsWorkingUnderTheOldName(): void {
+		$target  = new Value\ObjectFindTarget('publications', 'person');
+		$options = new Value\ObjectSaveOptions($target, 'abc-123');
+		$lock    = new Value\LockRequest('abc-123', 'import', 60, new Value\LockRunStep('run-1', 'node-2'));
+
+		$this->assertSame(expected: $target, actual: $options->target);
+		$this->assertSame(expected: 'abc-123', actual: $options->uuid);
+		$this->assertSame(expected: 'run-1', actual: $lock->runUuid);
+		$this->assertSame(expected: 'node-2', actual: $lock->nodeId);
+		$this->assertTrue((new Value\ObjectDeletion('abc-123', $target))->isScoped());
+	}//end testPositionalConstructionKeepsWorkingUnderTheOldName()
+
+	/**
+	 * The methods the values carry answer the same under both names.
+	 *
+	 * @return void
+	 */
+	public function testTheInheritedMethodsAnswerTheSame(): void {
+		$errors = [['property' => 'title', 'message' => 'Required', 'rule' => 'schema']];
+
+		$this->assertSame(expected: (new Contract\ObjectValidationVerdict(errors: $errors))->jsonSerialize(), actual: (new Value\ObjectValidationVerdict(errors: $errors))->jsonSerialize());
+		$this->assertFalse((new Value\ObjectValidationVerdict(errors: $errors))->isValid());
+		$this->assertTrue((new Value\ObjectValidationVerdict())->isValid());
+		$this->assertFalse((new Value\ObjectDeletion(uuid: 'a'))->isScoped());
+		$this->assertTrue((new Contract\ObjectDeletion(uuid: 'a', target: new Contract\ObjectFindTarget(register: 1, schema: 2)))->isScoped());
+	}//end testTheInheritedMethodsAnswerTheSame()
+
+	/**
+	 * The values built under the old name are accepted where the published name is asked for.
+	 *
+	 * @return void
+	 */
+	public function testAValueOfThePublishedNameIsAcceptedInsideTheOldValues(): void {
+		$target = new Contract\ObjectFindTarget(register: 'publications', schema: 'person');
+
+		$this->assertSame(expected: $target, actual: (new Value\ObjectSaveOptions(target: $target))->target);
+		$this->assertSame(expected: $target, actual: (new Value\ObjectDeletion(uuid: 'a', target: $target))->target);
+		$this->assertSame(expected: $target, actual: (new Value\ObjectPatch(objectId: 'a', data: [], target: $target))->target);
+		$this->assertSame(expected: $target->register, actual: Value\ObjectFindTarget::fromFindOptions(options: new Contract\ObjectFindOptions(register: 'publications'))->register);
+	}//end testAValueOfThePublishedNameIsAcceptedInsideTheOldValues()
 
 	/**
 	 * The named constructor of ObjectFindTarget returns the class it is called on.
