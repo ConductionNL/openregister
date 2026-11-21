@@ -49,8 +49,8 @@ class ManagedByConfigurationTraitTest extends TestCase {
 			public function __construct(public ?int $id) {
 			}
 
-			protected function configurationMembers(Configuration $configuration): ?array {
-				return $configuration->getApplications();
+			protected function configurationMemberKind(): string {
+				return 'applications';
 			}
 		};
 	}

@@ -42,7 +42,7 @@ class DependentValuePairCheckTest extends TestCase {
 	 *
 	 * @var string
 	 */
-	private const MALFORMED = 'Property "city": "%s" must be paired with a non-empty list of allowed values.';
+	private const MALFORMED = 'Property "city": "%s" must be paired with a list of allowed values.';
 
 	/**
 	 * `city` controlled by `country`, with the given allowed map and enums.
@@ -68,11 +68,11 @@ class DependentValuePairCheckTest extends TestCase {
 		$this->assertSame([], (new DependentValuePairCheck())->errors(self::declaration(['NL' => ['Utrecht'], 'BE' => ['Gent', 1]])));
 	}
 
-	public function testAPairWithoutValuesIsMalformed(): void {
+	public function testAPairWithoutAListIsMalformedButAnEmptyListIsNot(): void {
 		$errors = (new DependentValuePairCheck())->errors(self::declaration(['NL' => [], 'BE' => 'Gent']));
 
+		// An empty list is accepted (no city allowed for NL); a bare value is not a list.
 		$this->assertSame([
-			['code' => DependentValueValidator::CODE_MALFORMED, 'message' => sprintf(self::MALFORMED, 'NL')],
 			['code' => DependentValueValidator::CODE_MALFORMED, 'message' => sprintf(self::MALFORMED, 'BE')],
 		], $errors);
 	}
