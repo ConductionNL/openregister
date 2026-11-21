@@ -24,8 +24,6 @@ namespace OCA\OpenRegister\Notifications;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
-use OCA\OpenRegister\Notifications\Db\MessageMapper;
-use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
@@ -73,10 +71,6 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
-use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\Files\AppData\IAppDataFactory;
@@ -107,18 +101,15 @@ final class NotificationsWiring {
 		RateLimiterInterface::class => RateLimiter::class,
 		OptOutAuthorityInterface::class => OptOutAuthority::class,
 		WatcherMapperInterface::class => WatcherMapper::class,
-		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 		TimelineVisibilityServiceInterface::class => TimelineVisibilityService::class,
 		NcNotificationSenderInterface::class => NcNotificationSender::class,
 		PresenceServiceInterface::class => PresenceService::class,
 		ObjectPresenceInterface::class => ObjectPresenceTracker::class,
 		NotificationTemplatingInterface::class => NotificationTemplating::class,
-		CloudEventFormatterInterface::class => CloudEventFormatter::class,
 		TalkSenderInterface::class => TalkSender::class,
 		PublicTimelineInterface::class => PublicTimeline::class,
 		QueuedNotificationMapperInterface::class => QueuedNotificationMapper::class,
 		EmailSenderInterface::class => EmailSender::class,
-		MessageMapperInterface::class => MessageMapper::class,
 		NotificationPreferencesInterface::class => NotificationPreferenceService::class,
 		NotificationClearingServiceInterface::class => NotificationClearingService::class,
 		ReadNoticeClearingInterface::class => NotificationClearingService::class,

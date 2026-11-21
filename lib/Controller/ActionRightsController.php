@@ -26,8 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
-use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
-use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -51,16 +50,16 @@ class ActionRightsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                     $request    The request.
-	 * @param AdministratorOnlyGate        $gate       Refuses a caller who is not an administrator.
-	 * @param ActionRightsInterface        $catalogue  The action rights and their groups.
-	 * @param FlowNodeRightsGuardInterface $nodeRights The administrator's map of node type to right.
+	 * @param IRequest               $request    The request.
+	 * @param AdministratorOnlyGate  $gate       Refuses a caller who is not an administrator.
+	 * @param ActionRightsInterface  $catalogue  The action rights and their groups.
+	 * @param NodeRightsMapInterface $nodeRights The administrator's map of node type to right.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly AdministratorOnlyGate $gate,
 		private readonly ActionRightsInterface $catalogue,
-		private readonly FlowNodeRightsGuardInterface $nodeRights,
+		private readonly NodeRightsMapInterface $nodeRights,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -147,11 +146,11 @@ class ActionRightsController extends Controller {
 
 		$valid = [];
 		foreach ($map as $type => $right) {
-			$isRight = (is_string($right) === true && str_starts_with($right, IFlowNodeRequiresRight::RIGHT_PREFIX) === true
-				&& strlen($right) > strlen(IFlowNodeRequiresRight::RIGHT_PREFIX));
+			$isRight = (is_string($right) === true && str_starts_with($right, NodeRightsMapInterface::RIGHT_PREFIX) === true
+				&& strlen($right) > strlen(NodeRightsMapInterface::RIGHT_PREFIX));
 			if (is_string($type) === false || trim($type) === '' || ($right !== null && $isRight === false)) {
 				throw new InvalidArgumentException(
-					sprintf('Node type "%s" must map to a right starting with "%s", or to null.', (string) $type, IFlowNodeRequiresRight::RIGHT_PREFIX)
+					sprintf('Node type "%s" must map to a right starting with "%s", or to null.', (string) $type, NodeRightsMapInterface::RIGHT_PREFIX)
 				);
 			}
 
