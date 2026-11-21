@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Object\RemovalOptions;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -400,7 +401,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->objectMapper->method('assertDeletable')->willThrowException($refusal);
 		$this->objectMapper->expects($this->never())->method('update');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
+		$this->auditTrailMapper->expects($this->never())->method('recordChange');
 		$this->withAuditTrailsEnabled(true);
 
 		try {
@@ -662,8 +663,8 @@ class DeleteObjectTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('createAuditTrail')
-			->with($object, null, 'delete');
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([$object, null, 'delete']));
 
 		$this->handler->delete($object);
 	}
@@ -683,7 +684,7 @@ class DeleteObjectTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->never())
-			->method('createAuditTrail');
+			->method('recordChange');
 
 		$this->handler->delete($object);
 	}
@@ -800,7 +801,7 @@ class DeleteObjectTest extends TestCase {
 		// Audit trail should still be created (default-enabled fallback).
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('createAuditTrail');
+			->method('recordChange');
 
 		$this->handler->delete($object);
 	}

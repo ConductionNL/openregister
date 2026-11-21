@@ -268,16 +268,17 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => ($case['audit'] ?? true)]);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null): AuditTrail {
-			$this->trace[] = ['audit', $old?->getObject(), $new?->getObject()];
-			$log = $this->createMock(AuditTrail::class);
-			$log->method('jsonSerialize')->willReturn(['log' => 1]);
-			return $log;
-		});
 		$audit->method('recordChange')->willReturnCallback(function (\OCA\OpenRegister\Db\AuditTrail\AuditedChange $change): AuditTrail {
-			$this->trace[] = ['recordChange', $change->action, $change->marks, $change->old?->getObject(), $change->new?->getObject()];
+			// A plain edit (no origin, no markers) is the row the former positional call wrote.
+			$plain = ($change->action === null && $change->marks === []);
+			if ($plain === true) {
+				$this->trace[] = ['audit', $change->old?->getObject(), $change->new?->getObject()];
+			} else {
+				$this->trace[] = ['recordChange', $change->action, $change->marks, $change->old?->getObject(), $change->new?->getObject()];
+			}
+
 			$log = $this->createMock(AuditTrail::class);
-			$log->method('jsonSerialize')->willReturn(['log' => 2]);
+			$log->method('jsonSerialize')->willReturn(['log' => ($plain === true ? 1 : 2)]);
 			return $log;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);

@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
 use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
 use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -260,7 +261,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->signIn('bob', ['redactie']);
 		$this->permissions->method('hasPermission')->willReturn(true);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$this->ownerWriter
 			->expects($this->once())
@@ -289,8 +290,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->once())
-			->method('createAuditTrail')
-			->with(
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([
 				$this->callback(
 					static function ($old) {
 						return $old instanceof ObjectEntity && $old->getOwner() === 'alice';
@@ -302,7 +303,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 					}
 				),
 				ObjectOwnershipService::AUDIT_ACTION
-			)
+			]))
 			->willReturn($this->createMock(AuditTrail::class));
 
 		$this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
@@ -319,7 +320,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testThePreviousOwnerIsTold(): void {
 		$this->signIn('bob', ['redactie']);
 		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$notification = $this->expectNotification();
 		$notification->expects($this->once())->method('setUser')->with('alice')->willReturnSelf();
@@ -354,7 +355,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(false);
 
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
+		$this->auditTrailMapper->expects($this->never())->method('recordChange');
 		$this->notificationManager->expects($this->never())->method('notify');
 
 		$this->expectException(NotAuthorizedException::class);
@@ -404,7 +405,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testTheSystemScopeMayAssignWithoutASessionUser(): void {
 		$this->signIn(null);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->ownerWriter->expects($this->once())->method('writeOwner')->with($this->anything(), new OwnerAssignment('uuid-1', 'carol'));
 
 		$outcome = \OCA\OpenRegister\Service\SystemOperationContext::run(
@@ -424,7 +425,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testAnAdministratorAssignsToANamedOwner(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$this->ownerWriter
 			->expects($this->once())
@@ -460,7 +461,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 
 		$this->auditTrailMapper
 			->expects($this->exactly(3))
-			->method('createAuditTrail')
+			->method('recordChange')
 			->willReturn($this->createMock(AuditTrail::class));
 
 		$outcome = $this->service->reassign(
@@ -483,7 +484,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testOneFailureDoesNotLoseTheRestOfTheBatch(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$this->magicMapper->method('findAcrossAllSources')->willReturnCallback(
 			function (string|int $identifier) {
@@ -517,7 +518,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testTheChangeCarriesToAChildThatSharedTheOwner(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$child = $this->record('uuid-child', 'alice');
 		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturnCallback(
@@ -712,7 +713,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testAChildOwnedBySomebodyElseIsLeftAlone(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturn(
 			[$this->record('uuid-child', 'dave')]
@@ -741,7 +742,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testTheCascadeIsOffUnlessAskedFor(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 
 		$this->magicMapper->expects($this->never())->method('findByRelationUsingRelationsColumn');
 
@@ -761,7 +762,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->permissions->method('hasPermission')->willReturn(true);
 
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
+		$this->auditTrailMapper->expects($this->never())->method('recordChange');
 
 		$outcome = $this->service->claim(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')));
 
@@ -780,7 +781,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testANotificationFailureDoesNotUndoTheTransfer(): void {
 		$this->signIn('bob', ['redactie']);
 		$this->permissions->method('hasPermission')->willReturn(true);
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->notificationManager->method('createNotification')->willThrowException(
 			new \RuntimeException('the notification app is not enabled')
 		);
@@ -802,7 +803,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	 */
 	public function testADepartedPreviousOwnerIsNotNotified(): void {
 		$this->signIn('root', ['admin']);
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->userManager->method('userExists')->willReturnCallback(
 			static fn (string $uid): bool => ($uid !== 'alice')
@@ -855,7 +856,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testAFailedChildLookupLeavesTheParentTransferred(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willThrowException(
 			new \RuntimeException('no magic table for this register')
 		);
@@ -874,7 +875,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testAnUnresolvableChildIsSkipped(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturn(
 			[$this->record('uuid-child', 'alice')]
 		);
@@ -900,7 +901,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testACyclicRelationGraphTerminates(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->registerMapper->method('find')->willReturn(new Register());
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 
@@ -1019,7 +1020,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 	public function testACascadeStopsAtTheDepthCapWithANestedOutcome(): void {
 		$this->signIn('root', ['admin']);
 		$this->expectNotification();
-		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->auditTrailMapper->method('recordChange')->willReturn($this->createMock(AuditTrail::class));
 		$this->registerMapper->method('find')->willReturn(new Register());
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 

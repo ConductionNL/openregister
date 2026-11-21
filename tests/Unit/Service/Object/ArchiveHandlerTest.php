@@ -31,6 +31,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\ObjectStateRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -194,12 +195,12 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->persistsVerbatim();
 
 		$this->audit->expects($this->once())
-			->method('createAuditTrail')
-			->with(
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([
 				$this->anything(),
 				$this->anything(),
 				'archive'
-			);
+			]));
 
 		$this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 	}//end testArchiveWritesAnAuditEntry()
@@ -216,8 +217,8 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->persistsVerbatim();
 
 		$this->audit->expects($this->once())
-			->method('createAuditTrail')
-			->with($this->anything(), $this->anything(), 'unarchive');
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([$this->anything(), $this->anything(), 'unarchive']));
 
 		$result = $this->handler()->unarchiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 
@@ -243,7 +244,7 @@ final class ArchiveHandlerTest extends TestCase {
 		$object->archive(userSession: $firstSession, reason: 'eerste');
 
 		$this->resolvesTo(object: $object);
-		$this->audit->expects($this->never())->method('createAuditTrail');
+		$this->audit->expects($this->never())->method('recordChange');
 
 		$result = $this->handler()->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: 'tweede', register: null, schema: null));
 
@@ -425,8 +426,8 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->persistsVerbatim();
 
 		$this->audit->expects($this->once())
-			->method('createAuditTrail')
-			->with($this->anything(), $this->anything(), 'unfreeze');
+			->method('recordChange')
+			->with(AuditChangeCalls::matching([$this->anything(), $this->anything(), 'unfreeze']));
 
 		$result = $this->handler()->unfreezeWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: self::OBJ, reason: null, register: null, schema: null));
 

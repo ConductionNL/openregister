@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Notification\IManager as INotificationManager;
@@ -171,7 +172,7 @@ final class TransferAuditLog {
 	 */
 	private function auditTransferred(ObjectEntity $object): void {
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $object, new: $object, action: 'archival.transferred');
+			$this->auditTrailMapper->recordChange(change: new AuditedChange(old: $object, new: $object, action: 'archival.transferred'));
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[EdepotTransferService] Failed to create audit trail for transfer',
