@@ -118,7 +118,7 @@ final class MoveObjectTest extends TestCase {
 		$this->validator = $this->createMock(ValidateObject::class);
 		$this->audit = $this->createMock(AuditTrailMapper::class);
 		$this->relations = $this->createMock(RelationAddressRewriteInterface::class);
-		$this->audit->method('recordObjectEvent')->willReturn(new AuditTrail());
+		$this->audit->method('writeObjectEvent');
 
 		$this->objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity): ObjectEntity {
@@ -549,7 +549,7 @@ final class MoveObjectTest extends TestCase {
 	 */
 	public function testAFailedRelationRewriteStillReportsTheMove(): void {
 		$this->relations->method('rewrite')->willThrowException(new RuntimeException('relation table locked'));
-		$this->audit->expects(self::once())->method('recordObjectEvent');
+		$this->audit->expects(self::once())->method('writeObjectEvent');
 
 		$outcome = $this->service()->perform(
 			move: new ObjectMove(
@@ -702,7 +702,7 @@ final class MoveObjectTest extends TestCase {
 	public function testOneMovedEntryNamesBothAddresses(): void {
 		$recorded = [];
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$recorded): AuditTrail {
 				$recorded[] = ['action' => $action, 'context' => $context, 'actor' => $actorId];
 				return new AuditTrail();
