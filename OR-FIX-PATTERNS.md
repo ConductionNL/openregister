@@ -101,3 +101,13 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merge conflict in lib/Db/SchemaMapper.php (checkDataDeclarations now runSlots) and RecordAnnotationRefusals.php; a PR added a `$records->checkX()` save check.
 - Cause: main runs schema-save checks in slots of Db/SchemaMapper/SchemaDeclarationOrder; non-Db areas contribute via a SchemaDeclarationChecksEvent listener (see Listener/ReferenceCardDeclarationCheckListener).
 - Fix: take main's SchemaMapper and RecordAnnotationRefusals; add a slot constant (e.g. 235 between neighbours) to SchemaDeclarationOrder and to SchemaDeclarationOrderTest's list; put the check in a listener in its area, registered with registerEventListener; add the listener to tests/Unit/Support/ProcessDeclarationChecksDispatcher::listeners(); component-map row + python3 scripts/component-patterns.py. Example: #10300.
+
+## l10n/*.js conflicts on every locale after a build PR merges main
+- Symptom: CONFLICT in all 37 l10n/*.js (adjacent key blocks of the PR's and main's new strings).
+- Cause: both sides added keys in the same sorted region; the files are generated (apply.js is the only writer), so hand-editing is wrong.
+- Fix: during the conflicted merge run `node ~/q/bin/l10n-merge.js <checkout> $(git diff --name-only --diff-filter=U | grep '^l10n/.*\.js$')`: three-way per key from index stages 1/2/3 (main wins a key both changed), re-serialized with scripts/l10n/lib.js serializeJs; expect `git diff origin/main --numstat -- l10n` to be only the PR's additions. Parity counts vs a main checkout show nothing new missing.
+
+## Controller lists replaced by markers on main
+- Symptom: modify/delete conflict on lib/Controller/Support/MaintenanceReachableControllersInterface.php; F09ControllerBoundaryTest or MaintenanceModeMiddlewareTest pin three controllers.
+- Cause: main replaced ALWAYS_REACHABLE with Kernel\Contracts\Configuration\MaintenanceReachableInterface on each controller.
+- Fix: git rm the list file; the PR's new controller `implements MaintenanceReachableInterface`; add it to the F09 loop and the middleware test's expected list. Similarly ObjectsController::export moved to ObjectExportController: move attributes such as #[Sheddable] there and repoint tests.
