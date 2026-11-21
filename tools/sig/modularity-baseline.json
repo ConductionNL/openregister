@@ -33,8 +33,6 @@
   "lib/Service/Object/BulkRowRules.php -> lib/Service/Flow/FlowRunContext.php",
   "lib/Service/Object/RenderObject.php -> lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
-  "lib/Service/Object/RenderObject.php -> lib/Service/Interaction/WatcherService.php",
-  "lib/Service/Object/RenderObject.php -> lib/Service/ObjectAction/ObjectActionList.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
@@ -690,6 +688,8 @@
   "lib/Kernel/Contracts/Core/ObjectQuotaRefusal.php",
   "lib/Kernel/Contracts/Core/ObjectTimelineLinksInterface.php",
   "lib/Kernel/Contracts/Core/ObjectTrailReaderInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectUnreadMarkerInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectWatchMarkersInterface.php",
   "lib/Kernel/Contracts/Core/PartyParentInterface.php",
   "lib/Kernel/Contracts/Core/PlacedAuditEntry.php",
   "lib/Kernel/Contracts/Core/PreviewDimensionsInterface.php",
@@ -712,6 +712,7 @@
   "lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",
   "lib/Kernel/Contracts/Core/RouteCallWindow.php",
   "lib/Kernel/Contracts/Core/RouteCallersInterface.php",
+  "lib/Kernel/Contracts/Core/RunnableActionsInterface.php",
   "lib/Kernel/Contracts/Core/RunningNumbersInterface.php",
   "lib/Kernel/Contracts/Core/SaveBoundaryInterface.php",
   "lib/Kernel/Contracts/Core/SchemaAccessChangeLogInterface.php",
@@ -2219,13 +2220,13 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 874,
-  "Core": 57275,
+  "Core": 57302,
   "Files": 1262,
   "Integrations": 17733,
   "Kernel": 8464,
-  "Notifications": 1759,
+  "Notifications": 1760,
   "Platform": 61,
-  "Processes": 27092,
+  "Processes": 27093,
   "Search": 1344
  },
  "kernel_files": [
@@ -2689,6 +2690,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462046,
- "violation_degree": 0.0057
+ "total_loc": 462083,
+ "violation_degree": 0.0054
 }
