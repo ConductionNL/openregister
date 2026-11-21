@@ -143,8 +143,8 @@ class DelegationConsentService implements DelegationConsentServiceInterface {
 		$ask = new ConsentRequest(principal: trim($principal), actingAs: trim($actingAs), scope: $scope, reason: $reason);
 		$this->assertAskable(ask: $ask);
 
-		$existing = $this->grants->findOutstandingRequest(principal: $ask->principal, actingAs: $ask->actingAs, scope: $ask->scope);
-		return ($existing ?? $this->grants->insert($this->pendingGrant(ask: $ask)));
+		$pending = $this->pendingGrant(ask: $ask);
+		return ($this->grants->findOutstandingRequest(wanted: $pending) ?? $this->grants->insert($pending));
 	}//end request()
 
 	/**
