@@ -38,7 +38,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
  */
-class Version1Date20261114180000 extends TargetedMigrationStep {
+class Version1Date20261114181600 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
