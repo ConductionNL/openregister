@@ -324,6 +324,42 @@ class MdtoSourceReader {
 	}//end parties()
 
 	/**
+	 * The parts the schema's declared containment relation holds for this record.
+	 *
+	 * Each part is its id, with its name when the row carried one. A schema
+	 * that declares no containment, or an annotation stored before it could,
+	 * yields none.
+	 *
+	 * @param ObjectEntity $object The object to read.
+	 *
+	 * @return list<array{id: string, name: string|null}> The parts.
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function parts(ObjectEntity $object): array {
+		$declared = ($this->sourceOf(object: $object)->annotation['containment']['parts'] ?? null);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$parts = [];
+		foreach ($declared as $part) {
+			if (is_array($part) === false || is_string(($part['id'] ?? null)) === false || $part['id'] === '') {
+				continue;
+			}
+
+			$name = null;
+			if (is_string(($part['name'] ?? null)) === true && $part['name'] !== '') {
+				$name = $part['name'];
+			}
+
+			$parts[] = ['id' => $part['id'], 'name' => $name];
+		}
+
+		return $parts;
+	}//end parts()
+
+	/**
 	 * Report an ACTIVE legal hold as a use restriction.
 	 *
 	 * @param ObjectEntity $object The object to read.

@@ -19,7 +19,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -51,9 +51,9 @@ class FolderManagementHandlerTest extends TestCase {
 	private IUserMountCache $mountCache;
 
 	/**
-	 * @var RegisterFolderRecorder&MockObject
+	 * @var RegisterFolderRecordsInterface&MockObject
 	 */
-	private RegisterFolderRecorder $folderRecorder;
+	private RegisterFolderRecordsInterface $folderRecorder;
 
 	private FolderManagementHandler $handler;
 
@@ -95,7 +95,7 @@ class FolderManagementHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->mountCache = $this->createMock(IUserMountCache::class);
-		$this->folderRecorder = $this->createMock(RegisterFolderRecorder::class);
+		$this->folderRecorder = $this->createMock(RegisterFolderRecordsInterface::class);
 
 		// Common mock: user session returns a user
 		$this->mockUser = $this->createMock(IUser::class);

@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\IL10N;
@@ -45,7 +46,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
  */
-class ObjectActionList implements ObjectActionListInterface {
+class ObjectActionList implements ObjectActionListInterface, RunnableActionsInterface {
 
 	/**
 	 * Constructor.

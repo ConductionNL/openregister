@@ -46,9 +46,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\SplitLevel
  * @uses   \OCA\OpenRegister\Files\Service\TextSplitPass
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ExtractionSource
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\FileExtractionOptions
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SourceStamp
+ * @uses   \OCA\OpenRegister\Files\Service\ExtractionSource
+ * @uses   \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses   \OCA\OpenRegister\Files\Service\SourceStamp
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SourceText
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
@@ -58,6 +58,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership
  */
 final class ExtractionCeilingTest extends TestCase {
 
