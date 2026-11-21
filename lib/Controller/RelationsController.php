@@ -22,7 +22,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RelationsCollaboration;
 use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
@@ -30,6 +29,7 @@ use OCA\OpenRegister\Controller\Support\RelationTypeLookup;
 use OCA\OpenRegister\Controller\Support\RelationsRecords;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -166,7 +166,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedReports',
 		],
 		'flow' => [
-			'class' => \OCA\OpenRegister\Service\FlowLinkServiceInterface::class,
+			'class' => \OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface::class,
 			'available' => 'isFlowAvailable',
 			'method' => 'getLinkedOperations',
 		],
@@ -231,7 +231,7 @@ class RelationsController extends Controller {
 		IRequest $request,
 		RelationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->records = $services->records;
 		$this->collaboration = $services->collaboration;

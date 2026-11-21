@@ -7,9 +7,9 @@
  *
  * A store item here is a configuration set, a flow, or a schema that marked
  * itself shareable: whatever the app's declared shareable types own. Discovery,
- * signature checking, trust and install all stay in FederatedConfigService, so
- * this class only translates between the store surface's card shape and the
- * federated engine's repo/bundle shape.
+ * signature checking, trust and install all stay in Configuration, behind the
+ * shareable configuration catalogue port, so this class only translates between
+ * the store surface's card shape and the federated engine's repo/bundle shape.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -35,8 +35,7 @@ namespace OCA\OpenRegister\AppHost\Store;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
-use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -65,13 +64,11 @@ class FederatedStoreCatalog {
 	/**
 	 * Constructor.
 	 *
-	 * @param ShareableConfigTypeRegistryInterface $registry  Resolves a declared type id to its type.
-	 * @param FederatedConfigServiceInterface      $federated Discovery, fetch, trust and install.
-	 * @param LoggerInterface                      $logger    PSR logger, server-side detail only.
+	 * @param ShareableConfigCatalogueInterface $catalogue Declared types, discovery, fetch, trust and install.
+	 * @param LoggerInterface                   $logger    PSR logger, server-side detail only.
 	 */
 	public function __construct(
-		private readonly ShareableConfigTypeRegistryInterface $registry,
-		private readonly FederatedConfigServiceInterface $federated,
+		private readonly ShareableConfigCatalogueInterface $catalogue,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -115,7 +112,7 @@ class FederatedStoreCatalog {
 		return array_values(
 			array_filter(
 				$typeIds,
-				fn (string $typeId): bool => $this->registry->get(id: $typeId) !== null
+				fn (string $typeId): bool => $this->catalogue->declaredType(typeId: $typeId) !== null
 			)
 		);
 	}//end ownedTypes()
@@ -157,8 +154,8 @@ class FederatedStoreCatalog {
 	 * @return DeclaredShareableType|null The type, or null when no app owns it.
 	 */
 	private function ownedType(StoreDescriptor $descriptor, string $typeId): ?DeclaredShareableType {
-		$type = $this->registry->get(id: $typeId);
-		if ($type === null) {
+		$declared = $this->catalogue->declaredType(typeId: $typeId);
+		if ($declared === null) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Store] %s declares shareable type %s, which no app owns', $descriptor->appId, $typeId),
 				context: ['file' => __FILE__, 'line' => __LINE__]
@@ -166,7 +163,7 @@ class FederatedStoreCatalog {
 			return null;
 		}
 
-		return new DeclaredShareableType(typeId: $typeId, type: $type);
+		return $declared;
 	}//end ownedType()
 
 	/**
@@ -211,7 +208,7 @@ class FederatedStoreCatalog {
 	 */
 	private function discoverType(DeclaredShareableType $declared): array {
 		try {
-			return $this->federated->discover(topic: $declared->type->getTopic());
+			return $this->catalogue->discover(topic: $declared->topic);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $declared->typeId, $e->getMessage()),
@@ -234,12 +231,12 @@ class FederatedStoreCatalog {
 	 */
 	public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
 		foreach ($descriptor->types as $typeId) {
-			$type = $this->registry->get(id: $typeId);
-			if ($type === null) {
+			$declared = $this->catalogue->declaredType(typeId: $typeId);
+			if ($declared === null) {
 				continue;
 			}
 
-			$entry = $this->entryFor(declared: new DeclaredShareableType(typeId: $typeId, type: $type), slug: $slug);
+			$entry = $this->entryFor(declared: $declared, slug: $slug);
 			if ($entry !== null) {
 				return $this->resolvedBundle(typeId: $typeId, entry: $entry);
 			}
@@ -309,7 +306,7 @@ class FederatedStoreCatalog {
 	public function install(array $ref): array {
 		$source = (string)($ref['source'] ?? '');
 
-		if ($this->federated->isSourceAllowed(source: $source) === false) {
+		if ($this->catalogue->isSourceAllowed(source: $source) === false) {
 			return $this->refusedReport(ref: $ref, source: $source);
 		}
 
@@ -363,7 +360,7 @@ class FederatedStoreCatalog {
 	 * @return array The type's install result.
 	 */
 	private function installThroughType(array $ref, string $source): array {
-		return $this->federated->install(
+		return $this->catalogue->install(
 			typeId: (string)$ref['typeId'],
 			bundle: (array)$ref['bundle'],
 			source: $source
@@ -490,7 +487,7 @@ class FederatedStoreCatalog {
 	 */
 	private function fetchAt(string $repo, string $path): array {
 		try {
-			return $this->federated->fetchBundle(repo: $repo, path: $path);
+			return $this->catalogue->fetchBundle(repo: $repo, path: $path);
 		} catch (Throwable $e) {
 			return [];
 		}
@@ -517,7 +514,7 @@ class FederatedStoreCatalog {
 			// discriminator here: a set, a flow and a schema are what differ.
 			'kind' => $typeId,
 			'type' => $typeId,
-			'typeName' => $declared->type->getDisplayName(),
+			'typeName' => $declared->typeName,
 			'publisher' => $owner,
 			'source' => (string)($entry['url'] ?? ''),
 			'updated' => (string)($entry['updated'] ?? ''),

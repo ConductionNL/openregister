@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ActionRightsController;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
-use OCA\OpenRegister\Service\ActionRightsCatalogueInterface;
-use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -65,16 +65,16 @@ final class ActionRightsControllerTest extends TestCase {
 	/**
 	 * The catalogue.
 	 *
-	 * @var ActionRightsCatalogueInterface&MockObject
+	 * @var ActionRightsInterface&MockObject
 	 */
-	private ActionRightsCatalogueInterface&MockObject $catalogue;
+	private ActionRightsInterface&MockObject $catalogue;
 
 	/**
 	 * The node map.
 	 *
-	 * @var FlowNodeRightsGuardInterface&MockObject
+	 * @var NodeRightsMapInterface&MockObject
 	 */
-	private FlowNodeRightsGuardInterface&MockObject $nodeRights;
+	private NodeRightsMapInterface&MockObject $nodeRights;
 
 	/**
 	 * The session.
@@ -97,8 +97,8 @@ final class ActionRightsControllerTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$this->catalogue = $this->createMock(ActionRightsCatalogueInterface::class);
-		$this->nodeRights = $this->createMock(FlowNodeRightsGuardInterface::class);
+		$this->catalogue = $this->createMock(originalClassName: ActionRightsInterface::class);
+		$this->nodeRights = $this->createMock(NodeRightsMapInterface::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->groups = $this->createMock(IGroupManager::class);
 

@@ -29,9 +29,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\McpControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCP\AppFramework\Controller;
@@ -82,7 +82,7 @@ class McpController extends Controller {
 		IRequest $request,
 		McpControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->mcpDiscoveryService = $services->mcpDiscoveryService;
 		$this->grantableRightsIndex = $services->grantableRightsIndex;
 		$this->logger = $services->logger;
