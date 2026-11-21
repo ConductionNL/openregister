@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the nullable bigint columns `sample_count` and `sample_sum_ms` to openregister_metrics.
@@ -39,7 +38,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/production-observability
  */
-class Version1Date20261116230000 extends SimpleMigrationStep {
+class Version1Date20261116230000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -62,7 +61,7 @@ class Version1Date20261116230000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/production-observability
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -84,5 +83,5 @@ class Version1Date20261116230000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

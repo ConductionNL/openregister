@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the nullable `duration_ms` column to openregister_webhook_logs.
@@ -38,7 +37,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/production-observability
  */
-class Version1Date20261114190000 extends SimpleMigrationStep {
+class Version1Date20261114190000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -61,7 +60,7 @@ class Version1Date20261114190000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/production-observability
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -81,5 +80,5 @@ class Version1Date20261114190000 extends SimpleMigrationStep {
 		$output->info('Added ' . self::COLUMN . ' on ' . self::TABLE . ' for the delivery latency histogram.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
