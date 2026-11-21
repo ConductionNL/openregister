@@ -434,4 +434,81 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['brp person openregister/brp-sanne ('.$stuck.'): the register refused it'], $report['failed']);
 		$this->assertSame(['openregister/brp-sanne'], array_keys($this->record->read(set: 'demo')['objects']));
 	}
+
+	/**
+	 * A catalogue fragment whose publication looks up a theme in an app the instance may not have.
+	 *
+	 * @param bool   $optional Whether the publication is marked optional.
+	 * @param string $register The register the lookup reads.
+	 *
+	 * @return void
+	 */
+	private function publicationFragment(bool $optional, string $register = 'catalogi'): void {
+		$publication = [
+			'key'      => 'publication-1',
+			'register' => 'cases',
+			'schema'   => 'case',
+			'lookups'  => ['theme' => ['register' => $register, 'schema' => 'theme', 'where' => ['slug' => 'wonen']]],
+			'data'     => ['type' => '{{lookup:theme}}'],
+		];
+		if ($optional === true) {
+			$publication['optional'] = true;
+		}
+
+		$this->app(app: 'catalogue', fragment: ['objects' => [$publication]]);
+	}//end publicationFragment()
+
+	public function testAnOptionalEntryWhoseAppIsAbsentIsSkippedAndTheSetInstalls(): void {
+		$this->publicationFragment(optional: true);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['skipped'][0]);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok'], json_encode($report));
+		$this->assertSame(3, $this->store->creates, 'the rest of the set is written, the skipped entry is not');
+		$this->assertCount(1, $report['skipped']);
+		$this->assertStringContainsString('object "publication-1"', $report['skipped'][0]);
+		$this->assertArrayNotHasKey('catalogue/publication-1', json_decode($this->config['example_set_demo'], true)['objects']);
+	}
+
+	public function testAnOptionalEntryWhoseLookupFindsNothingIsSkipped(): void {
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+	}
+
+	public function testAnEntryNotMarkedOptionalStillRefusesTheSet(): void {
+		$this->publicationFragment(optional: false);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['refusals'][0]);
+		$this->assertFalse($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertSame(0, $this->store->creates, 'a refused check writes nothing');
+	}
+
+	public function testAnOptionalEntryWithTwoMatchesIsStillRefused(): void {
+		// Optional covers "nothing there", not "more than one there": an ambiguous lookup still refuses.
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('a lookup needs exactly one', $check['refusals'][0]);
+	}
 }

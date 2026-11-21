@@ -6,12 +6,12 @@
  *
  * The non-secret connection parameters (driver, host, port, dbname, user, or a
  * sqlite path) live on the Source `authConfig`; the DB PASSWORD is custodied
- * behind the {@see CredentialStore} abstraction (ADR-004) and referenced only by
- * a `credential` UUID on `authConfig`. This factory resolves the secret through
- * that interface — the store selection (Doriath leaf vs. Nextcloud vault) is made
- * upstream by {@see \OCA\OpenRegister\Service\Credential\CredentialStoreResolver}
- * and injected as the already-resolved `CredentialStore`, so this class depends
- * only on the interface (design D1/D2).
+ * behind the credential store (ADR-004) and referenced only by a `credential`
+ * UUID on `authConfig`. This factory resolves the secret through the Core-owned
+ * {@see CredentialSecretReaderInterface}, which every credential store extends —
+ * the store selection (Doriath leaf vs. Nextcloud vault) is made upstream and
+ * injected as the already-resolved store, so this class depends only on the
+ * read interface (design D1/D2).
  *
  * Connections are cached per request keyed by source id (introspection + a
  * paginated read may open the same source several times in one request). There is
@@ -38,8 +38,8 @@ namespace OCA\OpenRegister\Service\Dbal;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,13 +64,13 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialStore $credentialStore The active credential-store leaf (resolved upstream).
+	 * @param CredentialSecretReaderInterface $credentialStore The active credential-store leaf (resolved upstream).
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialStore $credentialStore,
+		private readonly CredentialSecretReaderInterface $credentialStore,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -83,7 +83,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * returned. The password is resolved through the credential custody seam and
 	 * never logged.
 	 *
-	 * @param Source $source The `type: database` source to connect to.
+	 * @param SourceInterface $source The `type: database` source to connect to.
 	 *
 	 * @return Connection The open (lazy) DBAL connection.
 	 *
@@ -92,7 +92,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function getConnection(Source $source): Connection {
+	public function getConnection(SourceInterface $source): Connection {
 		$cacheKey = $this->cacheKey(source: $source);
 		if (isset($this->connections[$cacheKey]) === true) {
 			return $this->connections[$cacheKey];
@@ -107,7 +107,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * Open a new DBAL connection for a database source.
 	 *
-	 * @param Source $source The `type: database` source.
+	 * @param SourceInterface $source The `type: database` source.
 	 *
 	 * @return Connection The connection.
 	 *
@@ -119,7 +119,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function openConnection(Source $source): Connection {
+	private function openConnection(SourceInterface $source): Connection {
 		$params = $this->buildParams(source: $source);
 
 		try {
@@ -171,7 +171,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * Assemble the DBAL connection parameter array for a database source,
 	 * resolving the password through the credential custody seam.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return array<string, mixed> The DriverManager params (may contain the password).
 	 *
@@ -179,7 +179,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function buildParams(Source $source): array {
+	private function buildParams(SourceInterface $source): array {
 		$config = ($source->getAuthConfig() ?? []);
 		if ($config === []) {
 			throw new DbalConnectionException('Database source has no connection configuration.');
@@ -300,7 +300,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * credential is configured (e.g. a local SQLite file or a socket-trusted
 	 * user) an empty password is used.
 	 *
-	 * @param Source $source The database source (for diagnostics).
+	 * @param SourceInterface $source The database source (for diagnostics).
 	 * @param array<string, mixed> $config The source `authConfig` block.
 	 *
 	 * @return string The resolved password, or '' when no credential is configured.
@@ -309,7 +309,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function resolvePassword(Source $source, array $config): string {
+	private function resolvePassword(SourceInterface $source, array $config): string {
 		$credentialUuid = (string)($config['credential'] ?? '');
 		if ($credentialUuid === '') {
 			return '';
@@ -331,26 +331,26 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * Build the per-request cache key for a source.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The cache key.
 	 *
 	 * @spec exclude Private cache-key helper; behaviour covered by getConnection() caching.
 	 */
-	private function cacheKey(Source $source): string {
+	private function cacheKey(SourceInterface $source): string {
 		return 'id:' . ((string)$source->getId()) . ':uuid:' . ((string)$source->getUuid());
 	}//end cacheKey()
 
 	/**
 	 * A secret-free label identifying a source in log lines.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The label (uuid or id — never a credential).
 	 *
 	 * @spec exclude Private log-label helper; no behavioural contract.
 	 */
-	private function sourceLabel(Source $source): string {
+	private function sourceLabel(SourceInterface $source): string {
 		$uuid = $source->getUuid();
 		if ($uuid !== null && $uuid !== '') {
 			return (string)$uuid;

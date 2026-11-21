@@ -26,10 +26,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\CalendarEventKey;
@@ -94,7 +94,7 @@ class CalendarEventsController extends Controller {
 		IRequest $request,
 		CalendarEventsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->permissions = $services->permissions;
 
 		$this->calendarEventService = $services->calendarEventService;
