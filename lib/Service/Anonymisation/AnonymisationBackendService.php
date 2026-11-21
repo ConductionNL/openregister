@@ -20,8 +20,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -67,6 +67,20 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	private readonly ProbeResultCache $probeCache;
 
 	/**
+	 * Reads what each backend is built from.
+	 *
+	 * @var DetectorVersionReader
+	 */
+	private readonly DetectorVersionReader $detectorVersions;
+
+	/**
+	 * The version records each backend has reported.
+	 *
+	 * @var DetectorVersionHistory
+	 */
+	private readonly DetectorVersionHistory $detectorHistory;
+
+	/**
 	 * App manager used for ExApp detection.
 	 *
 	 * @var IAppManager
@@ -90,9 +104,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reads the stored entity-recognition settings.
 	 *
-	 * @var FileSettingsHandler
+	 * @var FileSettingsReaderInterface
 	 */
-	private readonly FileSettingsHandler $fileSettingsHandler;
+	private readonly FileSettingsReaderInterface $fileSettingsHandler;
 
 	/**
 	 * Logger.
@@ -104,9 +118,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reports an OpenAnonymiser connection test to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionStatusReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionStatusReporterInterface $connectionReporter;
 
 	/**
 	 * The next step an unconfigured OpenAnonymiser connection reports, by probe error.
@@ -123,7 +137,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * Constructor.
 	 *
 	 * @param AnonymisationBackendPlatform      $platform      App manager, app config, cache factory and HTTP clients.
-	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger and connection reporter.
+	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger, connection reporter and pattern version.
 	 */
 	public function __construct(
 		AnonymisationBackendPlatform $platform,
@@ -144,6 +158,8 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		}
 
 		$this->probeCache = new ProbeResultCache(cache: $cache, appConfig: $this->appConfig);
+		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager, patterns: $collaborators->patterns);
+		$this->detectorHistory  = new DetectorVersionHistory(appConfig: $this->appConfig);
 	}//end __construct()
 
 	/**
@@ -218,7 +234,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return ProbeResult The fresh probe result.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function testConnection(string $method): ProbeResult {
 		$result = $this->freshProbe(method: $method);
@@ -241,7 +257,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function reportOpenAnonymiser(ProbeResult $result): void {
 		$this->connectionReporter->report(
@@ -414,7 +430,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @throws AnalyzeRequestRejectedException When the ExApp answers 4xx: it was reached and refused the request.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function requestOpenAnonymiser(AnonymiserCall $call): ?array {
 		return $this->sendToExApp(call: $call);
@@ -482,7 +498,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	private function decodeExAppResponse(IResponse $response, string $appId): ?array {
 		$status = $response->getStatusCode();
@@ -625,8 +641,36 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			name: $method,
 			configured: $this->isConfigured(method: $method, probe: $probe),
 			probe: $probe,
+			detector: $this->detectorFor(method: $method, probe: $probe),
 		);
 	}//end buildBackendInfo()
+
+	/**
+	 * What a backend is built from. A reachable backend's record is noted in
+	 * the version history at the probe moment, which dates a record that
+	 * states no change day of its own; an unreachable one reports as it is.
+	 *
+	 * @param string      $method The backend method.
+	 * @param ProbeResult $probe  The backend's latest probe.
+	 *
+	 * @return DetectorVersion
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-detector-says-when-it-last-changed-req-adi-004
+	 */
+	private function detectorFor(string $method, ProbeResult $probe): DetectorVersion {
+		$exAppId = null;
+		if ($method === BackendState::METHOD_OPENANONYMISER) {
+			$exAppId = $this->resolveActiveExAppId();
+		}
+
+		$record = $this->detectorVersions->forMethod(method: $method, exAppId: $exAppId);
+		if ($probe->reachable === false) {
+			return $record;
+		}
+
+		return $this->detectorHistory->observe(backend: $method, record: $record, now: $probe->probedAt);
+	}//end detectorFor()
 
 	/**
 	 * Build the hybrid BackendInfo from the composed atomic records.
@@ -643,10 +687,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		$available = ($regex->available === true && $presidio->available === true && $openAnonymiser->available === true);
 		$configured = ($presidio->configured === true && $openAnonymiser->configured === true);
 
+		$probe = new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now());
+
 		return new BackendInfo(
 			name: BackendState::METHOD_HYBRID,
 			configured: $configured,
-			probe: new ProbeResult(reachable: $available, latencyMs: null, error: null, probedAt: $this->now()),
+			probe: $probe,
+			detector: $this->detectorFor(method: BackendState::METHOD_HYBRID, probe: $probe),
 		);
 	}//end buildHybridInfo()
 

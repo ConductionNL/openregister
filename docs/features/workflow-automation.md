@@ -179,6 +179,11 @@ GET  /api/objects/{id}/available-actions   List actions allowed from the current
 POST /api/objects/{id}/transition          Apply a named action ({ "action": "<name>" })
 ```
 
+To move many objects through one action at once, start a bulk job with the
+`openregister:transition` action; each object goes through the same engine
+call and reports its own outcome. See
+[Bulk Jobs](../api/bulk-operations.md#change-status-openregistertransition).
+
 ### Static mode (`transitions`)
 
 `transitions` is a fixed `action → { from: [states], to: state }` map compared
@@ -537,6 +542,26 @@ Each of these refuses the schema save, exactly as `lifecycle-condition-malformed
 does. A stored value that skipped validation is not trusted at runtime
 either. A non-rule `autoWhen` counts as not holding, and logs a warning
 instead of firing.
+
+### Lifecycle action run records
+
+A declared action MAY carry a `key`, metadata an app uses to find its runs again:
+
+```json
+"transitions": { "indienen": { "from": "concept", "to": "ingediend", "actions": [
+  { "action": "set-fields", "key": "aut-91c0", "actionParameters": { "submittedAt": "{{now}}" } }
+] } }
+```
+
+Every declared action the executor reaches leaves one record with kind `lifecycle-action`: the key (empty when none), the action name, the transition, schema, register, object, time, an outcome and a message.
+
+| Outcome | When |
+| --- | --- |
+| `succeeded` | the handler returned and the transition's save completed |
+| `skipped` | its `condition` was false (message `condition is false`) |
+| `failed` | its handler threw (message: the handler's message); the transition still fails |
+
+The actions run before the save, so their records are held until the save completes. When an action throws, the actions before it in that transition are recorded `failed` with `transition rolled back`; a save that never completes leaves no `succeeded` record. Read them with `GET /api/automation-records?kind=lifecycle-action&key=<prefix>`, under the same filters, access rule and retention as notification records (see [Automation run records](webhooks-and-notifications.md#automation-run-records)).
 
 ## Standards
 

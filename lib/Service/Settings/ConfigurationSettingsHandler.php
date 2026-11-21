@@ -789,7 +789,7 @@ class ConfigurationSettingsHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	private function recordSettingsChange(?array $before, array $keys): void {
 		if ($before === null || $this->support->changeRecorder === null) {

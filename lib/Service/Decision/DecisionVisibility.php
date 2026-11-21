@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * The serialised relation a caller may see.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 class DecisionVisibility implements DecisionVisibilityInterface {
 
@@ -85,7 +85,7 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function present(EntityRelation $relation, string $userId, ?array $serialised=null): array {
 		$data = ($serialised ?? $relation->jsonSerialize());
@@ -123,7 +123,7 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function presentAll(array $relations, string $userId): array {
 		$presented = [];
@@ -147,7 +147,7 @@ class DecisionVisibility implements DecisionVisibilityInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function isHidden(EntityRelation $relation, string $userId): bool {
 		$resolved = $this->hidingResolution(relation: $relation);

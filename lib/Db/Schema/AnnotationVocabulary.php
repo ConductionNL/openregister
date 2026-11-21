@@ -19,8 +19,6 @@
 namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
-use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -59,6 +57,19 @@ final class AnnotationVocabulary {
 		'x-openregister-aggregate-refs',
 		'x-openregister-notifications',
 		'x-openregister-widgets',
+		// What a reference card of this schema's objects shows: its title
+		// property, up to three summary properties, an icon and an image
+		// property (platform-reference-provider). Absent from this list
+		// setConfiguration() would drop the block, every card would fall back
+		// to the dull title-and-schema default, and the schema would read as
+		// having declared nothing — the same or#460/#462-class silent drop the
+		// entries around this one record.
+		'x-openregister-card',
+		// What a unified-search result of this schema's objects shows: its
+		// title property, subline property and ordering date property
+		// (platform-search-provider). Absent from this list setConfiguration()
+		// would drop the block and every result would keep the derived title.
+		'x-openregister-search-result',
 		'x-openregister-relations',
 		// The named relation vocabulary: a list of
 		// {key, label, inverseLabel, symmetric, inherits} that several `$ref`
@@ -88,6 +99,8 @@ final class AnnotationVocabulary {
 		// register-level worked, so the capability looked healthy.
 		'x-openregister-processing',
 		'x-openregister-archival',
+		// Read by Schema::isPreservationEnabled() (REQ-APS-006): the preservation (statisch) regime.
+		'x-openregister-preserve',
 		// Which reference properties a record inherits a permanent appraisal
 		// through: `{"inheritAppraisalFrom": ["subjects"]}`. Read by
 		// InheritedAppraisal before an object is judged eligible for
@@ -266,7 +279,7 @@ final class AnnotationVocabulary {
 		// stopped at the root while its author read a 201. Measured on a live
 		// instance 2026-09-19 — POST with the annotation returned 201 and the
 		// configuration column was empty.
-		AccessDeclarationValidators::HIERARCHY_ANNOTATION,
+		Schema::HIERARCHY_ANNOTATION,
 		// Whether this schema's objects may invite an external
 		// (non-Nextcloud-user) participant into a linked Talk room by email,
 		// via TalkLinkService::invite() — default OFF.
@@ -281,7 +294,13 @@ final class AnnotationVocabulary {
 		// ClassificationDeclarationValidator. Absent from this list
 		// setConfiguration() would drop it and every classified object would
 		// read as unclassified, the same silent no-op every entry above records.
-		ClassificationScale::ANNOTATION,
+		Schema::CLASSIFICATION_ANNOTATION,
+		// A per-object confidentiality tier, legal ground and timed release
+		// (confidentiality-classification-primitive). Read by
+		// ConfidentialityRule; a faulty block is logged at error level and
+		// fails closed. Absent from this list setConfiguration() would drop it
+		// and every confidential object would read as unclassified.
+		Schema::CONFIDENTIALITY_ANNOTATION,
 	];
 
 

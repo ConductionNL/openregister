@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Throwable;
  * object, which answers with the state, who, when and why. Anything else is a
  * 500 that names nothing internal.
  *
- * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ObjectFolderResponder {
 
@@ -66,7 +66,7 @@ class ObjectFolderResponder {
 	 *
 	 * @return JSONResponse The error response.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function failure(Throwable $e): JSONResponse {
 		$answer = ($this->accessAnswer(e: $e) ?? $this->requestAnswer(e: $e) ?? $this->conflictAnswer(e: $e));
@@ -150,7 +150,7 @@ class ObjectFolderResponder {
 	 *
 	 * @return JSONResponse 400.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function noUpload(): JSONResponse {
 		return new JSONResponse(data: ['error' => $this->l10n->t('No file was uploaded')], statusCode: 400);
@@ -167,7 +167,7 @@ class ObjectFolderResponder {
 	 *
 	 * @return JSONResponse 201 when all were stored, 207 when some were, 409 when every file was a taken name, 400 otherwise.
 	 *
-	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function uploaded(array $outcome, int $total): JSONResponse {
 		$rejected = $this->rejectedRows(outcome: $outcome);

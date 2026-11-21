@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ class FlowTimerEventMapper extends QBMapper implements FlowTimerEventMapperInter
 	 *
 	 * @return FlowTimerEvent The inserted row.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function insert(Entity $entity): FlowTimerEvent {
 		if ($entity instanceof FlowTimerEvent === false) {
@@ -93,7 +93,7 @@ class FlowTimerEventMapper extends QBMapper implements FlowTimerEventMapperInter
 	 *
 	 * @throws \LogicException Always.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function update(Entity $entity): FlowTimerEvent {
 		throw new LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be updated.');
@@ -108,7 +108,7 @@ class FlowTimerEventMapper extends QBMapper implements FlowTimerEventMapperInter
 	 *
 	 * @throws \LogicException Always.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function delete(Entity $entity): FlowTimerEvent {
 		throw new LogicException('The timer history is append-only; event ' . (string)$entity->getId() . ' cannot be deleted.');
@@ -121,7 +121,7 @@ class FlowTimerEventMapper extends QBMapper implements FlowTimerEventMapperInter
 	 *
 	 * @return array<int, FlowTimerEvent> The events.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function findByTimer(string $timerUuid): array {
 		$qb = $this->selectWhere(column: new LinkColumn(name: 'timer_uuid', value: $timerUuid));

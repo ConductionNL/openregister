@@ -22,6 +22,8 @@ use OCA\OpenRegister\Repair\ImportDsarRegisters;
 use OCA\OpenRegister\Repair\ImportDestructionListRegister;
 use OCA\OpenRegister\Repair\ImportEdepotTransferRegister;
 use OCA\OpenRegister\Repair\ImportMergeOperationRegister;
+use OCA\OpenRegister\Repair\ImportRedactionPolicyRegister;
+use OCA\OpenRegister\Repair\ImportTranslationGlossaryRegister;
 use OCA\OpenRegister\Repair\ImportTrustConfigurationRegister;
 use OCA\OpenRegister\Repair\SeedVocabularyRegister;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
@@ -39,7 +41,7 @@ use ReflectionClassConstant;
 class DescriptorConfigIdsTest extends TestCase {
 
 	/**
-	 * The nine descriptors with their id and the repair step that imports each.
+	 * The eleven descriptors with their id and the repair step that imports each.
 	 *
 	 * @return array<string, array{0: string, 1: string, 2: class-string}>
 	 */
@@ -54,6 +56,8 @@ class DescriptorConfigIdsTest extends TestCase {
 			'vocabulary' => ['vocabulary_register.json', 'openregister.vocabulary', SeedVocabularyRegister::class],
 			'dsar cases' => ['data_subject_request_register.json', 'openregister.dsar-cases', ImportDsarRegisters::class],
 			'dsar policy packs' => ['dsar_policy_pack_register.json', 'openregister.dsar-policy-packs', ImportDsarRegisters::class],
+			'redaction policy' => ['redaction_policy_register.json', 'openregister.redaction-policy', ImportRedactionPolicyRegister::class],
+			'translation glossary' => ['translation_glossary_register.json', 'openregister.translation-glossary', ImportTranslationGlossaryRegister::class],
 		];
 	}//end descriptors()
 
@@ -74,16 +78,16 @@ class DescriptorConfigIdsTest extends TestCase {
 	}//end testTheFileMapsToItsOwnId()
 
 	/**
-	 * The map holds exactly these nine, so a tenth descriptor cannot be added without a test row.
+	 * The map holds exactly these eleven, so a twelfth descriptor cannot be added without a test row.
 	 *
 	 * @return void
 	 */
-	public function testTheMapHoldsExactlyTheNineDescriptors(): void {
+	public function testTheMapHoldsExactlyTheTenDescriptors(): void {
 		$files = array_map(static fn (array $row): string => $row[0], array_values(self::descriptors()));
 		$this->assertEqualsCanonicalizing($files, array_keys(DescriptorConfigIds::BY_FILE));
-		$this->assertCount(9, array_unique(DescriptorConfigIds::BY_FILE), 'no two descriptors share an id');
+		$this->assertCount(11, array_unique(DescriptorConfigIds::BY_FILE), 'no two descriptors share an id');
 		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'flow_register.json'));
-	}//end testTheMapHoldsExactlyTheNineDescriptors()
+	}//end testTheMapHoldsExactlyTheTenDescriptors()
 
 	/**
 	 * Every repair step imports its descriptor under the id the map gives that file (never the shared one).

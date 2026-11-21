@@ -2,10 +2,10 @@
 
 ## 1. Version records (REQ-ADI-001, REQ-ADI-004)
 
-- [ ] 1.1 Add `VERSION` and `CHANGED_AT` public constants to `JurisdictionPatternSet` implementations, starting with `lib/Service/TextExtraction/PatternSet/NlPatternSet.php`, and a `DetectorVersion` value object. Verify: `tests/Unit/Service/Anonymisation/AnonymisationBackendServiceVersionTest.php::testThePatternSetReportsItsVersionAndChangeDate` (fails today: no constant exists).
-- [ ] 1.2 Read engine and model versions from each backend probe in `AnonymisationBackendService::probe()`, reporting `unknown` for anything not exposed, and return the record from `getState()`. Verify: `testAnUnexposedModelIsReportedAsUnknown`.
+- [x] 1.1 Add `VERSION` and `CHANGED_AT` public constants to `JurisdictionPatternSet` implementations, starting with `lib/Service/TextExtraction/PatternSet/NlPatternSet.php`, and a `DetectorVersion` value object. Verify: `tests/Unit/Service/Anonymisation/AnonymisationBackendServiceVersionTest.php::testThePatternSetReportsItsVersionAndChangeDate` (fails today: no constant exists).
+- [x] 1.2 Read engine and model versions from each backend probe in `AnonymisationBackendService::probe()`, reporting `unknown` for anything not exposed, and return the record from `getState()`. Verify: `testAnUnexposedModelIsReportedAsUnknown`.
 - [ ] 1.3 Store the record on `AnonymisationLog` (migration adding a `detector` JSON column) from the call site in `DocumentProcessingHandler::anonymizeDocument()`. Verify: `tests/Unit/Db/AnonymisationLogVersionTest.php::testARunStoresTheBackendVersionRecord`, which drives the real `DocumentProcessingHandler` call path, not the entity alone.
-- [ ] 1.4 Keep a version history per backend and set `changedAt` on first sight of a new record. Verify: `tests/Unit/Service/Anonymisation/DetectorVersionHistoryTest.php::testANewModelVersionStartsAHistoryEntry`.
+- [x] 1.4 Keep a version history per backend and set `changedAt` on first sight of a new record. Verify: `tests/Unit/Service/Anonymisation/DetectorVersionHistoryTest.php::testANewModelVersionStartsAHistoryEntry`.
 
 ## 2. Measured accuracy (REQ-ADI-002)
 
@@ -20,8 +20,8 @@
 
 ## 6. Threshold setting (REQ-ADI-007)
 
-- [ ] 6.1 Add `anonymisation.confidenceThreshold` (default 0.5, refused outside 0 to 1) to `FileSettingsHandler` and replace the literals in `TextExtractionService.php` and `EntityRecognitionHandler.php`. Verify: `tests/Unit/Service/TextExtraction/EntityRecognitionThresholdTest.php::testTheSettingReplacesTheLiteral` and `testAnOutOfRangeValueIsRefused`; a grep test asserts no `'confidence_threshold' => 0.5` literal remains in `lib/`.
-- [ ] 6.2 Cross-app contract for filinq: the key is `anonymisation.confidenceThreshold` in the body of `GET /api/settings/files`, a float. Verify: `tests/Contract/FileSettingsContractTest.php` pins the key and type. filinq's `anonymization-review-workbench` carries the consumer test; when OpenRegister is absent filinq uses its own default and says so.
+- [x] 6.1 Add `anonymisation.confidenceThreshold` (default 0.5, refused outside 0 to 1) to `FileSettingsHandler` and replace the literals in `TextExtractionService.php` and `EntityRecognitionHandler.php`. Verify: `tests/Unit/Service/TextExtraction/EntityRecognitionThresholdTest.php::testTheSettingReplacesTheLiteral` and `testAnOutOfRangeValueIsRefused`; a grep test asserts no `'confidence_threshold' => 0.5` literal remains in `lib/`.
+- [x] 6.2 Cross-app contract for filinq: the key is `anonymisation.confidenceThreshold` in the body of `GET /api/settings/files`, a float. Verify: `tests/Contract/FileSettingsContractTest.php` pins the key and type. filinq's `anonymization-review-workbench` carries the consumer test; when OpenRegister is absent filinq uses its own default and says so.
 
 ## V. Verification and done
 
