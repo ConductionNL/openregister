@@ -31,7 +31,10 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
@@ -51,6 +54,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -69,6 +73,8 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
+use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IContainer;
 use Psr\Container\ContainerInterface;
@@ -126,11 +132,13 @@ final class ConfigurationServiceRegistrar {
 	];
 
 	/**
-	 * Register configuration-related services.
+	 * Register configuration-related services, and the Configuration area's own listeners.
 	 *
 	 * @param IRegistrationContext $context The registration context
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The component listener registrar is static; there is no instance to inject at registration time.
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
@@ -156,8 +164,26 @@ final class ConfigurationServiceRegistrar {
 		$context->registerService(ConfigurationExportHandler::class, self::buildExportHandler(...));
 		$context->registerService(ConfigurationService::class, self::buildConfigurationService(...));
 
+		// Bind the translation provider the admin settings select: Nextcloud
+		// Task Processing only when an administrator chose it and confirmed
+		// that record text may be sent; the no-op identity provider otherwise
+		// (ai-translation-with-a-glossary design D-6).
+		$context->registerService(
+			TranslationProviderInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(TranslationProviderResolver::class)->resolve();
+			}
+		);
+
 		self::registerSettingsServices(context: $context);
 		self::registerConfigurationDeploymentServices(context: $context);
+
+		// The reference-card declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, ReferenceCardDeclarationCheckListener::class);
+
+		// The Configuration area subscribes its own listeners here, from its own
+		// registrar: their events have no listener from another area.
+		ConfigurationListenerRegistrar::register(context: $context);
 	}//end register()
 
 	/**
@@ -483,6 +509,9 @@ final class ConfigurationServiceRegistrar {
 
 		// Register TenantKeyService for audit-trail HMAC key management.
 		$context->registerService(TenantKeyService::class, self::buildTenantKeyService(...));
+
+		// The search settings API reads the search backend settings through Search's contract.
+		$context->registerServiceAlias(SearchBackendSettingsInterface::class, SearchBackendHandler::class);
 	}//end registerSettingsServices()
 
 	/**

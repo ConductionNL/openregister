@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\TranslationRowStatusInterface;
+
 /**
  * Interface => mapper map of the Configuration area, behind ConfigurationMapperRegistrar.
  *
@@ -53,8 +55,6 @@ final class ConfigurationMapperBindings {
 		MigrationPackMapperInterface::class               => MigrationPackMapper::class,
 		RecordTemplateMapperInterface::class              => RecordTemplateMapper::class,
 		SequenceMapperInterface::class                    => SequenceMapper::class,
-		TaskSequenceMapperInterface::class                => TaskSequenceMapper::class,
-		TranslationMapperInterface::class                 => TranslationMapper::class,
-		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
+		TranslationRowStatusInterface::class              => TranslationMapper::class,
 	];
 }//end class

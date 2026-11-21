@@ -37,13 +37,13 @@ use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectClassification;
-use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
@@ -56,7 +56,6 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -627,9 +626,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param bool          $verdict The person's own verdict.
 	 * @param PermissionAsk $ask     The question, with the schema, register and verb written to.
 	 *
-	 * @return bool The verdict after elevation.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @return bool The verdict after elevation; without an elevation port the person's own verdict stands.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -638,9 +635,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::permits(
-			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
-		);
+		return ($this->rules->writeElevation?->permits(ask: $ask) ?? false);
 	}//end elevated()
 
 	/**
@@ -3013,7 +3008,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
 			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
@@ -3081,7 +3076,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return ['values' => [], 'scopes' => []];
 		}
 
-		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
 
