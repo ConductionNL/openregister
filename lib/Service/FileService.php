@@ -93,7 +93,7 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCA\OpenRegister\Support\ContentDisposition;
@@ -159,9 +159,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * Builds share links for the host the visitor used
 	 *
-	 * @var ShareUrlBuilderInterface
+	 * @var ShareLinkUrlInterface
 	 */
-	private ShareUrlBuilderInterface $shareUrls;
+	private ShareLinkUrlInterface $shareUrls;
 
 
 	/**

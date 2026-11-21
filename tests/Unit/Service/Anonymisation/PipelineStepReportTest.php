@@ -24,6 +24,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
 use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\PipelineStepImplementers;
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
 use OCA\OpenRegister\Files\Service\File\SanitizationResult;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\SanitizerInterface;
@@ -49,6 +50,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\AnonymisationPipelineController
  * @covers \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler
  * @covers \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @covers \OCA\OpenRegister\Files\Service\File\PipelineStepImplementers
  * @uses   \OCA\OpenRegister\Service\Anonymisation\BackendState
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
  * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
@@ -65,6 +67,9 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Files\Service\File\DocxTextReplacer
  * @uses \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
  * @uses \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Service\File\OfficeMediaBurner
  */
 final class PipelineStepReportTest extends TestCase {
 	private const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -106,6 +111,7 @@ final class PipelineStepReportTest extends TestCase {
 		);
 
 		$steps = new PipelineSteps();
+		$implementers = new PipelineStepImplementers();
 		$root = dirname(__DIR__, 4);
 		$found = 0;
 		foreach (self::STEP_DIRS as $dir) {
@@ -116,7 +122,7 @@ final class PipelineStepReportTest extends TestCase {
 				}
 
 				$found++;
-				$step = $steps->stepImplementedBy(class: $class);
+				$step = $implementers->stepImplementedBy(class: $class);
 				$this->assertNotNull($step, $class . ' alters document content but is no registered pipeline step');
 				$this->assertContains($step, $reported, 'step ' . $step . ' has no report entry');
 			}
@@ -126,7 +132,7 @@ final class PipelineStepReportTest extends TestCase {
 		$this->assertGreaterThanOrEqual(4, $found);
 
 		// The image seam's burner paints into pixels: it is a step too, for the standalone image types and the images inside DOCX and ODT.
-		$this->assertSame('image-burner', $steps->stepImplementedBy(class: \OCA\OpenRegister\Service\File\ImageBurner::class));
+		$this->assertSame('image-burner', $implementers->stepImplementedBy(class: \OCA\OpenRegister\Service\File\ImageBurner::class));
 		$this->assertSame(
 			[
 				'image/png',
