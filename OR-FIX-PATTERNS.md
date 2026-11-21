@@ -366,3 +366,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Db/CatalogueQueryScopeTest::testEveryCatalogueQueryNamesItsSchema lists lib/<PR file>:<line> after merging main.
 - Cause: main (5c53389fca4, upgrade-performance) requires every FROM information_schema.* query to be limited to the instance's own database.
 - Fix: append ' AND '.(new CatalogueScope(db: $this->db))->condition() (OCA\OpenRegister\Db\CatalogueScope) to the WHERE, as RegisterService/MagicMapper do; assert 'table_schema = DATABASE()' in the class's test (a mocked IDBConnection is not Postgres). (#10537)
+## Clean main merge, but four open PRs add the same Version1Date20261114100000 (or-fix-3)
+- Symptom: lane green after the merge; check-migration-version-bump exits 1, and a scan of open PR heads finds #10451, #10499, #10518 and #10523 each adding a DIFFERENT step under Version1Date20261114100000.
+- Fix: per PR in your lane, git mv the step (and test) to Version1Date20261114100<lane>, sed csv/tasks.md, add a migration test if missing, bump info.xml one past main. #10523 moved to ...100003 (75f015a0); the other three still clash.
