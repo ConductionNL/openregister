@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
@@ -795,7 +796,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			languageService: $this->container->get(RequestLanguagesInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
-			appConfig: $this->appConfig
+			appConfig: $this->appConfig,
+			searchProfile: $this->container->get(PropertySearchProfileInterface::class)
 		);
 	}//end initializeSearchHandler()
 
