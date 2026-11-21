@@ -33,14 +33,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the nullable persons register columns to openregister_entity_relations.
  *
  * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.2
  */
-class Version1Date20261114230000 extends SimpleMigrationStep {
+class Version1Date20261114230000 extends TargetedMigrationStep {
 
 	/**
 	 * The added columns and their type and length.
@@ -63,7 +62,7 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.2
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -88,5 +87,5 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

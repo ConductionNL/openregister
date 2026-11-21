@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IGroupManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -128,7 +128,7 @@ class OfficialsDirectory {
 	 * @return list<array{name: string, capacity: string}>
 	 */
 	private function fromSchema(array $source): array {
-		$objectService = $this->container->get(ObjectService::class);
+		$objectService = $this->container->get(ObjectOperationsInterface::class);
 		$found = $objectService->findAll(
 			config: [
 				'filters' => ['register' => $source['register'], 'schema' => $source['schema']],

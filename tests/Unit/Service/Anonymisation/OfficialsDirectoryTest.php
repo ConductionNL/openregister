@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsDirectory;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -79,7 +79,7 @@ class OfficialsDirectoryTest extends TestCase {
 	public function testASchemaSourceListsTheNameAndCapacityPropertiesReadAsTheSystem(): void {
 		$alderman = new ObjectEntity();
 		$alderman->setObject(['naam' => 'P. de Vries', 'rol' => 'public-office']);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectOperationsInterface::class);
 		$objectService->expects($this->once())->method('findAll')
 			->with(
 				['filters' => ['register' => '5', 'schema' => 'functionarissen'], 'limit' => OfficialsDirectory::LIMIT],
@@ -96,7 +96,7 @@ class OfficialsDirectoryTest extends TestCase {
 				]
 			);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ObjectService::class)->willReturn($objectService);
+		$container->method('get')->with(ObjectOperationsInterface::class)->willReturn($objectService);
 
 		$officials = (new OfficialsDirectory($this->createMock(IGroupManager::class), $container, $this->createMock(LoggerInterface::class)))->officials(
 			source: ['type' => 'schema', 'register' => '5', 'schema' => 'functionarissen', 'nameProperty' => 'naam', 'capacityProperty' => 'rol']

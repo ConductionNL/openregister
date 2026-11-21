@@ -20,7 +20,7 @@ use OCA\OpenRegister\Service\Anonymisation\PersonRegisterMatcher;
 use OCA\OpenRegister\Service\Anonymisation\PersonRegisterRun;
 use OCA\OpenRegister\Service\Anonymisation\PersonRegisterSource;
 use OCA\OpenRegister\Service\Anonymisation\RegisterNameReader;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Contacts\IManager as ContactsManager;
 use OCP\IAddressBook;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -43,7 +43,7 @@ class PersonRegisterMatcherTest extends TestCase {
 
 	private const PLACES = ['type' => 'schema', 'register' => 'bag', 'schema' => 'straten', 'nameProperty' => 'naam'];
 
-	private ObjectService&MockObject $objects;
+	private ObjectOperationsInterface&MockObject $objects;
 
 	private ContactsManager&MockObject $contacts;
 
@@ -64,7 +64,7 @@ class PersonRegisterMatcherTest extends TestCase {
 			],
 			'straten' => [['id' => 'b1', 'naam' => 'Willem de Zwijgerlaan'], ['id' => 'b2', 'naam' => 'Dorpsstraat']],
 		];
-		$this->objects = $this->createMock(ObjectService::class);
+		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->objects->method('findAll')->willReturnCallback(
 			fn (array $config): array => $this->bySchema[$config['filters']['schema']] ?? []
 		);
@@ -79,7 +79,7 @@ class PersonRegisterMatcherTest extends TestCase {
 	 */
 	private function matcher(): PersonRegisterMatcher {
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ObjectService::class)->willReturn($this->objects);
+		$container->method('get')->with(ObjectOperationsInterface::class)->willReturn($this->objects);
 
 		return new PersonRegisterMatcher(reader: new RegisterNameReader(container: $container, contacts: $this->contacts), logger: $this->logger);
 	}//end matcher()

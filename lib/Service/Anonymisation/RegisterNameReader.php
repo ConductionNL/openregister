@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\Contacts\IManager as ContactsManager;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
@@ -119,7 +119,7 @@ class RegisterNameReader {
 	 * @return list<string>
 	 */
 	private function fromSchema(array $source): array {
-		$objectService = $this->container->get(ObjectService::class);
+		$objectService = $this->container->get(ObjectOperationsInterface::class);
 		$found = $objectService->findAll(
 			config: [
 				'filters' => ['register' => $source['register'], 'schema' => $source['schema']],
