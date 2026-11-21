@@ -160,6 +160,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCP\\IGroupManager',
 				'OCP\\IUserManager',
 				'OCA\\OpenRegister\\Service\\Authorization\\GroupProvisioner',
+				'OCA\\OpenRegister\\Service\\Authorization\\GroupReconcilerInterface',
 				'OCA\\OpenRegister\\Service\\Schema\\SchemaVersioningService',
 				'OCA\\OpenRegister\\Service\\Archival\\SelectionListSeeder',
 				'OCA\\OpenRegister\\Service\\Object\\SaveObject\\ObjectSlugHandler',

@@ -250,6 +250,7 @@ class ImportHandlerActingUserAccessGoldenTest extends TestCase {
 			[
 				'provision [["medewerkers","archivarissen"],"zaakapp"]',
 				'config ["openregister","declared_groups_zaakapp","[\"medewerkers\",\"archivarissen\"]"]',
+				'config ["openregister","declared_group_rights_zaakapp","{\"schemas\":{\"zaak\":{\"delete\":[\"archivarissen\"]}},\"registers\":{\"zaken\":{\"read\":[\"medewerkers\"]}}}"]',
 				'provision [["medewerkers","archivarissen"],"unknown"]',
 			],
 			$this->calls
