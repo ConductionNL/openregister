@@ -196,9 +196,28 @@ class WebhookDeliveryJob extends QueuedJob {
 		return new WebhookDelivery(
 			webhook: $webhook,
 			event: new WebhookEvent(name: $argument['event_name'], payload: $argument['payload'] ?? []),
-			attempt: $argument['attempt'] ?? 1
+			attempt: $argument['attempt'] ?? 1,
+			targetUrl: $this->targetUrl(argument: $argument)
 		);
 	}//end deliveryFor()
+
+	/**
+	 * The target URL a per-target delivery was queued with, or null.
+	 *
+	 * @param array<string, mixed> $argument Validated job arguments
+	 *
+	 * @return string|null The URL, or null when the job names none.
+	 *
+	 * @spec openspec/changes/webhook-per-delivery-target/specs/webhook-payload-mapping/spec.md#requirement-a-per-target-webhook-delivers-to-the-url-each-delivery-names
+	 */
+	private function targetUrl(array $argument): ?string {
+		$url = $argument['target_url'] ?? null;
+		if (is_string($url) === false || trim($url) === '') {
+			return null;
+		}
+
+		return $url;
+	}//end targetUrl()
 
 	/**
 	 * Log whether the delivery succeeded or failed.

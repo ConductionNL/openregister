@@ -505,6 +505,30 @@ Example with array filter:
 }
 ```
 
+## Per-Target Webhooks
+
+Some apps send one event to many addresses that change over time, for example a
+federation broadcast to every peer directory. Instead of one webhook per address, an
+administrator creates one webhook with `"configuration": {"deliverPerTarget": true}`.
+That webhook holds the event, method, headers, secret, timeout and retry policy; the
+app names the URL of each delivery:
+
+```php
+$webhookService->triggerWebhookForEvent(
+    eventName: 'opencatalogi.federation.broadcast',
+    payload: ['directory' => $directoryUrl],
+    url: $peerUrl,
+);
+```
+
+- Each delivery runs as a background job, is logged with its own URL, and is retried
+  to that URL under the webhook's retry policy; the delivery logs show every target.
+- The URL passes the same outbound address checks as a fixed webhook URL, redirects
+  included.
+- The webhook's own `url` is never posted to, and an ordinary event dispatch skips it.
+- A webhook owned by a user never delivers per target, and a webhook without the key
+  ignores any URL a caller names.
+
 ## Security
 
 ### HMAC Signature Verification
