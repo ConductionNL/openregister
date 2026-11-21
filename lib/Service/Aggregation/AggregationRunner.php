@@ -56,7 +56,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\DraftListing;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -66,7 +65,8 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -199,7 +199,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * Constructor.
 	 *
 	 * @param SchemaCatalogInterface $catalog The register and schema loaders and the magic-table mapper (PHP fallback path).
-	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
+	 * @param FilterPlaceholdersInterface $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
 	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the schema's `list` action.
@@ -207,7 +207,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
 	 * @param OrganisationScopeResolverInterface $organizationHandler Owns the organisation-boundary decision the native SQL renders.
 	 * @param TranslationHandler $translationHandler Resolves translatable group keys to the negotiated language.
-	 * @param LanguageService $languageService Request-scoped language negotiation (Accept-Language / _lang).
+	 * @param RequestLanguagesInterface $languageService Request-scoped language negotiation (Accept-Language / _lang).
 	 * @param LoggerInterface|null $logger Optional logger for diagnostics.
 	 * @param DbalObjectSourceProvider|null $dbalSourceProvider Provider that computes aggregations live against an
 	 *                                                          external DBAL virtual register; null disables the
@@ -226,7 +226,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	public function __construct(
 		SchemaCatalogInterface $catalog,
-		private readonly PlaceholderResolverInterface $placeholders,
+		private readonly FilterPlaceholdersInterface $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,
 		private readonly PermissionHandlerInterface $permissionHandler,
@@ -234,7 +234,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly OrganisationScopeResolverInterface $organizationHandler,
 		private readonly TranslationHandler $translationHandler,
-		private readonly LanguageService $languageService,
+		private readonly RequestLanguagesInterface $languageService,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?DbalObjectSourceProvider $dbalSourceProvider = null,
 		// LAST AND NULLABLE so every existing construction keeps working. The

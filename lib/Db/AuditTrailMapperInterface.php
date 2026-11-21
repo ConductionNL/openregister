@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
@@ -33,12 +34,25 @@ use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * Every public method of AuditTrailMapper. Callers depend on this interface, not on the class.
+ *
+ * It extends the Core port through which Core records an action on one object.
  */
-interface AuditTrailMapperInterface {
+interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 *
+	 * Owned here, by the port, because the slug backfill (Core) splits its log
+	 * lines by the same number the entry is capped at.
+	 *
+	 * @var int
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -257,6 +271,21 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function applyRetentionExpiry(AuditTrail $auditTrail, ?ObjectEntity $objectEntity): AuditTrail;
+
+	/**
+	 * Record what referential integrity did to one object: build the row, stamp its expiry, insert it.
+	 *
+	 * The row's expiry follows the retention of `$entry->object` (or#4101); without
+	 * one it is retained indefinitely, as {@see applyRetentionExpiry()} says. A
+	 * database failure is thrown; the caller decides whether that blocks it.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object, by whom, and the object itself when found.
+	 *
+	 * @return AuditTrail The stored row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail;
 
 	/**
 	 * Create audit trail rows for many object changes with batched inserts.

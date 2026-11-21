@@ -28,12 +28,15 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 256;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
+	 *
+	 * Last changed when the calendar-object listeners (CalendarObjectChangedListener,
+	 * CalendarObjectDeletedListener) were added: six listeners more, the rest unchanged.
 	 */
-	private const SEQUENCE_SHA256 = '90aa1870868d4cf1db3407d4181264456e04c344becebafc3b865b3e695349c3';
+	private const SEQUENCE_SHA256 = '638477e5762c31322ce65dc6b38efa8724f1aaa2d515e8b8dea22ab831d22f32';
 
 	/**
 	 * The registration calls, in call order, with every argument.
