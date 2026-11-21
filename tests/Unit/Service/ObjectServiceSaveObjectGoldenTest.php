@@ -17,9 +17,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
-use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -252,12 +254,12 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		$container = $this->recorder(IAppContainer::class, 'container', [
 			'get' => function (array $args) use ($case) {
-				if ($args[0] === ContactMatchingService::class) {
+				if ($args[0] === ContactMatchCacheInterface::class) {
 					if (($case['contactThrows'] ?? false) === true) {
 						throw new Exception('contacts down');
 					}
 
-					return $this->recorder(ContactMatchingService::class, 'contacts', []);
+					return $this->recorder(ContactMatchCacheInterface::class, 'contacts', []);
 				}
 
 				if (($case['referenceThrows'] ?? false) === true) {
@@ -266,7 +268,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 				return match ($args[0]) {
 					IReferenceManager::class => $this->recorder(IReferenceManager::class, 'references', []),
-					ObjectPreviewFormatter::class => new ObjectPreviewFormatter(
+					ObjectPreviewCacheInterface::class => new ObjectPreviewFormatter(
 						$this->recorder(IURLGenerator::class, 'urls', [
 							'getAbsoluteURL' => fn (array $a): string => 'https://cloud.test' . $a[0],
 						]),
@@ -279,7 +281,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 						),
 						$this->createStub(LoggerInterface::class)
 					),
-					DeepLinkRegistryService::class => $this->recorder(DeepLinkRegistryService::class, 'deepLinks', [
+					DeepLinkResolverInterface::class => $this->recorder(DeepLinkResolverInterface::class, 'deepLinks', [
 						'resolveUrl' => fn (array $a): ?string => ($case['deepLink'] ?? null),
 					]),
 					default => null,

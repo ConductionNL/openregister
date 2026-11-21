@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
 use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use OCA\OpenRegister\Service\Resilience\OutboundBreaker;
 use OCA\OpenRegister\Tests\Unit\Service\Resilience\FakeMemcache;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClient;
@@ -52,6 +53,7 @@ require_once __DIR__ . '/../Resilience/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
+ * @uses   \OCA\OpenRegister\Service\Resilience\OutboundBreaker
  */
 class OutboundHttpClientBreakerTest extends TestCase {
 
@@ -91,7 +93,7 @@ class OutboundHttpClientBreakerTest extends TestCase {
 		$proxy->method('requestOptions')->willReturn([]);
 
 		$this->inner  = $this->createMock(IClient::class);
-		$this->client = new OutboundHttpClient(inner: $this->inner, proxy: $proxy, breakers: $registry);
+		$this->client = new OutboundHttpClient(inner: $this->inner, proxy: $proxy, breakers: new OutboundBreaker(breakers: $registry));
 	}//end setUp()
 
 	/**
