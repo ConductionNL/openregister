@@ -366,7 +366,6 @@
   "lib/Dto/DeletionEffects.php",
   "lib/Event/AbstractRegisterEvent.php",
   "lib/Event/AbstractSchemaEvent.php",
-  "lib/Event/AbstractTaskEvent.php",
   "lib/Event/AgentCreatedEvent.php",
   "lib/Event/AgentDeletedEvent.php",
   "lib/Event/AgentUpdatedEvent.php",
@@ -411,7 +410,6 @@
   "lib/Event/SourceCreatedEvent.php",
   "lib/Event/SourceDeletedEvent.php",
   "lib/Event/SourceUpdatedEvent.php",
-  "lib/Event/TaskTerminalEvent.php",
   "lib/Event/ViewAlertCrossedEvent.php",
   "lib/Event/ViewCreatedEvent.php",
   "lib/Event/ViewDeletedEvent.php",
@@ -1847,10 +1845,10 @@
   "Core": 35024,
   "Files": 1263,
   "Integrations": 17689,
-  "Kernel": 6027,
+  "Kernel": 5989,
   "Notifications": 1760,
   "Platform": 0,
-  "Processes": 27041,
+  "Processes": 27042,
   "Search": 1349
  },
  "kernel_files": [
@@ -1917,7 +1915,6 @@
   "lib/Event/AbstractRegisterEvent.php",
   "lib/Event/AbstractSchemaEvent.php",
   "lib/Event/AbstractSourceEvent.php",
-  "lib/Event/AbstractTaskEvent.php",
   "lib/Event/AbstractViewEvent.php",
   "lib/Event/AgentCreatedEvent.php",
   "lib/Event/AgentDeletedEvent.php",
@@ -1959,7 +1956,6 @@
   "lib/Event/SourceCreatedEvent.php",
   "lib/Event/SourceDeletedEvent.php",
   "lib/Event/SourceUpdatedEvent.php",
-  "lib/Event/TaskTerminalEvent.php",
   "lib/Event/ViewAlertCrossedEvent.php",
   "lib/Event/ViewCreatedEvent.php",
   "lib/Event/ViewDeletedEvent.php",
@@ -2177,7 +2173,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 7631,
- "total_loc": 462400,
+ "kernel_loc": 7593,
+ "total_loc": 462395,
  "violation_degree": 0.0051
 }

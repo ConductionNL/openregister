@@ -37,11 +37,12 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -93,16 +94,16 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-	 * @param EntityEventsInterface|null $entityEvents Publishes task terminality
-	 *                                                (TaskTerminalEvent) so
-	 *                                          business timers are cancelled in
-	 *                                          the same operation. Nullable so
-	 *                                          the mapper stays constructible
-	 *                                          without a container.
+	 * @param IEventDispatcher|null $dispatcher Dispatches task terminality
+	 *                                          (TaskTerminalEvent) so business
+	 *                                          timers are cancelled in the same
+	 *                                          operation. Nullable so the mapper
+	 *                                          stays constructible without a
+	 *                                          container.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly ?EntityEventsInterface $entityEvents = null,
+		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
@@ -168,11 +169,11 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function announceTerminality(Task $task): void {
-		if ($this->entityEvents === null || $task->isInTerminalState() === false) {
+		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
 			return;
 		}
 
-		$this->entityEvents->taskTerminal(task: $task, committed: false);
+		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $task, committed: false));
 	}//end announceTerminality()
 
 	/**
