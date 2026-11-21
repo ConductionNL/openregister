@@ -3474,3 +3474,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-21T15:17:41Z integrator-20261111T115842-a749432d RED tree 068ba2f800 prs 1 front=skip: Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Db\AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce
 2026-11-21T15:22:53Z session-20261121T152239-3d391879 or-fix-2 start; fixed 7667 -> db0e66e7
 2026-11-21T15:23:30Z session-20261121T152239-3d391879 or-fix-2 7721 obsolete (on main via b4acbb2609d), commented
+2026-11-21T15:27:23Z integrator-20261111T115842-a749432d RED tree 15220a8677 prs 2 front=ok: Tests: 63363, Assertions: 221697, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Db\AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce
