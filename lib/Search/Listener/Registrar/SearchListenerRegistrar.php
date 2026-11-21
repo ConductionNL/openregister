@@ -20,12 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Listener\Registrar;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Search\Listener\SearchDeclarationChecksListener;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -73,4 +75,21 @@ final class SearchListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
 	}//end thresholds()
+
+	/**
+	 * The schema declaration checks Search contributes to the schema save (the widget annotation).
+	 *
+	 * The event is a positioned collection: the check names its slot of
+	 * SchemaDeclarationOrder, so where this line stands in the listener list
+	 * does not change the order the checks run in.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function declarationChecks(IRegistrationContext $context): void {
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, SearchDeclarationChecksListener::class);
+	}//end declarationChecks()
 }//end class
