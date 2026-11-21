@@ -28,11 +28,13 @@ use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\Anonymisation\BackendStatement;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -58,7 +60,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -79,13 +81,6 @@ class FileSettingsHandler {
 	 * @var string
 	 */
 	public const OPENANONYMISER_PASSWORD_KEY = self::OPENANONYMISER_CREDENTIAL_FIELD;
-
-	/**
-	 * The minimum confidence a detection needs when no organisation setting says otherwise.
-	 *
-	 * @var float
-	 */
-	public const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
 
 	/**
 	 * The file settings key holding the anonymisation settings.
@@ -150,7 +145,7 @@ class FileSettingsHandler {
 	/**
 	 * Constructor for FileSettingsHandler
 	 *
-	 * The app id comes from Application::APP_ID (ADR-011 Rule 4).
+	 * The app id comes from AppIdentity::APP_ID (ADR-011 Rule 4).
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail (openregister#4100).
@@ -176,7 +171,7 @@ class FileSettingsHandler {
 	 */
 	public function getFileSettingsOnly(): array {
 		try {
-			$fileConfig = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
+			$fileConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', '');
 			if (empty($fileConfig) === true) {
 				$defaults = self::FILE_DEFAULTS;
 				$defaults['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
@@ -300,7 +295,7 @@ class FileSettingsHandler {
 	private function storeRecorded(array $fileConfig, array $fileData): void {
 		$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_CREDENTIAL_FIELD];
 		$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
-		$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, 'fileManagement', json_encode($fileConfig));
 		$this->storeOpenAnonymiserPassword(fileData: $fileData);
 		if ($before !== null) {
 			$this->changeRecorder?->record(before: $before, keys: $auditKeys);
@@ -348,7 +343,7 @@ class FileSettingsHandler {
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
 	 */
 	public function confidenceThreshold(): float {
-		$stored = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
+		$stored = $this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', '');
 		$settings = json_decode($stored, true);
 		if (is_array($settings) === false) {
 			return self::DEFAULT_CONFIDENCE_THRESHOLD;
@@ -445,7 +440,7 @@ class FileSettingsHandler {
 	 * @return array<string, mixed> Empty when none are stored.
 	 */
 	private function storedAnonymisation(): array {
-		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$settings = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
 		if (is_array($settings) === false || is_array($settings[self::ANONYMISATION_KEY] ?? null) === false) {
 			return [];
 		}
@@ -522,7 +517,7 @@ class FileSettingsHandler {
 	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
 	 */
 	public function maskForms(): array {
-		$settings = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$settings = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
 		$stored = ($settings[self::ANONYMISATION_KEY][self::MASK_FORMS_KEY] ?? null);
 		if (is_array($stored) === false) {
 			return [];
@@ -585,7 +580,7 @@ class FileSettingsHandler {
 			return $this->patternSetSetting()->submitted(codes: $fileData[EntityPatternSetSetting::SETTINGS_KEY]);
 		}
 
-		$stored = json_decode($this->appConfig->getValueString(Application::APP_ID, 'fileManagement', ''), true);
+		$stored = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
 		if (is_array($stored) === true && is_array($stored[EntityPatternSetSetting::SETTINGS_KEY] ?? null) === true) {
 			return $stored[EntityPatternSetSetting::SETTINGS_KEY];
 		}
@@ -657,7 +652,7 @@ class FileSettingsHandler {
 	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
 	 */
 	public function getOpenAnonymiserPassword(): string {
-		return $this->appConfig->getValueString(Application::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD, '');
+		return $this->appConfig->getValueString(AppIdentity::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD, '');
 	}//end getOpenAnonymiserPassword()
 
 	/**
@@ -699,12 +694,12 @@ class FileSettingsHandler {
 	 */
 	private function writeOpenAnonymiserPassword(string $password): void {
 		if ($password === '') {
-			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD);
+			$this->appConfig->deleteKey(AppIdentity::APP_ID, self::OPENANONYMISER_CREDENTIAL_FIELD);
 			return;
 		}
 
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::OPENANONYMISER_CREDENTIAL_FIELD,
 			$password,
 			sensitive: true
