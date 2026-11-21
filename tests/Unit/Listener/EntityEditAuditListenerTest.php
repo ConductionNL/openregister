@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\OrganisationInterface;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
@@ -181,5 +182,21 @@ final class EntityEditAuditListenerTest extends TestCase {
 		$this->assertSame('repair-7', $this->written[0]->getCauseRun());
 		$this->assertSame(['slug' => 'gemeente-noord', 'title' => 'Gemeente Noord', 'version' => null, 'properties' => []], $this->written[0]->getChanged());
 		$this->assertSame(64, strlen($this->written[1]->getChanged()['sha256']));
+	}
+
+	/**
+	 * The organisation events carry the Core interface; an implementation that is not the
+	 * stored entity has no audit identity, so it writes nothing rather than failing.
+	 *
+	 * @return void
+	 */
+	public function testAnOrganisationThatIsNotTheEntityWritesNothing(): void {
+		$other    = $this->createMock(OrganisationInterface::class);
+		$listener = $this->listener();
+		$listener->handle(new OrganisationCreatedEvent($other));
+		$listener->handle(new OrganisationUpdatedEvent($other, self::organisation('Gemeente Noord')));
+		$listener->handle(new OrganisationDeletedEvent($other));
+
+		$this->assertSame([], $this->written);
 	}
 }

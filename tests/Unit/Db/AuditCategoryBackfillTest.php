@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Migration\Version1Date20261114230000;
 use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditCategory;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Audit\EntityEditAuditor;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
@@ -61,6 +62,8 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(AdministrativeRetention::class)]
 #[UsesClass(EntityEditAuditor::class)]
 #[UsesClass(SettingsChangeAuditor::class)]
+#[UsesClass(AuditEntryWriter::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry::class)]
 #[UsesClass(Schema::class)]
 final class AuditCategoryBackfillTest extends TestCase {
 
@@ -198,14 +201,18 @@ final class AuditCategoryBackfillTest extends TestCase {
 		$new->setTitle('Meldingen 2');
 		(new EntityEditAuditor($mapper, $session, $this->createMock(LoggerInterface::class)))->recordUpdated(old: $old, new: $new);
 
-		$settingsMapper = $this->getMockBuilder(AuditTrailMapper::class)->disableOriginalConstructor()->onlyMethods(['insertAuditTrails'])->getMock();
+		// The settings writer goes through the Core audit port; the trail's insertAuditTrails() stamps
+		// the category from the action, as the real mapper does.
+		$stamping       = $this->mapper();
+		$settingsMapper = $this->createMock(AuditTrailMapperInterface::class);
 		$settingsMapper->method('insertAuditTrails')->willReturnCallback(
-			static function (array $entries) use (&$written): array {
+			static function (array $entries) use (&$written, $stamping): array {
+				$entries = array_map(static fn (AuditTrail $row): AuditTrail => $stamping->stampCategory(auditTrail: $row), $entries);
 				array_push($written, ...$entries);
 				return $entries;
 			}
 		);
-		(new SettingsChangeAuditor(mapper: $settingsMapper, userSession: $session, logger: $this->createMock(LoggerInterface::class)))
+		(new SettingsChangeAuditor(trail: new AuditEntryWriter(mapper: $settingsMapper), userSession: $session, logger: $this->createMock(LoggerInterface::class)))
 			->recordUpdate(app: 'openregister', before: ['register' => 'a'], after: ['register' => 'b']);
 
 		$this->assertSame(['schema.updated', 'settings.updated'], array_map(static fn (AuditTrail $row): string => (string)$row->getAction(), $written));
