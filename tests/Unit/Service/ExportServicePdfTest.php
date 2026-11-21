@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Service\Export\DocumentStyleReader;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\ExportService;
@@ -532,4 +533,119 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringContainsString('<td>true</td><td></td>', $html);
 		$this->assertStringNotContainsString('not a column', $html);
 	}//end testRowsSectionFollowsTheColumnsAndEscapesEveryCell()
+
+	// --- house style (export-pdf-house-style) ---
+
+	private function convertedOdtPart(string $part): string {
+		$file = tempnam(sys_get_temp_dir(), 'odt');
+		file_put_contents($file, $this->converter->lastOdt);
+		$zip = new \ZipArchive();
+		$zip->open($file);
+		$xml = (string) $zip->getFromName($part);
+		$zip->close();
+		unlink($file);
+
+		return $xml;
+	}
+
+	private function serviceWithStyle(?array $profile, ?string $expectedUid): ExportService {
+		$reader = $this->createMock(DocumentStyleReader::class);
+		$reader->expects($this->once())->method('forUser')->with($expectedUid)->willReturn($profile);
+
+		return new ExportService(
+			$this->registerMapper,
+			$this->userManager,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			$reader
+		);
+	}
+
+	public function testATableExportWearsTheInstanceHouseStyle(): void {
+		$service = $this->serviceWithStyle(
+			profile: ['colours' => ['primary' => '#00529b'], 'footer' => ['lines' => ['Gemeente Hilversum, Dudokpark 1']]],
+			expectedUid: null
+		);
+
+		$service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertStringContainsString('Gemeente Hilversum, Dudokpark 1', $this->convertedOdtPart(part: 'styles.xml'));
+		$this->assertStringContainsString('fo:background-color="#00529b"', $this->convertedOdtPart(part: 'content.xml'));
+	}
+
+	public function testAUserExportReadsThatUsersHouseStyle(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunning');
+		$schema->setProperties(['title' => ['type' => 'string']]);
+		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
+		$this->objectService->method('searchObjects')->willReturn([$this->createObjectEntity('uuid-1', 'V1', ['title' => 'V1'])]);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('behandelaar');
+
+		$service = $this->serviceWithStyle(profile: ['footer' => ['privacyUrl' => 'https://hilversum.nl/privacy']], expectedUid: 'behandelaar');
+		$service->pdfFor(request: new ExportRequest(schema: $schema, currentUser: $user));
+
+		$this->assertStringContainsString('https://hilversum.nl/privacy', $this->convertedOdtPart(part: 'styles.xml'));
+	}
+
+	public function testWithoutAProfileTheExportKeepsThePlainLayout(): void {
+		$service = $this->serviceWithStyle(profile: null, expectedUid: null);
+
+		$this->assertSame('%PDF-1.7 converted', $service->renderTableToPdf(table: new RowsTable(title: 'T', columns: ['a' => 'A'], rows: [['a' => 'x']])));
+		$this->assertStringNotContainsString('OR_FooterLine', $this->convertedOdtPart(part: 'styles.xml'));
+		$this->assertStringContainsString('fo:background-color="#2c3e50"', $this->convertedOdtPart(part: 'content.xml'));
+	}
+
+	/**
+	 * The PDF report summarises the objects by status with counts and
+	 * percentages, and names the applied filters (rapportage-bi-export).
+	 */
+	public function testBuildPdfSectionSummarisesTheStatusAndTheFilters(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string', 'enum' => ['open', 'verleend']]]);
+		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
+		$objects = [];
+		foreach (['open', 'verleend', 'verleend', 'verleend', null] as $i => $status) {
+			$objects[] = $this->createObjectEntity('uuid-' . $i, 'V' . $i, ['title' => 'V' . $i, 'status' => $status]);
+		}
+
+		$method = (new ReflectionClass(ExportService::class))->getMethod('buildPdfSection');
+		$method->setAccessible(true);
+		$html = $method->invoke(
+			$this->service,
+			new ExportRequest(schema: $schema, filters: ['status!' => 'afgehandeld', '_limit' => 50, 'zone' => ['a']]),
+			$objects
+		);
+
+		$this->assertStringContainsString('<p class="meta">Filters: status! = afgehandeld</p>', $html);
+		$this->assertStringContainsString('<tr><td>verleend</td><td>3</td><td>60.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>open</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>(none)</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>Total</td><td>5</td><td>100.0%</td></tr>', $html);
+		$this->assertLessThan(strpos($html, '<table><thead>'), strpos($html, '<table class="summary">'));
+	}
+
+	/**
+	 * A status the caller may not read is not summarised, and without a status
+	 * column or filters there is no summary block at all.
+	 */
+	public function testBuildPdfSectionDoesNotSummariseAnUnreadableStatus(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string']]);
+		$this->propertyRbacHandler
+			->method('canReadProperty')
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'status');
+
+		$html = $this->invokeBuildPdfSection(null, $schema, [$this->createObjectEntity('uuid-1', 'V', ['title' => 'V', 'status' => 'geheim'])]);
+
+		$this->assertStringNotContainsString('class="summary"', $html);
+		$this->assertStringNotContainsString('geheim', $html);
+		$this->assertStringNotContainsString('Filters:', $html);
+	}
 }//end class

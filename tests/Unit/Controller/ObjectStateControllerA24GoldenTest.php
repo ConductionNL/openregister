@@ -41,6 +41,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectStateController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectStateControllerServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Object\ObjectStateRequest
+ * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
  */
 final class ObjectStateControllerA24GoldenTest extends TestCase {
 

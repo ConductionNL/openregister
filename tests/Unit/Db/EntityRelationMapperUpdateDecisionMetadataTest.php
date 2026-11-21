@@ -544,4 +544,21 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		$this->assertSame('d-1', $stored->getDecisionUuid());
 	}//end testLinkDecisionStoresTheUuid()
+
+	public function testTheReleaseFormsAreJudgedTheSameWay(): void {
+		$mapper = $this->mapperWithMockedUpdate();
+		$this->auditTrailMapper->expects($this->never())->method('insert');
+
+		foreach ([
+			fn () => $mapper->updateDecisionMetadata(relation: new EntityRelation(), fields: ['anonymized' => true], actingUser: $this->user),
+			fn () => $mapper->updateDecisionMetadata(new EntityRelation(), ['anonymized' => true], $this->user),
+		] as $call) {
+			try {
+				$call();
+				$this->fail('An unknown field must be refused in the release form too.');
+			} catch (CustomValidationException $refused) {
+				$this->assertMatchesRegularExpression('/anonymized/', $refused->getMessage());
+			}
+		}
+	}
 }//end class

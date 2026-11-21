@@ -110,7 +110,7 @@ final class ObjectActionElevationScope {
 	private static function permitsInFrame(int $frame, ElevatedWrite $write): bool {
 		foreach (self::$frames[$frame]['entries'] as $entry) {
 			if (self::matches(entry: $entry, write: $write) === true) {
-				self::$frames[$frame]['used'][$write->schemaId . ':' . $write->verb] = true;
+				self::$frames[$frame]['used'][self::usedKey(registerId: $write->registerId, schemaId: $write->schemaId, verb: $write->verb)] = true;
 				return true;
 			}
 		}
@@ -121,16 +121,17 @@ final class ObjectActionElevationScope {
 	/**
 	 * The attribution an audit row of an elevated write carries, or null.
 	 *
-	 * @param string|int|null $schemaId The schema of the audited object.
-	 * @param string          $verb     The audited action.
+	 * @param string|int|null $registerId The register of the audited object.
+	 * @param string|int|null $schemaId   The schema of the audited object.
+	 * @param string          $verb       The audited action.
 	 *
 	 * @return array{elevatedBy: string, triggeredBy: string|null, runAs: string}|null The attribution.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	public static function attributionFor(string|int|null $schemaId, string $verb): ?array {
+	public static function attributionFor(string|int|null $registerId, string|int|null $schemaId, string $verb): ?array {
 		$frame = array_key_last(self::$frames);
-		if ($frame === null || isset(self::$frames[$frame]['used'][$schemaId . ':' . $verb]) === false) {
+		if ($frame === null || isset(self::$frames[$frame]['used'][self::usedKey(registerId: $registerId, schemaId: $schemaId, verb: $verb)]) === false) {
 			return null;
 		}
 
@@ -142,10 +143,23 @@ final class ObjectActionElevationScope {
 	}//end attributionFor()
 
 	/**
+	 * The key under which a frame records an elevated write it permitted.
+	 *
+	 * @param string|int|null $registerId The register written to.
+	 * @param string|int|null $schemaId   The schema written to.
+	 * @param string          $verb       The action.
+	 *
+	 * @return string The key.
+	 */
+	private static function usedKey(string|int|null $registerId, string|int|null $schemaId, string $verb): string {
+		return $registerId . ':' . $schemaId . ':' . $verb;
+	}//end usedKey()
+
+	/**
 	 * Whether an entry lists this write.
 	 *
-	 * A write that names no register (a create before it is placed) is matched
-	 * on schema and verb; one that names a register must name the listed one.
+	 * The write must name the listed register, schema and verb; a write that
+	 * names no register matches no entry.
 	 *
 	 * @param array{register: string, schema: string, verbs: list<string>} $entry The entry.
 	 * @param ElevatedWrite                                                     $write The write, its schema known.

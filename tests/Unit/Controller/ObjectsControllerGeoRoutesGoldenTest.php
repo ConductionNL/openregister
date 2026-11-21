@@ -16,6 +16,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\SpatialFilter;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCP\AppFramework\Http\JSONResponse;
@@ -34,6 +35,11 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses \OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs
  * @uses   \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest
+ * @uses \OCA\OpenRegister\Service\Geo\GeocodeOptions
  */
 class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-geo-routes-golden.json';
@@ -197,9 +203,13 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 	 */
 	private function services(array $case): GeoServices {
 		$wanted = ($case['services'] ?? ['parser', 'applier', 'builder', 'geocoder']);
+		$spatialFilter = null;
+		if (in_array('parser', $wanted, true) === true && in_array('applier', $wanted, true) === true) {
+			$spatialFilter = new SpatialFilter(parser: $this->parser(mode: $case['parse'] ?? 'filters'), applier: $this->applier());
+		}
+
 		return new GeoServices(
-			geoFilterParser: in_array('parser', $wanted, true) ? $this->parser(mode: $case['parse'] ?? 'filters') : null,
-			geoFilterApplier: in_array('applier', $wanted, true) ? $this->applier() : null,
+			spatialFilter: $spatialFilter,
 			geoFeatureBuilder: in_array('builder', $wanted, true) ? $this->builder() : null,
 			pdokGeocoder: in_array('geocoder', $wanted, true) ? $this->geocoder(available: $case['available'] ?? true) : null,
 		);

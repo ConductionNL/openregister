@@ -23,6 +23,10 @@ use Throwable;
  *
  * @covers \OCA\OpenRegister\Service\TaskService
  * @uses   \OCA\OpenRegister\Service\Task\VtodoCalendarLocator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\TaskVtodoDocument
+ * @uses \OCA\OpenRegister\Service\Task\VtodoReader
  */
 class TaskServiceAllUserTasksGoldenTest extends TestCase {
 

@@ -38,6 +38,7 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueRenderer
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
  */
 class PortalTaskConfigBehaviourTest extends TestCase {
 

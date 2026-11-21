@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
  * through the container only when the app is enabled, and every missing piece
  * refuses with 409 rather than failing open.
  *
- * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+ * @spec openspec/specs/file-actions/spec.md
  */
 class OfficeSessionService {
 
@@ -69,6 +69,13 @@ class OfficeSessionService {
 	 * @var string
 	 */
 	private const OWNER = 'openregister';
+
+	/**
+	 * Whether Office opens a MIME type, asked once per type and request.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $opensByMimeType = [];
 
 	/**
 	 * Constructor.
@@ -98,7 +105,7 @@ class OfficeSessionService {
 	 *
 	 * @throws OfficeOpenRefusedException 409, 415 or 403 when the document cannot be opened.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function openSession(OfficeOpenRequest $request): OfficeSession {
 		$services = $this->richdocuments();
@@ -209,7 +216,7 @@ class OfficeSessionService {
 	 *
 	 * @return bool True when richdocuments is enabled.
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function isAvailable(): bool {
 		try {
@@ -259,6 +266,71 @@ class OfficeSessionService {
 
 		return $services;
 	}//end richdocuments()
+
+	/**
+	 * The page that opens a file of an object in Nextcloud Office, or null when
+	 * Office does not open its type (or is not available). The page and the
+	 * Office endpoint behind it run the object's read and update checks
+	 * themselves; this is only the address a list offers.
+	 *
+	 * @param string $register The register, as the route names it.
+	 * @param string $schema   The schema, as the route names it.
+	 * @param string $objectId The object's id.
+	 * @param int    $fileId   The file's id.
+	 * @param string $mimeType The file's MIME type.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	public function officePageUrl(string $register, string $schema, string $objectId, int $fileId, string $mimeType): ?string {
+		if ($this->opensInOffice(mimeType: $mimeType) === false) {
+			return null;
+		}
+
+		return $this->urlGenerator->linkToRoute(
+			'openregister.files.officePage',
+			['register' => $register, 'schema' => $schema, 'id' => $objectId, 'fileId' => $fileId]
+		);
+	}//end officePageUrl()
+
+	/**
+	 * Whether Nextcloud Office opens files of this MIME type here.
+	 *
+	 * @param string $mimeType The MIME type.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/tasks.md
+	 */
+	public function opensInOffice(string $mimeType): bool {
+		if ($mimeType === '') {
+			return false;
+		}
+
+		if (array_key_exists($mimeType, $this->opensByMimeType) === false) {
+			$this->opensByMimeType[$mimeType] = $this->officeOpens(mimeType: $mimeType);
+		}
+
+		return $this->opensByMimeType[$mimeType];
+	}//end opensInOffice()
+
+	/**
+	 * Ask richdocuments whether it has an editor for the MIME type.
+	 *
+	 * @param string $mimeType The MIME type.
+	 *
+	 * @return bool
+	 */
+	private function officeOpens(string $mimeType): bool {
+		try {
+			$urlSrc = $this->richdocuments()['tokenManager']->getUrlSrcForMimeType($mimeType);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return is_string($urlSrc) === true && $urlSrc !== '';
+	}//end officeOpens()
 
 	/**
 	 * The WOPI source Collabora calls back on, as richdocuments' own viewer builds it.

@@ -2891,229 +2891,229 @@
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'open')"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'open')"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = 'open'))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'open'))",
-        "crossSql": "(_id = 'open')",
-        "crossQb": "or(eq(t._id,\"open\"))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = 'open'))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'open'))",
+        "crossSql": "(_uuid = 'open')",
+        "crossQb": "or(eq(t._uuid,\"open\"))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,\"open\")))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,\"open\")))"
         ]
     },
     "_id/string/deny": {
-        "union": "(NOT (_id = 'open'))))",
-        "aliased": "(NOT (r0._id = 'open')))))",
-        "qb": "(NOT (t._id = 'open')))"
+        "union": "(NOT (_uuid = 'open'))))",
+        "aliased": "(NOT (r0._uuid = 'open')))))",
+        "qb": "(NOT (t._uuid = 'open')))"
     },
     "_id/quoted": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'o''brien')"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'o''brien')"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = 'o''brien'))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'o''brien'))",
-        "crossSql": "(_id = 'o''brien')",
-        "crossQb": "or(eq(t._id,\"o'brien\"))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = 'o''brien'))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'o''brien'))",
+        "crossSql": "(_uuid = 'o''brien')",
+        "crossQb": "or(eq(t._uuid,\"o'brien\"))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,\"o'brien\")))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,\"o'brien\")))"
         ]
     },
     "_id/quoted/deny": {
-        "union": "(NOT (_id = 'o''brien'))))",
-        "aliased": "(NOT (r0._id = 'o''brien')))))",
-        "qb": "(NOT (t._id = 'o''brien')))"
+        "union": "(NOT (_uuid = 'o''brien'))))",
+        "aliased": "(NOT (r0._uuid = 'o''brien')))))",
+        "qb": "(NOT (t._uuid = 'o''brien')))"
     },
     "_id/token": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = '$userId')"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = '$userId')"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = '$userId'))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = '$userId'))",
-        "crossSql": "(_id = '$userId')",
-        "crossQb": "or(eq(t._id,\"$userId\"))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = '$userId'))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = '$userId'))",
+        "crossSql": "(_uuid = '$userId')",
+        "crossQb": "or(eq(t._uuid,\"$userId\"))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,\"$userId\")))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,\"$userId\")))"
         ]
     },
     "_id/token/deny": {
-        "union": "(NOT (_id = '$userId'))))",
-        "aliased": "(NOT (r0._id = '$userId')))))",
-        "qb": "(NOT (t._id = '$userId')))"
+        "union": "(NOT (_uuid = '$userId'))))",
+        "aliased": "(NOT (r0._uuid = '$userId')))))",
+        "qb": "(NOT (t._uuid = '$userId')))"
     },
     "_id/int": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 5)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 5)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = 5))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 5))",
-        "crossSql": "(_id = 5)",
-        "crossQb": "or(eq(t._id,5))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = 5))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 5))",
+        "crossSql": "(_uuid = 5)",
+        "crossQb": "or(eq(t._uuid,5))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,5)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,5)))"
         ]
     },
     "_id/int/deny": {
-        "union": "(NOT (_id = 5))))",
-        "aliased": "(NOT (r0._id = 5)))))",
-        "qb": "(NOT (t._id = 5)))"
+        "union": "(NOT (_uuid = 5))))",
+        "aliased": "(NOT (r0._uuid = 5)))))",
+        "qb": "(NOT (t._uuid = 5)))"
     },
     "_id/true": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = TRUE)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = TRUE)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = TRUE))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = TRUE))",
-        "crossSql": "(_id = TRUE)",
-        "crossQb": "or(eq(t._id,true))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = TRUE))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = TRUE))",
+        "crossSql": "(_uuid = TRUE)",
+        "crossQb": "or(eq(t._uuid,true))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,true)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,true)))"
         ]
     },
     "_id/true/deny": {
-        "union": "(NOT (_id = TRUE))))",
-        "aliased": "(NOT (r0._id = TRUE)))))",
-        "qb": "(NOT (t._id = TRUE)))"
+        "union": "(NOT (_uuid = TRUE))))",
+        "aliased": "(NOT (r0._uuid = TRUE)))))",
+        "qb": "(NOT (t._uuid = TRUE)))"
     },
     "_id/false": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = FALSE)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = FALSE)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = FALSE))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = FALSE))",
-        "crossSql": "(_id = FALSE)",
-        "crossQb": "or(eq(t._id,false))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = FALSE))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = FALSE))",
+        "crossSql": "(_uuid = FALSE)",
+        "crossQb": "or(eq(t._uuid,false))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,false)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,false)))"
         ]
     },
     "_id/false/deny": {
-        "union": "(NOT (_id = FALSE))))",
-        "aliased": "(NOT (r0._id = FALSE)))))",
-        "qb": "(NOT (t._id = FALSE)))"
+        "union": "(NOT (_uuid = FALSE))))",
+        "aliased": "(NOT (r0._uuid = FALSE)))))",
+        "qb": "(NOT (t._uuid = FALSE)))"
     },
     "_id/null": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NULL)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NULL)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id IS NULL))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NULL))",
-        "crossSql": "(_id IS NULL)",
-        "crossQb": "or(isNull(t._id))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid IS NULL))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NULL))",
+        "crossSql": "(_uuid IS NULL)",
+        "crossQb": "or(isNull(t._uuid))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNull(t._id)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNull(t._uuid)))"
         ]
     },
     "_id/null/deny": {
-        "union": "(NOT (_id IS NULL))))",
-        "aliased": "(NOT (r0._id IS NULL)))))",
-        "qb": "(NOT (t._id IS NULL)))"
+        "union": "(NOT (_uuid IS NULL))))",
+        "aliased": "(NOT (r0._uuid IS NULL)))))",
+        "qb": "(NOT (t._uuid IS NULL)))"
     },
     "_id/eq": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'a')"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'a')"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id = 'a'))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id = 'a'))",
-        "crossSql": "(_id = 'a')",
-        "crossQb": "or(eq(t._id,\"a\"))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid = 'a'))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid = 'a'))",
+        "crossSql": "(_uuid = 'a')",
+        "crossQb": "or(eq(t._uuid,\"a\"))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._id,\"a\")))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),eq(t._uuid,\"a\")))"
         ]
     },
     "_id/eq/deny": {
-        "union": "(NOT (_id = 'a'))))",
-        "aliased": "(NOT (r0._id = 'a')))))",
-        "qb": "(NOT (t._id = 'a')))"
+        "union": "(NOT (_uuid = 'a'))))",
+        "aliased": "(NOT (r0._uuid = 'a')))))",
+        "qb": "(NOT (t._uuid = 'a')))"
     },
     "_id/ne": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id != 'a')"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid != 'a')"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id != 'a'))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id != 'a'))",
-        "crossSql": "(_id != 'a')",
-        "crossQb": "or(neq(t._id,\"a\"))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid != 'a'))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid != 'a'))",
+        "crossSql": "(_uuid != 'a')",
+        "crossQb": "or(neq(t._uuid,\"a\"))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),neq(t._id,\"a\")))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),neq(t._uuid,\"a\")))"
         ]
     },
     "_id/ne/deny": {
-        "union": "(NOT (_id != 'a'))))",
-        "aliased": "(NOT (r0._id != 'a')))))",
-        "qb": "(NOT (t._id != 'a')))"
+        "union": "(NOT (_uuid != 'a'))))",
+        "aliased": "(NOT (r0._uuid != 'a')))))",
+        "qb": "(NOT (t._uuid != 'a')))"
     },
     "_id/range": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (_id >= 18 AND _id < 65))"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (_uuid >= 18 AND _uuid < 65))"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND (r0._id >= 18 AND r0._id < 65)))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (_id >= 18 AND _id < 65)))",
-        "crossSql": "((_id >= 18 AND _id < 65))",
-        "crossQb": "or(and(gte(t._id,18),lt(t._id,65)))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND (r0._uuid >= 18 AND r0._uuid < 65)))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (_uuid >= 18 AND _uuid < 65)))",
+        "crossSql": "((_uuid >= 18 AND _uuid < 65))",
+        "crossQb": "or(and(gte(t._uuid,18),lt(t._uuid,65)))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),and(gte(t._id,18),lt(t._id,65))))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),and(gte(t._uuid,18),lt(t._uuid,65))))"
         ]
     },
     "_id/range/deny": {
-        "union": "(NOT ((_id >= 18 AND _id < 65)))))",
-        "aliased": "(NOT ((r0._id >= 18 AND r0._id < 65))))))",
-        "qb": "(NOT ((t._id >= 18 AND t._id < 65))))"
+        "union": "(NOT ((_uuid >= 18 AND _uuid < 65)))))",
+        "aliased": "(NOT ((r0._uuid >= 18 AND r0._uuid < 65))))))",
+        "qb": "(NOT ((t._uuid >= 18 AND t._uuid < 65))))"
     },
     "_id/in": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IN ('a', 'b'))"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IN ('a', 'b'))"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id IN ('a', 'b')))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IN ('a', 'b')))",
-        "crossSql": "(_id IN ('a', 'b'))",
-        "crossQb": "or(in(t._id,[\"a\",\"b\"]))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid IN ('a', 'b')))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IN ('a', 'b')))",
+        "crossSql": "(_uuid IN ('a', 'b'))",
+        "crossQb": "or(in(t._uuid,[\"a\",\"b\"]))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),in(t._id,[\"a\",\"b\"])))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),in(t._uuid,[\"a\",\"b\"])))"
         ]
     },
     "_id/in/deny": {
-        "union": "(NOT (_id IN ('a', 'b')))))",
-        "aliased": "(NOT (r0._id IN ('a', 'b'))))))",
-        "qb": "(NOT (t._id IN ('a', 'b'))))"
+        "union": "(NOT (_uuid IN ('a', 'b')))))",
+        "aliased": "(NOT (r0._uuid IN ('a', 'b'))))))",
+        "qb": "(NOT (t._uuid IN ('a', 'b'))))"
     },
     "_id/nin": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id NOT IN ('a', 'b'))"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid NOT IN ('a', 'b'))"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id NOT IN ('a', 'b')))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id NOT IN ('a', 'b')))",
-        "crossSql": "(_id NOT IN ('a', 'b'))",
-        "crossQb": "or(notIn(t._id,[\"a\",\"b\"]))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid NOT IN ('a', 'b')))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid NOT IN ('a', 'b')))",
+        "crossSql": "(_uuid NOT IN ('a', 'b'))",
+        "crossQb": "or(notIn(t._uuid,[\"a\",\"b\"]))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),notIn(t._id,[\"a\",\"b\"])))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),notIn(t._uuid,[\"a\",\"b\"])))"
         ]
     },
     "_id/nin/deny": {
-        "union": "(NOT (_id NOT IN ('a', 'b')))))",
-        "aliased": "(NOT (r0._id NOT IN ('a', 'b'))))))",
-        "qb": "(NOT (t._id NOT IN ('a', 'b'))))"
+        "union": "(NOT (_uuid NOT IN ('a', 'b')))))",
+        "aliased": "(NOT (r0._uuid NOT IN ('a', 'b'))))))",
+        "qb": "(NOT (t._uuid NOT IN ('a', 'b'))))"
     },
     "_id/inEmpty": {
         "union": [
@@ -3138,96 +3138,96 @@
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NOT NULL)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NOT NULL)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id IS NOT NULL))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NOT NULL))",
-        "crossSql": "(_id IS NOT NULL)",
-        "crossQb": "or(isNotNull(t._id))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid IS NOT NULL))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NOT NULL))",
+        "crossSql": "(_uuid IS NOT NULL)",
+        "crossQb": "or(isNotNull(t._uuid))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNotNull(t._id)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNotNull(t._uuid)))"
         ]
     },
     "_id/ninEmpty/deny": {
-        "union": "(NOT (_id IS NOT NULL))))",
-        "aliased": "(NOT (r0._id IS NOT NULL)))))",
-        "qb": "(NOT (t._id IS NOT NULL)))"
+        "union": "(NOT (_uuid IS NOT NULL))))",
+        "aliased": "(NOT (r0._uuid IS NOT NULL)))))",
+        "qb": "(NOT (t._uuid IS NOT NULL)))"
     },
     "_id/exists": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NOT NULL)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NOT NULL)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id IS NOT NULL))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NOT NULL))",
-        "crossSql": "(_id IS NOT NULL)",
-        "crossQb": "or(isNotNull(t._id))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid IS NOT NULL))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NOT NULL))",
+        "crossSql": "(_uuid IS NOT NULL)",
+        "crossQb": "or(isNotNull(t._uuid))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNotNull(t._id)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNotNull(t._uuid)))"
         ]
     },
     "_id/exists/deny": {
-        "union": "(NOT (_id IS NOT NULL))))",
-        "aliased": "(NOT (r0._id IS NOT NULL)))))",
-        "qb": "(NOT (t._id IS NOT NULL)))"
+        "union": "(NOT (_uuid IS NOT NULL))))",
+        "aliased": "(NOT (r0._uuid IS NOT NULL)))))",
+        "qb": "(NOT (t._uuid IS NOT NULL)))"
     },
     "_id/notExists": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NULL)"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NULL)"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._id IS NULL))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _id IS NULL))",
-        "crossSql": "(_id IS NULL)",
-        "crossQb": "or(isNull(t._id))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND r0._uuid IS NULL))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND _uuid IS NULL))",
+        "crossSql": "(_uuid IS NULL)",
+        "crossQb": "or(isNull(t._uuid))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNull(t._id)))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),isNull(t._uuid)))"
         ]
     },
     "_id/notExists/deny": {
-        "union": "(NOT (_id IS NULL))))",
-        "aliased": "(NOT (r0._id IS NULL)))))",
-        "qb": "(NOT (t._id IS NULL)))"
+        "union": "(NOT (_uuid IS NULL))))",
+        "aliased": "(NOT (r0._uuid IS NULL)))))",
+        "qb": "(NOT (t._uuid IS NULL)))"
     },
     "_id/contains": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')))"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')))"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('a'))))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a'))))",
-        "crossSql": "(JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')))",
-        "crossQb": "or(JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a')))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('a'))))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a'))))",
+        "crossSql": "(JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')))",
+        "crossQb": "or(JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a')))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a'))))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a'))))"
         ]
     },
     "_id/contains/deny": {
-        "union": "(NOT (JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a'))))))",
-        "aliased": "(NOT (JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('a')))))))",
-        "qb": "(NOT (JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a')))))"
+        "union": "(NOT (JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a'))))))",
+        "aliased": "(NOT (JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('a')))))))",
+        "qb": "(NOT (JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a')))))"
     },
     "_id/containsAny": {
         "union": [
             "_owner = 'alice'",
             "(JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors'))",
-            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('b'))))"
+            "(((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('b'))))"
         ],
-        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND (JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('b')))))",
-        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('b')))))",
-        "crossSql": "((JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('b'))))",
-        "crossQb": "or((JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('b'))))",
+        "aliased": "(r0._owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.ownerGroup')) IN ('editors')) OR (((r0._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(r0._authorization, '$.scope'))) = 'organisation') AND (r0._status IS NULL OR r0._status <> 'draft')) AND (JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('b')))))",
+        "row": "(_owner = 'alice' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.ownerGroup')) IN ('editors')) OR (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft')) AND (JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('b')))))",
+        "crossSql": "((JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('b'))))",
+        "crossQb": "or((JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('b'))))",
         "qb": [
-            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),(JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('b')))))"
+            "or(eq(t._owner,\"alice\"),(JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup')) IN ('editors')),and(((t._authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.scope'))) = 'organisation') AND (t._status IS NULL OR t._status <> 'draft')),(JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('b')))))"
         ]
     },
     "_id/containsAny/deny": {
-        "union": "(NOT ((JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_id, '[]'), JSON_QUOTE('b')))))))",
-        "aliased": "(NOT ((JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(r0._id, '[]'), JSON_QUOTE('b'))))))))",
-        "qb": "(NOT ((JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._id, '[]'), JSON_QUOTE('b'))))))"
+        "union": "(NOT ((JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(_uuid, '[]'), JSON_QUOTE('b')))))))",
+        "aliased": "(NOT ((JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(r0._uuid, '[]'), JSON_QUOTE('b'))))))))",
+        "qb": "(NOT ((JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('a')) OR JSON_CONTAINS(COALESCE(t._uuid, '[]'), JSON_QUOTE('b'))))))"
     },
     "_id/unknownOp": {
         "union": [

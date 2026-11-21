@@ -30,22 +30,29 @@ namespace OCA\OpenRegister\Tests\Support;
 
 use Closure;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\Constraint\IsEqual;
 
 /**
- * Builds recordObjectEvent() stubs and matchers from positional ones.
+ * Builds recordObjectEvent() and writeObjectEvent() stubs and matchers from positional ones.
  */
 final class AuditTrailEvents {
 	/**
 	 * The event's values in the order of the former positional signature.
 	 *
-	 * @param ObjectAuditEvent $event The recorded event.
+	 * An ObjectAuditEntry (the Core port) carries no address, so its address is null.
+	 *
+	 * @param ObjectAuditEvent|ObjectAuditEntry $event The recorded event.
 	 *
 	 * @return array<int, mixed> Object, action, context, actor id, actor name and address.
 	 */
-	public static function values(ObjectAuditEvent $event): array {
+	public static function values(ObjectAuditEvent|ObjectAuditEntry $event): array {
+		if ($event instanceof ObjectAuditEntry) {
+			return [$event->object, $event->action, $event->context, $event->actorId, $event->actorName, null];
+		}
+
 		return [
 			$event->object,
 			$event->action,
@@ -64,7 +71,7 @@ final class AuditTrailEvents {
 	 * @return Closure The recordObjectEvent() callback.
 	 */
 	public static function positional(callable $inner): Closure {
-		return static fn (ObjectAuditEvent $event): mixed => $inner(...self::values(event: $event));
+		return static fn (ObjectAuditEvent|ObjectAuditEntry $event): mixed => $inner(...self::values(event: $event));
 	}//end positional()
 
 	/**
@@ -76,7 +83,7 @@ final class AuditTrailEvents {
 	 */
 	public static function matching(array $expected): Callback {
 		return new Callback(static function (mixed $event) use ($expected): bool {
-			if ($event instanceof ObjectAuditEvent === false) {
+			if ($event instanceof ObjectAuditEvent === false && $event instanceof ObjectAuditEntry === false) {
 				return false;
 			}
 

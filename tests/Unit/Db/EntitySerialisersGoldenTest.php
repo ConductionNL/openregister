@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Files\Db\File
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @covers \OCA\OpenRegister\Files\Db\NoteVersion
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class EntitySerialisersGoldenTest extends TestCase {
 

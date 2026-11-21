@@ -57,6 +57,12 @@ final class NullFilter {
 	public const OR_NULL_MODIFIER = 'orNull';
 
 	/**
+	 * The operator that matches one of its values, or no value at all: null,
+	 * missing, an empty string or an empty array.
+	 */
+	public const IN_OR_EMPTY = 'inOrEmpty';
+
+	/**
 	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
 	 *
 	 * A query string only delivers strings, so a strict `=== true` can never
@@ -138,22 +144,105 @@ final class NullFilter {
 	 * `$build` receives the criterion without the modifier and returns the
 	 * field's conditions. A bag that held nothing but `orNull` adds no condition.
 	 *
+	 * An `inOrEmpty` operator is read here too, so every path that reads `orNull`
+	 * reads it: its values go through the path's own `in` builder, ORed with
+	 * "no value". It ANDs with the bag's other operators, like any operator.
+	 *
 	 * @param mixed    $criterion A filter value: a scalar or an operator bag.
 	 * @param string   $column    The column reference the conditions test.
 	 * @param callable $build     fn(mixed $criterion): list<string|\Stringable>.
+	 * @param \Closure|null $postgres fn(): bool, whether the column is on PostgreSQL; asked only for `inOrEmpty`.
 	 *
 	 * @return list<string|\Stringable> The conditions to AND into the query.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/search-value-or-empty-filter/specs/zoeken-filteren/spec.md#requirement-a-list-filter-can-match-a-value-or-no-value-in-one-query
 	 */
-	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
-		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
-		if ($orNull === false) {
-			return $build($criterion);
+	public static function conditionsFor(mixed $criterion, string $column, callable $build, ?\Closure $postgres = null): array {
+		[$criterion, $inOrEmpty] = self::splitInOrEmpty(criterion: $criterion);
+		[$criterion, $orNull]    = self::splitOrNull(criterion: $criterion);
+		if ($inOrEmpty === null) {
+			if ($orNull === false) {
+				return $build($criterion);
+			}
+
+			return $criterion === [] ? [] : self::admitNull(conditions: $build($criterion), column: $column);
 		}
 
-		return $criterion === [] ? [] : self::admitNull(conditions: $build($criterion), column: $column);
+		$conditions = [];
+		if ($criterion !== []) {
+			$conditions = $build($criterion);
+			if ($orNull === true) {
+				$conditions = self::admitNull(conditions: $conditions, column: $column);
+			}
+		}
+
+		$conditions[] = self::valueOrEmpty(values: $inOrEmpty, column: $column, build: $build, postgres: ($postgres !== null && $postgres() === true));
+
+		return $conditions;
 	}//end conditionsFor()
+
+	/**
+	 * Take an `inOrEmpty` operator out of a criterion.
+	 *
+	 * @param mixed $criterion A filter value.
+	 *
+	 * @return array{0: mixed, 1: list<mixed>|null} The criterion without it, and its values (null when absent).
+	 *
+	 * @spec openspec/changes/search-value-or-empty-filter/specs/zoeken-filteren/spec.md#requirement-a-list-filter-can-match-a-value-or-no-value-in-one-query
+	 */
+	public static function splitInOrEmpty(mixed $criterion): array {
+		if (is_array($criterion) === false || array_key_exists(self::IN_OR_EMPTY, $criterion) === false) {
+			return [$criterion, null];
+		}
+
+		$values = $criterion[self::IN_OR_EMPTY];
+		unset($criterion[self::IN_OR_EMPTY]);
+		if (is_array($values) === false) {
+			$values = [$values];
+		}
+
+		return [$criterion, array_values(array_filter($values, static fn (mixed $v): bool => $v !== null && $v !== ''))];
+	}//end splitInOrEmpty()
+
+	/**
+	 * One parenthesised group: one of the values (through the path's own builder), or no value.
+	 *
+	 * The values go to the path's builder as a plain list, the form each path
+	 * reads as "one of these".
+	 *
+	 * "No value" is null (which a missing property is in a magic table), an
+	 * empty string, or an empty array. The empty test casts the column to text,
+	 * so it holds for a text and a JSON column alike on both platforms. An
+	 * empty value list leaves only the "no value" half: the literal meaning.
+	 *
+	 * @param list<mixed> $values   The listed values.
+	 * @param string      $column   The column reference.
+	 * @param callable    $build    The path's condition builder.
+	 * @param bool        $postgres Whether the column is on PostgreSQL.
+	 *
+	 * @return string The group.
+	 */
+	private static function valueOrEmpty(array $values, string $column, callable $build, bool $postgres): string {
+		$text = "CAST({$column} AS CHAR)";
+		if ($postgres === true) {
+			$text = "CAST({$column} AS TEXT)";
+		}
+
+		$empty = "{$column} IS NULL OR {$text} IN ('', '[]')";
+		if ($values === []) {
+			return '(' . $empty . ')';
+		}
+
+		// A plain list is the form every path reads as "one of these": IN on a
+		// scalar column, any-of containment on an array column.
+		$matches = $build($values);
+		if ($matches === []) {
+			return '(' . $empty . ')';
+		}
+
+		return '(' . self::andGroup(conditions: $matches) . ' OR ' . $empty . ')';
+	}//end valueOrEmpty()
 
 	/**
 	 * Join one field's conditions into `(a AND b) OR column IS NULL`.

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Pins which definitions create nothing, and the save, inverse link and tracking of a created object.
@@ -35,6 +36,10 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 
@@ -66,7 +71,7 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 			}
 		);
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, $uuid, $rbac, $multi): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, $uuid, $rbac, $multi): ObjectEntity {
 				$this->calls[] = ['save', $register, $schema->getSlug(), $data, $uuid, $rbac, $multi];
 				if (($data['fail'] ?? false) === true) {
 					throw new \RuntimeException('disk full');
@@ -76,7 +81,7 @@ class CascadingHandlerCreateRelatedGoldenTest extends TestCase {
 				$created->setUuid(($data['noUuid'] ?? false) === true ? null : 'new-uuid');
 				$created->setObject(['text' => 'stored']);
 				return $created;
-			}
+			})
 		);
 		$save->method('trackCreatedSubObject')->willReturnCallback(
 			function (string $uuid, array $objectData): void {

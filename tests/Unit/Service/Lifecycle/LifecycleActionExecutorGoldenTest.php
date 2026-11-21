@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Lifecycle\ContextLifecycleActionInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionRegistry;
@@ -40,6 +41,8 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
  * were recorded from the code as it stood before the refactor.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor
+ * @uses \OCA\OpenRegister\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionPayload
  */
 class LifecycleActionExecutorGoldenTest extends TestCase {
 
@@ -72,7 +75,7 @@ class LifecycleActionExecutorGoldenTest extends TestCase {
 	}//end executor()
 
 	private function handler(): LifecycleActionInterface {
-		$handler = $this->createMock(LifecycleActionInterface::class);
+		$handler = $this->createMock(ContextLifecycleActionInterface::class);
 		$handler->method('execute')->willReturnCallback(
 			function (LifecycleActionContext $context): array {
 				$this->trace[] = 'execute ' . $context->actionName . ' ' . json_encode([$context->objectData, $context->previousData, $context->parameters]);

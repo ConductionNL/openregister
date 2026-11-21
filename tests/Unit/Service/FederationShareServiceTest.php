@@ -101,7 +101,9 @@ class FederationShareServiceTest extends TestCase {
 			$this->shareMapper,
 			$this->grantor,
 			$this->secureRandom,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class),
+			(new \OCA\OpenRegister\Tests\Unit\Service\Federation\Support\FixedClock($this))->lifetime()
 		);
 	}//end setUp()
 
@@ -178,6 +180,20 @@ class FederationShareServiceTest extends TestCase {
 		$this->expectExceptionMessage('This share needs the right to manage its schema');
 		$this->service->createOutgoingShare(['scope' => 'schema', 'register' => 'zaken', 'schema' => 'zaak', 'permissions' => 'read-write']);
 	}//end testASharePastTheCallersRightsIsRefusedAndNotStored()
+
+	/**
+	 * A share of a schema that does not declare itself federatable is refused and not stored.
+	 *
+	 * @return void
+	 */
+	public function testAShareOfAnUndeclaredSchemaIsRefusedAndNotStored(): void {
+		$this->grantor->method('federationRefusal')->willReturn('This schema does not allow its objects to be shared with another instance');
+		$this->shareMapper->expects($this->never())->method('createFromArray');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->expectExceptionMessage('This schema does not allow its objects to be shared with another instance');
+		$this->service->createOutgoingShare(['scope' => 'object', 'register' => 'zaken', 'schema' => 'zaak', 'objectUri' => 'zaak-1', 'permissions' => 'read']);
+	}//end testAShareOfAnUndeclaredSchemaIsRefusedAndNotStored()
 
 	/**
 	 * The grantor judges exactly the share that would be stored.
@@ -334,7 +350,7 @@ class FederationShareServiceTest extends TestCase {
 				return new FederatedShare();
 			}
 		);
-		$service = new FederationShareService($this->shareMapper, $grantor, $this->secureRandom, $this->createMock(LoggerInterface::class));
+		$service = new FederationShareService($this->shareMapper, $grantor, $this->secureRandom, $this->createMock(LoggerInterface::class), $this->createMock(\OCA\OpenRegister\Service\Federation\ShareCreatorCheck::class), (new \OCA\OpenRegister\Tests\Unit\Service\Federation\Support\FixedClock($this))->lifetime());
 
 		$service->createOutgoingShare(['scope' => 'schema', 'schema' => 'zaak', 'permissions' => 'read']);
 

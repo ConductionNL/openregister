@@ -71,6 +71,9 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -92,7 +95,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
@@ -107,6 +110,30 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PresentationAnnotations
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
+ * @uses \OCA\OpenRegister\Service\Object\DraftCaller
+ * @uses \OCA\OpenRegister\Service\Object\DraftSubject
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\WriteConstraintCheck
  */
 class ObjectServiceHiddenRowWriteTest extends TestCase {
 
@@ -323,13 +350,13 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		);
 
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				$entity = new ObjectEntity();
 				$entity->setUuid('draft-1');
 
 				return $entity;
-			}
+			})
 		);
 	}//end hiddenFromTheCaller()
 
@@ -366,9 +393,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		[$register, $schema] = $this->scope();
 		$this->service->saveObject(
 			object: ['subject' => 'changed'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -417,10 +442,9 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			return $arguments[$name];
 		}
 
-		foreach ((new \ReflectionMethod(SaveObject::class, 'saveObject'))->getParameters() as $index => $parameter) {
-			if ($parameter->getName() === $name) {
-				return ($arguments[$index] ?? $parameter->getDefaultValue());
-			}
+		$index = array_search($name, SaveObjectArgs::NAMES, true);
+		if ($index !== false) {
+			return $arguments[$index];
 		}
 
 		$this->fail('SaveObject::saveObject() has no parameter ' . $name);
@@ -434,14 +458,17 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$visible->setOwner('mallory');
 		$this->objectMapper->method('find')->willReturn($visible);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments) use ($visible): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments) use ($visible): ObjectEntity {
 				$this->saves[] = $arguments;
 				return $visible;
-			}
+			})
 		);
 		[$register, $schema] = $this->scope();
 
-		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '1');
+		$this->service->saveObject(
+			object: ['subject' => 'x'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '1')
+		);
 
 		$this->assertSame('uuid-b', $this->savedArgument(name: 'uuid'));
 		$this->assertFalse($this->savedArgument(name: 'failIfExists'));
@@ -465,14 +492,17 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				return new ObjectEntity();
-			}
+			})
 		);
 		[$register, $schema] = $this->scope();
 
-		$this->service->saveObject(object: ['subject' => 'x'], register: $register, schema: $schema, uuid: '7');
+		$this->service->saveObject(
+			object: ['subject' => 'x'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '7')
+		);
 
 		$this->assertSame('hidden-7', $this->savedArgument(name: 'uuid'));
 	}//end testAHiddenRowsWriteContinuesWithItsUuid()
@@ -548,12 +578,12 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (mixed ...$arguments): ObjectEntity {
 				$this->saves[] = $arguments;
 				$entity = new ObjectEntity();
 				$entity->setUuid('draft-1');
 				return $entity;
-			}
+			})
 		);
 
 		$this->saveOver(rbac: true);

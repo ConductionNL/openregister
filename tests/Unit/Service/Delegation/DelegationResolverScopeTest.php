@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Delegation\DelegationResolver
  * @uses   \OCA\OpenRegister\Service\Delegation\DelegationVerdict
  * @uses   \OCA\OpenRegister\Db\DelegationGrant
+ * @uses \OCA\OpenRegister\Service\Delegation\DelegationRequest
  */
 class DelegationResolverScopeTest extends TestCase {
 

@@ -85,6 +85,11 @@ import {
 
 				<!-- Display Object -->
 				<div v-else>
+					<RecordTemplatePicker
+						v-if="isNewObject"
+						:register="currentRegister?.id || null"
+						:schema="currentSchema"
+						@apply="applyRecordTemplate" />
 					<div class="tabContainer">
 						<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 							<AppTab :title="t('openregister', 'Properties')" active>
@@ -942,12 +947,7 @@ import {
 			</div>
 
 			<template #actions>
-				<NcButton @click="closeModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Close
-				</NcButton>
+				<CloseCancelButton label="Close" @click="closeModal" />
 				<NcButton
 					v-if="!isNewObject"
 					@click="
@@ -1029,9 +1029,12 @@ import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
 import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
+import RecordTemplatePicker from '../../components/object/RecordTemplatePicker.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { uploadSizeLabel } from '../../services/byteSize.js'
 import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
@@ -1497,6 +1500,7 @@ function removeElement(element) {
 export default {
 	name: 'ViewObject',
 	components: {
+		RecordTemplatePicker,
 		NcDialog,
 		NcButton,
 		NcNoteCard,
@@ -1513,6 +1517,7 @@ export default {
 		CodeMirror,
 		AppTabs,
 		AppTab,
+		CloseCancelButton,
 		Cancel,
 		FileOutline,
 		OpenInNew,
@@ -2090,21 +2095,7 @@ export default {
 			window.open(filesAppUrl, '_blank')
 		},
 
-		/**
-		 * Format file size for display
-		 *
-		 * @param {number} bytes - The file size in bytes
-		 * @return {string} The formatted file size
-		 * @spec exclude display helper formatting file size
-		 */
-		formatFileSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		formatFileSize: uploadSizeLabel,
 
 		/**
 		 * Truncate file name to prevent dialog alignment issues
@@ -2164,6 +2155,20 @@ export default {
 			if (objectStore.objectItem) {
 				this.fetchObjectFiles(objectStore.objectItem)
 			}
+		},
+
+		/**
+		 * Start the new record from a template: a blank record with the
+		 * template's values that still fit the schema. The record is saved
+		 * through the normal save, so validation and RBAC apply as always.
+		 *
+		 * @param {object} applied The applied template.
+		 * @param {object} applied.values The values that still fit.
+		 * @return {void}
+		 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md
+		 */
+		applyRecordTemplate({ values }) {
+			this.formData = { ...this.blankObjectData(), ...(values || {}) }
 		},
 
 		/**

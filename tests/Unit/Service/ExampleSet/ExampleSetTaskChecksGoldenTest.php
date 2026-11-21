@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
  */
 class ExampleSetTaskChecksGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-task-checks-golden.json';

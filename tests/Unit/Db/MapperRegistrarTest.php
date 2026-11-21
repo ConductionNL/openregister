@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MapperRegistrar registers the hand-built mappers in a fixed order.
+ * MapperRegistrar registers the hand-built Core mappers in a fixed order (the entity relation mapper is built by FilesMapperRegistrar).
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,9 +31,7 @@ class MapperRegistrarTest extends TestCase {
 			expected: [
 				'OCA\OpenRegister\Db\SchemaMapper',
 				'OCA\OpenRegister\Db\RegisterMapper',
-				'OCA\OpenRegister\Db\WebhookMapper',
 				'OCA\OpenRegister\Db\MagicMapper',
-				'OCA\OpenRegister\Db\EntityRelationMapper',
 			],
 			actual: $context->services
 		);

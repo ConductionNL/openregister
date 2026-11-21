@@ -42,6 +42,10 @@ use InvalidArgumentException;
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleRelease
  * @uses   \OCA\OpenRegister\Db\Flow
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ScheduleFlowStoreTest extends TestCase {
 	private FlowMapper&MockObject $mapper;

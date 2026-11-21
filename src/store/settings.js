@@ -908,6 +908,46 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Read which groups see who read a record, with the groups to pick from.
+		 * Nothing is kept in the store: the section holds its own copy.
+		 *
+		 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+		 * @return {Promise<{readEventsVisibleTo: Array<string>, groups: Array<{id: string, label: string}>}|undefined>} The setting and the group options.
+		 */
+		async loadAuditSettings() {
+			return readSettings(this, {
+				send: () => axios.get(api('settings')),
+				apply: (data) => ({
+					readEventsVisibleTo: Array.isArray(data.audit?.readEventsVisibleTo)
+						? data.audit.readEventsVisibleTo
+						: [],
+					groups: idLabelOptions(data.availableGroups, []),
+				}),
+				log: 'Failed to load the read entry setting:',
+			})
+		},
+
+		/**
+		 * Store which groups see who read a record.
+		 *
+		 * @param {{readEventsVisibleTo: Array<string>}} auditData The group ids.
+		 * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
+		 * @return {Promise<object>} The stored settings.
+		 */
+		async updateAuditSettings(auditData) {
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings'), { audit: auditData }),
+				done: t('openregister', 'Read entry visibility updated'),
+				log: 'Failed to update the read entry setting:',
+				failed: (error) =>
+					t('openregister', 'Failed to update the read entry setting: {error}', {
+						error: error.message,
+					}),
+			})
+		},
+
+		/**
 		 * Update Retention settings
 		 *
 		 * @param {object} retentionData - The retention settings to save
