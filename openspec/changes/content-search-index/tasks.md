@@ -5,7 +5,7 @@
 - [ ] 1.1 Add the `kind` field and file hits to the provider's result shape.
 - [x] 1.2 Parse scopes from the query and narrow the schema list before the
       PR 3528 chunk loop.
-- [ ] 1.3 Advertise available scopes in the OCS capability.
+- [x] 1.3 Advertise available scopes in the OCS capability.
 
 ## 2. Storage paths
 
@@ -48,6 +48,36 @@ Mutation-checked: turning the OR into an AND reddened three assertions.
 a schema with the first register that happens to load makes `register:dossiq`
 answer somebody else's rows — true-looking, and about the wrong data.
 
+## What the second pass built: the capability (1.3) and `app:` scopes
+
+`lib/Capabilities/SearchScopesCapability.php` advertises, under
+`openregister.search`, the provider id, the filter the scopes travel in
+(`scopes`) and the `app:`, `register:` and `schema:` scopes of the searchable
+schemas THIS USER may read (`PermissionCheckInterface::hasPermission(read)`;
+a check that throws keeps the schema out). Nobody signed in is offered
+nothing. It is excluded from the initial state Nextcloud renders into every
+page, because it costs a read check per searchable schema.
+
+`lib/Search/SearchScopeCatalog.php` is the one description of the searchable
+schemas both readers use — the provider to narrow, the capability to
+advertise — so a chip offered is read the same way when it comes back.
+
+🔴 **`app:` NOW NARROWS.** The first pass parsed it and `narrowSchemas()`
+ignored it, so `app:dossiq` searched every schema. It keeps the schemas the
+app claims in the deep-link registry, keyed on the (register, schema) pair;
+an app that claims nothing keeps nothing.
+
+🔑 **SLUGS ARE COMPARED IN LOWER CASE.** The tokens always were, so a schema
+stored as `Case` could never be named. Five rows of `SearchScopesGoldenTest`
+were re-recorded for these two changes, and say so.
+
+🔑 **`files` IS NOT ADVERTISED YET.** It narrows nothing until hits carry a
+`kind` (1.1), so a chip for it would look like a broken filter.
+
+Tests: `SearchScopesCapabilityTest` (5), `SearchScopeCatalogTest` (4), three
+more in `SearchScopesTest`, one provider-level `app:` test in
+`ObjectsProviderTest`. Each new file mutation-checked.
+
 ## Not built here, and named rather than claimed
 
 - **1.1, the `kind` field and file hits.** `_content_search` already widens the
@@ -56,9 +86,8 @@ answer somebody else's rows — true-looking, and about the wrong data.
   as `kind: file` with its file name and excerpt means carrying the chunk (and
   resolving its source file) through `QueryHandler` to the provider, which is a
   change to the pipeline's return shape and deserves its own PR.
-- **1.3, the OCS capability.** It advertises the scopes available TO THIS USER,
-  so it needs the per-user searchable set, not the instance's. Small, but it
-  belongs with 1.1's shape rather than ahead of it.
+- **`files` in the capability.** Added with 1.1, when a `files` scope keeps
+  only file hits.
 - **2.1 and 2.2, the two storage paths.** The database path exists
   (`ContentSearchHandler`); the backend path and naming the backend in the
   response are part of the same response-shape change as 1.1.

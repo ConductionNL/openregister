@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use DOMXPath;
  * verdict attached, and none of it changes if the file carries no
  * coordinates at all.
  *
- * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+ * @spec openspec/specs/flow-bpmn-interchange/spec.md
  */
 class BpmnDiagramLayout {
 
@@ -44,7 +44,7 @@ class BpmnDiagramLayout {
 	 *
 	 * @return array<string, array{x: int, y: int}> The positions.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function positions(DOMXPath $xpath): array {
 		$positions = [];
@@ -102,7 +102,7 @@ class BpmnDiagramLayout {
 	 *
 	 * @return DOMElement|null The bounds.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function boundsOf(DOMXPath $xpath, DOMElement $shape): ?DOMElement {
 		$bounds = $xpath->query('./dc:Bounds', $shape);
@@ -131,7 +131,7 @@ class BpmnDiagramLayout {
 	 *
 	 * @return array<int, array<string, mixed>> The nodes.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function laidOut(array $nodes, array $positions): array {
 		foreach ($nodes as $index => $node) {

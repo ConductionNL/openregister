@@ -2,8 +2,8 @@
 
 - [x] 1.1 Add `DbalConnectionFactory` (`lib/Service/Dbal/DbalConnectionFactory.php`): resolve a `type: database` Source → password via `CredentialStoreResolver::resolve()->get(uuid, scope)` (Doriath custody leaf when eligible, NC vault fallback — ADR-004) → `DriverManager::getConnection([...])`; per-request connection cache keyed by sourceId; fail closed (typed `DbalConnectionException`) on decrypt/secret-missing; drivers restricted to `pdo_mysql`/`pdo_pgsql`/`pdo_sqlite`.
   - Acceptance: connecting to the SQLite fixture succeeds; a source with an unresolvable credential throws, never opens an unauthenticated connection; password never appears in logs; factory depends only on the `CredentialStore` interface. (verified: lib/Service/Dbal/DbalConnectionFactory.php, tests/Unit/Service/Dbal/DbalConnectionFactoryTest.php)
-- [ ] 1.2 Wire `Source` type `database` to store non-secret metadata (driver/host/port/dbname/user) + credential UUID in `authConfig`; keep the password in the credential custody seam, not in `databaseUrl`/`ICrypto`. Document the two-path split (legacy harvest vs. virtual DB) in code.
-  - Acceptance: a database Source round-trips with no plaintext password persisted in the row or any OR object.
+- [x] 1.2 Wire `Source` type `database` to store non-secret metadata (driver/host/port/dbname/user) + credential UUID in `authConfig`; keep the password in the credential custody seam, not in `databaseUrl`/`ICrypto`. Document the two-path split (legacy harvest vs. virtual DB) in code.
+  - Acceptance: a database Source round-trips with no plaintext password persisted in the row or any OR object. (verified: lib/Controller/Support/SourcePayload.php documents the two-path split and strips the password; tests/Unit/Controller/SourcesControllerTest.php::testCreateStripsSubmittedDatabasePassword, ::testUpdateStripsSubmittedDatabasePassword)
 
 ## 2. Seed data (demo fixture)
 
@@ -38,10 +38,10 @@
 
 ## 5. Registration & routes
 
-- [ ] 5.1 Register `DbalObjectSourceProvider` DI in `Application::register()` and add it to the `$providerClasses` list in `Application::bootObjectSourceProviders()`; register the new `lib/Service/Dbal/*` services.
-  - Acceptance: the provider is resolvable by `ObjectSourceRegistry::get('dbal-source')` at runtime.
-- [ ] 5.2 Add `test-connection` and `introspect` actions to `SourcesController` + `appinfo/routes.php` (admin-only, correct NC auth attributes); responses never expose the password.
-  - Acceptance: routes are reachable, admin-guarded, and covered by route-auth/route-reachability gates. (code exists, test missing: lib/Controller/SourcesController.php, appinfo/routes.php (no testConnection/introspect test in tests/Unit/Controller/SourcesControllerTest.php))
+- [x] 5.1 Register `DbalObjectSourceProvider` DI in `Application::register()` and add it to the `$providerClasses` list in `Application::bootObjectSourceProviders()`; register the new `lib/Service/Dbal/*` services.
+  - Acceptance: the provider is resolvable by `ObjectSourceRegistry::get('dbal-source')` at runtime. (verified: lib/Service/ObjectSource/ObjectSourceWiring.php lists DbalObjectSourceProvider and wires the lib/Service/Dbal services; the runtime lookup itself is a live check)
+- [x] 5.2 Add `test-connection` and `introspect` actions to `SourcesController` + `appinfo/routes.php` (admin-only, correct NC auth attributes); responses never expose the password.
+  - Acceptance: routes are reachable, admin-guarded, and covered by route-auth/route-reachability gates. (verified: lib/Controller/SourcesController.php, appinfo/routes.php; tests/Unit/Controller/SourcesControllerTest.php covers admin refusal, 404, non-database 422, success without secrets and 503 for both actions)
 
 ## 6. UI (minimal)
 
@@ -54,5 +54,6 @@
   - Acceptance: tests pass; each ADDED spec scenario is traceable to a test or carries an `@e2e exclude`. (verified: tests/Unit/Service/Dbal/SqlTypeMapperTest.php, tests/Unit/Service/Dbal/DbalConnectionFactoryTest.php, tests/Unit/Service/ObjectSource/DbalObjectSourceProviderTest.php)
 - [ ] 7.2 Integration test: introspect the SQLite fixture and assert against `expected-introspection.json`; read objects and resolve a relation via `_extend`.
   - Acceptance: golden-file assertion passes.
+  - Progress: the golden assertion is `DatabaseIntrospectionServiceTest::testBlueprintMatchesGoldenIntrospection`; `tests/Unit/Service/Dbal/VirtualRegisterReadThroughTest.php` introspects the fixture, reads the permits through the provider and follows `applicant_id` to its applicant. Left: the same through `_extend` and `RelationHandler` on an instance.
 - [ ] 7.3 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates; fix all findings including any pre-existing issues touched.
   - Acceptance: `composer check:strict` and the gates pass green.

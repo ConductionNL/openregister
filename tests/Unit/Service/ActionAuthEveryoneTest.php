@@ -182,4 +182,25 @@ class ActionAuthEveryoneTest extends TestCase {
 
 	}//end testTheShippedSeedDoesNotLockOutExistingAuthors()
 
+	/**
+	 * Owning a webhook is seeded to administrators, never to everyone: until
+	 * this right existed only an administrator could create a webhook, so a
+	 * broader seed would hand every user an outbound channel on upgrade.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function testTheShippedSeedGrantsWebhookOwnToAdministratorsOnly(): void {
+		$seed = json_decode(file_get_contents(__DIR__ . '/../../../lib/actions.seed.json'), true);
+
+		$this->assertSame(['admin'], $seed['actions']['webhook.own'] ?? null);
+		$this->assertNotContains('@authenticated', $seed['actions']['webhook.own']);
+		$this->assertIsString($seed['$why-owning-a-webhook-is-admin-only'] ?? null, 'a narrow seed says why it is narrow');
+
+		[$service, $user] = $this->serviceWith($seed['actions']);
+		$this->assertFalse($service->can(user: $user, action: 'webhook.own'));
+
+	}//end testTheShippedSeedGrantsWebhookOwnToAdministratorsOnly()
+
 }//end class

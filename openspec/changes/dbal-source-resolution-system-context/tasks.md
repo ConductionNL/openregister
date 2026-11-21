@@ -2,7 +2,7 @@
 
 ## 1. System lookup seam
 
-- [ ] 1.1 Add `SourceMapper::findForSystem(string $sourceId): ?Source` — id-or-uuid lookup with NO RBAC verify and NO organisation filter, docblock stating the security rationale (REQ-DSRSC-001) (code exists, test missing: lib/Db/SourceMapper.php::findForSystem (exercised only through a mock))
+- [x] 1.1 Add `SourceMapper::findForSystem(string $sourceId): ?Source` — id-or-uuid lookup with NO RBAC verify and NO organisation filter, docblock stating the security rationale (REQ-DSRSC-001) (verified: lib/Db/SourceMapper.php::findForSystem, tests/Unit/Db/SourceMapperFindForSystemTest.php)
 
 ## 2. Provider wiring
 
@@ -15,4 +15,4 @@
 
 ## 4. Quality
 
-- [ ] 4.1 `php -l` + `composer phpcs` on changed files; run the relevant `DbalObjectSourceProviderTest` subset in the `nextcloud:34` container recipe (host PHP too old)
+- [x] 4.1 `php -l` + `composer phpcs` on changed files; run the relevant `DbalObjectSourceProviderTest` subset in the `nextcloud:34` container recipe (host PHP too old)

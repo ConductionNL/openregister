@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Psr\Container\ContainerInterface;
 /**
  * Checks and writes the claim of a set's task.
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+ * @spec openspec/specs/example-sets/spec.md
  */
 class ExampleSetTaskClaim {
 	/**
@@ -64,7 +64,7 @@ class ExampleSetTaskClaim {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function refusal(array $data, ?DateTime $moment): string {
 		$claimedBy = (string) ($data['claimedBy'] ?? '');
@@ -117,7 +117,7 @@ class ExampleSetTaskClaim {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
+	 * @spec openspec/specs/example-sets/spec.md
 	 */
 	public function write(Task $task, array $data): void {
 		if ((string) ($data['claimedBy'] ?? '') === '') {
