@@ -417,12 +417,12 @@ class SharesProvider extends CoreIntegrationProvider {
 		if ($type !== 'public-token') {
 			// Only the public-token surface is supported by this provider;
 			// anything else defers to the abstract 501 contract.
-			return parent::create(ref: $ref, payload: $payload);
+			throw $this->unsupported(operation: 'create');
 		}
 
 		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 		if ($service === null || method_exists($service, 'mintFor') === false) {
-			return parent::create(ref: $ref, payload: $payload);
+			throw $this->unsupported(operation: 'create');
 		}
 
 		return $service->mintFor(
@@ -503,8 +503,7 @@ class SharesProvider extends CoreIntegrationProvider {
 
 		$service = $this->shares->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
 		if ($service === null || method_exists($service, 'revokeShare') === false) {
-			parent::delete(ref: $ref, entityId: $entityId);
-			return;
+			throw $this->unsupported(operation: 'delete');
 		}
 
 		$service->revokeShare($ref->id, $entityId);
@@ -525,7 +524,7 @@ class SharesProvider extends CoreIntegrationProvider {
 			return;
 		}
 
-		parent::delete(ref: $ref, entityId: $entityId);
+		throw $this->unsupported(operation: 'delete');
 	}//end deleteCaseToken()
 
 	/**

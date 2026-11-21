@@ -20,7 +20,7 @@ use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -36,6 +36,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Golden test for DestructionExecutionJob::run().
@@ -52,6 +53,17 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\BackgroundJob\DestructionListRun
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\ExecutedDestruction
+ * @uses \OCA\OpenRegister\Service\Object\DeletionOptions
+ * @uses \OCA\OpenRegister\Service\Object\DeletionRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateOptions
  */
 class DestructionExecutionJobGoldenTest extends TestCase
 {
@@ -137,7 +149,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $services = [
             LoggerInterface::class           => $this->logger(),
             RetentionServiceInterface::class => $this->retention(),
-            ArchivalSettingsReaderInterface::class => $this->settings($case),
+            ArchivalSettingsInterface::class => $this->settings($case),
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),
@@ -298,7 +310,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
     {
         $saver = $this->createMock(SaveObject::class);
         $saver->method('saveObject')->willReturnCallback(
-            function (...$args) use ($case): ObjectEntity {
+            SaveObjectArgs::callback(callback: function (...$args) use ($case): ObjectEntity {
                 $this->record('saveObject', array_slice($args, 0, 8));
                 if (($case['cert'] ?? null) === 'throw') {
                     throw new RuntimeException('cert refused');
@@ -307,7 +319,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
                 $cert = new ObjectEntity();
                 $cert->setUuid('cert-1');
                 return $cert;
-            }
+            })
         );
         return $saver;
     }//end saver()

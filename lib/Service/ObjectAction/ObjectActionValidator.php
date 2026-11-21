@@ -162,7 +162,7 @@ class ObjectActionValidator implements ObjectActionValidatorInterface {
 	 *
 	 * @return list<string> The refusals.
 	 *
-	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private function selfAssignFieldRefusals(Schema $schema): array {
 		$properties = ($schema->getProperties() ?? []);

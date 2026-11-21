@@ -95,6 +95,7 @@ class RosterResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\RunSignal
  */
 final class FlowRunAssigneeTypedTest extends TestCase {
 

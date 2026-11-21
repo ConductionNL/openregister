@@ -48,6 +48,19 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\XwikiLinkService
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TaskSequence
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Db\XwikiLink
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\XwikiPageDraft
+ * @uses \OCA\OpenRegister\Service\XwikiPendingLink
+ * @uses \OCA\OpenRegister\Support\FleetAppId
+ * @uses \OCA\OpenRegister\Support\FleetApp\FleetAppCatalogue
+ * @uses \OCA\OpenRegister\Support\FleetApp\FleetAppProbe
+ * @uses \OCA\OpenRegister\Exception\ProviderUnavailableException
  */
 class XwikiLinkServiceGoldenTest extends TestCase {
 

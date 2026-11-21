@@ -242,4 +242,22 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->router->expects($this->once())->method('probe')->with($this->provider)->willReturn($probe);
 		$this->assertSame($probe, $this->provider->health());
 	}//end testHealthDefersToRouterProbe()
+
+	public function testTheReleaseFormOfDispatchSendsTheSameRequest(): void {
+		$requests = [];
+		$this->router->method('call')->willReturnCallback(
+			static function (...$args) use (&$requests): array {
+				$requests[] = $args;
+				return ['ok' => true];
+			}
+		);
+
+		$this->provider->dispatch(source: 'cmcom-sms', message: new OutboundMessage(path: 'message', body: ['x' => 1], headers: ['X' => 'y']));
+		$this->provider->dispatch(source: 'cmcom-sms', body: ['x' => 1], path: 'message', headers: ['X' => 'y']);
+		$this->provider->dispatch('cmcom-sms', ['x' => 1], 'message', ['X' => 'y']);
+
+		$this->assertCount(3, $requests);
+		$this->assertEquals($requests[0], $requests[1]);
+		$this->assertEquals($requests[0], $requests[2]);
+	}//end testTheReleaseFormOfDispatchSendsTheSameRequest()
 }//end class

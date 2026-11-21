@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
+use OCA\OpenRegister\BulkAction\BulkActionInvoker;
 use OCA\OpenRegister\BulkAction\BulkActionOutcomeInterface;
 use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
@@ -290,7 +291,8 @@ class BulkJobExecutor {
 			return $refusal;
 		}
 
-		return $pass->action->apply(
+		return (new BulkActionInvoker())->apply(
+			action: $pass->action,
 			step: new BulkStep(
 				object: $object,
 				parameters: ($pass->job->getParameters() ?? []),
@@ -331,7 +333,8 @@ class BulkJobExecutor {
 		// left before this job ever wrote (D-2).
 		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
 
-		$result = $pass->action->apply(
+		$result = (new BulkActionInvoker())->apply(
+			action: $pass->action,
 			step: new BulkStep(
 				object: $object,
 				parameters: ($job->getParameters() ?? []),

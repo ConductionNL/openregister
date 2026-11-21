@@ -59,6 +59,13 @@ class NoteVersionService {
 	public const AUDIT_ACTION = 'note.edited';
 
 	/**
+	 * The audit action a note lock is recorded under.
+	 *
+	 * @var string
+	 */
+	public const LOCK_AUDIT_ACTION = 'note.locked';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param NoteVersionMapper $mapper      Reads and writes the version rows.
@@ -237,32 +244,57 @@ class NoteVersionService {
 	 * trail stays small and the text stays in the versions, which is what
 	 * ADR-003 asks of an immutable trail.
 	 *
-	 * @param ObjectEntity $object   The object the note hangs on.
-	 * @param integer      $noteId   The note that was rewritten.
-	 * @param integer      $versions The number of versions the note now has.
+	 * @param ObjectEntity         $object The object the note hangs on.
+	 * @param array<string, mixed> $note   The rewritten note, carrying its id and versionCount.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
-		return $this->writeEditEntry(object: $object, context: ['noteId' => $noteId, 'versionCount' => $versions]);
+	public function auditEdit(ObjectEntity $object, array $note): bool {
+		return $this->writeEditEntry(
+			object: $object,
+			context: ['noteId' => (int)($note['id'] ?? 0), 'versionCount' => (int)($note['versionCount'] ?? 0)]
+		);
 	}//end auditEdit()
+
+	/**
+	 * Record on the object that one of its notes was locked, by whom and when.
+	 *
+	 * @param ObjectEntity         $object The object the note hangs on.
+	 * @param array<string, mixed> $note   The locked note.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function auditLock(ObjectEntity $object, array $note): bool {
+		return $this->writeEditEntry(
+			object: $object,
+			context: [
+				'noteId' => (int)($note['id'] ?? 0),
+				'lockedBy' => (string)($note['lockedBy'] ?? ''),
+				'lockedAt' => (string)($note['lockedAt'] ?? ''),
+			],
+			action: self::LOCK_AUDIT_ACTION
+		);
+	}//end auditLock()
 
 	/**
 	 * Write the note-edited entry on the object; a failure is logged, never thrown.
 	 *
 	 * @param ObjectEntity                             $object  The object the note hangs on.
-	 * @param array{noteId: int, versionCount: int} $context The note and its version count.
+	 * @param array<string, int|string>              $context The note and what the entry says about it.
+	 * @param string                                 $action  The audit action.
 	 *
 	 * @return boolean True when an audit entry was written.
 	 */
-	private function writeEditEntry(ObjectEntity $object, array $context): bool {
+	private function writeEditEntry(ObjectEntity $object, array $context, string $action = self::AUDIT_ACTION): bool {
 		try {
 			$this->auditTrail->recordObjectEvent(
 				event: new ObjectAuditEvent(
 					object: $object,
-					action: self::AUDIT_ACTION,
+					action: $action,
 					context: $context
 				)
 			);
@@ -270,7 +302,7 @@ class NoteVersionService {
 			// The text has already been replaced and the version already
 			// written; losing the trail entry must not lose the edit.
 			$this->logger->error(
-				'[NoteVersionService] Note ' . $context['noteId'] . ' was edited but the audit entry could not be written',
+				'[NoteVersionService] Note ' . $context['noteId'] . ' was ' . $this->pastTense(action: $action) . ' but the audit entry could not be written',
 				['exception' => $e]
 			);
 
@@ -279,6 +311,21 @@ class NoteVersionService {
 
 		return true;
 	}//end writeEditEntry()
+
+	/**
+	 * What happened to the note, in the words of the log line.
+	 *
+	 * @param string $action The audit action.
+	 *
+	 * @return string `locked` for a lock, `edited` for anything else.
+	 */
+	private function pastTense(string $action): string {
+		if ($action === self::LOCK_AUDIT_ACTION) {
+			return 'locked';
+		}
+
+		return 'edited';
+	}//end pastTense()
 
 	/**
 	 * Resolve a user id to a display name, falling back to the id.

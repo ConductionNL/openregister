@@ -120,22 +120,6 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * "the child carries the parent's confidentiality" and "the child has no
 	 * confidentiality" never look the same afterwards.
 	 *
-	 * @param ObjectEntity $parent The parent object.
-	 * @param array<string, mixed> $childData The child's data as written so far.
-	 * @param array<string, string> $inherits Role to property name.
-	 *
-	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}
-	 *         The child's data with the inherited values applied, and the record.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	public function applyInheritance(ObjectEntity $parent, array $childData, array $inherits): array {
-		return $this->inherit(inheritance: new ParentInheritance(parent: $parent, childData: $childData, inherits: $inherits));
-	}//end applyInheritance()
-
-	/**
-	 * What a child takes from its parent at creation, as {@see applyInheritance()} describes.
-	 *
 	 * @param ParentInheritance $inheritance The parent, the child's data so far and the roles inherited.
 	 *
 	 * @return array{data: array<string, mixed>, inherited: array<string, mixed>}

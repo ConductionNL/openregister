@@ -27,6 +27,14 @@ use Psr\Log\LoggerInterface;
  * the failure is logged with the object, property and target language.
  *
  * @covers \OCA\OpenRegister\Service\BulkTranslationService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\TranslationEdit
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Service\ObjectTranslationRequest
+ * @uses \OCA\OpenRegister\Service\PropertyTranslation
+ * @uses \OCA\OpenRegister\Service\TranslationStores
+ * @uses \OCA\OpenRegister\Service\Translation\LanguagePair
  */
 class BulkTranslationServiceSidecarFailureTest extends TestCase {
 
