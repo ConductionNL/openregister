@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
 use OCA\OpenRegister\Service\View\ViewObjectQuery;
@@ -51,7 +52,7 @@ final class F11FlowAccessInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		FlowAccess::class => [FlowAccessInterface::class, ContractBindings::class],
-		ViewObjectQuery::class => [ViewObjectQueryInterface::class, ContractBindings::class],
+		ViewObjectQuery::class => [ViewObjectQueryInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
