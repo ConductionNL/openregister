@@ -30,7 +30,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Mcp\Db\Agent
- * @uses \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest
  * @uses \OCA\OpenRegister\Mcp\Service\Chat\ChatReply
  * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
