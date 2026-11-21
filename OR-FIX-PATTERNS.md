@@ -263,3 +263,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError 'Argument #14 ($eventDispatcher) must be of type ?IEventDispatcher, MockObject_WebhookService given' from ObjectsControllerFactory, or ArgumentCountError on FacetHandler::__construct (searchProfile).
 - Cause: main 08711497dff replaced ObjectsController's WebhookService with IEventDispatcher (webhooks answer a request event); FacetHandler gained a required PropertySearchProfileInterface.
 - Fix: in the PR's new tests pass createMock(IEventDispatcher::class) in that slot, and searchProfile: new PropertySearchProfile(); see #10538 and, for AggregationQuery::create(groupBy:) -> layout: new AggregationLayout(...), #9818.
+
+## Schema save checks moved out of SchemaMapper::checkDataDeclarations (or-fix-12)
+- Symptom: conflict in lib/Db/SchemaMapper.php (checkDataDeclarations is now runSlots/dataSteps) and in lib/Db/SchemaMapper/RecordAnnotationRefusals.php, for a PR that added a $records->checkX() call.
+- Cause: main runs save checks in numbered slots (SchemaDeclarationOrder); area checks come from listeners on SchemaDeclarationChecksEvent (archival/retention: ArchivalDeclarationRefusals + ArchivalDeclarationChecksListener).
+- Fix: take main's SchemaMapper and RecordAnnotationRefusals; move the PR's method into the owning area's refusals class and call it from that listener, inside the neighbouring slot's closure (keeps SchemaDeclarationOrderTest's slot list) or as a new slot (then update that test and the listener test); rename the test's subject class; add a listener test that the slot runs it. See #10132, #10232.
