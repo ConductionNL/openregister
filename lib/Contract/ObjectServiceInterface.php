@@ -115,6 +115,10 @@ use OCP\IUser;
  * which is both. An implementation or test double must type these
  * parameters with the names here (or wider); one still typed with the old
  * Kernel names is narrower than this interface and fatals at class load.
+ * The two defaults (`saveObject()`, `saveObjects()`) still build the
+ * deprecated names, so a call that omits them, and a generated mock of this
+ * interface, passes exactly the value it passed before; they move to the
+ * published names with the consuming apps (task 7.3).
  *
  * `saveObject()` takes `array`, not `array|ObjectEntityInterface`. The
  * implementation accepts `array|ObjectEntity`, and `array|ObjectEntity` is
@@ -168,7 +172,7 @@ interface ObjectServiceInterface {
 	 */
 	public function saveObject(
 		array $object,
-		ObjectSaveOptions $options=new ObjectSaveOptions(),
+		ObjectSaveOptions $options=new \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions(),
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): ObjectEntityInterface;
@@ -348,7 +352,7 @@ interface ObjectServiceInterface {
 	 */
 	public function saveObjects(
 		array $objects,
-		BulkSaveOptions $options=new BulkSaveOptions(),
+		BulkSaveOptions $options=new \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions(),
 		bool $_rbac=true,
 		bool $_multitenancy=true
 	): array;

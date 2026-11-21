@@ -165,6 +165,37 @@ class PublishedSignaturesTest extends TestCase {
 	}//end testTheOldNamesStillFitThePublishedParameters()
 
 	/**
+	 * The contract's defaults still build the deprecated names.
+	 *
+	 * A consumer that omits the options, and every generated mock of the
+	 * interface, receives exactly the value it received before the values were
+	 * published; a test callback typed with the old name keeps working.
+	 *
+	 * @return void
+	 */
+	public function testTheDefaultsStillBuildTheDeprecatedNames(): void {
+		$defaults = [
+			'saveObject'  => Value\ObjectSaveOptions::class,
+			'saveObjects' => Value\BulkSaveOptions::class,
+		];
+		foreach ($defaults as $methodName => $old) {
+			$this->assertInstanceOf($old, $this->parameter(ObjectServiceInterface::class, $methodName, 'options')->getDefaultValue(), $methodName . '()');
+		}
+
+		$received = null;
+		$service  = $this->createMock(ObjectServiceInterface::class);
+		$service->method('saveObject')->willReturnCallback(
+			function (array $object, Value\ObjectSaveOptions $options) use (&$received): Contract\ObjectEntityInterface {
+				$received = $options;
+				return $this->createMock(Contract\ObjectEntityInterface::class);
+			}
+		);
+		$service->saveObject(['title' => 'x']);
+
+		$this->assertInstanceOf(Value\ObjectSaveOptions::class, $received);
+	}//end testTheDefaultsStillBuildTheDeprecatedNames()
+
+	/**
 	 * The lock handler's receiving chain takes the published lock values.
 	 *
 	 * @return void
