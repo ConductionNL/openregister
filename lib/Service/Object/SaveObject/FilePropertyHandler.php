@@ -25,7 +25,6 @@ use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
 use OCA\OpenRegister\Service\File\UrlFileFetcher;
-use OCA\OpenRegister\Service\File\UrlFileSource;
 use OCA\OpenRegister\Service\File\UrlStreamOpener;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
@@ -705,10 +704,12 @@ class FilePropertyHandler {
 
 	/**
 	 * Fetches file content from a URL through the shared fetch: the SEC-SVC-2 anti-SSRF
-	 * guard first, no redirects, 30 seconds, and the instance's upload ceiling while reading.
+	 * guard first, no redirects, 30 seconds.
 	 *
-	 * A refused address keeps its guard message; any other failed fetch is reported as
-	 * before, naming the URL.
+	 * The fetch is not strict and has no size ceiling, so this path behaves as it did
+	 * before the fetch was shared: any size is read, an answer of 400 or more fails,
+	 * and an empty body is stored. A refused address keeps its guard message; any other
+	 * failed fetch is reported as before, naming the URL.
 	 *
 	 * @param string $url The URL to fetch from.
 	 *
@@ -722,7 +723,7 @@ class FilePropertyHandler {
 	 */
 	private function fetchFileFromUrl(string $url): string {
 		try {
-			return $this->urlFetcher->fetch(url: $url, maxBytes: UrlFileSource::ceilingBytes());
+			return $this->urlFetcher->fetch(url: $url, maxBytes: PHP_INT_MAX, strict: false);
 		} catch (UrlFetchRefused $refused) {
 			if ($refused->reason === UrlFetchRefused::REFUSED_ADDRESS) {
 				throw new InvalidArgumentException($refused->getMessage());

@@ -2623,8 +2623,9 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	/**
-	 * The property path fetches through the shared fetcher, with the instance's upload ceiling,
-	 * and reports any refusal other than the address guard as before (files-create-from-url 1.1).
+	 * The property path fetches through the shared fetcher, not strict and without a size
+	 * ceiling, and reports any refusal other than the address guard as before
+	 * (files-create-from-url 1.1: no behaviour change on that path).
 	 *
 	 * @return void
 	 *
@@ -2634,10 +2635,10 @@ class FilePropertyHandlerTest extends TestCase {
 		$fetcher = $this->createMock(UrlFileFetcher::class);
 		$fetcher->expects($this->exactly(2))
 			->method('fetch')
-			->with('http://93.184.216.34/a.pdf', \OCA\OpenRegister\Service\File\UrlFileSource::ceilingBytes())
+			->with('http://93.184.216.34/a.pdf', PHP_INT_MAX, false)
 			->willReturnOnConsecutiveCalls(
 				'%PDF-1.4 bytes',
-				$this->throwException(new \OCA\OpenRegister\Service\File\UrlFetchRefused(reason: 'too-large', message: 'The file is larger than 1 bytes.'))
+				$this->throwException(new \OCA\OpenRegister\Service\File\UrlFetchRefused(reason: 'status', message: 'The URL answered with status 404.'))
 			);
 		$handler = new FilePropertyHandler($this->logger, $this->fileService, $fetcher);
 		$method = new ReflectionMethod($handler, 'fetchFileFromUrl');
