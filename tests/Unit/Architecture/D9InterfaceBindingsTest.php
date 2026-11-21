@@ -110,10 +110,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 			SearchRegistrar::class,
 			[],
 		],
+		// Counts to Core by its csv row, so Core's own map binds it.
 		PlaceholderResolver::class => [
 			PlaceholderResolverInterface::class,
 			CoreServiceBindings::class,
-			[],
+			['lib/Service/CoreServiceBindings.php'],
 		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
