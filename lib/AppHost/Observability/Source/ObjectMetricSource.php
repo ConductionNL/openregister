@@ -34,6 +34,7 @@ use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use Throwable;
 
 /**
@@ -173,12 +174,31 @@ class ObjectMetricSource implements MetricSourceInterface {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema slug is unknown.
 	 */
 	private function buildBaseQuery(array $source): array {
-		$schemaId = $this->lookups->schemaMapper->find($source['schema'], _rbac: false, _multitenancy: false)->getId();
+		// The register is read once, before the schema, so the schema slug is
+		// looked up inside it: two apps may carry a schema with the same slug.
+		// A missing register still fails after the schema, as it always did.
+		$named = (isset($source['register']) === true && $source['register'] !== '');
+		$register = null;
+		$registerError = null;
+		if ($named === true) {
+			try {
+				$register = $this->lookups->registerMapper->find($source['register'], _rbac: false, _multitenancy: false);
+			} catch (Throwable $e) {
+				$registerError = $e;
+			}
+		}
+
+		$schemaId = (new SchemaRefInRegister(schemas: $this->lookups->schemaMapper))
+			->find(schemaRef: $source['schema'], register: $register, _rbac: false, _multitenancy: false)
+			->getId();
 
 		$self = ['schema' => $schemaId];
-		if (isset($source['register']) === true && $source['register'] !== '') {
-			$registerId = $this->lookups->registerMapper->find($source['register'], _rbac: false, _multitenancy: false)->getId();
-			$self['register'] = $registerId;
+		if ($named === true) {
+			if ($registerError !== null) {
+				throw $registerError;
+			}
+
+			$self['register'] = $register->getId();
 		}
 
 		$query = ['@self' => $self];

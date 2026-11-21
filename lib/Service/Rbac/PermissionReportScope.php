@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 
 /**
  * Resolves the entities a permission report runs over.
@@ -77,17 +78,20 @@ class PermissionReportScope implements PermissionReportScopeInterface {
 	/**
 	 * The schemas the report covers.
 	 *
-	 * @param string|null $filter Optional schema filter (id|uuid|slug).
+	 * @param string|null   $filter Optional schema filter (id|uuid|slug).
+	 * @param Register|null $within The register the report is narrowed to; a slug filter is looked up inside it
+	 *                              first, so a slug two apps share reports on this register's schema.
 	 *
 	 * @return Schema[] The schemas, empty when the filter matches nothing.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	public function schemas(?string $filter): array {
+	public function schemas(?string $filter, ?Register $within = null): array {
 		try {
 			if ($filter !== null && $filter !== '') {
 				// See registers(): the mapper throws rather than answering null.
-				return [$this->schemaMapper->find($filter)];
+				return [(new SchemaRefInRegister(schemas: $this->schemaMapper))->find(schemaRef: $filter, register: $within)];
 			}
 
 			return $this->schemaMapper->findAll();

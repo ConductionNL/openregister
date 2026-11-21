@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -105,7 +106,10 @@ class RematerialiseCalculationsCommand extends Command {
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		try {
 			$register = $this->storage->registerMapper->find((string)$input->getArgument('register'), _multitenancy: false);
-			$schema = $this->storage->schemaMapper->find((string)$input->getArgument('schema'), _multitenancy: false);
+			// The slug is read inside the register just named: two apps may
+			// both carry a schema with this slug.
+			$schema = (new SchemaRefInRegister(schemas: $this->storage->schemaMapper))
+				->find(schemaRef: (string)$input->getArgument('schema'), register: $register, _multitenancy: false);
 		} catch (\Throwable $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
 			return Command::FAILURE;

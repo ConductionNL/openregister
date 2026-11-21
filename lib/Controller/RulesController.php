@@ -551,6 +551,7 @@ class RulesController extends Controller {
 	 */
 	private function resolveSchema(string $reference): ?Schema {
 		try {
+			// Stays global: the rules routes name only the schema and the rule, no register.
 			return $this->schemaMapper->find($reference);
 		} catch (Throwable $e) {
 			return null;

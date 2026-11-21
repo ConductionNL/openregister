@@ -225,6 +225,8 @@ final class RegisterSerializer implements RegisterSerializerInterface {
 		$key = (string)$schemaId;
 
 		if (isset($this->schemaCache[$key]) === false) {
+			// Stays global: the id IS the register's own entry for the schema, so there is no id set to narrow a
+			// legacy slug entry against.
 			$this->schemaCache[$key] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
 		}
 

@@ -336,7 +336,11 @@ class SchemaScopedProvidersGoldenTest extends TestCase {
 	 */
 	public function testAnUnresolvableSchemaIsTriedOnce(): void {
 		$this->schemaMapper->expects($this->once())->method('find')->willThrowException(new RuntimeException('no schema'));
-		$this->registerMapper->expects($this->never())->method('find');
+		// The register is read once, to look the schema slug up inside it first
+		// (register-scoped-schema-slug-resolution); the failed schema is still tried once.
+		$register = new Register();
+		$register->setId(3);
+		$this->registerMapper->expects($this->once())->method('find')->willReturn($register);
 		$this->objects->expects($this->never())->method('searchObjectsPaginated');
 		$this->logger->expects($this->once())->method('debug')->with(
 			'[AbstractSchemaSearchProvider] Failed to resolve schema slug "{slug}": {error}',
@@ -347,6 +351,31 @@ class SchemaScopedProvidersGoldenTest extends TestCase {
 
 		$this->assertSame('lead', $result['name']);
 	}//end testAnUnresolvableSchemaIsTriedOnce()
+
+	/**
+	 * A schema slug two registers share resolves to the provider's own register's schema.
+	 */
+	public function testTheSchemaSlugResolvesInsideTheProvidersRegister(): void {
+		$register = new Register();
+		$register->setId(3);
+		$register->setSchemas([36]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->expects($this->once())->method('findBySlugInIds')->with('lead', [36])->willReturn($this->schema());
+		$globalIds = [];
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function (string|int $id) use (&$globalIds): Schema {
+				$globalIds[] = $id;
+				return $this->schema();
+			}
+		);
+		$this->objects->expects($this->once())->method('searchObjectsPaginated')->willReturn(['results' => []]);
+
+		$this->search()->search($this->createMock(IUser::class), $this->query());
+
+		// Only the resolved id is read back globally, never the slug.
+		$this->assertNotContains('lead', $globalIds);
+		$this->assertContains(7, $globalIds);
+	}//end testTheSchemaSlugResolvesInsideTheProvidersRegister()
 
 	/**
 	 * Slug lookups skip RBAC and the tenant filter, and the ids are read once per provider.

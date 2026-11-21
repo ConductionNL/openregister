@@ -115,6 +115,7 @@ class ReferenceFilterOperandGuard {
 		}
 
 		try {
+			// Stays global: a schema body is validated on its own; no register is in the request.
 			$schema = $this->schemaMapper->find(id: $target);
 		} catch (\Throwable $e) {
 			return [];

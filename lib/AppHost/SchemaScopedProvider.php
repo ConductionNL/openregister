@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
+
 /**
  * Resolves a provider's slugs once per instance and reads its schema live.
  *
@@ -39,6 +42,14 @@ trait SchemaScopedProvider {
 	 * @var int|false|null
 	 */
 	private int|false|null $registerId = null;
+
+	/**
+	 * Memoized register entity, read once and shared by the id and the schema
+	 * lookup. `false` means the read failed; `null` that it was not tried.
+	 *
+	 * @var Register|false|null
+	 */
+	private Register|false|null $registerEntity = null;
 
 	/**
 	 * Memoized resolved schema database ID. `false` means resolution was
@@ -106,19 +117,38 @@ trait SchemaScopedProvider {
 	 */
 	private function resolveRegisterId(): int|false {
 		if ($this->registerId === null) {
-			try {
-				$this->registerId = (int)$this->registerMapper->find($this->getRegisterSlug(), _rbac: false, _multitenancy: false)->getId();
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					'[' . self::LOG_NAME . '] Failed to resolve register slug "{slug}": {error}',
-					['slug' => $this->getRegisterSlug(), 'error' => $e->getMessage()]
-				);
-				$this->registerId = false;
+			$register = $this->resolveRegister();
+			$this->registerId = false;
+			if ($register !== false) {
+				$this->registerId = (int)$register->getId();
 			}
 		}
 
 		return $this->registerId;
 	}//end resolveRegisterId()
+
+	/**
+	 * Lazily read the register {@see self::getRegisterSlug()} names, once per instance.
+	 *
+	 * @return Register|false The register, or `false` when it could not be read
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function resolveRegister(): Register|false {
+		if ($this->registerEntity === null) {
+			try {
+				$this->registerEntity = $this->registerMapper->find($this->getRegisterSlug(), _rbac: false, _multitenancy: false);
+			} catch (\Exception $e) {
+				$this->logger->debug(
+					'[' . self::LOG_NAME . '] Failed to resolve register slug "{slug}": {error}',
+					['slug' => $this->getRegisterSlug(), 'error' => $e->getMessage()]
+				);
+				$this->registerEntity = false;
+			}
+		}
+
+		return $this->registerEntity;
+	}//end resolveRegister()
 
 	/**
 	 * Lazily resolve {@see self::getSchemaSlug()} to its database ID,
@@ -132,7 +162,17 @@ trait SchemaScopedProvider {
 	private function resolveSchemaId(): int|false {
 		if ($this->schemaId === null) {
 			try {
-				$this->schemaId = (int)$this->schemaMapper->find($this->getSchemaSlug(), _multitenancy: false, _rbac: false)->getId();
+				// Inside the provider's own register first: the slug is unique
+				// there, not across the instance. An unreadable register leaves
+				// the global lookup, as before.
+				$register = $this->resolveRegister();
+				if ($register === false) {
+					$register = null;
+				}
+
+				$this->schemaId = (int)(new SchemaRefInRegister(schemas: $this->schemaMapper))
+					->find(schemaRef: $this->getSchemaSlug(), register: $register, _rbac: false, _multitenancy: false)
+					->getId();
 			} catch (\Exception $e) {
 				$this->logger->debug(
 					'[' . self::LOG_NAME . '] Failed to resolve schema slug "{slug}": {error}',

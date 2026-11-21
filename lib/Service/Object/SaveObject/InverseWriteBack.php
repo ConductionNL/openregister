@@ -224,7 +224,7 @@ final class InverseWriteBack {
 			return [];
 		}
 
-		$schemaId = $this->lookups->schemaId(reference: $settings->targetSchema);
+		$schemaId = $this->lookups->schemaId(reference: $settings->targetSchema, register: $settings->targetRegister);
 		if ($schemaId === null) {
 			return [];
 		}

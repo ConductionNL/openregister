@@ -94,7 +94,7 @@ final class ReferenceExistence {
 	 * @return string|null The id, or null when it does not resolve.
 	 */
 	private function targetSchemaId(ReferenceCheck $check): ?string {
-		$targetSchemaId = $this->lookups->schemaId(reference: $check->schemaRef);
+		$targetSchemaId = $this->lookups->schemaId(reference: $check->schemaRef, register: $check->register);
 		if ($targetSchemaId === null) {
 			$this->events->logger->warning(
 				message: '[SaveObject] Could not resolve schema reference for reference validation',

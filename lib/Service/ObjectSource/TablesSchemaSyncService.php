@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -211,7 +212,7 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	private function seedTable(Register $register, array $table): bool {
 		$payload = $this->schemaPayload(table: $table);
 
-		$schema = $this->findSchemaBySlug(slug: $payload['slug']);
+		$schema = $this->findSchemaBySlug(slug: $payload['slug'], register: $register);
 		if ($schema === null) {
 			$schema = $this->schemaMapper->createFromArray(object: $payload);
 		} elseif ($this->isManaged(schema: $schema) === false) {
@@ -228,15 +229,19 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 
 
 	/**
-	 * The schema with a slug, outside RBAC and tenancy.
+	 * The schema with a slug, outside RBAC and tenancy, looked up among the `tables` register's schemas first.
 	 *
-	 * @param string $slug The schema slug.
+	 * @param string   $slug     The schema slug.
+	 * @param Register $register The `tables` register.
 	 *
 	 * @return Schema|null The schema, or null when there is none.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function findSchemaBySlug(string $slug): ?Schema {
+	private function findSchemaBySlug(string $slug, Register $register): ?Schema {
 		try {
-			return $this->schemaMapper->find($slug, _rbac: false, _multitenancy: false);
+			return (new SchemaRefInRegister(schemas: $this->schemaMapper))
+				->find(schemaRef: $slug, register: $register, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -456,6 +461,8 @@ class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 	 * @return Schema|null Null when it cannot be read.
 	 */
 	private function findUnscopedSchema(mixed $ref): ?Schema {
+		// Stays global: the ref IS the register's own entry for the schema, so
+		// there is no id set to narrow a slug entry against.
 		try {
 			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {

@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Service\Resolver\Exception\ResolverConfigKey;
 use OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\Resolver\RegisterSchemaPair;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IAppConfig;
@@ -391,6 +392,10 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	/**
 	 * Resolve a register and a schema lookup in a single call.
 	 *
+	 * The schema slug is resolved among the resolved register's own schemas
+	 * first: slugs are unique within a register, not across the instance. See
+	 * {@see lookupSchemaInRegister()} for how the tenancy rule is kept.
+	 *
 	 * @param ConfigLookup $register The lookup of the register.
 	 * @param ConfigLookup $schema   The lookup of the schema.
 	 *
@@ -409,8 +414,80 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 
 		$entity     = $this->lookupRegister(lookup: $register);
 
-		return new RegisterSchemaPair(registerId: $registerId, schemaId: $schemaId, register: $entity, schema: $this->lookupSchema(lookup: $schema));
+		return new RegisterSchemaPair(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			register: $entity,
+			schema: $this->lookupSchemaInRegister(lookup: $schema, register: $entity)
+		);
 	}//end lookupPair()
+
+	/**
+	 * The configured schema, looked up inside the register first, cached per request and register.
+	 *
+	 * The scoped match reads the register's schema list directly and so does not
+	 * pass the mapper's tenant filter. It is therefore only taken when the same
+	 * tenancy rule as {@see findSchema()} admits it: with an explicit
+	 * organisation, the schema must not belong to another one; without, the
+	 * caller's tenant-filtered lookup must see it by id. Otherwise, and for ids,
+	 * uuids and slugs the register lacks, {@see findSchema()} answers unchanged.
+	 *
+	 * @param ConfigLookup $lookup   The lookup of the schema, with the explicit tenant.
+	 * @param Register     $register The resolved register of the pair.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws MissingConfigException If config is unset and no default.
+	 * @throws SchemaNotFoundException If the value does not resolve in the caller tenant.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function lookupSchemaInRegister(ConfigLookup $lookup, Register $register): Schema {
+		$this->maybeFlushOnTenantSwitch();
+
+		$slugOrUuid = $this->lookupId(lookup: $lookup);
+		$cacheKey   = $lookup->cacheKey().':in-register:'.(string)$register->getId();
+
+		if (isset($this->schemaCache[$cacheKey]) === true) {
+			return $this->schemaCache[$cacheKey];
+		}
+
+		$schema = $this->admittedInRegister(lookup: $lookup, slugOrUuid: $slugOrUuid, register: $register)
+			?? $this->findSchema(lookup: $lookup, slugOrUuid: $slugOrUuid);
+		$this->schemaCache[$cacheKey] = $schema;
+
+		return $schema;
+	}//end lookupSchemaInRegister()
+
+	/**
+	 * The register's own schema carrying the slug, when the tenancy rule admits it; else null.
+	 *
+	 * @param ConfigLookup $lookup     The lookup, with the explicit tenant.
+	 * @param string       $slugOrUuid The configured slug or UUID.
+	 * @param Register     $register   The register.
+	 *
+	 * @return Schema|null The admitted schema, or null to fall back to the global lookup.
+	 */
+	private function admittedInRegister(ConfigLookup $lookup, string $slugOrUuid, Register $register): ?Schema {
+		$scoped = (new SchemaRefInRegister(schemas: $this->mappers->schemaMapper))->findInRegister(schemaRef: $slugOrUuid, register: $register);
+		if ($scoped === null) {
+			return null;
+		}
+
+		if ($lookup->organisationUuid !== null) {
+			if ($this->ownedElsewhere(owner: $scoped->getOrganisation(), organisationUuid: $lookup->organisationUuid) === true) {
+				return null;
+			}
+
+			return $scoped;
+		}
+
+		try {
+			return $this->mappers->schemaMapper->find(id: (int)$scoped->getId());
+		} catch (DoesNotExistException|MultipleObjectsReturnedException $e) {
+			return null;
+		}
+	}//end admittedInRegister()
 
 	/**
 	 * Enumerate every `<context>_(register|schema)` key set for an app.

@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 
 /**
  * Handles utility operations for ObjectService.
@@ -132,8 +133,14 @@ class UtilityHandler {
 	 * Converts string/int identifiers to actual entity objects
 	 * by loading them from the appropriate mapper.
 	 *
-	 * @param mixed $entity The entity identifier (string/int) or object.
-	 * @param string $type The entity type ('register' or 'schema').
+	 * A schema slug is resolved inside `$register` first when one is given:
+	 * slugs are unique within a register, not across the instance. An id, a
+	 * uuid, a slug the register lacks, or a register that cannot be read
+	 * resolves globally, as without it.
+	 *
+	 * @param mixed  $entity   The entity identifier (string/int) or object.
+	 * @param string $type     The entity type ('register' or 'schema').
+	 * @param mixed  $register For a schema: the register in context (entity, id, uuid or slug); optional and last.
 	 *
 	 * @return mixed The entity object.
 	 *
@@ -141,11 +148,17 @@ class UtilityHandler {
 	 * @phpstan-return mixed
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	public function normalizeEntity($entity, string $type) {
+	public function normalizeEntity($entity, string $type, mixed $register = null) {
 		if (is_string($entity) === true || is_int($entity) === true) {
 			if ($type === 'register') {
 				return $this->registerMapper->find($entity);
+			}
+
+			if ($register !== null) {
+				return (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+					->find(schemaRef: $entity, register: $register);
 			}
 
 			return $this->schemaMapper->find($entity);

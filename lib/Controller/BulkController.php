@@ -55,6 +55,8 @@ use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
+use OCA\OpenRegister\Service\Schemas\RowSchemaRefsInRegister;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -239,6 +241,19 @@ class BulkController extends Controller {
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end refusedRowSchemas()
+
+	/**
+	 * The pass that pins a mixed-schema row's slug to the register's own schema.
+	 *
+	 * @return RowSchemaRefsInRegister The pass.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function rowSchemaRefs(): RowSchemaRefsInRegister {
+		return new RowSchemaRefsInRegister(
+			lookup: new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper)
+		);
+	}//end rowSchemaRefs()
 
 	/**
 	 * The schema manage gate, built from this controller's collaborators when none was injected.
@@ -777,6 +792,13 @@ class BulkController extends Controller {
 				data: ['error' => 'Invalid input. "objects" array is required.'],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
+		}
+
+		// A mixed-schema row's slug is pinned to the register's own schema once, so the
+		// rights check below and the save read the same schema.
+		if ($isMixedSchema === true) {
+			$objects = $this->rowSchemaRefs()->scope(objects: $objects, register: $resolved['register']);
+			$data['objects'] = $objects;
 		}
 
 		$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);

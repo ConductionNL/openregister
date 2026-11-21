@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\Support\TranslationSlot;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Db\TranslationSlot as RowSlot;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Controller;
@@ -97,6 +99,13 @@ class TranslationController extends Controller {
 	private readonly MagicObjectFinderInterface $objectMapper;
 
 	/**
+	 * Reads the object's register, so a schema slug resolves inside it; null in a hand-built test.
+	 *
+	 * @var RegisterMapperInterface|null
+	 */
+	private readonly ?RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request.
@@ -112,6 +121,7 @@ class TranslationController extends Controller {
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->bulkService = $services->bulkService;
 		$this->objectMapper = $services->mappers->objectMapper;
+		$this->registerMapper = $services->mappers->registerMapper;
 	}//end __construct()
 
 	/**
@@ -249,7 +259,7 @@ class TranslationController extends Controller {
 			return [];
 		}
 
-		$resolvedSchema = $this->resolveSchema(ref: $schema);
+		$resolvedSchema = $this->resolveSchema(ref: $schema, uuid: $uuid);
 		if ($resolvedSchema === null) {
 			return [];
 		}
@@ -396,17 +406,41 @@ class TranslationController extends Controller {
 	/**
 	 * Resolve a schema by id/uuid/slug; returns null when not found.
 	 *
-	 * @param string $ref The schema reference (id/uuid/slug).
+	 * A slug is looked up among the schemas of the object's own register first:
+	 * slugs are unique within a register, not across the instance. An id, or a
+	 * slug the register does not carry, resolves globally as before.
+	 *
+	 * @param string $ref  The schema reference (id/uuid/slug).
+	 * @param string $uuid The object whose register scopes a slug.
 	 *
 	 * @return Schema|null The schema entity or null.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function resolveSchema(string $ref): ?Schema {
+	private function resolveSchema(string $ref, string $uuid): ?Schema {
 		try {
-			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
+			return (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+				->find(schemaRef: $ref, register: $this->registerOfSlugTarget(ref: $ref, uuid: $uuid), _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			return null;
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end resolveSchema()
+
+	/**
+	 * The register of the object, read only when a slug needs it and a register reader is there.
+	 *
+	 * @param string $ref  The schema reference.
+	 * @param string $uuid The object UUID.
+	 *
+	 * @return string|null The object's register id, or null.
+	 */
+	private function registerOfSlugTarget(string $ref, string $uuid): ?string {
+		if ($this->registerMapper === null || is_numeric($ref) === true) {
+			return null;
+		}
+
+		return $this->loadObject(uuid: $uuid)?->getRegister();
+	}//end registerOfSlugTarget()
 }//end class
