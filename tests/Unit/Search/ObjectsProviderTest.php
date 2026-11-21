@@ -1019,4 +1019,65 @@ class ObjectsProviderTest extends TestCase {
 		$this->assertSame(['relevant', 'new', 'old', 'undated', 'other'], $this->titlesOf($provider($declarations)->search($user, $this->mockQuery(['term' => 'x'], 10))));
 		$this->assertSame(['relevant', 'undated', 'old', 'new', 'other'], $this->titlesOf($provider(null)->search($user, $this->mockQuery(['term' => 'x'], 10))));
 	}
+
+	/**
+	 * 🔴 An `app:` scope narrows the schema list BEFORE the chunk loop to the
+	 * schemas that app claims in the deep-link registry (content-search-index).
+	 *
+	 * It used to be parsed and then ignored, so `app:dossiq` searched every
+	 * searchable schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 */
+	public function testAnAppScopeSearchesOnlyTheSchemasThatAppClaims(): void {
+		$schema = static function (int $id, string $slug): Schema {
+			$entity = new Schema();
+			$entity->setId($id);
+			$entity->setSlug($slug);
+			return $entity;
+		};
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setSlug('zaken');
+		$register->setSchemas([1, 2, 3]);
+
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findNonSearchableIds')->willReturn([]);
+		$schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3]);
+		$schemaMapper->method('findAll')->willReturn([$schema(1, 'case'), $schema(2, 'contact'), $schema(3, 'invoice')]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('findAll')->willReturn([$register]);
+
+		$deepLink = $this->createMock(\OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface::class);
+		$deepLink->method('registrations')->willReturn(
+			[
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'dossiq', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c'),
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'dossiq', registerSlug: 'zaken', schemaSlug: 'invoice', urlTemplate: '/i'),
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'zaken', schemaSlug: 'contact', urlTemplate: '/p'),
+			]
+		);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$asked = [];
+		$objectService->method('searchObjectsPaginated')->willReturnCallback(
+			function (array $query) use (&$asked): array {
+				$asked[] = $query['@self']['schema'] ?? null;
+				return ['results' => [], 'total' => 0];
+			}
+		);
+
+		$catalog = new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class));
+		$output = new \OCA\OpenRegister\Search\ObjectsProviderOutput($this->l10n, $this->createMock(\OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface::class), $this->logger);
+		$provider = new ObjectsProvider(
+			$objectService,
+			$catalog,
+			$output,
+			new \OCA\OpenRegister\Search\SearchScopeCatalog(catalog: $catalog, logger: $this->logger, deepLink: $deepLink)
+		);
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'scopes' => 'app:dossiq']));
+
+		$this->assertSame([[1, 3]], $asked, 'one chunk, holding only the schemas dossiq claims');
+	}
 }

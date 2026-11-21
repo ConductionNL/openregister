@@ -52,6 +52,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\LoadSheddingMiddleware',
 				'OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware',
 				'OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware',
+				'OCA\OpenRegister\Middleware\ConditionGroupMiddleware',
 				'OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware',
 				'OCA\OpenRegister\Middleware\RelatedRowFilterMiddleware',
 				'OCA\OpenRegister\Middleware\MaintenanceModeMiddleware',

@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use DateTimeZone;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCP\IUserManager;
@@ -40,6 +41,17 @@ use OCP\IUserManager;
  * Starts the flow on a cron schedule.
  */
 class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNodeInterface, IFlowNodeConfigForm {
+	/**
+	 * The config key naming the timezone the cron is read in.
+	 *
+	 * Optional. Without it the cron is read in the server's timezone, as before.
+	 * Exposed so an app that writes schedule triggers can tell whether this
+	 * engine reads the key (`defined(TriggerScheduleNode::class . '::CONFIG_TIMEZONE')`).
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	public const CONFIG_TIMEZONE = 'timezone';
+
 	/**
 	 * Constructor.
 	 *
@@ -108,7 +120,7 @@ class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNode
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function configKeys(): array {
-		return ['cron', 'runAs'];
+		return ['cron', 'runAs', self::CONFIG_TIMEZONE];
 	}//end configKeys()
 
 	/**
@@ -140,6 +152,16 @@ class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNode
 				),
 				'required' => true,
 			],
+			[
+				'key' => self::CONFIG_TIMEZONE,
+				'label' => $this->l10n->t('Timezone'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'The timezone the schedule is read in, like "Europe/Amsterdam". '
+						. 'Empty reads it in the server\'s timezone.'
+				),
+				'required' => false,
+			],
 		];
 	}//end configForm()
 
@@ -170,8 +192,37 @@ class TriggerScheduleNode extends TriggerNodeBase implements TriggerScheduleNode
 		}
 
 		$this->assertFiveFields(cron: $cron);
+		$this->assertKnownTimezone(config: $config);
 		$this->validateActingIdentity(config: $config);
 	}//end validateConfig()
+
+	/**
+	 * Refuse a timezone that is not a timezone identifier PHP knows.
+	 *
+	 * An empty or absent timezone is accepted: the cron is then read in the
+	 * server's timezone. A misspelt one is refused here rather than read as UTC
+	 * at fire time, where the flow would run hours off with nothing reported.
+	 *
+	 * @param array $config The node configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the timezone is set and unknown.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 */
+	private function assertKnownTimezone(array $config): void {
+		$timezone = trim((string)($config[self::CONFIG_TIMEZONE] ?? ''));
+		if ($timezone === '') {
+			return;
+		}
+
+		if (in_array(needle: $timezone, haystack: DateTimeZone::listIdentifiers(), strict: true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('A schedule trigger\'s timezone must be a timezone identifier like "Europe/Amsterdam"; "%s" is not one.', $timezone)
+			);
+		}
+	}//end assertKnownTimezone()
 
 	/**
 	 * Refuse a cron expression that is not five space-separated fields.

@@ -12,7 +12,7 @@ Triggered via the `_search` query parameter:
 
 - Searches across all `type: string` properties in the schema's dynamic table
 - Always includes metadata fields: `_name`, `_description`, `_summary`
-- Case-insensitive matching via `ILIKE` in the database backend
+- Case-insensitive matching via `ILIKE` in the database backend, and accent-insensitive where the database can fold accents (see [Accents](#accents-_accents))
 - String properties with `format: date`, `format: date-time`, or `format: time` are excluded from text search
 - PostgreSQL `pg_trgm` extension enables fuzzy matching when installed
 - Solr and Elasticsearch backends use their native query parsers
@@ -20,6 +20,33 @@ Triggered via the `_search` query parameter:
 ```
 GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast
 ```
+
+### Accents (`_accents`)
+
+A search ignores accents as well as case: `cafe` finds "Café de Flore" and `reunie` finds "Reünie oud-raadsleden". This applies to the plain search, to every term of a boolean search, to fuzzy matching and to the search behind facet counts, so a facet count still equals the number of results behind it.
+
+How the database does it:
+
+- **PostgreSQL** compares through `openregister_fold()`, a wrapper over the `unaccent` extension that a migration creates. Where the extension cannot be created (it needs the right to create a trusted extension, the default for a database owner from PostgreSQL 13), accent-insensitive search is unavailable and searches compare as before.
+- **MariaDB and MySQL** compare through the accent-insensitive `utf8mb4_unicode_ci` collation; nothing needs installing, so it is always available.
+- Other databases cannot fold accents.
+
+An administrator sees and switches it in the **Search Configuration** section of the Open Register admin settings, or through the API:
+
+```
+GET   /api/settings/search-backend        → "accentInsensitive": {"enabled": true, "available": true, "reason": ""}
+PATCH /api/settings/search-backend        {"accentInsensitive": false}
+```
+
+It is on by default wherever it is available. Switching it on where it is unavailable answers 400 with the reason, for example "the unaccent extension could not be created". Switching it off makes every search compare accents exactly again.
+
+One search can ask for the exact comparison with `_accents=exact`, whatever the setting:
+
+```
+GET /api/objects/{register}/{schema}?_search=cafe&_accents=exact
+```
+
+Any other `_accents` value is ignored.
 
 ### Widening to attached-file body text (`_content_search`)
 
@@ -52,6 +79,39 @@ Any schema property can be used as a filter parameter with comparison operators:
 | `[exists]` | Field exists/has value | `?locatie[exists]=true` |
 
 System metadata fields (`_name`, `_uuid`, `_owner`, `_created`, `_updated`, `_deleted`, `_schema`, `_register`) are always available as filter targets regardless of schema.
+
+### Filtering through a reference (`_ref`)
+
+A filter can reach one step through a reference property of the queried schema
+and test a field of the object it points to:
+
+```
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats]=Zuiddrecht
+GET /api/objects/{register}/inschrijvingen?_ref[cursus][startdatum][gte]=2026-09-01
+GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrecht&_ref[aanvrager][woonplaats][in][]=Oosterhout
+```
+
+- `<property>` is one of the queried schema's own reference properties; the
+  referenced schema is the one that property declares (`$ref` or
+  `objectConfiguration.schema`), so the caller never names it.
+- The operators are `eq` (the default), `ne`, `gt`, `gte`, `lt`, `lte` and `in`.
+- Several fields in one block must hold on the same referenced object. A second
+  block with a suffix, `_ref[aanvrager:2][...]`, asks for an independent one.
+- Only referenced objects the caller may read count: the referenced schema's
+  own access rules and organisation boundary apply inside the filter, so a
+  hidden object never makes a row match.
+- The filter runs inside the query, so totals and paging count only matching
+  objects.
+- Refused with HTTP 400, naming the part: an unknown property, a property that
+  is not a reference, a field the referenced schema lacks, an unknown operator,
+  a chain through a second reference, a property holding a list of references
+  (not supported yet), and `_ref` on a search across several schemas.
+
+**Direction.** `_ref` follows a reference *out* of the queried object (where
+this object points). `_related[<schema>][<property>]` runs the other way: it
+keeps objects that rows of another schema point *to*. `_referenced[<schema>][<property>]`
+is the same direction as `_ref` but names the referenced schema itself; `_ref`
+reads it from the property.
 
 ## Faceting
 
@@ -240,6 +300,21 @@ Key behaviours:
 Apps declare their result URLs, icons, and display names via the boot-time
 deep-link registry (`DeepLinkRegistrationEvent`); the registry's optional
 `displayName` is what labels an app's unified-search results.
+
+### Tasks in the search bar
+
+A second provider, **Tasks** (`openregister_flow_tasks`), lists the flow tasks
+the searcher would see in their own task inbox: assigned to them, offered to one
+of their groups, or watched by them. It runs the inbox query itself, so it never
+shows a task the inbox would not; an administrator is searched like anyone
+else, not over the whole instance's work. Every word of the term must occur in
+the task's title or description, case insensitively; open tasks come before
+finished ones, ten per page.
+
+Each result shows the task title and a subline with the state (or "Overdue"),
+the due date and the subject's title when the searcher may read the subject. It
+opens OpenRegister's task page, or the subject app's own task view when that
+app registered a task route in the [deep link registry](deep-link-registry.md#task-routes).
 
 ## The administered dictionary
 

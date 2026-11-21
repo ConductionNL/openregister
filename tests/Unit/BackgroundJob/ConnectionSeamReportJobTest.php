@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
@@ -36,9 +37,15 @@ use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
+use OCA\OpenRegister\Service\Translation\GlossaryService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
+use OCA\OpenRegister\Service\Translation\TranslationBindingDescription;
+use OCA\OpenRegister\Service\Translation\TaskProcessingTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IUserSession;
+use OCP\TaskProcessing\IManager;
+use OCP\TaskProcessing\IProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -55,6 +62,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider
  * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry
  * @uses \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider
+ * @uses \OCA\OpenRegister\Service\Translation\TranslationBindingDescription
+ * @uses \OCA\OpenRegister\Service\Translation\TaskProcessingTranslationProvider
  * @uses \OCA\OpenRegister\Service\Gdpr\Seam\ProviderSet
  */
 class ConnectionSeamReportJobTest extends TestCase {
@@ -100,7 +109,11 @@ class ConnectionSeamReportJobTest extends TestCase {
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id): object {
+			function (string $id) use (&$container): object {
+				if ($id === TranslationBindingInterface::class) {
+					return new TranslationBindingDescription(container: $container);
+				}
+
 				$service = ($this->services[$id] ?? null);
 				if ($service instanceof RuntimeException) {
 					throw $service;
@@ -154,6 +167,60 @@ class ConnectionSeamReportJobTest extends TestCase {
 		$this->assertSame(expected: 'simulated', actual: $this->reports['dsar-regulator'][0]);
 		$this->assertStringContainsString(needle: 'refuses', haystack: $this->reports['dsar-regulator'][1]);
 	}//end testDefaultBindingsReadSimulated()
+
+	/**
+	 * The Task Processing provider reads Configured and names the Nextcloud providers text goes to.
+	 *
+	 * @return void
+	 */
+	public function testTheTaskProcessingProviderIsConfiguredAndNamesItsProviders(): void {
+		$translate = $this->createMock(originalClassName: IProvider::class);
+		$translate->method('getName')->willReturn('Local translator');
+		$manager = $this->createMock(originalClassName: IManager::class);
+		$manager->method('getPreferredProvider')->willReturnCallback(
+			static function (string $taskTypeId) use ($translate): IProvider {
+				if ($taskTypeId === 'core:text2text:translate') {
+					return $translate;
+				}
+
+				throw new RuntimeException('No provider for ' . $taskTypeId);
+			}
+		);
+		$this->services[TranslationProviderInterface::class] = new TaskProcessingTranslationProvider(
+			taskProcessing: $manager,
+			glossary: $this->createMock(originalClassName: GlossaryService::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+		);
+
+		$this->runJob();
+
+		$this->assertSame(
+			expected: ['configured', 'Translation runs through Nextcloud Task Processing: Local translator (core:text2text:translate). Not tested.'],
+			actual: $this->reports['translation']
+		);
+	}//end testTheTaskProcessingProviderIsConfiguredAndNamesItsProviders()
+
+	/**
+	 * Task Processing without any provider for the two task types says so, still Configured.
+	 *
+	 * @return void
+	 */
+	public function testTaskProcessingWithoutAProviderSaysSo(): void {
+		$manager = $this->createMock(originalClassName: IManager::class);
+		$manager->method('getPreferredProvider')->willThrowException(new RuntimeException('none'));
+		$this->services[TranslationProviderInterface::class] = new TaskProcessingTranslationProvider(
+			taskProcessing: $manager,
+			glossary: $this->createMock(originalClassName: GlossaryService::class),
+			userSession: $this->createMock(originalClassName: IUserSession::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+		);
+
+		$this->runJob();
+
+		$this->assertSame(expected: 'configured', actual: $this->reports['translation'][0]);
+		$this->assertStringContainsString(needle: 'reports no provider for translation', haystack: $this->reports['translation'][1]);
+	}//end testTaskProcessingWithoutAProviderSaysSo()
 
 	/**
 	 * A stand-in never reads as success: no default message claims verification.
