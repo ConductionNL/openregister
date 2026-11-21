@@ -168,3 +168,9 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## New lib file has its csv row but no component pattern (or-fix-7)
 - Symptom: ComponentDefinitionTest 'matches no component (Remainder)' / 'matches [] in the components yaml' for a file the PR added, although scripts/component-map.csv has its row (main sometimes carries the row already).
 - Fix: python3 scripts/component-patterns.py (rewrites the components yaml), commit the one-line yaml change. Also check registrar order tests (e.g. tests/Unit/Service/ServiceRegistrarTest::testRegistersTheServicesInOrder) for a binding the PR added.
+
+## New migration extends SimpleMigrationStep (or-fix-8)
+- Symptom: tests/Unit/Migration/SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted lists the PR's lib/Migration/Version1Date2026....php.
+- Cause: main requires every step after 2.1.0 to extend TargetedMigrationStep (its preSchemaChange/changeSchema/postSchemaChange are final).
+- Fix: extends TargetedMigrationStep, drop the SimpleMigrationStep import, rename changeSchema->changeTargetedSchema / postSchemaChange->afterTargetedSchemaChange / preSchemaChange->beforeTargetedSchemaChange and make them protected; tests calling the public post/changeSchema keep working.
+- Note: ReservedColumnNamesTest errors with an upstream HTTP 404 on MariaDB lex.h are network/environment, not the PR.
