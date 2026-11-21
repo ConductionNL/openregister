@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -120,7 +120,7 @@ class AnnotationNotificationListenerNoteAddedTest extends TestCase {
 		$this->assertSame(
 			[
 				[
-					'job' => JobHandles::ANNOTATION_NOTIFICATION_DISPATCH,
+					'job' => ProcessesJobHandlesInterface::ANNOTATION_NOTIFICATION_DISPATCH,
 					'entry' => [
 						'uuid' => 'task-1',
 						'register' => '5',
