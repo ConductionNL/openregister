@@ -17,9 +17,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
-use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -70,6 +72,13 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Golden test for ObjectService::saveObject().
@@ -181,21 +190,17 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		try {
 			$saved = $service->saveObject(
-				$object,
-				array_key_exists('extend', $case) === true ? $case['extend'] : [],
-				(array_key_exists('register', $case) === true ? $case['register'] : $this->register()),
-				(($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case)),
-				($case['uuid'] ?? null),
-				($case['rbac'] ?? true),
-				($case['multi'] ?? true),
-				($case['silent'] ?? false),
-				($case['validation'] ?? true),
-				($case['files'] ?? null),
-				$user,
-				($case['failIfExists'] ?? false),
-				($case['unowned'] ?? false),
-				($case['dedup'] ?? false),
-				($case['owner'] ?? null)
+				object: $object,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: (array_key_exists('register', $case) === true ? $case['register'] : $this->register()), schema: (($case['noSchema'] ?? false) === true) ? null : ($case['schema'] ?? $this->schema(case: $case))),
+					uuid: ($case['uuid'] ?? null),
+					extend: array_key_exists('extend', $case) === true ? $case['extend'] : [],
+					uploadedFiles: ($case['files'] ?? null),
+					policy: new SavePolicy(silent: ($case['silent'] ?? false), validation: ($case['validation'] ?? true), failIfExists: ($case['failIfExists'] ?? false), dedupOverride: ($case['dedup'] ?? false)),
+					actor: new SaveActor(currentUser: $user, owner: ($case['owner'] ?? null), unowned: ($case['unowned'] ?? false))
+				),
+				_rbac: ($case['rbac'] ?? true),
+				_multitenancy: ($case['multi'] ?? true)
 			);
 			$actual = ['result' => $this->describe($saved)];
 		} catch (\Throwable $e) {
@@ -249,12 +254,12 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 		$container = $this->recorder(IAppContainer::class, 'container', [
 			'get' => function (array $args) use ($case) {
-				if ($args[0] === ContactMatchingService::class) {
+				if ($args[0] === ContactMatchCacheInterface::class) {
 					if (($case['contactThrows'] ?? false) === true) {
 						throw new Exception('contacts down');
 					}
 
-					return $this->recorder(ContactMatchingService::class, 'contacts', []);
+					return $this->recorder(ContactMatchCacheInterface::class, 'contacts', []);
 				}
 
 				if (($case['referenceThrows'] ?? false) === true) {
@@ -263,7 +268,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 
 				return match ($args[0]) {
 					IReferenceManager::class => $this->recorder(IReferenceManager::class, 'references', []),
-					ObjectPreviewFormatter::class => new ObjectPreviewFormatter(
+					ObjectPreviewCacheInterface::class => new ObjectPreviewFormatter(
 						$this->recorder(IURLGenerator::class, 'urls', [
 							'getAbsoluteURL' => fn (array $a): string => 'https://cloud.test' . $a[0],
 						]),
@@ -276,7 +281,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 						),
 						$this->createStub(LoggerInterface::class)
 					),
-					DeepLinkRegistryService::class => $this->recorder(DeepLinkRegistryService::class, 'deepLinks', [
+					DeepLinkResolverInterface::class => $this->recorder(DeepLinkResolverInterface::class, 'deepLinks', [
 						'resolveUrl' => fn (array $a): ?string => ($case['deepLink'] ?? null),
 					]),
 					default => null,
@@ -292,7 +297,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			]);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->recorder(DataManipulationHandler::class, 'dataManip', []),
 			deleteHandler: $this->recorder(DeleteObject::class, 'deleteHandler', []),
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
@@ -311,6 +316,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 				'applyExpressionDefaults' => fn (array $a): array => $a[1] + ['expression' => 1],
 				'seedLifecycleFieldOnCreate' => fn (array $a): array => $a[1] + ['seeded' => 1],
 				'saveObject' => function (array $a) use ($case): ObjectEntity {
+					$a = SaveObjectArgs::flat(args: $a);
 					if (($case['saveThrows'] ?? false) === true) {
 						throw new Exception('database refused');
 					}
@@ -375,7 +381,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			container: $container,
 			objectSourceRegistry: $this->recorder(ObjectSourceRegistry::class, 'objectSources', []),
 			autoTransitions: $autoTransitions
-		);
+		));
 	}//end service()
 
 	/**
@@ -413,8 +419,16 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			$args    = [$args[0], $args[1], $options->userId, $options->objectOwner, $args[3], $options->object, $options->register];
 		}
 
+		if ($method === 'saveHandler.saveObject') {
+			$args = SaveObjectArgs::flat(args: $args);
+		}
+
 		if (in_array($method, ['logger.debug', 'logger.info', 'logger.warning', 'logger.error'], true) === true && is_array($args[1] ?? null) === true) {
 			unset($args[1]['file'], $args[1]['line']);
+		}
+
+		if (($args[0] ?? null) instanceof WriteConstraintCheck) {
+			$args = [$args[0]->incoming, $args[0]->stored, ...array_slice($args, 1)];
 		}
 
 		$this->calls[] = [$method, $this->describe($args)];

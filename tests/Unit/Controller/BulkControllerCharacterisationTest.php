@@ -173,7 +173,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 	public function testDeleteSchemaAnswers404ForAnUnknownSchema(): void {
 		$this->asAdmin();
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
-		$this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+		$this->objectService->expects($this->never())->method('deleteObjectsOfTable');
 
 		$response = $this->controller->deleteSchema('1', '9');
 
@@ -184,7 +184,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 	public function testDeleteSchemaObjectsAnswers404ForAnUnknownSchema(): void {
 		$this->asAdmin();
 		$this->schemaMapper->method('find')->willThrowException(new DoesNotExistException('nope'));
-		$this->objectService->expects($this->never())->method('deleteObjectsBySchema');
+		$this->objectService->expects($this->never())->method('deleteObjectsOfTable');
 
 		$response = $this->controller->deleteSchemaObjects('1', '9');
 
@@ -208,7 +208,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($this->schema(2));
 		$this->registerMapper->method('find')->willReturn(new Register());
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException(new \RuntimeException('x'));
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException(new \RuntimeException('x'));
 		$this->objectService->method('deleteObjectsByRegister')->willThrowException(new \RuntimeException('y'));
 
 		$schema = $this->controller->deleteSchema('1', '2');
@@ -229,7 +229,7 @@ class BulkControllerCharacterisationTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn(new Register());
 		$this->request->method('getParams')->willReturn([]);
 		$refusal = new ArchivalImmutableException('kept');
-		$this->objectService->method('deleteObjectsBySchema')->willThrowException($refusal);
+		$this->objectService->method('deleteObjectsOfTable')->willThrowException($refusal);
 		$this->objectService->method('deleteObjectsByRegister')->willThrowException($refusal);
 
 		$this->assertSame(403, $this->controller->deleteSchema('1', '2')->getStatus());

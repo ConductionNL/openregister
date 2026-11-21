@@ -180,6 +180,88 @@ import {
 import { pageShellComponents } from '../pageShell.js'
 import { t } from './l10n.js'
 
+/**
+ * The packs sorted by name (or slug, for a pack without one).
+ *
+ * @param {Array<object>} packs The packs.
+ * @return {Array<object>} A sorted copy.
+ */
+function sortedByName(packs) {
+	return packs
+		.slice()
+		.sort((a, b) =>
+			String(a.name || a.packSlug).localeCompare(String(b.name || b.packSlug)),
+		)
+}
+
+/**
+ * The notice for a deleted pack.
+ *
+ * @param {object} pack The pack.
+ * @return {object} The notice.
+ */
+function deletedNotice(pack) {
+	return {
+		type: 'success',
+		message: t('openregister', 'Deleted "{name}".', {
+			name: pack.name || pack.packSlug,
+		}),
+	}
+}
+
+/**
+ * The notice for a delete the server refused or that failed.
+ *
+ * @param {Error} error What went wrong.
+ * @return {object} The notice.
+ */
+function deleteFailedNotice(error) {
+	return {
+		type: 'error',
+		...explainError(
+			error,
+			t('openregister', 'Could not delete the migration pack.'),
+		),
+	}
+}
+
+/**
+ * The notice for an imported pack. A pack with the file's id was already
+ * stored (and may have been edited on this instance): it says the pack was
+ * overwritten, not that a new one arrived.
+ *
+ * @param {{pack: object, replaced: boolean}} imported What the import answered.
+ * @param {string} fileName The file's name, for a pack without a name or slug.
+ * @return {object} The notice.
+ */
+function importedNotice({ pack, replaced }, fileName) {
+	const name = pack?.name || pack?.packSlug || fileName
+	return {
+		type: 'success',
+		message: replaced
+			? t('openregister', 'Replaced "{name}".', { name })
+			: t('openregister', 'Imported "{name}".', { name }),
+	}
+}
+
+/**
+ * The notice for an import the server refused or that failed.
+ *
+ * @param {Error} error What went wrong.
+ * @return {object} The notice.
+ */
+function importFailedNotice(error) {
+	return {
+		type: 'error',
+		...explainError(error, t('openregister', 'Could not import the file.'), {
+			'invalid-request': t(
+				'openregister',
+				'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
+			),
+		}),
+	}
+}
+
 export default {
 	name: 'MigrationPacksIndex',
 	components: {
@@ -242,13 +324,7 @@ export default {
 			this.error = ''
 			try {
 				const packs = await listPacks()
-				this.packs = packs
-					.slice()
-					.sort((a, b) =>
-						String(a.name || a.packSlug).localeCompare(
-							String(b.name || b.packSlug),
-						),
-					)
+				this.packs = sortedByName(packs)
 			} catch {
 				this.error = t('openregister', 'Could not load the migration packs.')
 			} finally {
@@ -311,28 +387,26 @@ export default {
 			try {
 				await deletePack(pack.id)
 				this.packs = this.packs.filter((p) => p.id !== pack.id)
-				this.notice = {
-					type: 'success',
-					message: t('openregister', 'Deleted "{name}".', {
-						name: pack.name || pack.packSlug,
-					}),
-				}
+				this.notice = deletedNotice(pack)
 			} catch (error) {
-				this.notice = {
-					type: 'error',
-					...explainError(
-						error,
-						t('openregister', 'Could not delete the migration pack.'),
-					),
-				}
+				this.notice = deleteFailedNotice(error)
 			} finally {
 				this.busy = false
 				this.deleting = null
-				// The focused delete button is gone with its row or dialog.
-				this.$nextTick(() => {
-					this.$refs.heading?.focus()
-				})
+				this.focusHeading()
 			}
+		},
+
+		/**
+		 * Move the focus to the heading once the page has re-rendered: the
+		 * focused delete button is gone with its row or dialog.
+		 *
+		 * @return {void}
+		 */
+		focusHeading() {
+			this.$nextTick(() => {
+				this.$refs.heading?.focus()
+			})
 		},
 
 		/**
@@ -349,33 +423,23 @@ export default {
 			if (!file) {
 				return
 			}
+			await this.importFile(file)
+		},
+
+		/**
+		 * Import a pack file, say how it went and reload the list.
+		 *
+		 * @param {File} file The chosen file.
+		 * @return {Promise<void>}
+		 */
+		async importFile(file) {
 			this.importing = true
 			try {
-				const { pack, replaced } = await importPack(file)
-				const name = pack?.name || pack?.packSlug || file.name
-				// A pack with the file's id was already stored (and may have been edited
-				// on this instance): say it was overwritten, not that a new one arrived.
-				this.notice = {
-					type: 'success',
-					message: replaced
-						? t('openregister', 'Replaced "{name}".', { name })
-						: t('openregister', 'Imported "{name}".', { name }),
-				}
+				const imported = await importPack(file)
+				this.notice = importedNotice(imported, file.name)
 				await this.load()
 			} catch (error) {
-				this.notice = {
-					type: 'error',
-					...explainError(
-						error,
-						t('openregister', 'Could not import the file.'),
-						{
-							'invalid-request': t(
-								'openregister',
-								'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
-							),
-						},
-					),
-				}
+				this.notice = importFailedNotice(error)
 			} finally {
 				this.importing = false
 			}

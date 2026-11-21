@@ -43,19 +43,13 @@ namespace OCA\OpenRegister\Lifecycle;
  * A handler MUST fail loudly (throw) when it cannot perform its declared work —
  * it MUST NOT silently no-op. Silent no-op is the exact defect the executor
  * exists to eliminate (issue #427).
+ *
+ * This base declares no `execute()`, so a handler written for either
+ * published signature loads. Implement {@see ContextLifecycleActionInterface}
+ * (one `LifecycleActionContext`) for new handlers; handlers that still take
+ * `(array $objectData, array $previousData, array $parameters, string $actionName)`
+ * keep working and may say so with {@see LegacyLifecycleActionInterface}.
+ * The executor calls either form through {@see LifecycleActionInvoker}.
  */
 interface LifecycleActionInterface {
-	/**
-	 * Run the action on a transitioning object.
-	 *
-	 * @param array<string, mixed> $objectData The object payload after the lifecycle field was moved to its target value.
-	 * @param array<string, mixed> $previousData The object payload before the transition (for conditions / diffing).
-	 * @param array<string, mixed> $parameters The declared `actionParameters` block (empty array when absent).
-	 * @param string $actionName The declared `action` name that resolved to this handler.
-	 *
-	 * @return array<string, mixed> The object payload, with any self-mutations applied. Return the input unchanged for pure side-effect actions.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array;
 }//end interface

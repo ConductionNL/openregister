@@ -17,7 +17,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\DsarGuards;
 use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Service\DsarStores;
+use OCA\OpenRegister\Service\DsarSubjectQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -44,6 +47,9 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\DsarErasureRun
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Verwerkingsactiviteit
+ * @uses \OCA\OpenRegister\Service\DsarGuards
+ * @uses \OCA\OpenRegister\Service\DsarStores
+ * @uses \OCA\OpenRegister\Service\DsarSubjectQuery
  */
 class DsarServiceGoldenTest extends TestCase {
 
@@ -94,8 +100,13 @@ class DsarServiceGoldenTest extends TestCase {
 		$service = $this->service($case);
 		try {
 			$result = match ($case['call']) {
-				'find' => $service->findObjectsForSubject($case['subject'], $case['type'] ?? null, $case['mode'] ?? 'exact'),
-				'erase' => $service->eraseObjectsForSubject($case['subject'], $case['type'] ?? null, $case['dryRun'] ?? false),
+				'find' => $service->findObjectsFor(
+					query: new DsarSubjectQuery(subject: $case['subject'], type: $case['type'] ?? null, mode: $case['mode'] ?? 'exact')
+				),
+				'erase' => $service->eraseObjectsFor(
+					query: new DsarSubjectQuery(subject: $case['subject'], type: $case['type'] ?? null, mode: 'exact'),
+					dryRun: $case['dryRun'] ?? false
+				),
 				default => $service->rectifyObjectForSubject($case['id'], $case['changes']),
 			};
 		} catch (Throwable $e) {
@@ -202,7 +213,11 @@ class DsarServiceGoldenTest extends TestCase {
 			);
 		}
 
-		return new DsarService($db, $objects, $activities, $config, $session, $logger, $groups, $guard);
+		return new DsarService(
+			stores: new DsarStores(db: $db, objectMapper: $objects, vrwMapper: $activities, appConfig: $config),
+			guards: new DsarGuards(userSession: $session, groupManager: $groups, archivalGuard: $guard),
+			logger: $logger
+		);
 	}//end service()
 
 	private function queryBuilder(array $case): IQueryBuilder {

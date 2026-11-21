@@ -12,6 +12,7 @@ import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 import { getJson, objectAnswer, okJson, sendJson } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions, listStateFields } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -120,6 +121,82 @@ function moveRequiredToProperties(cleaned) {
 	delete cleaned.required
 }
 
+/**
+ * Refuse a schema that cannot be downloaded: missing, not a Schema, or
+ * without an id.
+ *
+ * @param {unknown} schema The schema to download
+ * @return {void}
+ * @throws {Error} Why it cannot be downloaded
+ */
+function assertDownloadable(schema) {
+	if (!schema) {
+		throw new Error('No schema item to download')
+	}
+	if (!(schema instanceof Schema)) {
+		throw new Error('Invalid schema item to download')
+	}
+	if (!schema?.id) {
+		throw new Error('No schema item ID to download')
+	}
+}
+
+/**
+ * Ask the server for a schema's download; a failed answer is logged and
+ * thrown as its status text.
+ *
+ * @param {Schema} schema The schema
+ * @return {Promise<Response>} The successful response
+ */
+async function fetchSchemaDownload(schema) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		},
+	)
+
+	if (!response.ok) {
+		console.error(response)
+		throw new Error(response.statusText)
+	}
+	return response
+}
+
+/**
+ * Let the browser save data as a prettified JSON file.
+ *
+ * @param {object} data The data to save
+ * @param {string} filename The file name to offer
+ * @return {void}
+ */
+function saveAsJsonFile(data, filename) {
+	// Convert JSON to a prettified string
+	const jsonString = JSON.stringify(data, null, 2)
+
+	// Create a Blob from the JSON string
+	const blob = new Blob([jsonString], { type: 'application/json' })
+
+	// Create a URL for the Blob
+	const url = URL.createObjectURL(blob)
+
+	// Create a temporary anchor element
+	const a = document.createElement('a')
+	a.href = url
+	a.download = filename
+
+	// Temporarily add the anchor to the DOM and trigger the download
+	document.body.appendChild(a)
+	a.click()
+
+	// Clean up
+	document.body.removeChild(a)
+	URL.revokeObjectURL(url)
+}
+
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
@@ -137,7 +214,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {object} state - Store state
 		 * @return {object|false} The schema to edit
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		editorSchemaItem: (state) => {
 			const item = state.schemaItem
@@ -170,7 +247,7 @@ export const useSchemaStore = defineStore('schema', {
 		 * Switch the editor between publishing and saving a draft.
 		 *
 		 * @param {boolean} draftMode - True to save edits as the schema's draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		setDraftMode(draftMode) {
 			this.draftMode = draftMode === true
@@ -181,7 +258,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {object} schemaItem - The edited schema (must have an id)
 		 * @return {Promise<Schema>} The schema with its draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async saveSchemaDraft(schemaItem) {
 			if (!schemaItem?.id) {
@@ -204,7 +281,7 @@ export const useSchemaStore = defineStore('schema', {
 		 * @param {object} [options] - Options
 		 * @param {boolean} [options.acknowledgeBreaking] - Accept a breaking change
 		 * @return {Promise<Schema>} The published schema
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async publishSchemaDraft(id, options = {}) {
 			const { data } = await axios.post(
@@ -220,7 +297,7 @@ export const useSchemaStore = defineStore('schema', {
 		 *
 		 * @param {number|string} id - The schema id
 		 * @return {Promise<Schema>} The schema without a draft
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async discardSchemaDraft(id) {
 			const { data } = await axios.delete(
@@ -466,54 +543,9 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to GET /api/schemas/{id}/download + browser-download side effect
 		 */
 		async downloadSchema(schema) {
-			if (!schema) {
-				throw new Error('No schema item to download')
-			}
-			if (!(schema instanceof Schema)) {
-				throw new Error('Invalid schema item to download')
-			}
-			if (!schema?.id) {
-				throw new Error('No schema item ID to download')
-			}
-
-			const response = await fetch(
-				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				},
-			)
-
-			if (!response.ok) {
-				console.error(response)
-				throw new Error(response.statusText)
-			}
-
-			const data = await response.json()
-
-			// Convert JSON to a prettified string
-			const jsonString = JSON.stringify(data, null, 2)
-
-			// Create a Blob from the JSON string
-			const blob = new Blob([jsonString], { type: 'application/json' })
-
-			// Create a URL for the Blob
-			const url = URL.createObjectURL(blob)
-
-			// Create a temporary anchor element
-			const a = document.createElement('a')
-			a.href = url
-			a.download = `${schema.title}.json`
-
-			// Temporarily add the anchor to the DOM and trigger the download
-			document.body.appendChild(a)
-			a.click()
-
-			// Clean up
-			document.body.removeChild(a)
-			URL.revokeObjectURL(url)
+			assertDownloadable(schema)
+			const response = await fetchSchemaDownload(schema)
+			saveAsJsonFile(await response.json(), `${schema.title}.json`)
 
 			return { response }
 		},
@@ -556,7 +588,7 @@ export const useSchemaStore = defineStore('schema', {
 		async updateSchemaFromExploration(schemaId, propertyUpdates) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
 
-			const response = await fetch(endpoint, {
+			const response = await fetch(endpoint, withRequestToken({
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -564,7 +596,7 @@ export const useSchemaStore = defineStore('schema', {
 				body: JSON.stringify({
 					properties: propertyUpdates,
 				}),
-			})
+			}))
 
 			const data = await okJson(response)
 

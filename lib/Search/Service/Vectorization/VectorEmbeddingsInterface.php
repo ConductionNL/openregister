@@ -106,10 +106,7 @@ interface VectorEmbeddingsInterface {
 	/**
 	 * Perform semantic similarity search
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -117,7 +114,7 @@ interface VectorEmbeddingsInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array;
+	public function semanticSearch(SemanticSearchRequest $request): array;
 
 	/**
 	 * Perform hybrid search combining keyword and semantic (vector) results

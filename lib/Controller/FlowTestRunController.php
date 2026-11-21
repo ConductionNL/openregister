@@ -15,15 +15,16 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ * @spec openspec/specs/flow-partial-run/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -48,9 +49,11 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * `startAt` and `pins`, and it is the one flow endpoint gated on
  * `flow.update` rather than on being allowed to see the flow.
  *
- * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+ * @spec openspec/specs/flow-partial-run/spec.md
  */
 class FlowTestRunController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 
 	/**
 	 * Queues and executes a run.
@@ -90,7 +93,7 @@ class FlowTestRunController extends Controller {
 		IRequest $request,
 		FlowTestRunControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->runner = $services->runner;
 		$this->resolvers = $services->resolvers;
 		$this->userSession = $services->userSession;
@@ -139,7 +142,7 @@ class FlowTestRunController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 * @spec openspec/specs/flow-partial-run/spec.md
 	 */
 	#[NoAdminRequired]
 	public function test(): JSONResponse {
@@ -210,15 +213,7 @@ class FlowTestRunController extends Controller {
 				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],

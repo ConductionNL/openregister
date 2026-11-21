@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
  * Pins each condition and every value handed to the binder, in order, on both platforms.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathTarget
+ * @uses \OCA\OpenRegister\Support\NullFilter
  */
 final class NestedPathFilterConditionsGoldenTest extends TestCase {
 

@@ -31,7 +31,9 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRecords;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -257,12 +259,8 @@ class DeploymentServiceAccessGoldenTest extends TestCase {
 		);
 
 		return new DeploymentService(
-			$drafts,
-			$previews,
-			$this->store(case: $case),
-			$this->deployments(case: $case),
-			$sets,
-			$this->db(),
+			new DeploymentValues($drafts, $previews, $this->store(case: $case)),
+			new DeploymentRecords($this->deployments(case: $case), $sets, $this->db()),
 			$this->session(case: $case),
 			$this->logger()
 		);

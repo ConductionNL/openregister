@@ -49,6 +49,15 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\ObjectSource\DirectoryPage
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
  */
 class DirectoryProvidersProjectionGoldenTest extends TestCase {
 

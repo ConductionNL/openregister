@@ -30,6 +30,8 @@ use RuntimeException;
  * the system mark is released even when the write throws.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class LifecycleWriteBoundaryWithoutPassTest extends TestCase {
 

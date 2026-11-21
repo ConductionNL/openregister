@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCP\IL10N;
@@ -35,6 +36,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowToken
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowTarget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExecution
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunOrigin
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowRun
  */
 class SubFlowNodeFailedChildBehaviourTest extends TestCase {
 
@@ -60,7 +68,7 @@ class SubFlowNodeFailedChildBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Sub-flow "child" did not complete (status: failed: register "cases" not found).');
 
-		$this->node($failed)->execute([], ['flowId' => 'child'], []);
+		$this->node($failed)->execute(new FlowNodeCall(items: [], config: ['flowId' => 'child'], context: []));
 	}//end testTheChildsErrorIsNamed()
 
 	public function testWithoutAnErrorOnlyTheStatusIsNamed(): void {
@@ -70,6 +78,6 @@ class SubFlowNodeFailedChildBehaviourTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Sub-flow "child" did not complete (status: failed).');
 
-		$this->node($failed)->execute([], ['flowId' => 'child'], []);
+		$this->node($failed)->execute(new FlowNodeCall(items: [], config: ['flowId' => 'child'], context: []));
 	}//end testWithoutAnErrorOnlyTheStatusIsNamed()
 }//end class

@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskEventsControllerFactory;
 use OCA\OpenRegister\Controller\TaskEventsController;
 use OCA\OpenRegister\Db\CalendarLink;
@@ -58,6 +59,9 @@ use OCA\OpenRegister\Service\LinkTarget;
  * @covers \OCA\OpenRegister\Controller\TaskEventsController
  * @uses \OCA\OpenRegister\Controller\Support\TaskEventsControllerServices
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Controller\Support\TaskLeafGuard
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\CalendarEventKey
  */
 class TaskEventsControllerTest extends TestCase {
 
@@ -171,7 +175,7 @@ class TaskEventsControllerTest extends TestCase {
 	private function expectNoCalendarWork(): void {
 		$this->links->expects($this->never())->method('getLinkedEvents');
 		$this->links->expects($this->never())->method('createLinkedEvent');
-		$this->links->expects($this->never())->method('linkEvent');
+		$this->links->expects($this->never())->method('linkLocatedEvent');
 		$this->links->expects($this->never())->method('unlinkEvent');
 		$this->events->expects($this->never())->method('unlinkEvent');
 	}//end expectNoCalendarWork()
@@ -313,8 +317,8 @@ class TaskEventsControllerTest extends TestCase {
 		$this->givenReadable();
 		$link = $this->createMock(originalClassName: CalendarLink::class);
 		$link->method('jsonSerialize')->willReturn(['id' => 5]);
-		$this->links->expects($this->once())->method('linkEvent')
-			->with('t-1', 4, 9, 'personal', 'u-1')
+		$this->links->expects($this->once())->method('linkLocatedEvent')
+			->with((new LinkTarget(objectUuid: 't-1', registerId: 4))->inSchema(schemaId: 9), new CalendarEventKey(calendarUri: 'personal', eventUid: 'u-1'))
 			->willReturn($link);
 
 		$response = $this->controller(['calendarUri' => 'personal', 'eventUid' => 'u-1'])->link(uuid: 't-1');

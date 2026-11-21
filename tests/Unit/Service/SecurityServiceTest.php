@@ -139,7 +139,7 @@ class SecurityServiceTest extends TestCase {
 		$this->cache->method('get')->willReturn(0);
 		$this->cache->expects($this->atLeastOnce())->method('set');
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 	}
 
 	public function testRecordFailedLoginAttemptLocksOutAfterThreshold(): void {
@@ -151,7 +151,7 @@ class SecurityServiceTest extends TestCase {
 			$setCalls[] = $key;
 		});
 
-		$this->service->recordFailedLoginAttempt('user1', '1.2.3.4');
+		$this->service->recordFailedLoginAttempt(new FailedAttempt('user1', '1.2.3.4', 'invalid_credentials'));
 
 		// Should set both user lockout and ip lockout.
 		$lockoutKeys = array_filter($setCalls, fn ($k) => str_contains($k, 'lockout'));

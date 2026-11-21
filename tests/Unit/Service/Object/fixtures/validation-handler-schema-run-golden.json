@@ -288,9 +288,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -414,9 +412,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -540,9 +536,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -666,9 +660,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -945,9 +937,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1060,9 +1050,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1175,9 +1163,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1290,9 +1276,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1405,9 +1389,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1704,9 +1686,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -1746,9 +1726,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -1775,7 +1753,7 @@
                     }
                 ]
             ],
-            "sha1": "397da48ae7aca240134aafa31edc5ae1db1a0605"
+            "sha1": "b47437ca4f663892918466b411ce683380ed082c"
         }
     },
     "band 1000": {
@@ -1863,9 +1841,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -1978,9 +1954,7 @@
                     "_rbac": false,
                     "_multitenancy": false,
                     "validation": true,
-                    "events": false,
-                    "deduplicateIds": false,
-                    "enrich": true
+                    "events": false
                 }
             ],
             [
@@ -2097,9 +2071,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2141,9 +2113,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2170,7 +2140,7 @@
                     }
                 ]
             ],
-            "sha1": "1e37b89bb3cf6bc7520daf15c6db2156ed98ddfd"
+            "sha1": "b0e47e89d060562f49dc9673fe476b9f406f4cdf"
         }
     },
     "band 10001": {
@@ -2262,9 +2232,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2306,9 +2274,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2335,7 +2301,7 @@
                     }
                 ]
             ],
-            "sha1": "07ed382d8202248c2650a2ef75b006e3a65fa183"
+            "sha1": "60764c880e317b732b4624660e3714394ebce4e2"
         }
     },
     "band 50000": {
@@ -2427,9 +2393,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2471,9 +2435,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2500,7 +2462,7 @@
                     }
                 ]
             ],
-            "sha1": "a6cf64a7fd6749ed2da431d602732e9236cb537d"
+            "sha1": "216aa3da8f550543ac7680a18084574d07b2572c"
         }
     },
     "band 50001": {
@@ -2592,9 +2554,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2636,9 +2596,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2665,7 +2623,7 @@
                     }
                 ]
             ],
-            "sha1": "fc1b7b018cd6879f75eefbfc5f573d5755abbabb"
+            "sha1": "df690786409a3796bf91ba110d0e4fdab235d96a"
         }
     },
     "band 200000": {
@@ -2757,9 +2715,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2801,9 +2757,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2830,7 +2784,7 @@
                     }
                 ]
             ],
-            "sha1": "41de870e8eb24503e0735fe7149cb48341bc1e0c"
+            "sha1": "257b68d2c7bfee2c7cad2062e26fd1d5361efbb9"
         }
     },
     "band 200001": {
@@ -2922,9 +2876,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2966,9 +2918,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -2995,7 +2945,7 @@
                     }
                 ]
             ],
-            "sha1": "2d003d65c7b6b380dc1005f02a1e81fa41c05a77"
+            "sha1": "54f155b2d8e8f82c9d239a1a80ac967ecab99e5c"
         }
     },
     "band by limit": {
@@ -3088,9 +3038,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -3132,9 +3080,7 @@
                         "_rbac": false,
                         "_multitenancy": false,
                         "validation": true,
-                        "events": false,
-                        "deduplicateIds": false,
-                        "enrich": true
+                        "events": false
                     }
                 ],
                 [
@@ -3161,7 +3107,7 @@
                     }
                 ]
             ],
-            "sha1": "37b37344e5d26b1798bffcd2d6e15d6042adbaa7"
+            "sha1": "6891f7947d4eaa96a8bbc8b10f8761bbb944d959"
         }
     }
 }

@@ -81,6 +81,31 @@ final class SystemOperationContext {
 	}//end run()
 
 	/**
+	 * Run a callable with any active system-operation scope lifted.
+	 *
+	 * For code that acts as a named user: that user's own permission checks
+	 * must decide, even when the caller runs inside a system scope. A run()
+	 * nested inside the callable elevates again as usual. The outer scope is
+	 * restored when the callable ends, including on exceptions.
+	 *
+	 * @param callable $operation The operation to execute without elevation.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public static function suspend(callable $operation) {
+		$depth = self::$depth;
+		self::$depth = 0;
+
+		try {
+			return $operation();
+		} finally {
+			self::$depth = $depth;
+		}
+	}//end suspend()
+
+	/**
 	 * Declare that the write about to run is the system's, and fail if it cannot be.
 	 *
 	 * 🔴 THIS EXISTS BECAUSE THE ALTERNATIVE DEGRADES SILENTLY. A consuming app

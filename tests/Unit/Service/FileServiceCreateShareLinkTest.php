@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
@@ -33,6 +34,7 @@ use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Service\FileService
+ * @uses \OCA\OpenRegister\Service\File\ShareLinkRequest
  */
 class FileServiceCreateShareLinkTest extends TestCase {
 
@@ -88,7 +90,7 @@ class FileServiceCreateShareLinkTest extends TestCase {
 			->willThrowException(new Exception('no folder'));
 		$this->rootFolder->expects($this->never())->method('get');
 
-		$this->assertSame("OpenRegister user folder couldn't be found.", $service->createShareLink('a/b.txt'));
+		$this->assertSame("OpenRegister user folder couldn't be found.", $service->createShareLink(new ShareLinkRequest('a/b.txt')));
 	}//end testNoFileIsLookedUpWithoutTheUserFolder()
 
 	/**
@@ -106,6 +108,21 @@ class FileServiceCreateShareLinkTest extends TestCase {
 			->with('a/b.txt')
 			->willThrowException(new NotFoundException());
 
-		$this->assertSame('File not found at a/b.txt', $service->createShareLink('/a/b.txt/'));
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink(new ShareLinkRequest('/a/b.txt/')));
 	}//end testTheFileIsLookedUpWithTheUserFolder()
+
+	public function testThePublishedPathFormLooksUpTheSameFile(): void {
+		$service = $this->service();
+		$this->folders->expects($this->exactly(3))
+			->method('getOpenRegisterUserFolder')
+			->willReturn($this->createMock(Folder::class));
+		$this->rootFolder->expects($this->exactly(3))
+			->method('get')
+			->with('a/b.txt')
+			->willThrowException(new NotFoundException());
+
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink('/a/b.txt/'));
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink(path: '/a/b.txt/', shareType: 3));
+		$this->assertSame('File not found at a/b.txt', $service->createShareLink(request: new ShareLinkRequest('/a/b.txt/')));
+	}//end testThePublishedPathFormLooksUpTheSameFile()
 }//end class
