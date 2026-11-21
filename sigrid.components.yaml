@@ -51,7 +51,7 @@ components:
   - name: Core
     include:
       - ".*/lib/Kernel/Contracts/Core/.*"
-      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractRetentionJob|ActorForwardedJob|ConfiguredJobRuntime|DbalIntrospectionJob|DeferredObjectEventJob|DraftExpiryJob|GroupReconcilerJob|JobHandles|JobRuntime|ObjectCleanupJob|PublishedDigestVerifyJob|RecordedJobRuntime|RecordedQueuedJob|RecordsItsRuns|SchemaChangeNoticeJob|SchemaRunJob|StateHistoryRebuildJob|TenantDeprovisionJob|TenantPurgeJob|TenantUsageSyncJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ActorForwardingServices[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventActor[.]php"
       - ".*/lib/BackgroundJob/Support/DeferredObjectEventLookup[.]php"
@@ -2212,7 +2212,7 @@ components:
       - ".*/lib/Controller/Support/WellKnownControllerServices[.]php"
       - ".*/lib/Controller/Support/XwikiLinksControllerServices[.]php"
       - ".*/lib/Controller/Trait/ObjectLinkActionsTrait[.]php"
-      - ".*/lib/Db/(AnalyticsLink|AnalyticsLinkMapper|AnalyticsLinkMapperInterface|AnalyticsSeries|AnalyticsSeriesMapper|AnalyticsSeriesMapperInterface|ApiCallKey|ApiCallKeys|ApiCallRecord|ApiCallRecordMapper|ApiCallRecordMapperInterface|ApplicationMapperInterface|BookmarkLink|BookmarkLinkMapper|BookmarkLinkMapperInterface|CalendarLink|CalendarLinkMapper|CalendarLinkMapperInterface|CaseToken|CaseTokenMapper|CaseTokenMapperInterface|CollectiveLink|CollectiveLinkMapper|CollectiveLinkMapperInterface|Consumer|ConsumerMapper|ConsumerMapperInterface|ContactLink|ContactLinkMapper|ContactLinkMapperInterface|CospendEntryKey|CospendLink|CospendLinkMapper|CospendLinkMapperInterface|CountLinksByObjectUuidTrait|DeckLink|DeckLinkMapper|DeckLinkMapperInterface|DeleteLinksByObjectUuidTrait|EmailLink|EmailLinkMapper|EmailLinkMapperInterface|Endpoint|EndpointLog|EndpointLogMapper|EndpointLogMapperInterface|EndpointLogScope|EndpointMapper|EndpointMapperInterface|FederatedShare|FederatedShareMapper|FederatedShareMapperInterface|FindAllNewestFirstTrait|FindLinksByObjectUuidTrait|FlowLink|FlowLinkMapper|FlowLinkMapperInterface|FormLink|FormLinkMapper|FormLinkMapperInterface|FormSubmissionRef|HandoffQueueEntry|HandoffQueueEntryMapper|HandoffQueueEntryMapperInterface|IntegrationsMapperBindings|IntegrationsMapperRegistrar|MailMessageKey|MapLink|MapLinkMapper|MapLinkMapperInterface|Mapping|MappingMapper|MappingMapperInterface|ObjectKeyLinkTrait|OpenProjectLink|OpenProjectLinkMapper|OpenProjectLinkMapperInterface|PhotoLink|PhotoLinkMapper|PhotoLinkMapperInterface|PollLink|PollLinkMapper|PollLinkMapperInterface|Source|SourceMapper|SyncExecution|SyncFailure|SyncRecord|SyncRecordInputs|SyncRecordMapper|SyncRecordMapperInterface|TalkLink|TalkLinkMapper|TalkLinkMapperInterface|TimeTrackerLink|TimeTrackerLinkMapper|TimeTrackerLinkMapperInterface|Webhook|WebhookLog|WebhookLogMapper|WebhookLogMapperInterface|WebhookMapper|WebhookMapperInterface|XwikiLink|XwikiLinkMapper|XwikiLinkMapperInterface)[.]php"
+      - ".*/lib/Db/(AnalyticsLink|AnalyticsLinkMapper|AnalyticsLinkMapperInterface|AnalyticsSeries|AnalyticsSeriesMapper|AnalyticsSeriesMapperInterface|ApiCallKey|ApiCallKeys|ApiCallRecord|ApiCallRecordMapper|ApiCallRecordMapperInterface|ApplicationMapperInterface|BookmarkLink|BookmarkLinkMapper|BookmarkLinkMapperInterface|CalendarLink|CalendarLinkDuplicates|CalendarLinkMapper|CalendarLinkMapperInterface|CaseToken|CaseTokenMapper|CaseTokenMapperInterface|CollectiveLink|CollectiveLinkMapper|CollectiveLinkMapperInterface|Consumer|ConsumerMapper|ConsumerMapperInterface|ContactLink|ContactLinkMapper|ContactLinkMapperInterface|CospendEntryKey|CospendLink|CospendLinkMapper|CospendLinkMapperInterface|CountLinksByObjectUuidTrait|DeckLink|DeckLinkMapper|DeckLinkMapperInterface|DeleteLinksByObjectUuidTrait|EmailLink|EmailLinkMapper|EmailLinkMapperInterface|Endpoint|EndpointLog|EndpointLogMapper|EndpointLogMapperInterface|EndpointLogScope|EndpointMapper|EndpointMapperInterface|FederatedShare|FederatedShareMapper|FederatedShareMapperInterface|FindAllNewestFirstTrait|FindLinksByObjectUuidTrait|FlowLink|FlowLinkMapper|FlowLinkMapperInterface|FormLink|FormLinkMapper|FormLinkMapperInterface|FormSubmissionRef|HandoffQueueEntry|HandoffQueueEntryMapper|HandoffQueueEntryMapperInterface|IntegrationsMapperBindings|IntegrationsMapperRegistrar|MailMessageKey|MapLink|MapLinkMapper|MapLinkMapperInterface|Mapping|MappingMapper|MappingMapperInterface|ObjectKeyLinkTrait|OpenProjectLink|OpenProjectLinkMapper|OpenProjectLinkMapperInterface|PhotoLink|PhotoLinkMapper|PhotoLinkMapperInterface|PollLink|PollLinkMapper|PollLinkMapperInterface|Source|SourceMapper|SyncExecution|SyncFailure|SyncRecord|SyncRecordInputs|SyncRecordMapper|SyncRecordMapperInterface|TalkLink|TalkLinkMapper|TalkLinkMapperInterface|TimeTrackerLink|TimeTrackerLinkMapper|TimeTrackerLinkMapperInterface|Webhook|WebhookLog|WebhookLogMapper|WebhookLogMapperInterface|WebhookMapper|WebhookMapperInterface|XwikiLink|XwikiLinkMapper|XwikiLinkMapperInterface)[.]php"
       - ".*/lib/Db/Application/[^/]*"
       - ".*/lib/Db/BulkJob/[^/]*"
       - ".*/lib/Db/CaseItem/[^/]*"
@@ -2238,7 +2238,7 @@ components:
       - ".*/lib/Db/WebhookLog/[^/]*"
       - ".*/lib/Event/(RegisterLeafProvidersEvent|ToolRegistrationEvent)[.]php"
       - ".*/lib/Federation/[^/]*"
-      - ".*/lib/Listener/(HandoffDeclarationChecksListener|WebhookRequestInterceptionListener)[.]php"
+      - ".*/lib/Listener/(CalendarObjectChangedListener|CalendarObjectDeletedListener|HandoffDeclarationChecksListener|WebhookRequestInterceptionListener)[.]php"
       - ".*/lib/Mcp/[^/]*"
       - ".*/lib/Mcp/Attribute/[^/]*"
       - ".*/lib/Mcp/BuiltIn/AbstractBuiltInToolProvider[.]php"
@@ -2339,7 +2339,6 @@ components:
   - name: Files
     include:
       - ".*/lib/Kernel/Contracts/Files/.*"
-      - ".*/lib/BackgroundJob/(PublishedDigestVerifyJob)[.]php"
       - ".*/lib/Controller/(FileDisclosuresController)[.]php"
       - ".*/lib/Db/(DecisionMetadataChange|EntityRelationMapper|FileDigest|FileDigestMapper|FilesMapperBindings|FilesMapperRegistrar)[.]php"
       - ".*/lib/Files/[^/]*"

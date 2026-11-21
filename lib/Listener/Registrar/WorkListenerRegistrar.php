@@ -32,6 +32,22 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 final class WorkListenerRegistrar {
 
 	/**
+	 * Calendar-object event class => inbound calendar-link listener.
+	 *
+	 * @var array<string, string>
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-inbound-calendar-changes-refresh-the-link-table-req-cal-inb-001
+	 */
+	public const CALENDAR_LINK_LISTENERS = [
+		'OCP\\Calendar\\Events\\CalendarObjectCreatedEvent' => \OCA\OpenRegister\Listener\CalendarObjectChangedListener::class,
+		'OCP\\Calendar\\Events\\CalendarObjectUpdatedEvent' => \OCA\OpenRegister\Listener\CalendarObjectChangedListener::class,
+		'OCP\\Calendar\\Events\\CalendarObjectMovedEvent' => \OCA\OpenRegister\Listener\CalendarObjectChangedListener::class,
+		'OCP\\Calendar\\Events\\CalendarObjectRestoredEvent' => \OCA\OpenRegister\Listener\CalendarObjectChangedListener::class,
+		'OCP\\Calendar\\Events\\CalendarObjectDeletedEvent' => \OCA\OpenRegister\Listener\CalendarObjectDeletedListener::class,
+		'OCP\\Calendar\\Events\\CalendarObjectMovedToTrashEvent' => \OCA\OpenRegister\Listener\CalendarObjectDeletedListener::class,
+	];
+
+	/**
 	 * Register the listeners.
 	 *
 	 * @param IRegistrationContext $context The registration context.
@@ -52,5 +68,35 @@ final class WorkListenerRegistrar {
 			\OCP\Calendar\Events\CalendarObjectDeletedEvent::class,
 			\OCA\OpenRegister\Listener\TaskVtodoWriteBackListener::class
 		);
+
+		// The inbound half of the calendar leaf (calendar-leaf-inbound,
+		// REQ-CAL-INB-001): calendar-side changes refresh, create and delete
+		// the link rows. Registered after the write-back hook, so a reverted
+		// projection is what the link rows see.
+		self::registerPresent(context: $context, listeners: self::CALENDAR_LINK_LISTENERS);
 	}//end register()
+
+	/**
+	 * Register each listener of the map whose event class exists, so a server
+	 * without one of the calendar events keeps the outbound-only behaviour
+	 * instead of failing at boot.
+	 *
+	 * @param IRegistrationContext  $context   The registration context.
+	 * @param array<string, string> $listeners Event class => listener class.
+	 *
+	 * @return int How many were registered.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-inbound-calendar-changes-refresh-the-link-table-req-cal-inb-001
+	 */
+	public static function registerPresent(IRegistrationContext $context, array $listeners): int {
+		$registered = 0;
+		foreach ($listeners as $event => $listener) {
+			if (class_exists($event) === true) {
+				$context->registerEventListener($event, $listener);
+				$registered++;
+			}
+		}
+
+		return $registered;
+	}//end registerPresent()
 }//end class

@@ -93,4 +93,26 @@ interface CalendarLinkMapperInterface {
 	 * @return CalendarLink The inserted row, with its id.
 	 */
 	public function insert(Entity $entity): Entity;
+
+	/**
+	 * Save a changed row.
+	 *
+	 * @param Entity $entity The row to save.
+	 *
+	 * @return CalendarLink The saved row.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-inbound-calendar-changes-refresh-the-link-table-req-cal-inb-001
+	 */
+	public function update(Entity $entity): Entity;
+
+	/**
+	 * Delete one row.
+	 *
+	 * @param Entity $entity The row to delete.
+	 *
+	 * @return CalendarLink The deleted row.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-inbound-calendar-changes-refresh-the-link-table-req-cal-inb-001
+	 */
+	public function delete(Entity $entity): Entity;
 }//end interface
