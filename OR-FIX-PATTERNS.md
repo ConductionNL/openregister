@@ -111,3 +111,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: modify/delete conflict on lib/Controller/Support/MaintenanceReachableControllersInterface.php; F09ControllerBoundaryTest or MaintenanceModeMiddlewareTest pin three controllers.
 - Cause: main replaced ALWAYS_REACHABLE with Kernel\Contracts\Configuration\MaintenanceReachableInterface on each controller.
 - Fix: git rm the list file; the PR's new controller `implements MaintenanceReachableInterface`; add it to the F09 loop and the middleware test's expected list. Similarly ObjectsController::export moved to ObjectExportController: move attributes such as #[Sheddable] there and repoint tests.
+
+## Undefined constant JobHandles::<X> (or-fix-10)
+- Symptom: Error: Undefined constant OCA\OpenRegister\BackgroundJob\JobHandles::<X> in a PR's test or lib code after a main merge.
+- Cause: main split the job handle constants per area into lib/BackgroundJob/<Area>JobHandlesInterface.php (Processes, Compliance, Configuration, Integrations).
+- Fix: `grep -rn 'const <X>' lib/BackgroundJob` and swap the import and the constant prefix to that interface (see #10530 ef7ee364).
