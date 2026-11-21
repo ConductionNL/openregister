@@ -28,34 +28,12 @@ use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 /**
  * Save-time checks of annotations whose faults are silent later, so the save refuses them.
  *
+ * The widget annotation is Search's: SearchDeclarationChecksListener contributes
+ * its check in the WIDGETS slot of SchemaDeclarationOrder.
+ *
  * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
  */
 final class RecordAnnotationRefusals {
-
-	/**
-	 * Validate the optional `x-openregister-widgets` annotation.
-	 *
-	 * Schemas that pre-declare widgets (e.g. the `dashboard` schema in the
-	 * `reports` register) carry the array under
-	 * `configuration['x-openregister-widgets']`. Operators see shape errors at
-	 * schema-save time rather than at first render.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws \Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
-	 */
-	public function checkWidgets(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-widgets');
-		if ($annotation->isBlock() === true) {
-			$annotation->faults()->refuse(
-				errors: SchemaDeclarationValidators::widgets()->validate(['x-openregister-widgets' => $annotation->value()])
-			);
-		}
-	}//end checkWidgets()
 
 	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.

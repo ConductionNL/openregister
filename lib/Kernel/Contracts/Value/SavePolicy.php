@@ -23,33 +23,12 @@
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * The policy switches of one object save. Every default is the behaviour a caller gets without asking.
+ * The published SavePolicy, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\SavePolicy, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class SavePolicy {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param bool $silent        Skip audit trail creation and events.
-	 * @param bool $validation    Validate the object against its schema. A bulk importer with
-	 *                            pre-validated rows may decline re-validating every one of them.
-	 * @param bool $failIfExists  Insert-only: throw ObjectExistsException rather than update when the
-	 *                            identifier is taken. False is an upsert.
-	 * @param bool $dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
-	 *                            ObjectsController reads it from the raw request, because the body filter
-	 *                            there strips `_`-prefixed keys.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Each flag is a documented save policy with a safe default.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		public readonly bool $silent=false,
-		public readonly bool $validation=true,
-		public readonly bool $failIfExists=false,
-		public readonly bool $dedupOverride=false,
-	) {
-	}//end __construct()
+final class SavePolicy extends \OCA\OpenRegister\Contract\SavePolicy {
 }//end class
