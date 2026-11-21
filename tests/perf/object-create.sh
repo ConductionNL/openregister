@@ -42,9 +42,15 @@
 #   PG_CONTAINER default conduction-postgres
 #   PG_USER     default oc_admin
 #   PG_DB       default nextcloud
-#   BUDGET_MS   default 500   (p95 budget; exit 1 when exceeded)
+#   FLOOR_BUDGET_MS default 50  (the gate: p95 wall minus the instance floor,
+#                               measured in the same run, must be under this)
+#   BUDGET_MS   default empty (optional absolute p95 wall budget; the wall
+#                               figure is always reported, and only gated when set)
 #   MAX_SCHEMA_SCANS default 5
 #   MAX_COMMITS default 1
+#
+# The summary and verdict live in lib/summarise.awk (tested by
+# tests/perf/summarise.test.sh, which needs no instance).
 #
 # Exit codes: 0 within budget, 1 over budget or over a counter bound, 2 setup error.
 #
@@ -58,11 +64,12 @@ NC_AUTH="${NC_AUTH:-admin:admin}"
 PG_CONTAINER="${PG_CONTAINER:-conduction-postgres}"
 PG_USER="${PG_USER:-oc_admin}"
 PG_DB="${PG_DB:-nextcloud}"
-BUDGET_MS="${BUDGET_MS:-500}"
+FLOOR_BUDGET_MS="${FLOOR_BUDGET_MS:-50}"
+BUDGET_MS="${BUDGET_MS:-}"
 MAX_SCHEMA_SCANS="${MAX_SCHEMA_SCANS:-5}"
 MAX_COMMITS="${MAX_COMMITS:-1}"
 
-RUNS=10
+RUNS=20
 REGISTER="larpingapp"
 SCHEMA="character"
 PAYLOAD=""
@@ -73,7 +80,7 @@ while getopts "n:r:s:p:h" opt; do
         r) REGISTER="$OPTARG" ;;
         s) SCHEMA="$OPTARG" ;;
         p) PAYLOAD="$OPTARG" ;;
-        h) sed -n '2,40p' "$0"; exit 0 ;;
+        h) sed -n '2,58p' "$0"; exit 0 ;;
         *) exit 2 ;;
     esac
 done
@@ -160,7 +167,7 @@ esac
 
 echo "[perf] endpoint : $ENDPOINT"
 echo "[perf] runs     : $RUNS (plus 2 warm-up, discarded)"
-echo "[perf] budget   : p95 < ${BUDGET_MS}ms, schema scans <= ${MAX_SCHEMA_SCANS}, commits <= ${MAX_COMMITS}"
+echo "[perf] budget   : p95 minus floor < ${FLOOR_BUDGET_MS}ms${BUDGET_MS:+, p95 <= ${BUDGET_MS}ms}, schema scans <= ${MAX_SCHEMA_SCANS}, commits <= ${MAX_COMMITS}"
 echo
 
 # Warm-up: a cold PHP worker repays opcache + every lazy cache, and this
@@ -184,40 +191,6 @@ FLOOR_MS="$(measure_floor)"
 echo "[perf] instance floor (app-boot, no object work): ${FLOOR_MS}ms"
 echo
 
-awk -v budget="$BUDGET_MS" -v maxs="$MAX_SCHEMA_SCANS" -v maxc="$MAX_COMMITS" -v floor="$FLOOR_MS" '
-{
-    t[NR] = $1 * 1000
-    if ($2 !~ /^2/) bad++
-    if ($3 > worst_schema) worst_schema = $3
-    if ($5 > worst_commits) worst_commits = $5
-    sum_schema += $3; sum_commits += $5
-}
-END {
-    n = NR
-    if (n == 0) { print "[perf] no runs"; exit 2 }
-    # insertion sort — n is small and this avoids depending on asort()
-    for (i = 2; i <= n; i++) { v = t[i]; j = i - 1; while (j > 0 && t[j] > v) { t[j+1] = t[j]; j-- } t[j+1] = v }
-    p95i = int(n * 0.95); if (p95i < 1) p95i = 1
-    med = (n % 2) ? t[int(n/2)+1] : (t[n/2] + t[n/2+1]) / 2
-
-    printf "[perf] wall           min=%.0fms  median=%.0fms  p95=%.0fms  max=%.0fms\n", t[1], med, t[p95i], t[n]
-    printf "[perf] minus floor    min=%.0fms  median=%.0fms  p95=%.0fms   (floor %.0fms)\n", \
-        (t[1]-floor < 0 ? 0 : t[1]-floor), (med-floor < 0 ? 0 : med-floor), \
-        (t[p95i]-floor < 0 ? 0 : t[p95i]-floor), floor
-    printf "[perf] schema seq scans  avg=%.1f  worst=%d  (bound %d)\n", sum_schema/n, worst_schema, maxs
-    printf "[perf] commits           avg=%.1f  worst=%d  (bound %d)\n", sum_commits/n, worst_commits, maxc
-
-    fail = 0
-    if (bad)                { printf "[perf] FAIL %d run(s) did not return 2xx\n", bad; fail = 1 }
-    if (t[p95i] > budget) {
-        printf "[perf] FAIL p95 %.0fms exceeds %sms\n", t[p95i], budget
-        if (t[p95i] - floor <= budget) {
-            printf "[perf]      (write path itself is %.0fms — within budget; the overage is the %.0fms instance floor)\n", t[p95i]-floor, floor
-        }
-        fail = 1
-    }
-    if (worst_schema > maxs){ printf "[perf] FAIL %d schema seq scans exceeds %d\n", worst_schema, maxs; fail = 1 }
-    if (worst_commits > maxc){printf "[perf] FAIL %d commits exceeds %d\n", worst_commits, maxc; fail = 1 }
-    if (!fail) print "[perf] PASS"
-    exit fail
-}' "$WORK/results"
+awk -v budget="$BUDGET_MS" -v floorbudget="$FLOOR_BUDGET_MS" \
+    -v maxs="$MAX_SCHEMA_SCANS" -v maxc="$MAX_COMMITS" -v floor="$FLOOR_MS" \
+    -f "$(dirname "$0")/lib/summarise.awk" "$WORK/results"
