@@ -321,3 +321,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: the helper reports e.g. duplicate rows: ['Service/OwnedWebhookView.php']; the yaml then moves that file to the PR's component.
 - Cause: the PR's conflict hunk carries a row for a file main maps elsewhere in the csv (outside the hunk), so the per-hunk union keeps both.
 - Fix: delete the PR's copy (main's row wins), rerun python3 scripts/component-patterns.py; the yaml diff vs main must show only the PR's own files (#10523).
+
+## Save-check test still mocks the dispatcher after the check moved to a slot (or-fix-9)
+- Symptom: 'Failed asserting that exception of type Exception is thrown' in a tests/Unit/Db/SchemaMapper*Test that builds SchemaMapper with eventDispatcher: createMock(IEventDispatcher::class); red on the PR head itself.
+- Cause: the check was moved (often by a fix lane) into a SchemaDeclarationChecksEvent listener slot; a mocked dispatcher never runs the listeners, so nothing refuses.
+- Fix: pass eventDispatcher: new \OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher() (as SchemaMapperAutoTransitionValidationTest does); the listener must be in its listeners() list. (#10529)
