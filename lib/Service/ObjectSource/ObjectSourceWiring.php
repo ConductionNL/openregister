@@ -163,6 +163,8 @@ final class ObjectSourceWiring {
 			'sourceMapper'      => \OCA\OpenRegister\Db\SourceMapperInterface::class,
 			'connectionFactory' => DbalConnectionFactory::class,
 			'logger'            => 'Psr\Log\LoggerInterface',
+			// Each source behind its own breaker, `source:{id}` (operate-load-shedding D-3).
+			'breakers'          => \OCA\OpenRegister\Service\Resilience\BreakerRegistry::class,
 		],
 		// Tables provider stack: a guarded reader (the sole Tables boundary), pure mappers, a schema-sync reconciler and the provider.
 		TablesUuidDeriver::class => [],

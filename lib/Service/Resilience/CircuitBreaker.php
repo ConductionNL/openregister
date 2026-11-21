@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Resilience;
 
+use Closure;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IMemcache;
 use Psr\Log\LoggerInterface;
@@ -53,6 +54,16 @@ class CircuitBreaker {
 	private const PREFIX = 'breaker_';
 
 	/**
+	 * The most keys the console's index holds.
+	 */
+	private const INDEX_LIMIT = 200;
+
+	/**
+	 * How long the console's index is kept after its last change, in seconds.
+	 */
+	private const INDEX_TTL = 86400;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IMemcache|null    $cache      The state store; null lets every call through.
@@ -60,6 +71,7 @@ class CircuitBreaker {
 	 * @param ITimeFactory      $clock      The clock.
 	 * @param LoggerInterface   $logger     The logger.
 	 * @param bool              $shared     Whether the store is shared by every worker.
+	 * @param Closure|null      $onChange   Told of each opening and closing: (string $key, bool $open, int $coolDown): void.
 	 *
 	 * @return void
 	 */
@@ -69,8 +81,79 @@ class CircuitBreaker {
 		private readonly ITimeFactory $clock,
 		private readonly LoggerInterface $logger,
 		public readonly bool $shared,
+		private readonly ?Closure $onChange = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The keys that have counted a failure or opened recently, for the operations console.
+	 *
+	 * The index is kept best-effort: two workers adding a key at the same
+	 * moment may lose one of them until its next failure. It holds at most
+	 * INDEX_LIMIT keys, the newest kept.
+	 *
+	 * @return list<string> The keys.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	public function knownKeys(): array {
+		try {
+			$index = $this->cache?->get(self::PREFIX . 'index');
+		} catch (Throwable $e) {
+			$this->logger->warning('[CircuitBreaker] key index unreadable: ' . $e->getMessage());
+			return [];
+		}
+
+		if (is_array($index) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($index, 'is_string'));
+	}//end knownKeys()
+
+	/**
+	 * Add a key to the console's index.
+	 *
+	 * @param string $key The breaker key.
+	 *
+	 * @return void
+	 */
+	private function remember(string $key): void {
+		$known = $this->knownKeys();
+		if (in_array($key, $known, true) === true) {
+			return;
+		}
+
+		$known[] = $key;
+		$known   = array_slice($known, -self::INDEX_LIMIT);
+		$this->attempt(
+			key: $key,
+			action: function () use ($known): void {
+				$this->cache?->set(self::PREFIX . 'index', $known, self::INDEX_TTL);
+			}
+		);
+	}//end remember()
+
+	/**
+	 * Tell the listener of a transition; a failing listener never fails the call.
+	 *
+	 * @param string $key      The breaker key.
+	 * @param bool   $open     True when it opened, false when it closed.
+	 * @param int    $coolDown The cool-down it opened for, 0 when it closed.
+	 *
+	 * @return void
+	 */
+	private function changed(string $key, bool $open, int $coolDown): void {
+		if ($this->onChange === null) {
+			return;
+		}
+
+		try {
+			($this->onChange)($key, $open, $coolDown);
+		} catch (Throwable $e) {
+			$this->logger->warning(sprintf('[CircuitBreaker] %s: transition not reported: %s', $key, $e->getMessage()));
+		}
+	}//end changed()
 
 	/**
 	 * Let a call to the dependency through, or refuse it while the breaker is open.
@@ -168,6 +251,7 @@ class CircuitBreaker {
 			return;
 		}
 
+		$this->remember(key: $key);
 		$this->count(key: $key, part: 'calls');
 		$this->count(key: $key, part: 'failures');
 		if ($this->shouldOpen(key: $key) === true) {
@@ -185,6 +269,7 @@ class CircuitBreaker {
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	public function reset(string $key): void {
+		$wasOpen = ($this->read(key: $key, part: 'open') !== null);
 		$this->attempt(
 			key: $key,
 			action: function () use ($key): void {
@@ -198,6 +283,11 @@ class CircuitBreaker {
 				}
 			}
 		);
+
+		if ($wasOpen === true) {
+			$this->logger->info(sprintf('[CircuitBreaker] %s closed', $key));
+			$this->changed(key: $key, open: false, coolDown: 0);
+		}
 	}//end reset()
 
 	/**
@@ -324,6 +414,8 @@ class CircuitBreaker {
 			}
 		);
 		$this->logger->warning(sprintf('[CircuitBreaker] %s opened for %d seconds', $key, $coolDown));
+		$this->remember(key: $key);
+		$this->changed(key: $key, open: true, coolDown: $coolDown);
 	}//end open()
 
 	/**
