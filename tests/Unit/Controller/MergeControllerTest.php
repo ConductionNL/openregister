@@ -120,6 +120,33 @@ class MergeControllerTest extends TestCase {
 		$this->assertSame($payload, $response->getData());
 	}//end testPreviewDelegatesToPreviewMerge()
 
+	/**
+	 * mdm-merge-relinks-every-reference task 1.3: the preview answers the
+	 * references that will move, by schema and count, as the service plans them.
+	 *
+	 * @return void
+	 */
+	public function testPreviewListsTheReferencesBySchemaAndCount(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['from', '', 'from-uuid'],
+				['into', '', 'into-uuid'],
+			]
+		);
+
+		$references = [['schema' => 'suite', 'count' => 1], ['schema' => 'connection', 'count' => 3]];
+		$this->mergeService->method('previewMerge')->willReturn(
+			['from' => 'from-uuid', 'into' => 'into-uuid', 'postMergeGoldenRecord' => [], 'references' => $references]
+		);
+
+		$data = $this->controller->preview()->getData();
+
+		$this->assertSame($references, $data['references']);
+		foreach ($data['references'] as $reference) {
+			$this->assertSame(['schema', 'count'], array_keys($reference));
+		}
+	}//end testPreviewListsTheReferencesBySchemaAndCount()
+
 	public function testPreviewNeverWrites(): void {
 		$this->request->method('getParam')->willReturnArgument(1);
 		$this->mergeService->expects($this->once())->method('previewMerge')->willReturn([]);

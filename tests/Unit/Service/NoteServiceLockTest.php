@@ -49,6 +49,18 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\NoteService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\StoredEntity
+ * @uses \OCA\OpenRegister\Exception\NoteEditForbiddenException
+ * @uses \OCA\OpenRegister\Exception\NoteLockedException
+ * @uses \OCA\OpenRegister\Exception\NoteWriteRefusedException
+ * @uses \OCA\OpenRegister\Files\Service\NoteAccounts
+ * @uses \OCA\OpenRegister\Files\Service\NoteLockService
+ * @uses \OCA\OpenRegister\Files\Service\NoteReplies
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit
+ * @uses \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform
+ * @uses \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class NoteServiceLockTest extends TestCase {
 
@@ -146,6 +158,7 @@ class NoteServiceLockTest extends TestCase {
 		$this->assertSame('note-locked', $this->stored['verb']);
 		$this->assertTrue($note['locked']);
 		$this->assertSame('sanne', $note['lockedBy']);
+		$this->assertSame('sanne', $note['lockedByDisplayName'], 'a locker without an account reads as their id');
 		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $note['lockedAt']);
 		$this->assertSame('internal', $this->stored['meta']['visibility'], 'the lock keeps the other metadata');
 	}
@@ -246,6 +259,7 @@ class NoteServiceLockTest extends TestCase {
 
 		$this->assertFalse($note['locked']);
 		$this->assertNull($note['lockedBy']);
+		$this->assertNull($note['lockedByDisplayName']);
 		$this->assertNull($note['lockedAt']);
 	}
 

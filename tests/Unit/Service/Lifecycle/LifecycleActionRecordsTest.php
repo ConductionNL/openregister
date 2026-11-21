@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\ContextLifecycleActionInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
 use OCA\OpenRegister\Listener\LifecycleActionRecordListener;
 use OCA\OpenRegister\Service\AutomationRecordWriter;
@@ -151,7 +152,7 @@ final class LifecycleActionRecordsTest extends TestCase {
 	}
 
 	public function testAFailingActionIsRecordedAndTheEarlierOneIsRolledBack(): void {
-		$failing = $this->createMock(LifecycleActionInterface::class);
+		$failing = $this->createMock(ContextLifecycleActionInterface::class);
 		$failing->method('execute')->willThrowException(new RuntimeException('zaaktype ontbreekt'));
 		$this->registry->method('resolve')->willReturnCallback(
 			static fn (string $name): LifecycleActionInterface => $name === 'set-fields' ? new SetFieldsAction() : $failing

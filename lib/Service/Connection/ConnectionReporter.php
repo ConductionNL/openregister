@@ -21,7 +21,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Sends connection reports and refresh requests to integriq.
  *
- * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+ * @spec openspec/specs/app-connections/spec.md
  */
 class ConnectionReporter implements ConnectionReporterInterface {
 
@@ -141,7 +141,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function report(string $key, string $status, string $message = ''): bool {
 		return $this->reportStatus(report: new ConnectionStatusReport(key: $key, status: $status, message: $message));
@@ -158,7 +158,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function reportStatus(ConnectionStatusReport $report): bool {
 		if ($this->hasKnownKey(report: $report) === false || $this->hasKnownStatus(report: $report) === false) {
@@ -245,7 +245,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return bool True when the report was sent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function reportLlmProviders(mixed $chatProvider, mixed $embeddingProvider): bool {
 		$chat      = $this->chosenProvider(value: $chatProvider);
@@ -312,7 +312,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return array<int, string> The connection keys a refresh was sent for.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function refreshFromSave(array $savedKeys): array {
 		$eventClass = $this->resolveEventClass(eventClass: self::REFRESH_EVENT);
@@ -355,7 +355,7 @@ class ConnectionReporter implements ConnectionReporterInterface {
 	 *
 	 * @return string|null The class name to instantiate, or null when absent.
 	 *
-	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md
+	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	protected function resolveEventClass(string $eventClass): ?string {
 		$qualified = '\\' . $eventClass;

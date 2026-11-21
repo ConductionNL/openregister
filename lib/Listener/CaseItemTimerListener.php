@@ -92,7 +92,13 @@ class CaseItemTimerListener implements IEventListener {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	private function onTransitioned(CaseItemTransitionedEvent $event): void {
+		// The event carries the Kernel read contract; only the plan engine's own
+		// CaseItem row is ever dispatched, and the timers arm on that row.
 		$item = $event->getItem();
+		if ($item instanceof CaseItem === false) {
+			return;
+		}
+
 		if ($item->getState() === CaseItem::STATE_ACTIVE) {
 			$this->timers->onEntered(item: $item, act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 		}

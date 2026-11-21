@@ -56,6 +56,15 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(RbacRuleChecks::class)]
 #[UsesClass(DefinitionWriteRights::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\RegisterMappers::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\SchemaPlatform::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\SchemaSemantics::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\SchemaServices::class)]
+#[UsesClass(\OCA\OpenRegister\Controller\Support\SchemasControllerServices::class)]
+#[UsesClass(\OCA\OpenRegister\Db\SchemaCatalog::class)]
+#[UsesClass(\OCA\OpenRegister\Service\RegisterScopedSchemaResolver::class)]
+#[UsesClass(\OCA\OpenRegister\Service\RegisterScopedSchemaResolvers::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard::class)]
 final class SchemasMatrixSaveRefusalTest extends TestCase {
 	/**
 	 * The schema's stored authorization: `medewerkers` reads, `beheerders` manages.

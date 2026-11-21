@@ -168,7 +168,7 @@ Private views (default) are only visible to you.
 
 **Why this separation?** Views are designed to be query filters that can be exposed as API endpoints. UI preferences are personal and session-specific.
 
-### Presentation: table, kanban, calendar or gallery
+### Presentation: table, kanban, calendar, gallery or tree
 
 A view also carries how it renders, under `presentation.viewType`. A view without a
 presentation renders as a `table`, exactly as every view did before presentations
@@ -180,6 +180,7 @@ existed.
 | `kanban` | Columns of cards by a field's value | `kanban.groupByField` |
 | `calendar` | Records on a date, or over a period | `calendar.dateField`, optionally `calendar.endDateField` |
 | `gallery` | A grid of cards with a cover picture | `gallery.titleField`, optionally `gallery.coverField`, `gallery.cardFields`, `gallery.cardSize` |
+| `tree` | Records that form a hierarchy, as a collapsible tree | `tree.labelField`, optionally `tree.fields`; the schema must declare a hierarchy |
 
 #### The gallery
 
@@ -216,6 +217,56 @@ Content-Type: application/json
   }
 }
 ```
+
+#### The tree
+
+A tree suits records that point at a parent record of the same schema: departments,
+product groups, categories, themes. The hierarchy is declared once, on the schema,
+with the same `x-openregister-hierarchy` annotation that lets access travel from a
+parent to its children:
+
+```json
+{
+  "slug": "afdelingen",
+  "properties": {
+    "naam": { "type": "string" },
+    "bovenliggendeAfdeling": { "type": "string", "format": "uuid" }
+  },
+  "configuration": {
+    "x-openregister-hierarchy": { "parent": "bovenliggendeAfdeling" }
+  }
+}
+```
+
+`parent` names the property that holds the parent record's uuid; the older spelling
+`parentField` is read too. A schema without the annotation cannot be shown as a tree:
+saving a tree view on it is refused with an error naming the missing hierarchy.
+
+- **`labelField`** (required): the property shown as the node's label.
+- **`fields`**: more properties to show beside the label, each a property of the
+  view's schema.
+
+```bash
+POST /api/views
+Content-Type: application/json
+
+{
+  "name": "Afdelingen als boom",
+  "query": { "registers": [1], "schemas": ["afdelingen"] },
+  "presentation": {
+    "viewType": "tree",
+    "tree": { "labelField": "naam", "fields": ["code"] }
+  }
+}
+```
+
+A save validates the tree presentation as described above; the page that draws the
+tree, and the per-node child counts it shows, are still being built. The tree opens
+on the root records, those without a parent, and loads a node's
+children one level at a time when it is opened, with the view's filters applied.
+Because it never walks the whole hierarchy, a record that is (wrongly) its own
+ancestor shows as a node that repeats when opened rather than as a hang. Moving a
+record to another branch is an edit of its parent property.
 
 ### Data Sources
 

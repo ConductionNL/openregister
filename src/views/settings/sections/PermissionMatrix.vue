@@ -495,7 +495,7 @@ export default {
 		/**
 		 * @param {object} register
 		 * @param {boolean} enabled
-		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
+		 * @spec openspec/specs/rbac-scopes/spec.md
 		 */
 		async togglePublicAccess(register, enabled) {
 			const auth = { ...(register.authorization || {}) }
@@ -525,7 +525,7 @@ export default {
 		 * @param {object} schema
 		 * @param {object} register
 		 * @param {boolean} enabled
-		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
+		 * @spec openspec/specs/rbac-scopes/spec.md
 		 */
 		async toggleSchemaPublicAccess(schema, register, enabled) {
 			const schemaAuth =
@@ -589,7 +589,7 @@ export default {
 
 		/**
 		 * @param {object} register
-		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#REQ-RSS-001
+		 * @spec openspec/specs/rbac-scopes/spec.md
 		 */
 		async applyBulkRole(register) {
 			const roleName = this.bulkRole[register.id]?.value

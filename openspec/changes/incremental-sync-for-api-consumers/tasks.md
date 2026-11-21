@@ -12,10 +12,14 @@
 
 ## 2. Filters on the deleted list (REQ-SYNC-002, D-2)
 
-- [ ] 2.1 `DeletedController::index`: read `register`, `schema`, `deletedSince`; resolve register and schema by id or slug (404 when unknown); parse `deletedSince` as ISO 8601 (400 naming it when invalid).
-- [ ] 2.2 `ObjectEntityMapper::findDeletedAcrossAllMagicTables` and `countDeletedAcrossAllMagicTables`: accept the three filters; narrow the magic table list before scanning; apply `deletedSince` to `deleted.deletedAt` in SQL.
-- [ ] 2.3 Unit tests for each refusal and for `total` matching the filtered rows.
-- [ ] 2.4 Newman: add the filtered deleted-list request to the existing collection.
+- [x] 2.1 `DeletedController::index`: read `register`, `schema`, `deletedSince`; resolve register and schema by id or slug (404 when unknown); parse `deletedSince` as ISO 8601 (400 naming it when invalid).
+      > 2026-11-13: `DeletedController::deletedFilter()`: register and schema by id or slug, resolved in the caller's scope (404 naming the parameter); `deletedSince` ISO 8601 (400 naming it). `DeletedStore` carries the `SchemaMapperInterface`.
+- [x] 2.2 `ObjectEntityMapper::findDeletedAcrossAllMagicTables` and `countDeletedAcrossAllMagicTables`: accept the three filters; narrow the magic table list before scanning; apply `deletedSince` to `deleted.deletedAt` in SQL.
+      > 2026-11-13: `DeletedFilter` passed to both. Register and schema narrow the table list before the scan. `deletedSince` is compared on the parsed `deletedAt` (also the older `deleted` key and bare timestamps), not as SQL text: the stored value carries the writer's offset, so a text comparison misorders rows. The count reads the markers only when a window is asked for.
+- [x] 2.3 Unit tests for each refusal and for `total` matching the filtered rows.
+      > 2026-11-13: `DeletedControllerSyncFilterTest`, `DeletedFilterTest`, and `MagicMapperDeletedRestoreTest::testAFilteredScanReadsOnlyTheSchemasTableAndKeepsTheWindow` / `::testTheFilteredCountMatchesTheFilteredRows`.
+- [x] 2.4 Newman: add the filtered deleted-list request to the existing collection.
+      > 2026-11-13: `18a2` (filtered list, total) and `18a3` (malformed `deletedSince` is 400) in `tests/integration/openregister-crud.postman_collection.json`; not run here (needs a live instance).
 
 ## 3. Tombstones for destroyed objects (REQ-SYNC-003, D-3)
 

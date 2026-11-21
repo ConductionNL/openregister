@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
@@ -843,7 +844,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 		return new AccessLinkService(
 			mapper: $mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->createMock(AuditTrailMapper::class)), logger: new NullLogger()),
 			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
 			urlGenerator: $urls
 		);

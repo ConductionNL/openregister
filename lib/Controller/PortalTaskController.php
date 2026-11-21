@@ -44,7 +44,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PortalTaskControllerServices;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Exception\PortalSubjectException;
@@ -52,6 +51,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
@@ -134,7 +134,7 @@ class PortalTaskController extends Controller {
 		IRequest $request,
 		PortalTaskControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->assertion = $services->domain->assertion;
 		$this->portal = $services->domain->portal;
 		$this->delivery = $services->domain->delivery;
