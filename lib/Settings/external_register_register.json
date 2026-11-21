@@ -1,0 +1,197 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "External registers",
+    "description": "Sourced schemas for the basisregistraties a municipality must consult: an address from the BAG, a parcel from the BRK and a WOZ value. Each record is read live through the openconnector-http object source and shown by the external-register leaf on another object; nothing is stored. Every schema is off until an administrator names its OpenConnector source.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Example sourced schemas for the external-register leaf, off until a source is configured."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "external-registers": {
+        "slug": "external-registers",
+        "title": "External registers",
+        "version": "1.0.0",
+        "description": "Records read live from the basisregistraties, never stored.",
+        "published": "2026-01-01T00:00:00+00:00",
+        "schemas": [
+          "bag-adres",
+          "brk-perceel",
+          "woz-waarde"
+        ],
+        "folder": "Open Registers/External registers"
+      }
+    },
+    "schemas": {
+      "bag-adres": {
+        "slug": "bag-adres",
+        "title": "BAG address",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "An address from the BAG, read live by its nummeraanduiding.",
+        "description": "Served by the openconnector-http object source and never stored. Off until an administrator names the OpenConnector source that holds the BAG credentials in config.source; until then the external-register leaf explains that the register is not configured. The find path follows the BAG Individuele Bevragingen API; a mapping (config.mapping) can reshape another source's answer into these fields.",
+        "configuration": {
+          "x-openregister-object-source": {
+            "provider": "openconnector-http",
+            "readOnly": true,
+            "config": {
+              "source": "",
+              "find": "/adressen/{key}",
+              "id": "nummeraanduidingIdentificatie",
+              "results": "_embedded.adressen"
+            }
+          }
+        },
+        "properties": {
+          "nummeraanduidingIdentificatie": {
+            "type": "string",
+            "title": "Nummeraanduiding",
+            "description": "The 16-digit BAG nummeraanduiding id the address is found by.",
+            "maxLength": 16
+          },
+          "openbareRuimteNaam": {
+            "type": "string",
+            "title": "Street",
+            "description": "The public space name."
+          },
+          "huisnummer": {
+            "type": "integer",
+            "title": "House number",
+            "description": "The house number."
+          },
+          "huisletter": {
+            "type": "string",
+            "title": "House letter",
+            "description": "The house letter, when there is one."
+          },
+          "huisnummertoevoeging": {
+            "type": "string",
+            "title": "Addition",
+            "description": "The house number addition, when there is one."
+          },
+          "postcode": {
+            "type": "string",
+            "title": "Postcode",
+            "description": "The postcode.",
+            "maxLength": 6
+          },
+          "woonplaatsNaam": {
+            "type": "string",
+            "title": "Place",
+            "description": "The place name."
+          },
+          "adresseerbaarObjectIdentificatie": {
+            "type": "string",
+            "title": "Addressable object",
+            "description": "The BAG id of the residential object, berth or pitch the address belongs to."
+          }
+        }
+      },
+      "brk-perceel": {
+        "slug": "brk-perceel",
+        "title": "BRK parcel",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A cadastral parcel from the BRK, read live by its identification.",
+        "description": "Served by the openconnector-http object source and never stored. Off until an administrator names the OpenConnector source for the BRK in config.source. The find path follows the BRK Bevragen API.",
+        "configuration": {
+          "x-openregister-object-source": {
+            "provider": "openconnector-http",
+            "readOnly": true,
+            "config": {
+              "source": "",
+              "find": "/kadastraalonroerendezaken/{key}",
+              "id": "identificatie",
+              "results": "_embedded.kadastraalOnroerendeZaken"
+            }
+          }
+        },
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "title": "Identification",
+            "description": "The cadastral object id the parcel is found by."
+          },
+          "kadastraleAanduiding": {
+            "type": "string",
+            "title": "Cadastral designation",
+            "description": "Municipality, section and parcel number as one designation."
+          },
+          "kadastraleGrootte": {
+            "type": "integer",
+            "title": "Size",
+            "description": "The cadastral size in square metres."
+          },
+          "aardCultuurBebouwd": {
+            "type": "string",
+            "title": "Use",
+            "description": "The cultivation or built-up type the BRK records."
+          },
+          "zakelijkGerechtigdeIdentificaties": {
+            "type": "array",
+            "title": "Holders of rights",
+            "description": "The ids of the holders of real rights, as the source answers them.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "woz-waarde": {
+        "slug": "woz-waarde",
+        "title": "WOZ value",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "The WOZ object and its assessed values, read live by the WOZ object number.",
+        "description": "Served by the openconnector-http object source and never stored. Off until an administrator names the OpenConnector source for the WOZ in config.source. The find path follows the WOZ Bevragen API.",
+        "configuration": {
+          "x-openregister-object-source": {
+            "provider": "openconnector-http",
+            "readOnly": true,
+            "config": {
+              "source": "",
+              "find": "/wozobjecten/{key}",
+              "id": "wozobjectnummer",
+              "results": "_embedded.wozobjecten"
+            }
+          }
+        },
+        "properties": {
+          "wozobjectnummer": {
+            "type": "string",
+            "title": "WOZ object number",
+            "description": "The WOZ object number the record is found by.",
+            "maxLength": 12
+          },
+          "vastgesteldeWaarde": {
+            "type": "integer",
+            "title": "Assessed value",
+            "description": "The most recent assessed value, in euros."
+          },
+          "waardepeildatum": {
+            "type": "string",
+            "title": "Valuation date",
+            "description": "The reference date of that value.",
+            "format": "date"
+          },
+          "gebruikscode": {
+            "type": "string",
+            "title": "Use code",
+            "description": "The WOZ use code."
+          },
+          "adresseerbaarObjectIdentificatie": {
+            "type": "string",
+            "title": "Addressable object",
+            "description": "The BAG id of the object the value is for."
+          }
+        }
+      }
+    }
+  }
+}

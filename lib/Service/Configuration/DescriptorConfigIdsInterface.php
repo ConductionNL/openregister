@@ -49,6 +49,8 @@ interface DescriptorConfigIdsInterface {
 
 	public const EDEPOT_TRANSFERS = 'openregister.edepot-transfers';
 
+	public const EXTERNAL_REGISTERS = 'openregister.external-registers';
+
 	public const DESTRUCTION_LISTS = 'openregister.destruction-lists';
 
 	public const MERGE_OPERATION = 'openregister.merge-operation';
@@ -74,6 +76,7 @@ interface DescriptorConfigIdsInterface {
 		'decision_table_register.json' => self::DECISION_TABLES,
 		'dismissed_pair_register.json' => self::DISMISSED_PAIR,
 		'edepot_transfer_register.json' => self::EDEPOT_TRANSFERS,
+		'external_register_register.json' => self::EXTERNAL_REGISTERS,
 		'destruction_list_register.json' => self::DESTRUCTION_LISTS,
 		'merge_operation_register.json' => self::MERGE_OPERATION,
 		'trust_configuration_register.json' => self::TRUST_CONFIGURATION,

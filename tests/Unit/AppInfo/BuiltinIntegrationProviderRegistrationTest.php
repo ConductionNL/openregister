@@ -86,6 +86,20 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 			'Psr\Log\LoggerInterface',
 		],
+		'OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider' => [
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterLookupInterface',
+			'OCP\IL10N',
+		],
+		'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup' => [
+			'OCA\OpenRegister\Db\RegisterMapperInterface',
+			'OCA\OpenRegister\Db\SchemaMapperInterface',
+			'OCA\OpenRegister\Service\Object\PermissionCheckInterface',
+			'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade',
+			'OCP\ICacheFactory',
+			'OCP\AppFramework\Utility\ITimeFactory',
+			'Psr\Log\LoggerInterface',
+		],
 		'OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider' => [
 			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
 			'OCP\App\IAppManager',

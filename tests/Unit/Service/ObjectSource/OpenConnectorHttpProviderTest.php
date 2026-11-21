@@ -53,6 +53,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Integration\UpstreamRequest
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\ProviderUnavailableException
  */
 final class OpenConnectorHttpProviderTest extends TestCase {
 
@@ -192,5 +193,99 @@ final class OpenConnectorHttpProviderTest extends TestCase {
 		$this->assertSame([['id' => 1]], OpenConnectorHttpProvider::rows([['id' => 1]], 'results'));
 		$this->assertSame([], OpenConnectorHttpProvider::rows(['results' => 'x'], 'results'));
 		$this->assertSame([], OpenConnectorHttpProvider::rows(['other' => []], '_embedded.adressen'));
+	}
+
+	public function testLookupAnswersTheRecordWithEveryFlagSet(): void {
+		$this->answer(['identificatie' => '0363200000006110', 'straat' => 'Dam']);
+
+		$lookup = $this->provider()->lookup(self::CONFIG, ' 0363200000006110 ');
+
+		$this->assertSame([['bag', 'GET', '/adressen/0363200000006110', []]], $this->asked);
+		$this->assertSame(
+			['key' => '0363200000006110', 'appInstalled' => true, 'configured' => true, 'answered' => true, 'refused' => false, 'record' => ['identificatie' => '0363200000006110', 'straat' => 'Dam']],
+			$lookup
+		);
+	}
+
+	public function testLookupWithoutAKeyAsksNothing(): void {
+		$this->router->expects($this->never())->method('call');
+
+		$lookup = $this->provider()->lookup(self::CONFIG, '  ');
+
+		$this->assertSame('', $lookup['key']);
+		$this->assertNull($lookup['record']);
+	}
+
+	public function testLookupWithoutASourceIsNotConfigured(): void {
+		$this->router->expects($this->never())->method('call');
+
+		$lookup = $this->provider()->lookup(['find' => '/adressen/{key}'], 'k');
+
+		$this->assertFalse($lookup['configured']);
+		$this->assertFalse($lookup['answered']);
+	}
+
+	public function testAnEmptyAnswerIsAnsweredWithoutARecord(): void {
+		$this->answer([]);
+
+		$lookup = $this->provider()->lookup(self::CONFIG, 'k');
+
+		$this->assertTrue($lookup['answered']);
+		$this->assertNull($lookup['record']);
+	}
+
+	public function testARefusalIsAnsweredAndRefused(): void {
+		$this->answer(new ProviderUnavailableException('Upstream service answered HTTP 403.', ProviderUnavailableException::CAUSE_PROVIDER_AUTH));
+
+		$lookup = $this->provider()->lookup(self::CONFIG, 'k');
+
+		$this->assertTrue($lookup['answered']);
+		$this->assertTrue($lookup['refused']);
+		$this->assertTrue($lookup['configured']);
+	}
+
+	public function testAnAbsentConnectorIsNotInstalled(): void {
+		$this->answer(new ProviderUnavailableException('down', ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN));
+
+		$lookup = $this->provider()->lookup(self::CONFIG, 'k');
+
+		$this->assertFalse($lookup['appInstalled']);
+	}
+
+	public function testAMissingSourceIsNotConfigured(): void {
+		$this->answer(new ProviderUnavailableException('missing', ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING));
+
+		$this->assertFalse($this->provider()->lookup(self::CONFIG, 'k')['configured']);
+	}
+
+	public function testAnOutageIsNotAnswered(): void {
+		$this->answer(new ProviderUnavailableException('HTTP 502', ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN));
+
+		$lookup = $this->provider()->lookup(self::CONFIG, 'k');
+
+		$this->assertTrue($lookup['appInstalled']);
+		$this->assertTrue($lookup['configured']);
+		$this->assertFalse($lookup['answered']);
+		$this->assertFalse($lookup['refused']);
+	}
+
+	public function testAnyOtherFailureIsNotAnswered(): void {
+		$this->answer(new RuntimeException('socket'));
+
+		$lookup = $this->provider()->lookup(self::CONFIG, 'k');
+
+		$this->assertTrue($lookup['configured']);
+		$this->assertFalse($lookup['answered']);
+	}
+
+	public function testAMappingThatCannotRunIsNotConfiguredAndShowsNoRawRecord(): void {
+		$this->answer(['identificatie' => 'k', 'secret' => 'raw']);
+		$this->mappings->method('find')->willThrowException(new RuntimeException('gone'));
+
+		$lookup = $this->provider()->lookup(self::CONFIG + ['mapping' => 'bag-adres-to-object'], 'k');
+
+		$this->assertTrue($lookup['answered']);
+		$this->assertFalse($lookup['configured']);
+		$this->assertNull($lookup['record']);
 	}
 }
