@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 
@@ -52,8 +51,7 @@ class ContractBindingsTest extends TestCase {
 			$aliases[$alias['alias']] = $alias['target'];
 		}
 
-		// The Core entries ContractBindings still lists are bound by ServiceRegistrar.
-		$this->assertSame(expected: array_diff_key(ContractBindings::BINDINGS, CoreServiceBindings::BINDINGS), actual: $aliases);
+		$this->assertSame(expected: ContractBindings::BINDINGS, actual: $aliases);
 		$this->assertSame(expected: [], actual: $context->services);
 	}//end testRegisterAliasesEveryContract()
 }//end class

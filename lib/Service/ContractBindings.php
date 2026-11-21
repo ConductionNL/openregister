@@ -870,9 +870,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
 		...FeatureBindings::BINDINGS,
 		\OCA\OpenRegister\Service\RedactionPolicy\TermRuleSourceInterface::class => \OCA\OpenRegister\Service\RedactionPolicy\ObjectTermRuleSource::class,
-		// Read-only view of Core's own map, for the binding tests that still read it
-		// here; register() skips these, ServiceRegistrar binds them.
-		...CoreServiceBindings::BINDINGS,
 	];
 
 	/**
@@ -883,7 +880,7 @@ final class ContractBindings {
 	 * @return void
 	 */
 	public static function register(IRegistrationContext $context): void {
-		foreach (array_diff_key(self::BINDINGS, CoreServiceBindings::BINDINGS) as $contract => $service) {
+		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
 	}//end register()

@@ -122,7 +122,7 @@ final class CoreServiceBindingsTest extends TestCase {
 	 */
 	private function csvRows(): array {
 		$handle = fopen(self::ROOT . '/scripts/component-map.csv', 'r');
-		$this->assertNotFalse(actual: $handle);
+		$this->assertNotFalse(condition: $handle);
 		$header = (array) fgetcsv($handle, null, ',', '"', '');
 		$files  = [];
 		$dirs   = [];

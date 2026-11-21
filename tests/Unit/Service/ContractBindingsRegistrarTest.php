@@ -25,7 +25,6 @@ use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ContractBindingsRegistrar;
-use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -49,10 +48,8 @@ class ContractBindingsRegistrarTest extends TestCase
 
         ContractBindingsRegistrar::register($context);
 
-        // The Core entries ContractBindings still lists are bound by ServiceRegistrar.
-        $own = array_diff_key(ContractBindings::BINDINGS, CoreServiceBindings::BINDINGS);
-        $this->assertCount(count($own), $aliases);
-        $this->assertSame($own, array_column($aliases, 1, 0));
+        $this->assertCount(count(ContractBindings::BINDINGS), $aliases);
+        $this->assertSame(ContractBindings::BINDINGS, array_column($aliases, 1, 0));
         $this->assertContains([ConfigurationServiceInterface::class, ConfigurationService::class], $aliases);
         $this->assertNotContains([AdminGateInterface::class, AdminGate::class], $aliases);
     }//end testEveryBindingIsRegisteredAsAServiceAliasExactlyOnce()
