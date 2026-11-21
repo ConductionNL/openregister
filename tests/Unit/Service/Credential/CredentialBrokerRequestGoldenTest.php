@@ -30,6 +30,9 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -102,7 +105,11 @@ final class CredentialBrokerRequestGoldenTest extends TestCase {
 			}
 		};
 
-		return new CredentialBrokerService($objects, $store, $catalogue, $session, $clients, $logger, $this->createMock(OrganisationService::class));
+		return new CredentialBrokerService(
+			sources: new CredentialSources(objectService: $objects, credentialStore: $store, catalogue: $catalogue),
+			principals: new CredentialPrincipals(userSession: $session, organisationService: $this->createMock(OrganisationService::class)),
+			outbound: new CredentialOutbound(clientService: $clients, logger: $logger)
+		);
 	}
 
 	public function testTheAllowedCallIsHostLockedAndCarriesTheInjectedAuth(): void {
