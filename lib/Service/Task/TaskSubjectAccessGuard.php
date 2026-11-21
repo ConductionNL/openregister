@@ -50,6 +50,7 @@ namespace OCA\OpenRegister\Service\Task;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -259,13 +260,9 @@ class TaskSubjectAccessGuard {
 	private function find(ObjectOperationsInterface $objects, array $subject): ?ObjectEntity {
 		return $objects->find(
 			id: $subject['uuid'],
-			files: false,
-			register: $subject['register'],
-			schema: $subject['schema'],
+			options: new ObjectFindOptions(register: $subject['register'], schema: $subject['schema'], render: false, audit: false),
 			_rbac: true,
-			_multitenancy: true,
-			_render: false,
-			_audit: false
+			_multitenancy: true
 		);
 
 	}//end find()

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
@@ -757,12 +759,7 @@ class AuditTrailControllerTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setId(2);
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(
-				['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'],
-				null,
-				2,
-				0
-			)
+			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'], null), 2, 0))
 			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
 		$this->logService->expects($this->never())->method('countAllLogs');
 

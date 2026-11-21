@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
+use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -51,6 +52,9 @@ use ReflectionClass;
 use stdClass;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Testable Schema subclass for SaveObjectRefactoredMethods tests.
@@ -532,6 +536,25 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 		$this->assertNull($result, 'Should return null when object does not exist.');
 	}
 
+	/**
+	 * A failed lookup is not "not found": the save stops instead of turning into a create.
+	 *
+	 * @return void
+	 */
+	public function testFindAndValidateExistingObjectRefusesWhenTheLookupFails(): void {
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('find')
+			->willThrowException(new ObjectLookupFailedException('database down'));
+
+		$this->expectException(ObjectLookupFailedException::class);
+
+		$this->invokePrivateMethod(
+			'findAndValidateExistingObject',
+			[self::lookupCall(Uuid::v4()->toRfc4122())]
+		);
+	}
+
 	// ==================== clearImageMetadataIfFileProperty() Tests ====================
 
 	/**
@@ -668,15 +691,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 
 		// Execute full saveObject method with positional params.
 		$result = $this->saveObject->saveObject(
-			$this->mockRegister,
-			$this->mockSchema,
-			$data,
-			$uuid,
-			false,
-			false,
-			true,
-			true,
-			false
+			data: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $this->mockSchema), uuid: $uuid, policy: new SavePolicy(silent: true, validation: false)),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		// Assertions.

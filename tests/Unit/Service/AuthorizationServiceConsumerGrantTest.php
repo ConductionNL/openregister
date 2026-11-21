@@ -30,6 +30,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
@@ -188,16 +189,15 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 			$narrower
 		);
 
+		$narrowed = $narrower->narrow(
+			authorization: self::BLOCK,
+			use: new TokenGrantUse(grant: $grants->current(), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'))
+		);
+
 		return $handler->hasGroupPermission(
-			authorization: $narrower->narrow(
-				authorization: self::BLOCK,
-				use: new TokenGrantUse(grant: $grants->current(), target: new TokenGrantTarget(schemaSlug: 'zaak', registerSlug: 'zaken'))
-			),
-			groupId: 'leveranciers',
-			action: $action,
-			userId: 'leverancier',
-			userGroup: 'leveranciers',
-			objectOwner: 'leverancier'
+			request: (new GroupRuleRequest(authorization: $narrowed, action: $action))
+				->forGroup(groupId: 'leveranciers', userGroup: 'leveranciers')
+				->forUser(userId: 'leverancier', objectOwner: 'leverancier')
 		);
 	}//end permits()
 

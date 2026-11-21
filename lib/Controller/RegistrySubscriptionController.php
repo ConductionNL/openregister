@@ -28,15 +28,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RegistrySubscriptionControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -106,7 +107,7 @@ class RegistrySubscriptionController extends Controller {
 		IRequest $request,
 		RegistrySubscriptionControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objectService = $services->domain->objectService;
 		$this->schemaMapper = $services->domain->schemaMapper;
 		$this->permissionHandler = $services->domain->permissionHandler;
@@ -215,7 +216,10 @@ class RegistrySubscriptionController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveObjectAndGuardUpdate(ObjectRef $ref): array {
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $ref->id, register: $ref->register, schema: $ref->schema, _render: false));
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ref->id,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false)
+		));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
 		if ($this->mayUpdate(schema: $resolvedSchema, object: $object) === false) {

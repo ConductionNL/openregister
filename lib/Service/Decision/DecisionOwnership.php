@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * The ownership rule on one decision.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 class DecisionOwnership {
 
@@ -66,7 +66,7 @@ class DecisionOwnership {
 	 *
 	 * @return array{error: string, decision: string|null, decidedBy?: string|null, decidedAt?: string|null}|null
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function refusal(Decision $decision, DecisionQuestion $question): ?array {
 		if ($this->mayChange(decision: $decision, question: $question) === true) {
@@ -118,34 +118,61 @@ class DecisionOwnership {
 	 * @return bool True when the change may go through.
 	 */
 	private function mayByEvent(Decision $decision, DecisionQuestion $question): bool {
-		$actorId = $question->actorId;
-		$event   = new DecisionChangeRequestedEvent(
+		$event = new DecisionChangeRequestedEvent(
 			decision: $decision,
-			actorId: $actorId,
+			actorId: $question->actorId,
 			policy: $question->policy,
 			subject: $question->subject,
-			allowed: $this->isSupervisor(actorId: $actorId, policy: $question->policy)
+			allowed: $this->isSupervisor(actorId: $question->actorId, policy: $question->policy)
 		);
 
+		if ($this->dispatchChangeRequest(event: $event, actorId: $question->actorId) === false) {
+			return false;
+		}
+
+		$this->logOwnerRefusal(event: $event, actorId: $question->actorId);
+
+		return $event->isAllowed();
+	}//end mayByEvent()
+
+	/**
+	 * Ask the app that owns the subject; a listener that fails refuses the change.
+	 *
+	 * @param DecisionChangeRequestedEvent $event   The change request.
+	 * @param string                       $actorId Who asks.
+	 *
+	 * @return bool False when a listener failed (logged).
+	 */
+	private function dispatchChangeRequest(DecisionChangeRequestedEvent $event, string $actorId): bool {
 		try {
 			$this->platform->eventDispatcher->dispatchTyped($event);
 		} catch (Throwable $error) {
 			$this->platform->logger->warning(
 				message: '[DecisionOwnership] A listener failed; the change is refused.',
-				context: ['decision' => $decision->getUuid(), 'actor' => $actorId, 'error' => $error->getMessage()]
+				context: ['decision' => $event->getDecision()->getUuid(), 'actor' => $actorId, 'error' => $error->getMessage()]
 			);
 			return false;
 		}
 
+		return true;
+	}//end dispatchChangeRequest()
+
+	/**
+	 * Log a refusal the owning app gave a reason for.
+	 *
+	 * @param DecisionChangeRequestedEvent $event   The answered change request.
+	 * @param string                       $actorId Who asked.
+	 *
+	 * @return void
+	 */
+	private function logOwnerRefusal(DecisionChangeRequestedEvent $event, string $actorId): void {
 		if ($event->isAllowed() === false && $event->getReason() !== null) {
 			$this->platform->logger->info(
 				message: '[DecisionOwnership] Refused by the app that owns the subject.',
-				context: ['decision' => $decision->getUuid(), 'actor' => $actorId, 'reason' => $event->getReason()]
+				context: ['decision' => $event->getDecision()->getUuid(), 'actor' => $actorId, 'reason' => $event->getReason()]
 			);
 		}
-
-		return $event->isAllowed();
-	}//end mayByEvent()
+	}//end logOwnerRefusal()
 
 	/**
 	 * Whether the user is in one of the policy's supervisor groups.

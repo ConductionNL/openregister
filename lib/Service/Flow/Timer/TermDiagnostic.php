@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use DateTimeImmutable;
 
 /**
  * Runs the term engine read-only and returns its working.
@@ -128,8 +129,50 @@ class TermDiagnostic implements TermDiagnosticInterface {
 			'examinedDays' => $collector->examinedCount(),
 			'walkTruncated' => $collector->isTruncated(),
 			'ladder' => $this->rungs(query: $query),
+			// The windows the calendar keeps, and whether this term ran inside
+			// them: an hours term on a calendar with windows counts only open
+			// time, so two calendars can answer one term differently.
+			'serviceHours' => self::windowsOf(calendar: $calendar),
+			'serviceHoursApplied' => $normalised['unit'] === SlaCalculatorInterface::UNIT_HOURS && $calendar->getServiceHours()->areDeclared() === true,
 		];
 	}//end explain()
+
+	/**
+	 * The calendar's service-hours windows by weekday name, as `HH:MM-HH:MM`; empty when it declares none.
+	 *
+	 * @param WorkingCalendar $calendar The resolved calendar.
+	 *
+	 * @return array<string, array<int, string>> Weekday name to its windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	private static function windowsOf(WorkingCalendar $calendar): array {
+		$all = $calendar->getServiceHours()->all();
+		$named = [];
+		foreach (ServiceHours::WEEKDAYS as $name => $iso) {
+			if (($all[$iso] ?? []) === []) {
+				continue;
+			}
+
+			$named[$name] = array_map(
+				static fn (array $window): string => self::clock(minutes: $window['start']) . '-' . self::clock(minutes: $window['end']),
+				$all[$iso]
+			);
+		}
+
+		return $named;
+	}//end windowsOf()
+
+	/**
+	 * Minutes past midnight as `HH:MM`.
+	 *
+	 * @param int $minutes The minutes.
+	 *
+	 * @return string The clock time.
+	 */
+	private static function clock(int $minutes): string {
+		return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+	}//end clock()
 
 	/**
 	 * The instant each rung of a ladder would fire at.
@@ -159,10 +202,12 @@ class TermDiagnostic implements TermDiagnosticInterface {
 		foreach ($ladder as $index => $rung) {
 			$normalised = $this->calculator->validateSla(sla: $rung);
 			$firesAt = $this->calculator->add(
-				from: $anchor,
-				value: (float)$normalised['value'],
-				unit: $normalised['unit'],
-				calendar: $query->calendar
+				addition: new SlaAddition(
+					start: DateTimeImmutable::createFromInterface($anchor),
+					value: (float)$normalised['value'],
+					unit: $normalised['unit'],
+					calendar: $query->calendar
+				)
 			);
 
 			$rungs[] = [

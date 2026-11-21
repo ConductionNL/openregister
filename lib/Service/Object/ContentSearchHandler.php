@@ -24,9 +24,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -80,6 +81,42 @@ class ContentSearchHandler {
 	private const CHUNK_CANDIDATE_LIMIT = 50;
 
 	/**
+	 * The paging, facet, field and scope keys the metadata-arm probe drops.
+	 *
+	 * @var list<string>
+	 */
+	private const PROBE_DROPPED_KEYS = [
+		'_limit',
+		'_offset',
+		'_page',
+		'_facetable',
+		'_facets',
+		'_aggregations',
+		'_extend',
+		'_fields',
+		'_content_search',
+		'_register',
+		'_registers',
+		'_schema',
+		'_schemas',
+		'register',
+		'schema',
+		'_ids',
+	];
+
+	/**
+	 * The scope keys the metadata-arm probe drops from `@self`.
+	 *
+	 * @var list<string>
+	 */
+	private const PROBE_DROPPED_SELF_KEYS = [
+		'register',
+		'registers',
+		'schema',
+		'schemas',
+	];
+
+	/**
 	 * Request-scoped memo of the resolved chunk candidates, keyed by search
 	 * term and guard flags.
 	 *
@@ -100,7 +137,7 @@ class ContentSearchHandler {
 	 * Constructor for ContentSearchHandler.
 	 *
 	 * @param ChunkMapperInterface $chunkMapper Chunk store mapper (keyword search over body text).
-	 * @param FileMapperInterface $fileMapper File mapper, used to resolve a file chunk's owning object.
+	 * @param ObjectFileRecordsInterface $fileMapper File records, used to resolve a file chunk's owning object.
 	 * @param MagicMapperInterface $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
 	 * @param LoggerInterface $logger Logger for DEBUG-level unresolvable-chunk diagnostics.
 	 *
@@ -108,7 +145,7 @@ class ContentSearchHandler {
 	 */
 	public function __construct(
 		private readonly ChunkMapperInterface $chunkMapper,
-		private readonly FileMapperInterface $fileMapper,
+		private readonly ObjectFileRecordsInterface $fileMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
@@ -408,26 +445,14 @@ class ContentSearchHandler {
 	 * @spec openspec/specs/search-index/spec.md
 	 */
 	private function probeQuery(array $query): array {
-		unset(
-			$query['_limit'],
-			$query['_offset'],
-			$query['_page'],
-			$query['_facetable'],
-			$query['_facets'],
-			$query['_aggregations'],
-			$query['_extend'],
-			$query['_fields'],
-			$query['_content_search'],
-			$query['_register'],
-			$query['_registers'],
-			$query['_schema'],
-			$query['_schemas'],
-			$query['register'],
-			$query['schema'],
-			$query['_ids'],
-		);
+		foreach (self::PROBE_DROPPED_KEYS as $key) {
+			unset($query[$key]);
+		}
+
 		if (is_array($query['@self'] ?? null) === true) {
-			unset($query['@self']['register'], $query['@self']['registers'], $query['@self']['schema'], $query['@self']['schemas']);
+			foreach (self::PROBE_DROPPED_SELF_KEYS as $key) {
+				unset($query['@self'][$key]);
+			}
 		}
 
 		$query['_offset'] = 0;
@@ -463,10 +488,7 @@ class ContentSearchHandler {
 		}
 
 		$chunkHits = $this->chunkMapper->searchByKeyword(
-			query: $term,
-			limit: self::CHUNK_CANDIDATE_LIMIT,
-			filters: [],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(query: $term, limit: self::CHUNK_CANDIDATE_LIMIT, allowUnrankedFallback: true)
 		);
 
 		$owners = [];

@@ -43,6 +43,13 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ProcessingLogService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Db\Verwerkingsactiviteit
+ * @uses \OCA\OpenRegister\Service\ProcessingRead
+ * @uses \OCA\OpenRegister\Service\ReadCaptureRun
  */
 final class ProcessingLogServiceGoldenTest extends TestCase {
 

@@ -135,31 +135,8 @@ class PdfMetadataSanitizer {
 			'xmp_stripped' => false,
 		];
 
-		try {
-			$infoObj = $this->locateInfoObject(doc: $doc);
-		} catch (Throwable $e) {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'PdfMetadataSanitizer could not reach the trailer Info reference',
-				diagnostic: ['stage' => 'metadata.locate_info'],
-				previous: $e
-			);
-		}
-
-		if ($infoObj !== null) {
-			$diagnostic['info_fields_stripped'] = $this->stripInfoFields(doc: $doc, infoObj: $infoObj);
-		}
-
-		try {
-			$diagnostic['xmp_stripped'] = $this->sanitizeXmp(doc: $doc);
-		} catch (Throwable $e) {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
-				message: 'PdfMetadataSanitizer failed on XMP stream',
-				diagnostic: ['stage' => 'metadata.xmp'],
-				previous: $e
-			);
-		}
+		$diagnostic['info_fields_stripped'] = $this->strippedInfoFields(doc: $doc);
+		$diagnostic['xmp_stripped'] = $this->stripXmp(doc: $doc);
 
 		$this->logger->info(
 			message: '[PdfMetadataSanitizer] PDF metadata sanitised',
@@ -168,6 +145,68 @@ class PdfMetadataSanitizer {
 
 		return $diagnostic;
 	}//end sanitize()
+
+	/**
+	 * Strip the listed /Info fields, when the trailer references an /Info object.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document to mutate.
+	 *
+	 * @return int The number of fields stripped.
+	 *
+	 * @throws PdfAnonymisationException When the trailer Info reference cannot be reached.
+	 */
+	private function strippedInfoFields(PDFDoc $doc): int {
+		$infoObj = $this->reachInfoObject(doc: $doc);
+		if ($infoObj === null) {
+			return 0;
+		}
+
+		return $this->stripInfoFields(doc: $doc, infoObj: $infoObj);
+	}//end strippedInfoFields()
+
+	/**
+	 * The trailer's /Info object, or null when there is none.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 *
+	 * @return \ddn\sapp\PDFObject|null
+	 *
+	 * @throws PdfAnonymisationException When the trailer Info reference cannot be reached.
+	 */
+	private function reachInfoObject(PDFDoc $doc): ?\ddn\sapp\PDFObject {
+		try {
+			return $this->locateInfoObject(doc: $doc);
+		} catch (Throwable $e) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'PdfMetadataSanitizer could not reach the trailer Info reference',
+				diagnostic: ['stage' => 'metadata.locate_info'],
+				previous: $e
+			);
+		}
+	}//end reachInfoObject()
+
+	/**
+	 * Strip the XMP metadata stream.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document to mutate.
+	 *
+	 * @return bool Whether an XMP stream was stripped.
+	 *
+	 * @throws PdfAnonymisationException When the XMP stream cannot be sanitised.
+	 */
+	private function stripXmp(PDFDoc $doc): bool {
+		try {
+			return $this->sanitizeXmp(doc: $doc);
+		} catch (Throwable $e) {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_INTERNAL_ERROR,
+				message: 'PdfMetadataSanitizer failed on XMP stream',
+				diagnostic: ['stage' => 'metadata.xmp'],
+				previous: $e
+			);
+		}
+	}//end stripXmp()
 
 	/**
 	 * Replace the strip-listed /Info fields with the sentinel.

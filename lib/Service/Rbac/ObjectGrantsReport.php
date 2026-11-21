@@ -282,6 +282,26 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 	 */
 	private function shareRow(string $origin, array $found): array {
 		$share = $found['share'];
+		$row = $this->row(
+			origin: $origin,
+			holder: new GrantHolder(
+				type: $found['type'],
+				principalId: (string)$share->getSharedWith(),
+				verbs: $this->shareVerbs(share: $share)
+			)
+		);
+
+		return $this->withShareDetails(row: $row, share: $share);
+	}//end shareRow()
+
+	/**
+	 * The verbs a share grants: those its permission bits carry, then those its attributes add.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return array<int, string> The verbs, unique.
+	 */
+	private function shareVerbs(IShare $share): array {
 		$verbs = [];
 		foreach (self::SHARE_BIT_VERBS as $verb) {
 			$bit = (int)PermissionBit::forAction(action: $verb);
@@ -290,22 +310,26 @@ class ObjectGrantsReport implements ObjectGrantsReportInterface {
 			}
 		}
 
-		$row = $this->row(
-			origin: $origin,
-			holder: new GrantHolder(
-				type: $found['type'],
-				principalId: (string)$share->getSharedWith(),
-				verbs: array_values(array_unique(array_merge($verbs, $this->attributes->verbsOf(share: $share))))
-			)
-		);
-		$row['id'] = $origin . ':' . $share->getFullId();
+		return array_values(array_unique(array_merge($verbs, $this->attributes->verbsOf(share: $share))));
+	}//end shareVerbs()
+
+	/**
+	 * The row with the share's id, who shared it, and when it was shared and expires.
+	 *
+	 * @param array<string, mixed> $row   The row, its origin set.
+	 * @param IShare               $share The share.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withShareDetails(array $row, IShare $share): array {
+		$row['id'] = $row['origin'] . ':' . $share->getFullId();
 		$sharer = (string)$share->getSharedBy();
 		$row['sharedBy'] = ['id' => $sharer, 'displayName' => $this->directory->userManager->getDisplayName($sharer)];
 		$row['expiresAt'] = $share->getExpirationDate()?->format('c');
 		$row['sharedAt'] = $share->getShareTime()?->format('c');
 
 		return $row;
-	}//end shareRow()
+	}//end withShareDetails()
 
 	/**
 	 * A row with every field set to its empty value.

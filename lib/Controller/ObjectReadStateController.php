@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -283,9 +284,7 @@ class ObjectReadStateController extends Controller {
 	 */
 	private function markAndClear(ObjectEntity $object, array $where): array {
 		$state = $this->services->readState->markRead(
-			object: $object,
-			register: $where['register'],
-			schema: $where['schema'],
+			target: new AddressedObject(object: $object, register: $where['register'], schema: $where['schema']),
 			subResource: $where['subResource']
 		);
 

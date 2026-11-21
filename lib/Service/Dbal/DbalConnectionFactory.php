@@ -6,12 +6,12 @@
  *
  * The non-secret connection parameters (driver, host, port, dbname, user, or a
  * sqlite path) live on the Source `authConfig`; the DB PASSWORD is custodied
- * behind the {@see CredentialStore} abstraction (ADR-004) and referenced only by
- * a `credential` UUID on `authConfig`. This factory resolves the secret through
- * that interface — the store selection (Doriath leaf vs. Nextcloud vault) is made
- * upstream by {@see \OCA\OpenRegister\Service\Credential\CredentialStoreResolver}
- * and injected as the already-resolved `CredentialStore`, so this class depends
- * only on the interface (design D1/D2).
+ * behind the credential store (ADR-004) and referenced only by a `credential`
+ * UUID on `authConfig`. This factory resolves the secret through the Core-owned
+ * {@see CredentialSecretReaderInterface}, which every credential store extends —
+ * the store selection (Doriath leaf vs. Nextcloud vault) is made upstream and
+ * injected as the already-resolved store, so this class depends only on the
+ * read interface (design D1/D2).
  *
  * Connections are cached per request keyed by source id (introspection + a
  * paginated read may open the same source several times in one request). There is
@@ -38,8 +38,8 @@ namespace OCA\OpenRegister\Service\Dbal;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,13 +64,13 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CredentialStore $credentialStore The active credential-store leaf (resolved upstream).
+	 * @param CredentialSecretReaderInterface $credentialStore The active credential-store leaf (resolved upstream).
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialStore $credentialStore,
+		private readonly CredentialSecretReaderInterface $credentialStore,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -83,9 +83,33 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * returned. The password is resolved through the credential custody seam and
 	 * never logged.
 	 *
-	 * @param Source $source The `type: database` source to connect to.
+	 * @param SourceInterface $source The `type: database` source to connect to.
 	 *
 	 * @return Connection The open (lazy) DBAL connection.
+	 *
+	 * @throws DbalConnectionException When the source is misconfigured, the
+	 *                                 credential cannot be resolved, or DBAL fails.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	public function getConnection(SourceInterface $source): Connection {
+		$cacheKey = $this->cacheKey(source: $source);
+		if (isset($this->connections[$cacheKey]) === true) {
+			return $this->connections[$cacheKey];
+		}
+
+		$connection = $this->openConnection(source: $source);
+
+		$this->connections[$cacheKey] = $connection;
+		return $connection;
+	}//end getConnection()
+
+	/**
+	 * Open a new DBAL connection for a database source.
+	 *
+	 * @param SourceInterface $source The `type: database` source.
+	 *
+	 * @return Connection The connection.
 	 *
 	 * @throws DbalConnectionException When the source is misconfigured, the
 	 *                                 credential cannot be resolved, or DBAL fails.
@@ -95,16 +119,11 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	public function getConnection(Source $source): Connection {
-		$cacheKey = $this->cacheKey(source: $source);
-		if (isset($this->connections[$cacheKey]) === true) {
-			return $this->connections[$cacheKey];
-		}
-
+	private function openConnection(SourceInterface $source): Connection {
 		$params = $this->buildParams(source: $source);
 
 		try {
-			$connection = DriverManager::getConnection($params);
+			return DriverManager::getConnection($params);
 		} catch (Throwable $e) {
 			// Do NOT include $params — it carries the resolved password.
 			$this->logger->warning(
@@ -116,10 +135,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 				$e
 			);
 		}
-
-		$this->connections[$cacheKey] = $connection;
-		return $connection;
-	}//end getConnection()
+	}//end openConnection()
 
 	/**
 	 * Whether the named DBAL driver's PHP extension is available on this instance.
@@ -155,7 +171,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * Assemble the DBAL connection parameter array for a database source,
 	 * resolving the password through the credential custody seam.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return array<string, mixed> The DriverManager params (may contain the password).
 	 *
@@ -163,21 +179,13 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function buildParams(Source $source): array {
+	private function buildParams(SourceInterface $source): array {
 		$config = ($source->getAuthConfig() ?? []);
 		if ($config === []) {
 			throw new DbalConnectionException('Database source has no connection configuration.');
 		}
 
-		$driver = (string)($config['driver'] ?? '');
-		if (in_array($driver, self::SUPPORTED_DRIVERS, true) === false) {
-			throw new DbalConnectionException('Unsupported or missing database driver for the source.');
-		}
-
-		if ($this->isDriverAvailable(driver: $driver) === false) {
-			throw new DbalConnectionException('The database driver extension is not available on this instance.');
-		}
-
+		$driver = $this->availableDriver(config: $config);
 		$params = array_merge(
 			['driver' => $driver],
 			$this->driverSpecificParams(driver: $driver, config: $config)
@@ -187,6 +195,30 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 
 		return $params;
 	}//end buildParams()
+
+	/**
+	 * The source's DBAL driver, when it is supported and its extension is loaded.
+	 *
+	 * @param array<string, mixed> $config The source `authConfig` block.
+	 *
+	 * @return string The driver id.
+	 *
+	 * @throws DbalConnectionException When the driver is missing, unsupported or unavailable.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function availableDriver(array $config): string {
+		$driver = (string)($config['driver'] ?? '');
+		if (in_array($driver, self::SUPPORTED_DRIVERS, true) === false) {
+			throw new DbalConnectionException('Unsupported or missing database driver for the source.');
+		}
+
+		if ($this->isDriverAvailable(driver: $driver) === false) {
+			throw new DbalConnectionException('The database driver extension is not available on this instance.');
+		}
+
+		return $driver;
+	}//end availableDriver()
 
 	/**
 	 * The non-secret, driver-specific connection parameters.
@@ -205,14 +237,44 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 */
 	private function driverSpecificParams(string $driver, array $config): array {
 		if ($driver === 'pdo_sqlite') {
-			$path = (string)($config['path'] ?? '');
-			if ($path === '') {
-				throw new DbalConnectionException('SQLite database source requires a file path.');
-			}
-
-			return ['path' => $path];
+			return $this->sqliteParams(config: $config);
 		}
 
+		return $this->networkParams(config: $config);
+	}//end driverSpecificParams()
+
+	/**
+	 * The connection parameters of a SQLite source: its file path.
+	 *
+	 * @param array<string, mixed> $config The source `authConfig` block.
+	 *
+	 * @return array{path: string} The params.
+	 *
+	 * @throws DbalConnectionException When the path is missing.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function sqliteParams(array $config): array {
+		$path = (string)($config['path'] ?? '');
+		if ($path === '') {
+			throw new DbalConnectionException('SQLite database source requires a file path.');
+		}
+
+		return ['path' => $path];
+	}//end sqliteParams()
+
+	/**
+	 * The connection parameters of a network source: host, dbname, user, and port when given.
+	 *
+	 * @param array<string, mixed> $config The source `authConfig` block.
+	 *
+	 * @return array<string, mixed> The params (never a secret).
+	 *
+	 * @throws DbalConnectionException When host or dbname is missing.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function networkParams(array $config): array {
 		$params = [
 			'host' => (string)($config['host'] ?? ''),
 			'dbname' => (string)($config['dbname'] ?? ''),
@@ -228,7 +290,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 		}
 
 		return $params;
-	}//end driverSpecificParams()
+	}//end networkParams()
 
 	/**
 	 * Resolve the source's DB password from the credential custody seam.
@@ -238,7 +300,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 * credential is configured (e.g. a local SQLite file or a socket-trusted
 	 * user) an empty password is used.
 	 *
-	 * @param Source $source The database source (for diagnostics).
+	 * @param SourceInterface $source The database source (for diagnostics).
 	 * @param array<string, mixed> $config The source `authConfig` block.
 	 *
 	 * @return string The resolved password, or '' when no credential is configured.
@@ -247,7 +309,7 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function resolvePassword(Source $source, array $config): string {
+	private function resolvePassword(SourceInterface $source, array $config): string {
 		$credentialUuid = (string)($config['credential'] ?? '');
 		if ($credentialUuid === '') {
 			return '';
@@ -269,26 +331,26 @@ class DbalConnectionFactory implements DbalConnectionFactoryInterface {
 	/**
 	 * Build the per-request cache key for a source.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The cache key.
 	 *
 	 * @spec exclude Private cache-key helper; behaviour covered by getConnection() caching.
 	 */
-	private function cacheKey(Source $source): string {
+	private function cacheKey(SourceInterface $source): string {
 		return 'id:' . ((string)$source->getId()) . ':uuid:' . ((string)$source->getUuid());
 	}//end cacheKey()
 
 	/**
 	 * A secret-free label identifying a source in log lines.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 *
 	 * @return string The label (uuid or id — never a credential).
 	 *
 	 * @spec exclude Private log-label helper; no behavioural contract.
 	 */
-	private function sourceLabel(Source $source): string {
+	private function sourceLabel(SourceInterface $source): string {
 		$uuid = $source->getUuid();
 		if ($uuid !== null && $uuid !== '') {
 			return (string)$uuid;

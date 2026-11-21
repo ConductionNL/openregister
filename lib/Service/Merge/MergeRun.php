@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Merge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 
 /**
  * One merge in progress: the instruction, the pair, both payloads as they are
@@ -61,6 +62,20 @@ final class MergeRun {
 	 * @var integer
 	 */
 	public int $relinkedCount = 0;
+
+	/**
+	 * The references moved onto the survivor, by schema and count.
+	 *
+	 * @var array<int, array{schema: string, count: int}>
+	 */
+	public array $movedReferences = [];
+
+	/**
+	 * The references the merging user may not update, left pointing at the loser.
+	 *
+	 * @var array<int, array{object: string, path: string}>
+	 */
+	public array $skippedReferences = [];
 
 	/**
 	 * The resolver overrides a decision map produced, or null when there was none.

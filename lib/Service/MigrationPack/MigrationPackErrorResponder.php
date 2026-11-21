@@ -185,6 +185,17 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 			);
 		}
 
+		return $this->invalidPack(exception: $exception);
+	}//end refusedDefinition()
+
+	/**
+	 * The 422 for a pack definition that does not validate, carrying its errors.
+	 *
+	 * @param MigrationPackRefusedException $exception The refusal.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function invalidPack(MigrationPackRefusedException $exception): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'message' => $this->l10n->t('The pack definition is invalid'),
@@ -193,7 +204,7 @@ class MigrationPackErrorResponder implements MigrationPackErrorResponderInterfac
 			],
 			statusCode: 422
 		);
-	}//end refusedDefinition()
+	}//end invalidPack()
 
 	/**
 	 * 500: log an unexpected failure and answer with a static message.

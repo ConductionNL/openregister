@@ -130,23 +130,11 @@ class GgmImporter implements SchemaDialectImporter {
 			throw SchemaImportException::unknownReference($reference, $this->dialect());
 		}
 
-		$attributes = $this->attributesOf(objecttype: $objecttype);
-
-		$unknownRequested = [];
-		if ($options->hasSubset() === true) {
-			[$attributes, $unknownRequested] = $this->applySubset(attributes: $attributes, subset: $options->propertySubset);
-		}
+		[$attributes, $unknownRequested] = $this->requestedAttributes(objecttype: $objecttype, options: $options);
 
 		$properties = $this->mapAttributes(attributes: $attributes);
 
-		$importSource = [
-			'dialect' => $this->dialect(),
-			'reference' => (string)$objecttype['id'],
-			'snapshotVersion' => $this->snapshot->version(),
-			'source' => ($this->sourceLabel ?? 'snapshot'),
-			'importedAt' => gmdate('c'),
-			'baseline' => $properties,
-		];
+		$importSource = $this->importSource(objecttype: $objecttype, properties: $properties);
 
 		return new ImportedSchema(
 			heading: new ImportedSchemaHeading(title: (string)$objecttype['naam'], description: (string)($objecttype['definitie'] ?? '')),
@@ -155,6 +143,42 @@ class GgmImporter implements SchemaDialectImporter {
 			unknownRequested: $unknownRequested
 		);
 	}//end import()
+
+	/**
+	 * The objecttype's attributes the import asked for, and the requested names it lacks.
+	 *
+	 * @param array<string, mixed> $objecttype The snapshot objecttype.
+	 * @param ImportOptions        $options    Import options: an optional property subset.
+	 *
+	 * @return array{0: array<int|string, mixed>, 1: array<int, string>} The attributes and the unknown names.
+	 */
+	private function requestedAttributes(array $objecttype, ImportOptions $options): array {
+		$attributes = $this->attributesOf(objecttype: $objecttype);
+		if ($options->hasSubset() === false) {
+			return [$attributes, []];
+		}
+
+		return $this->applySubset(attributes: $attributes, subset: $options->propertySubset);
+	}//end requestedAttributes()
+
+	/**
+	 * Where the imported schema came from, with the mapped properties as the merge baseline.
+	 *
+	 * @param array<string, mixed>                $objecttype The snapshot objecttype.
+	 * @param array<string, array<string, mixed>> $properties The mapped properties.
+	 *
+	 * @return array<string, mixed> The import source.
+	 */
+	private function importSource(array $objecttype, array $properties): array {
+		return [
+			'dialect' => $this->dialect(),
+			'reference' => (string)$objecttype['id'],
+			'snapshotVersion' => $this->snapshot->version(),
+			'source' => ($this->sourceLabel ?? 'snapshot'),
+			'importedAt' => gmdate('c'),
+			'baseline' => $properties,
+		];
+	}//end importSource()
 
 	/**
 	 * The objecttype's attribuutsoorten, or an empty list when malformed.

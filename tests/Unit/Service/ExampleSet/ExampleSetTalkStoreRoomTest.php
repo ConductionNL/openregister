@@ -28,6 +28,8 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom
  */
 class ExampleSetTalkStoreRoomTest extends TestCase {
 
@@ -135,7 +137,7 @@ class ExampleSetTalkStoreRoomTest extends TestCase {
 			}
 		);
 
-		return new ExampleSetTalkStore($container, $this->createMock(IAppManager::class), $users);
+		return new ExampleSetTalkStore(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(IAppManager::class), users: $users));
 	}
 
 	public function testAnExistingGroupRoomOfTheSameNameIsFound(): void {

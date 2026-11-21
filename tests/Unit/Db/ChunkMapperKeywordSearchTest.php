@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -85,7 +86,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 				}
 			);
 
-		$results = $this->mapper->searchByKeyword('quarterly report', 10);
+		$results = $this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly report', limit: 10));
 
 		// Expression form — matches the functional GIN index (no tsvector column).
 		$this->assertStringContainsString(
@@ -128,7 +129,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 				}
 			);
 
-		$this->mapper->searchByKeyword('term', 5, ['source_type' => 'file']);
+		$this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'term', limit: 5, filters: ['source_type' => 'file']));
 
 		$this->assertStringContainsString('source_type = :sourceType', $capturedSql);
 		$this->assertSame('file', $capturedParams['sourceType']);
@@ -146,7 +147,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('keyword search unavailable'), $this->anything());
 
-		$results = $this->mapper->searchByKeyword('quarterly report', 10);
+		$results = $this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly report', limit: 10));
 
 		$this->assertSame([], $results);
 	}//end testSearchByKeywordReturnsEmptyWithWarningOnNonPostgres()
@@ -162,7 +163,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('Keyword search query failed'), $this->anything());
 
-		$results = $this->mapper->searchByKeyword('quarterly report', 10);
+		$results = $this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly report', limit: 10));
 
 		$this->assertSame([], $results);
 	}//end testSearchByKeywordReturnsEmptyWithWarningWhenColumnMissing()
@@ -197,7 +198,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 		$this->db->expects($this->never())->method('executeQuery');
 
-		$results = $this->mapper->searchByKeyword('quarterly', 10, [], true);
+		$results = $this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly', limit: 10, allowUnrankedFallback: true));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('file', $results[0]['entity_type']);
@@ -237,7 +238,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
-		$this->mapper->searchByKeyword('quarterly', 10, ['source_type' => 'file'], true);
+		$this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly', limit: 10, filters: ['source_type' => 'file'], allowUnrankedFallback: true));
 
 		$this->assertSame('source_type', $capturedFilterCol);
 	}//end testSearchByKeywordUnrankedFallbackHonoursSourceTypeFilter()
@@ -265,7 +266,7 @@ class ChunkMapperKeywordSearchTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('Unranked keyword search query failed'), $this->anything());
 
-		$results = $this->mapper->searchByKeyword('quarterly', 10, [], true);
+		$results = $this->mapper->searchByKeyword(search: new KeywordChunkSearch(query: 'quarterly', limit: 10, allowUnrankedFallback: true));
 
 		$this->assertSame([], $results);
 	}//end testSearchByKeywordUnrankedFallbackDegradesGracefullyOnQueryFailure()

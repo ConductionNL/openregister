@@ -65,6 +65,11 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubGuards
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator
  * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssueDraft
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssueListing
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSelection
+ * @uses \OCA\OpenRegister\Service\Configuration\DistinctKeyBudget
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-11
  */

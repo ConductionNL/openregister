@@ -27,11 +27,13 @@ import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FileReplaceOutline from 'vue-material-design-icons/FileReplaceOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import Gavel from 'vue-material-design-icons/Gavel.vue'
 import History from 'vue-material-design-icons/History.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
@@ -69,11 +71,13 @@ export default {
 	DatabaseArrowRightOutline,
 	DatabaseOutline,
 	DeleteRestore,
+	EmailOutline,
 	FileDocumentMultipleOutline,
 	FileDocumentOutline,
 	FileOutline,
 	FileReplaceOutline,
 	FileTreeOutline,
+	Gavel,
 	History,
 	InformationOutline,
 	Magnify,

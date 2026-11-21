@@ -105,6 +105,12 @@ class MdtoXmlGenerator {
 	public const USE_RESTRICTION_UNRECORDED = 'Nader te bepalen';
 
 	/**
+	 * The begrippenlijst named for `betrokkeneTypeRelatie`. MDTO leaves it free;
+	 * the label is the schema property the party is kept in.
+	 */
+	public const PARTY_RELATION_LIST = 'Relatietypen betrokkenen';
+
+	/**
 	 * The MDTO begrippenlijst `waardering` comes from. It is CLOSED.
 	 */
 	public const APPRAISAL_LIST = 'Waarderingen';
@@ -152,12 +158,16 @@ class MdtoXmlGenerator {
 	 * @param MdtoDocumentWriter $writer The XML primitives.
 	 * @param MdtoBestandGenerator $bestandGenerator Builder of a file's own document.
 	 * @param MdtoPreconditions $preconditions What must hold before a document is worth writing.
+	 * @param MdtoContainment|null $containment The records a record contains and is part of; none when null.
 	 */
 	public function __construct(
 		private readonly MdtoValueSources $sources,
 		private readonly MdtoDocumentWriter $writer,
 		private readonly MdtoBestandGenerator $bestandGenerator,
 		private readonly MdtoPreconditions $preconditions,
+		// Optional and last so existing callers keep working; the container
+		// always passes it. Without it a document carries no containment.
+		private readonly ?MdtoContainment $containment = null,
 	) {
 	}//end __construct()
 
@@ -189,8 +199,10 @@ class MdtoXmlGenerator {
 		$this->addRating(run: $run);
 		$this->addRetentionPeriod(run: $run);
 		$this->addInformatiecategorie(run: $run);
+		$this->addContainment(run: $run);
 		$this->addRepresentations(parent: $root, files: $files);
 		$this->addArchiefvormer(parent: $root);
+		$this->addParties(run: $run);
 		$this->addUseRestriction(run: $run);
 
 		return $this->writer->serialise(dom: $dom);
@@ -379,17 +391,29 @@ class MdtoXmlGenerator {
 		$this->writer->begrip(parent: $element, name: 'eventType', begrip: new MdtoBegrip(label: $event['type'], list: MdtoEventMapper::EVENT_TYPE_LIST));
 		$this->writer->textsIfPresent(parent: $element, texts: ['eventTijd' => $event['time']]);
 		if ($event['actorName'] !== null) {
-			$this->writer->verwijzing(
-				parent: $element,
-				name: 'eventVerantwoordelijkeActor',
-				verwijzing: new MdtoVerwijzing(
-					naam: $event['actorName'],
-					kenmerk: $event['actorId'],
-					bron: $this->organisationIdentifier()
-				)
-			);
+			$this->addEventActor(element: $element, event: $event);
 		}
 	}//end addEvent()
+
+	/**
+	 * Name the actor responsible for an event.
+	 *
+	 * @param DOMElement           $element The event element.
+	 * @param array<string, mixed> $event   The event, with an actor name.
+	 *
+	 * @return void
+	 */
+	private function addEventActor(DOMElement $element, array $event): void {
+		$this->writer->verwijzing(
+			parent: $element,
+			name: 'eventVerantwoordelijkeActor',
+			verwijzing: new MdtoVerwijzing(
+				naam: $event['actorName'],
+				kenmerk: $event['actorId'],
+				bron: $this->organisationIdentifier()
+			)
+		);
+	}//end addEventActor()
 
 	/**
 	 * Add `waardering`, a `begripGegevens` from the closed Waarderingen list.
@@ -545,6 +569,78 @@ class MdtoXmlGenerator {
 	}//end addArchiefvormer()
 
 	/**
+	 * Add `isOnderdeelVan` for each record this one is part of, then
+	 * `bevatOnderdeel` for each record it contains.
+	 *
+	 * Containment is declared on the containing record's schema; a record
+	 * whose schemas declare none gets neither element, exactly as before.
+	 * The XSD puts both after `informatiecategorie` and before
+	 * `heeftRepresentatie`.
+	 *
+	 * @param InformatieobjectRun $run The document being written: its element, object and facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	private function addContainment(InformatieobjectRun $run): void {
+		if ($this->containment === null) {
+			return;
+		}
+
+		foreach ($this->containment->wholesOf(object: $run->object) as $whole) {
+			$this->writer->verwijzing(
+				parent: $run->root,
+				name: 'isOnderdeelVan',
+				verwijzing: new MdtoVerwijzing(naam: $whole['name'], kenmerk: $whole['id'], bron: 'OpenRegister')
+			);
+		}
+
+		foreach ($this->containment->partsOf(object: $run->object) as $part) {
+			$this->writer->verwijzing(
+				parent: $run->root,
+				name: 'bevatOnderdeel',
+				verwijzing: new MdtoVerwijzing(naam: $part['name'], kenmerk: $part['id'], bron: 'OpenRegister')
+			);
+		}
+	}//end addContainment()
+
+	/**
+	 * Add one `betrokkene` per party the schema's archival block names.
+	 *
+	 * The relation is the property the party came from (`aanvrager`), on a
+	 * free list, because MDTO prescribes none for it; the actor is the party's
+	 * name, with its OpenRegister id when it has one. A schema that names no
+	 * party gets no `betrokkene`, exactly as before.
+	 *
+	 * @param InformatieobjectRun $run The document being written: its element, object and facts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	private function addParties(InformatieobjectRun $run): void {
+		foreach ($this->sources->sourceReader->parties(object: $run->object) as $party) {
+			$role = $party['role'];
+			if ($role === '') {
+				$role = 'betrokkene';
+			}
+
+			$element = $this->writer->element(parent: $run->root, name: 'betrokkene');
+			$this->writer->begrip(
+				parent: $element,
+				name: 'betrokkeneTypeRelatie',
+				begrip: new MdtoBegrip(label: $role, list: self::PARTY_RELATION_LIST)
+			);
+			$this->writer->verwijzing(
+				parent: $element,
+				name: 'betrokkeneActor',
+				verwijzing: new MdtoVerwijzing(naam: $party['name'], kenmerk: $party['id'], bron: 'OpenRegister')
+			);
+		}
+	}//end addParties()
+
+	/**
 	 * Add `beperkingGebruik`, which the XSD requires at least once.
 	 *
 	 * {@see MdtoSourceReader::useRestriction()} decides whether a restriction
@@ -559,10 +655,7 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function addUseRestriction(InformatieobjectRun $run): void {
-		$restriction = $this->sources->sourceReader->useRestriction(object: $run->object);
-		if ($restriction === null) {
-			$restriction = ['type' => self::USE_RESTRICTION_UNRECORDED, 'description' => null, 'startDate' => null];
-		}
+		$restriction = $this->useRestrictionOf(run: $run);
 
 		$element = $this->writer->element(parent: $run->root, name: 'beperkingGebruik');
 		$this->writer->begrip(
@@ -576,6 +669,18 @@ class MdtoXmlGenerator {
 			$this->writer->text(parent: $term, name: 'termijnStartdatumLooptijd', content: $restriction['startDate']);
 		}
 	}//end addUseRestriction()
+
+	/**
+	 * The object's use restriction, or the "unrecorded" one when none is recorded.
+	 *
+	 * @param InformatieobjectRun $run The information object being written.
+	 *
+	 * @return array{type: string, description: string|null, startDate: string|null} The restriction.
+	 */
+	private function useRestrictionOf(InformatieobjectRun $run): array {
+		return ($this->sources->sourceReader->useRestriction(object: $run->object)
+			?? ['type' => self::USE_RESTRICTION_UNRECORDED, 'description' => null, 'startDate' => null]);
+	}//end useRestrictionOf()
 
 
 	/**

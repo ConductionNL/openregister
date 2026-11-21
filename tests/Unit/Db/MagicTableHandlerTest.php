@@ -8,6 +8,7 @@ use OCP\IConfig;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IAppConfig;
@@ -98,9 +99,8 @@ class MagicTableHandlerTest extends TestCase {
 		// syncTableForRegisterSchema must NOT be called — table is up to date.
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $this->handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);
@@ -143,9 +143,8 @@ class MagicTableHandlerTest extends TestCase {
 			->method('syncTableForRegisterSchema')
 			->willReturn(['success' => true]);
 
-		$result = $handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);
@@ -172,7 +171,7 @@ class MagicTableHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('widenDecimalColumns');
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$this->assertTrue($this->handler->ensureTableForRegisterSchema(register: $this->register, schema: $this->schema));
+		$this->assertTrue($this->handler->ensureTargetTable(target: new MagicTableTarget(register: $this->register, schema: $this->schema)));
 	}//end testFirstUseDoesNotWidenANarrowNumberColumn()
 
 	/**
@@ -189,9 +188,8 @@ class MagicTableHandlerTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('getExistingTableColumns');
 		$this->magicMapper->expects($this->never())->method('syncTableForRegisterSchema');
 
-		$result = $this->handler->ensureTableForRegisterSchema(
-			register: $this->register,
-			schema: $this->schema
+		$result = $this->handler->ensureTargetTable(
+			target: new MagicTableTarget(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertTrue($result);

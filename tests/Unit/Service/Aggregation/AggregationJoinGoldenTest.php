@@ -26,11 +26,13 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
@@ -289,7 +291,8 @@ class AggregationJoinGoldenTest extends TestCase {
 			}
 		);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null) use ($case): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($case): array {
+				[$register, $schema, $limit] = [$table->register, $table->schema, $listing->limitOrNull()];
 				$this->calls[] = ['table' => [$register->getSlug(), $schema->getSlug(), $limit]];
 				$entities = [];
 				$source = $case['rows'];

@@ -48,6 +48,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses   \OCA\OpenRegister\Db\LinkColumn
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 class TaskSideMappersTest extends TestCase {
 	use FluentQueryBuilderTrait;

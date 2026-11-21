@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -434,19 +436,8 @@ class FilePropertyHandler {
 	 * - Storing file IDs in the object data instead of just attaching files
 	 * - Supporting both single files and arrays of files
 	 *
-	 * @param ObjectEntity $objectEntity The object entity being saved.
-	 * @param array $object The object data (passed by reference to update with file IDs).
-	 * @param string $propertyName The name of the file property.
-	 * @param Schema $schema The schema containing property configuration.
-	 *
-	 * @psalm-param   ObjectEntity $objectEntity
-	 * @psalm-param   array<string, mixed> $object
-	 * @psalm-param   string $propertyName
-	 * @psalm-param   Schema $schema
-	 * @phpstan-param ObjectEntity $objectEntity
-	 * @phpstan-param array<string, mixed> $object
-	 * @phpstan-param string $propertyName
-	 * @phpstan-param Schema $schema
+	 * @param ObjectFileWrite $write        The write: its entity and schema, and the data that gets the file ids.
+	 * @param string          $propertyName The name of the file property.
 	 *
 	 * @return void
 	 *
@@ -457,21 +448,16 @@ class FilePropertyHandler {
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function handleFileProperty(
-		ObjectEntity $objectEntity,
-		array &$object,
-		string $propertyName,
-		Schema $schema,
-	): void {
-		$fileValue = $object[$propertyName];
+	public function handleFileProperty(ObjectFileWrite $write, string $propertyName): void {
+		$schema = $write->schema;
 		$target = new FilePropertyTarget(
-			objectEntity: $objectEntity,
+			objectEntity: $write->entity,
 			name: $propertyName,
 			isArray: (($schema->getProperties() ?? [])[$propertyName]['type'] ?? '') === 'array',
 			fileConfig: $this->parts->configs->fileConfigOf(schema: $schema, propertyName: $propertyName)
 		);
 
-		$object[$propertyName] = $this->storedValue(target: $target, fileValue: $fileValue);
+		$write->data[$propertyName] = $this->storedValue(target: $target, fileValue: $write->data[$propertyName]);
 	}//end handleFileProperty()
 
 	/**
@@ -496,12 +482,49 @@ class FilePropertyHandler {
 			return $this->storeFiles(target: $target, fileValue: $fileValue);
 		}
 
+		if (self::isFileId(value: $fileValue) === true) {
+			return $this->ownFileId(target: $target, fileId: $fileValue);
+		}
+
 		if ($this->isFileValue(value: $fileValue) === false) {
 			return $fileValue;
 		}
 
 		return $this->processSingleFileProperty(request: $this->storeRequest(target: $target, index: null), fileInput: $fileValue);
 	}//end storedValue()
+
+	/**
+	 * Whether a value is a bare file id: a positive integer or a string of digits.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isFileId(mixed $value): bool {
+		if (is_int($value) === true) {
+			return $value > 0;
+		}
+
+		return is_string($value) === true && ctype_digit($value) === true && (int)$value > 0;
+	}//end isFileId()
+
+	/**
+	 * A bare file id, kept only when the object's own folder holds that file.
+	 *
+	 * @param FilePropertyTarget $target The file property.
+	 * @param int|string         $fileId The file id.
+	 *
+	 * @return int|string The file id as sent.
+	 *
+	 * @throws Exception When the object's folder does not hold the file.
+	 */
+	private function ownFileId(FilePropertyTarget $target, int|string $fileId): int|string {
+		if ($this->parts->files->holdsFile(request: $this->storeRequest(target: $target, index: null), fileId: $fileId) === true) {
+			return $fileId;
+		}
+
+		throw new Exception("File property '{$target->name}' only accepts files in the object's folder");
+	}//end ownFileId()
 
 	/**
 	 * Whether an incoming value deletes the stored files: null, or an empty array.
@@ -629,11 +652,13 @@ class FilePropertyHandler {
 	 */
 	private function addFile(FileStoreRequest $request, array $fileData): int {
 		$file = $this->fileService->addFile(
-			objectEntity: $request->objectEntity,
-			fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
-			content: $fileData['content'],
-			share: $request->fileConfig['autoShare'] ?? false,
-			tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			target: new FileTarget(object: $request->objectEntity),
+			upload: new FileUpload(
+				fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
+				content: $fileData['content'],
+				share: $request->fileConfig['autoShare'] ?? false,
+				tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
+			)
 		);
 
 		return $file->getId();

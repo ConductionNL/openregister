@@ -51,12 +51,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -103,6 +105,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * both need the same node resolution, which is the actual coupling.
  */
 class FlowNodeRunController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 	/**
 	 * Resolves the calling user.
 	 *
@@ -183,7 +187,7 @@ class FlowNodeRunController extends Controller {
 		IRequest $request,
 		FlowNodeRunControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->platform->userSession;
 		$this->flows = $services->graph->flows;
 		$this->publishedGraphs = $services->graph->publishedGraphs;
@@ -332,15 +336,7 @@ class FlowNodeRunController extends Controller {
 				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],
@@ -525,16 +521,14 @@ class FlowNodeRunController extends Controller {
 		try {
 			$object = $this->objects->find(
 				id: $ref['uuid'],
-				register: $ref['register'],
-				schema: $ref['schema'],
-				_rbac: false,
-				_multitenancy: true,
 				// This load is the boundary CHECK, not the business read — the
 				// node itself performs whatever reads/writes it is built to,
 				// and those are what should appear in the audit trail. Auditing
 				// this preliminary load too would double every direct-invoke
 				// call in the trail for a read that touched no shown data.
-				_audit: false
+				options: new ObjectFindOptions(register: $ref['register'], schema: $ref['schema'], audit: false),
+				_rbac: false,
+				_multitenancy: true
 			);
 		} catch (Throwable $e) {
 			return null;

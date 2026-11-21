@@ -39,6 +39,8 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -139,7 +141,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 		foreach ($this->schemas() as $schema) {
 			$actions = [];
 			try {
-				$actions = $this->permissions->permittedActionsFor(schema: $schema, object: null, userId: $principal);
+				$actions = $this->permissions->permittedActionsFor(listing: new VerbListing(schema: $schema, userId: $principal));
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[PrincipalReach] Could not read the permitted actions on a schema',
@@ -155,9 +157,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 			$provenance = [];
 			try {
 				$provenance = $this->permissions->provenanceFor(
-					schema: $schema,
-					actions: $actions,
-					userId: $principal
+					request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $principal, object: null)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning(

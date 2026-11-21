@@ -20,6 +20,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+
 /**
  * One batch of bulk rows going through the Wave-12 safeguards: the rows, the batch defaults,
  * the caller's flags, and the result the refused rows land in.
@@ -30,6 +32,21 @@ namespace OCA\OpenRegister\Service\Object;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class SafeguardBatchRun {
+
+	/**
+	 * Whether the rows went through the safeguard screen (it is skipped without its dependencies).
+	 *
+	 * @var bool
+	 */
+	public bool $screened = false;
+
+	/**
+	 * Uuids of the passed rows that update a stored object, for the bulk quota.
+	 *
+	 * @var array<string, bool>
+	 */
+	public array $storedUuids = [];
+
 	/**
 	 * Constructor.
 	 *

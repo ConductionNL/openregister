@@ -133,4 +133,14 @@ interface ObjectRelationMapperInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function findTouching(array $uuids): array;
+	/**
+	 * Persist a row, refreshing the updated timestamp.
+	 *
+	 * @param ObjectRelation $relation The row.
+	 *
+	 * @return ObjectRelation The updated row.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	public function save(ObjectRelation $relation): ObjectRelation;
 }//end interface

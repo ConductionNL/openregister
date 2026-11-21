@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCP\Share\IManager;
+use OCP\Share\IShare;
 
 /**
  * The share manager and the caller, the share type being read, and the grant
@@ -47,6 +48,13 @@ final class ShareGrantRun {
 	 * @var array<string, int>
 	 */
 	public array $granted = [];
+
+	/**
+	 * Folder shares read so far, each with the object uuid its folder name names.
+	 *
+	 * @var list<array{0: string, 1: IShare}>
+	 */
+	public array $candidates = [];
 
 	/**
 	 * Start the run.

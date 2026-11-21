@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FlowRegistrar registers the flow run guards, run context and step dispatcher in a fixed order.
+ * FlowRegistrar registers the flow run guards, run context, step dispatcher, lifecycle state and task services in a fixed order.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 class FlowRegistrarTest extends TestCase {
 
 	/**
-	 * register() registers the flow run guards, run context and step dispatcher, in this order.
+	 * register() registers the flow run guards, run context, step dispatcher, lifecycle state and task services, in this order.
 	 *
 	 * @return void
 	 */
@@ -33,6 +33,12 @@ class FlowRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Flow\FlowRunnableGuard',
 				'OCA\OpenRegister\Service\Flow\FlowRunContext',
 				'OCA\OpenRegister\Service\Flow\FlowStepDispatcher',
+				'OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext',
+				'OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass',
+				'OCA\OpenRegister\Service\Task\TaskInboxService',
+				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
+				'OCA\OpenRegister\Service\TaskService',
+				'OCA\OpenRegister\Service\FlowLinkService',
 			],
 			actual: $context->services
 		);

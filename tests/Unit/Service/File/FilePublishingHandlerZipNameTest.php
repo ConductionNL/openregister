@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\File;
@@ -39,6 +39,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 class FilePublishingHandlerZipNameTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	/**
 	 * The ZIP paths a test made, removed afterwards.
@@ -73,7 +74,7 @@ class FilePublishingHandlerZipNameTest extends TestCase {
 		$file->method('getContent')->willReturn('alpha');
 		$files = $this->createMock(FileHandlerSupportInterface::class);
 		$files->method('getFiles')->willReturn([$file]);
-		$restrictions = $this->createMock(FileRestrictionGuardInterface::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('readableNodes')->willReturnArgument(0);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturn($restrictions);
@@ -81,7 +82,8 @@ class FilePublishingHandlerZipNameTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicObjectFinderInterface::class),
 			fileMapper: $this->createMock(FileMapperInterface::class),
 			logger: new NullLogger(),
-			container: $container
+			container: $container,
+			publishedDigests: $this->passThroughDigests()
 		);
 		$handler->setFileService($files);
 		$object = new ObjectEntity();

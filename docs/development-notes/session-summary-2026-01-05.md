@@ -56,7 +56,7 @@ Volledige test van Magic Mapper met:
 
 **Voorbeeld Query:**
 ```bash
-curl 'http://localhost/apps/openregister/api/registers/5/objects?schema=30&_search=VNG'
+curl -H 'OCS-APIRequest: true' 'http://localhost/apps/openregister/api/registers/5/objects?schema=30&_search=VNG'
 ```
 Result: Mixed results uit magic table met fuzzy matching!
 
