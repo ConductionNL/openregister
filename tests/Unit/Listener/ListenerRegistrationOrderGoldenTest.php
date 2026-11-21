@@ -28,15 +28,16 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 256;
+	private const LISTENER_COUNT = 257;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
 	 * Last changed when AccessListenerRegistrar added the two owner-webhook listeners
-	 * (webhooks-for-owners).
+	 * (webhooks-for-owners), on top of Search's SearchDeclarationChecksListener registration
+	 * on the SchemaDeclarationChecksEvent listeners; every other registration is unchanged.
 	 */
-	private const SEQUENCE_SHA256 = '35417d8504e71f19d846e471db7262de0e9cc15450897bb87695256a49965c9a';
+	private const SEQUENCE_SHA256 = 'abec06e4fb167fa220f32d1f907bfdff9c72d179e5203787ff88c2e91412bc10';
 
 	/**
 	 * The registration calls, in call order, with every argument.
