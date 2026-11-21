@@ -39,7 +39,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114100003 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
