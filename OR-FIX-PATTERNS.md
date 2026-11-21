@@ -258,3 +258,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after the merge, ArgumentCountError in a test main added for a controller the PR gave new constructor params; TypeError "ObjectsControllerFactory::args(): Argument #14 ($eventDispatcher) ... WebhookService given" in the PR's own tests; "Class OCA\OpenRegister\Files\Service\Sharing\AccessLink not found".
 - Cause: main moved AccessLinkReader into Files (it reads AccessLinkInterface constants, so a constant the PR added on Db\AccessLink resolves to a missing class); main dropped WebhookService from ObjectsControllerFactory (14th positional is IEventDispatcher).
 - Fix: pass the new mocks in main's test; give positional factory calls `createMock(IEventDispatcher::class)`; put a new subject constant on Kernel\Contracts\AccessLinkInterface and alias it on Db\AccessLink. component-map.csv conflicts: `python3 ~/q/bin/component-map-merge.py scripts/component-map.csv` (union, main's row wins per file).
+
+## New test builds a constructor main changed (or-fix-18)
+- Symptom: TypeError 'Argument #14 ($eventDispatcher) must be of type ?IEventDispatcher, MockObject_WebhookService given' from ObjectsControllerFactory, or ArgumentCountError on FacetHandler::__construct (searchProfile).
+- Cause: main 08711497dff replaced ObjectsController's WebhookService with IEventDispatcher (webhooks answer a request event); FacetHandler gained a required PropertySearchProfileInterface.
+- Fix: in the PR's new tests pass createMock(IEventDispatcher::class) in that slot, and searchProfile: new PropertySearchProfile(); see #10538 and, for AggregationQuery::create(groupBy:) -> layout: new AggregationLayout(...), #9818.
