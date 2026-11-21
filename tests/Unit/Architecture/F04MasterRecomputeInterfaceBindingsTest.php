@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -39,7 +39,7 @@ final class F04MasterRecomputeInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string|null, 2: string}>
 	 */
 	private const HIDDEN = [
-		MasterRecomputeService::class => [MasterRecomputeInterface::class, ContractBindings::class, 'Service'],
+		MasterRecomputeService::class => [MasterRecomputeInterface::class, CoreServiceBindings::class, 'Service'],
 	];
 
 	/**
