@@ -28,15 +28,18 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 260;
+	private const LISTENER_COUNT = 261;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
-	 * Last changed when the calendar-object listeners (CalendarObjectChangedListener,
-	 * CalendarObjectDeletedListener) were added: six listeners more, the rest unchanged.
+	 * Last changed when Search started contributing the widget declaration check: one
+	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
+	 * listeners; every other registration is unchanged and in the same order. Then the
+	 * calendar-object listeners (CalendarObjectChangedListener, CalendarObjectDeletedListener)
+	 * were added: six listeners more.
 	 */
-	private const SEQUENCE_SHA256 = '638477e5762c31322ce65dc6b38efa8724f1aaa2d515e8b8dea22ab831d22f32';
+	private const SEQUENCE_SHA256 = '099edcfd300582cc9cba321982ef5969b15755aa7c431affdd4f9b6752994b4b';
 
 	/**
 	 * The registration calls, in call order, with every argument.
