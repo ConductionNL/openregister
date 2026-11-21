@@ -384,3 +384,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Service/Interaction/RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision lists 'lib/<file>.php::<method>' from the PR.
 - Cause: main scans lib/ for $this->objectService / $objectService / $this->objects ->find( and requires each to be a lookup, _audit: false, or a listed open.
 - Fix: a person opening the object: add to OPENED; a background/system read through ObjectService: wrap in WriteCause::asLookup(fn () => ...) or pass _audit: false; a receiver that is not ObjectService (e.g. MagicObjectFinderInterface): add to NOT_OBJECT_SERVICE. (#10534)
+
+## Inherited red on main: FlowEngineOversightTest (or-fix-3)
+- Symptom: tests/Unit/Service/Flow/FlowEngineOversightTest (5 cases) Error: Class "Unit\Service\Flow\FlowSubject" not found.
+- Cause: red on plain main e158c36ac (21 Nov); the test's namespace is Unit\Service\Flow (no OCA\OpenRegister\Tests prefix) and it names FlowSubject unqualified. Also red on main then: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce, AnonymousEnvelopeReadPathsTest (4).
+- Fix: none on PR branches: inherited; confirm on origin/main.
