@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -88,7 +89,7 @@ class ActionDateFollowerGoldenTest extends TestCase {
 	 */
 	public function testFrozenOrPeriodlessRecordsAreLeftAlone(): void {
 		$this->calculator->expects($this->never())->method('calculate');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$blocks = [
 			['archiefstatus' => 'transferred', 'bewaartermijn' => 'P5Y'],
@@ -126,7 +127,7 @@ class ActionDateFollowerGoldenTest extends TestCase {
 		$this->setUp();
 		$object = $this->record(['bewaartermijn' => 'P5Y']);
 		$this->calculator->method('calculate')->willReturn(null);
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 		$this->assertFalse($this->follower->follow($object, new Schema()), 'no date before, none now');
 	}//end testAnUnchangedDateChangesNothing()
 
@@ -138,13 +139,15 @@ class ActionDateFollowerGoldenTest extends TestCase {
 	public function testALostSourceDateClearsTheDate(): void {
 		$object = $this->record(['bewaartermijn' => 'P5Y', 'archiefactiedatum' => '2031-01-01', 'other' => 'kept']);
 		$this->calculator->method('calculate')->willReturn(null);
-		$this->audit->expects($this->once())->method('createAuditTrailEntry')->with(
-			$object,
-			'archival.destruction_date_removed',
-			[
-				'archiefactiedatum' => ['old' => '2031-01-01', 'new' => null],
-				'reason' => 'The source date of the destruction date was cleared.',
-			]
+		$this->audit->expects($this->once())->method('recordObjectEvent')->with(
+			$this->callback(
+				static fn (ObjectAuditEvent $event): bool => $event->object === $object
+					&& $event->action === 'archival.destruction_date_removed'
+					&& $event->context === [
+						'archiefactiedatum' => ['old' => '2031-01-01', 'new' => null],
+						'reason' => 'The source date of the destruction date was cleared.',
+					]
+			)
 		);
 
 		$this->assertTrue($this->follower->follow($object, new Schema()));
@@ -160,7 +163,7 @@ class ActionDateFollowerGoldenTest extends TestCase {
 	public function testANewDateIsStoredAndLogged(): void {
 		$object = $this->record(['bewaartermijn' => 'P5Y', 'archiefactiedatum' => '2031-01-01', 'other' => 'kept']);
 		$this->calculator->method('calculate')->willReturn('2032-02-02');
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertTrue($this->follower->follow($object, new Schema()));
 		$this->assertSame(['bewaartermijn' => 'P5Y', 'archiefactiedatum' => '2032-02-02', 'other' => 'kept'], $object->getRetention());
