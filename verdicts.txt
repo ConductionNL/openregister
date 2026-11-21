@@ -3459,3 +3459,4 @@
 8344 68024e9b6cecf071cb32b3ce945a13cc7f58b0ee REVERIFY or-fix-1: merged main (TransitionEngine: actor runAs, graph forms, reopen declaringAction), fixed private runAsSystem name tripping the elevation guard and missing component rows; Lifecycle, Architecture green; review needed
 9163 6de2c185aee640541596622faa6aea4da92289f4 REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8700 passed; eslint clean on touched files); review needed
 9199 ad5a35d5c2fd3c57c937aa225af3ee708041026b REVERIFY or-fix-1: merged main, parked specs now pass (full jest green: 8707 passed, 8707 total; eslint clean on touched files); review needed
+9066 cadf92c022e8aa9a4487d492a7d92a384490ba4f REVERIFY or-fix-0: merged main, fixed class-aliases.json entry for moved ChatMessageRequest (ClassAliasMapTest); review needed
