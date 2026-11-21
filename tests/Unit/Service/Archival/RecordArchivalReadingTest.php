@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
+use OCA\OpenRegister\Service\Archival\AnnotatedRow;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RecordArchivalReading;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
@@ -34,6 +35,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Archival\RecordArchivalReading
+ * @uses   \OCA\OpenRegister\Service\Archival\AnnotatedRow
  * @uses   \OCA\OpenRegister\Service\Archival\RetentionEvaluator
  * @uses   \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -63,7 +65,7 @@ final class RecordArchivalReadingTest extends TestCase {
 		$annotation = ['retention' => ['default' => 'P1Y']];
 		$entity     = self::record();
 
-		$expected = (new RetentionEvaluator(logger: new NullLogger()))->evaluate(annotation: $annotation, row: ['title' => 'Z-1'], createdAt: $entity->getCreated());
+		$expected = (new RetentionEvaluator(logger: new NullLogger()))->evaluate(subject: new AnnotatedRow(annotation: $annotation, row: ['title' => 'Z-1'], createdAt: $entity->getCreated()));
 		$actual   = (new RecordArchivalReading(logger: new NullLogger()))->retentionAnnotation(annotation: $annotation, entity: $entity);
 
 		self::assertSame($expected, $actual);

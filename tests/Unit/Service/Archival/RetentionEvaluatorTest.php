@@ -88,9 +88,11 @@ final class RetentionEvaluatorTest extends TestCase {
 
 	public function testDeclaredPartiesAreReadOffTheRow(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['default' => 'P30D'], 'parties' => 'aanvrager'],
-			row: ['aanvrager' => ['naam' => 'Gemeente Zuiddrecht', 'id' => 'org-1']],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'P30D'], 'parties' => 'aanvrager'],
+				row: ['aanvrager' => ['naam' => 'Gemeente Zuiddrecht', 'id' => 'org-1']],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame([['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'org-1']], $result['parties']);
@@ -101,9 +103,11 @@ final class RetentionEvaluatorTest extends TestCase {
 	 */
 	public function testDeclaredContainmentListsThePartsOffTheRow(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['default' => 'P30D'], 'containment' => 'onderdelen'],
-			row: ['onderdelen' => ['child-1', ['uuid' => 'child-2', 'naam' => 'Bijlage B']]],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'P30D'], 'containment' => 'onderdelen'],
+				row: ['onderdelen' => ['child-1', ['uuid' => 'child-2', 'naam' => 'Bijlage B']]],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame(
