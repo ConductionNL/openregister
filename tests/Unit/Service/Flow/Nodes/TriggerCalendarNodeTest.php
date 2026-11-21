@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -62,7 +62,7 @@ class TriggerCalendarNodeTest extends TestCase {
 				'omschrijving' => ['type' => 'string'],
 			]
 		);
-		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturnCallback(
 			static function (string|int $id) use ($schema): Schema {
 				if ($id !== 'contracten') {

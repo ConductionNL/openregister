@@ -84,9 +84,9 @@ class FlowCalendarIndex {
 		private readonly FlowTriggerSlugsInterface $slugs,
 		private readonly WorkingCalendarService $calendars,
 		private readonly LoggerInterface $logger,
-		?TriggerCalendarMoment $clock=null,
+		TriggerCalendarMoment $clock,
 	) {
-		$this->clock = ($clock ?? new TriggerCalendarMoment());
+		$this->clock = $clock;
 	}//end __construct()
 
 	/**

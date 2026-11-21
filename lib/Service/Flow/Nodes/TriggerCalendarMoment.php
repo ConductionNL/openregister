@@ -26,7 +26,6 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 
@@ -61,10 +60,10 @@ final class TriggerCalendarMoment {
 	/**
 	 * Constructor.
 	 *
-	 * @param SlaCalculatorInterface|null $calculator The business-time calculator.
+	 * @param SlaCalculatorInterface $calculator The business-time calculator.
 	 */
-	public function __construct(?SlaCalculatorInterface $calculator = null) {
-		$this->calculator = ($calculator ?? new SlaCalculator());
+	public function __construct(SlaCalculatorInterface $calculator) {
+		$this->calculator = $calculator;
 	}//end __construct()
 
 	/**

@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ManifestControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -90,7 +90,7 @@ class ManifestController extends Controller {
 		IRequest $request,
 		ManifestControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->manifestService = $services->manifestService;
 		$this->appManager = $services->appManager;
 		$this->logger = $services->logger;

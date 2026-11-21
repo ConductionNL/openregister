@@ -22,11 +22,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Connection;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+
 /**
  * The methods of ConnectionReporter that callers outside its component use.
  * Callers depend on this interface, not on the class.
+ *
+ * The Compliance contract this interface extends declares report(); its
+ * key is one of {@see ConnectionReporter::KEYS} and its status one of
+ * {@see ConnectionReporter::STATUSES}.
  */
-interface ConnectionReporterInterface {
+interface ConnectionReporterInterface extends ConnectionStatusReporterInterface {
 
 	/**
 	 * Ask integriq to resolve every connection whose config keys a save wrote.
@@ -41,23 +47,6 @@ interface ConnectionReporterInterface {
 	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	public function refreshFromSave(array $savedKeys): array;
-
-	/**
-	 * Report a connection's status to integriq.
-	 *
-	 * Never throws: this runs beside a test or a save whose own answer is what
-	 * the caller returns. Without integriq nothing is sent and nothing is
-	 * logged, because a missing optional app is not a fault.
-	 *
-	 * @param string $key     One of {@see self::KEYS}.
-	 * @param string $status  One of {@see self::STATUSES}.
-	 * @param string $message What OpenRegister observed.
-	 *
-	 * @return bool True when the report was sent.
-	 *
-	 * @spec openspec/specs/app-connections/spec.md
-	 */
-	public function report(string $key, string $status, string $message = ''): bool;
 
 	/**
 	 * Report which LLM providers a settings save left chosen.

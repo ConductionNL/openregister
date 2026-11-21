@@ -21,6 +21,8 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarMoment;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 
 /**
  * The calendar-trigger index: a new date places a moment, a changed date moves it,
@@ -77,7 +79,8 @@ class FlowCalendarIndexTest extends TestCase {
 			moments: $this->moments,
 			slugs: $slugs,
 			calendars: $this->createMock(WorkingCalendarService::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			clock: new TriggerCalendarMoment(new SlaCalculator())
 		);
 	}//end index()
 
