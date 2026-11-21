@@ -34,6 +34,7 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapabilityServices;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\SemanticProviderCatalogue;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -289,4 +290,61 @@ class IntegrationsCapabilityTest extends TestCase {
 		$this->assertArrayHasKey('authStatus', $row);
 		$this->assertArrayHasKey('openConnectorSource', $row);
 	}//end testAdminGetsOperationalFields()
+
+	/**
+	 * Build the capability with the given semantic provider catalogue.
+	 *
+	 * @param SemanticProviderCatalogue|null $catalogue The catalogue, or null when not wired.
+	 *
+	 * @return IntegrationsCapability
+	 */
+	private function capabilityWithProviders(?SemanticProviderCatalogue $catalogue): IntegrationsCapability {
+		return new IntegrationsCapability(
+			registry: $this->registryWith([]),
+			userSession: $this->userSession(uid: 'alice'),
+			groupManager: $this->groupManager(isAdmin: false),
+			services: new IntegrationsCapabilityServices(
+				appManager: $this->appManager(enabledApps: []),
+				leafRegistry: $this->leafRegistry(),
+				semanticProviders: $catalogue
+			)
+		);
+	}//end capabilityWithProviders()
+
+	/**
+	 * The semantic provider rows are advertised as the catalogue lists them.
+	 *
+	 * @return void
+	 */
+	public function testSemanticProvidersAreAdvertised(): void {
+		$row = [
+			'uri' => 'https://schema.org/Organization',
+			'register' => 3,
+			'registerSlug' => 'finance',
+			'schema' => 7,
+			'schemaSlug' => 'payee',
+			'appId' => 'shillinq',
+			'available' => false,
+			'reason' => SemanticProviderCatalogue::REASON_APP_NOT_INSTALLED,
+		];
+		$catalogue = $this->createMock(SemanticProviderCatalogue::class);
+		$catalogue->expects($this->once())->method('list')->willReturn([$row]);
+
+		$payload = $this->capabilityWithProviders(catalogue: $catalogue)->getCapabilities();
+
+		$this->assertSame([$row], $payload['openregister']['integrations']['semanticProviders']);
+	}//end testSemanticProvidersAreAdvertised()
+
+	/**
+	 * Without a catalogue, or when it fails, the list is empty and the capability still builds.
+	 *
+	 * @return void
+	 */
+	public function testSemanticProvidersAreEmptyWithoutAWorkingCatalogue(): void {
+		$failing = $this->createMock(SemanticProviderCatalogue::class);
+		$failing->method('list')->willThrowException(new \RuntimeException('cache down'));
+
+		$this->assertSame([], $this->capabilityWithProviders(catalogue: null)->getCapabilities()['openregister']['integrations']['semanticProviders']);
+		$this->assertSame([], $this->capabilityWithProviders(catalogue: $failing)->getCapabilities()['openregister']['integrations']['semanticProviders']);
+	}//end testSemanticProvidersAreEmptyWithoutAWorkingCatalogue()
 }//end class
