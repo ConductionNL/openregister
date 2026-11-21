@@ -1552,6 +1552,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail {
 		$auditTrail = self::integrityRow(entry: $entry);
 		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $entry->object);
+		self::keepUntil(auditTrail: $auditTrail, until: $entry->expiresNoEarlierThan);
 		$this->insert(entity: $auditTrail);
 
 		return $auditTrail;
@@ -1572,6 +1573,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($entry->objectUuid);
 		$auditTrail->setAction($entry->action);
 		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $entry->changed));
 		$auditTrail->setUser($entry->userId);
 		$auditTrail->setCreated(new DateTime());
 		if ($entry->schemaId !== null) {
@@ -1584,6 +1586,32 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrail;
 	}//end integrityRow()
+
+	/**
+	 * Push a finite expiry out to the given moment, so the evidence of a cleared
+	 * reference outlives the recovery window of the delete that cleared it.
+	 *
+	 * An entry retained indefinitely (null expiry) stays so, and an expiry
+	 * already later than the floor is left as it is: the floor only lengthens.
+	 * Set before the row is sealed, as every expiry is.
+	 *
+	 * @param AuditTrail              $auditTrail The entry being written.
+	 * @param \DateTimeImmutable|null $until      The earliest expiry, or null for no floor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function keepUntil(AuditTrail $auditTrail, ?\DateTimeImmutable $until): void {
+		$expires = $auditTrail->getExpires();
+		if ($until === null || $expires === null) {
+			return;
+		}
+
+		if ($expires->getTimestamp() < $until->getTimestamp()) {
+			$auditTrail->setExpires(DateTime::createFromImmutable($until));
+		}
+	}//end keepUntil()
 
 	/**
 	 * Resolve the audit row's expiry from the object's retention policy.

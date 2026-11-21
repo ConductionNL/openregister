@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrail\AuditTrailFieldTypes;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -48,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
  * @uses \OCA\OpenRegister\Service\Audit\AuditRowAttribution
  * @uses \OCA\OpenRegister\Service\Audit\AuditTrailCollaborators
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  *
  * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
  */
@@ -116,5 +118,36 @@ class AuditTrailTriggerObjectTest extends TestCase {
 		$this->assertNull(AuditTrailMapper::triggerObjectOf(cascadeContext: null));
 		$this->assertNull(AuditTrailMapper::triggerObjectOf(cascadeContext: ['triggerObject' => 42]));
 		$this->assertNull(AuditTrailMapper::triggerObjectOf(cascadeContext: []));
+	}
+
+	public function testAnIntegrityRowCarriesTheTriggeringObject(): void {
+		$withTrigger = AuditTrailMapper::integrityRow(entry: new IntegrityAuditEntry(action: 'referential_integrity.set_null', objectUuid: 'dependant', changed: ['triggerObject' => self::ROOT], userId: 'system'));
+		$restrict = AuditTrailMapper::integrityRow(entry: new IntegrityAuditEntry(action: 'referential_integrity.restrict_blocked', objectUuid: 'dependant', changed: [], userId: 'system'));
+
+		$this->assertSame(self::ROOT, $withTrigger->getTriggerObject());
+		$this->assertNull($restrict->getTriggerObject());
+	}
+
+	public function testTheEvidenceFloorOnlyLengthensAFiniteExpiry(): void {
+		$floor = new \DateTimeImmutable('2030-01-01T00:00:00+00:00');
+
+		$short = new AuditTrail();
+		$short->setExpires(new \DateTime('2029-01-01T00:00:00+00:00'));
+		AuditTrailMapper::keepUntil(auditTrail: $short, until: $floor);
+		$this->assertSame($floor->getTimestamp(), $short->getExpires()->getTimestamp(), 'a shorter expiry is pushed out to the floor');
+
+		$long = new AuditTrail();
+		$long->setExpires(new \DateTime('2031-01-01T00:00:00+00:00'));
+		AuditTrailMapper::keepUntil(auditTrail: $long, until: $floor);
+		$this->assertSame((new \DateTime('2031-01-01T00:00:00+00:00'))->getTimestamp(), $long->getExpires()->getTimestamp(), 'a later expiry is kept');
+
+		$forever = new AuditTrail();
+		AuditTrailMapper::keepUntil(auditTrail: $forever, until: $floor);
+		$this->assertNull($forever->getExpires(), 'an indefinite entry stays indefinite');
+
+		$noFloor = new AuditTrail();
+		$noFloor->setExpires(new \DateTime('2029-01-01T00:00:00+00:00'));
+		AuditTrailMapper::keepUntil(auditTrail: $noFloor, until: null);
+		$this->assertSame((new \DateTime('2029-01-01T00:00:00+00:00'))->getTimestamp(), $noFloor->getExpires()->getTimestamp());
 	}
 }//end class
