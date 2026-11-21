@@ -80,7 +80,16 @@ class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
 	 * @return \OCP\AppFramework\Http\JSONResponse
 	 */
 	private function answer(): \OCP\AppFramework\Http\JSONResponse {
-		$controller = AuditTrailControllerFactory::create(
+		return $this->controllerFor()->objectLogs('obj-1', 'reg', 'sch', $this->objectService);
+	}//end answer()
+
+	/**
+	 * The controller around the fixture.
+	 *
+	 * @return AuditTrailController
+	 */
+	private function controllerFor(): AuditTrailController {
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(LogService::class),
@@ -93,9 +102,7 @@ class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
 			$this->history,
 			$this->masker
 		);
-
-		return $controller->objectLogs('obj-1', 'reg', 'sch', $this->objectService);
-	}//end answer()
+	}//end controllerFor()
 
 	/**
 	 * An administrator reads the stored log, masked, paged with links, as before the move.
@@ -205,4 +212,54 @@ class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
 			$response->getData()
 		);
 	}//end testAReaderGetsTheRecordedResponse()
+
+	/**
+	 * The request cases ObjectsControllerRequestParamsGoldenTest records.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function requestCases(): array {
+		return ObjectsControllerRequestParamsGoldenTest::configCases();
+	}//end requestCases()
+
+	/**
+	 * The route reads paging, filters, order and search exactly as the recorded object API listing did.
+	 *
+	 * @param array<string, mixed> $params The request params.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('requestCases')]
+	public function testTheRequestReadsAsTheRecordedListing(array $params): void {
+		$recorded = json_decode((string)file_get_contents(__DIR__ . '/fixtures/objects-request-params-golden.json'), true);
+		$expected = $recorded['config ' . $this->dataName()]['value'];
+
+		$request = $this->createMock(\OCP\IRequest::class);
+		$request->method('getParams')->willReturn($params);
+		$this->request = $request;
+		$this->userSession = $this->createMock(\OCP\IUserSession::class);
+		$this->groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$this->history = $this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class);
+		$this->masker = null;
+		$controller = (new \ReflectionClass(AuditTrailController::class))->getMethod('listingConfig');
+		$listing = $controller->invoke($this->controllerFor());
+		$actual = json_decode(
+			(string)json_encode(
+				[
+					'limit' => $listing['query']->limit,
+					'offset' => $listing['query']->offset,
+					'page' => $listing['page'],
+					'filters' => $listing['query']->filters,
+					'sort' => $listing['query']->sort,
+					'_search' => $listing['search'],
+				]
+			),
+			true
+		);
+
+		$this->assertSame(
+			array_intersect_key($expected, $actual),
+			$actual
+		);
+	}//end testTheRequestReadsAsTheRecordedListing()
 }//end class

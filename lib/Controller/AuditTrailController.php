@@ -166,7 +166,7 @@ class AuditTrailController extends Controller {
 		$this->auditHashService = $services->log->auditHashService;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
-		$this->logger = $services->platform->logger;
+		$this->logger = $services->log->logger;
 		$this->readableLister = $services->log->readableLister;
 		$this->auditPage = $services->log->auditPage;
 		$this->historyForReaders = $services->readers->historyForReaders;

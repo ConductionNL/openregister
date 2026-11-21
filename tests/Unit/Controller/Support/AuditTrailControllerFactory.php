@@ -58,6 +58,7 @@ final class AuditTrailControllerFactory {
 					auditHashService: $auditHashService,
 					readableLister: $readableLister,
 					auditPage: $auditPage,
+					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
 				readers: new \OCA\OpenRegister\Controller\Support\AuditTrailReaders(
 					historyForReaders: $historyForReaders,
@@ -66,7 +67,6 @@ final class AuditTrailControllerFactory {
 				platform: new \OCA\OpenRegister\Controller\Support\AuditTrailPlatform(
 					userSession: $userSession,
 					groupManager: $groupManager,
-					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
 			),
 		];
