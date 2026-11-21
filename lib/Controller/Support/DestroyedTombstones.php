@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
 
 /**
@@ -112,7 +113,10 @@ final class DestroyedTombstones {
 			$records = $this->authorizer->readableDestructionRecords(
 				records: $this->auditTrailMapper->findDestructions(query: $query->page(limit: $take, offset: $start))
 			);
-			$results = array_map(static fn (AuditTrail $record): array => self::tombstone(record: $record), $records);
+			// The authorizer answers in the Core audit-record port; the destruction
+			// rows it was handed are AuditTrail entities, and only those carry a tombstone.
+			$entries = array_filter($records, static fn (AuditRecordInterface $record): bool => $record instanceof AuditTrail);
+			$results = array_map(static fn (AuditTrail $record): array => self::tombstone(record: $record), $entries);
 		}
 
 		$oldest = $this->auditTrailMapper->oldestDestruction();

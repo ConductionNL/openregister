@@ -102,6 +102,20 @@ class DestroyedTombstonesTest extends TestCase {
 		);
 	}
 
+	public function testOnlyAuditTrailEntriesTheAuthorizerReturnsBecomeTombstones(): void {
+		$other = new class implements \OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface {
+		};
+		$this->authorizer = $this->createMock(DeletedObjectAuthorizerInterface::class);
+		$this->authorizer->method('readableDestructionRecords')->willReturnCallback(
+			static fn (array $records): array => [...$records, $other]
+		);
+
+		$listing = $this->tombstones(records: [self::record(uuid: 'a1')], count: 1)
+			->listing(query: new DestructionQuery(since: new DateTimeImmutable('2026-10-02T00:00:00+00:00')), deletedTotal: 0, limit: 20, offset: 0);
+
+		$this->assertSame(['a1'], array_column($listing['results'], 'id'));
+	}
+
 	public function testTheListingCarriesTombstonesTotalAndCoverage(): void {
 		$listing = $this->tombstones(records: [self::record(uuid: 'a1'), self::record(uuid: 'b2')], count: 2)
 			->listing(query: new DestructionQuery(since: new DateTimeImmutable('2026-10-02T00:00:00+00:00')), deletedTotal: 0, limit: 20, offset: 0);
