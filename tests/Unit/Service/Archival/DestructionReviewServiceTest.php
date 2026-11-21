@@ -121,7 +121,7 @@ class DestructionReviewServiceTest extends TestCase {
 	}
 
 	/**
-	 * The three answers, each recorded in the same history.
+	 * The four answers, each recorded in the same history.
 	 *
 	 * @return array<string, array{0: string, 1: string|null}> answer and the new date it needs.
 	 */
@@ -130,6 +130,7 @@ class DestructionReviewServiceTest extends TestCase {
 			'destroy' => [DestructionReviewService::ANSWER_DESTROY, null],
 			'retain' => [DestructionReviewService::ANSWER_RETAIN, '2029-03-01'],
 			'transfer' => [DestructionReviewService::ANSWER_TRANSFER, null],
+			'anonymise' => [DestructionReviewService::ANSWER_ANONYMISE, null],
 		];
 	}
 
@@ -200,9 +201,9 @@ class DestructionReviewServiceTest extends TestCase {
 		);
 	}
 
-	public function testAFourthAnswerIsRefusedAndTheThreeAreNamed(): void {
+	public function testAnUnknownAnswerIsRefusedAndTheFourAreNamed(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->expectExceptionMessageMatches('/destroy, retain, transfer/');
+		$this->expectExceptionMessageMatches('/destroy, retain, transfer, anonymise$/');
 
 		$this->service->recordAnswer(
 			listData: $this->list(),

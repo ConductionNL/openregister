@@ -606,7 +606,7 @@ class DestructionGoldenTest extends TestCase {
 	public static function refusedAnswers(): array {
 		$assigned = ['objects' => [['uuid' => 'e', 'reviewer' => 'rev']]];
 		return [
-			'fourth answer' => [$assigned, ['e', 'burn', 'rev', 'r'], '"burn" is not a review answer; the answers are destroy, retain, transfer'],
+			'fourth answer' => [$assigned, ['e', 'burn', 'rev', 'r'], '"burn" is not a review answer; the answers are destroy, retain, transfer, anonymise'],
 			'no reason' => [$assigned, ['e', 'destroy', 'rev', '  '], 'A review answer records why it was given, so a reason is required'],
 			'retain no date' => [$assigned, ['e', 'retain', 'rev', 'r', ' '], 'Retaining a record moves its archiefactiedatum, so a new date is required'],
 			'retain bad date' => [$assigned, ['e', 'retain', 'rev', 'r', 'not a date'], '"not a date" is not a date the archiefactiedatum can be moved to'],

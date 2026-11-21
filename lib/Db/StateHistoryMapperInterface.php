@@ -109,6 +109,33 @@ interface StateHistoryMapperInterface {
 	public function pruneClosedIntervalsBefore(string $objectUuid, DateTimeInterface $horizon): int;
 
 	/**
+	 * How many intervals of one object a set of properties holds.
+	 *
+	 * @param string   $objectUuid The object.
+	 * @param string[] $properties The properties.
+	 *
+	 * @return int The number of intervals.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function countForObjectProperties(string $objectUuid, array $properties): int;
+
+	/**
+	 * Drop every interval of one object for a set of properties, open or closed.
+	 *
+	 * Used by an anonymisation: the intervals hold the former values of the
+	 * properties it changed, so they leave with the values.
+	 *
+	 * @param string   $objectUuid The object.
+	 * @param string[] $properties The properties.
+	 *
+	 * @return int Rows removed.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function deleteForObjectProperties(string $objectUuid, array $properties): int;
+
+	/**
 	 * Insert one row.
 	 *
 	 * @param Entity $entity The row to insert.

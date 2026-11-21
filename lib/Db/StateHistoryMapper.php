@@ -190,6 +190,62 @@ class StateHistoryMapper extends QBMapper implements StateHistoryMapperInterface
 	}//end pruneClosedIntervalsBefore()
 
 	/**
+	 * How many intervals of one object a set of properties holds.
+	 *
+	 * @param string   $objectUuid The object.
+	 * @param string[] $properties The properties.
+	 *
+	 * @return int The number of intervals.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function countForObjectProperties(string $objectUuid, array $properties): int {
+		if ($properties === []) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->func()->count('*', 'intervals'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->in('property', $qb->createNamedParameter(array_values($properties), IQueryBuilder::PARAM_STR_ARRAY)));
+
+		$result = $qb->executeQuery();
+		$count  = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countForObjectProperties()
+
+	/**
+	 * Drop every interval of one object for a set of properties, open or closed.
+	 *
+	 * 🔴 THE OPEN INTERVAL GOES TOO, unlike in pruneClosedIntervalsBefore().
+	 * That one keeps the open interval because the object still asserts it; an
+	 * anonymised object no longer does, so any interval of the property holds
+	 * a value the record has given up.
+	 *
+	 * @param string   $objectUuid The object.
+	 * @param string[] $properties The properties.
+	 *
+	 * @return int Rows removed.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function deleteForObjectProperties(string $objectUuid, array $properties): int {
+		if ($properties === []) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere($qb->expr()->in('property', $qb->createNamedParameter(array_values($properties), IQueryBuilder::PARAM_STR_ARRAY)));
+
+		return (int)$qb->executeStatement();
+	}//end deleteForObjectProperties()
+
+	/**
 	 * Run a uuid query and flatten it.
 	 *
 	 * @param IQueryBuilder $queryBuilder The prepared query.
