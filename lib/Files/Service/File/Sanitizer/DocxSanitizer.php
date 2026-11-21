@@ -70,7 +70,7 @@ use ZipArchive;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   DOM / ZipArchive collaborators are intrinsic to ZIP-and-XML surgery.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One private helper per OOXML structure keeps each pass readable.
  */
-class DocxSanitizer implements SanitizerInterface {
+class DocxSanitizer implements MetadataMaskingSanitizerInterface {
 
 	/**
 	 * The DOCX MIME type this strategy supports.
@@ -151,6 +151,23 @@ class DocxSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
+		return $this->sanitizeMasked(sourcePath: $sourcePath, destPath: $destPath, mask: MetadataMask::none());
+	}//end sanitize()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string       $sourcePath Path to the source .docx.
+	 * @param string       $destPath   Path to write the sanitised .docx.
+	 * @param MetadataMask $mask       The run's substitution map.
+	 *
+	 * @throws SanitizationException On encryption / corrupt-zip / internal failure.
+	 *
+	 * @return SanitizationReport Per-category counts.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function sanitizeMasked(string $sourcePath, string $destPath, MetadataMask $mask): SanitizationReport {
 		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
 		$run = new DocxSanitizationRun(zip: $zip);
 
@@ -168,7 +185,7 @@ class DocxSanitizer implements SanitizerInterface {
 		$this->stripCustomXmlParts(run: $run);
 
 		// Metadata parts (each touched exactly once).
-		$this->scrubMetadata(run: $run);
+		$this->scrubMetadata(run: $run, mask: $mask);
 
 		// Inline body-part surgery: read once, run every inline pass, write once.
 		$documentRelIds = $this->processBodyParts(run: $run, bodyParts: $bodyParts);
@@ -186,8 +203,8 @@ class DocxSanitizer implements SanitizerInterface {
 
 		$zip->close();
 
-		return $this->buildReport(counts: $run->counts());
-	}//end sanitize()
+		return $this->buildReport(counts: $run->counts(), mask: $mask);
+	}//end sanitizeMasked()
 
 	/**
 	 * Copy the source to the destination (when they differ) and open it.
@@ -256,10 +273,11 @@ class DocxSanitizer implements SanitizerInterface {
 	 * Build the per-category report from the counter map.
 	 *
 	 * @param array<string, int> $counts Counter map.
+	 * @param MetadataMask       $mask   The run's substitution map, with the fields it could not mask.
 	 *
 	 * @return SanitizationReport
 	 */
-	private function buildReport(array $counts): SanitizationReport {
+	private function buildReport(array $counts, MetadataMask $mask): SanitizationReport {
 		return new SanitizationReport(
 			revisions: new SanitizationRevisionCounts(
 				commentsRemoved: $counts['commentsRemoved'],
@@ -273,7 +291,8 @@ class DocxSanitizer implements SanitizerInterface {
 				customXmlPartsDropped: $counts['customXmlPartsDropped'],
 				fieldCodesStripped: $counts['fieldCodesStripped']
 			),
-			sentinelApplied: $this->sentinel
+			sentinelApplied: $this->sentinel,
+			unmaskableFields: $mask->reported()
 		);
 	}//end buildReport()
 
@@ -499,46 +518,53 @@ class DocxSanitizer implements SanitizerInterface {
 	/**
 	 * Scrub document metadata fields to the sentinel.
 	 *
-	 * @param DocxSanitizationRun $run The sanitisation run.
+	 * @param DocxSanitizationRun $run  The sanitisation run.
+	 * @param MetadataMask        $mask The run's substitution map.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubMetadata(DocxSanitizationRun $run): void {
-		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCorePart(zip: $run->zip));
+	private function scrubMetadata(DocxSanitizationRun $run, MetadataMask $mask): void {
+		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCorePart(zip: $run->zip, mask: $mask));
 		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubAppPart(zip: $run->zip));
-		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCustomPart(zip: $run->zip));
+		$run->count(category: 'metadataFieldsScrubbed', amount: $this->scrubCustomPart(zip: $run->zip, mask: $mask));
 	}//end scrubMetadata()
 
 	/**
-	 * Scrub docProps/core.xml fields.
+	 * Scrub docProps/core.xml fields: identity fields to the sentinel, the
+	 * descriptive ones masked with the run's map (or to the sentinel when
+	 * the run does not mask).
 	 *
-	 * @param ZipArchive $zip The open archive.
+	 * @param ZipArchive   $zip  The open archive.
+	 * @param MetadataMask $mask The run's substitution map.
 	 *
 	 * @return int The number of fields scrubbed.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubCorePart(ZipArchive $zip): int {
+	private function scrubCorePart(ZipArchive $zip, MetadataMask $mask): int {
 		$xml = $zip->getFromName('docProps/core.xml');
 		if ($xml === false || $xml === '') {
 			return 0;
 		}
 
 		$dom = $this->loadXml(xml: $xml);
-		$fields = [
+		$identity = [
 			['http://purl.org/dc/elements/1.1/', 'creator'],
 			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'lastModifiedBy'],
+			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'category'],
+			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'contentStatus'],
+		];
+		$descriptive = [
 			['http://purl.org/dc/elements/1.1/', 'title'],
 			['http://purl.org/dc/elements/1.1/', 'subject'],
 			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'keywords'],
 			['http://purl.org/dc/elements/1.1/', 'description'],
-			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'category'],
-			['http://schemas.openxmlformats.org/package/2006/metadata/core-properties', 'contentStatus'],
 		];
 
-		$count = $this->surgery->scrubElements(dom: $dom, fields: $fields);
+		$count  = $this->surgery->scrubElements(dom: $dom, fields: $identity);
+		$count += $this->surgery->maskElements(dom: $dom, fields: $descriptive, mask: $mask);
 		$zip->addFromString('docProps/core.xml', $dom->saveXML());
 		return $count;
 	}//end scrubCorePart()
@@ -569,21 +595,29 @@ class DocxSanitizer implements SanitizerInterface {
 	}//end scrubAppPart()
 
 	/**
-	 * Scrub string-typed custom document properties.
+	 * Scrub string-typed custom document properties; a masking run masks
+	 * them and removes, naming them, the ones that are not text.
 	 *
-	 * @param ZipArchive $zip The open archive.
+	 * @param ZipArchive   $zip  The open archive.
+	 * @param MetadataMask $mask The run's substitution map.
 	 *
 	 * @return int The number of properties scrubbed.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubCustomPart(ZipArchive $zip): int {
+	private function scrubCustomPart(ZipArchive $zip, MetadataMask $mask): int {
 		$xml = $zip->getFromName('docProps/custom.xml');
 		if ($xml === false || $xml === '') {
 			return 0;
 		}
 
 		$dom = $this->loadXml(xml: $xml);
+		if ($mask->isActive() === true) {
+			$count = $this->surgery->maskOoxmlCustomProperties(dom: $dom, mask: $mask);
+			$zip->addFromString('docProps/custom.xml', $dom->saveXML());
+			return $count;
+		}
+
 		$xpath = new DOMXPath($dom);
 		$xpath->registerNamespace('vt', 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes');
 		$values = $xpath->query('//vt:lpwstr | //vt:lpstr');

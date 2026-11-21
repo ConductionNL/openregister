@@ -308,6 +308,20 @@
 					</p>
 				</div>
 
+				<!-- Review gate: anonymised output waits for a person's check -->
+				<div class="setting-item">
+					<NcCheckboxRadioSwitch
+						v-model="fileSettings.requireReview"
+						type="switch"
+						data-testid="require-review-switch"
+						@update:modelValue="saveSettings">
+						{{ t('openregister', 'Require a review before anonymised output is written') }}
+					</NcCheckboxRadioSwitch>
+					<p class="setting-description" data-testid="require-review-note">
+						{{ t('openregister', 'When on, an anonymised copy is only made once every detection is decided and the document is marked as checked. Unattended pipelines, such as the Woo pipeline of OpenCatalogi, then wait for officers to decide.') }}
+					</p>
+				</div>
+
 				<!-- Method Selector -->
 				<div
 					v-if="fileSettings.entityRecognitionEnabled"
@@ -918,6 +932,32 @@ function applyPlainSettings(fileSettings, settings) {
 }
 
 /**
+ * Take over whether anonymised output waits for a person's check.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyRequireReview(fileSettings, settings) {
+	if (settings.anonymisation && typeof settings.anonymisation === 'object') {
+		fileSettings.requireReview = settings.anonymisation.requireReview === true
+	}
+}
+
+/**
+ * The review setting to save: only once the stored one was loaded, so a save
+ * before the load cannot switch the gate off.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function anonymisationFields(settings) {
+	return typeof settings.requireReview === 'boolean'
+		? { anonymisation: { requireReview: settings.requireReview } }
+		: {}
+}
+
+/**
  * Take over the stored jurisdiction pattern set codes.
  *
  * @param {object} fileSettings The form's settings.
@@ -1113,6 +1153,8 @@ const INITIAL_STATE = {
 		openAnonymiserPasswordSet: false,
 		// Enabled jurisdiction pattern set codes; null until loaded.
 		entityPatternSets: null,
+		// null until the stored setting is loaded; see anonymisationFields().
+		requireReview: null,
 	},
 
 	// A newly typed OpenAnonymiser password, sent once and then cleared.
@@ -1479,6 +1521,7 @@ export default {
 					applyPlainSettings(this.fileSettings, settings)
 					applyEnabledFileTypes(this.fileTypes, settings)
 					applyPatternSets(this.fileSettings, settings)
+					applyRequireReview(this.fileSettings, settings)
 				}
 				// Load object settings
 				await this.loadObjectSettings()
@@ -1702,6 +1745,7 @@ export default {
 				...recognitionFields(this.fileSettings),
 				...openAnonymiserFields(this.fileSettings),
 				...patternSetFields(this.fileSettings),
+				...anonymisationFields(this.fileSettings),
 				enabledFileTypes: this.fileTypes
 					.filter((ft) => ft.enabled)
 					.map((ft) => ft.extension),

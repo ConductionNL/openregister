@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
+use OCA\OpenRegister\Service\Anonymisation\RedactionReviewGate;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -40,6 +41,8 @@ final class FileServicePlatform {
 	 * @param IRootFolder              $rootFolder  Root folder
 	 * @param ShareLinkUrlInterface    $shareUrls   Share link builder
 	 * @param IUserSession             $userSession User session
+	 * @param RedactionReviewGate|null $reviewGate  Refuses anonymised output a person has not checked;
+	 *                                              null only where no container builds the service.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -48,6 +51,7 @@ final class FileServicePlatform {
 		public readonly IRootFolder $rootFolder,
 		public readonly ShareLinkUrlInterface $shareUrls,
 		public readonly IUserSession $userSession,
+		public readonly ?RedactionReviewGate $reviewGate = null,
 	) {
 	}//end __construct()
 }//end class

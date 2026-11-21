@@ -115,6 +115,7 @@ exports[`file configuration initial state starts from the recorded defaults 1`] 
     "openAnonymiserSource": "internal",
     "openAnonymiserUsername": "",
     "presidioApiEndpoint": "",
+    "requireReview": null,
     "textExtractor": {
       "id": "llphant",
       "label": "LLPhant",

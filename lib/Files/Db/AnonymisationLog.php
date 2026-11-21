@@ -68,6 +68,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDurationMs(?int $durationMs)
  * @method string|null getSteps()
  * @method void setSteps(?string $steps)
+ * @method string|null getVerification()
+ * @method void setVerification(?string $verification)
  * @method DateTime getCreated()
  * @method void setCreated(DateTime $created)
  *
@@ -177,6 +179,13 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	protected ?string $steps = null;
 
 	/**
+	 * The written copy's irreversibility verdict, as JSON: verdict, output mode, routes and counts.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $verification = null;
+
+	/**
 	 * Created timestamp.
 	 *
 	 * @var DateTime
@@ -201,6 +210,7 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'replacements', type: 'integer');
 		$this->addType(fieldName: 'durationMs', type: 'integer');
 		$this->addType(fieldName: 'steps', type: 'string');
+		$this->addType(fieldName: 'verification', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 		$this->created = new DateTime();
@@ -245,11 +255,31 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getStepsArray()
 
 	/**
-	 * The serialised sanitization report and step outcomes, decoded.
+	 * Decode the irreversibility verdict.
 	 *
-	 * @return array{sanitization: array|null, steps: array|null}
+	 * @return array<string, mixed>|null The verdict, or null when the run verified no copy.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getVerificationArray(): ?array {
+		if ($this->verification === null) {
+			return null;
+		}
+
+		$decoded = json_decode($this->verification, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end getVerificationArray()
+
+	/**
+	 * The serialised sanitization report, step outcomes and verdict, decoded.
+	 *
+	 * @return array{sanitization: array|null, steps: array|null, verification: array|null}
 	 */
 	protected function jsonOverrides(): array {
-		return ['sanitization' => $this->getSanitizationArray(), 'steps' => $this->getStepsArray()];
+		return ['sanitization' => $this->getSanitizationArray(), 'steps' => $this->getStepsArray(), 'verification' => $this->getVerificationArray()];
 	}//end jsonOverrides()
 }//end class

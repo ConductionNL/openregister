@@ -56,7 +56,7 @@ use ZipArchive;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) DOM / ZipArchive collaborators are intrinsic to ZIP-and-XML surgery.
  */
-class OdtSanitizer implements SanitizerInterface {
+class OdtSanitizer implements MetadataMaskingSanitizerInterface {
 
 	/**
 	 * The ODT MIME type this strategy supports.
@@ -124,6 +124,23 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
+		return $this->sanitizeMasked(sourcePath: $sourcePath, destPath: $destPath, mask: MetadataMask::none());
+	}//end sanitize()
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string       $sourcePath Path to the source .odt.
+	 * @param string       $destPath   Path to write the sanitised .odt.
+	 * @param MetadataMask $mask       The run's substitution map.
+	 *
+	 * @throws SanitizationException On encryption / corrupt-zip / internal failure.
+	 *
+	 * @return SanitizationReport Per-category counts.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function sanitizeMasked(string $sourcePath, string $destPath, MetadataMask $mask): SanitizationReport {
 		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
 
 		$counts = [
@@ -136,7 +153,7 @@ class OdtSanitizer implements SanitizerInterface {
 		];
 
 		$this->sanitizeContent(zip: $zip, counts: $counts);
-		$this->scrubMetadata(zip: $zip, counts: $counts);
+		$this->scrubMetadata(zip: $zip, counts: $counts, mask: $mask);
 
 		$zip->close();
 
@@ -153,9 +170,10 @@ class OdtSanitizer implements SanitizerInterface {
 				customXmlPartsDropped: 0,
 				fieldCodesStripped: $counts['fieldCodesStripped']
 			),
-			sentinelApplied: $this->sentinel
+			sentinelApplied: $this->sentinel,
+			unmaskableFields: $mask->reported()
 		);
-	}//end sanitize()
+	}//end sanitizeMasked()
 
 	/**
 	 * Copy the source to the destination (when they differ) and open it.
@@ -310,57 +328,80 @@ class OdtSanitizer implements SanitizerInterface {
 	/**
 	 * Scrub meta.xml fields to the sentinel.
 	 *
-	 * @param ZipArchive $zip The open archive.
+	 * @param ZipArchive         $zip    The open archive.
 	 * @param array<string, int> $counts Mutable counter map.
+	 * @param MetadataMask       $mask   The run's substitution map.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubMetadata(ZipArchive $zip, array &$counts): void {
+	private function scrubMetadata(ZipArchive $zip, array &$counts, MetadataMask $mask): void {
 		$metaXml = $zip->getFromName('meta.xml');
 		if ($metaXml === false) {
 			return;
 		}
 
 		$dom = $this->loadXml(xml: $metaXml);
-		$fields = [
+		$identity = [
 			[self::NS['dc'], 'creator'],
 			[self::NS['meta'], 'initial-creator'],
+		];
+		$descriptive = [
 			[self::NS['dc'], 'title'],
 			[self::NS['dc'], 'subject'],
 			[self::NS['meta'], 'keyword'],
 			[self::NS['dc'], 'description'],
 		];
 
-		$counts['metadataFieldsScrubbed'] += $this->surgery->scrubElements(dom: $dom, fields: $fields);
-		$counts['metadataFieldsScrubbed'] += $this->scrubUserDefinedFields(dom: $dom);
+		$counts['metadataFieldsScrubbed'] += $this->surgery->scrubElements(dom: $dom, fields: $identity);
+		$counts['metadataFieldsScrubbed'] += $this->surgery->maskElements(dom: $dom, fields: $descriptive, mask: $mask);
+		$counts['metadataFieldsScrubbed'] += $this->scrubUserDefinedFields(dom: $dom, mask: $mask);
 
 		$zip->addFromString('meta.xml', $dom->saveXML());
 	}//end scrubMetadata()
 
 
 	/**
-	 * Scrub string-typed (or untyped) meta:user-defined fields to the sentinel.
+	 * Scrub string-typed (or untyped) meta:user-defined fields to the
+	 * sentinel; a masking run masks them and removes, naming them, the
+	 * fields of any other value type.
 	 *
-	 * @param DOMDocument $dom The meta DOM.
+	 * @param DOMDocument  $dom  The meta DOM.
+	 * @param MetadataMask $mask The run's substitution map.
 	 *
 	 * @return int The number of fields scrubbed.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function scrubUserDefinedFields(DOMDocument $dom): int {
-		$userDefined = $dom->getElementsByTagNameNS(self::NS['meta'], 'user-defined');
-		$stringTyped = array_filter(
-			iterator_to_array($userDefined),
-			fn (DOMElement $node): bool => in_array(
-				$node->getAttributeNS(self::NS['meta'], 'value-type'),
-				['', 'string'],
-				true
-			)
+	private function scrubUserDefinedFields(DOMDocument $dom, MetadataMask $mask): int {
+		$userDefined = iterator_to_array($dom->getElementsByTagNameNS(self::NS['meta'], 'user-defined'));
+		$isText      = fn (DOMElement $node): bool => in_array(
+			$node->getAttributeNS(self::NS['meta'], 'value-type'),
+			['', 'string'],
+			true
 		);
+		$stringTyped = array_filter($userDefined, $isText);
 
-		return $this->surgery->scrubNodes(nodes: $stringTyped);
+		$count = $this->surgery->maskNodes(nodes: $stringTyped, mask: $mask);
+		if ($mask->isActive() === false) {
+			return $count;
+		}
+
+		foreach ($userDefined as $node) {
+			if ($isText($node) === true) {
+				continue;
+			}
+
+			$mask->noteUnmaskable(
+				field: $node->getAttributeNS(self::NS['meta'], 'name'),
+				reason: 'not a text value (' . $node->getAttributeNS(self::NS['meta'], 'value-type') . ')'
+			);
+			$node->parentNode?->removeChild($node);
+			$count++;
+		}
+
+		return $count;
 	}//end scrubUserDefinedFields()
 
 

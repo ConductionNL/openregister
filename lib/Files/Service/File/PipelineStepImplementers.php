@@ -26,6 +26,8 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\XlsxSanitizer;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\ImageBurner;
 
@@ -55,6 +57,8 @@ final class PipelineStepImplementers {
 		PipelineSteps::PDF_METADATA_SANITISER => PdfMetadataSanitizer::class,
 		PipelineSteps::DOCX_SANITISER => DocxSanitizer::class,
 		PipelineSteps::ODT_SANITISER => OdtSanitizer::class,
+		PipelineSteps::XLSX_SANITISER => XlsxSanitizer::class,
+		PipelineSteps::PPTX_SANITISER => PptxSanitizer::class,
 		PipelineSteps::IMAGE_BURNER => ImageBurner::class,
 	];
 

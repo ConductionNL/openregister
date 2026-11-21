@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Files\Service\File\Pdf;
 use ddn\sapp\PDFDoc;
 use ddn\sapp\pdfvalue\PDFValueString;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
@@ -86,6 +87,31 @@ class PdfMetadataSanitizer {
 		'Creator',
 	];
 
+	/**
+	 * /Info fields an anonymisation run masks with its substitution map
+	 * instead of stripping (REQ-RRS-004); the others in the strip list name
+	 * a person and are stripped as always.
+	 *
+	 * @var string[]
+	 */
+	private const INFO_FIELDS_TO_MASK = [
+		'Title',
+		'Subject',
+		'Keywords',
+	];
+
+	/**
+	 * /Info fields that carry no text a mask applies to: provenance kept as is.
+	 *
+	 * @var string[]
+	 */
+	private const INFO_FIELDS_PRESERVED = [
+		'Producer',
+		'CreationDate',
+		'ModDate',
+		'Trapped',
+	];
+
 	// Note: /Info fields NOT in INFO_FIELDS_TO_STRIP are left untouched
 	// by `sanitize()`. The preserve-list per spec is Producer,
 	// CreationDate, and ModDate — provenance fields that carry no PII.
@@ -120,7 +146,13 @@ class PdfMetadataSanitizer {
 	 * `to_pdf_file_b(rebuild: true)` to persist the changes — the
 	 * sanitiser mutates objects that need to land in the rebuild path.
 	 *
-	 * @param PDFDoc $doc The loaded PDF document to mutate.
+	 * With an active mask (an anonymisation run) Title, Subject, Keywords
+	 * and the text custom /Info entries are masked with the run's map
+	 * instead of stripped, and an entry that is not text is removed and
+	 * named on the mask (REQ-RRS-004).
+	 *
+	 * @param PDFDoc            $doc  The loaded PDF document to mutate.
+	 * @param MetadataMask|null $mask The anonymisation run's substitution map, or null.
 	 *
 	 * @return array{info_fields_stripped: int, xmp_stripped: bool}
 	 *                                                              Diagnostic summary (no PII).
@@ -128,14 +160,15 @@ class PdfMetadataSanitizer {
 	 * @throws PdfAnonymisationException On reflection / SAPP errors.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
 	 */
-	public function sanitize(PDFDoc $doc): array {
+	public function sanitize(PDFDoc $doc, ?MetadataMask $mask = null): array {
 		$diagnostic = [
 			'info_fields_stripped' => 0,
 			'xmp_stripped' => false,
 		];
 
-		$diagnostic['info_fields_stripped'] = $this->strippedInfoFields(doc: $doc);
+		$diagnostic['info_fields_stripped'] = $this->strippedInfoFields(doc: $doc, mask: $mask);
 		$diagnostic['xmp_stripped'] = $this->stripXmp(doc: $doc);
 
 		$this->logger->info(
@@ -149,16 +182,21 @@ class PdfMetadataSanitizer {
 	/**
 	 * Strip the listed /Info fields, when the trailer references an /Info object.
 	 *
-	 * @param PDFDoc $doc The loaded PDF document to mutate.
+	 * @param PDFDoc            $doc  The loaded PDF document to mutate.
+	 * @param MetadataMask|null $mask The anonymisation run's substitution map, or null.
 	 *
 	 * @return int The number of fields stripped.
 	 *
 	 * @throws PdfAnonymisationException When the trailer Info reference cannot be reached.
 	 */
-	private function strippedInfoFields(PDFDoc $doc): int {
+	private function strippedInfoFields(PDFDoc $doc, ?MetadataMask $mask): int {
 		$infoObj = $this->reachInfoObject(doc: $doc);
 		if ($infoObj === null) {
 			return 0;
+		}
+
+		if ($mask !== null && $mask->isActive() === true) {
+			return $this->maskInfoFields(doc: $doc, infoObj: $infoObj, mask: $mask);
 		}
 
 		return $this->stripInfoFields(doc: $doc, infoObj: $infoObj);
@@ -234,6 +272,62 @@ class PdfMetadataSanitizer {
 
 		return $stripped;
 	}//end stripInfoFields()
+
+	/**
+	 * Strip the identity /Info fields, mask the descriptive and the text
+	 * custom ones, and remove, naming them, the entries that are not text.
+	 *
+	 * @param PDFDoc              $doc     The loaded PDF document.
+	 * @param \ddn\sapp\PDFObject $infoObj The /Info object.
+	 * @param MetadataMask        $mask    The run's substitution map.
+	 *
+	 * @return int The number of fields stripped, masked or removed.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function maskInfoFields(PDFDoc $doc, \ddn\sapp\PDFObject $infoObj, MetadataMask $mask): int {
+		$changed   = 0;
+		$infoValue = $infoObj->get_value();
+		$keys      = $infoValue->get_keys();
+		if (is_array($keys) === false) {
+			$keys = [];
+		}
+
+		foreach ($keys as $field) {
+			$field = (string) $field;
+			if (in_array($field, self::INFO_FIELDS_PRESERVED, true) === true) {
+				continue;
+			}
+
+			if (in_array($field, self::INFO_FIELDS_TO_STRIP, true) === true
+				&& in_array($field, self::INFO_FIELDS_TO_MASK, true) === false
+			) {
+				$infoValue[$field] = new PDFValueString(self::SENTINEL);
+				$changed++;
+				continue;
+			}
+
+			$text = PdfInfoText::read(value: $infoValue[$field]);
+			if ($text === null) {
+				$mask->noteUnmaskable(field: $field, reason: 'not a text string');
+				unset($infoValue[$field]);
+				$changed++;
+				continue;
+			}
+
+			$masked = $mask->apply(text: $text);
+			if ($masked !== $text) {
+				$infoValue[$field] = PdfInfoText::write(text: $masked);
+				$changed++;
+			}
+		}//end foreach
+
+		if ($changed > 0) {
+			$doc->add_object(pdf_object: $infoObj);
+		}
+
+		return $changed;
+	}//end maskInfoFields()
 
 	/**
 	 * Read the trailer dictionary.
