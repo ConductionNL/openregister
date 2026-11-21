@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 
 /**
@@ -62,7 +63,7 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 		$this->appTypes['alpha']  = ['counter' => 'int'];
 		$this->counter();
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: 'created', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
 		$this->assertSame(expected: '423', actual: $this->appValues['alpha']['counter']);
@@ -79,7 +80,7 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 		$this->appTypes['alpha']  = ['counter' => 'int'];
 		$this->counter();
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: '450', actual: $this->appValues['alpha']['counter']);
 		$this->assertSame(expected: 'kept', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
@@ -94,10 +95,10 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 	public function testACounterTheAppMovedOnIsNotLost(): void {
 		$this->counter();
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->appValues['alpha']['counter'] = '431';
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(expected: [], actual: $report['lost'], message: (string) json_encode($report));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
@@ -111,10 +112,10 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 	public function testACounterBelowTheFloorIsLost(): void {
 		$this->counter();
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->appValues['alpha']['counter'] = '12';
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertContains(needle: 'app config alpha counter (alpha/counter)', haystack: $report['lost'], message: (string) json_encode($report));
 	}//end testACounterBelowTheFloorIsLost()
@@ -128,7 +129,7 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 		$this->appValues['alpha'] = ['counter' => '7'];
 		$this->appTypes['alpha']  = ['counter' => 'int'];
 		$this->counter();
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->appValues['alpha']['counter'] = '431';
 		$this->remover->remove(set: 'demo');
@@ -146,19 +147,19 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 		$this->appValues['alpha'] = ['counter' => '7'];
 		$this->appTypes['alpha']  = ['counter' => 'int'];
 		$this->counter(entry: ['value' => '402', 'atLeast' => false]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->appValues['alpha']['counter'] = '404';
 
 		$this->counter();
 		$plan   = $this->catalogue->gather(set: 'demo');
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame(expected: '423', actual: $this->appValues['alpha']['counter']);
 		$this->assertSame(expected: 'raised', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
 		$this->assertSame(expected: [], actual: $report['lost'], message: (string) json_encode($report));
 
 		$this->appValues['alpha']['counter'] = '431';
-		$this->assertSame(expected: [], actual: $this->installer->install(plan: $plan, today: $this->today())['lost']);
+		$this->assertSame(expected: [], actual: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['lost']);
 
 		$this->appValues['alpha']['counter'] = '423';
 		$this->remover->remove(set: 'demo');
@@ -172,10 +173,10 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 	 */
 	public function testARecordedLowerFloorIsRaised(): void {
 		$this->counter(entry: ['value' => '400']);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->counter();
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: '423', actual: $this->appValues['alpha']['counter']);
 		$this->assertSame(expected: 'raised', actual: $report['appConfig']['alpha/counter'], message: (string) json_encode($report));
@@ -190,11 +191,11 @@ class ExampleSetAppConfigAtLeastTest extends ExampleSetTestCase {
 	public function testARecordedEntryAboveTheFloorKeepsItsValue(): void {
 		$this->counter(entry: ['value' => '402', 'atLeast' => false]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->appValues['alpha']['counter'] = '450';
 
 		$this->counter();
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(expected: '450', actual: $this->appValues['alpha']['counter']);
 		$this->assertSame(expected: [], actual: $report['lost'], message: (string) json_encode($report));

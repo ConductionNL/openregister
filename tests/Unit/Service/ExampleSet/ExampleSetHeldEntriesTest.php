@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 
 /**
@@ -59,11 +60,11 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$this->store->offer(register: 'int', schema: 'connection');
 		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'source' => null, 'status' => 'unconfigured']);
 		$this->connectionChange(set: ['source' => 'zaakmagazijn', 'status' => 'error']);
-		$this->assertTrue($this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['ok']);
 
 		$this->connectionChange(set: ['source' => 'zaakmagazijn']);
 		$this->store->rows['int connection'][$id]['status'] = 'ok';
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('ok', $this->store->rows['int connection'][$id]['status'], 'the job\'s value is left');
@@ -78,10 +79,10 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$this->store->offer(register: 'int', schema: 'connection');
 		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'source' => null, 'rightsMatrix' => null]);
 		$this->connectionChange(set: ['source' => 'zaakmagazijn']);
-		$this->assertTrue($this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['ok']);
 
 		$this->connectionChange(set: ['source' => 'zaakmagazijn', 'rightsMatrix' => ['behandelaar' => ['read']]]);
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['behandelaar' => ['read']], $this->store->rows['int connection'][$id]['rightsMatrix']);
@@ -102,11 +103,11 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'name' => 'Fase 3', 'version' => 1]);
 		$this->connectionChange(set: ['name' => 'Oplevering', 'version' => 2]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
 		$this->store->rows['int connection'][$id]['name']    = 'Fase 3';
 		$this->store->rows['int connection'][$id]['version'] = 1;
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['Oplevering', 2], [$this->store->rows['int connection'][$id]['name'], $this->store->rows['int connection'][$id]['version']]);
@@ -130,13 +131,13 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$new = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake', 'staff']]];
 		$this->connectionChange(set: ['rules' => $old]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue(condition: $this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		if ($reordered === true) {
 			$this->store->rows['int connection'][$id]['rules'] = [['groups' => ['intake'], 'rule' => 'hidden', 'field' => 'note']];
 		}
 
 		$this->connectionChange(set: ['rules' => $new]);
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: $new, actual: $this->store->rows['int connection'][$id]['rules']);
@@ -155,13 +156,13 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$new = [['field' => 'note', 'rule' => 'hidden', 'groups' => ['intake', 'staff']]];
 		$object = ['key' => 'bron', 'register' => 'int', 'schema' => 'connection', 'data' => ['key' => 'stuf', 'rules' => $old]];
 		$this->app(app: 'alpha', fragment: ['objects' => [$object]]);
-		$this->assertTrue(condition: $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['ok']);
+		$this->assertTrue(condition: $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['ok']);
 		$id = $this->store->ids(register: 'int', schema: 'connection')[0];
 		$this->store->rows['int connection'][$id]['rules'] = [['groups' => ['intake'], 'rule' => 'hidden', 'field' => 'note']];
 
 		$object['data']['rules'] = $new;
 		$this->app(app: 'alpha', fragment: ['objects' => [$object]]);
-		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: $new, actual: $this->store->rows['int connection'][$id]['rules']);
@@ -186,10 +187,10 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 		$id = $this->store->seed(register: 'int', schema: 'connection', data: ['key' => 'stuf', 'name' => 'Fase 3']);
 		$this->connectionChange(set: ['name' => 'Oplevering']);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->store->rows['int connection'][$id]['name'] = 'Eigen naam';
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertSame('Eigen naam', $this->store->rows['int connection'][$id]['name']);
 	}//end testARefreshLeavesAFieldSomebodyEdited()
@@ -212,9 +213,9 @@ class ExampleSetHeldEntriesTest extends ExampleSetTestCase {
 			]],
 		]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$uuid = ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan');

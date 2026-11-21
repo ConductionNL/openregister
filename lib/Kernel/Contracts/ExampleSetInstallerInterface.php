@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use DateTimeImmutable;
 
 /**
  * Checks an example set plan against the instance and installs it. Implemented by ExampleSetInstaller.
@@ -38,28 +37,27 @@ interface ExampleSetInstallerInterface {
 	 * counts as existing for a `user` format here: the accounts are written
 	 * first in a real install, and no other id is let through.
 	 *
-	 * @param array<string, mixed>   $plan  A plan from ExampleSetCatalogue::gather().
-	 * @param array<int, string>     $adopt Account ids the administrator lets the set use although it did not create them.
-	 * @param DateTimeImmutable|null $today The install day; now in the set's time zone when null.
+	 * @param ExampleSetInstallInput $input The plan, the account ids the administrator lets the set use although it
+	 *                                      did not create them, and the install day (now in the set's time zone when
+	 *                                      null); the password is not used.
 	 *
 	 * @return array{refusals: array<int, string>, checked: array<string, int>, checkedChanges: array<string, int>, registers: array<string, string>}
 	 *         Every refusal, the number of objects (`checked`) and of changes (`checkedChanges`) checked per register
 	 *         and schema, counted apart as an install reports them, and per required register `imported` or `kept`.
 	 */
-	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array;
+	public function check(ExampleSetInstallInput $input): array;
 
 	/**
 	 * Install a set: check, then write what the record lacks, then prove it.
 	 *
-	 * @param array<string, mixed>   $plan     A plan from ExampleSetCatalogue::gather().
-	 * @param array<int, string>     $adopt    Account ids the administrator lets the set use.
-	 * @param string                 $password One password for every new account; '' makes one per account.
-	 * @param DateTimeImmutable|null $today    The install day; now in the set's time zone when null.
+	 * @param ExampleSetInstallInput $input The plan, the account ids the administrator lets the set use, one password
+	 *                                      for every new account ('' makes one per account) and the install day (now
+	 *                                      in the set's time zone when null).
 	 *
 	 * @return array<string, mixed> `refusals` (non-empty: none of the set's accounts or objects was written),
 	 *                              `registers`, `users`, `groups`, `memberships` and `changes` (each name to
 	 *                              `imported`, `created`, `adopted` or `kept`), `passwords` (uid to a password this
 	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 */
-	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array;
+	public function install(ExampleSetInstallInput $input): array;
 }//end interface
