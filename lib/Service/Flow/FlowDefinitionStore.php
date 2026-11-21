@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 
 /**
  * Where flow definitions live: the flow table and the trigger index derived from its nodes.
@@ -34,11 +34,11 @@ final readonly class FlowDefinitionStore {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FlowMapper $mapper Reads and writes flow definitions.
+	 * @param FlowMapperInterface $mapper Reads and writes flow definitions.
 	 * @param FlowTriggerIndex $triggerIndex Keeps the trigger index derived from the nodes.
 	 */
 	public function __construct(
-		public FlowMapper $mapper,
+		public FlowMapperInterface $mapper,
 		public FlowTriggerIndex $triggerIndex,
 	) {
 	}//end __construct()

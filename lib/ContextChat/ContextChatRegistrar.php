@@ -25,7 +25,8 @@ namespace OCA\OpenRegister\ContextChat;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the interfaces other components type against to the ContextChat classes.
+ * Binds the interfaces other components type against to the ContextChat classes,
+ * and registers the component's event listeners.
  *
  * An alias only names the class; nothing here loads ContentProvider, whose
  * parent interface is missing before Nextcloud 32.
@@ -55,4 +56,22 @@ final class ContextChatRegistrar {
 			$context->registerServiceAlias($contract, $service);
 		}
 	}//end register()
+
+	/**
+	 * Register the ContextChat component's event listeners.
+	 *
+	 * The content provider registers softly gated by
+	 * IContentManager::isContextChatAvailable() inside the listener body, so an
+	 * instance without the `context_chat` app installed is entirely unaffected.
+	 * `::class` does not load the event, whose class is missing before Nextcloud 32.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; no behaviour of its own.
+	 */
+	public static function registerListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(\OCP\ContextChat\Events\ContentProviderRegisterEvent::class, ContentProviderRegistrationListener::class);
+	}//end registerListeners()
 }//end class

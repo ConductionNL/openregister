@@ -1,0 +1,33 @@
+{
+    // Mutation testing for the access code (SIG audit, round t1 lane T37).
+    // Not a CI gate yet: run with `composer test:mutation`, see docs/testing.md.
+    "$schema": "vendor-bin/infection/vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "lib"
+        ],
+        // The scope is narrowed per run with --filter=<file,...>; see docs/testing.md.
+        "excludes": [
+            "Migration",
+            "Contract",
+            "AppInfo"
+        ]
+    },
+    "phpUnit": {
+        "configDir": ".",
+        "customPath": "vendor/bin/phpunit"
+    },
+    "testFramework": "phpunit",
+    "threads": "max",
+    "timeout": 30,
+    "tmpDir": "vendor-bin/infection/vendor/run/tmp",
+    "logs": {
+        "text": "vendor-bin/infection/vendor/run/infection-log.txt",
+        "summary": "vendor-bin/infection/vendor/run/infection-summary.txt",
+        "perMutator": "vendor-bin/infection/vendor/run/per-mutator.md",
+        "json": "vendor-bin/infection/vendor/run/infection-log.json"
+    },
+    "mutators": {
+        "@default": true
+    }
+}

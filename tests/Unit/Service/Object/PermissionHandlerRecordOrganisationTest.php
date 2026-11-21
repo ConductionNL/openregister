@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -61,6 +62,36 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses   \OCA\OpenRegister\Service\Object\QueryHandlers
+ * @uses   \OCA\OpenRegister\Service\Object\QueryPlatform
+ * @uses   \OCA\OpenRegister\Service\Object\QueryRefinements
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses   \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses   \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 
@@ -111,7 +142,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
 			objectEntityMapper: $this->createMock(originalClassName: MagicMapper::class),
 			conditionMatcher: new ConditionMatcher(
-				userSession: $userSession,
+				users: new ConditionUserResolvers(userSession: $userSession),
 				container: $container,
 				operatorEvaluator: new OperatorEvaluator(logger: $logger),
 				logger: $logger

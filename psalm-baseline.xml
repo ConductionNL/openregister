@@ -61,12 +61,6 @@
       <code><![CDATA[$id]]></code>
     </InvalidScalarArgument>
   </file>
-  <file src="lib/Controller/Settings/CacheSettingsController.php">
-    <UndefinedClass>
-      <code><![CDATA[$this->appDataFactory]]></code>
-      <code><![CDATA[Factory]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Controller/Trait/HandlesExceptionsTrait.php">
     <UndefinedThisPropertyFetch>
       <code><![CDATA[$this->logger]]></code>

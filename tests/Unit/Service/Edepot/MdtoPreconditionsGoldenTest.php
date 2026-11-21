@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Edepot;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoInputReaders;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCP\IAppConfig;
@@ -36,6 +37,9 @@ use Psr\Log\LoggerInterface;
  * elements (one and several), and every missing generator input.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\MdtoPreconditions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Configuration\AppSettingsAccess
+ * @uses \OCA\OpenRegister\Service\Edepot\MdtoInputReaders
  */
 class MdtoPreconditionsGoldenTest extends TestCase {
 
@@ -89,7 +93,7 @@ class MdtoPreconditionsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MdtoPreconditions($config, $logger, $source, $bestand, $resolver);
+		return new MdtoPreconditions(new MdtoInputReaders($source, $bestand, $resolver), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($config, $this->createMock(\OCP\App\IAppManager::class), $logger));
 	}//end preconditions()
 
 	/**

@@ -37,9 +37,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 use DateTime;
 use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Db\ErasurePreviewMapperInterface;
-use OCP\IGroupManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use Throwable;
 
 /**
@@ -54,18 +52,14 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *
-	 * @param ErasurePreviewMapperInterface $mapper       The preview rows.
-	 * @param IUserSession         $userSession  The acting principal.
-	 * @param IGroupManager        $groupManager Administrator reach.
-	 * @param LoggerInterface      $logger       PSR logger.
+	 * @param ErasurePreviewMapperInterface $mapper     The preview rows.
+	 * @param GdprCallerMembership          $membership The acting principal, administrator reach and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ErasurePreviewMapperInterface $mapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		private readonly GdprCallerMembership $membership,
 	) {
 	}//end __construct()
 
@@ -193,7 +187,7 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 		} catch (Throwable $e) {
 			// The erasure has already happened. Losing the stamp would let it be
 			// run a second time, so it is loud rather than swallowed.
-			$this->logger->error(
+			$this->membership->logger->error(
 				message: '[ErasurePreview] Could not stamp the preview as consumed after an erasure ran',
 				context: ['uuid' => $preview->getUuid(), 'error' => $e->getMessage()]
 			);
@@ -210,12 +204,12 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	 * @return bool True for its author and for an administrator.
 	 */
 	private function mayReach(ErasurePreview $preview): bool {
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid = $this->membership->userSession->getUser()?->getUID();
 		if ($uid === null) {
 			return false;
 		}
 
-		return ($this->groupManager->isAdmin($uid) === true || $preview->getCreatedBy() === $uid);
+		return ($this->membership->groupManager->isAdmin($uid) === true || $preview->getCreatedBy() === $uid);
 	}//end mayReach()
 
 	/**
@@ -256,6 +250,6 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	 * @return string The actor.
 	 */
 	private function actor(): string {
-		return ($this->userSession->getUser()?->getUID() ?? 'system');
+		return ($this->membership->userSession->getUser()?->getUID() ?? 'system');
 	}//end actor()
 }//end class

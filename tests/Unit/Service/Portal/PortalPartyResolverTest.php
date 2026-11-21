@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
+use OCA\OpenRegister\Service\Portal\PortalCase;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectClaims;
@@ -35,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Portal\PortalPartyResolver
  * @covers \OCA\OpenRegister\Service\Portal\PortalSubject
  * @covers \OCA\OpenRegister\Exception\PortalPartyNotFoundException
+ * @uses \OCA\OpenRegister\Service\Portal\PortalCase
+ * @uses \OCA\OpenRegister\Service\Portal\PortalSubjectClaims
  */
 class PortalPartyResolverTest extends TestCase {
 
@@ -74,7 +77,7 @@ class PortalPartyResolverTest extends TestCase {
 	 */
 	#[DataProvider('caseShapes')]
 	public function testTheCaseShapesResolve(array $case, string $role, string $expected): void {
-		$this->assertSame($expected, (new PortalPartyResolver())->resolve(case: $case, role: $role, caseUuid: 'c-1'));
+		$this->assertSame($expected, (new PortalPartyResolver())->resolve(case: new PortalCase(data: $case, uuid: 'c-1'), role: $role));
 	}//end testTheCaseShapesResolve()
 
 	/**
@@ -86,7 +89,7 @@ class PortalPartyResolverTest extends TestCase {
 		$resolver = new PortalPartyResolver();
 		foreach ([[], ['initiator' => ''], ['initiator' => ['name' => 'nobody']], ['rollen' => [['roltype' => 'behandelaar', 'bsn' => '1']]]] as $case) {
 			try {
-				$resolver->resolve(case: $case, role: 'initiator', caseUuid: 'case-7');
+				$resolver->resolve(case: new PortalCase(data: $case, uuid: 'case-7'), role: 'initiator');
 				$this->fail('Expected a refusal for ' . json_encode($case));
 			} catch (PortalPartyNotFoundException $refused) {
 				$this->assertStringContainsString("role 'initiator'", $refused->getMessage());

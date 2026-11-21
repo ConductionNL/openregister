@@ -19,8 +19,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Trait;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
-use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -29,6 +27,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
 use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -95,7 +94,7 @@ trait HandlesExceptionsTrait {
 			return $this->errorResponse(e: $e, context: $context);
 		}
 
-		$this->logTranslatedException(e: $e, status: $status, context: $context);
+		$this->logTranslatedException(e: $e, context: $context);
 
 		return new JSONResponse(
 			data: [
@@ -151,8 +150,8 @@ trait HandlesExceptionsTrait {
 		// how deletion lawfully happens instead.
 		ArchivalImmutableException::class => Http::STATUS_FORBIDDEN,
 		// Foundation / configuration unavailable (ADR-049 fail-closed) → 503.
-		FoundationUnavailableException::class => Http::STATUS_SERVICE_UNAVAILABLE,
-		ConfigurationMissingException::class => Http::STATUS_SERVICE_UNAVAILABLE,
+		// The AppHost FoundationUnavailableException and ConfigurationMissingException implement it.
+		ServiceUnavailableExceptionInterface::class => Http::STATUS_SERVICE_UNAVAILABLE,
 		MissingConfigException::class => Http::STATUS_SERVICE_UNAVAILABLE,
 	];
 
@@ -196,13 +195,13 @@ trait HandlesExceptionsTrait {
 	/**
 	 * Log a translated (typed, non-500) exception at warning level.
 	 *
-	 * @param Throwable $e The caught exception.
-	 * @param int $status The HTTP status it was translated to.
+	 * @param Throwable $e The caught exception; its class maps to a status.
 	 * @param string $context Optional short context label for the log line.
 	 *
 	 * @return void
 	 */
-	private function logTranslatedException(Throwable $e, int $status, string $context): void {
+	private function logTranslatedException(Throwable $e, string $context): void {
+		$status = $this->exceptionStatus(e: $e);
 		$this->exceptionLogger()?->warning(
 			message: $this->exceptionLogLine(e: $e, context: $context) . ' (translated to HTTP ' . $status . ')',
 			context: [

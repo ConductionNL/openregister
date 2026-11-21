@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskCalendarDocument
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjector
  */
 final class TaskCalendarDocumentTest extends TestCase {
 
@@ -53,7 +54,7 @@ final class TaskCalendarDocumentTest extends TestCase {
 	 */
 	#[DataProvider('documents')]
 	public function testItAnswersWhatTheProjectorAnswers(string $document): void {
-		$this->assertSame(TaskCalendarProjector::taskUuidOf(calendarData: $document), TaskCalendarDocument::taskUuidOf(calendarData: $document));
+		$this->assertSame(TaskCalendarProjector::taskUuidOf(calendarData: $document), (new TaskCalendarDocument())->taskUuidOf(calendarData: $document));
 	}//end testItAnswersWhatTheProjectorAnswers()
 
 	/**
@@ -63,7 +64,7 @@ final class TaskCalendarDocumentTest extends TestCase {
 	 */
 	public function testAProjectedDocumentYieldsItsTask(): void {
 		$document = self::documents()['projected'][0];
-		$this->assertSame('0d6c3f5e-4c1e-4a43-9f0e-0f5b8c0b1a11', TaskCalendarDocument::taskUuidOf(calendarData: $document));
+		$this->assertSame('0d6c3f5e-4c1e-4a43-9f0e-0f5b8c0b1a11', (new TaskCalendarDocument())->taskUuidOf(calendarData: $document));
 	}//end testAProjectedDocumentYieldsItsTask()
 
 	/**

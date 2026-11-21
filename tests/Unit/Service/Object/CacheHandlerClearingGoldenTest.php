@@ -14,6 +14,9 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -31,6 +34,10 @@ use Stringable;
  * @covers \OCA\OpenRegister\Service\Object\CacheHandler
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Object\ObjectChange
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
  */
 class CacheHandlerClearingGoldenTest extends TestCase {
 
@@ -95,10 +102,16 @@ class CacheHandlerClearingGoldenTest extends TestCase {
 		}
 
 		$handler = new CacheHandler(
-			organisationMapper: $this->createStub(OrganisationMapperInterface::class),
-			logger: $this->logger(),
-			cacheFactory: $factory,
-			userSession: $this->createStub(IUserSession::class)
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->createStub(OrganisationMapperInterface::class)
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger(),
+				cacheFactory: $factory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->createStub(IUserSession::class)
+			)
 		);
 
 		$this->fill($handler);

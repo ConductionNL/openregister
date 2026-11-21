@@ -62,6 +62,7 @@ class ExampleSetHistoryRowKindsTest extends TestCase {
 		$archival = $this->createMock(ExampleSetArchival::class);
 		$auditEntries = $this->createMock(ExampleSetAuditEntries::class);
 		$timelineEntries = $this->createMock(ExampleSetTimelineEntries::class);
+		$timelineEntries->method('rows')->willReturn($timelineEntries);
 		$bundle = new ExampleSetHistoryRowKinds(
 			exportRuns: $exportRuns,
 			archival: $archival,

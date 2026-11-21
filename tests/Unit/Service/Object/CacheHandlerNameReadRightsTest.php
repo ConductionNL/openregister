@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;
@@ -52,6 +55,11 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(\OCA\OpenRegister\Db\Organisation::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\NameLookupRun::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Object\ObjectChange::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\CacheHandlerRuntime::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\CacheHandlerStores::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\CacheNameScopeSources::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\CachedName::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\NameVisibilityRun::class)]
 class CacheHandlerNameReadRightsTest extends TestCase {
 	/** The caller's active organisation. */
 	private const ORG_CALLER = 'cccccccc-0000-0000-0000-000000000001';
@@ -187,12 +195,18 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 		);
 
 		return new CacheHandler(
-			organisationMapper: $this->organisationMapper,
-			logger: $this->createMock(LoggerInterface::class),
-			cacheFactory: $this->cacheFactory,
-			userSession: $this->userSession,
-			container: $container,
-			groupManager: $this->groupManager
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheFactory: $this->cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager
+			)
 		);
 	}//end buildHandler()
 

@@ -17,13 +17,29 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Survivorship;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTuple;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver
+ * @uses \OCA\OpenRegister\Service\Survivorship\AttributeClaim
+ * @uses \OCA\OpenRegister\Service\Survivorship\CandidateStanding
+ * @uses \OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest
+ * @uses \OCA\OpenRegister\Service\Survivorship\SourceFreshness
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipDate
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipRun
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipSource
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipTierPolicy
+ * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup
+ * @uses \OCA\OpenRegister\Service\Survivorship\TierPosition
+ * @uses \OCA\OpenRegister\Service\Survivorship\TierResolutionRun
+ * @uses \OCA\OpenRegister\Service\Survivorship\TrustTierResolver
+ * @uses \OCA\OpenRegister\Service\Survivorship\TrustTuple
  */
 final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 
@@ -43,18 +59,12 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 			/**
 			 * {@inheritDoc}
 			 */
-			public function resolveTier(
-				string $entityType,
-				string $attribute,
-				string $sourceSystem,
-				array $trustRows,
-				DateTimeImmutable $asOf,
-			): ?string {
-				if ($attribute === $this->failing) {
+			public function resolveTier(TrustTuple $tuple, array $trustRows, DateTimeImmutable $asOf): ?string {
+				if ($tuple->attribute === $this->failing) {
 					throw new RuntimeException('trust lookup failed');
 				}
 
-				return parent::resolveTier($entityType, $attribute, $sourceSystem, $trustRows, $asOf);
+				return parent::resolveTier($tuple, $trustRows, $asOf);
 			}
 		};
 	}//end failingOn()
@@ -77,13 +87,12 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 			['sourceSystem' => 'crm', 'lastUpdated' => '2026-01-01T00:00:00+00:00', 'values' => ['city' => 'Y', 'zip' => '2']],
 		];
 
-		$result = (new SurvivorshipResolver())->resolveGoldenRecord(
-			'person',
-			$sources,
-			$config,
-			[],
-			$this->failingOn(attribute: 'city'),
-			new DateTimeImmutable('2026-06-01T00:00:00+00:00')
+		$result = (new SurvivorshipResolver())->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $config,
+				trust: new SurvivorshipTrustLookup('person', [], $this->failingOn(attribute: 'city'), new DateTimeImmutable('2026-06-01T00:00:00+00:00'))
+			)
 		);
 
 		$this->assertSame(['name' => 'A'], $result['goldenRecord']);
@@ -111,13 +120,12 @@ final class SurvivorshipResolverCandidatesGoldenTest extends TestCase {
 			'not a record',
 		];
 
-		$result = (new SurvivorshipResolver())->resolveGoldenRecord(
-			'person',
-			$sources,
-			$config,
-			[],
-			$this->failingOn(attribute: 'none'),
-			new DateTimeImmutable('2026-06-01T00:00:00+00:00')
+		$result = (new SurvivorshipResolver())->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $config,
+				trust: new SurvivorshipTrustLookup('person', [], $this->failingOn(attribute: 'none'), new DateTimeImmutable('2026-06-01T00:00:00+00:00'))
+			)
 		);
 
 		$this->assertSame(['city' => 'Y', 'zip' => '2'], $result['goldenRecord']);

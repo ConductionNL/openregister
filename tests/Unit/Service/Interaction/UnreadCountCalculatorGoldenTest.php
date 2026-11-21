@@ -40,6 +40,9 @@ use RuntimeException;
  * Golden pins for the unread badge counts.
  *
  * @covers \OCA\OpenRegister\Service\Interaction\UnreadCountCalculator
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Service\Interaction\SubResourceWindow
  */
 class UnreadCountCalculatorGoldenTest extends TestCase {
 

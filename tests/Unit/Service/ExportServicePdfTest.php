@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +36,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Service\Export\DocumentStyleReader;
+use OCA\OpenRegister\Service\Export\ExportRequest;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -44,6 +49,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
@@ -158,7 +164,7 @@ class ExportServicePdfTest extends TestCase {
 	 * The PDF is the office server's conversion of an ODT holding the rows.
 	 */
 	public function testRenderRowsToPdfConvertsAnOdtOfTheRows(): void {
-		$pdf = $this->service->renderRowsToPdf(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]);
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]));
 
 		$this->assertSame('%PDF-1.7 converted', $pdf);
 		$this->assertStringContainsString('Uitkeringen', $this->convertedOdtText());
@@ -175,7 +181,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertFalse($this->service->isPdfAvailable());
 
 		$this->expectException(OfficeServerRequiredException::class);
-		$this->service->exportToPdf(null, new Schema());
+		$this->service->exportToPdf(request: new ObjectExportRequest(schema: new Schema()));
 	}
 
 	/**
@@ -186,7 +192,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->assertFalse($service->isPdfAvailable());
 		$this->expectException(OfficeServerRequiredException::class);
-		$service->renderRowsToPdf(title: 'T', columns: ['a' => 'A'], rows: []);
+		$service->renderTableToPdf(table: new RowsTable(title: 'T', columns: ['a' => 'A'], rows: []));
 	}
 
 	/**
@@ -215,7 +221,7 @@ class ExportServicePdfTest extends TestCase {
 		$method = $reflection->getMethod('buildPdfSection');
 		$method->setAccessible(true);
 
-		return $method->invoke($this->service, $register, $schema, $objects, $currentUser);
+		return $method->invoke($this->service, new ExportRequest(register: $register, schema: $schema, currentUser: $currentUser), $objects);
 	}
 
 	// --- exportToPdf: happy path ---
@@ -232,7 +238,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([$object]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($pdf);
 		$this->assertStringStartsWith('%PDF', $pdf);
@@ -248,7 +254,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -277,7 +283,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf($register, null);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -317,9 +323,15 @@ class ExportServicePdfTest extends TestCase {
 		$method = new ReflectionMethod(ExportService::class, 'guardPdfRowCap');
 		$method->setAccessible(true);
 
-		// No exception expected — must not throw at exactly the cap.
-		$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
-		$this->addToAssertionCount(1);
+		// The pair is testGuardPdfRowCapThrowsWhenOverCap: one row more is refused.
+		$refusedAt = null;
+		try {
+			$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
+		} catch (ExportTooLargeException $e) {
+			$refusedAt = $e->getRowCount();
+		}
+
+		$this->assertNull($refusedAt, 'An export of exactly MAX_PDF_EXPORT_ROWS rows must not be refused.');
 	}
 
 	public function testExportToPdfShortCircuitsBeforeRenderingWhenOverCap(): void {
@@ -343,7 +355,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->expectException(ExportTooLargeException::class);
 
 		try {
-			$this->service->exportToPdf(null, $schema);
+			$this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 		} catch (ExportTooLargeException $e) {
 			$this->assertSame($overCap, $e->getRowCount());
 			$this->assertSame(ExportService::MAX_PDF_EXPORT_ROWS, $e->getMaxRows());
@@ -382,7 +394,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn($objects);
 
 		$this->expectException(ExportTooLargeException::class);
-		$this->service->exportToPdf($register, null);
+		$this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 	}
 
 	// --- buildPdfSection: column selection / RBAC parity + truncation ---
@@ -417,7 +429,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(static fn ($schema, $property, $object) => $property !== 'restricted');
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'restricted');
 
 		$object = $this->createObjectEntity('uuid-1', 'Object', ['public' => 'ok', 'restricted' => 'nope']);
 
@@ -487,11 +499,8 @@ class ExportServicePdfTest extends TestCase {
 	 * A caller that fetched its own rows gets them rendered as a PDF (portaliq#765).
 	 */
 	public function testRenderRowsToPdfRendersRowsTheCallerFetched(): void {
-		$pdf = $this->service->renderRowsToPdf(
-			title: 'My statements',
-			columns: ['period' => 'Period', 'amount' => 'Amount'],
-			rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
-		);
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'My statements', columns: ['period' => 'Period', 'amount' => 'Amount'], rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
+		));
 
 		$this->assertStringStartsWith('%PDF-', $pdf);
 	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
@@ -504,7 +513,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->expectException(ExportTooLargeException::class);
 
-		$this->service->renderRowsToPdf(title: 'Too long', columns: ['a' => 'A'], rows: $rows);
+		$this->service->renderTableToPdf(table: new RowsTable(title: 'Too long', columns: ['a' => 'A'], rows: $rows));
 	}//end testRenderRowsToPdfRefusesMoreRowsThanTheCap()
 
 	/**
@@ -512,11 +521,11 @@ class ExportServicePdfTest extends TestCase {
 	 * and a list of column keys doubles as their labels.
 	 */
 	public function testRowsSectionFollowsTheColumnsAndEscapesEveryCell(): void {
-		$html = (new RowsPdfSection())->build(
+		$html = (new RowsPdfSection())->build(table: new RowsTable(
 			title: 'Cases <b>',
 			columns: ['status', 'title'],
 			rows: [['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
-		);
+		));
 
 		$this->assertStringContainsString('<h1>Cases &lt;b&gt;</h1>', $html);
 		$this->assertStringContainsString('<th>status</th><th>title</th>', $html);
@@ -524,4 +533,119 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringContainsString('<td>true</td><td></td>', $html);
 		$this->assertStringNotContainsString('not a column', $html);
 	}//end testRowsSectionFollowsTheColumnsAndEscapesEveryCell()
+
+	// --- house style (export-pdf-house-style) ---
+
+	private function convertedOdtPart(string $part): string {
+		$file = tempnam(sys_get_temp_dir(), 'odt');
+		file_put_contents($file, $this->converter->lastOdt);
+		$zip = new \ZipArchive();
+		$zip->open($file);
+		$xml = (string) $zip->getFromName($part);
+		$zip->close();
+		unlink($file);
+
+		return $xml;
+	}
+
+	private function serviceWithStyle(?array $profile, ?string $expectedUid): ExportService {
+		$reader = $this->createMock(DocumentStyleReader::class);
+		$reader->expects($this->once())->method('forUser')->with($expectedUid)->willReturn($profile);
+
+		return new ExportService(
+			$this->registerMapper,
+			$this->userManager,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			$reader
+		);
+	}
+
+	public function testATableExportWearsTheInstanceHouseStyle(): void {
+		$service = $this->serviceWithStyle(
+			profile: ['colours' => ['primary' => '#00529b'], 'footer' => ['lines' => ['Gemeente Hilversum, Dudokpark 1']]],
+			expectedUid: null
+		);
+
+		$service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertStringContainsString('Gemeente Hilversum, Dudokpark 1', $this->convertedOdtPart(part: 'styles.xml'));
+		$this->assertStringContainsString('fo:background-color="#00529b"', $this->convertedOdtPart(part: 'content.xml'));
+	}
+
+	public function testAUserExportReadsThatUsersHouseStyle(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunning');
+		$schema->setProperties(['title' => ['type' => 'string']]);
+		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
+		$this->objectService->method('searchObjects')->willReturn([$this->createObjectEntity('uuid-1', 'V1', ['title' => 'V1'])]);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('behandelaar');
+
+		$service = $this->serviceWithStyle(profile: ['footer' => ['privacyUrl' => 'https://hilversum.nl/privacy']], expectedUid: 'behandelaar');
+		$service->pdfFor(request: new ExportRequest(schema: $schema, currentUser: $user));
+
+		$this->assertStringContainsString('https://hilversum.nl/privacy', $this->convertedOdtPart(part: 'styles.xml'));
+	}
+
+	public function testWithoutAProfileTheExportKeepsThePlainLayout(): void {
+		$service = $this->serviceWithStyle(profile: null, expectedUid: null);
+
+		$this->assertSame('%PDF-1.7 converted', $service->renderTableToPdf(table: new RowsTable(title: 'T', columns: ['a' => 'A'], rows: [['a' => 'x']])));
+		$this->assertStringNotContainsString('OR_FooterLine', $this->convertedOdtPart(part: 'styles.xml'));
+		$this->assertStringContainsString('fo:background-color="#2c3e50"', $this->convertedOdtPart(part: 'content.xml'));
+	}
+
+	/**
+	 * The PDF report summarises the objects by status with counts and
+	 * percentages, and names the applied filters (rapportage-bi-export).
+	 */
+	public function testBuildPdfSectionSummarisesTheStatusAndTheFilters(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string', 'enum' => ['open', 'verleend']]]);
+		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
+		$objects = [];
+		foreach (['open', 'verleend', 'verleend', 'verleend', null] as $i => $status) {
+			$objects[] = $this->createObjectEntity('uuid-' . $i, 'V' . $i, ['title' => 'V' . $i, 'status' => $status]);
+		}
+
+		$method = (new ReflectionClass(ExportService::class))->getMethod('buildPdfSection');
+		$method->setAccessible(true);
+		$html = $method->invoke(
+			$this->service,
+			new ExportRequest(schema: $schema, filters: ['status!' => 'afgehandeld', '_limit' => 50, 'zone' => ['a']]),
+			$objects
+		);
+
+		$this->assertStringContainsString('<p class="meta">Filters: status! = afgehandeld</p>', $html);
+		$this->assertStringContainsString('<tr><td>verleend</td><td>3</td><td>60.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>open</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>(none)</td><td>1</td><td>20.0%</td></tr>', $html);
+		$this->assertStringContainsString('<tr><td>Total</td><td>5</td><td>100.0%</td></tr>', $html);
+		$this->assertLessThan(strpos($html, '<table><thead>'), strpos($html, '<table class="summary">'));
+	}
+
+	/**
+	 * A status the caller may not read is not summarised, and without a status
+	 * column or filters there is no summary block at all.
+	 */
+	public function testBuildPdfSectionDoesNotSummariseAnUnreadableStatus(): void {
+		$schema = new Schema();
+		$schema->setSlug('vergunningen');
+		$schema->setProperties(['title' => ['type' => 'string'], 'status' => ['type' => 'string']]);
+		$this->propertyRbacHandler
+			->method('canReadProperty')
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'status');
+
+		$html = $this->invokeBuildPdfSection(null, $schema, [$this->createObjectEntity('uuid-1', 'V', ['title' => 'V', 'status' => 'geheim'])]);
+
+		$this->assertStringNotContainsString('class="summary"', $html);
+		$this->assertStringNotContainsString('geheim', $html);
+		$this->assertStringNotContainsString('Filters:', $html);
+	}
 }//end class

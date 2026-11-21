@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`search sidebar scope pickers renders the pickers with nothing selected 1`] = `
+"<div class="filterSection">
+<h3>t:Filter Objects</h3>
+<div class="filterGroup">
+<label for="registerSelect">t:Registers</label>
+<x-ncselect options="[{&quot;value&quot;:1,&quot;label&quot;:&quot;R&quot;,&quot;title&quot;:&quot;R&quot;,&quot;register&quot;:{&quot;id&quot;:1,&quot;title&quot;:&quot;R&quot;}}]" label="title" id="registerSelect" modelvalue="[]" loading="false" disabled="false" inputlabel="t:Registers" multiple="true" closeonselect="false" placeholder="t:Select one or more registers">
+<slot-option>
+<div class="option-content">
+<span class="option-title">Pets</span>
+<span class="option-description">All pets</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">0 t:register(s) selected</p>
+</div>
+<div class="filterGroup">
+<label for="schemaSelect">t:Schemas</label>
+<x-ncselect options="[]" id="schemaSelect" modelvalue="[]" loading="false" disabled="true" inputlabel="t:Schemas" multiple="true" closeonselect="false" placeholder="t:Select one or more schemas">
+<slot-option>
+<div class="option-content">
+<span class="option-title">Pets</span>
+<span class="option-description">All pets</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">0 t:schema(s) selected</p>
+</div>
+</div>"
+`;
+
+exports[`search sidebar scope pickers renders the pickers with registers and schemas selected 1`] = `
+"<div class="filterSection">
+<h3>t:Filter Objects</h3>
+<div class="filterGroup">
+<label for="registerSelect">t:Registers</label>
+<x-ncselect options="[{&quot;value&quot;:1,&quot;label&quot;:&quot;R&quot;,&quot;title&quot;:&quot;R&quot;,&quot;register&quot;:{&quot;id&quot;:1,&quot;title&quot;:&quot;R&quot;}}]" label="title" id="registerSelect" modelvalue="[{&quot;id&quot;:1}]" loading="true" disabled="true" inputlabel="t:Registers" multiple="true" closeonselect="false" placeholder="t:Select one or more registers">
+<slot-option>
+<div class="option-content">
+<span class="option-title">Pets</span>
+<span class="option-description">All pets</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">1 t:register(s) selected</p>
+</div>
+<div class="filterGroup">
+<label for="schemaSelect">t:Schemas</label>
+<x-ncselect options="[]" id="schemaSelect" modelvalue="[{&quot;id&quot;:2},{&quot;id&quot;:3}]" loading="false" disabled="false" inputlabel="t:Schemas" multiple="true" closeonselect="false" placeholder="t:Select one or more schemas" label="title">
+<slot-option>
+<div class="option-content">
+<span class="option-title">Pets</span>
+<span class="option-description">All pets</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">2 t:schema(s) selected</p>
+</div>
+</div>"
+`;

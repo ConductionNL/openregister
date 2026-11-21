@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -59,32 +59,55 @@ class CoSubjectProbe {
 	/**
 	 * Other people's identifiers of the SAME KIND on this object.
 	 *
-	 * @param ObjectEntity      $object    The object.
-	 * @param string            $subjectId The subject value.
-	 * @param array<int, array> $matched   The PII hits for this subject.
+	 * @param SubjectMatch $match     The object and the PII hits for this subject.
+	 * @param string       $subjectId The subject value.
 	 *
 	 * @return array<int, string> The other subjects' PII types, deduplicated.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function otherSubjectsOn(ObjectEntity $object, string $subjectId, array $matched): array {
-		$types = array_values(array_unique(array_filter(array_column($matched, 'type'))));
-		$uuid = (string)($object->getUuid() ?? '');
+	public function otherSubjectsOn(SubjectMatch $match, string $subjectId): array {
+		$types = array_values(array_unique(array_filter(array_column($match->matched, 'type'))));
+		$uuid = (string)($match->object->getUuid() ?? '');
 		if ($types === [] || $uuid === '') {
 			return [];
 		}
 
-		try {
-			$rows = $this->indexRows(uuid: $uuid, types: $types);
-		} catch (Throwable $e) {
-			return $this->assumeShared(uuid: $uuid, types: $types, error: $e);
+		$rows = $this->readIndex(uuid: $uuid, types: $types);
+		if ($rows === null) {
+			return $types;
 		}
 
 		return $this->othersAmong(
 			rows: $rows,
-			needles: $this->parties->needles(subjectId: $subjectId, matched: $matched)
+			needles: $this->parties->needles(subjectId: $subjectId, matched: $match->matched)
 		);
 	}//end otherSubjectsOn()
+
+	/**
+	 * The index rows, or null when the index cannot be read (logged).
+	 *
+	 * FAILING CLOSED HERE MEANS "ASSUME SHARED". An index we cannot read is not
+	 * evidence that the record is this subject's alone, and the cheaper mistake
+	 * is a scrub where a destruction would have done: on null the caller counts
+	 * every type as shared.
+	 *
+	 * @param string             $uuid  The object uuid.
+	 * @param array<int, string> $types The subject's PII types.
+	 *
+	 * @return array<int, array<string, mixed>>|null The rows, or null when unreadable.
+	 */
+	private function readIndex(string $uuid, array $types): ?array {
+		try {
+			return $this->indexRows(uuid: $uuid, types: $types);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[ErasurePreview] Could not read the PII index for co-subjects, assuming the record is shared',
+				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end readIndex()
 
 	/**
 	 * The PII index rows of the given types on one object.
@@ -108,28 +131,6 @@ class CoSubjectProbe {
 
 		return $rows;
 	}//end indexRows()
-
-	/**
-	 * Fail closed on an unreadable index: every type counts as shared.
-	 *
-	 * FAILING CLOSED HERE MEANS "ASSUME SHARED". An index we cannot read is not
-	 * evidence that the record is this subject's alone, and the cheaper mistake
-	 * is a scrub where a destruction would have done.
-	 *
-	 * @param string             $uuid  The object uuid.
-	 * @param array<int, string> $types The subject's PII types.
-	 * @param Throwable          $error What went wrong.
-	 *
-	 * @return array<int, string> The types, all assumed shared.
-	 */
-	private function assumeShared(string $uuid, array $types, Throwable $error): array {
-		$this->logger->warning(
-			message: '[ErasurePreview] Could not read the PII index for co-subjects, assuming the record is shared',
-			context: ['uuid' => $uuid, 'error' => $error->getMessage()]
-		);
-
-		return $types;
-	}//end assumeShared()
 
 	/**
 	 * The types of the rows whose value is not one of the subject's own.

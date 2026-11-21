@@ -21,11 +21,11 @@
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
+use OCA\OpenRegister\BackgroundJob\Support\ConfigurationCheckServices;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -49,26 +49,58 @@ class ConfigurationCheckJob extends TimedJob {
 	private const TAG = '[ConfigurationCheckJob] ';
 
 	/**
+	 * Where the configurations are.
+	 *
+	 * @var ConfigurationMapperInterface
+	 */
+	private readonly ConfigurationMapperInterface $configurationMapper;
+
+	/**
+	 * Checks remote versions and imports updates.
+	 *
+	 * @var ConfigurationServiceInterface
+	 */
+	private readonly ConfigurationServiceInterface $configurationService;
+
+	/**
+	 * Tells admins an update is available.
+	 *
+	 * @var NotificationServiceInterface
+	 */
+	private readonly NotificationServiceInterface $notificationService;
+
+	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param NotificationServiceInterface $notificationService Notification service
-	 * @param IAppConfig $appConfig App configuration
-	 * @param LoggerInterface $logger Logger
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock, app settings and run log.
+	 * @param ConfigurationCheckServices $services  Configuration mapper, configuration service and notification service
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly NotificationServiceInterface $notificationService,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
+		ConfigurationCheckServices $services,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
+		$this->configurationMapper = $services->configurationMapper;
+		$this->configurationService = $services->configurationService;
+		$this->notificationService = $services->notificationService;
 		$this->applyInterval(interval: $this->configuredInterval());
 	}//end __construct()
 

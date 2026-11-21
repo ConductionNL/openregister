@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
@@ -102,8 +104,8 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (Schema $schema, array $object): array {
-				$this->seen['update'] = $object;
+			function (PropertyWriteCheck $write): array {
+				$this->seen['update'] = $write->request->object;
 				return [];
 			}
 		);
@@ -127,8 +129,7 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$this->createMock(TranslationHandler::class),
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);

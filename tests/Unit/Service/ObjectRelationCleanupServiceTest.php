@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupLinks;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -119,10 +120,12 @@ class ObjectRelationCleanupServiceTest extends TestCase {
 		$this->service = new ObjectRelationCleanupService(
 			noteService: $this->noteService,
 			taskService: $this->taskService,
-			emailService: $this->emailService,
-			calendarEventService: $this->calendarEventService,
-			contactService: $this->contactService,
-			deckCardService: $this->deckCardService,
+			links: new ObjectRelationCleanupLinks(
+				emailService: $this->emailService,
+				calendarEventService: $this->calendarEventService,
+				contactService: $this->contactService,
+				deckCardService: $this->deckCardService
+			),
 			logger: $this->logger
 		);
 
@@ -144,6 +147,20 @@ class ObjectRelationCleanupServiceTest extends TestCase {
 		$this->service->cleanup(objectUuid: 'obj-1');
 
 	}//end testCleanupInvokesAllSixEntityCleanupsWithTheObjectUuid()
+
+	/**
+	 * The service is the timeline-links port a declared destruction counts and destroys through.
+	 *
+	 * @return void
+	 */
+	public function testTheServiceAnswersTheTimelineLinksPort(): void {
+		$this->emailService->expects($this->once())->method('deleteLinksForObject')->with('obj-1')->willReturn(0);
+		$this->noteService->expects($this->never())->method('deleteNotesForObject');
+
+		$port = $this->service;
+		$this->assertInstanceOf(\OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface::class, $port);
+		$port->destroyTimelineLinks(objectUuid: 'obj-1');
+	}//end testTheServiceAnswersTheTimelineLinksPort()
 
 	/**
 	 * POSITIVE CONTROL — every listed task is deleted on its own calendar.

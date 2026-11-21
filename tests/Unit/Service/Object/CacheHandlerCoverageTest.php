@@ -22,6 +22,9 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -158,16 +161,22 @@ class CacheHandlerCoverageTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$withDistributedCache ? $this->cacheFactory : null,
-			$this->userSession,
-			$effectiveContainer,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->db,
-			null,
-			$this->appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				db: $this->db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $withDistributedCache ? $this->cacheFactory : null,
+				container: $effectiveContainer
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: null,
+				appConfig: $this->appConfig
+			)
 		);
 	}
 
@@ -242,14 +251,24 @@ class CacheHandlerCoverageTest extends TestCase {
 			->willThrowException(new \Exception('Redis unavailable'));
 
 		$handler = new CacheHandler(
-			$this->organisationMapper,
-			$this->logger,
-			$cacheFactory,
-			$this->userSession
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->logger,
+				cacheFactory: $cacheFactory
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession
+			)
 		);
 
 		// Should still construct without error
 		$this->assertInstanceOf(CacheHandler::class, $handler);
+		// Without the distributed cache the handler keeps names in memory.
+		$handler->setObjectName('uuid-1', 'Name 1');
+		$this->assertSame(1, $handler->getStats()['name_cache_size']);
+		$this->assertSame(0, $handler->getDistributedNameCacheCount());
 	}
 
 	// =========================================================================
@@ -435,12 +454,15 @@ class CacheHandlerCoverageTest extends TestCase {
 	public function testClearSearchCacheDistributedFailure(): void {
 		$handler = $this->createHandler();
 
-		$this->queryCache->method('clear')
+		$this->queryCache->expects($this->once())->method('clear')
 			->willThrowException(new \Exception('Redis down'));
 
 		// Should not throw
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[CacheHandler] Failed to clear search cache', $this->anything());
+
 		$handler->clearSearchCache();
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -468,14 +490,15 @@ class CacheHandlerCoverageTest extends TestCase {
 	public function testClearAllCachesDistributedFailures(): void {
 		$handler = $this->createHandler();
 
-		$this->queryCache->method('clear')
+		$this->queryCache->expects($this->once())->method('clear')
 			->willThrowException(new \Exception('Redis failure'));
-		$this->nameDistributedCache->method('clear')
+		$this->nameDistributedCache->expects($this->once())->method('clear')
 			->willThrowException(new \Exception('Redis failure'));
 
 		// Should not throw
+		$this->logger->expects($this->exactly(2))->method('warning');
+
 		$handler->clearAllCaches();
-		$this->assertTrue(true);
 	}
 
 	// =========================================================================
@@ -484,8 +507,12 @@ class CacheHandlerCoverageTest extends TestCase {
 
 	public function testClearCacheDelegatesToClearAllCaches(): void {
 		$handler = $this->createHandler(false, false);
+		$handler->setObjectName('uuid-1', 'Name 1');
+		$this->assertSame(1, $handler->getStats()['name_cache_size']);
+
 		$handler->clearCache();
-		$this->assertTrue(true);
+
+		$this->assertSame(0, $handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================
@@ -524,15 +551,15 @@ class CacheHandlerCoverageTest extends TestCase {
 		$this->assertSame('Test Object', $nameCache['uuid-1']);
 	}
 
-	public function testSetObjectNameEnforcesTtl(): void {
+	public function testSetObjectNameCachesForMaxTtl(): void {
 		$handler = $this->createHandler();
 
-		// Very high TTL should be clamped to MAX_CACHE_TTL (86400)
+		// Names are always cached for MAX_CACHE_TTL (86400)
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
 			->with('name_uuid-1', ['n' => 'Test', 'o' => null, 's' => null], 86400);
 
-		$handler->setObjectName('uuid-1', 'Test', 999999);
+		$handler->setObjectName('uuid-1', 'Test');
 	}
 
 	// =========================================================================
@@ -635,11 +662,18 @@ class CacheHandlerCoverageTest extends TestCase {
 	public function testClearNameCacheDistributedFailure(): void {
 		$handler = $this->createHandler();
 
-		$this->nameDistributedCache->method('clear')
+		$this->nameDistributedCache->expects($this->once())->method('clear')
 			->willThrowException(new \Exception('Redis failure'));
 
+		$handler->setObjectName('uuid-1', 'Name 1');
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with('[CacheHandler] Failed to clear distributed name cache', $this->anything());
+
 		$handler->clearNameCache();
-		$this->assertTrue(true);
+
+		// The local names are dropped even though the distributed clear failed.
+		$this->assertSame(0, $handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================
@@ -655,7 +689,9 @@ class CacheHandlerCoverageTest extends TestCase {
 			->willThrowException(new \Exception('not available'));
 
 		$handler->invalidateForObjectChange($entity, 'create');
-		$this->assertTrue(true);
+
+		// A created object's name is cached right away, under both its UUID and its numeric id.
+		$this->assertSame(2, $handler->getStats()['name_cache_size']);
 	}
 
 	public function testInvalidateForObjectChangeDelete(): void {
@@ -686,15 +722,23 @@ class CacheHandlerCoverageTest extends TestCase {
 			->willThrowException(new \Exception('Redis failure'));
 
 		// Should not throw
+		$handler->setObjectName('uuid-1', 'Name 1');
+
 		$handler->invalidateForObjectChange($entity, 'delete');
-		$this->assertTrue(true);
+
+		// The deleted object's name is gone locally even though the distributed remove failed.
+		$this->assertSame(0, $handler->getStats()['name_cache_size']);
 	}
 
 	public function testInvalidateForObjectChangeNullObject(): void {
 		$handler = $this->createHandler();
 
+		$handler->setObjectName('uuid-1', 'Name 1');
+
 		$handler->invalidateForObjectChange(null, 'unknown', 1, 2);
-		$this->assertTrue(true);
+
+		// Without an object no name is added or dropped.
+		$this->assertSame(1, $handler->getStats()['name_cache_size']);
 	}
 
 	public function testInvalidateForObjectChangeWithExplicitIds(): void {
@@ -705,7 +749,9 @@ class CacheHandlerCoverageTest extends TestCase {
 			->willThrowException(new \Exception('not available'));
 
 		$handler->invalidateForObjectChange($entity, 'update', 10, 20);
-		$this->assertTrue(true);
+
+		// Cached under both its UUID and its numeric id.
+		$this->assertSame(2, $handler->getStats()['name_cache_size']);
 	}
 
 	// =========================================================================
@@ -760,10 +806,12 @@ class CacheHandlerCoverageTest extends TestCase {
 		$handler = $this->createHandler(false, false);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$result = $handler->getAllObjectNames();
 		$this->assertIsArray($result);
+		$this->assertSame([], $result);
+		$this->assertSame(1, $handler->getStats()['name_warmups']);
 	}
 
 	public function testGetAllObjectNamesForceWarmup(): void {
@@ -771,10 +819,13 @@ class CacheHandlerCoverageTest extends TestCase {
 		$this->setProperty($handler, 'nameCache', ['uuid-1' => 'Name 1']);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$result = $handler->getAllObjectNames(true);
 		$this->assertIsArray($result);
+		// The forced warmup rebuilds the cache from the sources, which hold nothing.
+		$this->assertSame([], $result);
+		$this->assertSame(1, $handler->getStats()['name_warmups']);
 	}
 
 }

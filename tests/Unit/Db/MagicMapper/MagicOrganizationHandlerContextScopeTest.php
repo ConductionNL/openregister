@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IUserManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -39,6 +41,10 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\OrganisationScopeTable
+ * @uses \OCA\OpenRegister\Service\DeclaredPair
+ * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MagicOrganizationHandlerContextScopeTest extends TestCase {
 
@@ -76,7 +82,7 @@ class MagicOrganizationHandlerContextScopeTest extends TestCase {
 		);
 
 		$handler = $this->getMockBuilder(MagicOrganizationHandler::class)
-			->setConstructorArgs([$session, $groups, $appConfig, $container, $this->createMock(LoggerInterface::class)])
+			->setConstructorArgs([new MagicMapperIdentity($session, $groups, $this->createMock(IUserManager::class)), $appConfig, $container, $this->createMock(LoggerInterface::class)])
 			->onlyMethods(['getActiveOrganizationUuids'])
 			->getMock();
 		$handler->method('getActiveOrganizationUuids')->willReturn($orgUuids);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\SecuritySettingsController;
+use OCA\OpenRegister\Controller\Support\SecuritySettingsControllerServices;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,10 +26,8 @@ class SecuritySettingsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->controller = new SecuritySettingsController(
-			'openregister',
 			$this->request,
-			$this->securityService,
-			$this->logger
+			new SecuritySettingsControllerServices($this->securityService, $this->logger)
 		);
 	}
 

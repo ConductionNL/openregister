@@ -34,6 +34,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
@@ -61,6 +62,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Exception\TaskCompleteViaAppException
  * @uses \OCA\OpenRegister\Service\Portal\PortalSubject
+ * @uses \OCA\OpenRegister\Service\Portal\PortalCompletion
+ * @uses \OCA\OpenRegister\Service\Portal\PortalSubjectClaims
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class PortalTaskControllerTest extends TestCase {
 
@@ -236,10 +240,14 @@ class PortalTaskControllerTest extends TestCase {
 			->with(
 				$subject,
 				't-1',
-				['remarks' => 'ok'],
-				'here',
-				[['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 12, 'tmp_name' => '/tmp/a', 'error' => UPLOAD_ERR_OK]],
-				'submitted'
+				$this->equalTo(
+					new PortalCompletion(
+						answers: ['remarks' => 'ok'],
+						comment: 'here',
+						files: [['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 12, 'tmp_name' => '/tmp/a', 'error' => UPLOAD_ERR_OK]],
+						outcome: 'submitted'
+					)
+				)
 			)
 			->willReturn($this->task());
 		$this->portal->method('row')->willReturn(['uuid' => 't-1', 'state' => 'completed']);

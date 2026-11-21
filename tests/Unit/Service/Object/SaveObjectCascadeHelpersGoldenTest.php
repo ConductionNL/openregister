@@ -25,12 +25,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * Recorded on the code before the identifier test and the orphan scope were extracted; orphan cleanup of pointers later dropped.
@@ -53,6 +55,34 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses   \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\EmptyValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget
  */
 class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 
@@ -90,12 +120,12 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ?string $uuid = null): ObjectEntity {
 				$this->trace[] = ['save', $register, $schema, $data, $uuid];
 				$saved = new ObjectEntity();
 				$saved->setUuid('33333333-3333-3333-3333-333333333333');
 				return $saved;
-			}
+			})
 		);
 
 		$mapper = $this->createMock(MagicMapper::class);
@@ -167,10 +197,13 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setId(1);
 		$schema->setProperties($properties);
 
-		$extra = $method === 'cascadeObjects' ? [$stored] : [];
+		$run = new CascadeRun();
+		$run->parent = $parent;
+		$run->data = $data;
+		$run->stored = $stored;
 		$answer = match ($method) {
 			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
-			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $run, $schema),
 		};
 		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 

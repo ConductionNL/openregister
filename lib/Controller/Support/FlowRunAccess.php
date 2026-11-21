@@ -24,13 +24,13 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
+use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 
 /**
  * The domain services of the flow run API.
  *
- * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+ * @spec openspec/specs/flow-tooling/spec.md
  */
 final class FlowRunAccess {
 	/**
@@ -39,15 +39,15 @@ final class FlowRunAccess {
 	 * @param OrganisationServiceInterface   $organisationService Scopes the active-runs list to the caller's tenant.
 	 * @param FlowRunnableGuardInterface     $guard               Whether the caller may run the flow a run belongs to.
 	 * @param ?FlowCaller           $flowOwnership       Reads which flows the caller owns, from the
-	 * @param ?FlowRunSignalService $signalService       The guarded signal seam the
+	 * @param ?FlowRunSignalInterface $signalService       The guarded signal seam the
 	 *
-	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/specs/flow-tooling/spec.md
 	 */
 	public function __construct(
 		public readonly OrganisationServiceInterface $organisationService,
 		public readonly FlowRunnableGuardInterface $guard,
 		public readonly ?FlowCaller $flowOwnership = null,
-		public readonly ?FlowRunSignalService $signalService = null,
+		public readonly ?FlowRunSignalInterface $signalService = null,
 	) {
 	}//end __construct()
 }//end class

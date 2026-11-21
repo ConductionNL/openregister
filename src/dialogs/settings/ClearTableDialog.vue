@@ -1,5 +1,9 @@
 <template>
-	<NcDialog :open="open" :name="name" @closing="$emit('closing')">
+	<CnDialog
+		:open="open"
+		:name="name"
+		width="confirm"
+		@closing="$emit('closing')">
 		<div class="clear-dialog-content">
 			<h3>⚠️ {{ heading }}</h3>
 			<p>{{ description }}</p>
@@ -19,11 +23,11 @@
 				</template>
 			</SettingsDialogActions>
 		</div>
-	</NcDialog>
+	</CnDialog>
 </template>
 
 <script>
-import { NcDialog } from '@nextcloud/vue'
+import { CnDialog } from '@conduction/nextcloud-vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import SettingsDialogActions from './SettingsDialogActions.vue'
 
@@ -34,7 +38,7 @@ import SettingsDialogActions from './SettingsDialogActions.vue'
  */
 export default {
 	name: 'ClearTableDialog',
-	components: { Delete, NcDialog, SettingsDialogActions },
+	components: { CnDialog, Delete, SettingsDialogActions },
 	props: {
 		open: { type: Boolean, required: true },
 		clearing: { type: Boolean, default: false },

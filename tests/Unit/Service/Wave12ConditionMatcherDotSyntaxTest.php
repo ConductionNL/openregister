@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -30,6 +31,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
  */
 class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 
@@ -53,11 +55,10 @@ class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
 		$this->matcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession, $this->groupManager),
 			$this->container,
 			$this->operatorEvaluator,
-			$this->logger,
-			$this->groupManager
+			$this->logger
 		);
 	}//end setUp()
 

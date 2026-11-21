@@ -106,7 +106,7 @@ class TransitionEngineSlugContractTest extends TestCase {
 			);
 
 		return new TransitionEngine(
-			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, $this->schemaMapper, $this->registerMapper),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->dispatcher, new \OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary(
 				new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()
 			), $this->createMock(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry::class)),

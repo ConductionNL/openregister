@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -45,6 +46,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\Support\ConfigServices
+ * @uses \OCA\OpenRegister\Exception\OrganisationSlugConflictException
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 final class OrganisationMapperTenancyGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -500,7 +505,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 		$mapper = new OrganisationMapper(
 			$db,
 			$this->recordingLogger(),
-			$this->createMock(IEventDispatcher::class),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 		$this->queuedRows = [[['configvalue' => self::B]]];
@@ -609,7 +614,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 		return new OrganisationMapper(
 			$db,
 			$this->recordingLogger(),
-			$this->createMock(IEventDispatcher::class),
+			new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)),
 			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end recordingMapper()
@@ -665,7 +670,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 			 * @param IConfig $config Config.
 			 */
 			public function __construct(IDBConnection $db, AbstractLogger $logger, IEventDispatcher $dispatcher, IAppConfig $appConfig, IConfig $config) {
-				parent::__construct($db, $logger, $dispatcher, new ConfigServices($appConfig, $config));
+				parent::__construct($db, $logger, new EntityEventPublisher(dispatcher: $dispatcher), new ConfigServices($appConfig, $config));
 				$this->recordingLogger = $logger;
 			}
 

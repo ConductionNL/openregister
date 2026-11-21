@@ -18,7 +18,7 @@ final class CaseControllerFactory {
 	/**
 	 * The constructor arguments of CaseController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param CasePlanService $plans Constructor argument.
 	 * @param ZaaktypeCaseSkeletonMapper $zaaktypes Constructor argument.
@@ -38,7 +38,6 @@ final class CaseControllerFactory {
 		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CaseControllerServices(
 				plans: $plans,

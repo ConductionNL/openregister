@@ -18,6 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionNodes;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCall;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use PHPUnit\Framework\TestCase;
 
@@ -26,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleActionNodes
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
  */
 class ScheduleActionNodesTest extends TestCase {
 	/**
@@ -38,7 +42,7 @@ class ScheduleActionNodesTest extends TestCase {
 	 */
 	private function nodeOf(string $action, array $arguments): ?array {
 		return (new ScheduleActionNodes())->flowNode(
-			new ScheduleDescriptor('s', null, '0 6 * * *', $action, $arguments)
+			new ScheduleDescriptor('s', new ScheduleCadence(null, '0 6 * * *'), new ScheduleCall($action, $arguments))
 		);
 	}
 

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
@@ -38,13 +39,6 @@ use OCP\IUserSession;
  * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
  */
 class ExampleSetActingAs {
-	/**
-	 * How many daily refresh runs are open in this process; a background run outside the CLI (AJAX or web cron) opens one.
-	 *
-	 * @var integer
-	 */
-	private static int $backgroundRuns = 0;
-
 	/**
 	 * Whether this process is the command line (occ, system cron).
 	 *
@@ -79,12 +73,7 @@ class ExampleSetActingAs {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-refresh-makes-the-access-links-and-grants-of-a-set-again
 	 */
 	public static function inBackgroundJob(callable $run): mixed {
-		self::$backgroundRuns++;
-		try {
-			return $run();
-		} finally {
-			self::$backgroundRuns--;
-		}
+		return ExampleSetBackgroundRun::inBackgroundJob(run: $run);
 	}//end inBackgroundJob()
 
 	/**
@@ -96,7 +85,7 @@ class ExampleSetActingAs {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function refusal(): string {
-		if ($this->cli === false && self::$backgroundRuns === 0) {
+		if ($this->cli === false && ExampleSetBackgroundRun::isOpen() === false) {
 			return 'an example set acts as an account only from occ or the background job';
 		}
 
@@ -122,16 +111,8 @@ class ExampleSetActingAs {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function run(string $uid, callable $operation): mixed {
-		$refusal = $this->refusal();
-		if ($refusal !== '') {
-			throw new ExampleSetException($refusal);
-		}
-
+		$user = $this->accountToActAs(uid: $uid);
 		$previous = $this->userSession->getUser();
-		$user = $this->userManager->get($uid);
-		if ($user === null) {
-			throw new ExampleSetException('no account "'.$uid.'" to act as');
-		}
 
 		$this->userSession->setVolatileActiveUser($user);
 		try {
@@ -140,4 +121,27 @@ class ExampleSetActingAs {
 			$this->userSession->setVolatileActiveUser($previous);
 		}
 	}//end run()
+
+	/**
+	 * The account to act as, once acting as another account is allowed here at all.
+	 *
+	 * @param string $uid The account to act as.
+	 *
+	 * @return IUser The account.
+	 *
+	 * @throws ExampleSetException When acting as is refused or the account does not exist.
+	 */
+	private function accountToActAs(string $uid): IUser {
+		$refusal = $this->refusal();
+		if ($refusal !== '') {
+			throw new ExampleSetException($refusal);
+		}
+
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			throw new ExampleSetException('no account "'.$uid.'" to act as');
+		}
+
+		return $user;
+	}//end accountToActAs()
 }//end class

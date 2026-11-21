@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
 use OCP\AppFramework\Controller;
@@ -66,18 +67,16 @@ class PropertyVocabularyController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param PropertyVocabularyControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		PropertyVocabularyControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->vocabulary = $services->vocabulary;
 		$this->declarations = $services->declarations;
 		$this->schemaMapper = $services->schemaMapper;

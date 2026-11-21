@@ -62,11 +62,10 @@ interface TransferListServiceInterface {
 	public function approveTransferList(array $transferList, string $archivistId): array;
 
 	/**
-	 * Reject a transfer list.
+	 * Reject a transfer list in review.
 	 *
 	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param string              $archivistId  The rejecting archivist user ID.
-	 * @param string              $reason       The reason for rejection.
+	 * @param TransferRejection   $rejection    Who rejects it, and why.
 	 *
 	 * @return array<string,mixed> The updated transfer list data.
 	 *
@@ -75,5 +74,5 @@ interface TransferListServiceInterface {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
 	 * @spec openspec/specs/edepot-transfer/spec.md
 	 */
-	public function rejectTransferList(array $transferList, string $archivistId, string $reason): array;
+	public function reject(array $transferList, TransferRejection $rejection): array;
 }//end interface

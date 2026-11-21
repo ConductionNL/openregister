@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -61,6 +62,18 @@ interface ConfigurationDraftMapperInterface {
 		?string $layerRef,
 		string $configKey
 	): ?ConfigurationDraft;
+
+	/**
+	 * The pending value one set holds for one address, when it holds one.
+	 *
+	 * @param string               $setUuid The set uuid.
+	 * @param ConfigurationAddress $address The layer, layer reference and configuration key.
+	 *
+	 * @return ConfigurationDraft|null The draft, or null when the set holds none.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAt(string $setUuid, ConfigurationAddress $address): ?ConfigurationDraft;
 
 	/**
 	 * Find a draft by its uuid.

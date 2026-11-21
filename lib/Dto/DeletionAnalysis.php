@@ -33,13 +33,6 @@ namespace OCA\OpenRegister\Dto;
 class DeletionAnalysis {
 
 	/**
-	 * Whether the object may be deleted without violating RESTRICT constraints.
-	 *
-	 * @var boolean
-	 */
-	public readonly bool $deletable;
-
-	/**
 	 * Dependent objects that will be cascade-deleted alongside the root.
 	 *
 	 * @var array
@@ -61,43 +54,24 @@ class DeletionAnalysis {
 	public readonly array $defaultTargets;
 
 	/**
-	 * Dependent objects that block deletion (onDelete = RESTRICT).
-	 *
-	 * @var array
-	 */
-	public readonly array $blockers;
-
-	/**
-	 * The full dependency chain path for each blocker or cascade target.
-	 *
-	 * @var array
-	 */
-	public readonly array $chainPaths;
-
-	/**
 	 * Construct a new DeletionAnalysis value object.
 	 *
-	 * @param bool $deletable Whether the object may be deleted without violating RESTRICT constraints.
-	 * @param array $cascadeTargets Dependent objects that will be cascade-deleted alongside the root.
-	 * @param array $nullifyTargets Dependent objects whose reference property will be set to null.
-	 * @param array $defaultTargets Dependent objects whose reference property will be set to its schema default.
-	 * @param array $blockers Dependent objects that block deletion (onDelete = RESTRICT).
-	 * @param array $chainPaths The full dependency chain path for each blocker or cascade target.
+	 * @param bool                 $deletable  Whether the object may be deleted without violating RESTRICT constraints.
+	 * @param DeletionEffects|null $effects    The cascade, set-null and set-default targets; none when null.
+	 * @param array                $blockers   Dependent objects that block deletion (onDelete = RESTRICT).
+	 * @param array                $chainPaths The full dependency chain path for each blocker or cascade target.
 	 */
 	public function __construct(
-		bool $deletable,
-		array $cascadeTargets = [],
-		array $nullifyTargets = [],
-		array $defaultTargets = [],
-		array $blockers = [],
-		array $chainPaths = [],
+		public readonly bool $deletable,
+		?DeletionEffects $effects = null,
+		public readonly array $blockers = [],
+		public readonly array $chainPaths = [],
 	) {
-		$this->deletable = $deletable;
-		$this->cascadeTargets = $cascadeTargets;
-		$this->nullifyTargets = $nullifyTargets;
-		$this->defaultTargets = $defaultTargets;
-		$this->blockers = $blockers;
-		$this->chainPaths = $chainPaths;
+		$effects ??= new DeletionEffects();
+
+		$this->cascadeTargets = $effects->cascadeTargets;
+		$this->nullifyTargets = $effects->nullifyTargets;
+		$this->defaultTargets = $effects->defaultTargets;
 	}//end __construct()
 
 	/**
@@ -109,14 +83,7 @@ class DeletionAnalysis {
 	 * @return self
 	 */
 	public static function empty(): self {
-		return new self(
-			deletable: true,
-			cascadeTargets: [],
-			nullifyTargets: [],
-			defaultTargets: [],
-			blockers: [],
-			chainPaths: []
-		);
+		return new self(deletable: true);
 	}//end empty()
 
 	/**

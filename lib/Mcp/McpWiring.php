@@ -27,13 +27,15 @@ use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -53,6 +55,7 @@ final class McpWiring
         ChatServiceInterface::class        => ChatService::class,
         ContextChatSubmissionListenerInterface::class => ContextChatSubmissionListener::class,
         ConversationMapperInterface::class => ConversationMapper::class,
+        MessageMapperInterface::class      => MessageMapper::class,
         ToolRegistryInterface::class => ToolRegistry::class,
     ];
 

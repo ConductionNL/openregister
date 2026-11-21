@@ -61,6 +61,38 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionSources
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\ExtendDotRequest
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRequest
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\Relation\DescribeRun
+ * @uses \OCA\OpenRegister\Service\Relation\RelationValueReader
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class RenderObjectExtendReadCheckTest extends TestCase {
 	private const PARENT = '11111111-1111-4111-8111-111111111111';
@@ -199,10 +231,40 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			'container' => $container,
 		];
 
-		// Only what the constructor declares, so the test follows its dependency list.
-		$declared = array_column((new \ReflectionMethod(RenderObject::class, '__construct'))->getParameters(), 'name');
-
-		return new RenderObject(...array_intersect_key($dependencies, array_flip($declared)));
+return new RenderObject(
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $dependencies['registerMapper'], schemas: $dependencies['schemaMapper'], tables: $dependencies['objectEntityMapper']),
+					objectCacheService: $dependencies['objectCacheService']
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $dependencies['fileMapper'],
+					fileService: $dependencies['fileService'],
+					systemTagManager: $dependencies['systemTagManager'],
+					systemTagMapper: $dependencies['systemTagMapper']
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $dependencies['translationHandler'],
+					translationStatusService: $dependencies['translationStatusService'],
+					translationMapper: $dependencies['translationMapper'],
+					languageService: $dependencies['languageService']
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $dependencies['computedFieldHandler'],
+					calculationEvaluator: $dependencies['calculationEvaluator'],
+					linkedEntityEnricher: $dependencies['linkedEntityEnricher'],
+					urnService: $dependencies['urnService']
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $dependencies['logger'],
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				container: $dependencies['container']
+			),
+			propertyRbacHandler: $dependencies['propertyRbacHandler']
+		);
 	}
 
 	/**

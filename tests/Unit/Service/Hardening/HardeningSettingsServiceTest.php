@@ -21,9 +21,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
+use OCA\OpenRegister\Service\Hardening\PlatformSecurityReader;
+use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
+use OCA\OpenRegister\Service\Hardening\HardeningPosture;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\HardeningChange as HardeningAuditChange;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorGuard;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -41,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorGuard
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Db\AuditTrail\HardeningChange
+ * @uses \OCA\OpenRegister\Service\Hardening\FloorBreach
+ * @uses \OCA\OpenRegister\Service\Hardening\FloorRule
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningChange
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPosture
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningSettingsStore
  */
 class HardeningSettingsServiceTest extends TestCase {
 
@@ -84,8 +94,9 @@ class HardeningSettingsServiceTest extends TestCase {
 		);
 
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-		$this->auditTrailMapper->method('createHardeningChangeEntry')->willReturnCallback(
-			function (string $control, int|string|array $before, int|string|array $after, bool $accepted, string $refusal = ''): AuditTrail {
+		$this->auditTrailMapper->method('recordHardeningChange')->willReturnCallback(
+			function (HardeningAuditChange $change, bool $accepted): AuditTrail {
+				[$control, $before, $after, $refusal] = [$change->control, $change->before, $change->after, $change->refusal];
 				$this->rows[] = [
 					'control' => $control,
 					'before' => $before,
@@ -101,9 +112,13 @@ class HardeningSettingsServiceTest extends TestCase {
 		$policy = new HardeningPolicy($this->appConfig);
 
 		return new HardeningSettingsService(
-			$policy,
 			new HardeningFloorGuard($policy),
-			new HardeningSettingsStore($this->appConfig, $this->auditTrailMapper, $this->createMock(LoggerInterface::class))
+			new HardeningPosture(
+				$policy,
+				new HardeningSettingsStore($this->appConfig, $this->auditTrailMapper, $this->createMock(LoggerInterface::class)),
+				$this->createMock(HardeningAuditWriter::class),
+				$this->createMock(PlatformSecurityReader::class)
+			)
 		);
 	}
 

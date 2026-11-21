@@ -4,6 +4,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -35,9 +36,7 @@ class WebhookMapperTest extends TestCase {
 
 		$this->mapper = new WebhookMapper(
 			$this->db,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
+			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
 			$this->appConfig
 		);
 	}
@@ -45,10 +44,6 @@ class WebhookMapperTest extends TestCase {
 	// -------------------------------------------------------------------------
 	// Construction
 	// -------------------------------------------------------------------------
-
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(WebhookMapper::class, $this->mapper);
-	}
 
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_webhooks', $this->mapper->getTableName());

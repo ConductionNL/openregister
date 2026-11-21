@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\History;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\StateHistory;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\History\StateHistoryRebuild;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -182,7 +183,7 @@ class StateHistoryRebuildTest extends TestCase {
 			}
 		);
 
-		$written = $this->rebuild->rebuildObject('uuid-1', 'status', 'zaken', 'zaak');
+		$written = $this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status');
 
 		$this->assertSame(3, $written);
 		$this->assertSame(['delete', 'insert:open', 'insert:bezwaar', 'insert:gesloten'], $order);
@@ -197,6 +198,38 @@ class StateHistoryRebuildTest extends TestCase {
 		$this->audit->method('findChangesForObject')->willThrowException(new \RuntimeException('gone'));
 		$this->intervals->expects($this->never())->method('insert');
 
-		$this->assertSame(0, $this->rebuild->rebuildObject('uuid-1', 'status', 'zaken', 'zaak'));
+		$this->assertSame(0, $this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status'));
 	}//end testAFailingRebuildWritesNothingAndDoesNotThrow()
+
+	/**
+	 * Every interval is its own row naming the object, register, schema and property.
+	 *
+	 * @return void
+	 */
+	public function testEachIntervalRowNamesTheObjectRegisterSchemaAndProperty(): void {
+		$this->audit->method('findChangesForObject')->willReturn($this->changes());
+
+		$rows = [];
+		$this->intervals->method('insert')->willReturnCallback(
+			static function (StateHistory $row) use (&$rows): StateHistory {
+				$rows[] = $row;
+				return $row;
+			}
+		);
+
+		$this->rebuild->rebuild(new ObjectRef(register: 'zaken', schema: 'zaak', id: 'uuid-1'), 'status');
+
+		$this->assertCount(3, $rows);
+		$this->assertNotSame($rows[0], $rows[1]);
+		foreach ($rows as $row) {
+			$this->assertSame('uuid-1', $row->getObjectUuid());
+			$this->assertSame('zaken', $row->getRegister());
+			$this->assertSame('zaak', $row->getSchema());
+			$this->assertSame('status', $row->getProperty());
+		}
+
+		$this->assertSame(['open', 'bezwaar', 'gesloten'], array_map(static fn (StateHistory $row): string => (string)$row->getValue(), $rows));
+		$this->assertNull($rows[0]->getEnteredAt());
+		$this->assertNull($rows[2]->getLeftAt());
+	}//end testEachIntervalRowNamesTheObjectRegisterSchemaAndProperty()
 }//end class

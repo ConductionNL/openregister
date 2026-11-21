@@ -18,9 +18,12 @@ namespace Unit\Service\Edepot;
 use DOMDocument;
 use OCA\OpenRegister\Service\Archival\MdtoMappingResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Edepot\MdtoBestandGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoContainment;
 use OCA\OpenRegister\Service\Edepot\MdtoDocumentWriter;
 use OCA\OpenRegister\Service\Edepot\MdtoEventMapper;
+use OCA\OpenRegister\Service\Edepot\MdtoInputReaders;
 use OCA\OpenRegister\Service\Edepot\MdtoPreconditions;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ObjectArchivalAnnotation;
@@ -29,6 +32,7 @@ use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Edepot\MdtoSourceReader;
 use OCA\OpenRegister\Service\Edepot\MdtoValueReader;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
+use OCA\OpenRegister\Service\Edepot\MdtoValueSources;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -187,6 +191,21 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 				[],
 				[],
 			],
+			'parties named by the schema annotation' => [
+				$base + [
+					'annotation' => [
+						'effectiveRetention' => 'P20Y',
+						'matchedRule' => null,
+						'parties' => [
+							['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'b7a1c2d3-0000-4000-8000-000000000001'],
+							['role' => 'gemachtigde', 'name' => 'J. de Vries'],
+						],
+					],
+				],
+				[],
+				[],
+				[],
+			],
 			'nog niet bepaald waardering' => [
 				['archiefnominatie' => 'nog_niet_bepaald', 'bewaartermijn' => 'P1Y'],
 				[],
@@ -232,6 +251,111 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 
 		$this->assertValidMdto(xml: $xml, what: 'informatieobject');
 	}//end testGeneratedDocumentValidatesAgainstTheMdtoXsd()
+
+	/**
+	 * A declared party is one `betrokkene` naming it, after `archiefvormer`; none declared, none written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.2
+	 */
+	public function testADeclaredPartyIsOneBetrokkene(): void {
+		$base = ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y'];
+		$with = $base + ['annotation' => ['effectiveRetention' => 'P20Y', 'matchedRule' => null, 'parties' => [['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht']]]];
+
+		$xml = $this->generator(events: [])->generate($this->objectEntity(retention: $with, tmlo: []), []);
+		$this->assertValidMdto(xml: $xml, what: 'informatieobject with a party');
+
+		$dom = new \DOMDocument();
+		$dom->loadXML($xml);
+		$xpath = new \DOMXPath($dom);
+		$xpath->registerNamespace('m', 'https://www.nationaalarchief.nl/mdto');
+		$this->assertSame(1, $xpath->query('//m:betrokkene')->length);
+		$this->assertSame('Gemeente Zuiddrecht', $xpath->evaluate('string(//m:betrokkene/m:betrokkeneActor/m:verwijzingNaam)'));
+		$this->assertSame('aanvrager', $xpath->evaluate('string(//m:betrokkene/m:betrokkeneTypeRelatie/m:begripLabel)'));
+		$this->assertSame(1.0, $xpath->evaluate('count(//m:archiefvormer/following-sibling::m:betrokkene)'));
+
+		$without = $this->generator(events: [])->generate($this->objectEntity(retention: $base, tmlo: []), []);
+		$this->assertStringNotContainsString('betrokkene', $without);
+	}//end testADeclaredPartyIsOneBetrokkene()
+
+	/**
+	 * A parent and its two children point at each other, and every document validates.
+	 *
+	 * The schema of the parent declares `onderdelen` as its containment. The
+	 * parent's document lists both children under `bevatOnderdeel` (a child the
+	 * row named only by id is looked up for its name), and each child's document
+	 * names the parent under `isOnderdeelVan`, found through the records that
+	 * reference the child.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function testAParentAndItsChildrenPointAtEachOther(): void {
+		$parentUuid = '7f0c1f8e-1d2a-4c3b-9e4f-5a6b7c8d9e01';
+		$childOne = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c51';
+		$childTwo = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c52';
+		$base = ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y'];
+		$parent = $this->recordEntity(
+			uuid: $parentUuid,
+			title: 'Dossier Kerkstraat 1',
+			retention: $base + ['annotation' => ['effectiveRetention' => 'P20Y', 'matchedRule' => null, 'containment' => [
+				'property' => 'onderdelen',
+				'parts' => [['id' => $childOne, 'name' => 'Aanvraag'], ['id' => $childTwo]],
+			]]]
+		);
+		$first = $this->recordEntity(uuid: $childOne, title: 'Aanvraag', retention: $base);
+		$second = $this->recordEntity(uuid: $childTwo, title: 'Besluit', retention: $base);
+
+		$objects = $this->createMock(MagicMapperInterface::class);
+		$objects->method('findByRelationUsingRelationsColumn')->willReturnCallback(
+			static fn (string $uuid): array => in_array($uuid, [$childOne, $childTwo], true) ? [$parent] : []
+		);
+		$objects->method('find')->willReturnCallback(
+			static fn (string|int $identifier): ObjectEntity => match ($identifier) {
+				$childTwo => $second,
+			}
+		);
+		$generator = $this->generator(events: [], objects: $objects);
+
+		$parentXml = $generator->generate($parent, []);
+		$this->assertValidMdto(xml: $parentXml, what: 'parent informatieobject');
+		$parentPath = $this->xpath(xml: $parentXml);
+		$this->assertSame(['Aanvraag', 'Besluit'], $this->texts(xpath: $parentPath, query: '//m:bevatOnderdeel/m:verwijzingNaam'));
+		$this->assertSame([$childOne, $childTwo], $this->texts(xpath: $parentPath, query: '//m:bevatOnderdeel/m:verwijzingIdentificatie/m:identificatieKenmerk'));
+		$this->assertSame(0, $parentPath->query('//m:isOnderdeelVan')->length);
+
+		foreach ([$first, $second] as $child) {
+			$childXml = $generator->generate($child, []);
+			$this->assertValidMdto(xml: $childXml, what: 'child informatieobject ' . $child->getUuid());
+			$childPath = $this->xpath(xml: $childXml);
+			$this->assertSame(['Dossier Kerkstraat 1'], $this->texts(xpath: $childPath, query: '//m:isOnderdeelVan/m:verwijzingNaam'));
+			$this->assertSame([$parentUuid], $this->texts(xpath: $childPath, query: '//m:isOnderdeelVan/m:verwijzingIdentificatie/m:identificatieKenmerk'));
+			$this->assertSame(0, $childPath->query('//m:bevatOnderdeel')->length);
+		}
+	}//end testAParentAndItsChildrenPointAtEachOther()
+
+	/**
+	 * A record whose schemas declare no party and no containment keeps today's export.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function testWithoutDeclarationsThereIsNoPartyOrContainment(): void {
+		$objects = $this->createMock(MagicMapperInterface::class);
+		$objects->method('findByRelationUsingRelationsColumn')->willReturn([]);
+		$object = $this->recordEntity(uuid: '0b1e9c52-5f3a-4f9e-9d0a-2b6c1d7e8f90', title: 'Besluit', retention: ['archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y']);
+
+		$withLookup = $this->generator(events: [], objects: $objects)->generate($object, []);
+		$withoutLookup = $this->generator(events: [])->generate($object, []);
+
+		foreach (['betrokkene', 'isOnderdeelVan', 'bevatOnderdeel'] as $element) {
+			$this->assertStringNotContainsString($element, $withLookup);
+		}
+		$this->assertSame($withoutLookup, $withLookup);
+	}//end testWithoutDeclarationsThereIsNoPartyOrContainment()
 
 	/**
 	 * Every file's own `bestand` document validates too.
@@ -383,7 +507,7 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 	 *
 	 * @return MdtoXmlGenerator The generator.
 	 */
-	private function generator(array $events): MdtoXmlGenerator {
+	private function generator(array $events, ?MagicMapperInterface $objects = null): MdtoXmlGenerator {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnMap(
 			[
@@ -400,17 +524,72 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 		$writer = new MdtoDocumentWriter();
 		$sourceReader = new MdtoSourceReader(new MdtoValueReader(), $this->objectAnnotations());
 		$bestandGenerator = new MdtoBestandGenerator($writer);
-		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
+		$preconditions = new MdtoPreconditions(new MdtoInputReaders($sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class)), new \OCA\OpenRegister\Service\Configuration\AppSettingsAccess($appConfig, $this->createMock(\OCP\App\IAppManager::class), $this->createMock(LoggerInterface::class)));
 
 		return new MdtoXmlGenerator(
-			$appConfig,
-			$eventMapper,
-			$sourceReader,
+			new MdtoValueSources($appConfig, $eventMapper, $sourceReader),
 			$writer,
 			$bestandGenerator,
-			$preconditions
+			$preconditions,
+			$objects === null ? null : new MdtoContainment($objects, $sourceReader, new NullLogger())
 		);
 	}//end generator()
+
+	/**
+	 * A record with its own uuid, title and retention block.
+	 *
+	 * @param string              $uuid      The record's uuid.
+	 * @param string              $title     The record's title.
+	 * @param array<string,mixed> $retention The retention block.
+	 *
+	 * @return ObjectEntity&MockObject The record.
+	 */
+	private function recordEntity(string $uuid, string $title, array $retention): ObjectEntity&MockObject {
+		$object = $this->getMockBuilder(ObjectEntity::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getUuid', 'getObject'])
+			->addMethods(['getRetention', 'getTmlo'])
+			->getMock();
+		$object->method('getUuid')->willReturn($uuid);
+		$object->method('getObject')->willReturn(['title' => $title]);
+		$object->method('getRetention')->willReturn($retention);
+		$object->method('getTmlo')->willReturn([]);
+
+		return $object;
+	}//end recordEntity()
+
+	/**
+	 * An XPath over a document, with the MDTO namespace as `m`.
+	 *
+	 * @param string $xml The document.
+	 *
+	 * @return \DOMXPath The XPath.
+	 */
+	private function xpath(string $xml): \DOMXPath {
+		$dom = new \DOMDocument();
+		$dom->loadXML($xml);
+		$xpath = new \DOMXPath($dom);
+		$xpath->registerNamespace('m', 'https://www.nationaalarchief.nl/mdto');
+
+		return $xpath;
+	}//end xpath()
+
+	/**
+	 * The text of every node a query selects, in document order.
+	 *
+	 * @param \DOMXPath $xpath The XPath.
+	 * @param string    $query The query.
+	 *
+	 * @return list<string> The texts.
+	 */
+	private function texts(\DOMXPath $xpath, string $query): array {
+		$texts = [];
+		foreach ($xpath->query($query) as $node) {
+			$texts[] = $node->textContent;
+		}
+
+		return $texts;
+	}//end texts()
 
 	/**
 	 * Build a mock ObjectEntity.
@@ -443,11 +622,7 @@ class MdtoXmlGeneratorXsdTest extends TestCase {
 	 * @return ObjectArchivalAnnotation The resolver.
 	 */
 	private function objectAnnotations(): ObjectArchivalAnnotation {
-		return new ObjectArchivalAnnotation(
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			evaluator: new RetentionEvaluator(logger: new NullLogger()),
-			logger: new NullLogger()
-		);
+		return new ObjectArchivalAnnotation(lookup: new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup(schemaMapper: $this->createMock(originalClassName: SchemaMapper::class), logger: new NullLogger()), evaluator: new RetentionEvaluator(logger: new NullLogger()));
 	}
 
 }//end class

@@ -50,26 +50,21 @@ class HandoffMappingEvaluator {
 	 *
 	 * @param array<string, mixed> $mapping The declared mapping (contract field → expression;
 	 *                                      each expression is validated as an array at runtime).
-	 * @param array<string, mixed> $sourceData The source object's data.
-	 * @param array<string, mixed> $provenance The engine-filled source pointer `{app, register, schema, uuid}`.
+	 * @param HandoffMappingSource $source  The source object's data and its provenance pointer.
 	 *
 	 * @return array<string, mixed> Contract field → evaluated value (fields evaluating to null are omitted).
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Semantic references are carried, not copied)
 	 */
-	public function evaluate(array $mapping, array $sourceData, array $provenance): array {
+	public function evaluate(array $mapping, HandoffMappingSource $source): array {
 		$result = [];
 		foreach ($mapping as $field => $expression) {
 			if (is_array($expression) === false) {
 				continue;
 			}
 
-			$value = $this->evaluateExpression(
-				expression: $expression,
-				sourceData: $sourceData,
-				provenance: $provenance
-			);
+			$value = $this->evaluateExpression(expression: $expression, source: $source);
 			if ($value !== null) {
 				$result[(string)$field] = $value;
 			}
@@ -82,8 +77,7 @@ class HandoffMappingEvaluator {
 	 * Evaluate one mapping expression.
 	 *
 	 * @param array<string, mixed> $expression The expression (exactly one of the five kinds).
-	 * @param array<string, mixed> $sourceData The source object's data.
-	 * @param array<string, mixed> $provenance The engine-filled source pointer.
+	 * @param HandoffMappingSource $source     The source object's data and its provenance pointer.
 	 *
 	 * @return mixed The evaluated value, or null when the expression yields nothing
 	 *               (e.g. `from` on an absent property without a `default`).
@@ -91,40 +85,64 @@ class HandoffMappingEvaluator {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
-	private function evaluateExpression(array $expression, array $sourceData, array $provenance): mixed {
+	private function evaluateExpression(array $expression, HandoffMappingSource $source): mixed {
 		if (array_key_exists('const', $expression) === true) {
 			return $expression['const'];
 		}
 
 		if (array_key_exists('provenance', $expression) === true) {
-			return $provenance;
+			return $source->provenance;
 		}
 
 		if (array_key_exists('template', $expression) === true) {
 			return $this->interpolate(
 				template: (string)$expression['template'],
-				data: $sourceData
+				data: $source->data
 			);
 		}
 
+		return $this->evaluateReference(expression: $expression, data: $source->data);
+	}//end evaluateExpression()
+
+	/**
+	 * Evaluate an expression that reads a source property: a carried semantic reference or a plain `from`.
+	 *
+	 * @param array<string, mixed> $expression The expression.
+	 * @param array<string, mixed> $data       The source object's data.
+	 *
+	 * @return mixed The value, or null when the expression reads nothing.
+	 */
+	private function evaluateReference(array $expression, array $data): mixed {
 		if (array_key_exists('semanticRef', $expression) === true) {
 			return $this->carryReference(
 				property: (string)$expression['semanticRef'],
-				sourceData: $sourceData
+				sourceData: $data
 			);
 		}
 
 		if (array_key_exists('from', $expression) === true) {
-			$value = ($sourceData[(string)$expression['from']] ?? null);
-			if ($value === null && array_key_exists('default', $expression) === true) {
-				return $expression['default'];
-			}
-
-			return $value;
+			return $this->fromValue(expression: $expression, data: $data);
 		}
 
 		return null;
-	}//end evaluateExpression()
+	}//end evaluateReference()
+
+	/**
+	 * The value a `from` expression reads, or its default when the source has none.
+	 *
+	 * @param array<string, mixed> $expression The expression, with its `from` key.
+	 * @param array<string, mixed> $data       The source object's data.
+	 *
+	 * @return mixed The value.
+	 */
+	private function fromValue(array $expression, array $data): mixed {
+		$value = ($data[(string)$expression['from']] ?? null);
+		if ($value === null && array_key_exists('default', $expression) === true) {
+			return $expression['default'];
+		}
+
+		return $value;
+	}//end fromValue()
 
 	/**
 	 * Carry an ADR-048 semantic reference across as a reference.

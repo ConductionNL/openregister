@@ -1,0 +1,74 @@
+{
+    "find found": {
+        "result": 12,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sequences, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 where(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 4, 1",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = 2026, 2",
+            "#1 expr.eq(scope_key, :p3, NULL)",
+            "#1 andWhere(eq(scope_key, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "find missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_sequences, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 where(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 4, 1",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = , 2",
+            "#1 expr.eq(scope_key, :p3, NULL)",
+            "#1 andWhere(eq(scope_key, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "increment": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_sequences, NULL)",
+            "#1 set(next_value, next_value + 1)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 where(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 4, 1",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = 2026-06, 2",
+            "#1 expr.eq(scope_key, :p3, NULL)",
+            "#1 andWhere(eq(scope_key, :p3, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "raise": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_sequences, NULL)",
+            "#1 param :p1 = 121, 1",
+            "#1 set(next_value, :p1)",
+            "#1 param :p2 = 1, 1",
+            "#1 expr.eq(register_id, :p2, NULL)",
+            "#1 where(eq(register_id, :p2, NULL))",
+            "#1 param :p3 = 2, 1",
+            "#1 expr.eq(schema_id, :p3, NULL)",
+            "#1 andWhere(eq(schema_id, :p3, NULL))",
+            "#1 param :p4 = 2026, 2",
+            "#1 expr.eq(scope_key, :p4, NULL)",
+            "#1 andWhere(eq(scope_key, :p4, NULL))",
+            "#1 param :p5 = 121, 1",
+            "#1 expr.lt(next_value, :p5, NULL)",
+            "#1 andWhere(lt(next_value, :p5, NULL))",
+            "#1 executeStatement()"
+        ]
+    }
+}

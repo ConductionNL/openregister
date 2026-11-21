@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener\Registrar;
 
-use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
+use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
@@ -81,7 +82,25 @@ final class FlowsListenerRegistrar {
 		self::registerFileAndDiscoveryListeners(context: $context);
 		self::registerTriggerListeners(context: $context);
 		self::registerPageScriptListeners(context: $context);
+		self::bindAppEventWebhookListener(context: $context);
 	}//end register()
+
+	/**
+	 * Bind the Kernel webhook-delivery port to the webhook listener.
+	 *
+	 * AppWebhookEvents::declare() subscribes the port by its service name to
+	 * each app-declared event; this alias makes that resolve to
+	 * WebhookEventListener. It registers no listener, so the order is unchanged.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md
+	 */
+	private static function bindAppEventWebhookListener(IRegistrationContext $context): void {
+		$context->registerServiceAlias(AppEventWebhookListenerInterface::class, WebhookEventListener::class);
+	}//end bindAppEventWebhookListener()
 
 	/**
 	 * Register the file, discovery and platform listeners.
@@ -141,10 +160,8 @@ final class FlowsListenerRegistrar {
 		$context->registerEventListener(\OCP\OCM\Events\ResourceTypeRegisterEvent::class, OcmResourceTypeListener::class);
 
 		// Register OpenRegister as a Context Chat (OCP\ContextChat) content
-		// provider — softly gated by IContentManager::isContextChatAvailable()
-		// inside the listener body, so an instance without the `context_chat`
-		// app installed is entirely unaffected.
-		$context->registerEventListener(\OCP\ContextChat\Events\ContentProviderRegisterEvent::class, ContentProviderRegistrationListener::class);
+		// provider; the ContextChat component names its own listener.
+		ContextChatRegistrar::registerListeners(context: $context);
 	}//end registerFileAndDiscoveryListeners()
 
 	/**

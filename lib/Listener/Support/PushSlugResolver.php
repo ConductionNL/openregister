@@ -96,7 +96,7 @@ final class PushSlugResolver {
 	 * @return string|null The slug, or null when blank or not resolvable.
 	 */
 	private function slugOf(?string $id, \Closure $find): ?string {
-		if ($id === null || $id === '') {
+		if (self::isBlank(id: $id) === true) {
 			return null;
 		}
 
@@ -106,4 +106,17 @@ final class PushSlugResolver {
 			return null;
 		}
 	}//end slugOf()
+
+	/**
+	 * Whether no id was carried.
+	 *
+	 * @param string|null $id The UUID or id.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-false string $id
+	 */
+	private static function isBlank(?string $id): bool {
+		return ($id === null || $id === '');
+	}//end isBlank()
 }//end class

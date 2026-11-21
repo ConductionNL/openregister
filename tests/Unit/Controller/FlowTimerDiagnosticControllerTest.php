@@ -27,6 +27,8 @@ use OCA\OpenRegister\Controller\FlowTimerDiagnosticController;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTimerDiagnosticControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\Timer\WorkingCalendarTest;
 use OCP\IGroupManager;
@@ -205,7 +207,7 @@ class FlowTimerDiagnosticControllerTest extends TestCase {
 		}
 
 		$this->assertSame(
-			['string', IRequest::class, IUserSession::class, IGroupManager::class, TermDiagnostic::class],
+			[IRequest::class, IUserSession::class, IGroupManager::class, TermDiagnosticInterface::class, WorkingCalendarDefinitionsInterface::class],
 			$types,
 			'a mapper or a connection here would be something that could arm a timer or write a ledger row'
 		);

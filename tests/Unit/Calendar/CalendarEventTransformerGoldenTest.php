@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Calendar;
 
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -21,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Calendar\CalendarEventTransformer
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Calendar\CalendarDefinition
  */
 class CalendarEventTransformerGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/calendar-event-transformer-golden.json';
@@ -77,7 +79,7 @@ class CalendarEventTransformerGoldenTest extends TestCase {
 		$schema->setTitle('Hearings');
 		$schema->setProperties($properties);
 
-		$actual = json_decode(json_encode((new CalendarEventTransformer())->transform($object, $schema, $config)), true);
+		$actual = json_decode(json_encode((new CalendarEventTransformer())->transform($object, new CalendarDefinition($schema, $config))), true);
 
 		$name = $this->dataName();
 		$golden = [];

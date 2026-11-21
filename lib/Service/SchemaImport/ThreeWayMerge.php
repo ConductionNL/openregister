@@ -46,10 +46,9 @@ class ThreeWayMerge {
 	/**
 	 * Compute the classified diff + merged result for an update-from-source.
 	 *
-	 * @param array<string, array<string,mixed>> $baseline Imported baseline property definitions.
-	 * @param array<string, array<string,mixed>> $current  Current schema property definitions.
-	 * @param array<string, array<string,mixed>> $incoming Freshly-imported property definitions.
-	 * @param array<int, string>                 $resolved Conflicting property names the caller confirmed to apply.
+	 * Added and changed names take the incoming definition into the merged map.
+	 *
+	 * @param MergeInstruction $merge The baseline, current and incoming maps plus the confirmed conflicts.
 	 *
 	 * @return array<string, mixed> {
 	 *                              added: string[], removed: string[], changed: string[], keptLocal: string[],
@@ -58,41 +57,23 @@ class ThreeWayMerge {
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
-	public function compute(array $baseline, array $current, array $incoming, array $resolved = []): array {
-		$sides = ['baseline' => $baseline, 'current' => $current, 'incoming' => $incoming, 'resolved' => array_fill_keys($resolved, true)];
-		$result = ['added' => [], 'removed' => [], 'changed' => [], 'keptLocal' => [], 'conflicts' => [], 'merged' => $current];
+	public function compute(MergeInstruction $merge): array {
+		$result = ['added' => [], 'removed' => [], 'changed' => [], 'keptLocal' => [], 'conflicts' => [], 'merged' => $merge->current];
 
-		foreach (array_unique(array_merge(array_keys($baseline), array_keys($current), array_keys($incoming))) as $name) {
-			$result = $this->place(result: $result, sides: $sides, name: $name);
+		foreach ($merge->names() as $name) {
+			$bucket = $this->classify(sides: $merge, name: $name);
+			if ($bucket !== null) {
+				$result[$bucket][] = $name;
+			}
+
+			if ($bucket === 'added' || $bucket === 'changed') {
+				$result['merged'][$name] = $merge->incoming[$name];
+			}
 		}
 
 		$result['applied'] = ($result['conflicts'] === []);
 		return $result;
 	}//end compute()
-
-	/**
-	 * Record one property name in its bucket; added and changed names take
-	 * the incoming definition into the merged map.
-	 *
-	 * @param array<string, array<int|string, mixed>> $result The result built so far.
-	 * @param array<string, array<int|string, mixed>> $sides  The baseline, current and incoming maps plus the resolved set.
-	 * @param int|string                              $name   The property name.
-	 *
-	 * @return array<string, array<int|string, mixed>> The result with the name placed.
-	 */
-	private function place(array $result, array $sides, int|string $name): array {
-		$bucket = $this->classify(sides: $sides, name: $name);
-		if ($bucket === null) {
-			return $result;
-		}
-
-		$result[$bucket][] = $name;
-		if ($bucket === 'added' || $bucket === 'changed') {
-			$result['merged'][$name] = $sides['incoming'][$name];
-		}
-
-		return $result;
-	}//end place()
 
 	/**
 	 * Classify one property name into its merge-table bucket.
@@ -102,16 +83,16 @@ class ThreeWayMerge {
 	 * auto-applied); added locally and never in the baseline → keptLocal; a
 	 * name only the baseline knows lands nowhere.
 	 *
-	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param MergeInstruction $sides The baseline, current and incoming maps plus the resolved set.
 	 * @param int|string                              $name  The property name.
 	 *
 	 * @return string|null The bucket, or null when the name lands nowhere.
 	 */
-	private function classify(array $sides, int|string $name): ?string {
+	private function classify(MergeInstruction $sides, int|string $name): ?string {
 		return match (true) {
-			array_key_exists($name, $sides['incoming']) => $this->classifyIncoming(sides: $sides, name: $name),
-			array_key_exists($name, $sides['current']) === false => null,
-			array_key_exists($name, $sides['baseline']) => 'removed',
+			array_key_exists($name, $sides->incoming) => $this->classifyIncoming(sides: $sides, name: $name),
+			array_key_exists($name, $sides->current) === false => null,
+			array_key_exists($name, $sides->baseline) => 'removed',
 			default => 'keptLocal',
 		};
 	}//end classify()
@@ -122,17 +103,17 @@ class ThreeWayMerge {
 	 * Absent locally → added. Without a baseline both sides count as
 	 * changed, so it is a conflict; otherwise compare against the baseline.
 	 *
-	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param MergeInstruction $sides The baseline, current and incoming maps plus the resolved set.
 	 * @param int|string                              $name  The property name.
 	 *
 	 * @return string The bucket.
 	 */
-	private function classifyIncoming(array $sides, int|string $name): string {
-		if (array_key_exists($name, $sides['current']) === false) {
+	private function classifyIncoming(MergeInstruction $sides, int|string $name): string {
+		if (array_key_exists($name, $sides->current) === false) {
 			return 'added';
 		}
 
-		if (array_key_exists($name, $sides['baseline']) === false) {
+		if (array_key_exists($name, $sides->baseline) === false) {
 			return $this->resolveConflict(sides: $sides, name: $name);
 		}
 
@@ -145,18 +126,18 @@ class ThreeWayMerge {
 	 * Source unchanged → keep local (covers local mods + identical); local
 	 * unchanged → apply source; both changed → conflict.
 	 *
-	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param MergeInstruction $sides The baseline, current and incoming maps plus the resolved set.
 	 * @param int|string                              $name  The property name.
 	 *
 	 * @return string The bucket.
 	 */
-	private function compareWithBaseline(array $sides, int|string $name): string {
-		$base = $sides['baseline'][$name];
-		if ($this->differs(a: $base, b: $sides['incoming'][$name]) === false) {
+	private function compareWithBaseline(MergeInstruction $sides, int|string $name): string {
+		$base = $sides->baseline[$name];
+		if ($this->differs(a: $base, b: $sides->incoming[$name]) === false) {
 			return 'keptLocal';
 		}
 
-		if ($this->differs(a: $base, b: $sides['current'][$name]) === false) {
+		if ($this->differs(a: $base, b: $sides->current[$name]) === false) {
 			return 'changed';
 		}
 
@@ -166,13 +147,13 @@ class ThreeWayMerge {
 	/**
 	 * Both sides changed: apply only when the caller explicitly resolved it.
 	 *
-	 * @param array<string, array<int|string, mixed>> $sides The baseline, current and incoming maps plus the resolved set.
+	 * @param MergeInstruction $sides The baseline, current and incoming maps plus the resolved set.
 	 * @param int|string                              $name  The property name.
 	 *
 	 * @return string The bucket.
 	 */
-	private function resolveConflict(array $sides, int|string $name): string {
-		if (isset($sides['resolved'][$name]) === true) {
+	private function resolveConflict(MergeInstruction $sides, int|string $name): string {
+		if (isset($sides->resolvedSet()[$name]) === true) {
 			return 'changed';
 		}
 

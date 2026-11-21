@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Names places and reads edges for the definition builder.
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowGraph {
 
@@ -62,7 +62,7 @@ class FlowGraph {
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function inPlace(string $nodeId): string {
 		return $nodeId;
@@ -74,20 +74,19 @@ class FlowGraph {
 	 * An ordinary node has one input place. A declared join has one per
 	 * incoming edge instead, which is what makes it wait for all of them.
 	 *
-	 * @param string $nodeId The target node.
-	 * @param string $edgeId The edge arriving at it.
-	 * @param array<string, array> $nodes The declared nodes.
+	 * @param EdgeArrival          $arrival The edge and the target node it arrives at.
+	 * @param array<string, array> $nodes   The declared nodes.
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function targetPlace(string $nodeId, string $edgeId, array $nodes): string {
-		if ($this->isJoin(node: ($nodes[$nodeId] ?? [])) === true) {
-			return $this->joinPlace(nodeId: $nodeId, edgeId: $edgeId);
+	public function targetPlace(EdgeArrival $arrival, array $nodes): string {
+		if ($this->isJoin(node: ($nodes[$arrival->nodeId] ?? [])) === true) {
+			return $this->joinPlace(nodeId: $arrival->nodeId, edgeId: $arrival->edgeId);
 		}
 
-		return $this->inPlace(nodeId: $nodeId);
+		return $this->inPlace(nodeId: $arrival->nodeId);
 	}//end targetPlace()
 
 	/**
@@ -98,7 +97,7 @@ class FlowGraph {
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function joinPlace(string $nodeId, string $edgeId): string {
 		return $this->inPlace(nodeId: $nodeId) . self::PLACE_JOIN . $edgeId;
@@ -111,7 +110,7 @@ class FlowGraph {
 	 *
 	 * @return bool True when it is a join.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function isJoin(array $node): bool {
 		return ($node['join'] ?? false) === true;
@@ -125,7 +124,7 @@ class FlowGraph {
 	 *
 	 * @return array<array> The edges.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function incoming(string $nodeId, array $edges): array {
 		return array_values(
@@ -145,7 +144,7 @@ class FlowGraph {
 	 *
 	 * @return array<array> The edges.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function outgoing(string $nodeId, array $edges): array {
 		return array_values(
@@ -167,20 +166,15 @@ class FlowGraph {
 	 *
 	 * @return array<string> The endpoint node ids.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function normaliseEndpoints(mixed $value): array {
 		if ($value === null) {
 			return [];
 		}
 
-		$list = [$value];
-		if (is_array($value) === true) {
-			$list = $value;
-		}
-
 		$names = [];
-		foreach ($list as $item) {
+		foreach (self::asList(value: $value) as $item) {
 			$name = trim((string)$item);
 			if ($name !== '') {
 				$names[] = $name;
@@ -189,4 +183,19 @@ class FlowGraph {
 
 		return $names;
 	}//end normaliseEndpoints()
+
+	/**
+	 * The value as a list: itself when it is an array, else a list of one.
+	 *
+	 * @param mixed $value The declared endpoint or endpoints.
+	 *
+	 * @return array The list.
+	 */
+	private static function asList(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end asList()
 }//end class

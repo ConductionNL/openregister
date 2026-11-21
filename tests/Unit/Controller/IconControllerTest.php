@@ -60,7 +60,6 @@ class IconControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 
 		$this->controller = new IconController(
-			'openregister',
 			$this->request,
 			new MdiIconSvg()
 		);

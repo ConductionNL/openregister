@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`clear dialog audit renders with clearing false 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Audit Trails">
+"<x-ncdialog name="Confirm Clear Audit Trails" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Audit Trails</h3>
@@ -24,7 +24,7 @@ exports[`clear dialog audit renders with clearing false 1`] = `
 `;
 
 exports[`clear dialog audit renders with clearing true 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Audit Trails">
+"<x-ncdialog name="Confirm Clear Audit Trails" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Audit Trails</h3>
@@ -47,7 +47,7 @@ exports[`clear dialog audit renders with clearing true 1`] = `
 `;
 
 exports[`clear dialog blob renders with clearing false 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Blob Objects">
+"<x-ncdialog name="Confirm Clear Blob Objects" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
@@ -71,7 +71,7 @@ exports[`clear dialog blob renders with clearing false 1`] = `
 `;
 
 exports[`clear dialog blob renders with clearing true 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Blob Objects">
+"<x-ncdialog name="Confirm Clear Blob Objects" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
@@ -95,7 +95,7 @@ exports[`clear dialog blob renders with clearing true 1`] = `
 `;
 
 exports[`clear dialog search renders with clearing false 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Search Trails">
+"<x-ncdialog name="Confirm Clear Search Trails" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Search Trails</h3>
@@ -118,7 +118,7 @@ exports[`clear dialog search renders with clearing false 1`] = `
 `;
 
 exports[`clear dialog search renders with clearing true 1`] = `
-"<x-ncdialog open="true" name="Confirm Clear Search Trails">
+"<x-ncdialog name="Confirm Clear Search Trails" size="small" noclose="false" class="" open="true">
   <slot-default>
     <div class="clear-dialog-content">
       <h3>⚠️ Confirm Clear All Search Trails</h3>

@@ -50,7 +50,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Support\PermissionBit;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -141,11 +140,18 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	private array $notInheritable = [];
 
 	/**
-	 * Reads what a share declares about a grant.
+	 * Reads what a share declares about a grant; stateless, made on first use.
 	 *
-	 * @var ShareGrantAttributes
+	 * @var ShareGrantAttributes|null
 	 */
-	private ShareGrantAttributes $shareAttributes;
+	private ?ShareGrantAttributes $shareAttributes = null;
+
+	/**
+	 * Keeps the shares that are on their object's stored folder; made on first use.
+	 *
+	 * @var StoredFolderShares|null
+	 */
+	private ?StoredFolderShares $storedFolderShares = null;
 
 	/**
 	 * Constructor.
@@ -161,8 +167,16 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		private readonly ContainerInterface $container,
 		private readonly ?HierarchyGrantExpander $hierarchy = null,
 	) {
-		$this->shareAttributes = new ShareGrantAttributes();
 	}//end __construct()
+
+	/**
+	 * The reader of what a share declares about a grant.
+	 *
+	 * @return ShareGrantAttributes The reader.
+	 */
+	private function shareAttributes(): ShareGrantAttributes {
+		return $this->shareAttributes ??= new ShareGrantAttributes();
+	}//end shareAttributes()
 
 	/**
 	 * The object UUIDs granted to a caller, mapped to the permission bitmask.
@@ -198,8 +212,6 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * @return array<string, int> Object UUID => core permission bitmask.
 	 */
 	private function resolve(string $userId): array {
-		$granted = [];
-
 		$manager = $this->shareManager();
 		if ($manager === null) {
 			// Fail CLOSED: an unreachable share manager means "no grants", which
@@ -212,16 +224,15 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			return [];
 		}
 
+		$run = new ShareGrantRun(manager: $manager, userId: $userId);
 		foreach (self::PRINCIPAL_SHARE_TYPES as $shareType) {
-			$this->collectForType(
-				manager: $manager,
-				userId: $userId,
-				shareType: $shareType,
-				granted: $granted
-			);
+			$run->shareType = $shareType;
+			$this->collectForType(run: $run);
 		}
 
-		return $this->expandDownHierarchies(granted: $granted);
+		$this->admitCandidates(run: $run);
+
+		return $this->expandDownHierarchies(granted: $run->granted);
 	}//end resolve()
 
 	/**
@@ -352,22 +363,26 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Whether one object is granted to the caller for one action.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object's UUID.
-	 * @param string $action The action being decided.
+	 * @param GrantLookup $lookup The caller and the object's UUID.
+	 * @param string      $action The action being decided.
 	 *
 	 * @return bool True when a grant exists that carries the action's permission.
 	 */
-	public function isGranted(?string $userId, ?string $objectUuid, string $action = 'read'): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		return array_key_exists(
-			$objectUuid,
-			$this->grantedObjectUuidsFor(userId: $userId, action: $action)
-		);
+	public function isGranted(GrantLookup $lookup, string $action = 'read'): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& array_key_exists((string)$lookup->objectUuid, $this->grantedObjectUuidsFor(userId: $lookup->userId, action: $action));
 	}//end isGranted()
+
+	/**
+	 * Whether a uuid names an object at all; no grant answers for a missing one.
+	 *
+	 * @param string|null $objectUuid The object.
+	 *
+	 * @return bool False for null and for the empty string.
+	 */
+	private function namesAnObject(?string $objectUuid): bool {
+		return $objectUuid !== null && $objectUuid !== '';
+	}//end namesAnObject()
 
 	/**
 	 * Forget the memoised grants.
@@ -405,101 +420,143 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	/**
 	 * Page through one share type, adding folder shares to the grant map.
 	 *
-	 * @param IManager $manager Core share manager.
-	 * @param string $userId The caller.
-	 * @param integer $shareType One of PRINCIPAL_SHARE_TYPES.
-	 * @param array<string, int> $granted Grant map, modified in place.
+	 * @param ShareGrantRun $run The manager, the caller, the share type, and the grant map it fills.
 	 *
 	 * @return void
 	 */
-	private function collectForType(IManager $manager, string $userId, int $shareType, array &$granted): void {
+	private function collectForType(ShareGrantRun $run): void {
 		$page = 0;
 		while ($page < self::MAX_PAGES) {
-			$shares = $this->readPage(manager: $manager, userId: $userId, shareType: $shareType, page: $page);
-			if (empty($shares) === true) {
-				return;
-			}
-
-			foreach ($shares as $share) {
-				$this->absorbShare(share: $share, granted: $granted);
-			}
-
-			if (count($shares) < self::PAGE_SIZE) {
+			if ($this->absorbPage(run: $run, shares: $this->readPage(run: $run, page: $page)) === false) {
 				return;
 			}
 
 			$page++;
-		}//end while
+		}
 
+		$this->warnPagingBound(run: $run);
+	}//end collectForType()
+
+	/**
+	 * Say that the paging bound was hit, so some grants of this type were not read.
+	 *
+	 * @param ShareGrantRun $run The run: its share type.
+	 *
+	 * @return void
+	 */
+	private function warnPagingBound(ShareGrantRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectGrantResolver] Hit the share paging bound; some grants were NOT read',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'shareType' => $shareType,
+				'shareType' => $run->shareType,
 				'bound' => (self::PAGE_SIZE * self::MAX_PAGES),
 			]
 		);
-	}//end collectForType()
+	}//end warnPagingBound()
+
+	/**
+	 * Add one page of shares to the run's candidates, and say whether another page may follow.
+	 *
+	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
+	 * @param IShare[]      $shares The page.
+	 *
+	 * @return bool True when the page was full, so the next one must be read.
+	 */
+	private function absorbPage(ShareGrantRun $run, array $shares): bool {
+		if (empty($shares) === true) {
+			return false;
+		}
+
+		foreach ($shares as $share) {
+			$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
+			if ($uuid !== null) {
+				$run->candidates[] = [$uuid, $share];
+			}
+		}
+
+		return count($shares) >= self::PAGE_SIZE;
+	}//end absorbPage()
 
 	/**
 	 * Read one page of one share type, or nothing when the read failed.
 	 *
-	 * @param IManager $manager Core share manager.
-	 * @param string $userId The caller.
-	 * @param integer $shareType One of PRINCIPAL_SHARE_TYPES.
-	 * @param integer $page Zero-based page number.
+	 * @param ShareGrantRun $run  The manager, the caller and the share type.
+	 * @param integer       $page Zero-based page number.
 	 *
 	 * @return IShare[] The shares, empty when the type must be skipped.
 	 */
-	private function readPage(IManager $manager, string $userId, int $shareType, int $page): array {
+	private function readPage(ShareGrantRun $run, int $page): array {
 		try {
-			return $manager->getSharedWith(
-				$userId,
-				$shareType,
+			return $run->manager->getSharedWith(
+				$run->userId,
+				$run->shareType,
 				null,
 				self::PAGE_SIZE,
 				($page * self::PAGE_SIZE)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'shareType' => $shareType,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->warnUnreadableType(run: $run, error: $e);
 			return [];
 		}
 	}//end readPage()
 
 	/**
-	 * Add one share to the grant map, when it is a folder share on an object.
+	 * Say that the shares of one type could not be read, so the type is skipped.
 	 *
-	 * @param IShare $share The share.
-	 * @param array<string, int> $granted Grant map, modified in place.
+	 * @param ShareGrantRun $run   The run: its share type.
+	 * @param Throwable     $error Why the read failed.
 	 *
 	 * @return void
 	 */
-	private function absorbShare(IShare $share, array &$granted): void {
-		$uuid = $this->shareAttributes->objectUuidOf(share: $share);
-		if ($uuid === null) {
-			return;
-		}
+	private function warnUnreadableType(ShareGrantRun $run, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectGrantResolver] Could not read shares for a type; skipping it',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'shareType' => $run->shareType,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnUnreadableType()
 
+	/**
+	 * Grant each candidate share whose node is the folder stored for its object.
+	 *
+	 * @param ShareGrantRun $run The run whose candidates are checked and whose grant map takes them.
+	 *
+	 * @return void
+	 */
+	private function admitCandidates(ShareGrantRun $run): void {
+		$this->storedFolderShares ??= new StoredFolderShares(logger: $this->logger, container: $this->container);
+		foreach ($this->storedFolderShares->admitted(candidates: $run->candidates) as [$uuid, $share]) {
+			$this->absorbShare(uuid: $uuid, share: $share, run: $run);
+		}
+	}//end admitCandidates()
+
+	/**
+	 * Add one share to the grant map for the object it was admitted on.
+	 *
+	 * @param string        $uuid  The object the share grants.
+	 * @param IShare        $share The share.
+	 * @param ShareGrantRun $run   The run whose grant map takes the share.
+	 *
+	 * @return void
+	 */
+	private function absorbShare(string $uuid, IShare $share, ShareGrantRun $run): void {
 		// A caller may hold several grants on one object (directly and
 		// through a group). The widest wins, which is how core itself
 		// composes overlapping shares.
-		$existing = ($granted[$uuid] ?? 0);
-		$granted[$uuid] = ($existing | $share->getPermissions());
+		$existing = ($run->granted[$uuid] ?? 0);
+		$run->granted[$uuid] = ($existing | $share->getPermissions());
 
 		// Extension verbs ride in IShare's attribute bag (ADR-010), not
 		// in the permission integer, because core's bitmask has no room
 		// for a verb it does not define. Unioned across overlapping
 		// grants for the same reason the bitmask is.
-		$verbs = $this->shareAttributes->verbsOf(share: $share);
+		$verbs = $this->shareAttributes()->verbsOf(share: $share);
 		if (empty($verbs) === false) {
 			$this->verbs[$uuid] = array_values(
 				array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
@@ -517,7 +574,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		// nothing: the two together are an administrator who wrote
 		// "not below here" once, and the widest-wins rule that composes
 		// the BITMASK must not quietly overrule that.
-		if ($this->shareAttributes->inheritableOf(share: $share) === false) {
+		if ($this->shareAttributes()->inheritableOf(share: $share) === false) {
 			$this->notInheritable[$uuid] = true;
 		}
 	}//end absorbShare()
@@ -535,18 +592,14 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 * evaluator finite and reviewable. An extension verb is asked for by the
 	 * endpoint that performs the action, and only there.
 	 *
-	 * @param string|null $userId The caller.
-	 * @param string|null $objectUuid The object.
-	 * @param string $verb The extension verb, e.g. `use`.
+	 * @param GrantLookup $lookup The caller and the object.
+	 * @param string      $verb   The extension verb, e.g. `use`.
 	 *
 	 * @return bool True when a grant to this caller carries that verb.
 	 */
-	public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool {
-		if ($objectUuid === null || $objectUuid === '') {
-			return false;
-		}
-
-		return in_array($verb, $this->verbsHeldOn(userId: $userId, objectUuid: $objectUuid), true);
+	public function grantCarriesVerb(GrantLookup $lookup, string $verb): bool {
+		return $this->namesAnObject(objectUuid: $lookup->objectUuid) === true
+			&& in_array($verb, $this->verbsHeldOn(userId: $lookup->userId, objectUuid: (string)$lookup->objectUuid), true);
 	}//end grantCarriesVerb()
 
 	/**

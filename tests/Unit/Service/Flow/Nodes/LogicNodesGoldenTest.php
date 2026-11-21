@@ -107,7 +107,7 @@ final class LogicNodesGoldenTest extends TestCase {
 			new ExplodeNode(l10n: $l10n, urls: $urls),
 			new FilterNode(l10n: $l10n, urls: $urls),
 			new FlowStateNode(l10n: $l10n, urls: $urls),
-			new IterateNode($l10n, $urls, $this->createMock(ContainerInterface::class)),
+			new IterateNode(new FlowNodePresentation(l10n: $l10n, urls: $urls), $this->createMock(ContainerInterface::class)),
 			new MapNode(
 				l10n: $l10n,
 				urls: $urls,
@@ -118,10 +118,8 @@ final class LogicNodesGoldenTest extends TestCase {
 			new RouterNode(l10n: $l10n, urls: $urls),
 			new SetFieldsNode(l10n: $l10n, urls: $urls),
 			new SubFlowNode(
-				resolvers: $this->createMock(FlowLocator::class),
-				runs: $this->createMock(FlowRunServiceInterface::class),
-				l10n: $l10n,
-				urls: $urls
+				execution: new \OCA\OpenRegister\Service\Flow\FlowExecution($this->createMock(FlowLocator::class), $this->createMock(FlowRunServiceInterface::class), new \Psr\Log\NullLogger()),
+				presentation: new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($l10n, $urls)
 			),
 			new SwitchNode(l10n: $l10n, urls: $urls),
 			new WaitNode(l10n: $l10n, urls: $urls),

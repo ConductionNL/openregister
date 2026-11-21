@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\BackgroundJob\ImportPreviewRunner;
 use OCA\OpenRegister\Controller\ImportPreviewController;
 use OCA\OpenRegister\Db\ImportPreview;
@@ -276,10 +277,10 @@ final class ImportPreviewAccessGoldenTest extends TestCase {
 		$this->upload = null;
 		$seen = [];
 		$this->service->method('commit')->willReturnCallback(
-			function (ImportPreview $given, ?string $hash, $who) use (&$seen, $preview, $user): ImportPreview {
+			function (ImportPreview $given, ImportCommit $commit) use (&$seen, $preview, $user): ImportPreview {
 				$this->assertSame($preview, $given);
-				$this->assertSame($user, $who);
-				$seen[] = $hash;
+				$this->assertSame($user, $commit->currentUser);
+				$seen[] = $commit->sourceHash;
 				return $given;
 			}
 		);

@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;

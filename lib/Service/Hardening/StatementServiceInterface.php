@@ -43,10 +43,7 @@ interface StatementServiceInterface {
 	/**
 	 * Publish a statement, or a new version of one.
 	 *
-	 * @param string $version The version, as the administrator writes it.
-	 * @param string $body    The text a user reads.
-	 * @param string $title   The heading above it.
-	 * @param string $userId  Who published it.
+	 * @param StatementPublication $publication The version, the text, the heading and who published it; trimmed before use.
 	 *
 	 * @return array{version: string, title: string, body: string, publishedAt: string, publishedBy: string} The statement now in force.
 	 *
@@ -54,7 +51,7 @@ interface StatementServiceInterface {
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-published-statement-is-accepted-before-use-per-version-req-ihc-001
 	 */
-	public function publish(string $version, string $body, string $title = '', string $userId = ''): array;
+	public function publish(StatementPublication $publication): array;
 
 	/**
 	 * Withdraw the statement, so nothing is asked.

@@ -28,9 +28,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
+use OCA\OpenRegister\BackgroundJob\Support\RetentionDependantPlace;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -128,10 +127,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 				foreach (array_chunk($rows, self::BATCH) as $batch) {
 					$changed += $this->recalculateBatch(
 						batch: $batch,
-						uuid: $uuid,
-						relation: $dependant['relation'],
-						register: $register,
-						schema: $schema
+						place: new RetentionDependantPlace(sourceUuid: $uuid, relation: $dependant['relation'], register: $register, schema: $schema)
 					);
 				}
 			}//end foreach
@@ -143,53 +139,79 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	/**
 	 * Recalculate one batch of candidate dependants.
 	 *
+	 * @param list<ObjectEntity>      $batch The candidates
+	 * @param RetentionDependantPlace $place The source they refer to and where they live
+	 *
+	 * @return int How many got a new destruction date
+	 */
+	private function recalculateBatch(array $batch, RetentionDependantPlace $place): int {
+		$changed = 0;
+		foreach ($batch as $object) {
+			if ($this->recalculateOne(object: $object, place: $place) === true) {
+				$changed++;
+			}
+		}
+
+		return $changed;
+	}//end recalculateBatch()
+
+	/**
+	 * Recalculate one candidate dependant; a failure is logged, not thrown.
+	 *
 	 * A candidate found through the relation index may point at the source
 	 * from another property; only one whose derivation reference is the
 	 * source is recalculated.
 	 *
-	 * @param list<ObjectEntity> $batch    The candidates
-	 * @param string             $uuid     The source record's uuid
-	 * @param string             $relation The property holding the reference
-	 * @param Register           $register The register the candidates live in
-	 * @param Schema             $schema   Their schema
+	 * @param ObjectEntity            $object The candidate
+	 * @param RetentionDependantPlace $place  The source it refers to and where it lives
 	 *
-	 * @return int How many got a new destruction date
+	 * @return bool True when it got a new destruction date
 	 */
-	private function recalculateBatch(array $batch, string $uuid, string $relation, Register $register, Schema $schema): int {
-		$changed = 0;
-		foreach ($batch as $object) {
-			$reference = $this->rules->calculator->referenceOf(value: (($object->getObject() ?? [])[$relation] ?? null));
-			if ($reference === null || str_ends_with($reference, $uuid) === false) {
-				continue;
-			}
+	private function recalculateOne(ObjectEntity $object, RetentionDependantPlace $place): bool {
+		$reference = $this->rules->calculator->referenceOf(value: (($object->getObject() ?? [])[$place->relation] ?? null));
+		if ($reference === null || str_ends_with($reference, $place->sourceUuid) === false) {
+			return false;
+		}
 
-			try {
-				// The relation lookup fills only name and data; an update writes the whole row.
-				$stored = $this->lookup->objectMapper->find(
-					identifier: (string)$object->getUuid(),
-					register: $register,
-					schema: $schema,
-					_rbac: false,
-					_multitenancy: false
-				);
-				if ($this->rules->retention->followSourceDate(object: $stored, schema: $schema) === false) {
-					continue;
-				}
+		try {
+			return $this->storeFollowed(object: $object, place: $place);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				sprintf(
+					'[RelatedRetentionRecalculationJob] could not recalculate %s from %s: %s',
+					(string)$object->getUuid(),
+					$place->sourceUuid,
+					$failure->getMessage()
+				)
+			);
 
-				$this->lookup->objectMapper->update(entity: $stored, register: $register, schema: $schema);
-				$changed++;
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					sprintf(
-						'[RelatedRetentionRecalculationJob] could not recalculate %s from %s: %s',
-						(string)$object->getUuid(),
-						$uuid,
-						$failure->getMessage()
-					)
-				);
-			}//end try
-		}//end foreach
+			return false;
+		}
+	}//end recalculateOne()
 
-		return $changed;
-	}//end recalculateBatch()
+	/**
+	 * Re-read one dependant whole, let its destruction date follow the source and store it when it moved.
+	 *
+	 * @param ObjectEntity            $object The candidate, as the relation lookup filled it
+	 * @param RetentionDependantPlace $place  Where it lives
+	 *
+	 * @return bool True when it got a new destruction date
+	 */
+	private function storeFollowed(ObjectEntity $object, RetentionDependantPlace $place): bool {
+		// The relation lookup fills only name and data; an update writes the whole row.
+		$stored = $this->lookup->objectMapper->find(
+			identifier: (string)$object->getUuid(),
+			register: $place->register,
+			schema: $place->schema,
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($this->rules->retention->followSourceDate(object: $stored, schema: $place->schema) === false) {
+			return false;
+		}
+
+		$this->lookup->objectMapper->update(entity: $stored, register: $place->register, schema: $place->schema);
+
+		return true;
+	}//end storeFollowed()
 }//end class

@@ -18,7 +18,7 @@ final class FlowControllerFactory {
 	/**
 	 * The constructor arguments of FlowController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param EventCatalogService $eventCatalog Constructor argument.
 	 * @param FlowNodeRegistry $nodes Constructor argument.
@@ -27,6 +27,8 @@ final class FlowControllerFactory {
 	 * @param FlowService $flows Constructor argument.
 	 * @param FlowAccess $access Constructor argument.
 	 * @param FlowVersionService $flowVersionService Constructor argument.
+	 * @param FlowNodeRightsGuardInterface|null $nodeRights The node-rights guard; a real one over \$nodes, \$access and an empty administrator map when null.
+	 * @param FlowBpmnInterchangeInterface|null $bpmn The BPMN interchange; the real one when null.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,22 +42,35 @@ final class FlowControllerFactory {
 		\OCA\OpenRegister\Service\Flow\FlowService $flows,
 		\OCA\OpenRegister\Service\Flow\FlowAccess $access,
 		\OCA\OpenRegister\Service\Flow\FlowVersionService $flowVersionService,
+		?\OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface $nodeRights = null,
+		?\OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface $bpmn = null,
 	): array {
+		if ($nodeRights === null) {
+			$appConfig = (new \PHPUnit\Framework\MockObject\Generator\Generator())->testDouble(
+				type: \OCP\IAppConfig::class,
+				mockObject: false,
+				callOriginalConstructor: false,
+			);
+			$nodeRights = new \OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard(nodes: $nodes, access: $access, appConfig: $appConfig);
+		}
+
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FlowControllerServices(
 				catalogue: new \OCA\OpenRegister\Controller\Support\FlowCatalogue(
 					flowState: $flowState,
 					eventCatalog: $eventCatalog,
-					nodes: $nodes,
-					preflight: $preflight,
-					bpmn: new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange(),
+					nodeTypes: new \OCA\OpenRegister\Controller\Support\FlowNodeTypes(
+						nodes: $nodes,
+						preflight: $preflight,
+					),
+					bpmn: ($bpmn ?? new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange()),
 				),
 				definitions: new \OCA\OpenRegister\Controller\Support\FlowDefinitions(
 					flows: $flows,
 					access: $access,
 					flowVersionService: $flowVersionService,
+					nodeRights: $nodeRights,
 				),
 			),
 		];

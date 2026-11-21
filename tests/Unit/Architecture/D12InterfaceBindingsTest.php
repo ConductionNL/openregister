@@ -187,15 +187,13 @@ final class D12InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * ExtendingFormDeclaration and UniqueConstraintEvaluator: both callers are
-	 * Db code that constructs the class with `new` (the schema entity and a
-	 * schema-mapper refusal helper are not container-built); they are left as
-	 * they are.
+	 * UniqueConstraintEvaluator: its caller is Db code that constructs the
+	 * class with `new` (the schema entity is not container-built); it is left
+	 * as it is.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
 		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
 	];
 

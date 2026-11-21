@@ -37,12 +37,10 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
-use OCP\IGroupManager;
-use OCP\IUserManager;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -65,41 +63,6 @@ use Throwable;
  */
 class PrincipalReachService implements PrincipalReachListerInterface {
 	/**
-	 * The schemas the cascade is asked about.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Grants derived from sign-in claims.
-	 *
-	 * @var DerivedGrantStore
-	 */
-	private readonly DerivedGrantStore $derived;
-
-	/**
-	 * Delegations held by this principal.
-	 *
-	 * @var DelegationGrantMapperInterface
-	 */
-	private readonly DelegationGrantMapperInterface $delegations;
-
-	/**
-	 * Group membership.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Account lookup.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
-	/**
 	 * Wire the authorities the listing reads.
 	 *
 	 * @param PermissionExplanationInterface $permissions The canonical RBAC verdict and its provenance.
@@ -109,15 +72,10 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 	 */
 	public function __construct(
 		private readonly PermissionExplanationInterface $permissions,
-		ReachSources $sources,
-		PrincipalDirectory $directory,
+		private readonly ReachSources $sources,
+		private readonly PrincipalDirectory $directory,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->schemaMapper = $sources->schemaMapper;
-		$this->derived = $sources->derived;
-		$this->delegations = $sources->delegations;
-		$this->groupManager = $directory->groupManager;
-		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**
@@ -157,7 +115,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 
 		return [
 			'principal' => $principal,
-			'exists' => $this->userManager->userExists($principal),
+			'exists' => $this->directory->userManager->userExists($principal),
 			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 			'total' => count($entries),
 			'revocable' => $revocable,
@@ -183,7 +141,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 		foreach ($this->schemas() as $schema) {
 			$actions = [];
 			try {
-				$actions = $this->permissions->permittedActionsFor(schema: $schema, object: null, userId: $principal);
+				$actions = $this->permissions->permittedActionsFor(listing: new VerbListing(schema: $schema, userId: $principal));
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[PrincipalReach] Could not read the permitted actions on a schema',
@@ -199,9 +157,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 			$provenance = [];
 			try {
 				$provenance = $this->permissions->provenanceFor(
-					schema: $schema,
-					actions: $actions,
-					userId: $principal
+					request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $principal, object: null)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning(
@@ -236,13 +192,13 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 	 * @return array<int, array<string, mixed>> The entries.
 	 */
 	private function fromGroups(string $principal): array {
-		$user = $this->userManager->get($principal);
+		$user = $this->directory->userManager->get($principal);
 		if ($user === null) {
 			return [];
 		}
 
 		$entries = [];
-		foreach ($this->groupManager->getUserGroupIds($user) as $groupId) {
+		foreach ($this->directory->groupManager->getUserGroupIds($user) as $groupId) {
 			$entries[] = [
 				'source' => PrincipalReach::SOURCE_GROUP,
 				'revocable' => PrincipalReach::isRevocable(PrincipalReach::SOURCE_GROUP),
@@ -266,7 +222,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 		$entries = [];
 
 		try {
-			$grants = $this->derived->grantsFor(userId: $principal);
+			$grants = $this->sources->derived->grantsFor(userId: $principal);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PrincipalReach] Could not read the derived grants',
@@ -298,7 +254,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 		$now = new DateTime();
 
 		try {
-			$held = $this->delegations->findHeldBy(principal: $principal);
+			$held = $this->sources->delegations->findHeldBy(principal: $principal);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PrincipalReach] Could not read the delegations held',
@@ -335,7 +291,7 @@ class PrincipalReachService implements PrincipalReachListerInterface {
 	 */
 	private function schemas(): array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->sources->schemaMapper->findAll();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[PrincipalReach] Could not list the schemas, so the reach cannot be answered',

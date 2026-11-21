@@ -22,9 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
-use OCA\OpenRegister\Notifications\Db\MessageMapper;
-use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
@@ -34,8 +33,6 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
-use OCA\OpenRegister\Notifications\Service\EmailService;
-use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
@@ -47,6 +44,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolic
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
@@ -58,12 +56,14 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiterInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\ObjectPresenceTracker;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -71,10 +71,6 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
-use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\Files\AppData\IAppDataFactory;
@@ -100,25 +96,23 @@ final class NotificationsWiring {
 		NotificationRuleDispatcherInterface::class => AnnotationNotificationDispatcher::class,
 		NotificationPreferenceServiceInterface::class => NotificationPreferenceService::class,
 		NotificationRecipientResolverInterface::class => NotificationRecipientResolver::class,
-		EmailServiceInterface::class => EmailService::class,
 		NotificationHistoryMapperInterface::class => NotificationHistoryMapper::class,
 		TaskNotificationRulesInterface::class => TaskNotificationRules::class,
 		RateLimiterInterface::class => RateLimiter::class,
 		OptOutAuthorityInterface::class => OptOutAuthority::class,
 		WatcherMapperInterface::class => WatcherMapper::class,
-		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 		TimelineVisibilityServiceInterface::class => TimelineVisibilityService::class,
 		NcNotificationSenderInterface::class => NcNotificationSender::class,
 		PresenceServiceInterface::class => PresenceService::class,
+		ObjectPresenceInterface::class => ObjectPresenceTracker::class,
 		NotificationTemplatingInterface::class => NotificationTemplating::class,
-		CloudEventFormatterInterface::class => CloudEventFormatter::class,
 		TalkSenderInterface::class => TalkSender::class,
 		PublicTimelineInterface::class => PublicTimeline::class,
 		QueuedNotificationMapperInterface::class => QueuedNotificationMapper::class,
 		EmailSenderInterface::class => EmailSender::class,
-		MessageMapperInterface::class => MessageMapper::class,
 		NotificationPreferencesInterface::class => NotificationPreferenceService::class,
 		NotificationClearingServiceInterface::class => NotificationClearingService::class,
+		ReadNoticeClearingInterface::class => NotificationClearingService::class,
 		NotificationChannelPolicyInterface::class => NotificationChannelPolicy::class,
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
@@ -136,6 +130,12 @@ final class NotificationsWiring {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		$context->registerService(HexIconService::class, self::buildHexIconService(...));
+
+		// One recorder for the whole container, so what it counted survives
+		// the dispatcher instance that counted it: the dispatcher reads it from
+		// its DeliveryLedger, which the container autowires with this one
+		// (a-rule-that-reaches-nobody-says-so, task 3.1).
+		$context->registerService(RuleReachRecorder::class, self::buildRuleReachRecorder(...), true);
 
 		// The entries beside the objects. A provider of its own, because a Woo
 		// request asks for every mention of a subject and the answer is a
@@ -161,4 +161,17 @@ final class NotificationsWiring {
 			logger: $container->get(LoggerInterface::class)
 		);
 	}//end buildHexIconService()
+
+	/**
+	 * Build the one RuleReachRecorder of this container.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return RuleReachRecorder
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
+	 */
+	private static function buildRuleReachRecorder(ContainerInterface $container): RuleReachRecorder {
+		return new RuleReachRecorder(logger: $container->get(LoggerInterface::class));
+	}//end buildRuleReachRecorder()
 }//end class

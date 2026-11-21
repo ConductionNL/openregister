@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
+use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
+
 /**
  * Contract => service map for schemas.
  *
@@ -37,5 +40,8 @@ final class SchemasBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Schemas\ExtendingFormValidatorInterface::class => \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration::class,
+		SchemaRevalidatorInterface::class => SchemaRevalidationService::class,
+	];
 }//end class

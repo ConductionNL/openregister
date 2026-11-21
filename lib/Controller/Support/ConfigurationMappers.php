@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 
 /**
  * The mappers and repositories of the configuration API.
@@ -33,12 +33,12 @@ final class ConfigurationMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
+	 * @param ConfigurationMapperInterface $configurationMapper Configuration mapper
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly ConfigurationMapper $configurationMapper,
+		public readonly ConfigurationMapperInterface $configurationMapper,
 	) {
 	}//end __construct()
 }//end class

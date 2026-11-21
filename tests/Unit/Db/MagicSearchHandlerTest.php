@@ -18,6 +18,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Unit tests for MagicSearchHandler comparison-operator filter support.
@@ -59,7 +64,8 @@ class MagicSearchHandlerTest extends TestCase {
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			searchProfile: new PropertySearchProfile()
 		);
 	}//end setUp()
 
@@ -84,7 +90,7 @@ class MagicSearchHandlerTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
 
-		return $method->invoke($this->handler, $query, $schema, $connection, $isPostgres);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: $isPostgres));
 	}//end invokeMethod()
 
 	/**
@@ -482,7 +488,7 @@ class MagicSearchHandlerTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
 		$method->setAccessible(true);
-		$entity = $method->invoke($this->handler, $row, $register, $schema, '');
+		$entity = $method->invoke($this->handler, $row, new TableSearch(table: new RegisterSchema(register: $register, schema: $schema), tableName: ''));
 
 		return ($entity?->getObject() ?? []);
 	}//end invokeConvertRow()

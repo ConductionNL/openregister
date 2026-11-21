@@ -51,27 +51,27 @@ class MagicNumberColumnTest extends TestCase {
 	}//end testMultipleOfSetsTheScale()
 
 	public function testFiveGramsFitsTheDefaultColumn(): void {
-		$this->assertNull($this->column->refusal(value: 0.005, precision: 20, scale: 6));
-		$this->assertNull($this->column->refusal(value: '0.005', precision: 20, scale: 6));
+		$this->assertNull($this->column->refusal(value: 0.005, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($this->column->refusal(value: '0.005', size: ['precision' => 20, 'scale' => 6]));
 	}//end testFiveGramsFitsTheDefaultColumn()
 
 	public function testFiveGramsDoesNotFitTwoDecimals(): void {
-		$this->assertNotNull($this->column->refusal(value: 0.005, precision: 10, scale: 2));
-		$this->assertNotNull($this->column->refusal(value: '0.005', precision: 10, scale: 2));
+		$this->assertNotNull($this->column->refusal(value: 0.005, size: ['precision' => 10, 'scale' => 2]));
+		$this->assertNotNull($this->column->refusal(value: '0.005', size: ['precision' => 10, 'scale' => 2]));
 	}//end testFiveGramsDoesNotFitTwoDecimals()
 
 	public function testFloatNoiseIsNotRefused(): void {
-		$this->assertNull($this->column->refusal(value: 0.1 + 0.2, precision: 20, scale: 6));
-		$this->assertNull($this->column->refusal(value: 12.5, precision: 16, scale: 2));
+		$this->assertNull($this->column->refusal(value: 0.1 + 0.2, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($this->column->refusal(value: 12.5, size: ['precision' => 16, 'scale' => 2]));
 	}//end testFloatNoiseIsNotRefused()
 
 	public function testTooManyDecimalsOrDigitsAreRefused(): void {
-		$this->assertNotNull($this->column->refusal(value: 0.0000001, precision: 20, scale: 6));
-		$this->assertNotNull($this->column->refusal(value: '1.0E-7', precision: 20, scale: 6));
-		$this->assertNotNull($this->column->refusal(value: 1.0E15, precision: 20, scale: 6));
-		$this->assertNotNull($this->column->refusal(value: 100000000000000, precision: 20, scale: 6));
-		$this->assertNull($this->column->refusal(value: 99999999999999, precision: 20, scale: 6));
-		$this->assertNull($this->column->refusal(value: 'not a number', precision: 20, scale: 6));
+		$this->assertNotNull($this->column->refusal(value: 0.0000001, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNotNull($this->column->refusal(value: '1.0E-7', size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNotNull($this->column->refusal(value: 1.0E15, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNotNull($this->column->refusal(value: 100000000000000, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($this->column->refusal(value: 99999999999999, size: ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($this->column->refusal(value: 'not a number', size: ['precision' => 20, 'scale' => 6]));
 	}//end testTooManyDecimalsOrDigitsAreRefused()
 
 	public function testARowIsCheckedAgainstTheColumnsActualSize(): void {
@@ -86,9 +86,9 @@ class MagicNumberColumnTest extends TestCase {
 	}//end testARowThatFitsItsColumnsPasses()
 
 	public function testAnOldTwoDecimalColumnIsWidenedNeverNarrowed(): void {
-		$this->assertSame(['precision' => 20, 'scale' => 6], $this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 10, 'scale' => 2], precision: 20, scale: 6));
-		$this->assertSame(['precision' => 16, 'scale' => 2], $this->column->widening(currentColumn: ['type' => 'decimal', 'precision' => 10, 'scale' => 2], precision: 16, scale: 2));
-		$this->assertNull($this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 20, 'scale' => 6], precision: 17, scale: 3));
-		$this->assertNull($this->column->widening(currentColumn: ['type' => 'text', 'precision' => null, 'scale' => null], precision: 20, scale: 6));
+		$this->assertSame(['precision' => 20, 'scale' => 6], $this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 10, 'scale' => 2], required: ['precision' => 20, 'scale' => 6]));
+		$this->assertSame(['precision' => 16, 'scale' => 2], $this->column->widening(currentColumn: ['type' => 'decimal', 'precision' => 10, 'scale' => 2], required: ['precision' => 16, 'scale' => 2]));
+		$this->assertNull($this->column->widening(currentColumn: ['type' => 'numeric', 'precision' => 20, 'scale' => 6], required: ['precision' => 17, 'scale' => 3]));
+		$this->assertNull($this->column->widening(currentColumn: ['type' => 'text', 'precision' => null, 'scale' => null], required: ['precision' => 20, 'scale' => 6]));
 	}//end testAnOldTwoDecimalColumnIsWidenedNeverNarrowed()
 }//end class

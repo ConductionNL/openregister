@@ -22,19 +22,21 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
+
 /**
  * The review policy of one schema, or of the instance for files without one.
  *
- * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
-final class ReviewPolicy {
+final class ReviewPolicy implements ReviewPolicyInterface {
 
 	/**
 	 * The schema configuration key.
@@ -86,7 +88,7 @@ final class ReviewPolicy {
 	 *
 	 * @return self The policy.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public static function fromDeclaration(mixed $declaration): self {
 		if (is_array($declaration) === false) {
@@ -95,26 +97,37 @@ final class ReviewPolicy {
 
 		$ownership = ($declaration['ownership'] ?? self::OWNERSHIP_OPEN);
 
+		return new self(
+			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
+			supervisors: self::supervisorsOf(declared: ($declaration['supervisors'] ?? [])),
+			hideOthers: (($declaration['hideOthers'] ?? false) === true)
+		);
+	}//end fromDeclaration()
+
+	/**
+	 * The declared supervisor groups, trimmed, without blanks or repeats, in order.
+	 *
+	 * @param mixed $declared The declared supervisors.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private static function supervisorsOf(mixed $declared): array {
 		$supervisors = [];
-		foreach ((array)($declaration['supervisors'] ?? []) as $group) {
+		foreach ((array)$declared as $group) {
 			if (is_string($group) === true && trim($group) !== '') {
 				$supervisors[trim($group)] = true;
 			}
 		}
 
-		return new self(
-			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
-			supervisors: array_keys($supervisors),
-			hideOthers: (($declaration['hideOthers'] ?? false) === true)
-		);
-	}//end fromDeclaration()
+		return array_keys($supervisors);
+	}//end supervisorsOf()
 
 	/**
 	 * Whether a decision belongs to the person who took it.
 	 *
 	 * @return bool True for `decider` ownership.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function isDeciderOwned(): bool {
 		return $this->deciderOwned;
@@ -125,7 +138,7 @@ final class ReviewPolicy {
 	 *
 	 * @return array<string> Group ids.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function getSupervisors(): array {
 		return $this->supervisors;
@@ -136,7 +149,7 @@ final class ReviewPolicy {
 	 *
 	 * @return bool True when hiding is on.
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function hidesOthers(): bool {
 		return $this->hideOthers;
@@ -147,7 +160,7 @@ final class ReviewPolicy {
 	 *
 	 * @return array{ownership: string, supervisors: array<string>, hideOthers: bool}
 	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function toArray(): array {
 		$ownership = self::OWNERSHIP_OPEN;

@@ -24,10 +24,14 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistory;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Db\RecipientNotice;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\PrincipalDirectory;
+use OCP\IUserManager;
+use OCP\IGroupManager;
 
 /**
  * Doing the work empties the bell, and archiving is never reading.
@@ -72,7 +76,7 @@ class NotificationClearingServiceTest extends TestCase {
 
 		return new NotificationClearingService(
 			mapper: $this->mapper,
-			userSession: $session,
+			principals: new PrincipalDirectory($this->createMock(IUserManager::class), $this->createMock(IGroupManager::class), $session),
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
@@ -141,6 +145,22 @@ class NotificationClearingServiceTest extends TestCase {
 	}//end testOpeningATabClearsOnlyThatTab()
 
 	/**
+	 * A sub-resource opened anonymously, or without an id, clears nothing.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 */
+	public function testASubResourceClearsOnlyTheCallersOwnNotices(): void {
+		$this->mapper->expects($this->never())->method('markReadForSubject');
+
+		$this->assertSame(0, $this->serviceAs(null)->clearForSubResource(objectUuid: 'uuid-case-1', subjectId: 'files'));
+		$this->assertSame(0, $this->serviceAs('alice')->clearForSubResource(objectUuid: 'uuid-case-1', subjectId: ''));
+		$this->assertSame(0, $this->serviceAs('alice')->clearForSubResource(objectUuid: '', subjectId: 'files'));
+
+	}//end testASubResourceClearsOnlyTheCallersOwnNotices()
+
+	/**
 	 * An anonymous read clears nothing, and asks nothing.
 	 *
 	 * @return void
@@ -172,7 +192,7 @@ class NotificationClearingServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('markReadForSubject');
 		$this->mapper->expects($this->once())
 			->method('archive')
-			->with($this->equalTo(42), $this->equalTo('alice'));
+			->with($this->equalTo(new RecipientNotice(42, 'alice')));
 
 		$row = $this->serviceAs('alice')->archive(id: 42);
 

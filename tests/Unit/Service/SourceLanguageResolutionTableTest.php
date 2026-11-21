@@ -14,7 +14,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\LanguageMetaSubject;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\SourceLanguageLookup;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -44,6 +46,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Object\PropertySourceLanguage
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\LanguageMetaSubject
+ * @uses \OCA\OpenRegister\Service\SourceLanguageLookup
  */
 class SourceLanguageResolutionTableTest extends TestCase {
 
@@ -93,8 +97,8 @@ class SourceLanguageResolutionTableTest extends TestCase {
 		$this->assertSame(
 			[$expected, $expected],
 			[
-				$service->resolveSourceLanguage($schema, $object, 'title', $default),
-				$renderSide->invoke($render, $schema, $body, 'title', $default),
+				$service->resolveSourceLanguage(new SourceLanguageLookup($schema, $object, 'title', $default)),
+				$renderSide->invoke($render, new LanguageMetaSubject(entity: $object, schema: $schema, registerDefault: $default, preResolveData: $body), 'title'),
 			]
 		);
 	}//end testBothSidesResolveTheSameLanguage()

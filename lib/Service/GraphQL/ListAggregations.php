@@ -24,6 +24,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use RuntimeException;
 
 /**
@@ -163,15 +165,29 @@ final class ListAggregations {
 
 		try {
 			return $this->runner->run(
-				registerRef: (string)$request->register->getSlug(),
-				schemaRef: (string)$request->schema->getSlug(),
-				name: $name,
-				extraFilter: $request->propertyFilter()
+				ref: self::aggregationRef(request: $request, name: $name),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $request->propertyFilter())
 			);
 		} catch (NotAuthorizedException | RuntimeException $e) {
 			throw new Error($e->getMessage());
 		}
 	}//end declared()
+
+	/**
+	 * The named aggregation on the listed register and schema.
+	 *
+	 * @param ListRequest $request The list request, with a register.
+	 * @param string      $name    The aggregation's name.
+	 *
+	 * @return NamedAggregationRef The reference.
+	 */
+	private static function aggregationRef(ListRequest $request, string $name): NamedAggregationRef {
+		return new NamedAggregationRef(
+			register: (string)$request->register->getSlug(),
+			schema: (string)$request->schema->getSlug(),
+			name: $name
+		);
+	}//end aggregationRef()
 
 	/**
 	 * Map engine buckets onto the GraphQL `GroupBucket` shape.

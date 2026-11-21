@@ -18,7 +18,7 @@ final class AuditTrailControllerFactory {
 	/**
 	 * The constructor arguments of AuditTrailController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param LogService $logService Constructor argument.
 	 * @param AuditTrailMapper $auditTrailMapper Constructor argument.
@@ -46,7 +46,6 @@ final class AuditTrailControllerFactory {
 		?\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker $revealMasker = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AuditTrailControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\AuditTrailMappers(

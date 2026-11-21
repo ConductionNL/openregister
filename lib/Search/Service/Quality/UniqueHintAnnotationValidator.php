@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
+
 /**
  * Shape validator for the `x-openregister-unique-hint` annotation.
  *

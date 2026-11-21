@@ -8,8 +8,8 @@
  * The provider:
  *   1. Picks a marker convention — e.g. `[or:{objectUuid}]` in the
  *      title — and seeds upstream entities with that marker.
- *   2. Calls `$this->findByMarker($db, 'analytics_report', 'name',
- *      $marker, ['description', 'type'])` to fetch matching rows.
+ *   2. Calls `$this->scanMarker($db, new MarkerScan('analytics_report',
+ *      'name', $marker, ['id', 'description', 'type']))` to fetch matching rows.
  *   3. Returns the rows mapped into the registry leaf row contract.
  *
  * The trait owns the IDBConnection / IQueryBuilder boilerplate so each
@@ -44,34 +44,21 @@ use Throwable;
  */
 trait MarkerLookupTrait {
 	/**
-	 * Find rows in an upstream NC app's table whose marker column
-	 * contains the given marker substring.
+	 * The rows of one marker scan.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param string $table Table name without the `oc_` prefix.
-	 * @param string $markerColumn Column to search the marker in.
-	 * @param string $marker Marker substring (e.g. `[or:UUID]`).
-	 * @param array<int,string> $extraColumns Other columns to return alongside the row.
-	 * @param string $idColumn Primary-key column (default `id`).
+	 * @param IDBConnection $db   NC DB connection.
+	 * @param MarkerScan    $scan The table, marker column, marker and columns to return.
 	 *
 	 * @return array<int,array<string,mixed>> Matching rows.
 	 *
 	 * @spec exclude Shared defensive LIKE-scan helper for leaf list() impls — no standalone contract;
 	 *              the behavioural contract is each leaf provider's list() (annotated to its integration-* change).
 	 */
-	protected function findByMarker(
-		IDBConnection $db,
-		string $table,
-		string $markerColumn,
-		string $marker,
-		array $extraColumns = [],
-		string $idColumn = 'id',
-	): array {
+	protected function scanMarker(IDBConnection $db, MarkerScan $scan): array {
 		try {
 			$qb = $db->getQueryBuilder();
-			$select = array_unique(array_merge([$idColumn, $markerColumn], $extraColumns));
-			$qb->select(...$select)->from($table);
-			$qb->where($qb->expr()->iLike($markerColumn, $qb->createNamedParameter('%' . $marker . '%')));
+			$qb->select(...$scan->selectList())->from($scan->table);
+			$qb->where($qb->expr()->iLike($scan->markerColumn, $qb->createNamedParameter('%' . $scan->marker . '%')));
 
 			return $this->markerRows(result: $qb->executeQuery());
 		} catch (Throwable $e) {
@@ -79,14 +66,14 @@ trait MarkerLookupTrait {
 			// constructor-injected by every using provider, so logging cannot
 			// fail louder than the thing it reports.
 			$this->logger->debug(
-				'[MarkerLookupTrait] ' . $table . '.' . $markerColumn . ' query failed: ' . $e->getMessage(),
+				'[MarkerLookupTrait] ' . $scan->table . '.' . $scan->markerColumn . ' query failed: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 
 			// Schema mismatch / app uninstalled / column missing — empty list (AD-23).
 			return [];
 		}//end try
-	}//end findByMarker()
+	}//end scanMarker()
 
 	/**
 	 * Every row of an executed marker query.

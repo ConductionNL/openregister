@@ -39,6 +39,7 @@
 			"@composer bin all update --ansi"
 		],
 		"check:migration-version": "php scripts/check-migration-version-bump.php",
+		"check:modularity": "python3 tools/sig/modularity_check.py --check && python3 tools/sig/deptrac_areas.py --check && if [ -x vendor-bin/deptrac/vendor/bin/deptrac ]; then tools/sig/deptrac.sh areas --check; else echo 'deptrac SKIPPED, the second reading did not run: composer --working-dir=vendor-bin/deptrac install'; fi",
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
 		"cs:check": "php-cs-fixer fix --dry-run --diff",
 		"cs:fix": "php-cs-fixer fix",
@@ -56,10 +57,12 @@
 		"phpmetrics:violations": "./vendor/bin/phpmetrics --violations-xml=phpmetrics/violations.xml lib/",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always",
 		"test:richdocuments-contract": "./vendor/bin/phpunit -c tests/Contract/Richdocuments/phpunit.xml --no-coverage --colors=always",
+		"test:files-antivirus-contract": "./vendor/bin/phpunit -c tests/Contract/FilesAntivirus/phpunit.xml --no-coverage --colors=always",
 		"test:integration": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Integration suite boots the Nextcloud server (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always; fi",
 		"test:db": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Database suite needs a booted Nextcloud server and a live database (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always; fi",
 		"test:service": "if [ ! -f ../../lib/base.php ]; then echo 'SKIPPED: the Service suite needs a booted Nextcloud server container (../../lib/base.php not found) - run from inside a Nextcloud checkout or in CI'; else ./vendor/bin/phpunit --testsuite=\"Service Tests\" --colors=always; fi",
 		"test:all": "./vendor/bin/phpunit --colors=always",
+		"test:mutation": "vendor-bin/infection/run.sh",
 		"test:docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --colors=always'",
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
 		"test:newman": "bash tests/newman/run-all.sh",
@@ -73,6 +76,12 @@
 		"test:coverage-docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always'",
 		"coverage:check": "php scripts/coverage-guard.php coverage/clover.xml",
 		"coverage:update": "php scripts/coverage-guard.php coverage/clover.xml --update-baseline",
+		"coverage:publish": [
+			"Composer\\Config::disableProcessTimeout",
+			"@php -d pcov.directory=lib ./vendor/bin/phpunit -c phpunit-unit.xml --coverage-clover=coverage/clover.xml --do-not-fail-on-risky",
+			"npm run test:coverage-summary",
+			"@php scripts/coverage-publish.php"
+		],
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
 		"quality:phpmd-score": "phpmd lib/ json phpmd.xml --cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
 		"quality:psalm-score": "./vendor/bin/psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
@@ -86,7 +95,7 @@
 		"openapi": "generate-spec",
 		"check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
-		"check:strict": "E=0; for CMD in lint check:migration-version phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:strict": "E=0; for CMD in lint check:migration-version check:modularity phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"fix": [
 			"@cs:fix"
 		],
@@ -113,7 +122,7 @@
 		"minishlink/web-push": "^11.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
-		"phpseclib/phpseclib": "^3.0.58",
+		"phpseclib/phpseclib": "^4.0.3",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",

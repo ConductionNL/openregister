@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Task;
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md
  */
-final class TaskCalendarDocument {
+final class TaskCalendarDocument implements TaskCalendarDocumentInterface {
 	/**
 	 * The task a calendar document projects, or null when it projects none.
 	 *
@@ -39,9 +39,12 @@ final class TaskCalendarDocument {
 	 *
 	 * @return string|null The task uuid.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TaskCalendarProjector::taskUuidOf is the
+	 * stateless VTODO reader this class stands in front of.
+	 *
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md
 	 */
-	public static function taskUuidOf(string $calendarData): ?string {
+	public function taskUuidOf(string $calendarData): ?string {
 		return TaskCalendarProjector::taskUuidOf(calendarData: $calendarData);
 	}//end taskUuidOf()
 }//end class

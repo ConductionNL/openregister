@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -115,34 +117,6 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	public const TRIGGER_BULK_REGISTER_DELETE = 'bulk_register_delete';
 
 	/**
-	 * Magic-table mapper (row reads, bulk delete, table drop).
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $magicMapper;
-
-	/**
-	 * Register mapper, to resolve register entities.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema mapper, to resolve and delete schema entities.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Audit trail mapper (ADR-003 hash-chained writes).
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
 	 * SchemaDeletionService constructor.
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
@@ -151,13 +125,9 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		SchemaDeletionStores $stores,
+		private readonly SchemaDeletionStores $stores,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->magicMapper = $stores->magicMapper;
-		$this->registerMapper = $stores->registerMapper;
-		$this->schemaMapper = $stores->schemaMapper;
-		$this->auditTrailMapper = $stores->auditTrailMapper;
 	}//end __construct()
 
 	/**
@@ -175,36 +145,44 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 * parameter here on purpose — an override this method accepted would be reachable
 	 * over HTTP the moment a controller passed it through.
 	 *
-	 * @param int $registerId The register id.
-	 * @param int $schemaId The schema id.
-	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
-	 * @param string $triggeredBy Audit trigger context.
+	 * @param RegisterSchemaRef    $table   The register id and the schema id.
+	 * @param TableDeletionOptions $options Hard or soft, and the audit trigger (the bulk delete trigger when unset).
 	 *
 	 * @throws ArchivalImmutableException If the schema declares `x-openregister-archival`.
 	 * @throws Throwable If the register or schema cannot be resolved, or deletion fails.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int} The deletion result.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
-	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
-	public function deleteObjectsBySchema(
-		int $registerId,
-		int $schemaId,
-		bool $hardDelete = false,
-		string $triggeredBy = self::TRIGGER_BULK_DELETE,
-	): array {
-		$register = $this->registerMapper->find(id: $registerId);
-		$schema = $this->schemaMapper->find(id: $schemaId);
+	public function deleteObjectsBySchema(RegisterSchemaRef $table, TableDeletionOptions $options = new TableDeletionOptions()): array {
+		$register = $this->stores->registerMapper->find(id: (int)$table->register);
+		$run      = new TableDeletionRun(register: $register, hardDelete: $options->hardDelete, triggeredBy: ($options->triggeredBy ?? self::TRIGGER_BULK_DELETE));
+
+		return $this->deleteSchemaObjects(run: $run, schemaId: (int)$table->schema);
+	}//end deleteObjectsBySchema()
+
+	/**
+	 * Delete all objects of one schema in the run's register, refusing an archival schema.
+	 *
+	 * @param TableDeletionRun $run      The register, the hard-delete flag and the trigger.
+	 * @param int              $schemaId The schema whose objects are deleted.
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: list<string>, schema_id: int}
+	 *
+	 * @throws ArchivalImmutableException When the schema carries an archival annotation.
+	 * @throws Throwable When the transaction fails (rolled back).
+	 */
+	private function deleteSchemaObjects(TableDeletionRun $run, int $schemaId): array {
+		$schema = $this->stores->schemaMapper->find(id: $schemaId);
 
 		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 
-		$result = $this->deleteInOneTransaction(register: $register, schemas: [$schema], hardDelete: $hardDelete, triggeredBy: $triggeredBy);
+		$result = $this->deleteInOneTransaction(run: $run, schemas: [$schema]);
 
 		return ['deleted_count' => $result['deleted_count'], 'deleted_uuids' => $result['deleted_uuids'], 'schema_id' => $schemaId];
-	}//end deleteObjectsBySchema()
+	}//end deleteSchemaObjects()
 
 	/**
 	 * Resolve the schemas a register lists, the way the retention sweep does.
@@ -245,7 +223,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 */
 	private function listedSchema(Register $register, mixed $schemaId): ?Schema {
 		try {
-			return $this->schemaMapper->find(id: (int)$schemaId);
+			return $this->stores->schemaMapper->find(id: (int)$schemaId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaDeletionService] Register lists a schema that does not resolve; skipped',
@@ -273,34 +251,43 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 * ONE TRANSACTION. The pairs are emptied together or not at all, like phase 1
 	 * of {@see self::cascadeDeleteSchema()}.
 	 *
-	 * @param Register $register The register whose objects are deleted.
-	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
-	 * @param string $triggeredBy Audit trigger context.
+	 * @param Register             $register The register whose objects are deleted.
+	 * @param TableDeletionOptions $options  Hard or soft, and the audit trigger (the bulk register delete trigger when unset).
 	 *
 	 * @throws ArchivalImmutableException If any schema of the register is archival (nothing is deleted).
 	 * @throws Throwable If a delete fails (everything is rolled back).
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int} The deletion result.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
-	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
-	public function deleteObjectsByRegister(
-		Register $register,
-		bool $hardDelete = false,
-		string $triggeredBy = self::TRIGGER_BULK_REGISTER_DELETE,
-	): array {
-		$schemas = $this->resolveSchemasOfRegister(register: $register);
+	public function deleteObjectsByRegister(Register $register, TableDeletionOptions $options = new TableDeletionOptions()): array {
+		$triggeredBy = ($options->triggeredBy ?? self::TRIGGER_BULK_REGISTER_DELETE);
+
+		return $this->deleteRegisterObjects(run: new TableDeletionRun(register: $register, hardDelete: $options->hardDelete, triggeredBy: $triggeredBy));
+	}//end deleteObjectsByRegister()
+
+	/**
+	 * Delete all objects of every schema of the run's register, refusing archival schemas.
+	 *
+	 * @param TableDeletionRun $run The register, the hard-delete flag and the trigger.
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: list<string>, register_id: int}
+	 *
+	 * @throws ArchivalImmutableException When any schema carries an archival annotation.
+	 * @throws Throwable When the transaction fails (rolled back).
+	 */
+	private function deleteRegisterObjects(TableDeletionRun $run): array {
+		$schemas = $this->resolveSchemasOfRegister(register: $run->register);
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 		}
 
-		$result = $this->deleteInOneTransaction(register: $register, schemas: $schemas, hardDelete: $hardDelete, triggeredBy: $triggeredBy);
+		$result = $this->deleteInOneTransaction(run: $run, schemas: $schemas);
 
-		return ['deleted_count' => $result['deleted_count'], 'deleted_uuids' => $result['deleted_uuids'], 'register_id' => (int)$register->getId()];
-	}//end deleteObjectsByRegister()
+		return ['deleted_count' => $result['deleted_count'], 'deleted_uuids' => $result['deleted_uuids'], 'register_id' => (int)$run->register->getId()];
+	}//end deleteRegisterObjects()
 
 	/**
 	 * Cascade-delete a schema: its objects, its magic tables, and the schema itself.
@@ -355,7 +342,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
 
 		// ---- Phase 1: one transaction. ----
-		$removed = $this->cascadeInOneTransaction(schema: $schema, override: $override, tables: $tables);
+		$removed = $this->cascadeInOneTransaction(cascade: new SchemaCascade(schema: $schema, override: $override, tables: $tables));
 
 		// ---- Phase 2: post-commit, best effort. ----
 		$tableDropped = $this->dropTables(tableNames: array_column($tables, 'tableName'), schemaId: $schemaId);
@@ -369,21 +356,20 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	/**
 	 * Phase 1 of a cascade: guard or record kept rows, delete the rows and the schema, commit.
 	 *
-	 * @param Schema                 $schema   The schema.
-	 * @param SchemaTeardownOverride $override The owner's acknowledged lifts.
-	 * @param array                  $tables   The schema's magic tables.
+	 * @param SchemaCascade $cascade The schema, the override and its magic tables.
 	 *
 	 * @return array{deletedCount: int, deletedUuids: string[]}
 	 *
 	 * @throws Throwable After rolling back, when any step fails.
 	 */
-	private function cascadeInOneTransaction(Schema $schema, SchemaTeardownOverride $override, array $tables): array {
+	private function cascadeInOneTransaction(SchemaCascade $cascade): array {
+		$schema = $cascade->schema;
 		$this->db->beginTransaction();
 		try {
-			$this->recordKeptRowsLifted(schema: $schema, override: $override);
-			$removed = $this->deleteObjectsOfTables(schema: $schema, tables: $tables);
+			$this->recordKeptRowsLifted(schema: $schema, override: $cascade->override);
+			$removed = $this->deleteObjectsOfTables(schema: $schema, tables: $cascade->tables);
 			// The rows are gone, so the mapper guard naturally counts 0 — no force needed.
-			$this->schemaMapper->delete(entity: $schema);
+			$this->stores->schemaMapper->delete(entity: $schema);
 			$this->db->commit();
 			return $removed;
 		} catch (Throwable $e) {
@@ -426,7 +412,8 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 				continue;
 			}
 
-			$result = $this->deleteObjectsOfPair(register: $entry['register'], schema: $schema, hardDelete: true, triggeredBy: self::TRIGGER_SCHEMA_DELETION);
+			$run = new TableDeletionRun(register: $entry['register'], hardDelete: true, triggeredBy: self::TRIGGER_SCHEMA_DELETION);
+			$result = $this->deleteObjectsOfPair(run: $run, schema: $schema);
 			$removed['deletedCount'] += $result['deleted_count'];
 			$removed['deletedUuids'] = array_merge($removed['deletedUuids'], $result['deleted_uuids']);
 		}
@@ -520,7 +507,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 
 		try {
 			$query = ['_rbac' => false, '_multitenancy' => false, '_includeDeleted' => true];
-			return $this->magicMapper->countObjectsInRegisterSchemaTable(query: $query, register: $entry['register'], schema: $schema);
+			return $this->stores->magicMapper->countObjectsInRegisterSchemaTable(query: $query, register: $entry['register'], schema: $schema);
 		} catch (Throwable $e) {
 			// An unreadable table cannot be counted. Treat it as non-empty so
 			// the guard errs towards keeping data.
@@ -646,7 +633,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 * @return SchemaTeardownGuard
 	 */
 	private function teardownGuard(): SchemaTeardownGuard {
-		return new SchemaTeardownGuard(mapper: $this->magicMapper, db: $this->db, audit: $this->auditTrailMapper);
+		return new SchemaTeardownGuard(mapper: $this->stores->magicMapper, db: $this->db, audit: $this->stores->auditTrailMapper);
 	}//end teardownGuard()
 
 	/**
@@ -655,24 +642,22 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 * Any failure rolls the whole thing back: a committed audit entry always implies a
 	 * deleted object, and a row that refuses the delete leaves every row in place.
 	 *
-	 * @param Register $register The register context.
-	 * @param array<Schema> $schemas The schemas to empty.
-	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
-	 * @param string $triggeredBy Audit trigger context.
+	 * @param TableDeletionRun $run     The register, the hard-delete flag and the trigger.
+	 * @param array<Schema>    $schemas The schemas whose objects are deleted.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>} The deletion result.
 	 *
 	 * @throws Throwable If a row refuses the delete, or the deletion fails.
 	 */
-	private function deleteInOneTransaction(Register $register, array $schemas, bool $hardDelete, string $triggeredBy): array {
+	private function deleteInOneTransaction(TableDeletionRun $run, array $schemas): array {
 		$this->db->beginTransaction();
 		try {
-			$removed = $this->deleteSchemasOfRegister(register: $register, schemas: $schemas, hardDelete: $hardDelete, triggeredBy: $triggeredBy);
+			$removed = $this->deleteSchemasOfRegister(run: $run, schemas: $schemas);
 			$this->db->commit();
 			return $removed;
 		} catch (Throwable $e) {
 			$this->db->rollBack();
-			$failed = ['registerId' => (int)$register->getId(), 'error' => $e->getMessage()];
+			$failed = ['registerId' => (int)$run->register->getId(), 'error' => $e->getMessage()];
 			$message = '[SchemaDeletionService] Whole-table delete rolled back';
 			$this->logger->error(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $failed);
 			throw $e;
@@ -682,21 +667,19 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	/**
 	 * Refuse on any kept row first, then delete every schema's rows of the register.
 	 *
-	 * @param Register $register    The register.
-	 * @param Schema[] $schemas     The schemas.
-	 * @param bool     $hardDelete  Whether to hard-delete.
-	 * @param string   $triggeredBy The trigger recorded in the audit.
+	 * @param TableDeletionRun $run     The register, the hard-delete flag and the trigger.
+	 * @param array<Schema>    $schemas The schemas whose objects are deleted.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: string[]}
 	 */
-	private function deleteSchemasOfRegister(Register $register, array $schemas, bool $hardDelete, string $triggeredBy): array {
+	private function deleteSchemasOfRegister(TableDeletionRun $run, array $schemas): array {
 		foreach ($schemas as $schema) {
-			$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
+			$this->teardownGuard()->rows->assertNoneKept(register: $run->register, schema: $schema);
 		}
 
 		$removed = ['deleted_count' => 0, 'deleted_uuids' => []];
 		foreach ($schemas as $schema) {
-			$result = $this->deleteObjectsOfPair(register: $register, schema: $schema, hardDelete: $hardDelete, triggeredBy: $triggeredBy);
+			$result = $this->deleteObjectsOfPair(run: $run, schema: $schema);
 			$removed['deleted_count'] += $result['deleted_count'];
 			$removed['deleted_uuids'] = array_merge($removed['deleted_uuids'], $result['deleted_uuids']);
 		}
@@ -707,29 +690,24 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	/**
 	 * Audit and delete every object of one register/schema magic table.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
-	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
-	 * @param string $triggeredBy Audit trigger context.
+	 * @param TableDeletionRun $run    The register, the hard-delete flag and the trigger.
+	 * @param Schema           $schema The schema whose table is emptied.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>} The deletion result.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
 	 */
-	private function deleteObjectsOfPair(
-		Register $register,
-		Schema $schema,
-		bool $hardDelete,
-		string $triggeredBy,
-	): array {
-		if ($this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+	private function deleteObjectsOfPair(TableDeletionRun $run, Schema $schema): array {
+		$register = $run->register;
+
+		if ($this->stores->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 			return ['deleted_count' => 0, 'deleted_uuids' => []];
 		}
 
 		// Snapshot BEFORE deleting: the mapper primitive returns only a count, so the
 		// pre-deletion state has to be captured here or it is unrecoverable.
-		$deletedUuids = $this->auditObjectsBeforeDeletion(register: $register, schema: $schema, hardDelete: $hardDelete, triggeredBy: $triggeredBy);
-		$deletedCount = $this->magicMapper->deleteObjectsBySchema(register: $register, schema: $schema, hardDelete: $hardDelete);
+		$deletedUuids = $this->auditObjectsBeforeDeletion(run: $run, schema: $schema);
+		$deletedCount = $this->stores->magicMapper->deleteObjectsBySchema(register: $register, schema: $schema, hardDelete: $run->hardDelete);
 
 		return ['deleted_count' => $deletedCount, 'deleted_uuids' => $deletedUuids];
 	}//end deleteObjectsOfPair()
@@ -742,22 +720,22 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 * hash-chaining is applied at insert time, and inside the caller's transaction so
 	 * a rollback discards it.
 	 *
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
-	 * @param bool $hardDelete Whether the rows are about to be hard-deleted.
-	 * @param string $triggeredBy Audit trigger context.
+	 * @param TableDeletionRun $run    The register, the hard-delete flag and the trigger.
+	 * @param Schema           $schema The schema whose rows are audited.
 	 *
 	 * @return array<int, string> The UUIDs of the audited objects.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Recorded as audit context, not a behaviour switch.
 	 */
-	private function auditObjectsBeforeDeletion(Register $register, Schema $schema, bool $hardDelete, string $triggeredBy): array {
-		$baseContext = $this->cascadeAuditContext(register: $register, schema: $schema, hardDelete: $hardDelete, triggeredBy: $triggeredBy);
+	private function auditObjectsBeforeDeletion(TableDeletionRun $run, Schema $schema): array {
+		$baseContext = $this->cascadeAuditContext(run: $run, schema: $schema);
 
 		$uuids = [];
-		foreach ($this->teardownGuard()->rows->all(register: $register, schema: $schema) as $object) {
+		foreach ($this->teardownGuard()->rows->all(register: $run->register, schema: $schema) as $object) {
 			$context = (['snapshot' => $object->jsonSerialize()] + $baseContext);
-			$this->auditTrailMapper->createAuditTrailEntry(object: $object, action: self::ACTION_CASCADE_DELETE, context: $context);
+			$this->stores->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(object: $object, action: self::ACTION_CASCADE_DELETE, context: $context)
+			);
 			if ($object->getUuid() !== null) {
 				$uuids[] = (string)$object->getUuid();
 			}
@@ -769,22 +747,20 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	/**
 	 * The audit context every row of one register-schema delete shares.
 	 *
-	 * @param Register $register    The register.
-	 * @param Schema   $schema      The schema.
-	 * @param bool     $hardDelete  Whether the delete is hard.
-	 * @param string   $triggeredBy The trigger.
+	 * @param TableDeletionRun $run    The register, the hard-delete flag and the trigger.
+	 * @param Schema           $schema The schema that triggered the delete.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function cascadeAuditContext(Register $register, Schema $schema, bool $hardDelete, string $triggeredBy): array {
+	private function cascadeAuditContext(TableDeletionRun $run, Schema $schema): array {
 		// Schema-derived values: resolved ONCE for the whole operation (ADR-009).
 		return [
-			'triggeredBy' => $triggeredBy,
-			'hardDelete' => $hardDelete,
+			'triggeredBy' => $run->triggeredBy,
+			'hardDelete' => $run->hardDelete,
 			'cascadeContext' => [
 				'triggerSchema' => $schema->getSlug(),
 				'triggerSchemaId' => (int)$schema->getId(),
-				'registerId' => (int)$register->getId(),
+				'registerId' => (int)$run->register->getId(),
 			],
 		];
 	}//end cascadeAuditContext()
@@ -806,7 +782,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 		$schemaId = (int)$schema->getId();
 		$tables = [];
 
-		foreach ($this->magicMapper->getAllRegisterSchemaPairs() as $pair) {
+		foreach ($this->stores->magicMapper->getAllRegisterSchemaPairs() as $pair) {
 			if ((int)$pair['schemaId'] !== $schemaId) {
 				continue;
 			}
@@ -830,7 +806,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 */
 	private function registerOfTable(int $registerId, int $schemaId): ?Register {
 		try {
-			return $this->registerMapper->find(id: $registerId);
+			return $this->stores->registerMapper->find(id: $registerId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaDeletionService] Magic table has no register entity',
@@ -869,7 +845,7 @@ class SchemaDeletionService implements SchemaTeardownInterface {
 	 */
 	private function dropTable(string $tableName, int $schemaId): bool {
 		try {
-			$this->magicMapper->dropTable(tableName: $tableName);
+			$this->stores->magicMapper->dropTable(tableName: $tableName);
 			return true;
 		} catch (Throwable $e) {
 			// The objects and the schema are already gone and committed. Failing the

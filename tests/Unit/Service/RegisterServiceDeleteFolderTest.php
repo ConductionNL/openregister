@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -66,8 +66,8 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 	/** @var IRootFolder&MockObject */
 	private IRootFolder $rootFolder;
 
-	/** @var RegisterFolderRecorder&MockObject */
-	private RegisterFolderRecorder $recorder;
+	/** @var RegisterFolderRecordsInterface&MockObject */
+	private RegisterFolderRecordsInterface $recorder;
 
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
@@ -109,7 +109,7 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->rootFolder->method('getUserFolder')->willReturn($adminFolder);
 
-		$this->recorder = $this->createMock(RegisterFolderRecorder::class);
+		$this->recorder = $this->createMock(RegisterFolderRecordsInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$handler = new FolderManagementHandler(
@@ -137,7 +137,7 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->service = new RegisterService(
-			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $schemaMapper, db: $this->createMock(IDBConnection::class)),
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			helpers: new RegisterServiceHelpers($fileService, new RegisterSerializer($schemaMapper, $this->logger)),
 			organisationService: $this->createMock(OrganisationService::class),
 			logger: $this->logger

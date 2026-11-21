@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Command\DescriptorListCommand;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -117,8 +118,8 @@ class DescriptorListCommandTest extends TestCase {
 	public function testImportRunsTheRealReimportAndReportsWhatChanged(): void {
 		$this->descriptors->expects($this->never())->method('reimportMock');
 		$this->descriptors->expects($this->once())
-			->method('reimport')
-			->with('portaliq', 'portaliq')
+			->method('reimportShipped')
+			->with(new ShippedRegister('portaliq', 'portaliq'))
 			->willReturn(
 				[
 					'outcome'   => 'imported',
@@ -153,7 +154,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function testTheFallbackPathSaysTheAppsOwnStepsDidNotRun(): void {
-		$this->descriptors->method('reimport')->willReturn(
+		$this->descriptors->method('reimportShipped')->willReturn(
 			[
 				'outcome'   => 'imported',
 				'reason'    => null,
@@ -263,7 +264,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * for something to happen and it did not.
 	 */
 	public function testAFailedImportExitsNonZeroAndPrintsTheReason(): void {
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportShipped')
 			->willReturn(['outcome' => 'failed', 'reason' => 'no descriptor declares "nope"']);
 
 		$this->assertSame(1, $this->tester->execute(['--import' => 'nope', '--app' => 'openregister']));
@@ -275,7 +276,7 @@ class DescriptorListCommandTest extends TestCase {
 	 * the same slug. Refuse rather than guess which one was meant.
 	 */
 	public function testImportWithoutAnAppIsRefusedAndImportsNothing(): void {
-		$this->descriptors->expects($this->never())->method('reimport');
+		$this->descriptors->expects($this->never())->method('reimportShipped');
 
 		$this->assertSame(1, $this->tester->execute(['--import' => 'flows']));
 		$this->assertStringContainsString('--app', $this->tester->getDisplay());

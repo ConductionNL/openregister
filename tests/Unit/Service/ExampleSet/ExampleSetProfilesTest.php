@@ -16,8 +16,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 /**
  * Profiles of the cast's accounts.
@@ -93,7 +96,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 			}
 		};
 
-		$this->accounts->createUser(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x');
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x'));
 		$people = new ExampleSetPeople(accounts: $this->accounts, record: $this->record, profiles: $profiles);
 		$plan   = [
 			'set'       => 'demo',
@@ -109,8 +112,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		];
 		$record = $this->record->read(set: 'demo');
 
-		$report = ['users' => [], 'groups' => [], 'memberships' => [], 'dropped' => [], 'passwords' => []];
-		$people->install(plan: $plan, adopt: ['adopted.one'], password: 'pw', report: $report, record: $record);
+		$people->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: ['adopted.one'], password: 'pw')), record: $record);
 
 		$this->assertSame(expected: ['sanne.bakker'], actual: array_keys($written));
 		$this->assertSame(expected: 'Vergunningverlener', actual: $written['sanne.bakker']['headline']);
@@ -139,7 +141,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$accounts->method('getAccount')->willReturn($account);
 		$users = $this->createMock(\OCP\IUserManager::class);
 		$users->method('get')->willReturn($this->createMock(\OCP\IUser::class));
-		$profiles = new ExampleSetProfiles(users: $users, profiles: $accounts, container: $this->createMock(\Psr\Container\ContainerInterface::class));
+		$profiles = new ExampleSetProfiles(reach: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(\Psr\Container\ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $users), profiles: $accounts);
 
 		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'organisation' => 'Woo en informatie', 'absence' => null, 'status' => null]);
 

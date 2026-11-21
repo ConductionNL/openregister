@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\Providers\MarkerLookupTrait;
+use OCA\OpenRegister\Service\Integration\Providers\MarkerScan;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -127,7 +128,7 @@ class MarkerLookupTraitGoldenTest extends TestCase {
 			}//end __construct()
 
 			public function lookup(IDBConnection $db, array $extra, string $idColumn): array {
-				return $this->findByMarker($db, 'deck_cards', 'title', '[or:abc]', $extra, $idColumn);
+				return $this->scanMarker($db, new MarkerScan('deck_cards', 'title', '[or:abc]', array_merge([$idColumn], $extra)));
 			}//end lookup()
 		};
 	}//end provider()

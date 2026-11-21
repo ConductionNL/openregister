@@ -37,6 +37,7 @@ use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -74,7 +75,9 @@ class CodedValueGuardGoldenTest extends TestCase {
 			fn (string $schemeUri): array => ($schemeUri === 'urn:s1' ? $this->scheme : [])
 		);
 		$concepts->method('resolve')->willReturnCallback(
-			function (string $value, string $schemeUri, string $store = 'uri'): ?array {
+			function (string $value, CodedPropertyDeclaration $declaration): ?array {
+				$schemeUri = $declaration->scheme;
+				$store = $declaration->store;
 				if ($schemeUri !== 'urn:s1') {
 					return null;
 				}
@@ -93,7 +96,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 			}
 		);
 
-		$this->guard = new CodedValueGuard($concepts, $lifecycle, new ConceptHierarchy($lifecycle), new CodedPropertyDeclarationFactory());
+		$this->guard = new CodedValueGuard(new \OCA\OpenRegister\Service\Vocabulary\ConceptSchemeAccess($concepts, new ConceptHierarchy($lifecycle), $lifecycle), new CodedPropertyDeclarationFactory());
 	}//end setUp()
 
 	/**
@@ -142,9 +145,9 @@ class CodedValueGuardGoldenTest extends TestCase {
 		$at = new DateTimeImmutable('2026-09-14T12:00:00+00:00');
 		$actual = [];
 		foreach (self::objects() as $name => $object) {
-			$violations = $this->guard->collectViolations($object, self::schema(), $at);
+			$violations = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite($object, self::schema(), $at));
 			try {
-				$this->guard->enforce($object, self::schema(), $at);
+				$this->guard->enforce(new CodedValueWrite(object: $object, schema: self::schema(), at: $at));
 				$thrown = null;
 			} catch (CodedValueException $e) {
 				$thrown = [$e->getMessage(), $e->getErrors()];
@@ -153,7 +156,7 @@ class CodedValueGuardGoldenTest extends TestCase {
 			$actual[$name] = [$violations, $thrown];
 		}
 
-		$actual['schema without coded properties'] = $this->guard->collectViolations(['resultaat' => 'urn:ing'], new Schema(), $at);
+		$actual['schema without coded properties'] = $this->guard->collectViolations(new \OCA\OpenRegister\Service\Vocabulary\CodedValueWrite(['resultaat' => 'urn:ing'], new Schema(), $at));
 
 		$this->assertSame(self::expectedViolations(), $actual);
 	}//end testCollectViolationsAndEnforce()
@@ -244,22 +247,32 @@ class CodedValueGuardGoldenTest extends TestCase {
 					],
 				],
 			],
+			// property-code-list-from-concept-scheme: a value the scheme does not hold is
+			// refused naming the property and the scheme; it used to be skipped.
 			'skipped values' => [
-				[],
-				NULL,
+				[
+					'resultaat' => 'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+				],
+				[
+					'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+					[
+						'resultaat' => 'The value "urn:unknown" on "resultaat" is not a concept of the scheme urn:s1.',
+					],
+				],
 			],
 			'missing uri falls back to value' => [
 				[],
 				NULL,
 			],
+			// The last refusal of a property stands, and urn:unknown is its last value.
 			'scored' => [
 				[
-					'score' => 'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+					'score' => 'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 				],
 				[
-					'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+					'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 					[
-						'score' => 'The values "Regulier" and "Regulier" both belong to the group "urgentie", of which only one may be held.',
+						'score' => 'The value "urn:unknown" on "score" is not a concept of the scheme urn:s1.',
 					],
 				],
 			],

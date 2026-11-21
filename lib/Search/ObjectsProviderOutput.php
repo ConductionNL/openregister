@@ -22,7 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
+use OCA\OpenRegister\Service\Search\SearchResultDeclarations;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -35,16 +36,19 @@ final class ObjectsProviderOutput {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IL10N                       $l10n            The localization service.
-	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service.
-	 * @param LoggerInterface             $logger          Logger for debugging search operations.
+	 * @param IL10N                                $l10n            The localization service.
+	 * @param ObjectSearchResultFormatterInterface $resultFormatter Shared result-formatting service.
+	 * @param LoggerInterface                      $logger          Logger for debugging search operations.
+	 * @param SearchResultDeclarations|null        $declarations    What each schema declares a result shows;
+	 *                                                              its ordering date breaks relevance ties.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		public readonly IL10N $l10n,
-		public readonly ObjectSearchResultFormatter $resultFormatter,
+		public readonly ObjectSearchResultFormatterInterface $resultFormatter,
 		public readonly LoggerInterface $logger,
+		public readonly ?SearchResultDeclarations $declarations = null,
 	) {
 	}//end __construct()
 }//end class

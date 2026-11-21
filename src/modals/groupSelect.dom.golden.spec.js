@@ -25,6 +25,8 @@ jest.mock('@nextcloud/dialogs', () => ({
 	showSuccess: jest.fn(),
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('@conduction/nextcloud-vue', () => ({ CnViewPresentationPicker: mockIcon('CnViewPresentationPicker').default }))
+jest.mock('vue-material-design-icons/ViewDashboardOutline.vue', () => mockIcon('ViewDashboardOutline'))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('vue', () => ({
 	...jest.requireActual('vue'),
@@ -56,6 +58,9 @@ jest.mock('vue-material-design-icons/AccountMinus.vue', () =>
 )
 jest.mock('vue-material-design-icons/AccountPlus.vue', () => mockIcon('AccountPlus'))
 jest.mock('vue-material-design-icons/Close.vue', () => mockIcon('Close'))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	mockIcon('TrashCanOutline'),
+)
 jest.mock('vue-material-design-icons/ContentSave.vue', () => mockIcon('ContentSave'))
 jest.mock('vue-material-design-icons/ShareVariant.vue', () =>
 	mockIcon('ShareVariant'),

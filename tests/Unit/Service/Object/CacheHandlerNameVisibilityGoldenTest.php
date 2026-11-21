@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -107,16 +110,22 @@ class CacheHandlerNameVisibilityGoldenTest extends TestCase {
 		$container->method('get')->willReturn($this->objectMapper);
 
 		return new CacheHandler(
-			$this->organisationMapper,
-			$this->createMock(LoggerInterface::class),
-			null,
-			$this->userSession,
-			$container,
-			null,
-			null,
-			null,
-			$groupManager,
-			$appConfig
+			stores: new CacheHandlerStores(
+				organisationMapper: $this->organisationMapper,
+				registerMapper: null,
+				schemaMapper: null,
+				db: null
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheFactory: null,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $this->userSession,
+				groupManager: $groupManager,
+				appConfig: $appConfig
+			)
 		);
 	}//end handler()
 

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
@@ -35,6 +36,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Drives the real SchemaMapper::update() and checks which saves dispatch a
@@ -49,7 +52,6 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
@@ -135,19 +137,27 @@ class SchemaMapperUpdateEventTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (object $event): void {
+				if ($event instanceof SchemaDeclarationChecksEvent) {
+					return;
+				}
+
 				$this->dispatched[] = $event;
 			}
 		);
 
 		return new class(
 			$db,
-			$dispatcher,
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new TenancyServices(
+				$this->createMock(OrganisationMapper::class),
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class)
+			),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			new SchemaMapperServices(
+				$dispatcher,
+				$this->createMock(PropertyValidatorHandler::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends SchemaMapper {
 			/**
 			 * Return the stored row mapped through the real entity.

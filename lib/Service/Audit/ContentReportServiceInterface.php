@@ -27,12 +27,19 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
 
 /**
- * The content report operations the content report endpoints call.
+ * The content report operations the content report endpoints and the removal listener call.
  *
  * Declares only what callers outside the component use; the rest of the
  * class stays its own.
  */
 interface ContentReportServiceInterface {
+
+	/**
+	 * The audit action recorded when a removal is matched to a copy.
+	 *
+	 * @var string
+	 */
+	public const ACTION_REMOVAL_NAMED = 'content-report.removal-copied';
 
 	/**
 	 * File a report, taking the copy now.
@@ -82,4 +89,16 @@ interface ContentReportServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function reviewerGroup(): string;
+
+	/**
+	 * Record that the reported content has been removed, on every open report.
+	 *
+	 * @param string      $objectUuid The removed object's uuid.
+	 * @param string|null $auditUuid  The uuid of the audit entry recording the removal.
+	 *
+	 * @return string[] The uuids of the copies the removal should name.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function noteRemoval(string $objectUuid, ?string $auditUuid = null): array;
 }//end interface

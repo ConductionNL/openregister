@@ -78,11 +78,8 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @param string $typeId The shareable type id.
 	 * @param array $selection What to share.
-	 * @param string $repo The `owner/repo` to publish into.
-	 * @param string $path The path within the repo for the bundle file.
+	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
-	 * @param string $branch The branch to publish onto.
-	 * @param bool $private Whether a repo created on demand is private.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -90,15 +87,7 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(
-		string $typeId,
-		array $selection,
-		string $repo,
-		string $path,
-		string $credentialId,
-		string $branch = 'main',
-		bool $private = false,
-	): array;
+	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array;
 
 	/**
 	 * Discover published bundles across GitHub by their type's discovery topic.

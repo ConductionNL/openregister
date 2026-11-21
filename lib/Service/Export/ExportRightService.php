@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportRightInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -47,22 +48,18 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
+ * ACTION (`export`) and FALLBACK_ACTION (`read`) are inherited from
+ * ExportRightInterface.
+ *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ExportRightService {
+class ExportRightService implements ExportRightInterface {
 	/**
-	 * The right an export requires.
+	 * The principal an anonymous caller acts as.
 	 *
 	 * @var string
 	 */
-	public const ACTION = 'export';
-
-	/**
-	 * The right an export falls back to while no administrator has narrowed it.
-	 *
-	 * @var string
-	 */
-	public const FALLBACK_ACTION = 'read';
+	public const PUBLIC_PRINCIPAL = 'public';
 
 	/**
 	 * Wire the RBAC collaborators.
@@ -103,6 +100,74 @@ class ExportRightService {
 
 		return $this->refusalForUid(schema: $schema, userId: $user->getUID());
 	}//end refusalFor()
+
+	/**
+	 * The refusal for a caller without a session, or null when the public may export.
+	 *
+	 * The public principal may export a schema only when its effective export
+	 * grant names `public`: the `export` list when the schema declares one,
+	 * otherwise the `read` list, the same fallback a signed-in caller gets. A
+	 * schema with no such grant, or one whose authorization cannot be read,
+	 * answers 401 `not-public`, so a visitor learns they need an account and
+	 * not that the schema exists privately.
+	 *
+	 * @param Schema $schema The schema being exported.
+	 *
+	 * @return ExportRefusedException|null The refusal, or null when the public may export.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function refusalForAnonymous(Schema $schema): ?ExportRefusedException {
+		$authorization = null;
+		try {
+			$authorization = $this->permissionHandler->resolveAuthorization(schema: $schema);
+		} catch (Throwable $e) {
+			// An unreadable rule refuses: nothing here is a grant.
+			$this->logger->warning(
+				message: '[ExportRight] Authorization unresolvable, refusing the anonymous export',
+				context: ['schema' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+		}
+
+		$action = self::FALLBACK_ACTION;
+		if (is_array($authorization) === true && is_array($authorization[self::ACTION] ?? null) === true) {
+			$action = self::ACTION;
+		}
+
+		if (self::grantNamesPublic(grant: ($authorization[$action] ?? null)) === true) {
+			return null;
+		}
+
+		return new ExportRefusedException(
+			rule: 'not-public',
+			reason: 'Exporting this schema requires an account.',
+			statusCode: 401,
+			context: ['evaluated' => $action]
+		);
+	}//end refusalForAnonymous()
+
+	/**
+	 * Whether a grant list names the `public` principal, as a name or a rule entry.
+	 *
+	 * @param mixed $grant The list of an authorization verb.
+	 *
+	 * @return bool True when `public` is in it.
+	 */
+	private static function grantNamesPublic(mixed $grant): bool {
+		if (is_array($grant) === false) {
+			return false;
+		}
+
+		foreach ($grant as $entry) {
+			if ($entry === self::PUBLIC_PRINCIPAL
+				|| (is_array($entry) === true && ($entry['group'] ?? null) === self::PUBLIC_PRINCIPAL)
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end grantNamesPublic()
 
 	/**
 	 * Whether a principal sees every export run, or only their own.
@@ -152,28 +217,7 @@ class ExportRightService {
 			);
 		}
 
-		$action = self::ACTION;
-		if ($this->declaresExport(schema: $schema) === false) {
-			// Nobody has narrowed the verb on this schema yet, so it is held
-			// wherever `read` is held. See design D-2.
-			$action = self::FALLBACK_ACTION;
-		}
-
-		if ($this->holdsRight(schema: $schema, action: $action, userId: $userId) === true) {
-			return null;
-		}
-
-		return new ExportRefusedException(
-			rule: 'export-right-missing',
-			reason: 'User ' . $userId . ' does not hold the export right on schema '
-				. ($schema->getSlug() ?? (string)$schema->getId())
-				. '. Reading this schema and taking its data off the instance are separate grants.',
-			statusCode: 403,
-			context: [
-				'schema' => ($schema->getSlug() ?? (string)$schema->getId()),
-				'evaluated' => $action,
-			]
-		);
+		return $this->refusalUnlessHeld(schema: $schema, userId: $userId);
 	}//end refusalForUid()
 
 	/**
@@ -207,17 +251,25 @@ class ExportRightService {
 	}//end declaresExport()
 
 	/**
-	 * Whether the caller holds the named action on the schema.
+	 * The refusal when the principal does not hold the verb this schema asks for.
+	 *
+	 * A check that throws refuses: an unreadable verdict is not a grant.
 	 *
 	 * @param Schema $schema The schema.
-	 * @param string $action The verb to evaluate.
-	 * @param string $userId The caller.
+	 * @param string $userId The principal the export runs as.
 	 *
-	 * @return bool True when the caller holds it.
+	 * @return ExportRefusedException|null The refusal, or null when they hold it.
 	 */
-	private function holdsRight(Schema $schema, string $action, string $userId): bool {
+	private function refusalUnlessHeld(Schema $schema, string $userId): ?ExportRefusedException {
+		$action = self::ACTION;
+		if ($this->declaresExport(schema: $schema) === false) {
+			// Nobody has narrowed the verb on this schema yet, so it is held
+			// wherever `read` is held. See design D-2.
+			$action = self::FALLBACK_ACTION;
+		}
+
 		try {
-			return $this->permissionHandler->hasPermission(
+			$held = $this->permissionHandler->hasPermission(
 				schema: $schema,
 				action: $action,
 				userId: $userId,
@@ -230,7 +282,23 @@ class ExportRightService {
 				message: '[ExportRight] Permission check failed, refusing the export',
 				context: ['schema' => $schema->getId(), 'error' => $e->getMessage()]
 			);
-			return false;
+			$held = false;
 		}
-	}//end holdsRight()
+
+		if ($held === true) {
+			return null;
+		}
+
+		return new ExportRefusedException(
+			rule: 'export-right-missing',
+			reason: 'User ' . $userId . ' does not hold the export right on schema '
+				. ($schema->getSlug() ?? (string)$schema->getId())
+				. '. Reading this schema and taking its data off the instance are separate grants.',
+			statusCode: 403,
+			context: [
+				'schema' => ($schema->getSlug() ?? (string)$schema->getId()),
+				'evaluated' => $action,
+			]
+		);
+	}//end refusalUnlessHeld()
 }//end class

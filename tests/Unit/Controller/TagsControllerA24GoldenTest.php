@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Controller\TagsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -123,7 +124,7 @@ class TagsControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new TagsController('openregister', $this->request, $this->objectService, $this->fileService, $this->taggingHandler, $session);
+		return new TagsController($this->request, $this->objectService, new TagsControllerServices($this->fileService, $this->taggingHandler), $session);
 	}//end controller()
 
 	/**

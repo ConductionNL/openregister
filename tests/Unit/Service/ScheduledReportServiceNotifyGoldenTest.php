@@ -16,6 +16,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
@@ -40,6 +44,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Service\ScheduledReportRun
  * @uses   \OCA\OpenRegister\Exception\ExportTooLargeException
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest
+ * @uses \OCA\OpenRegister\Service\ScheduledReportDelivery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExportQuery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExporters
+ * @uses \OCA\OpenRegister\Service\ScheduledReportNotice
+ * @uses \OCA\OpenRegister\Service\ScheduledReportOwnerServices
+ * @uses \OCA\OpenRegister\Service\ScheduledReportStores
  */
 class ScheduledReportServiceNotifyGoldenTest extends TestCase {
 
@@ -132,17 +144,14 @@ class ScheduledReportServiceNotifyGoldenTest extends TestCase {
 		$this->mailer->method('createAttachment')->willReturn($this->createMock(IAttachment::class));
 
 		$this->service = new ScheduledReportService(
-			$this->mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->exportService,
-			$this->rootFolder,
-			$this->userManager,
-			$this->userSession,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class),
-			$this->mailer,
-			$this->config
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($this->exportService, null, null),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($this->userManager, $this->userSession, $this->rootFolder, $this->notificationManager),
+				$this->mailer,
+				$this->config
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 

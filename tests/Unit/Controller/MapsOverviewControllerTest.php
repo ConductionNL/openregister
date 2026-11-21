@@ -73,9 +73,7 @@ class MapsOverviewControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->overviews = $this->createMock(MapsOverviewService::class);
 
-		$this->controller = new MapsOverviewController(
-			'openregister',
-			$this->request,
+		$this->controller = new MapsOverviewController($this->request,
 			$this->overviews
 		);
 	}//end setUp()

@@ -34,8 +34,10 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
+use OCA\OpenRegister\Service\Calendar\DeadlineLookup;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -98,17 +100,17 @@ class DeadlineDateResolverTest extends TestCase {
 
 		$this->timers->expects($this->once())
 			->method('findBySubject')
-			->with('object', 'object-uuid', [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
+			->with(new TimerSubject('object', 'object-uuid'), [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED])
 			->willReturn([$timer]);
 
 		$this->calendars->expects($this->never())->method('resolve');
 
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(['timerPurpose' => 'due']),
 			rawDate: new DateTimeImmutable('2026-10-01T00:00:00+02:00'),
 			organisation: null
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-10-15', $resolved->format('Y-m-d'));
@@ -122,12 +124,12 @@ class DeadlineDateResolverTest extends TestCase {
 		$this->timers->method('findBySubject')->willReturn([$timer]);
 		$this->calendars->method('resolve')->willReturn($this->weekdayCalendar());
 
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(['timerPurpose' => 'due']),
 			rawDate: new DateTimeImmutable('2026-10-20T00:00:00+02:00'),
 			organisation: null
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-10-20', $resolved->format('Y-m-d'));
@@ -141,12 +143,12 @@ class DeadlineDateResolverTest extends TestCase {
 			->willReturn($this->weekdayCalendar());
 
 		// 17 October 2026 is a Saturday.
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(),
 			rawDate: new DateTimeImmutable('2026-10-17T00:00:00+02:00'),
 			organisation: 'org-uuid'
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-10-19', $resolved->format('Y-m-d'));
@@ -155,12 +157,12 @@ class DeadlineDateResolverTest extends TestCase {
 	public function testAWorkingDayIsLeftWhereItIs(): void {
 		$this->calendars->method('resolve')->willReturn($this->weekdayCalendar());
 
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(),
 			rawDate: new DateTimeImmutable('2026-10-20T00:00:00+02:00'),
 			organisation: null
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-10-20', $resolved->format('Y-m-d'));
@@ -170,23 +172,23 @@ class DeadlineDateResolverTest extends TestCase {
 		$this->calendars->method('resolve')
 			->willThrowException(new FlowTimerValidationException(message: "Working calendar 'typo' does not exist"));
 
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(['calendar' => 'typo']),
 			rawDate: new DateTimeImmutable('2026-10-17T00:00:00+02:00'),
 			organisation: null
-		);
+		));
 
 		$this->assertNull($resolved);
 	}
 
 	public function testNoDateAndNoTimerPublishesNothing(): void {
-		$resolved = $this->resolver->resolve(
+		$resolved = $this->resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: $this->declaration(),
 			rawDate: null,
 			organisation: null
-		);
+		));
 
 		$this->assertNull($resolved);
 	}

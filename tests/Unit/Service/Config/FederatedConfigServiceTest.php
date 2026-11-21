@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Config;
 
+use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
@@ -344,7 +345,7 @@ class FederatedConfigServiceTest extends TestCase {
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 
-		$result = $service->publish('demo.type', ['x' => 1], 'ConductionNL/pack', 'set.json', 'cred-1');
+		$result = $service->publish('demo.type', ['x' => 1], new ConfigPublishTarget('ConductionNL/pack', 'set.json'), 'cred-1');
 
 		$this->assertTrue($result['published']);
 		$this->assertSame('ConductionNL/pack', $result['repo']);

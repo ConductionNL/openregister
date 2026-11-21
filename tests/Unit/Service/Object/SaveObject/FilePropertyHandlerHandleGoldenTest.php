@@ -16,6 +16,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
+use OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -29,6 +31,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyTarget
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileInputReader
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyFiles
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileUploadGuard
  */
 class FilePropertyHandlerHandleGoldenTest extends TestCase {
 
@@ -116,9 +128,9 @@ class FilePropertyHandlerHandleGoldenTest extends TestCase {
 			->getMock();
 		$nextId = 100;
 		$handler->method('processSingleFileProperty')->willReturnCallback(
-			function (ObjectEntity $objectEntity, mixed $fileInput, string $propertyName, array $fileConfig, ?int $index = null) use (&$calls, &$nextId): int {
+			function (FileStoreRequest $request, mixed $fileInput) use (&$calls, &$nextId): int {
 				$nextId++;
-				$calls[] = ['store' => $fileInput, 'object' => $objectEntity->getUuid(), 'property' => $propertyName, 'fileConfig' => $fileConfig, 'index' => $index];
+				$calls[] = ['store' => $fileInput, 'object' => $request->objectEntity->getUuid(), 'property' => $request->propertyName, 'fileConfig' => $request->fileConfig, 'index' => $request->index];
 				return $nextId;
 			}
 		);
@@ -132,14 +144,17 @@ class FilePropertyHandlerHandleGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 		$schema->setConfiguration($configuration);
 
-		$object    = ['other' => 'kept', $property => $value];
-		$exception = null;
+		$write         = new ObjectFileWrite();
+		$write->entity = $entity;
+		$write->data   = ['other' => 'kept', $property => $value];
+		$write->schema = $schema;
+		$exception     = null;
 		try {
-			$handler->handleFileProperty($entity, $object, $property, $schema);
+			$handler->handleFileProperty($write, $property);
 		} catch (Exception $e) {
 			$exception = $e->getMessage();
 		}
 
-		return ['object' => $object, 'calls' => $calls, 'exception' => $exception];
+		return ['object' => $write->data, 'calls' => $calls, 'exception' => $exception];
 	}//end scenario()
 }//end class

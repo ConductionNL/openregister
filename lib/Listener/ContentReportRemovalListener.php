@@ -36,11 +36,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Listener\Support\HandlesObjectDeletion;
-use OCA\OpenRegister\Service\Audit\ContentReportService;
+use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -58,12 +59,12 @@ class ContentReportRemovalListener implements IEventListener {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ContentReportService $reports The reports and their copies.
+	 * @param ContentReportServiceInterface $reports The reports and their copies.
 	 * @param AuditTrailMapperInterface $auditTrail Records the removal against the copy.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 */
 	public function __construct(
-		private readonly ContentReportService $reports,
+		private readonly ContentReportServiceInterface $reports,
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
@@ -91,13 +92,15 @@ class ContentReportRemovalListener implements IEventListener {
 		// The removal record names the copy, which is the half of the
 		// requirement the report row alone does not satisfy: somebody
 		// reading the TRAIL has to be able to get to the evidence too.
-		$this->auditTrail->createAuditTrailEntry(
-			object: $object,
-			action: ContentReportService::ACTION_REMOVAL_NAMED,
-			context: [
-				'contentReports' => $copies,
-				'reason' => 'reported content removed; the copies taken at filing time survive it',
-			]
+		$this->auditTrail->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: ContentReportServiceInterface::ACTION_REMOVAL_NAMED,
+				context: [
+					'contentReports' => $copies,
+					'reason' => 'reported content removed; the copies taken at filing time survive it',
+				]
+			)
 		);
 	}//end onObjectDeleted()
 

@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -75,6 +76,20 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Object\DenialQuestion
+ * @uses \OCA\OpenRegister\Service\Object\PermissionAsk
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDenyServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionDerivedGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
+ * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
@@ -168,11 +183,10 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		);
 
 		$matcher = new ConditionMatcher(
-			$userSession,
+			new ConditionUserResolvers($userSession, $groupManager),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
-			new NullLogger(),
-			$groupManager
+			new NullLogger()
 		);
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);

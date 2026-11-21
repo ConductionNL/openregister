@@ -1206,27 +1206,6 @@ return array (
         ),
         'name' => 'A',
       ),
-      1 => 
-      array (
-        'entity' => 'u1',
-        'object' => 
-        array (
-          'id' => 'u1',
-          'x' => 2,
-          'keep' => true,
-        ),
-        'name' => NULL,
-      ),
-      2 => 
-      array (
-        'entity' => 'u2',
-        'object' => 
-        array (
-          'id' => 'u2',
-          'y' => 1,
-        ),
-        'name' => NULL,
-      ),
     ),
     'calls' => 
     array (

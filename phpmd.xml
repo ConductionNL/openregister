@@ -69,7 +69,7 @@
          objects and static helpers that have no constructor to take it. -->
     <!-- StaticAccess: a fourth exception, on the terms above.
 
-         `\OCA\OpenRegister\Support\PermissionBit` maps an action onto the core
+         `\OCA\OpenRegister\Service\Rbac\PermissionBit` maps an action onto the core
          share permission bit it needs. The table used to be a public static on
          `ObjectGrantResolver`, which IS a service: it takes an IManager, caches
          resolved grants per user, and answers questions about live shares.
@@ -110,6 +110,7 @@
            - Service\Search\SearchDictionary           (private ctor, ::empty, ::fromDeclarations)
            - Service\Schemas\ReferenceFilterDeclaration (private ctor, ::fromProperty)
            - Service\Rbac\TokenGrant                   (readonly VO, ::fromStored)
+           - Service\Edepot\MdtoBegrip                (readonly VO, ::optional)
 
     ===================================================================
          StaticAccess: pure declaration readers, on the FleetAppId terms.
@@ -147,7 +148,7 @@
         <properties>
             <property
                 name="exceptions"
-                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Support\PermissionBit,\OCA\OpenRegister\Formats\UuidFormat,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\OCA\OpenRegister\Db\StoredEntity,\DateTimeImmutable,\DateTimeZone"/>
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Service\Rbac\PermissionBit,\OCA\OpenRegister\Formats\UuidFormat,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\OCA\OpenRegister\Service\Edepot\MdtoBegrip,\OCA\OpenRegister\Db\StoredEntity,\DateTimeImmutable,\DateTimeZone"/>
         </properties>
     </rule>
 </ruleset>

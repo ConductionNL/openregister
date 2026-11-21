@@ -37,29 +37,42 @@ use OCA\OpenRegister\Db\TalkLink;
 final class TalkLinkFactory {
 
 	/**
-	 * A new link row between an object and a room, with the room's cached fields.
+	 * A new link row between an object and a room; the caller applies the room's
+	 * cached fields and then stamps who linked it.
 	 *
 	 * @param array  $object    The object: objectUuid, registerId, schemaId.
 	 * @param string $roomToken Talk room token.
-	 * @param array  $cache     The room's cached fields, as TalkRoomFields::cacheFields() returns them.
-	 * @param string $userUid   The user linking it.
 	 *
 	 * @return TalkLink The unsaved row.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function newLink(array $object, string $roomToken, array $cache, string $userUid): TalkLink {
+	public function newLink(array $object, string $roomToken): TalkLink {
 		$link = new TalkLink();
 		$link->setObjectUuid($object['objectUuid']);
 		$link->setRegisterId($object['registerId']);
 		$link->setSchemaId($object['schemaId']);
 		$link->setRoomToken($roomToken);
-		$this->applyCache(link: $link, cache: $cache);
+
+		return $link;
+	}//end newLink()
+
+	/**
+	 * Stamp a link row with the user linking it and the current time.
+	 *
+	 * @param TalkLink $link    The row.
+	 * @param string   $userUid The user linking it.
+	 *
+	 * @return TalkLink The same row.
+	 *
+	 * @spec openspec/specs/integration-talk/spec.md
+	 */
+	public function linkedBy(TalkLink $link, string $userUid): TalkLink {
 		$link->setLinkedBy($userUid);
 		$link->setLinkedAt(new DateTime());
 
 		return $link;
-	}//end newLink()
+	}//end linkedBy()
 
 	/**
 	 * Copy a room's cached fields onto a link row.

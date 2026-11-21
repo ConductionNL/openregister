@@ -7,6 +7,7 @@ namespace Unit\Service\Notification;
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\QueueWait;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -63,15 +64,15 @@ class DigestScheduleEvaluatorTest extends TestCase {
 
 		// Still the previous evening — not due.
 		$stillEvening = new DateTimeImmutable('2026-07-11T19:00:00+00:00');
-		$this->assertFalse($this->evaluator->isDue($digest, $enqueuedAt, $stillEvening));
+		$this->assertFalse($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $stillEvening)));
 
 		// 06:59 CEST the next morning — not yet due.
 		$justBefore = new DateTimeImmutable('2026-07-12T04:59:00+00:00');
-		$this->assertFalse($this->evaluator->isDue($digest, $enqueuedAt, $justBefore));
+		$this->assertFalse($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $justBefore)));
 
 		// 07:00 CEST the next morning — due.
 		$atSchedule = new DateTimeImmutable('2026-07-12T05:00:00+00:00');
-		$this->assertTrue($this->evaluator->isDue($digest, $enqueuedAt, $atSchedule));
+		$this->assertTrue($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $atSchedule)));
 	}
 
 	/**
@@ -88,11 +89,11 @@ class DigestScheduleEvaluatorTest extends TestCase {
 		// Later the same day: not due (today's occurrence already passed
 		// before this row existed).
 		$sameDayLater = new DateTimeImmutable('2026-07-12T12:00:00+00:00');
-		$this->assertFalse($this->evaluator->isDue($digest, $enqueuedAt, $sameDayLater));
+		$this->assertFalse($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $sameDayLater)));
 
 		// Next morning at 07:00 CEST: due.
 		$nextMorning = new DateTimeImmutable('2026-07-13T05:00:00+00:00');
-		$this->assertTrue($this->evaluator->isDue($digest, $enqueuedAt, $nextMorning));
+		$this->assertTrue($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $nextMorning)));
 	}
 
 	public function testWeeklyOnlyDueOnDeclaredWeekday(): void {
@@ -105,10 +106,10 @@ class DigestScheduleEvaluatorTest extends TestCase {
 		// before enqueue would make this odd; use an enqueue BEFORE this
 		// week's Monday occurrence and check it's not due until Monday.
 		$beforeMonday = new DateTimeImmutable('2026-07-10T08:00:00+00:00');
-		$this->assertFalse($this->evaluator->isDue($digest, $enqueuedAt, $beforeMonday));
+		$this->assertFalse($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $beforeMonday)));
 
 		$onMonday = new DateTimeImmutable('2026-07-13T06:30:00+00:00');
-		$this->assertTrue($this->evaluator->isDue($digest, $enqueuedAt, $onMonday));
+		$this->assertTrue($this->evaluator->isDue($digest, new QueueWait($enqueuedAt, $onMonday)));
 	}
 
 	/**
@@ -119,7 +120,7 @@ class DigestScheduleEvaluatorTest extends TestCase {
 		$enqueuedAt = new DateTimeImmutable('2026-07-12T10:00:00+00:00');
 		$now = new DateTimeImmutable('2026-07-12T10:00:01+00:00');
 
-		$this->assertTrue($this->evaluator->isDue(['schedule' => 'bogus'], $enqueuedAt, $now));
+		$this->assertTrue($this->evaluator->isDue(['schedule' => 'bogus'], new QueueWait($enqueuedAt, $now)));
 	}
 
 	/**

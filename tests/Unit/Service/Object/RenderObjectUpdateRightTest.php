@@ -32,11 +32,14 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCatalogue;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IL10N;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -60,10 +63,12 @@ class RenderObjectUpdateRightTest extends TestCase {
 	 * @param array<int, string>       $groups The reader's groups.
 	 * @param array<int, string>|string $extend The _extend parameter.
 	 * @param string $owner The object's owner.
+	 * @param bool   $wireManage Whether the manage decision can be taken (false: its resolver is missing).
+	 * @param array<string, mixed>|null $authorization The object's own authorization block.
 	 *
 	 * @return array The serialised object.
 	 */
-	private function renderAs(array $groups, array|string $extend, array $actions = [], string $owner = 'bob'): array {
+	private function renderAs(array $groups, array|string $extend, array $actions = [], string $owner = 'bob', bool $wireManage = true, ?array $authorization = null): array {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setSlug('case');
@@ -100,21 +105,32 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$actionList = new ObjectActionList(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
+			new ObjectActionCatalogue(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionInputs(new OasRequestValidator())),
 			new ObjectActionGate($permissions, $userSession, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
 			$this->createMock(TransitionEngine::class),
 			$l10n
 		);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($permissions, $actionList) {
+			static function (string $id) use ($permissions, $actionList, $userSession, $groupManager, $wireManage) {
 				if ($id === PermissionHandlerInterface::class) {
 					return $permissions;
 				}
 
-				if ($id === ObjectActionList::class) {
+				if ($id === IUserSession::class) {
+					return $userSession;
+				}
+
+				if ($id === IGroupManager::class) {
+					return $groupManager;
+				}
+
+				if ($id === ObjectScopeResolver::class && $wireManage === true) {
+					return new ObjectScopeResolver();
+				}
+
+				if ($id === RunnableActionsInterface::class) {
 					return $actionList;
 				}
 
@@ -126,28 +142,39 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$translationHandler->method('resolveTranslationsForRender')->willReturnArgument(0);
 
 		$render = new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$schemaMapper,
-			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
-			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class),
-			new NullLogger(),
-			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class),
-			null,
-			null,
-			null,
-			$container
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapper::class)),
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
+					fileService: $this->createMock(\OCA\OpenRegister\Service\FileService::class),
+					systemTagManager: $this->createMock(\OCP\SystemTag\ISystemTagManager::class),
+					systemTagMapper: $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: new NullLogger(),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(objectSourceRegistry: null, fieldEncryptionHandler: null),
+				request: null,
+				container: $container
+			),
+			propertyRbacHandler: $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class)
 		);
 
 		$entity = new ObjectEntity();
@@ -156,6 +183,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$entity->setRegister('3');
 		$entity->setOwner($owner);
 		$entity->setObject(['reference' => 'Z-1']);
+		$entity->setAuthorization($authorization);
 
 		return $render->renderEntity(entity: $entity, _extend: $extend)->jsonSerialize();
 	}//end renderAs()
@@ -168,7 +196,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 	public function testAnEditorMayUpdate(): void {
 		$rendered = $this->renderAs(['editors'], ['@self.can']);
 
-		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
+		$this->assertSame(['update' => true, 'manage' => false], $rendered['@self']['can'] ?? null);
 	}//end testAnEditorMayUpdate()
 
 	/**
@@ -179,7 +207,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 	public function testTheOwnerMayUpdate(): void {
 		$rendered = $this->renderAs([], ['@self.can'], owner: 'alice');
 
-		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
+		$this->assertSame(['update' => true, 'manage' => true], $rendered['@self']['can'] ?? null);
 	}//end testTheOwnerMayUpdate()
 
 	/**
@@ -190,7 +218,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 	public function testAReaderMayNotUpdate(): void {
 		$rendered = $this->renderAs(['readers'], ['@self.can']);
 
-		$this->assertSame(['update' => false], $rendered['@self']['can'] ?? null);
+		$this->assertSame(['update' => false, 'manage' => false], $rendered['@self']['can'] ?? null);
 	}//end testAReaderMayNotUpdate()
 
 	/**
@@ -201,7 +229,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 	public function testTheStringSpellingIsHonoured(): void {
 		$rendered = $this->renderAs(['editors'], 'files,@self.can');
 
-		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
+		$this->assertSame(['update' => true, 'manage' => false], $rendered['@self']['can'] ?? null);
 	}//end testTheStringSpellingIsHonoured()
 
 	/**
@@ -218,8 +246,8 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$reader = $this->renderAs(['readers'], ['@self.can'], $actions);
 		$editor = $this->renderAs(['editors'], ['@self.can'], $actions);
 
-		$this->assertSame(['take' => true, 'update' => false], $reader['@self']['can'] ?? null);
-		$this->assertSame(['take' => false, 'update' => true], $editor['@self']['can'] ?? null);
+		$this->assertSame(['take' => true, 'update' => false, 'manage' => false], $reader['@self']['can'] ?? null);
+		$this->assertSame(['take' => false, 'update' => true, 'manage' => false], $editor['@self']['can'] ?? null);
 	}//end testTheDeclaredActionsAreListedPerCaller()
 
 	/**
@@ -232,4 +260,77 @@ class RenderObjectUpdateRightTest extends TestCase {
 
 		$this->assertArrayNotHasKey('can', $rendered['@self']);
 	}//end testNoMarkerWithoutTheExtend()
+	/**
+	 * An administrator may manage an object somebody else owns.
+	 *
+	 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorMayManage(): void {
+		$rendered = $this->renderAs(['admin'], ['@self.can']);
+
+		$this->assertTrue($rendered['@self']['can']['manage'] ?? null);
+	}//end testAnAdministratorMayManage()
+
+	/**
+	 * A member of the object's owning group may manage it like its named owner.
+	 *
+	 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testTheOwningGroupMayManage(): void {
+		$rendered = $this->renderAs(['team-a'], ['@self.can'], authorization: ['ownerGroup' => 'team-a']);
+
+		$this->assertTrue($rendered['@self']['can']['manage'] ?? null);
+	}//end testTheOwningGroupMayManage()
+
+	/**
+	 * 🔴 An editor who is not the owner may update but not manage, and the
+	 * watchers endpoint refuses the same caller: the marker never offers what
+	 * the endpoint will refuse.
+	 *
+	 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testANonOwningEditorMayNotManageAndTheWatchersEndpointAgrees(): void {
+		$rendered = $this->renderAs(['editors'], ['@self.can']);
+		$this->assertSame(['update' => true, 'manage' => false], $rendered['@self']['can'] ?? null);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(['editors']);
+		$mapper = $this->createMock(\OCA\OpenRegister\Notifications\Db\WatcherMapperInterface::class);
+		$mapper->expects($this->never())->method('subscribe');
+		$watchers = new \OCA\OpenRegister\Service\Interaction\WatcherService(
+			new \OCA\OpenRegister\Service\Interaction\WatcherStore($mapper, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), new NullLogger()),
+			new \OCA\OpenRegister\Service\Interaction\WatcherCaller($session, $groupManager),
+			$this->createMock(\OCA\OpenRegister\Service\Object\PermissionCheckInterface::class),
+			new ObjectScopeResolver()
+		);
+		$object = new ObjectEntity();
+		$object->setUuid('5b0c1f0e-0000-4000-8000-000000000001');
+		$object->setOwner('bob');
+
+		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
+		$watchers->addWatcher(new \OCA\OpenRegister\Service\Interaction\AddressedObject($object, '3', '7'), 'carol');
+	}//end testANonOwningEditorMayNotManageAndTheWatchersEndpointAgrees()
+
+	/**
+	 * When the manage decision cannot be taken it reads false, and `update` still stands.
+	 *
+	 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testAManageDecisionThatCannotBeTakenReadsFalse(): void {
+		$rendered = $this->renderAs([], ['@self.can'], owner: 'alice', wireManage: false);
+
+		$this->assertSame(['update' => true, 'manage' => false], $rendered['@self']['can'] ?? null);
+	}//end testAManageDecisionThatCannotBeTakenReadsFalse()
 }//end class

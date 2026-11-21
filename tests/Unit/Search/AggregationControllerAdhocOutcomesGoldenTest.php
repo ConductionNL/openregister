@@ -32,6 +32,13 @@ use RuntimeException;
  * the query each one hands the runner, and that a refused input never runs.
  *
  * @covers \OCA\OpenRegister\Search\Controller\AggregationController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices
+ * @uses \OCA\OpenRegister\Search\Controller\Support\AggregationRun
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Support\FilterParams
  */
 final class AggregationControllerAdhocOutcomesGoldenTest extends TestCase {
 
@@ -71,7 +78,7 @@ final class AggregationControllerAdhocOutcomesGoldenTest extends TestCase {
 			static fn (string $name, $default = null) => array_key_exists($name, $params) ? $params[$name] : $default
 		);
 		$this->request->method('getParams')->willReturn($params);
-		return new AggregationController($this->request, $this->runner, $this->createMock(TimeseriesRequestValidator::class));
+		return new AggregationController($this->request, new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices($this->runner, $this->createMock(TimeseriesRequestValidator::class)));
 	}//end controller()
 
 	/**

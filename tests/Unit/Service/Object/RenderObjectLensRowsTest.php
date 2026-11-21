@@ -53,6 +53,20 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\PresentationAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class RenderObjectLensRowsTest extends TestCase {
 
@@ -91,25 +105,37 @@ class RenderObjectLensRowsTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new RenderObject(
-			fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Files\Db\FileMapper::class),
-			objectEntityMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class),
-			registerMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\RegisterMapper::class),
-			schemaMapper: $schemaMapper,
-			systemTagManager: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagManager::class),
-			systemTagMapper: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagObjectMapper::class),
-			objectCacheService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class),
-			propertyRbacHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\PropertyRbacHandler::class),
-			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
-			fileService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\FileService::class),
-			computedFieldHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			translationHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			linkedEntityEnricher: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			urnService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\UrnService::class),
-			translationStatusService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\TranslationStatusService::class),
-			translationMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\TranslationMapper::class),
-			languageService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\LanguageService::class),
-			lensResolver: $lenses,
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(originalClassName: \OCA\OpenRegister\Db\RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class)),
+					objectCacheService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Files\Db\FileMapper::class),
+					fileService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\FileService::class),
+					systemTagManager: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagManager::class),
+					systemTagMapper: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(lensResolver: $lenses)
+			),
+			propertyRbacHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\PropertyRbacHandler::class)
 		);
 	}//end renderer()
 

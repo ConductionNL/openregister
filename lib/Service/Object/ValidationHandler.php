@@ -19,13 +19,17 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 
 /**
  * Handles validation operations for ObjectService.
@@ -56,20 +60,14 @@ class ValidationHandler {
 	 * Constructor for ValidationHandler.
 	 *
 	 * @param ValidationErrorResponseInterface $validateHandler Handler for object validation.
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
-	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param MagicMapperInterface $magicMapper Mapper for magic tables.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ValidationErrorResponseInterface $validateHandler,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -98,12 +96,12 @@ class ValidationHandler {
 	 *
 	 * @param int $schemaId The schema ID to validate objects for.
 	 * @param callable $saveCallback Callback function to save/validate objects
-	 *                               (receives: object, extend, register, schema, uuid, rbac, multi, silent).
+	 *                               (receives: object, options, _rbac, _multitenancy, positionally).
 	 *
 	 * @psalm-param   int $schemaId
-	 * @psalm-param   callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
+	 * @psalm-param   callable(array, ObjectSaveOptions, bool, bool): mixed $saveCallback
 	 * @phpstan-param int $schemaId
-	 * @phpstan-param callable(array, array, int|string|null, int, string|null, bool, bool, bool): void $saveCallback
+	 * @phpstan-param callable(array, ObjectSaveOptions, bool, bool): mixed $saveCallback
 	 *
 	 * @return array Array containing 'valid' and 'invalid' objects with details.
 	 *
@@ -122,11 +120,20 @@ class ValidationHandler {
 		$result = ['valid' => [], 'invalid' => []];
 
 		// The mapper's findBySchema() bypasses RBAC and multi-tenancy.
-		foreach ($this->objectEntityMapper->findBySchema($schemaId) as $object) {
+		foreach ($this->catalog->tables()->findBySchema($schemaId) as $object) {
 			$data = $object->getObject();
 			$error = $this->silentSaveError(
 				object: $object,
-				save: static fn () => $saveCallback($data, [], $object->getRegister(), $schemaId, $object->getUuid(), false, false, true)
+				save: static fn () => $saveCallback(
+					$data,
+					new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $schemaId),
+						uuid: $object->getUuid(),
+						policy: new SavePolicy(silent: true),
+					),
+					false,
+					false
+				)
 			);
 			$entry = ['id' => $object->getId(), 'uuid' => $object->getUuid(), 'name' => $object->getName(), 'data' => $data];
 			if ($error === null) {
@@ -193,11 +200,8 @@ class ValidationHandler {
 	 * - total: Total number of objects in the schema (for pagination)
 	 * - errors: Array of error details (currently empty)
 	 *
-	 * @param int $registerId The ID of the register containing the schema
-	 * @param int $schemaId The ID of the schema whose objects should be validated
-	 * @param array $saveCallback Array-callable to save objects, e.g. [$objectService, 'saveObject']
-	 * @param int|null $limit Maximum number of objects to process (null = all)
-	 * @param int $offset Number of objects to skip before processing
+	 * @param SchemaRevalidation $revalidation The register and schema, the page (an unbounded query
+	 *                                         processes every object) and the save callback.
 	 *
 	 * @return array{processed: int, updated: int, failed: int, total: int, errors: array}
 	 *
@@ -205,16 +209,16 @@ class ValidationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validateAndSaveObjectsBySchema(int $registerId, int $schemaId, array $saveCallback, ?int $limit = null, int $offset = 0): array {
-		$loaded = $this->loadSchemaAndRegister(registerId: $registerId, schemaId: $schemaId);
+	public function validateAndSaveObjectsBySchema(SchemaRevalidation $revalidation): array {
+		$run = new ValidationRun(registerId: (int)$revalidation->table->register, schemaId: (int)$revalidation->table->schema);
+		$loaded = $this->loadSchemaAndRegister(registerId: $run->registerId, schemaId: $run->schemaId);
 		if ($loaded === null) {
 			return ['processed' => 0, 'updated' => 0, 'failed' => 0, 'errors' => [['error' => 'Failed to load schema or register']]];
 		}
 
-		$run = new ValidationRun(registerId: $registerId, schemaId: $schemaId);
-		$run->saveCallback = $saveCallback;
-		$run->limit        = $limit;
-		$run->offset       = $offset;
+		$run->saveCallback = $revalidation->saveCallback;
+		$run->limit        = $revalidation->query->limitOrNull();
+		$run->offset       = ($revalidation->query->offset ?? 0);
 
 		return $this->validateLoaded(loaded: $loaded, run: $run);
 	}//end validateAndSaveObjectsBySchema()
@@ -286,8 +290,8 @@ class ValidationHandler {
 	 */
 	private function loadSchemaAndRegister(int $registerId, int $schemaId): ?array {
 		try {
-			$schema = $this->schemaMapper->find($schemaId);
-			$register = $this->registerMapper->find($registerId);
+			$schema = $this->catalog->schemas()->find($schemaId);
+			$register = $this->catalog->registers()->find($registerId);
 
 			return [
 				'schema' => $schema,
@@ -321,7 +325,8 @@ class ValidationHandler {
 	 */
 	private function loadObjectsForValidation(array $loaded, int $schemaId): ?array {
 		try {
-			return $this->magicMapper->findAllInRegisterSchemaTable($loaded['register'], $loaded['schema']);
+			$table = new RegisterSchema(register: $loaded['register'], schema: $loaded['schema']);
+			return $this->catalog->tables()->findAllInRegisterSchemaTable(table: $table);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ValidationHandler] Failed to get objects from magic table',
@@ -573,14 +578,13 @@ class ValidationHandler {
 		// Validation and enrichment update metadata like _name; events are off for performance.
 		return $objectService->saveObjects(
 			objects: $objectsData,
-			register: $run->registerId,
-			schema: $run->schemaId,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $run->registerId, schema: $run->schemaId),
+				validation: true,
+				events: false
+			),
 			_rbac: false,
-			_multitenancy: false,
-			validation: true,
-			events: false,
-			deduplicateIds: false,
-			enrich: true
+			_multitenancy: false
 		);
 	}//end bulkSave()
 

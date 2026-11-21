@@ -42,30 +42,32 @@ interface DelegationConsentServiceInterface {
 	 * requester is emphatically not either — this is the check that stops a
 	 * principal from approving their own request.
 	 *
-	 * @param DelegationGrant $grant      The request being answered.
-	 * @param string          $answeredBy Who is answering.
-	 * @param boolean         $allow      Whether they permit it.
-	 * @param DateTime        $now        The moment of answering.
-	 * @param boolean         $isAdmin    Whether the answerer is an administrator.
-	 * @param DateTime|null   $until      An explicit expiry, or null for the default.
+	 * @param DelegationGrant  $grant  The request being answered.
+	 * @param DelegationCaller $caller Who is answering, and whether they are an administrator.
+	 * @param boolean          $allow  Whether they permit it.
+	 * @param DateTime|null    $until  An explicit expiry, or null for the default.
 	 *
 	 * @return DelegationGrant The answered grant.
 	 *
 	 * @throws InvalidArgumentException When the answerer may not answer this request.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $allow IS the answer, and
-	 *   $isAdmin is a fact about the answerer rather than a mode switch.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $allow IS the answer, not a mode switch.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function answer(
-		DelegationGrant $grant,
-		string $answeredBy,
-		bool $allow,
-		DateTime $now,
-		bool $isAdmin = false,
-		?DateTime $until = null,
-	): DelegationGrant;
+	public function answer(DelegationGrant $grant, DelegationCaller $caller, bool $allow, ?DateTime $until = null): DelegationGrant;
+
+	/**
+	 * The caller answering or withdrawing a grant.
+	 *
+	 * @param string  $uid     The caller's uid.
+	 * @param boolean $isAdmin Whether the caller is an administrator.
+	 *
+	 * @return DelegationCaller The caller.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function caller(string $uid, bool $isAdmin): DelegationCaller;
 
 	/**
 	 * What a user is told when asked to consent.
@@ -91,11 +93,10 @@ interface DelegationConsentServiceInterface {
 	 * creating a second. The caller cannot tell the two apart and should not need
 	 * to — what it needs is "there is a request, park on it".
 	 *
-	 * @param string   $principal The uid that would act.
-	 * @param string   $actingAs  The uid being asked.
-	 * @param array    $scope     What is being asked for.
-	 * @param string   $reason    Why, in the requester's words.
-	 * @param DateTime $now       The moment of asking.
+	 * @param string $principal The uid that would act.
+	 * @param string $actingAs  The uid being asked.
+	 * @param array  $scope     What is being asked for.
+	 * @param string $reason    Why, in the requester's words.
 	 *
 	 * @return DelegationGrant The outstanding request.
 	 *
@@ -103,29 +104,19 @@ interface DelegationConsentServiceInterface {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function request(
-		string $principal,
-		string $actingAs,
-		array $scope,
-		string $reason,
-		DateTime $now,
-	): DelegationGrant;
+	public function request(string $principal, string $actingAs, array $scope, string $reason): DelegationGrant;
 
 	/**
 	 * Withdraw a granted delegation.
 	 *
-	 * @param DelegationGrant $grant     The grant to withdraw.
-	 * @param string          $revokedBy Who is withdrawing it.
-	 * @param DateTime        $now       The moment.
-	 * @param boolean         $isAdmin   Whether the revoker is an administrator.
+	 * @param DelegationGrant  $grant  The grant to withdraw.
+	 * @param DelegationCaller $caller Who is withdrawing it, and whether they are an administrator.
 	 *
 	 * @return DelegationGrant The revoked grant.
 	 *
 	 * @throws InvalidArgumentException When the revoker may not withdraw it.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isAdmin is a fact about the caller.
-	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function revoke(DelegationGrant $grant, string $revokedBy, DateTime $now, bool $isAdmin = false): DelegationGrant;
+	public function revoke(DelegationGrant $grant, DelegationCaller $caller): DelegationGrant;
 }//end interface

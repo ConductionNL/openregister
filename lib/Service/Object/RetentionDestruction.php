@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Object;
  *
  * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
  */
-final class RetentionDestruction {
+final class RetentionDestruction implements RetentionDestructionInterface {
 
 	/**
 	 * How many destructions are running on this call stack.

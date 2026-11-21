@@ -21,6 +21,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
+use OCA\OpenRegister\Service\Object\CacheHandlerStores;
+use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -48,9 +51,29 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\NameLookupRun
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
+ * @uses \OCA\OpenRegister\Service\Object\MagicNameLoadRun
+ * @uses \OCA\OpenRegister\Service\Object\NameTableQuery
+ * @uses \OCA\OpenRegister\Service\Object\NameVisibilityRun
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\Register\MagicMappingConfig
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerRuntime
+ * @uses \OCA\OpenRegister\Service\Object\CacheHandlerStores
+ * @uses \OCA\OpenRegister\Service\Object\CacheNameScopeSources
+ * @uses \OCA\OpenRegister\Service\Object\CachedName
+ * @uses \OCA\OpenRegister\Service\Object\MagicNameLoadRun
+ * @uses \OCA\OpenRegister\Service\Object\NameTableQuery
+ * @uses \OCA\OpenRegister\Service\Object\NameVisibilityRun
  */
 class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 
@@ -415,15 +438,21 @@ class CacheHandlerMultipleNamesGoldenTest extends TestCase {
 		}
 
 		return new CacheHandler(
-			organisationMapper: $organisationMapper,
-			logger: $logger,
-			cacheFactory: $cacheFactory,
-			userSession: $session,
-			container: $container,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			db: $db,
-			groupManager: $groupManager
+			stores: new CacheHandlerStores(
+				organisationMapper: $organisationMapper,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				db: $db
+			),
+			runtime: new CacheHandlerRuntime(
+				logger: $logger,
+				cacheFactory: $cacheFactory,
+				container: $container
+			),
+			nameScope: new CacheNameScopeSources(
+				userSession: $session,
+				groupManager: $groupManager
+			)
 		);
 	}//end handler()
 }//end class

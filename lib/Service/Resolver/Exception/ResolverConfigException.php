@@ -49,15 +49,14 @@ abstract class ResolverConfigException extends Exception {
 	/**
 	 * Construct the refusal with diagnostic context.
 	 *
-	 * @param string         $appId     Consumer app id.
-	 * @param string         $configKey Config key the resolver read.
-	 * @param string         $message   The message.
-	 * @param int            $code      The HTTP-style status code.
-	 * @param Exception|null $previous  Previous exception in the chain.
+	 * @param ResolverConfigKey $config   The app and config key the refusal is about.
+	 * @param string            $message  The message.
+	 * @param int               $code     The HTTP-style status code.
+	 * @param Exception|null    $previous Previous exception in the chain.
 	 */
-	protected function __construct(string $appId, string $configKey, string $message, int $code, ?Exception $previous) {
-		$this->appId = $appId;
-		$this->configKey = $configKey;
+	protected function __construct(ResolverConfigKey $config, string $message, int $code, ?Exception $previous) {
+		$this->appId     = $config->appId;
+		$this->configKey = $config->configKey;
 
 		parent::__construct(message: $message, code: $code, previous: $previous);
 	}//end __construct()

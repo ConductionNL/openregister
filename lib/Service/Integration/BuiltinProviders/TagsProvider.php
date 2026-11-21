@@ -30,8 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
-use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\IL10N;
+use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 
@@ -41,7 +43,7 @@ use OCP\SystemTag\ISystemTagObjectMapper;
  * routes for now (the legacy path remains the authoritative writer
  * until the umbrella's controller refactor in tasks 18-22).
  */
-class TagsProvider extends AbstractIntegrationProvider {
+class TagsProvider extends CoreIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
@@ -86,24 +88,6 @@ class TagsProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Group identifier for UI grouping (or null).
-	 *
-	 * @return string|null Group identifier for UI grouping (or null).
-	 */
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	/**
-	 * Required NC app id (null = built-in).
-	 *
-	 * @return string|null Required app id (null = built-in).
-	 */
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
-	/**
 	 * Storage strategy hint for the registry.
 	 *
 	 * @return string Storage strategy hint for the registry.
@@ -113,27 +97,27 @@ class TagsProvider extends AbstractIntegrationProvider {
 	}//end getStorageStrategy()
 
 	/**
-	 * True when the provider is available for use.
-	 *
-	 * @return bool True when the provider is available for use.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
 	 * List tags attached to the given OR object.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Reserved.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-15
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->tagRowsOf(objectId: $ref->id);
+	}//end list()
+
+	/**
+	 * The system tags assigned to an object, as leaf rows.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function tagRowsOf(string $objectId): array {
 		try {
 			$tagIds = $this->objectMapper->getTagIdsForObjects([$objectId], 'openregister');
 			$ids = $tagIds[$objectId] ?? [];
@@ -142,33 +126,36 @@ class TagsProvider extends AbstractIntegrationProvider {
 				return [];
 			}
 
-			$tags = $this->tagManager->getTagsByIds($ids);
-			$rows = [];
-			foreach ($tags as $tag) {
-				$rows[] = [
-					'id' => (string)$tag->getId(),
-					'name' => $tag->getName(),
-					'visibility' => $tag->isUserVisible(),
-					'assignable' => $tag->isUserAssignable(),
-				];
-			}
-
-			return $rows;
+			return array_values(array_map(self::tagRow(...), $this->tagManager->getTagsByIds($ids)));
 		} catch (\Throwable $e) {
 			// The object may simply have no tags or the mapping might
 			// not yet exist. Surface an empty list rather than 500.
 			return [];
 		}//end try
-	}//end list()
+	}//end tagRowsOf()
+
+	/**
+	 * One system tag as a leaf row.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function tagRow(ISystemTag $tag): array {
+		return [
+			'id' => (string)$tag->getId(),
+			'name' => $tag->getName(),
+			'visibility' => $tag->isUserVisible(),
+			'assignable' => $tag->isUserAssignable(),
+		];
+	}//end tagRow()
 
 	/**
 	 * Mutation methods routed through the existing TagsController for
 	 * now — keep the umbrella focused on the registry contract and
 	 * leave the write-path consolidation to tasks 18-22.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
@@ -179,7 +166,7 @@ class TagsProvider extends AbstractIntegrationProvider {
 	 * @spec exclude NotImplemented write stub — tag writes still route through TagsController;
 	 *   the consolidated write path is owned by pluggable-integration-registry tasks 18-22, not this stub.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
+	public function create(ObjectRef $ref, array $payload): array {
 		throw new NotImplementedException(
 			message: 'TagsProvider write path delegates to TagsController for now (umbrella tasks 18-22).'
 		);

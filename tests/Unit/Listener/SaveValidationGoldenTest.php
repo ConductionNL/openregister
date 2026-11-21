@@ -30,10 +30,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\BulkAction\AssignActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
-use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
+use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
+use OCA\OpenRegister\BulkAction\TransitionActionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -44,17 +45,18 @@ use OCA\OpenRegister\Exception\CodedValueException;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
+use OCA\OpenRegister\Listener\Support\BulkEditActions;
+use OCA\OpenRegister\Listener\Support\BulkSetActions;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueWrite;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Listener\Support\BulkEditActions;
-use OCA\OpenRegister\Listener\Support\BulkSetActions;
 
 /**
  * Golden outcomes of the save validation listeners.
@@ -132,8 +134,8 @@ class SaveValidationGoldenTest extends TestCase {
 		);
 		$guard = $this->createMock(CodedValueGuard::class);
 		$guard->method('enforce')->willReturnCallback(
-			function (array $object) use ($enforce, &$calls): void {
-				$calls[] = 'enforce:'.json_encode($object);
+			function (CodedValueWrite $write) use ($enforce, &$calls): void {
+				$calls[] = 'enforce:'.json_encode($write->object);
 				if ($enforce !== null) {
 					throw $enforce;
 				}
@@ -321,14 +323,14 @@ class SaveValidationGoldenTest extends TestCase {
 		);
 
 		$listener = new BulkActionRegistrationListener(
-			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule')),
-			new BulkSetActions($make(ExportWholeSetAction::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
+			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule'), $make(TransitionActionInterface::class, 'transition')),
+			new BulkSetActions($make(WholeSetExportActionInterface::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
 			$this->logger()
 		);
 		$listener->handle(new Event());
 		$listener->handle(new BulkActionRegistrationEvent($registry));
 
-		self::assertSame(['set', 'rule', 'export', 'restore', 'run'], $registered);
+		self::assertSame(['set', 'rule', 'export', 'restore', 'run', 'transition'], $registered);
 		self::assertSame(['[BulkActionRegistration] Could not register a built-in action {"action":"assign","error":"taken"}'], $this->warnings);
 	}//end testBulkActionsRegisterInOrder()
 }//end class

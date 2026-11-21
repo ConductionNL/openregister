@@ -50,7 +50,10 @@ class NestedPathFilter {
 	/**
 	 * Operator keys of an operator bag.
 	 */
-	public const OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', NullFilter::OR_NULL_MODIFIER, LikeOperator::KEY];
+	public const OPERATORS = [
+		'gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull',
+		NullFilter::OR_NULL_MODIFIER, LikeOperator::KEY, NullFilter::IN_OR_EMPTY,
+	];
 
 	/**
 	 * A path segment: a property name, nothing that could leave the JSON path.
@@ -60,6 +63,14 @@ class NestedPathFilter {
 	 * 500 instead of the refusal this class intends).
 	 */
 	private const SEGMENT = '/^[A-Za-z0-9_\-]+\z/';
+
+	/**
+	 * The property types stored as a JSON object whose members a filter may name.
+	 *
+	 * A `calendar-range` is stored as `{ start, end }`, so `period.start` and
+	 * `period.end` take the same operators as a member of an `object`.
+	 */
+	private const STRUCTURED_TYPES = ['object', 'calendar-range'];
 
 	/**
 	 * Split a filter map into the filters on columns and the filters on a path inside an object property.
@@ -91,43 +102,39 @@ class NestedPathFilter {
 	/**
 	 * The SQL expression reading the text at a path inside an object column, or null when a segment is not a plain name.
 	 *
-	 * @param string       $column     The quoted, qualified column.
-	 * @param list<string> $path       The segments below the column.
-	 * @param bool         $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $column The quoted, qualified column and its platform.
+	 * @param list<string>     $path   The segments below the column.
 	 *
 	 * @return string|null The expression.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	public function expression(string $column, array $path, bool $isPostgres): ?string {
+	public function expression(NestedPathTarget $column, array $path): ?string {
 		if (self::isPlainPath(path: $path) === false) {
 			return null;
 		}
 
-		if ($isPostgres === true) {
-			return "({$column} #>> '{" . implode(',', $path) . "}')";
+		if ($column->isPostgres === true) {
+			return "({$column->expression} #>> '{" . implode(',', $path) . "}')";
 		}
 
-		return "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$." . implode('.', $path) . "'))";
+		return "JSON_UNQUOTE(JSON_EXTRACT({$column->expression}, '$." . implode('.', $path) . "'))";
 	}//end expression()
 
 	/**
-	 * The SQL conditions of one path filter.
+	 * The SQL conditions of one path filter on its target.
 	 *
-	 * `$bind` turns a value into its SQL form: a named parameter on the
-	 * QueryBuilder path, a quoted literal on the raw UNION path.
+	 * The target's binder turns a value into its SQL form: a named parameter
+	 * on the QueryBuilder path, a quoted literal on the raw UNION path.
 	 *
-	 * @param string   $expression The expression from expression().
-	 * @param mixed    $value      The filter value: a scalar, a list, or an operator bag.
-	 * @param callable $bind       Value to SQL: fn(string $value): string.
-	 * @param bool     $isPostgres Whether the platform is PostgreSQL.
+	 * @param NestedPathTarget $target The expression from expression(), its binder and the platform.
+	 * @param mixed            $value  The filter value: a scalar, a list, or an operator bag.
 	 *
 	 * @return list<string> The conditions, all of which must hold.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	public function conditions(string $expression, mixed $value, callable $bind, bool $isPostgres): array {
-		$target = new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres);
+	public function conditions(NestedPathTarget $target, mixed $value): array {
 		if (is_array($value) === false) {
 			return [self::scalarCondition(target: $target, value: $value)];
 		}
@@ -296,15 +303,17 @@ class NestedPathFilter {
 	}//end descends()
 
 	/**
-	 * Whether a property is declared with type object.
+	 * Whether a property is declared with a type stored as a JSON object: object or calendar-range.
 	 *
 	 * @param array<string,mixed> $properties The schema's properties.
 	 * @param string              $name       The property.
 	 *
-	 * @return bool True for an object property.
+	 * @return bool True for an object or calendar-range property.
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md#requirement-a-calendar-range-property-holds-a-start-and-an-end-as-one-value
 	 */
 	private static function isObjectProperty(array $properties, string $name): bool {
-		return is_array($properties[$name] ?? null) === true && ($properties[$name]['type'] ?? null) === 'object';
+		return is_array($properties[$name] ?? null) === true && in_array(($properties[$name]['type'] ?? null), self::STRUCTURED_TYPES, true) === true;
 	}//end isObjectProperty()
 
 	/**

@@ -33,21 +33,49 @@ namespace OCA\OpenRegister\Listener\Support;
 final class StateFieldWrite {
 
 	/**
+	 * The object as it would be saved.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $newData;
+
+	/**
+	 * The object as currently stored; null on a create.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private readonly ?array $oldData;
+
+	/**
+	 * The state the object ends in.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $toState;
+
+	/**
+	 * The state the stored object is in; null on a create.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $fromState;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<string, mixed>      $annotation The lifecycle annotation.
-	 * @param array<string, mixed>      $newData    The object as it would be saved.
-	 * @param array<string, mixed>|null $oldData    The object as currently stored; null on a create.
-	 * @param string|null               $toState    The state the object ends in.
-	 * @param string|null               $fromState  The state the stored object is in; null on a create.
+	 * @param array<string, mixed>   $annotation The lifecycle annotation.
+	 * @param StateFieldVersion      $new        The object as it would be saved, and its state.
+	 * @param StateFieldVersion|null $old        The object as currently stored, and its state; null on a create.
 	 */
 	public function __construct(
 		public readonly array $annotation,
-		public readonly array $newData,
-		private readonly ?array $oldData,
-		public readonly ?string $toState,
-		public readonly ?string $fromState,
+		StateFieldVersion $new,
+		?StateFieldVersion $old,
 	) {
+		$this->newData = $new->data;
+		$this->toState = $new->state;
+		$this->oldData = $old?->data;
+		$this->fromState = $old?->state;
 	}//end __construct()
 
 	/**

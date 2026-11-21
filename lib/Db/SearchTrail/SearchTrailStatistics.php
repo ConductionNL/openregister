@@ -74,12 +74,11 @@ final class SearchTrailStatistics {
 	/**
 	 * Totals over the range: searches, results, averages, non-empty searches.
 	 *
-	 * @param DateTime|null $from Start of the range, or open.
-	 * @param DateTime|null $to   End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return array<string, int|float>
 	 */
-	public function summary(?DateTime $from, ?DateTime $to): array {
+	public function summary(CreatedRange $range): array {
 		$qb = $this->db->getQueryBuilder();
 		$totalResultsSql = 'COALESCE(SUM(CASE WHEN total_results IS NOT NULL THEN total_results ELSE 0 END), 0) AS total_results';
 		$avgResultsSql = 'AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search';
@@ -89,7 +88,7 @@ final class SearchTrailStatistics {
 			->addSelect($qb->createFunction('COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches'))
 			->from($this->table);
 
-		return $this->summaryOf(stats: $this->fetchRow(qb: $qb, range: [$from, $to]));
+		return $this->summaryOf(stats: $this->fetchRow(qb: $qb, range: [$range->from, $range->to]));
 	}//end summary()
 
 	/**
@@ -113,12 +112,11 @@ final class SearchTrailStatistics {
 	 * The most searched terms.
 	 *
 	 * @param int           $limit How many.
-	 * @param DateTime|null $from  Start of the range, or open.
-	 * @param DateTime|null $to    End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function popularTerms(int $limit, ?DateTime $from, ?DateTime $to): array {
+	public function popularTerms(int $limit, CreatedRange $range): array {
 		$qb = $this->db->getQueryBuilder();
 		$this->selectAverages(qb: $qb, columns: ['search_term']);
 		$this->whereNotEmpty(qb: $qb, column: 'search_term')
@@ -126,19 +124,18 @@ final class SearchTrailStatistics {
 			->orderBy('search_count', 'DESC')
 			->setMaxResults($limit);
 
-		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$from, $to]), labels: ['term' => 'search_term']);
+		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$range->from, $range->to]), labels: ['term' => 'search_term']);
 	}//end popularTerms()
 
 	/**
 	 * Search activity per period of the interval.
 	 *
 	 * @param string        $interval hour, day, week or month (anything else is day).
-	 * @param DateTime|null $from     Start of the range, or open.
-	 * @param DateTime|null $to       End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function activityByTime(string $interval, ?DateTime $from, ?DateTime $to): array {
+	public function activityByTime(string $interval, CreatedRange $range): array {
 		$qb = $this->db->getQueryBuilder();
 		$this->selectAverages(qb: $qb, columns: [])
 			->groupBy('date_period')
@@ -149,7 +146,7 @@ final class SearchTrailStatistics {
 			$qb->addSelect($qb->createFunction($period));
 		}
 
-		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$from, $to]), labels: ['period' => 'date_period']);
+		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$range->from, $range->to]), labels: ['period' => 'date_period']);
 	}//end activityByTime()
 
 	/**
@@ -179,31 +176,29 @@ final class SearchTrailStatistics {
 	/**
 	 * Searches per register and schema.
 	 *
-	 * @param DateTime|null $from Start of the range, or open.
-	 * @param DateTime|null $to   End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function byRegisterSchema(?DateTime $from, ?DateTime $to): array {
+	public function byRegisterSchema(CreatedRange $range): array {
 		$columns = ['register', 'schema', 'register_uuid', 'schema_uuid'];
 		$qb = $this->db->getQueryBuilder();
 		$this->selectAverages(qb: $qb, columns: $columns)
 			->groupBy(...$columns)
 			->orderBy('search_count', 'DESC');
 
-		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$from, $to]), labels: array_combine($columns, $columns));
+		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$range->from, $range->to]), labels: array_combine($columns, $columns));
 	}//end byRegisterSchema()
 
 	/**
 	 * The user agents that search most.
 	 *
 	 * @param int           $limit How many.
-	 * @param DateTime|null $from  Start of the range, or open.
-	 * @param DateTime|null $to    End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function userAgents(int $limit, ?DateTime $from, ?DateTime $to): array {
+	public function userAgents(int $limit, CreatedRange $range): array {
 		$qb = $this->db->getQueryBuilder();
 		$this->selectAverages(qb: $qb, columns: ['user_agent'])
 			->where($qb->expr()->isNotNull('user_agent'))
@@ -211,53 +206,50 @@ final class SearchTrailStatistics {
 			->orderBy('search_count', 'DESC')
 			->setMaxResults($limit);
 
-		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$from, $to]), labels: ['user_agent' => 'user_agent']);
+		return $this->withAverages(rows: $this->fetchRows(qb: $qb, range: [$range->from, $range->to]), labels: ['user_agent' => 'user_agent']);
 	}//end userAgents()
 
 	/**
 	 * How many distinct non-empty values a column holds over the range.
 	 *
 	 * @param string        $column The column.
-	 * @param DateTime|null $from   Start of the range, or open.
-	 * @param DateTime|null $to     End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return int
 	 */
-	public function distinctCount(string $column, ?DateTime $from, ?DateTime $to): int {
+	public function distinctCount(string $column, CreatedRange $range): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectDistinct($column)
 			->from($this->table);
 		$this->whereNotEmpty(qb: $qb, column: $column);
 
-		return count($this->fetchRows(qb: $qb, range: [$from, $to]));
+		return count($this->fetchRows(qb: $qb, range: [$range->from, $range->to]));
 	}//end distinctCount()
 
 	/**
 	 * The average number of searches per session.
 	 *
-	 * @param DateTime|null $from Start of the range, or open.
-	 * @param DateTime|null $to   End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return float
 	 */
-	public function searchesPerSession(?DateTime $from, ?DateTime $to): float {
+	public function searchesPerSession(CreatedRange $range): float {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total_searches'), $qb->createFunction('COUNT(DISTINCT session) as unique_sessions'))
 			->from($this->table);
 		$this->whereNotEmpty(qb: $qb, column: 'session');
 
-		return $this->perSession(data: $this->fetchRow(qb: $qb, range: [$from, $to]), countKey: 'total_searches');
+		return $this->perSession(data: $this->fetchRow(qb: $qb, range: [$range->from, $range->to]), countKey: 'total_searches');
 	}//end searchesPerSession()
 
 	/**
 	 * The average number of object reads per session, from the audit trail.
 	 *
-	 * @param DateTime|null $from Start of the range, or open.
-	 * @param DateTime|null $to   End of the range, or open.
+	 * @param CreatedRange $range The created window.
 	 *
 	 * @return float
 	 */
-	public function objectViewsPerSession(?DateTime $from, ?DateTime $to): float {
+	public function objectViewsPerSession(CreatedRange $range): float {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total_views'), $qb->createFunction('COUNT(DISTINCT session) as unique_sessions'))
 			->from('openregister_audit_trails')
@@ -265,7 +257,7 @@ final class SearchTrailStatistics {
 			->andWhere($qb->expr()->isNotNull('session'))
 			->andWhere($qb->expr()->neq('session', $qb->createNamedParameter('')));
 
-		return $this->perSession(data: $this->fetchRow(qb: $qb, range: [$from, $to]), countKey: 'total_views');
+		return $this->perSession(data: $this->fetchRow(qb: $qb, range: [$range->from, $range->to]), countKey: 'total_views');
 	}//end objectViewsPerSession()
 
 	/**

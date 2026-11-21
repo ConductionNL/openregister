@@ -30,10 +30,13 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\PersonLinkRef;
+use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Service\PersonLinkTargets;
+use OCA\OpenRegister\Service\UserLinkRequest;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IURLGenerator;
@@ -104,14 +107,15 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		);
 		$userLinks = $this->createMock(UserLinkWriter::class);
 		$userLinks->method('write')->willReturnCallback(
-			function (...$args): ContactLink {
-				$this->calls[] = 'user:'.json_encode($args);
+			function (UserLinkRequest $request, ?string $role): ContactLink {
+				$this->calls[] = 'user:'.json_encode([$request->objectUuid, $request->registerId, $request->schemaId, $request->userId, $role]);
 				return new ContactLink();
 			}
 		);
 		$contacts = $this->createMock(ContactService::class);
-		$contacts->method('linkContact')->willReturnCallback(
-			function (...$args): ContactLink {
+		$contacts->method('linkCard')->willReturnCallback(
+			function (\OCA\OpenRegister\Service\ContactCardRef $card, \OCA\OpenRegister\Service\ContactPlacement $placement): ContactLink {
+				$args = [$placement->objectUuid, $placement->registerId, $card->addressbookId, $card->contactUri, $placement->role, $placement->schemaId];
 				$this->calls[] = 'contact:'.json_encode($args);
 				return new ContactLink();
 			}
@@ -126,12 +130,12 @@ class PersonLinkWriteGoldenTest extends TestCase {
 	 */
 	public function testLink(): void {
 		$service = $this->personLinks();
-		$service->link('case-1', 9, 3, ['userId' => ' jan ', 'role' => ' handler ']);
-		$service->link('case-1', 9, 3, ['userId' => 'jan']);
-		$service->link('case-1', 9, 4, ['userId' => 'jan', 'role' => 'anything']);
-		$service->link('case-1', 9, 5, ['userId' => 'jan', 'role' => 'anything']);
-		$service->link('case-1', 9, null, ['addressbookId' => '2', 'contactUri' => ' c.vcf ', 'role' => 'x']);
-		$service->link('case-1', 9, 3, ['userId' => '  ', 'addressbookId' => 2, 'contactUri' => 'c.vcf', 'role' => 'initiator']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => ' jan ', 'role' => ' handler ']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => 'jan']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 4), ['userId' => 'jan', 'role' => 'anything']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 5), ['userId' => 'jan', 'role' => 'anything']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, null), ['addressbookId' => '2', 'contactUri' => ' c.vcf ', 'role' => 'x']);
+		$service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => '  ', 'addressbookId' => 2, 'contactUri' => 'c.vcf', 'role' => 'initiator']);
 		$this->assertSame(
 			[
 				'schema:3',
@@ -150,10 +154,10 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		);
 
 		$this->calls = [];
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['userId' => 'jan', 'role' => 'boss']), 400, 'Role "boss" is not one of: initiator, handler');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['role' => 'handler']), 400, 'Either userId or addressbookId+contactUri is required');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['addressbookId' => 0, 'contactUri' => 'c.vcf']), 400, 'Either userId or addressbookId+contactUri is required');
-		$this->assertRefused(fn () => $service->link('case-1', 9, 3, ['addressbookId' => 2, 'contactUri' => ' ']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['userId' => 'jan', 'role' => 'boss']), 400, 'Role "boss" is not one of: initiator, handler');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['role' => 'handler']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['addressbookId' => 0, 'contactUri' => 'c.vcf']), 400, 'Either userId or addressbookId+contactUri is required');
+		$this->assertRefused(fn () => $service->linkPerson(new PersonLinkTarget('case-1', 9, 3), ['addressbookId' => 2, 'contactUri' => ' ']), 400, 'Either userId or addressbookId+contactUri is required');
 		$this->assertSame(['schema:3', 'schema:3', 'schema:3', 'schema:3'], $this->calls);
 	}//end testLink()
 
@@ -172,7 +176,8 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$existing->setContactUid('user:jan');
 		$existing->setNote('kept');
 		$links->method('findByObjectContactAndRole')->willReturnCallback(
-			function (...$args) use ($existing): ?ContactLink {
+			function (PersonLinkRef $ref) use ($existing): ?ContactLink {
+				$args = [$ref->objectUuid, $ref->contactUid, $ref->role];
 				$this->calls[] = 'find:'.json_encode($args);
 				if ($args[2] === 'handler') {
 					return $existing;
@@ -217,13 +222,13 @@ class PersonLinkWriteGoldenTest extends TestCase {
 		$session->method('getUser')->willReturnOnConsecutiveCalls($admin, $admin, null, null);
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRoute')->willReturnCallback(fn (string $route, array $args): string => $route.'?'.http_build_query($args));
-		$writer = new UserLinkWriter($links, $users, $session, $urls);
+		$writer = new UserLinkWriter($links, new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $this->createMock(\OCP\IGroupManager::class)), $urls);
 
-		$writer->write('case-1', 5, null, 'jan', null);
-		$writer->write('case-1', 5, 7, 'jan', 'handler');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'ghost', 'handler'), 404, 'User not found');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'jan', 'handler'), 401, 'No user logged in');
-		$this->assertRefused(fn () => $writer->write('case-1', 5, 7, 'ghost', 'handler'), 404, 'User not found');
+		$writer->write(new UserLinkRequest('case-1', 5, null, 'jan'), null);
+		$writer->write(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'ghost'), 'handler'), 404, 'User not found');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler'), 401, 'No user logged in');
+		$this->assertRefused(fn () => $writer->write(new UserLinkRequest('case-1', 5, 7, 'ghost'), 'handler'), 404, 'User not found');
 		$this->assertSame(
 			[
 				'find:["case-1","user:jan",null]',

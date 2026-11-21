@@ -35,10 +35,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Controller\Support\WorkingCalendarControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,9 +50,6 @@ use OCP\IUserSession;
 
 /**
  * Previews the non-working dates a calendar definition produces in a year.
- *
- * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendars::fromDefinition() is the
- * value object's validating named constructor.
  */
 class WorkingCalendarController extends Controller {
 
@@ -73,22 +72,42 @@ class WorkingCalendarController extends Controller {
 	public const MAX_YEAR = 2200;
 
 	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Answers whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Builds and validates the definition.
+	 *
+	 * @var WorkingCalendarDefinitionsInterface
+	 */
+	private readonly WorkingCalendarDefinitionsInterface $calendars;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
-	 * @param IRequest $request The current request.
-	 * @param IUserSession $userSession Resolves the caller.
-	 * @param IGroupManager $groupManager Answers whether they are an administrator.
+	 * @param IRequest                          $request  The current request.
+	 * @param WorkingCalendarControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		WorkingCalendarControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->calendars = $services->calendars;
 	}//end __construct()
 
 	/**
@@ -114,7 +133,7 @@ class WorkingCalendarController extends Controller {
 	 *
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-working-calendars-are-administered-under-nextcloud-admin-settings
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function preview(array $calendar = [], int $year = 0): JSONResponse {
 		$refusal = $this->requireAdmin() ?? $this->refuseYear(year: $year);
 		if ($refusal !== null) {
@@ -122,7 +141,7 @@ class WorkingCalendarController extends Controller {
 		}
 
 		try {
-			$definition = WorkingCalendars::fromDefinition(definition: $calendar);
+			$definition = $this->calendars->parse(definition: $calendar);
 		} catch (FlowTimerValidationException $refused) {
 			return $this->invalidDefinition(refused: $refused);
 		}

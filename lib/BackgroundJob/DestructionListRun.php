@@ -24,23 +24,31 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\Object\RetentionDestruction;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
+use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Claims an approved list, destroys its entries in batches, and records the outcome.
@@ -100,11 +108,25 @@ final class DestructionListRun {
 	private readonly DeleteObject $deleteObject;
 
 	/**
+	 * Opens the retention-destruction frame, so no lock or archive stops the delete.
+	 *
+	 * @var RetentionDestructionInterface
+	 */
+	private readonly RetentionDestructionInterface $retentionDestruction;
+
+	/**
 	 * Saves the destruction certificate.
 	 *
 	 * @var SaveObjectWriterInterface
 	 */
 	private readonly SaveObjectWriterInterface $saveObject;
+
+	/**
+	 * Writes the restorable copy of each object before it is destroyed.
+	 *
+	 * @var DestructionCopyWriter
+	 */
+	private readonly DestructionCopyWriter $copyWriter;
 
 	/**
 	 * Archival settings.
@@ -146,13 +168,15 @@ final class DestructionListRun {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->retentionService = $container->get(RetentionServiceInterface::class);
-		$settingsHandler        = $container->get(ArchivalSettingsReaderInterface::class);
-		$this->objectMapper     = $container->get(MagicMapperInterface::class);
-		$this->auditMapper      = $container->get(AuditTrailMapperInterface::class);
-		$this->deleteObject     = $container->get(DeleteObject::class);
-		$this->saveObject       = $container->get(SaveObjectWriterInterface::class);
-		$this->settings         = $settingsHandler->getArchivalSettingsOnly();
+		$this->retentionService     = $container->get(RetentionServiceInterface::class);
+		$settingsHandler            = $container->get(ArchivalSettingsInterface::class);
+		$this->objectMapper         = $container->get(MagicMapperInterface::class);
+		$this->auditMapper          = $container->get(AuditTrailMapperInterface::class);
+		$this->deleteObject         = $container->get(DeleteObject::class);
+		$this->retentionDestruction = $container->get(RetentionDestructionInterface::class);
+		$this->saveObject           = $container->get(SaveObjectWriterInterface::class);
+		$this->settings             = $settingsHandler->getArchivalSettingsOnly();
+		$this->copyWriter           = new DestructionCopyWriter();
 	}//end __construct()
 
 	/**
@@ -302,32 +326,66 @@ final class DestructionListRun {
 			return;
 		}
 
+		// The copy first: a failed copy throws here, before the object is
+		// marked, audited or deleted (import-preview-and-conflict-policy D-4).
+		$copy = $this->copy(object: $object);
+
 		$retention = $object->getRetention() ?? [];
 		$retention['archiefstatus'] = RecordStateInterface::DESTROYED;
 		$object->setRetention($retention);
-		$this->audit(object: $object, objRef: $objRef);
+		$this->audit(object: $object, objRef: $objRef, copy: $copy);
 
-		(new RetentionDestruction())->run(
-			fn (): bool => $this->deleteObject->deleteObject($object->getRegister(), $object->getSchema(), (string)$uuid, null, false, false)
+		$request = new DeletionRequest(register: $object->getRegister(), schema: $object->getSchema(), uuid: (string)$uuid);
+		$this->retentionDestruction->run(
+			fn (): bool => $this->deleteObject->deleteObject($request, false, false)
 		);
 		$this->count['destroyed']++;
 	}//end destroyObject()
+
+	/**
+	 * Write the restorable copy of an object to the configured copy location.
+	 *
+	 * Without a configured location no copy is written and the destruction
+	 * runs as it always has; with one, the copy must succeed for the
+	 * destruction to run.
+	 *
+	 * @param ObjectEntity $object Object about to be destroyed
+	 *
+	 * @return string|null The path of the copy, or null when no location is configured
+	 *
+	 * @throws RuntimeException When the copy cannot be written; the message names the location
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 */
+	private function copy(ObjectEntity $object): ?string {
+		$location = trim((string) ($this->settings['destructionCopyLocation'] ?? ''));
+		if ($location === '') {
+			return null;
+		}
+
+		return $this->copyWriter->write(location: $location, listUuid: $this->listUuid, object: $object);
+	}//end copy()
 
 	/**
 	 * Write the `archival.destroyed` audit trail entry of an object.
 	 *
 	 * @param ObjectEntity         $object Object about to be destroyed
 	 * @param array<string, mixed> $objRef Its list entry
+	 * @param string|null          $copy   Where its restorable copy was written, when one was
 	 *
 	 * @return void
 	 */
-	private function audit(ObjectEntity $object, array $objRef): void {
+	private function audit(ObjectEntity $object, array $objRef, ?string $copy=null): void {
 		$context = [
 			'destructionListUuid' => $this->listUuid,
 			'classification' => $objRef['classification'] ?? null,
 			'approvedBy' => array_column($this->listData['approvals'] ?? [], 'userId'),
 		];
-		$this->auditMapper->createAuditTrailEntry($object, 'archival.destroyed', $context);
+		if ($copy !== null) {
+			// The recorded destruction names its copy (REQ-IPC-004).
+			$context['copy'] = $copy;
+		}
+		$this->auditMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: 'archival.destroyed', context: $context));
 	}//end audit()
 
 	/**
@@ -363,7 +421,7 @@ final class DestructionListRun {
 	 */
 	private function saveCertificate(): void {
 		$data        = $this->listData;
-		$certificate = $this->retentionService->generateDestructionCertificate($data, $this->count['destroyed'], $data['executedAt']);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($data, $this->count['destroyed'], $data['executedAt']));
 		if (empty($this->settings['archivalRegister']) === true || empty($this->settings['destructionListSchema']) === true) {
 			return;
 		}
@@ -371,7 +429,8 @@ final class DestructionListRun {
 		try {
 			$register  = $this->settings['archivalRegister'];
 			$schema    = $this->settings['destructionListSchema'];
-			$savedCert = $this->saveObject->saveObject($register, $schema, $certificate, null, false, false, true, true);
+			$options   = new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), policy: new SavePolicy(silent: true));
+			$savedCert = $this->saveObject->saveObject(data: $certificate, options: $options, _rbac: false, _multitenancy: false);
 			$this->listData['certificateUuid'] = $savedCert->getUuid();
 		} catch (Exception $e) {
 			$this->logger->warning('[DestructionExecutionJob] Certificate save error: '.$e->getMessage());

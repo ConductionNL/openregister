@@ -43,7 +43,6 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
 				'OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator',
 				'OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator',
-				'OCA\OpenRegister\Repair\LogDanglingLinkedTypes',
 				'OCA\OpenRegister\Service\Integration\LeafRegistry',
 				'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider',
 				'OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider',
@@ -66,16 +65,13 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Integration\Providers\SharesProvider',
 				'OCA\OpenRegister\Service\ShareLinkService',
 				'OCA\OpenRegister\Service\CaseTokenService',
-				'OCA\OpenRegister\Controller\CaseTokenController',
 				'OCA\OpenRegister\Service\AnalyticsSeriesService',
-				'OCA\OpenRegister\Controller\AnalyticsSeriesController',
 				'OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\TalkProvider',
 				'OCA\OpenRegister\Service\TalkLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\PollsProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\FlowProvider',
 				'OCA\OpenRegister\Service\ActivityFilterService',
-				'OCA\OpenRegister\Service\FlowLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\MapsProvider',
 				'OCA\OpenRegister\Service\MapLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\PhotosProvider',
@@ -93,12 +89,21 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Schema\SchemaVersioningService',
 				'OCA\OpenRegister\Service\Schema\SchemaRevalidationService',
 				'OCA\OpenRegister\Service\Schema\SchemaMigrationService',
+				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
+				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
+				'OCA\OpenRegister\Service\Credential\CredentialStore',
+				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Controller\IntegrationsController',
 				'OCA\OpenRegister\Controller\ObjectIntegrationsController',
 			],
 			actual: $context->services
 		);
-		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
+		$this->assertSame(
+			expected: [
+				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+			],
+			actual: $context->listeners
+		);
 	}//end testRegistersTheServicesInOrder()
 
 	/**
@@ -215,6 +220,27 @@ class IntegrationRegistrarTest extends TestCase {
 
 		$loader();
 	}//end testBootLeafRegistryInstallsALazyLoader()
+
+	/**
+	 * bootObjectSources() adds the external-register provider to the object source registry.
+	 *
+	 * @return void
+	 */
+	public function testBootObjectSourcesAddsTheExternalRegisterProvider(): void {
+		$provider = $this->createMock(originalClassName: \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$registry = $this->createMock(originalClassName: \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->expects($this->once())->method('addProvider')->with($provider)->willReturn(true);
+
+		$server = $this->createMock(originalClassName: ContainerInterface::class);
+		$server->method('get')->willReturnMap(
+			[
+				[\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class, $registry],
+				[\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class, $provider],
+			]
+		);
+
+		IntegrationRegistrar::bootObjectSources(server: $server);
+	}//end testBootObjectSourcesAddsTheExternalRegisterProvider()
 
 	/**
 	 * A test double for a service, or, for a final class, a real instance.

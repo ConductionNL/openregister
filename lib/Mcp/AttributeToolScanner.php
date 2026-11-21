@@ -45,7 +45,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
-use Psr\Log\LoggerInterface;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionMethod;
@@ -78,9 +77,9 @@ final class AttributeToolScanner {
 	 * Scan every declared scannable class for one app and return every
 	 * attributed-method descriptor found across all of them.
 	 *
-	 * @param string $appId The owning app id (id prefix of every emitted tool id).
+	 * @param McpLeafApp   $app        The owning app (its id prefixes every emitted tool id) and
+	 *                                 its logger (malformed classes/methods are logged, not thrown).
 	 * @param list<string> $classNames Candidate scannable service FQCNs (see {@see IMcpScannableServices}).
-	 * @param LoggerInterface $logger PSR logger (malformed classes/methods are logged, not thrown).
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
@@ -88,7 +87,7 @@ final class AttributeToolScanner {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
 	 */
-	public function scanClasses(string $appId, array $classNames, LoggerInterface $logger): array {
+	public function scanClasses(McpLeafApp $app, array $classNames): array {
 		$descriptors = [];
 
 		foreach ($classNames as $className) {
@@ -96,7 +95,8 @@ final class AttributeToolScanner {
 				continue;
 			}
 
-			foreach ($this->scanClass(appId: $appId, className: $className, logger: $logger) as $descriptor) {
+			$subject = new ToolScanSubject(appId: $app->appId, className: $className, logger: $app->logger);
+			foreach ($this->scanClass(subject: $subject) as $descriptor) {
 				$descriptors[] = $descriptor;
 			}
 		}
@@ -107,15 +107,12 @@ final class AttributeToolScanner {
 	/**
 	 * Scan a single class for `#[McpTool]`-attributed public methods.
 	 *
-	 * @param string $appId The owning app id.
-	 * @param string $className The FQCN to reflect.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ToolScanSubject $subject The owning app id, the FQCN to reflect and the logger.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
 	 */
-	public function scanClass(string $appId, string $className, LoggerInterface $logger): array {
-		$subject         = new ToolScanSubject(appId: $appId, className: $className, logger: $logger);
+	public function scanClass(ToolScanSubject $subject): array {
 		$reflectionClass = $this->reflect(subject: $subject);
 		if ($reflectionClass === null) {
 			return [];
@@ -123,9 +120,10 @@ final class AttributeToolScanner {
 
 		$descriptors = [];
 		foreach ($reflectionClass->getMethods() as $method) {
-			$attribute = $this->toolAttribute(method: $method, subject: $subject);
+			$run       = new MethodScanRun(subject: $subject, method: $method);
+			$attribute = $this->toolAttribute(run: $run);
 			if ($attribute !== null) {
-				$descriptors[] = $this->buildDescriptor(appId: $appId, className: $className, method: $method, attribute: $attribute);
+				$descriptors[] = $this->buildDescriptor(run: $run, attribute: $attribute);
 			}
 		}
 
@@ -160,19 +158,18 @@ final class AttributeToolScanner {
 	 * its attribute cannot be instantiated, or its attribute declares a value the
 	 * scanner does not recognise; each of the last three is logged.
 	 *
-	 * @param ReflectionMethod $method  The method.
-	 * @param ToolScanSubject  $subject The class being scanned.
+	 * @param MethodScanRun $run The class being scanned and the method.
 	 *
 	 * @return McpTool|null
 	 */
-	private function toolAttribute(ReflectionMethod $method, ToolScanSubject $subject): ?McpTool {
-		$reflected = $this->reflectedAttribute(method: $method, subject: $subject);
+	private function toolAttribute(MethodScanRun $run): ?McpTool {
+		$reflected = $this->reflectedAttribute(run: $run);
 		if ($reflected === null) {
 			return null;
 		}
 
-		$attribute = $this->instantiate(attribute: $reflected, method: $method, subject: $subject);
-		if ($attribute === null || $this->isRecognised(attribute: $attribute, method: $method, subject: $subject) === false) {
+		$attribute = $this->instantiate(run: $run, attribute: $reflected);
+		if ($attribute === null || $this->isRecognised(run: $run, attribute: $attribute) === false) {
 			return null;
 		}
 
@@ -182,14 +179,13 @@ final class AttributeToolScanner {
 	/**
 	 * The method's `#[McpTool]` attribute when the method may be a tool.
 	 *
-	 * @param ReflectionMethod $method  The method.
-	 * @param ToolScanSubject  $subject The class being scanned.
+	 * @param MethodScanRun $run The class being scanned and the method.
 	 *
 	 * @return ReflectionAttribute<McpTool>|null The reflected attribute, or null.
 	 */
-	private function reflectedAttribute(ReflectionMethod $method, ToolScanSubject $subject): ?ReflectionAttribute {
-		$attributes = $method->getAttributes(McpTool::class);
-		if ($attributes === [] || $this->isCallableTool(method: $method, subject: $subject) === false) {
+	private function reflectedAttribute(MethodScanRun $run): ?ReflectionAttribute {
+		$attributes = $run->method->getAttributes(McpTool::class);
+		if ($attributes === [] || $this->isCallableTool(run: $run) === false) {
 			return null;
 		}
 
@@ -199,20 +195,16 @@ final class AttributeToolScanner {
 	/**
 	 * Instantiate the attribute; a failure is logged.
 	 *
+	 * @param MethodScanRun                $run       The class being scanned and the attributed method.
 	 * @param ReflectionAttribute<McpTool> $attribute The reflected attribute.
-	 * @param ReflectionMethod             $method    The attributed method.
-	 * @param ToolScanSubject              $subject   The class being scanned.
 	 *
 	 * @return McpTool|null The instance, or null.
 	 */
-	private function instantiate(ReflectionAttribute $attribute, ReflectionMethod $method, ToolScanSubject $subject): ?McpTool {
+	private function instantiate(MethodScanRun $run, ReflectionAttribute $attribute): ?McpTool {
 		try {
 			return $attribute->newInstance();
 		} catch (Throwable $e) {
-			$subject->warn(
-				message: '[AttributeToolScanner] Could not instantiate #[McpTool] attribute',
-				context: ['method' => $method->getName(), 'error' => $e->getMessage()]
-			);
+			$run->warn(message: '[AttributeToolScanner] Could not instantiate #[McpTool] attribute', context: ['error' => $e->getMessage()]);
 			return null;
 		}
 	}//end instantiate()
@@ -220,21 +212,20 @@ final class AttributeToolScanner {
 	/**
 	 * Whether every closed-vocabulary declaration is valid; logs the first one that is not.
 	 *
-	 * @param McpTool          $attribute The attribute instance.
-	 * @param ReflectionMethod $method    The attributed method.
-	 * @param ToolScanSubject  $subject   The class being scanned.
+	 * @param MethodScanRun $run       The class being scanned and the attributed method.
+	 * @param McpTool       $attribute The attribute instance.
 	 *
 	 * @return bool
 	 */
-	private function isRecognised(McpTool $attribute, ReflectionMethod $method, ToolScanSubject $subject): bool {
+	private function isRecognised(MethodScanRun $run, McpTool $attribute): bool {
 		$invalid = ToolDeclarationCheck::unrecognised(attribute: $attribute);
 		if ($invalid === null) {
 			return true;
 		}
 
-		$subject->warn(
+		$run->warn(
 			message: sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
-			context: ['method' => $method->getName(), $invalid['key'] => $invalid['value'], 'allowed' => $invalid['allowed']]
+			context: [$invalid['key'] => $invalid['value'], 'allowed' => $invalid['allowed']]
 		);
 		return false;
 	}//end isRecognised()
@@ -242,20 +233,19 @@ final class AttributeToolScanner {
 	/**
 	 * Whether an attributed method is a public instance method; logs why when it is not.
 	 *
-	 * @param ReflectionMethod $method  The attributed method.
-	 * @param ToolScanSubject  $subject The class being scanned.
+	 * @param MethodScanRun $run The class being scanned and the attributed method.
 	 *
 	 * @return bool
 	 */
-	private function isCallableTool(ReflectionMethod $method, ToolScanSubject $subject): bool {
-		$context = ['method' => $method->getName()];
+	private function isCallableTool(MethodScanRun $run): bool {
+		$method = $run->method;
 		if ($method->isPublic() === false) {
-			$subject->warn(message: '[AttributeToolScanner] #[McpTool] on a non-public method is ignored', context: $context);
+			$run->warn(message: '[AttributeToolScanner] #[McpTool] on a non-public method is ignored');
 			return false;
 		}
 
 		if ($method->isStatic() === true || $method->isAbstract() === true) {
-			$subject->warn(message: '[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored', context: $context);
+			$run->warn(message: '[AttributeToolScanner] #[McpTool] on a static or abstract method is ignored');
 			return false;
 		}
 
@@ -266,10 +256,8 @@ final class AttributeToolScanner {
 	 * Build one descriptor for an attributed method: the inferred core, the
 	 * output schema when inferable, then the author-declared extras.
 	 *
-	 * @param string $appId The owning app id.
-	 * @param string $className The declaring class FQCN.
-	 * @param ReflectionMethod $method The attributed method.
-	 * @param McpTool $attribute The resolved attribute instance.
+	 * @param MethodScanRun $run       The owning app, the declaring class and the attributed method.
+	 * @param McpTool       $attribute The resolved attribute instance.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>,
@@ -280,16 +268,17 @@ final class AttributeToolScanner {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
 	 */
-	private function buildDescriptor(string $appId, string $className, ReflectionMethod $method, McpTool $attribute): array {
+	private function buildDescriptor(MethodScanRun $run, McpTool $attribute): array {
+		$method   = $run->method;
 		$docLines = ToolDocblock::lines(docComment: $method->getDocComment());
 		$name     = $attribute->name ?? $method->getName();
 
 		$descriptor = [
-			'id' => $appId . '.' . $name,
+			'id' => $run->subject->appId . '.' . $name,
 			'name' => $name,
-			'description' => $this->describe(attribute: $attribute, className: $className, method: $method, docLines: $docLines),
+			'description' => $this->describe(run: $run, attribute: $attribute),
 			'inputSchema' => $this->inferInputSchema(method: $method, docParams: ToolDocblock::params(docLines: $docLines)),
-			'class' => $className,
+			'class' => $run->subject->className,
 			'method' => $method->getName(),
 			'paramNames' => $this->paramNames(method: $method),
 		];
@@ -300,17 +289,16 @@ final class AttributeToolScanner {
 	/**
 	 * The declared description, else the docblock summary, else a placeholder.
 	 *
-	 * @param McpTool          $attribute The attribute instance.
-	 * @param string           $className The declaring class FQCN.
-	 * @param ReflectionMethod $method    The attributed method.
-	 * @param list<string>     $docLines  The method's docblock lines.
+	 * @param MethodScanRun $run       The declaring class and the attributed method.
+	 * @param McpTool       $attribute The attribute instance.
 	 *
 	 * @return string The description.
 	 */
-	private function describe(McpTool $attribute, string $className, ReflectionMethod $method, array $docLines): string {
+	private function describe(MethodScanRun $run, McpTool $attribute): string {
+		$docLines    = ToolDocblock::lines(docComment: $run->method->getDocComment());
 		$description = $attribute->description ?? ToolDocblock::summary(docLines: $docLines);
 		if ($description === null || $description === '') {
-			$description = sprintf('%s::%s (no description declared).', $className, $method->getName());
+			$description = sprintf('%s::%s (no description declared).', $run->subject->className, $run->method->getName());
 		}
 
 		return $description;

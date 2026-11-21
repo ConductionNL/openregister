@@ -72,6 +72,38 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Object\RenderContext
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Db\Schema\WriteOnlyPathsDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RenderSelection
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionSources
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalText
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\Object\EntityRead
+ * @uses \OCA\OpenRegister\Service\Object\RenderDerivations
+ * @uses \OCA\OpenRegister\Service\Object\RenderEnrichers
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderPath
+ * @uses \OCA\OpenRegister\Service\Object\RenderPreloads
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRequest
+ * @uses \OCA\OpenRegister\Service\Object\RenderRun
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
+ * @uses \OCA\OpenRegister\Service\Object\RenderTranslations
+ * @uses \OCA\OpenRegister\Service\Object\TranslationScope
+ * @uses \OCA\OpenRegister\Service\Object\WithheldProperties
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -177,33 +209,40 @@ class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 
 		$rbacSession = $this->createMock(\OCP\IUserSession::class);
 		$rbacGroups = $this->createMock(\OCP\IGroupManager::class);
-		$rbac = new \OCA\OpenRegister\Service\PropertyRbacHandler(
-			$rbacSession,
-			$rbacGroups,
-			$this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
-			$this->createMock(\Psr\Log\LoggerInterface::class),
-			self::stateFieldRuleResolver($rbacSession, $rbacGroups)
-		);
+		$rbac = new \OCA\OpenRegister\Service\PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($rbacSession, $rbacGroups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class), self::stateFieldRuleResolver($rbacSession, $rbacGroups)), logger: $this->createMock(\Psr\Log\LoggerInterface::class));
 
 		return new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
-			$schemaMapper,
-			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
-			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-			$rbac,
-			$this->createMock(\Psr\Log\LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translation,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class)),
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class)
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
+					fileService: $this->createMock(\OCA\OpenRegister\Service\FileService::class),
+					systemTagManager: $this->createMock(\OCP\SystemTag\ISystemTagManager::class),
+					systemTagMapper: $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class)
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translation,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->createMock(\Psr\Log\LoggerInterface::class),
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $rbac
 		);
 	}
 

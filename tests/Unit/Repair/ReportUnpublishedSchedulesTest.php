@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCall;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest;
@@ -32,6 +34,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Repair\ReportUnpublishedSchedules
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence
+ * @uses \OCA\OpenRegister\AppHost\Scheduling\ScheduleCall
  */
 class ReportUnpublishedSchedulesTest extends TestCase {
 	/**
@@ -43,7 +47,7 @@ class ReportUnpublishedSchedulesTest extends TestCase {
 	 * @return void
 	 */
 	private function runWith(bool $published, int $warnings): void {
-		$schedule = new ScheduleDescriptor('nightly', null, '0 3 * * *', 'a');
+		$schedule = new ScheduleDescriptor('nightly', new ScheduleCadence(null, '0 3 * * *'), new ScheduleCall('a'));
 
 		$manifests = $this->createMock(ScheduleManifestLoader::class);
 		$manifests->method('loadAllOnDisk')->willReturn([new ScheduleManifest('crm', [$schedule])]);

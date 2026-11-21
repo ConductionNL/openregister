@@ -37,10 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\ObjectSource\NcEntitySemanticMap;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -51,6 +49,27 @@ use Throwable;
  * Seeds the virtual `directory` register with the core NC-entity schemas.
  */
 class SeedDirectoryVirtualSchemas implements IRepairStep {
+
+	/**
+	 * What follows the reason when a corrected `readOnly` annotation could not be saved.
+	 *
+	 * @var string
+	 */
+	private const READ_ONLY_NOT_SAVED = '. Writes through this schema '
+		.'will be refused until its x-openregister-object-source.readOnly is corrected.';
+
+	/**
+	 * The always-available `directory` virtual register (application: openregister), created when missing.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const REGISTER_DEFINITION = [
+		'title' => 'Directory',
+		'slug' => NcEntitySemanticMap::DIRECTORY_REGISTER,
+		'description' => 'Read-only virtual register projecting Nextcloud directory entities (users, groups) as OpenRegister objects.',
+		'application' => 'openregister',
+		'schemas' => [],
+	];
 
 	/**
 	 * Read-only minimal property sets per virtual schema slug.
@@ -96,15 +115,13 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
-	 * @param LoggerInterface $logger Logger for seed diagnostics.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
+	 * @param LoggerInterface        $logger  Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -134,33 +151,9 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$register = $this->ensureRegister();
-			$schemaIds = $register->getSchemas();
-			$changed = false;
-
-			foreach (NcEntitySemanticMap::ENTITIES as $row) {
-				// This step only owns the core rows that live on the always-available
-				// `directory` register (all of which are Nextcloud-core, requiredApp
-				// null); app-gated rows on their own app-named registers are seeded by
-				// SeedAppVirtualSchemas.
-				if ($row['register'] !== NcEntitySemanticMap::DIRECTORY_REGISTER) {
-					continue;
-				}
-
-				$schema = $this->ensureSchema(row: $row);
-				if (in_array($schema->getId(), $schemaIds, false) === false) {
-					$schemaIds[] = $schema->getId();
-					$changed = true;
-				}
-
-				$output->info(sprintf('Directory schema "%s" (id %s) ready', $row['schema'], (string)$schema->getId()));
-			}//end foreach
-
-			if ($changed === true) {
-				$register->setSchemas($schemaIds);
-				$this->registerMapper->update($register);
-			}
-
+			$seed = VirtualRegisterSeed::findOrCreate(catalog: $this->catalog, definition: self::REGISTER_DEFINITION);
+			$this->seedSchemas(seed: $seed, output: $output);
+			$seed->save(catalog: $this->catalog);
 			$output->info('Directory virtual register seeded');
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedDirectoryVirtualSchemas] seed failed: ' . $e->getMessage());
@@ -169,28 +162,30 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 	}//end run()
 
 	/**
-	 * Find or create the `directory` virtual register (application: openregister).
+	 * Ensure the schema of every `directory` row and list it on the register.
 	 *
-	 * @return Register The existing or newly created register.
+	 * @param VirtualRegisterSeed $seed   The directory register being seeded.
+	 * @param IOutput             $output Output interface for status messages.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
 	 */
-	private function ensureRegister(): Register {
-		try {
-			return $this->registerMapper->find(NcEntitySemanticMap::DIRECTORY_REGISTER, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			// Not found — create it.
-			return $this->registerMapper->createFromArray(
-				object: [
-					'title' => 'Directory',
-					'slug' => NcEntitySemanticMap::DIRECTORY_REGISTER,
-					'description' => 'Read-only virtual register projecting Nextcloud directory entities (users, groups) as OpenRegister objects.',
-					'application' => 'openregister',
-					'schemas' => [],
-				]
-			);
-		}//end try
-	}//end ensureRegister()
+	private function seedSchemas(VirtualRegisterSeed $seed, IOutput $output): void {
+		foreach (NcEntitySemanticMap::ENTITIES as $row) {
+			// This step only owns the core rows that live on the always-available
+			// `directory` register (all of which are Nextcloud-core, requiredApp
+			// null); app-gated rows on their own app-named registers are seeded by
+			// SeedAppVirtualSchemas.
+			if ($row['register'] !== NcEntitySemanticMap::DIRECTORY_REGISTER) {
+				continue;
+			}
+
+			$schema = $this->ensureSchema(row: $row);
+			$seed->attach(schema: $schema);
+			$output->info(sprintf('Directory schema "%s" (id %s) ready', $row['schema'], (string)$schema->getId()));
+		}//end foreach
+	}//end seedSchemas()
 
 	/**
 	 * Find or create one virtual schema for a semantic-map row.
@@ -205,34 +200,60 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 		$readOnly = (($row['writable'] ?? false) === false);
 
 		try {
-			$schema = $this->schemaMapper->find($row['schema'], _rbac: false, _multitenancy: false);
+			$schema = $this->catalog->schemas()->find($row['schema'], _rbac: false, _multitenancy: false);
 
 			return $this->reconcileReadOnly(schema: $schema, readOnly: $readOnly);
 		} catch (Throwable $e) {
-			$properties = (self::SCHEMA_PROPERTIES[$row['schema']] ?? []);
-
-			return $this->schemaMapper->createFromArray(
-				object: [
-					'title' => $row['schema'],
-					'slug' => $row['schema'],
-					'description' => sprintf(
-						'%s virtual schema for Nextcloud %s (%s).',
-						ucfirst($this->readOnlyLabel(readOnly: $readOnly)),
-						$row['schema'],
-						$row['schemaOrg']
-					),
-					'properties' => $properties,
-					'configuration' => [
-						'x-schema-org' => $row['schemaOrg'],
-						'x-openregister-object-source' => [
-							'provider' => $row['provider'],
-							'readOnly' => $readOnly,
-						],
-					],
-				]
+			return $this->catalog->schemas()->createFromArray(
+				object: $this->schemaDefinition(row: $row, readOnly: $readOnly)
 			);
 		}//end try
 	}//end ensureSchema()
+
+	/**
+	 * The object-source-backed schema to create for a semantic-map row.
+	 *
+	 * @param array<string, mixed> $row      One {@see NcEntitySemanticMap::ENTITIES} row.
+	 * @param bool                 $readOnly Whether the map marks the row read-only.
+	 *
+	 * @return array<string, mixed> The schema definition.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private function schemaDefinition(array $row, bool $readOnly): array {
+		return [
+			'title' => $row['schema'],
+			'slug' => $row['schema'],
+			'description' => $this->describeSchema(row: $row, readOnly: $readOnly),
+			'properties' => (self::SCHEMA_PROPERTIES[$row['schema']] ?? []),
+			'configuration' => [
+				'x-schema-org' => $row['schemaOrg'],
+				'x-openregister-object-source' => [
+					'provider' => $row['provider'],
+					'readOnly' => $readOnly,
+				],
+			],
+		];
+	}//end schemaDefinition()
+
+	/**
+	 * The description of a row's schema: its access, its name and its schema.org type.
+	 *
+	 * @param array<string, mixed> $row      One {@see NcEntitySemanticMap::ENTITIES} row.
+	 * @param bool                 $readOnly Whether the map marks the row read-only.
+	 *
+	 * @return string The description.
+	 *
+	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-2.2
+	 */
+	private function describeSchema(array $row, bool $readOnly): string {
+		return sprintf(
+			'%s virtual schema for Nextcloud %s (%s).',
+			ucfirst($this->readOnlyLabel(readOnly: $readOnly)),
+			$row['schema'],
+			$row['schemaOrg']
+		);
+	}//end describeSchema()
 
 	/**
 	 * Bring an EXISTING virtual schema's `readOnly` annotation in step with the map.
@@ -267,8 +288,22 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 		$configuration['x-openregister-object-source'] = $source;
 		$schema->setConfiguration($configuration);
 
+		return $this->saveReadOnly(schema: $schema, readOnly: $readOnly);
+	}//end reconcileReadOnly()
+
+	/**
+	 * Save a schema whose `readOnly` annotation was just corrected, and log the outcome.
+	 *
+	 * @param Schema $schema   The schema, with its corrected annotation.
+	 * @param bool   $readOnly The corrected value.
+	 *
+	 * @return Schema The saved schema, or the given one when the save failed or returned none.
+	 *
+	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
+	 */
+	private function saveReadOnly(Schema $schema, bool $readOnly): Schema {
 		try {
-			$updated = $this->schemaMapper->update($schema);
+			$updated = $this->catalog->schemas()->update($schema);
 		} catch (Throwable $e) {
 			// LOUD, not swallowed. `run()` catches everything and degrades to a
 			// warning, which is right for "the seed could not create a schema" and
@@ -276,32 +311,55 @@ class SeedDirectoryVirtualSchemas implements IRepairStep {
 			// the caller sees a generic "read-only projection" rejection with
 			// nothing pointing back at this annotation.
 			$this->logger->error(
-				sprintf(
-					'[SeedDirectoryVirtualSchemas] could not set %s to %s: %s. Writes through this schema '
-					.'will be refused until its x-openregister-object-source.readOnly is corrected.',
-					(string)$schema->getSlug(),
-					$this->readOnlyLabel(readOnly: $readOnly),
-					$e->getMessage()
-				)
+				$this->readOnlyNotSaved(schema: $schema, readOnly: $readOnly) . ': ' . $e->getMessage() . self::READ_ONLY_NOT_SAVED
 			);
-
 			return $schema;
 		}
 
-		$this->logger->info(
-			sprintf(
-				'[SeedDirectoryVirtualSchemas] %s is now %s',
-				(string)$schema->getSlug(),
-				$this->readOnlyLabel(readOnly: $readOnly)
-			)
-		);
+		$this->logger->info($this->readOnlySaved(schema: $schema, readOnly: $readOnly));
 
 		if ($updated instanceof Schema === true) {
 			return $updated;
 		}
 
 		return $schema;
-	}//end reconcileReadOnly()
+	}//end saveReadOnly()
+
+	/**
+	 * The start of the error line for a corrected `readOnly` annotation that could not be saved.
+	 *
+	 * @param Schema $schema   The schema.
+	 * @param bool   $readOnly The value it should have.
+	 *
+	 * @return string The line up to the reason.
+	 *
+	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
+	 */
+	private function readOnlyNotSaved(Schema $schema, bool $readOnly): string {
+		return sprintf(
+			'[SeedDirectoryVirtualSchemas] could not set %s to %s',
+			(string)$schema->getSlug(),
+			$this->readOnlyLabel(readOnly: $readOnly)
+		);
+	}//end readOnlyNotSaved()
+
+	/**
+	 * The info line for a corrected `readOnly` annotation that was saved.
+	 *
+	 * @param Schema $schema   The schema.
+	 * @param bool   $readOnly The value it now has.
+	 *
+	 * @return string The log line.
+	 *
+	 * @spec openspec/changes/the-organisation-projection-is-writable/specs/organisation-projection/spec.md#requirement-an-organisation-can-be-created-through-the-projection-req-orp-104
+	 */
+	private function readOnlySaved(Schema $schema, bool $readOnly): string {
+		return sprintf(
+			'[SeedDirectoryVirtualSchemas] %s is now %s',
+			(string)$schema->getSlug(),
+			$this->readOnlyLabel(readOnly: $readOnly)
+		);
+	}//end readOnlySaved()
 
 	/**
 	 * Name a `readOnly` value for a log line or a schema description.

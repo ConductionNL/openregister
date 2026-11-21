@@ -26,7 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
+use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -63,28 +65,21 @@ class NotificationBroadcastMapper extends QBMapper {
 	/**
 	 * Record one broadcast.
 	 *
-	 * @param string           $uuid    Stable identifier.
-	 * @param string           $sender  The uid of whoever sent it.
-	 * @param BroadcastMessage $message The subject and the longer text.
-	 * @param BroadcastWindow  $window  When it starts and stops showing.
+	 * @param string            $uuid     Stable identifier.
+	 * @param OutgoingBroadcast $outgoing The message, whoever sent it and when it shows.
 	 *
 	 * @return NotificationBroadcast The persisted row.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
-	public function record(
-		string $uuid,
-		string $sender,
-		BroadcastMessage $message,
-		BroadcastWindow $window,
-	): NotificationBroadcast {
+	public function record(string $uuid, OutgoingBroadcast $outgoing): NotificationBroadcast {
 		$entity = new NotificationBroadcast();
 		$entity->setUuid($uuid);
-		$entity->setSubject($message->subject);
-		$entity->setBody($message->body);
-		$entity->setSender($sender);
-		$entity->setStartsAt($window->startsAt);
-		$entity->setEndsAt($window->endsAt);
+		$entity->setSubject($outgoing->message->subject);
+		$entity->setBody($outgoing->message->body);
+		$entity->setSender($outgoing->sender);
+		$entity->setStartsAt($outgoing->window->startsAt);
+		$entity->setEndsAt($outgoing->window->endsAt);
 		$entity->setCreated(new DateTime());
 
 		return $this->insert(entity: $entity);
@@ -120,7 +115,7 @@ class NotificationBroadcastMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('created', 'DESC');
-		$this->page(qb: $qb, limit: $limit, offset: $offset);
+		$this->page(qb: $qb, query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset));
 
 		return $this->findEntities(query: $qb);
 	}//end findAllBroadcasts()

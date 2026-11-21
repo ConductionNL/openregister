@@ -54,7 +54,7 @@
       Unticked 2026-10-30: `git grep CnConfigurationStore` finds nothing on nextcloud-vue
       `main` or `development`; the shared store page is `CnStorePage`, which lists only the
       types a manifest declares.
-- [ ] Store type `nldesign.theme`: add `"nldesign.theme"` to `store.types` in
+- [x] Store type `nldesign.theme`: add `"nldesign.theme"` to `store.types` in
       `src/manifest.json` (next to `openregister.configset` and `openregister.flows`), so the
       Store page offers thematiq's shareable theme (registered by thematiq's
       `NlDesignThemeShareableConfigType`, id `nldesign.theme`). Only list it when
@@ -62,6 +62,10 @@
       must not appear. Test: with thematiq enabled, the Store page lists "NL Design theme"
       and publishing it calls `FederatedConfigService` with type `nldesign.theme`; with
       thematiq disabled, the type is absent. (thematiq row `gov-federated-share`)
+      Done: declared in `src/manifest.json`; `GenericStoreController::offeredTypes()` keeps
+      only the declared types `FederatedStoreCatalog::ownedTypes()` finds in the registry, for
+      both the filter kinds and the searched types. Unit-tested on the controller and the
+      catalogue; the live Store-page check with thematiq on and off is not done here.
 - [ ] Org source-allowlist / trusted-keys **admin** UI (config keys exist; no UI yet).
 - [ ] "How to share a config" end-user docs.
 

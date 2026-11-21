@@ -37,18 +37,22 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
-use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
-use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
-use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightRefused;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuardInterface;
+use OCA\OpenRegister\Service\Flow\FlowAdoptionRefusedInterface;
+use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
+use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface;
@@ -65,6 +69,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 
 /**
  * Catalog and CRUD endpoints for flows.
@@ -117,6 +122,8 @@ use Throwable;
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 	/**
 	 * The flow trigger catalog.
 	 *
@@ -174,18 +181,23 @@ class FlowController extends Controller {
 	private readonly FlowBpmnInterchangeInterface $bpmn;
 
 	/**
+	 * Which steps need a right, and whether the caller holds it.
+	 *
+	 * @var FlowNodeRightsGuardInterface
+	 */
+	private readonly FlowNodeRightsGuardInterface $nodeRights;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param FlowControllerServices $services The flow controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FlowControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->eventCatalog = $services->catalogue->eventCatalog;
 		$this->nodes = $services->catalogue->nodes;
 		$this->flowState = $services->catalogue->flowState;
@@ -194,7 +206,67 @@ class FlowController extends Controller {
 		$this->access = $services->definitions->access;
 		$this->flowVersionService = $services->definitions->flowVersionService;
 		$this->bpmn = $services->catalogue->bpmn;
+		$this->nodeRights = $services->definitions->nodeRights;
 	}//end __construct()
+
+	/**
+	 * Refuse unless the caller holds the right of every step in the document and the stored flow.
+	 *
+	 * Runs after denyUnless() on every path that saves a flow an author wrote:
+	 * create, BPMN import, update, draft, publish and adopt. The palette's
+	 * `locked` is advice; this is the control.
+	 *
+	 * @param array<string, mixed>      $document The document being saved.
+	 * @param array<string, mixed>|null $stored   The stored document of the flow being changed, or null.
+	 *
+	 * @return JSONResponse|null A 403 naming the step type and the right, or null when allowed.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private function refuseRestrictedSteps(array $document, ?array $stored=null): ?JSONResponse {
+		$user = $this->access->currentUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Not signed in.'], Http::STATUS_UNAUTHORIZED);
+		}
+
+		try {
+			$this->nodeRights->assertMayAuthor(user: $user, document: $document, stored: $stored);
+		} catch (FlowNodeRightRefused $refused) {
+			return new JSONResponse($refused->body(), Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end refuseRestrictedSteps()
+
+	/**
+	 * A stored flow's graph as a document.
+	 *
+	 * @param Flow $flow The flow.
+	 *
+	 * @return array{nodes: array, edges: array}
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private static function documentOf(Flow $flow): array {
+		return ['nodes' => ($flow->getNodes() ?? []), 'edges' => ($flow->getEdges() ?? [])];
+	}//end documentOf()
+
+	/**
+	 * Run an action on a flow the caller may update and whose steps they may author.
+	 *
+	 * @param string   $id   The flow uuid.
+	 * @param callable $then The action, given the flow.
+	 *
+	 * @return JSONResponse The action's response, 401/403 or 404.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-with-a-restricted-step-is-saved-only-by-someone-who-holds-its-right
+	 */
+	private function withAuthorableFlow(string $id, callable $then): JSONResponse {
+		return $this->withUpdatableFlow(
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => ($this->refuseRestrictedSteps(document: self::documentOf(flow: $flow)) ?? $then($flow))
+		);
+	}//end withAuthorableFlow()
 
 	/**
 	 * Refuse unless the caller holds the named right.
@@ -310,6 +382,10 @@ class FlowController extends Controller {
 		}
 
 		$results = $this->nodes->palette(scope: $scope);
+		$user = $this->access->currentUser();
+		if ($user !== null) {
+			$results = $this->nodeRights->annotatePalette(user: $user, palette: $results);
+		}
 
 		return new JSONResponse(
 			[
@@ -351,7 +427,6 @@ class FlowController extends Controller {
 	 *       understand.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
 	 */
@@ -406,6 +481,11 @@ class FlowController extends Controller {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function state(string $flowId): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$this->flows->find(uuid: $flowId);
 		} catch (DoesNotExistException $e) {
@@ -467,7 +547,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function validate(): JSONResponse {
 		$flow = $this->request->getParam('flow');
@@ -569,11 +649,16 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		$limit      = min(200, max(1, (int)$this->request->getParam('limit', 100)));
 		$offset     = max(0, (int)$this->request->getParam('offset', 0));
 		$appFilter  = $this->trimmedFilter(key: 'app');
@@ -615,7 +700,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|null The trimmed-nonempty value, or null.
 	 *
-	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function trimmedFilter(string $key): ?string {
 		$value = $this->request->getParam($key);
@@ -659,7 +744,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
@@ -716,7 +801,7 @@ class FlowController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	#[NoAdminRequired]
 	public function importBpmn(): JSONResponse {
@@ -733,6 +818,11 @@ class FlowController extends Controller {
 		$result = $this->mapBpmn(xml: $xml, strict: $this->strictRequested());
 		if ($result instanceof JSONResponse) {
 			return $result;
+		}
+
+		$restricted = $this->refuseRestrictedSteps(document: (array)$result['flow']);
+		if ($restricted !== null) {
+			return $restricted;
 		}
 
 		return $this->storeImportedFlow(result: $result);
@@ -858,7 +948,7 @@ class FlowController extends Controller {
 	 *
 	 * @return string|JSONResponse|null The file's content, a 400 refusal, or null when no file was sent.
 	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 * @spec openspec/specs/flow-bpmn-interchange/spec.md
 	 */
 	private function readBpmnUpload(): string|JSONResponse|null {
 		$file = $this->request->getUploadedFile('file');
@@ -898,6 +988,11 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
 		try {
 			$flow = $this->flows->find(uuid: $id);
 		} catch (DoesNotExistException $e) {
@@ -935,6 +1030,11 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'A flow needs a name.'], Http::STATUS_BAD_REQUEST);
 		}
 
+		$restricted = $this->refuseRestrictedSteps(document: $data);
+		if ($restricted !== null) {
+			return $restricted;
+		}
+
 		$flow = $this->saveOrRefuse(data: $data);
 		if ($flow instanceof JSONResponse) {
 			return $flow;
@@ -966,40 +1066,14 @@ class FlowController extends Controller {
 			return $this->flows->save(data: $data, uuid: $uuid);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			// 409, not 400. The request is well-formed; the flow's STATE is
 			// what refuses it, and that state can change — the author creates
 			// a draft and the identical request then succeeds. A 400 would
 			// tell the editor to fix the payload, which is the wrong advice.
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 	}//end saveOrRefuse()
-
-	/**
-	 * A lifecycle refusal as a 409 the editor can act on.
-	 *
-	 * 🔑 THE REASON IS A FIELD, NOT PROSE. "This version is published, create a
-	 * draft" and "this flow has no published version, publish one" want
-	 * opposite buttons from the author; parsing an English sentence to tell
-	 * them apart is how a UI ends up offering the wrong one.
-	 *
-	 * @param FlowLifecycleRefused $refusal The refusal.
-	 *
-	 * @return JSONResponse The 409.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	private function refusal(FlowLifecycleRefused $refusal): JSONResponse {
-		return new JSONResponse(
-			[
-				'error' => $refusal->getMessage(),
-				'reason' => $refusal->getReason(),
-				'lifecycleStatus' => $refusal->getState(),
-				'flowId' => $refusal->getFlowId(),
-			],
-			Http::STATUS_CONFLICT
-		);
-	}//end refusal()
 
 	/**
 	 * The stored flow, plus any warning the author should see about it.
@@ -1059,8 +1133,16 @@ class FlowController extends Controller {
 			return $denied;
 		}
 
+		$data = $this->flowPayload();
 		try {
-			$flow = $this->saveOrRefuse(data: $this->flowPayload(), uuid: $id);
+			// The stored steps count as much as the new ones: changing only the
+			// name of a powerful flow is still editing it.
+			$restricted = $this->refuseRestrictedSteps(document: $data, stored: self::documentOf(flow: $this->flows->find(uuid: $id)));
+			if ($restricted !== null) {
+				return $restricted;
+			}
+
+			$flow = $this->saveOrRefuse(data: $data, uuid: $id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		}
@@ -1077,7 +1159,7 @@ class FlowController extends Controller {
 	 *
 	 * @param string $id The flow uuid.
 	 *
-	 * @return JSONResponse An empty 200, or 404.
+	 * @return JSONResponse An empty 200, 404, or 409 while a run has not finished.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -1094,6 +1176,8 @@ class FlowController extends Controller {
 			$this->flows->delete(uuid: $id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 
 		return new JSONResponse([]);
@@ -1168,15 +1252,15 @@ class FlowController extends Controller {
 		try {
 			$flowRun = $this->flows->run(uuid: $id, subject: $input['subject'], context: $input['context'],
 				sync: $input['sync'], trigger: FlowRunVersionPinInterface::TRIGGER_TEST);
-		} catch (FlowLifecycleRefused $e) {
+		} catch (FlowLifecycleRefusedInterface $e) {
 			// Carries `reason` and `lifecycleStatus` so the editor can offer the right button.
-			return $this->refusal(refusal: $e);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowRunRefused $e) {
 			// "Run now" on an imported flow (which arrives with no owner).
 			return $this->runRefusal(refusal: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		} catch (FlowDeadEnd $e) {
+		} catch (FlowDeadEndInterface $e) {
 			return $this->deadEnd(deadEnd: $e);
 		}
 
@@ -1199,11 +1283,11 @@ class FlowController extends Controller {
 	 * which is also why the refusal is recorded on the flow itself
 	 * (`status: error`) before this point.
 	 *
-	 * @param FlowDeadEnd $deadEnd The refusal
+	 * @param FlowDeadEndInterface $deadEnd The refusal
 	 *
 	 * @return JSONResponse The 409 response naming the nodes
 	 */
-	private function deadEnd(FlowDeadEnd $deadEnd): JSONResponse {
+	private function deadEnd(FlowDeadEndInterface $deadEnd): JSONResponse {
 		return new JSONResponse(['error' => $deadEnd->getMessage(), 'nodes' => $deadEnd->getNodeIds()], Http::STATUS_CONFLICT);
 	}//end deadEnd()
 
@@ -1215,7 +1299,7 @@ class FlowController extends Controller {
 	 *
 	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
 	 *
-	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 * @spec openspec/specs/flow-and-run-detail-pages/spec.md
 	 */
 	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
 		$status = Http::STATUS_FORBIDDEN;
@@ -1243,8 +1327,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versions(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: function (Flow $flow): JSONResponse {
 				$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
@@ -1254,21 +1337,40 @@ class FlowController extends Controller {
 	}//end versions()
 
 	/**
-	 * Run an action on a flow: the caller must hold the right first (401
-	 * anonymous, 403 without it), then the flow must exist (404).
+	 * Run an action on a flow the caller may read: the right first (401
+	 * anonymous, 403 without flow.read), then the flow must exist (404).
 	 *
-	 * @param string   $right The action right (flow.read or flow.update)
-	 * @param string   $id    The flow UUID
-	 * @param callable $then  The action, given the flow
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
 	 *
 	 * @return JSONResponse The action's response or the refusal
 	 */
-	private function withFlow(string $right, string $id, callable $then): JSONResponse {
-		$denied = $this->denyUnless(action: $right);
-		if ($denied !== null) {
-			return $denied;
-		}
+	private function withReadableFlow(string $id, callable $then): JSONResponse {
+		return ($this->denyUnless(action: 'flow.read') ?? $this->withFoundFlow(id: $id, then: $then));
+	}//end withReadableFlow()
 
+	/**
+	 * Run an action on a flow the caller may change: the right first (401
+	 * anonymous, 403 without flow.update), then the flow must exist (404).
+	 *
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the refusal
+	 */
+	private function withUpdatableFlow(string $id, callable $then): JSONResponse {
+		return ($this->denyUnless(action: 'flow.update') ?? $this->withFoundFlow(id: $id, then: $then));
+	}//end withUpdatableFlow()
+
+	/**
+	 * Run an action on a flow that exists, or answer 404. Only called after the right was checked.
+	 *
+	 * @param string   $id   The flow UUID
+	 * @param callable $then The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the 404
+	 */
+	private function withFoundFlow(string $id, callable $then): JSONResponse {
 		try {
 			$flow = $this->flows->find(uuid: $id);
 		} catch (DoesNotExistException $e) {
@@ -1276,7 +1378,7 @@ class FlowController extends Controller {
 		}
 
 		return $then($flow);
-	}//end withFlow()
+	}//end withFoundFlow()
 
 	/**
 	 * Read one version of a flow, including the graph it names.
@@ -1294,8 +1396,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function version(string $id, int $version): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->versionWithGraph(flow: $flow, version: $version)
 		);
@@ -1340,8 +1441,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versionPreview(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.read',
+		return $this->withReadableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => new JSONResponse($this->flowVersionService->previewPublish(flow: $flow))
 		);
@@ -1362,7 +1462,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
-		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
+		return $this->withAuthorableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
 	}//end publish()
 
 	/**
@@ -1376,18 +1476,20 @@ class FlowController extends Controller {
 		try {
 			$version = $this->flowVersionService->publish(
 				flow: $flow,
-				// From FlowAccess, which already holds the session — a second
-				// IUserSession here would push this constructor past the
-				// parameter limit for one string.
-				publishedBy: $this->access->currentUser()?->getUID(),
-				// The author may RAISE the derived verdict and never lower it.
-				// A refusal to call a removal minor is an
-				// UnexpectedValueException rather than a lifecycle refusal:
-				// the flow's state is fine, the request is not.
-				bump: $this->request->getParam('bump')
+				options: new FlowPublishOptions(
+					// From FlowAccess, which already holds the session — a second
+					// IUserSession here would push this constructor past the
+					// parameter limit for one string.
+					publishedBy: $this->access->currentUser()?->getUID(),
+					// The author may RAISE the derived verdict and never lower it.
+					// A refusal to call a removal minor is an
+					// UnexpectedValueException rather than a lifecycle refusal:
+					// the flow's state is fine, the request is not.
+					bump: $this->request->getParam('bump')
+				)
 			);
-		} catch (FlowLifecycleRefused $e) {
-			return $this->refusal(refusal: $e);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (\UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage(), 'kind' => 'version-bump-refused'], Http::STATUS_CONFLICT);
 		}
@@ -1410,8 +1512,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.update',
+		return $this->withAuthorableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
 				step: fn () => $this->flowVersionService->createDraft(flow: $flow),
@@ -1431,8 +1532,8 @@ class FlowController extends Controller {
 	private function lifecycleStep(callable $step, int $status): JSONResponse {
 		try {
 			$version = $step();
-		} catch (FlowLifecycleRefused $e) {
-			return $this->refusal(refusal: $e);
+		} catch (FlowLifecycleRefusedInterface $e) {
+			return $this->lifecycleRefusal(refusal: $e);
 		}
 
 		return new JSONResponse($version->jsonSerialize(), $status);
@@ -1453,8 +1554,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function deprecate(string $id): JSONResponse {
-		return $this->withFlow(
-			right: 'flow.update',
+		return $this->withUpdatableFlow(
 			id: $id,
 			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
 				step: fn () => $this->flowVersionService->deprecate(flow: $flow),
@@ -1495,7 +1595,7 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {
-		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
+		return $this->withAuthorableFlow(id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
 	}//end adopt()
 
 	/**
@@ -1508,7 +1608,7 @@ class FlowController extends Controller {
 	private function adoptFlow(Flow $flow): JSONResponse {
 		try {
 			$adopted = $this->flows->adopt(flow: $flow);
-		} catch (FlowAdoptionRefused $e) {
+		} catch (FlowAdoptionRefusedInterface $e) {
 			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_CONFLICT);
 		}
 

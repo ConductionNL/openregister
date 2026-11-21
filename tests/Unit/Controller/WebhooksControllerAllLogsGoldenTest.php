@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WebhooksController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCP\AppFramework\Controller;
@@ -42,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Controller\WebhooksController
  * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class WebhooksControllerAllLogsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-all-logs-golden.json';
@@ -173,7 +175,9 @@ class WebhooksControllerAllLogsGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('findByWebhook')->willReturnCallback(
-			function (int $webhookId, ?int $limit = null, ?int $offset = null) use ($rows): array {
+			function (int $webhookId, ?ListQuery $page = null) use ($rows): array {
+				$limit  = $page?->limitOrNull();
+				$offset = $page?->offset;
 				$this->calls[] = ['findByWebhook' => [$webhookId, $limit, $offset]];
 				return array_slice(array_slice($rows, 1), (int)$offset, $limit);
 			}

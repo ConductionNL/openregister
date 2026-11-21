@@ -142,9 +142,7 @@ final class AuditTrailMapperWiringTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->database->idbConnection(),
-			$session,
-			$request,
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $session, $request)
 		);
 	}//end mapper()
 }//end class

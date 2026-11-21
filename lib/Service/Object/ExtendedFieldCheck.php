@@ -18,11 +18,13 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Formats\FormattedProperty;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\FormatFactory;
 
 /**
- * Checks an object's values against the extended field types (color, recurrence).
+ * Checks an object's values against the extended field types (color, recurrence,
+ * calendar-range, image-url).
  *
  * @category  Service
  * @package   OCA\OpenRegister
@@ -94,6 +96,8 @@ final class ExtendedFieldCheck {
 	 * @param array  $declared The property's declaration
 	 *
 	 * @return string|null The error
+	 *
+	 * @spec openspec/changes/extended-field-types-range-and-image/specs/extended-field-types/spec.md
 	 */
 	private function errorFor(string $name, array $declared): ?string {
 		$value = ($this->object[$name] ?? null);
@@ -102,8 +106,16 @@ final class ExtendedFieldCheck {
 		}
 
 		return match ($declared['type'] ?? null) {
-			'color' => FormatFactory::extendedFieldTypes()->validateColor(value: $value, format: ($declared['format'] ?? null), propertyName: $name),
+			'color' => FormatFactory::extendedFieldTypes()->validateColorProperty(
+				value: $value,
+				property: new FormattedProperty(name: $name, format: ($declared['format'] ?? null))
+			),
 			'recurrence' => FormatFactory::extendedFieldTypes()->validateRecurrence(value: $value, propertyName: $name),
+			'calendar-range' => FormatFactory::extendedFieldTypes()->validateCalendarRange(
+				value: $value,
+				property: new FormattedProperty(name: $name, format: ($declared['format'] ?? null))
+			),
+			'image-url' => FormatFactory::extendedFieldTypes()->validateImageUrl(value: $value, propertyName: $name),
 			default => null,
 		};
 	}//end errorFor()

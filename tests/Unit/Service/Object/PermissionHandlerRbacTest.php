@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IAppConfig;
@@ -661,7 +662,7 @@ class PermissionHandlerRbacTest extends TestCase {
 	private function buildHandlerWithRealMatcher(): PermissionHandler {
 		$operatorEvaluator = new OperatorEvaluator($this->logger);
 		$realMatcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession),
 			$this->container,
 			$operatorEvaluator,
 			$this->logger
@@ -1110,6 +1111,30 @@ class PermissionHandlerRbacTest extends TestCase {
 	// action. Authenticated users are deliberately UNCHANGED (their default-open
 	// behaviour is a separate, broader policy decision tracked in #1955).
 	// ------------------------------------------------------------------
+
+	/**
+	 * The object plane's anonymous branch, pinned as a PAIR per verb before
+	 * consolidate-permission-handling moves it (task 1): a schema granting
+	 * `public` the verb lets an anonymous caller act, and the same schema
+	 * granting it to another group only does not. A test of the refusal alone
+	 * passes just as well when everything is refused.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	public function testAnonymousAccessFollowsThePublicGrantForEveryVerb(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->setupRegisterForSchema(1, $this->createRegister(10, null));
+		$this->setupRegisterForSchema(2, $this->createRegister(10, null));
+
+		foreach (['read', 'create', 'update', 'delete'] as $verb) {
+			$granted = $this->createSchema(1, [$verb => ['public']]);
+			$withheld = $this->createSchema(2, [$verb => ['behandelaars']]);
+			$this->handler->clearPermissionCache();
+
+			$this->assertTrue($this->handler->hasPermission($granted, $verb), 'anonymous ' . $verb . ' must follow a public grant');
+			$this->assertFalse($this->handler->hasPermission($withheld, $verb), 'anonymous ' . $verb . ' must be refused without a public grant');
+		}
+	}
 
 	public function testAnonymousCreateDeniedOnSchemaWithNoAuthorization(): void {
 		// No authorization block anywhere → previously default-open (anonymous

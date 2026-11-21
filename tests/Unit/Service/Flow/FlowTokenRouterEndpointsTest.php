@@ -124,17 +124,13 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 		$flow = $this->branchingFlow(['split']);
 		$transition = $this->transition('split', ['hi', 'lo']);
 
-		$items = $this->router->resolveOutputTags(
-			flow: $flow,
-			transition: $transition,
-			items: [
+		$items = $this->router->resolveOutputTags(exits: $this->router->exitsOf(flow: $flow, transition: $transition), items: [
 				['json' => ['n' => 1], 'binary' => [], 'pairedItem' => null, 'output' => 'low'],
 				['json' => ['n' => 2], 'binary' => [], 'pairedItem' => null, 'output' => 'hi'],
 				['json' => ['n' => 3], 'binary' => [], 'pairedItem' => null, 'output' => 'unknowable'],
 				['json' => ['n' => 4], 'binary' => [], 'pairedItem' => null],
 				'not-an-item',
-			]
-		);
+			]);
 
 		$this->assertSame('lo', $items[0]['output'], 'the exit id resolves to the exit\'s place');
 		$this->assertSame('hi', $items[1]['output'], 'a tag that already names a place is untouched');
@@ -162,11 +158,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 			],
 		];
 
-		$items = $this->router->resolveOutputTags(
-			flow: $flow,
-			transition: $this->transition('split', ['hi', 'lo']),
-			items: [['json' => ['n' => 1], 'binary' => [], 'pairedItem' => null, 'output' => 'both']]
-		);
+		$items = $this->router->resolveOutputTags(exits: $this->router->exitsOf(flow: $flow, transition: $this->transition('split', ['hi', 'lo'])), items: [['json' => ['n' => 1], 'binary' => [], 'pairedItem' => null, 'output' => 'both']]);
 
 		$this->assertArrayNotHasKey('output', $items[0]);
 	}//end testResolveOutputTagsBroadcastsAcrossAMultiPlaceExit()
@@ -191,20 +183,10 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 		];
 		$transition = $this->transition('split', ['hi', 'lo']);
 
-		$tagged = $this->router->takenExits(
-			flow: $flow,
-			transition: $transition,
-			items: [['json' => [], 'binary' => [], 'pairedItem' => null, 'output' => 'second']],
-			context: []
-		);
+		$tagged = $this->router->takenExits(exits: $this->router->exitsOf(flow: $flow, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [['json' => [], 'binary' => [], 'pairedItem' => null, 'output' => 'second']], context: []));
 		$this->assertSame(['lo'], $tagged, 'the tagged exit beats declaration order');
 
-		$untagged = $this->router->takenExits(
-			flow: $flow,
-			transition: $transition,
-			items: [['json' => [], 'binary' => [], 'pairedItem' => null]],
-			context: []
-		);
+		$untagged = $this->router->takenExits(exits: $this->router->exitsOf(flow: $flow, transition: $transition), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [['json' => [], 'binary' => [], 'pairedItem' => null]], context: []));
 		$this->assertSame(['hi'], $untagged, 'without a tag the declaration-order else keeps it');
 	}//end testTakenExitsHonoursTheItemsRoutingTag()
 
@@ -225,12 +207,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 			],
 		];
 
-		$taken = $this->router->takenExits(
-			flow: $flow,
-			transition: $this->transition('split', ['hi']),
-			items: [['json' => [], 'binary' => [], 'pairedItem' => null]],
-			context: []
-		);
+		$taken = $this->router->takenExits(exits: $this->router->exitsOf(flow: $flow, transition: $this->transition('split', ['hi'])), output: new \OCA\OpenRegister\Service\Flow\FlowStepOutput(items: [['json' => [], 'binary' => [], 'pairedItem' => null]], context: []));
 
 		$this->assertSame(['hi'], $taken);
 	}//end testTakenExitsSkipsMalformedAndUnwiredExits()
@@ -241,12 +218,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	 * @return void
 	 */
 	public function testPlacesForExitReadsAListSource(): void {
-		$places = $this->router->placesForExit(
-			flow: $this->branchingFlow(from: ['split']),
-			nodeId: 'split',
-			exitId: 'high',
-			candidates: ['hi', 'lo']
-		);
+		$places = $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $this->branchingFlow(from: ['split']), nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'high');
 
 		$this->assertSame(['hi'], $places);
 
@@ -258,12 +230,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	 * @return void
 	 */
 	public function testPlacesForExitStillReadsAScalarSource(): void {
-		$places = $this->router->placesForExit(
-			flow: $this->branchingFlow(from: 'split'),
-			nodeId: 'split',
-			exitId: 'high',
-			candidates: ['hi', 'lo']
-		);
+		$places = $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $this->branchingFlow(from: 'split'), nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'high');
 
 		$this->assertSame(['hi'], $places);
 
@@ -280,8 +247,8 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	public function testPlacesForExitDoesNotReturnTheOtherBranch(): void {
 		$flow = $this->branchingFlow(from: ['split']);
 
-		$this->assertSame(['lo'], $this->router->placesForExit(flow: $flow, nodeId: 'split', exitId: 'low', candidates: ['hi', 'lo']));
-		$this->assertSame([], $this->router->placesForExit(flow: $flow, nodeId: 'split', exitId: 'nosuch', candidates: ['hi', 'lo']));
+		$this->assertSame(['lo'], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'low'));
+		$this->assertSame([], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'split', candidates: ['hi', 'lo']), exitId: 'nosuch'));
 
 	}//end testPlacesForExitDoesNotReturnTheOtherBranch()
 
@@ -291,12 +258,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	 * @return void
 	 */
 	public function testPlacesForExitIgnoresAnotherNodesEdge(): void {
-		$places = $this->router->placesForExit(
-			flow: $this->branchingFlow(from: ['split']),
-			nodeId: 'someone-else',
-			exitId: 'high',
-			candidates: ['hi', 'lo']
-		);
+		$places = $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $this->branchingFlow(from: ['split']), nodeId: 'someone-else', candidates: ['hi', 'lo']), exitId: 'high');
 
 		$this->assertSame([], $places);
 
@@ -313,8 +275,8 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 			'edges' => [['id' => 'both', 'from' => ['a', 'b'], 'fromExit' => 'out', 'to' => ['end']]],
 		];
 
-		$this->assertSame(['end'], $this->router->placesForExit(flow: $flow, nodeId: 'a', exitId: 'out', candidates: ['end']));
-		$this->assertSame(['end'], $this->router->placesForExit(flow: $flow, nodeId: 'b', exitId: 'out', candidates: ['end']));
+		$this->assertSame(['end'], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'a', candidates: ['end']), exitId: 'out'));
+		$this->assertSame(['end'], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'b', candidates: ['end']), exitId: 'out'));
 
 	}//end testPlacesForExitHonoursEveryFanOutSource()
 
@@ -324,12 +286,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 	 * @return void
 	 */
 	public function testPlacesForExitRespectsTheCandidateList(): void {
-		$places = $this->router->placesForExit(
-			flow: $this->branchingFlow(from: ['split']),
-			nodeId: 'split',
-			exitId: 'high',
-			candidates: ['lo']
-		);
+		$places = $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $this->branchingFlow(from: ['split']), nodeId: 'split', candidates: ['lo']), exitId: 'high');
 
 		$this->assertSame([], $places);
 
@@ -416,7 +373,7 @@ class FlowTokenRouterEndpointsTest extends TestCase {
 			'edges' => ['not-an-edge', ['id' => 'ok', 'from' => ['a'], 'fromExit' => 'x', 'to' => ['b']]],
 		];
 
-		$this->assertSame(['b'], $this->router->placesForExit(flow: $flow, nodeId: 'a', exitId: 'x', candidates: ['b']));
+		$this->assertSame(['b'], $this->router->placesForExit(exits: new \OCA\OpenRegister\Service\Flow\FlowNodeExits(flow: $flow, nodeId: 'a', candidates: ['b']), exitId: 'x'));
 
 	}//end testMalformedEdgesAreSkipped()
 }//end class

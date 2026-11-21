@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use Error;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -20,10 +21,12 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
+use Twig\Environment;
 
 /**
  * Pins how ComputedFieldHandler resolves `_ref` cross-references and rolls up
@@ -36,6 +39,10 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
  */
 class ComputedFieldReferencesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/computed-field-references-golden.json';
@@ -50,8 +57,8 @@ class ComputedFieldReferencesGoldenTest extends TestCase {
 			$schema->setProperties($properties);
 			$handler = $this->handler(calls: $calls, logs: $logs, scores: $scores);
 			$actual[$name] = [
-				'save' => $handler->evaluateComputedFields($data, $schema),
-				'read' => $handler->evaluateComputedFields($data, $schema, 'read'),
+				'save' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema)),
+				'read' => $handler->evaluateComputedFields($data, new ComputedPass(schema: $schema, evaluateOn: 'read')),
 				'calls' => $calls,
 				'logs' => $logs,
 			];
@@ -146,10 +153,27 @@ class ComputedFieldReferencesGoldenTest extends TestCase {
 
 		return new ComputedFieldHandler(
 			$mapper,
-			new MappingExtension(),
-			$this->createMock(MappingRuntimeLoader::class),
+			$this->mappingTwig(),
 			$logger,
 			$guard
 		);
 	}//end handler()
+
+	/**
+	 * The mapping extension and a stand-in runtime loader, installed as before.
+	 *
+	 * @return MappingTwigInstallerInterface The installer.
+	 */
+	private function mappingTwig(): MappingTwigInstallerInterface {
+		$installer = $this->createMock(MappingTwigInstallerInterface::class);
+		$loader    = $this->createMock(MappingRuntimeLoader::class);
+		$installer->method('installOn')->willReturnCallback(
+			static function (Environment $twig) use ($loader): void {
+				$twig->addExtension(new MappingExtension());
+				$twig->addRuntimeLoader($loader);
+			}
+		);
+
+		return $installer;
+	}//end mappingTwig()
 }//end class

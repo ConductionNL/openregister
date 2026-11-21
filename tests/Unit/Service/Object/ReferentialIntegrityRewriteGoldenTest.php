@@ -11,9 +11,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -21,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
@@ -31,6 +34,8 @@ use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Golden record of applyDeletionActions() over SET_NULL targets (scalar, array with and without
@@ -58,7 +63,10 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->scenarios() as $name => [$data, $analysis, $failure]) {
 			$this->seen = ['updated' => [], 'audit' => [], 'warnings' => []];
-			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions($analysis, 'alice', 'root-uuid', 'org-1', 'parent-schema');
+			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions(
+				$analysis,
+				new CascadeDeleteOrigin(userId: 'alice', cascadeSource: 'root-uuid', triggerSchemaSlug: 'parent-schema', organisationId: 'org-1')
+			);
 			$actual[$name] = $this->seen + ['result' => $result];
 		}
 
@@ -76,8 +84,8 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 	 * @return array<string, array{0: array, 1: DeletionAnalysis, 2: ?string}>
 	 */
 	private function scenarios(): array {
-		$null = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, nullifyTargets: [$target]);
-		$default = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, defaultTargets: [$target]);
+		$null = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [$target]));
+		$default = static fn (array $target): DeletionAnalysis => new DeletionAnalysis(deletable: true, effects: new DeletionEffects(defaultTargets: [$target]));
 		$scalar = ['objectUuid' => 'dep', 'schema' => '3', 'property' => 'parent', 'isArray' => false, 'sourceUuid' => 'root-uuid'];
 		$list = ['parent' => ['a', 'root-uuid', 'b', 'root-uuid'], 'name' => 'n'];
 		return [
@@ -94,7 +102,7 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 			'default null value'        => [['parent' => 'root-uuid'], $default(['defaultValue' => null] + $scalar), null],
 			'default lookup fails'      => [['parent' => 'root-uuid'], $default(['defaultValue' => 'f'] + $scalar), 'find'],
 			'default update fails'      => [['parent' => 'root-uuid'], $default(['defaultValue' => 'f'] + $scalar), 'update'],
-			'both kinds'                => [['parent' => 'root-uuid'], new DeletionAnalysis(deletable: true, nullifyTargets: [$scalar], defaultTargets: [['defaultValue' => 'd'] + $scalar]), null],
+			'both kinds'                => [['parent' => 'root-uuid'], new DeletionAnalysis(deletable: true, effects: new DeletionEffects(nullifyTargets: [$scalar], defaultTargets: [['defaultValue' => 'd'] + $scalar])), null],
 		];
 	}//end scenarios()
 
@@ -131,7 +139,7 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 			}
 		);
 
-		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$auditMapper->method('insert')->willReturnCallback(
 			function (AuditTrail $row): AuditTrail {
 				$this->seen['audit'][] = [
@@ -156,9 +164,9 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		return new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $objectMapper, db: $this->createMock(IDBConnection::class)),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $auditMapper, archivalGuard: new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $auditMapper, archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))),
 			logger: $logger
 		);
 	}//end service()

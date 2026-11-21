@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+ * @spec openspec/specs/schema-scoped-reference-providers/spec.md
  */
 
 declare(strict_types=1);
@@ -30,10 +30,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Search;
 
 use OCA\OpenRegister\AppHost\SchemaScopedProvider;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
+use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IUser;
 use OCP\Search\IProvider;
 use OCP\Search\ISearchQuery;
@@ -78,13 +79,32 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	private const LOG_NAME = 'AbstractSchemaSearchProvider';
 
 	/**
+	 * Register mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for slug-to-id resolution, read by SchemaScopedProvider.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Logger, read by SchemaScopedProvider.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for AbstractSchemaSearchProvider.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
-	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
-	 * @param RegisterMapperInterface $registerMapper Register mapper for slug-to-id resolution
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for slug-to-id resolution and the `smartPickerEnabled` flag
-	 * @param LoggerInterface $logger Logger
+	 * @param ObjectSearchResultFormatterInterface $resultFormatter Shared result-formatting service
+	 * @param SchemaScopeLookups $lookups The register and schema mappers and the logger
 	 *
 	 * @return void
 	 *
@@ -92,11 +112,12 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly ObjectSearchResultFormatter $resultFormatter,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		private readonly ObjectSearchResultFormatterInterface $resultFormatter,
+		SchemaScopeLookups $lookups,
 	) {
+		$this->registerMapper = $lookups->registerMapper;
+		$this->schemaMapper = $lookups->schemaMapper;
+		$this->logger = $lookups->logger;
 	}//end __construct()
 
 	/**
@@ -122,7 +143,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return string Search provider ID
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getId(): string {
 		return 'openregister_objects_' . $this->getRegisterSlug() . '_' . $this->getSchemaSlug();
@@ -135,7 +156,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return string The schema's current title, or its slug as fallback
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getName(): string {
 		return $this->schemaTitle();
@@ -152,7 +173,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function getOrder(string $route, array $routeParameters): ?int {
 		unset($route, $routeParameters);
@@ -175,7 +196,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
 		unset($user);
@@ -199,7 +220,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 *
 	 * @return array<string, int>
 	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 * @spec openspec/specs/schema-scoped-reference-providers/spec.md
 	 */
 	private function searchScope(): array {
 		if ($this->isSmartPickerEnabled() === false) {

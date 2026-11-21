@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Controller\TagsController;
 use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -41,11 +42,9 @@ class TagsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
 
 		$this->controller = new TagsController(
-			'openregister',
 			$this->request,
 			$this->objectService,
-			$this->fileService,
-			$this->createMock(TaggingHandler::class),
+			new TagsControllerServices($this->fileService, $this->createMock(TaggingHandler::class)),
 			$this->userSession
 		);
 	}//end setUp()
@@ -86,11 +85,9 @@ class TagsControllerTest extends TestCase {
 		$anonymousSession->method('getUser')->willReturn(null);
 
 		$controller = new TagsController(
-			'openregister',
 			$this->request,
 			$this->objectService,
-			$this->fileService,
-			$this->createMock(TaggingHandler::class),
+			new TagsControllerServices($this->fileService, $this->createMock(TaggingHandler::class)),
 			$anonymousSession
 		);
 

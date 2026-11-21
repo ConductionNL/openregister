@@ -18,7 +18,7 @@ final class FederatedConfigControllerFactory {
 	/**
 	 * The constructor arguments of FederatedConfigController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param FederatedConfigServiceInterface $service Constructor argument.
 	 * @param FederatedConfigAccess $access Constructor argument.
@@ -36,7 +36,6 @@ final class FederatedConfigControllerFactory {
 		\OCP\IConfig $config,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices(
 				service: $service,

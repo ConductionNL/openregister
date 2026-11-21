@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -36,6 +37,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\AuditTrailFilterTerm
  * @uses   \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
+ * @uses \OCA\OpenRegister\Db\QueryPage
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class AuditTrailFindAllGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -105,14 +109,12 @@ class AuditTrailFindAllGoldenTest extends TestCase {
 
 		$mapper = new AuditTrailMapper(
 			$db,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IRequest::class),
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 
 		$outcome = [];
 		try {
-			$outcome['count'] = count($mapper->findAll(...$args));
+			$outcome['count'] = count($mapper->findTrail(new ListQuery(($args[0] ?? ListQuery::UNBOUNDED), $args[1], ($args[2] ?? []), ($args[3] ?? []), $args[4])));
 		} catch (\Throwable $e) {
 			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
 		}

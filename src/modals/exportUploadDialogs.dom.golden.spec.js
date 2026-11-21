@@ -39,11 +39,14 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 }))
 jest.mock(
 	'@conduction/nextcloud-vue/dist/esm/components/CnIcon/CnIcon.vue.js',
-	() => mockModule('CnIcon'),
+	() => ({ __esModule: true, default: { name: 'CnIcon', render: () => null } }),
 )
 jest.mock(
 	'@conduction/nextcloud-vue/dist/esm/components/CnDialogHeader/CnDialogHeader.vue.js',
-	() => mockModule('CnDialogHeader'),
+	() => ({
+		__esModule: true,
+		default: { name: 'CnDialogHeader', render: () => null },
+	}),
 )
 jest.mock('vue-codemirror6', () => mockModule('CodeMirror'))
 jest.mock('@codemirror/lang-json', () => ({
@@ -249,7 +252,6 @@ describe('import, export, upload and download dialogs (DOM golden)', () => {
 			expect(wrapper.html()).toMatchSnapshot()
 		},
 	)
-
 })
 
 describe('ReimportDescriptorDialog (DOM golden)', () => {

@@ -32,70 +32,7 @@ namespace OCA\OpenRegister\Service\Sync;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-final class SyncRecordStatus {
-
-	/**
-	 * Record identified during the Gather stage, awaiting fetch.
-	 */
-	public const PENDING = 'pending';
-
-	/**
-	 * Full record data retrieved during the Fetch stage.
-	 */
-	public const FETCHED = 'fetched';
-
-	/**
-	 * Fetch failed for this record (transient or hard error).
-	 */
-	public const FETCH_ERROR = 'fetch_error';
-
-	/**
-	 * Record successfully created or updated in the target register.
-	 */
-	public const IMPORTED = 'imported';
-
-	/**
-	 * Record content unchanged since the last sync; no write performed.
-	 */
-	public const UNCHANGED = 'unchanged';
-
-	/**
-	 * Import failed (schema validation or persistence error).
-	 */
-	public const IMPORT_ERROR = 'import_error';
-
-	/**
-	 * Source and local copy both changed; awaiting manual resolution.
-	 */
-	public const CONFLICT = 'conflict';
-
-	/**
-	 * Record skipped (e.g. filtered out or beyond the execution limit).
-	 */
-	public const SKIPPED = 'skipped';
-
-	/**
-	 * Record failed after all retries were exhausted.
-	 */
-	public const PERMANENT_ERROR = 'permanent_error';
-
-	/**
-	 * Allowed forward transitions keyed by current status.
-	 *
-	 * @var array<string, list<string>>
-	 */
-	private const TRANSITIONS = [
-		self::PENDING => [self::FETCHED, self::FETCH_ERROR, self::SKIPPED],
-		self::FETCHED => [self::IMPORTED, self::UNCHANGED, self::IMPORT_ERROR, self::CONFLICT, self::SKIPPED],
-		self::FETCH_ERROR => [self::FETCHED, self::PERMANENT_ERROR, self::SKIPPED],
-		self::IMPORT_ERROR => [self::IMPORTED, self::PERMANENT_ERROR, self::SKIPPED],
-		self::CONFLICT => [self::IMPORTED, self::UNCHANGED, self::SKIPPED],
-		// Terminal states.
-		self::IMPORTED => [],
-		self::UNCHANGED => [],
-		self::SKIPPED => [],
-		self::PERMANENT_ERROR => [],
-	];
+final class SyncRecordStatus implements SyncRecordStatusInterface {
 
 	/**
 	 * All valid status values.

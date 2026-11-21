@@ -30,17 +30,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileSession;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapper;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -56,8 +56,19 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\File\FileLockHandler
  * @covers \OCA\OpenRegister\Service\File\FilePublishingHandler
  * @covers \OCA\OpenRegister\Service\File\FileValidationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\FileSession
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileFinder
+ * @uses \OCA\OpenRegister\Service\File\ObjectFileLookup
+ * @uses \OCA\OpenRegister\Service\File\ExecutableContentDetector
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\File\FileSession
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFileFinder
+ * @uses   \OCA\OpenRegister\Service\File\ObjectFileLookup
+ * @uses   \OCA\OpenRegister\Service\File\ExecutableContentDetector
  */
 class FileAccessGuardsGoldenTest extends TestCase {
+	use PassThroughDigestsTrait;
 
 	/**
 	 * The user the session returns; null for none.
@@ -135,7 +146,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 		});
 		$factory = $this->createMock(ICacheFactory::class);
 		$factory->method('createDistributed')->willReturn($cache);
-		$locks = new FileLockHandler($factory, $this->session(), $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class));
+		$locks = new FileLockHandler($factory, new FileSession($this->session(), $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class)));
 
 		$this->currentUser = 'bob';
 		$locks->assertCanModify(fileId: 1);
@@ -278,7 +289,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturnCallback(fn (string $uid): bool => in_array($uid, $admins, true));
 
-		return new FileLockHandler($factory, $this->session(), $groups, $this->createMock(LoggerInterface::class));
+		return new FileLockHandler($factory, new FileSession($this->session(), $groups, $this->createMock(LoggerInterface::class)));
 	}//end lockHandler()
 
 	private function object(): ObjectEntity {
@@ -288,14 +299,14 @@ class FileAccessGuardsGoldenTest extends TestCase {
 	}//end object()
 
 	private function publishing(bool $indicatorRefuses, bool $restricted): FilePublishingHandler {
-		$guard = $this->createMock(PartyIndicatorGuard::class);
+		$guard = $this->createMock(PublicationRefusalInterface::class);
 		$guard->method('assertPublicationAllowed')->willReturnCallback(function (string $objectUuid) use ($indicatorRefuses): void {
 			$this->trace[] = 'indicator ' . $objectUuid;
 			if ($indicatorRefuses === true) {
 				throw new Exception('Publication is refused', 403);
 			}
 		});
-		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturnCallback(function (int $fileId) use ($restricted): bool {
 			$this->trace[] = 'isRestricted ' . $fileId;
 			return $restricted;
@@ -305,9 +316,9 @@ class FileAccessGuardsGoldenTest extends TestCase {
 			return array_values(array_filter($nodes, fn ($node): bool => $node->getName() !== 'secret.txt'));
 		});
 		$container = $this->createMock(IServerContainer::class);
-		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
+		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileReadRestrictionInterface::class ? $restrictions : $guard);
 
-		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container);
+		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container, $this->passThroughDigests());
 		$handler->setFileService($this->fileService());
 		return $handler;
 	}//end publishing()

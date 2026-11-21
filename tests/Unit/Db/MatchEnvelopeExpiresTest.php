@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\RecordMetadataConditions;
 use OCP\IUserSession;
@@ -40,6 +41,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Service\ComparableInstants
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
  */
 class MatchEnvelopeExpiresTest extends TestCase {
 
@@ -69,7 +71,7 @@ class MatchEnvelopeExpiresTest extends TestCase {
 	 */
 	private function matcher(): ConditionMatcher {
 		return new ConditionMatcher(
-			$this->createMock(IUserSession::class),
+			new ConditionUserResolvers($this->createMock(IUserSession::class)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(logger: new NullLogger()),
 			new NullLogger()
@@ -118,5 +120,36 @@ class MatchEnvelopeExpiresTest extends TestCase {
 	 */
 	public function testTheRenderedSelfIsUnchanged(): void {
 		$this->assertArrayNotHasKey('expires', $this->record('+1 day')->getObjectArray());
+		$this->assertSame('zaak-1', $this->record(null)->getObjectArray()['name']);
 	}//end testTheRenderedSelfIsUnchanged()
+
+	/**
+	 * A rule on `_name` or `_description` reads the stored value, as the list
+	 * reads the column: a record without a name has none, not its uuid.
+	 *
+	 * @return void
+	 */
+	public function testNameAndDescriptionReadTheStoredValue(): void {
+		$unnamed = $this->record(null)->getMatchEnvelope();
+		$this->assertNull($unnamed['@self']['name']);
+		$this->assertNull($unnamed['@self']['description']);
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $unnamed, match: ['_name' => null]));
+		$this->assertFalse($this->matcher()->objectMatchesConditions(object: $unnamed, match: ['_name' => 'zaak-1']));
+
+		$named = $this->record(null);
+		$named->setName('Besluit');
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $named->getMatchEnvelope(), match: ['_name' => 'Besluit']));
+	}//end testNameAndDescriptionReadTheStoredValue()
+
+	/**
+	 * `_id` names the uuid on a record and on the list's column alike.
+	 *
+	 * @return void
+	 */
+	public function testIdReadsTheUuidOnBothPaths(): void {
+		$this->assertTrue($this->matcher()->objectMatchesConditions(object: $this->record(null)->getMatchEnvelope(), match: ['_id' => 'zaak-1']));
+		$this->assertSame('_uuid', (new RecordMetadataConditions())->columnKey(key: '_id'));
+		$this->assertSame('_uuid', (new RecordMetadataConditions())->columnKey(key: '@self.id'));
+		$this->assertSame('_uuid', (new \OCA\OpenRegister\Service\Rbac\RuleColumns())->columnOf(key: '_id'));
+	}//end testIdReadsTheUuidOnBothPaths()
 }//end class
