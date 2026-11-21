@@ -85,6 +85,11 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
   },
   "readMarkedFor": null,
   "relationsLoading": false,
+  "translation": {
+    "key": "",
+    "languages": [],
+    "translatable": [],
+  },
 }
 `;
 
