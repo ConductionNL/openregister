@@ -56,7 +56,7 @@ class PermissionsControllerTest extends TestCase {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
 
-		$catalogue = $this->createMock(originalClassName: \OCA\OpenRegister\Service\ActionRightsCatalogueInterface::class);
+		$catalogue = $this->createMock(originalClassName: \OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface::class);
 		$catalogue->method('actions')->willReturn($actions);
 
 		return new PermissionsController(

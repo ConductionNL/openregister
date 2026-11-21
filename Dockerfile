@@ -16,11 +16,11 @@
 
 # Nextcloud 33 is the newest major whose image still ships PHP 8.3. The 34 and
 # 35 images ship PHP 8.5, which some apps in the fleet do not support yet.
-ARG NEXTCLOUD_IMAGE=nextcloud:33.0.10-apache
+ARG NEXTCLOUD_IMAGE=nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc
 ARG APP_ID=openregister
 
 # ── Frontend: the same steps the release workflow runs ──
-FROM node:22-bookworm-slim AS frontend
+FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS frontend
 WORKDIR /app
 COPY . .
 # Honour engines.npm: Node 22 bundles npm 10, several apps require npm 11.
@@ -32,7 +32,7 @@ RUN set -eu; \
     rm -rf node_modules
 
 # ── Backend: runtime composer dependencies only ──
-FROM composer:2 AS vendor
+FROM composer:2@sha256:919efe8e62179c71dfd31fad035fd671fe7454211c6b2aa30a10af0ab4acedba AS vendor
 WORKDIR /app
 COPY --from=frontend /app /app
 # The lock was resolved for the app's own platform; the composer image does not
@@ -41,7 +41,7 @@ RUN composer install --no-dev --no-interaction --no-progress \
         --optimize-autoloader --classmap-authoritative --ignore-platform-reqs
 
 # ── Package: the same file set as the release tarball ──
-FROM alpine:3.20 AS package
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS package
 ARG APP_ID
 # hadolint ignore=DL3018
 RUN apk add --no-cache rsync
@@ -64,7 +64,7 @@ RUN mkdir -p "/out/${APP_ID}" && rsync -a \
         /app/ "/out/${APP_ID}/"
 
 # ── OpenRegister: the newest stable release, checked against its SHA-256 ──
-FROM alpine:3.20 AS openregister
+FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS openregister
 ARG APP_ID
 # Empty means the newest stable release at build time. Prereleases are refused.
 # Pin it for a reproducible build: --build-arg OPENREGISTER_VERSION=2.1.0

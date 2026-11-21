@@ -32,12 +32,12 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
@@ -142,7 +142,7 @@ class AuditTrailController extends Controller {
 		IRequest $request,
 		AuditTrailControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->logService = $services->log->logService;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->auditHashService = $services->log->auditHashService;
@@ -966,8 +966,8 @@ class AuditTrailController extends Controller {
 					'queued' => true,
 					'message' => sprintf(
 						'More than %d entries match. The export runs in the background and you get a notification when the file is in your Files under "%s".',
-						JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
-						JobHandles::AUDIT_TRAIL_EXPORT_FOLDER
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER
 					),
 				],
 				statusCode: Http::STATUS_ACCEPTED

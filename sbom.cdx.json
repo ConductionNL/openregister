@@ -4987,10 +4987,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/aix-ppc64"
         }
@@ -5025,10 +5021,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm64"
@@ -5065,10 +5057,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm"
         }
@@ -5103,10 +5091,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-x64"
@@ -5143,10 +5127,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-arm64"
         }
@@ -5181,10 +5161,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-x64"
@@ -5221,10 +5197,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-arm64"
         }
@@ -5259,10 +5231,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-x64"
@@ -5299,10 +5267,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm64"
         }
@@ -5337,10 +5301,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm"
@@ -5377,10 +5337,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ia32"
         }
@@ -5415,10 +5371,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-loong64"
@@ -5455,10 +5407,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-mips64el"
         }
@@ -5493,10 +5441,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ppc64"
@@ -5533,10 +5477,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-riscv64"
         }
@@ -5571,10 +5511,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-s390x"
@@ -5611,10 +5547,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-x64"
         }
@@ -5649,10 +5581,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-arm64"
@@ -5689,10 +5617,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-x64"
         }
@@ -5727,10 +5651,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-arm64"
@@ -5767,10 +5687,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-x64"
         }
@@ -5805,10 +5721,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openharmony-arm64"
@@ -5845,10 +5757,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/sunos-x64"
         }
@@ -5883,10 +5791,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-arm64"
@@ -5923,10 +5827,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-ia32"
         }
@@ -5961,10 +5861,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-x64"
@@ -7765,10 +7661,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@napi-rs/lzma-linux-x64-gnu"
@@ -9726,10 +9618,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm-eabi"
         }
@@ -9764,10 +9652,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm64"
@@ -9804,10 +9688,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-arm64"
         }
@@ -9842,10 +9722,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-x64"
@@ -9882,10 +9758,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-arm64"
         }
@@ -9920,10 +9792,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-x64"
@@ -9960,10 +9828,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-gnueabihf"
         }
@@ -9998,10 +9862,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-musleabihf"
@@ -10038,10 +9898,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-gnu"
         }
@@ -10076,10 +9932,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-musl"
@@ -10116,10 +9968,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-gnu"
         }
@@ -10154,10 +10002,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-musl"
@@ -10194,10 +10038,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-gnu"
         }
@@ -10232,10 +10072,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-musl"
@@ -10272,10 +10108,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-gnu"
         }
@@ -10310,10 +10142,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-musl"
@@ -10350,10 +10178,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-s390x-gnu"
         }
@@ -10388,10 +10212,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-gnu"
@@ -10428,10 +10248,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-musl"
         }
@@ -10466,10 +10282,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openbsd-x64"
@@ -10506,10 +10318,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openharmony-arm64"
         }
@@ -10544,10 +10352,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-arm64-msvc"
@@ -10584,10 +10388,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-ia32-msvc"
         }
@@ -10623,10 +10423,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-gnu"
         }
@@ -10661,10 +10457,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-msvc"
@@ -18873,10 +18665,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/fsevents"
