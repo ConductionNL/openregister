@@ -31,7 +31,6 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Db\QueryPage;
-use OCA\OpenRegister\Db\Source;
 
 /**
  * Class ChunkMapper
@@ -510,7 +509,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			// The stemmed arm (search-dutch-language-quality REQ-SDL-001): an
 			// inflected form finds its base and the reverse. The configuration
 			// is an identifier TextSearchConfiguration vouched for, inlined so
-			// the functional GIN index of Version1Date20261114120000 serves it.
+			// the functional GIN index of Version1Date20261121150000 serves it.
 			$dutchVector = "to_tsvector('" . $stemmed . "', text_content)";
 			$dutchQuery  = "plainto_tsquery('" . $stemmed . "', :query)";
 			$match       = '(' . $match . ' OR ' . $dutchVector . ' @@ ' . $dutchQuery . ')';

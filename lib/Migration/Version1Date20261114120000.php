@@ -1,27 +1,36 @@
 <?php
 
 /**
- * Database migration adding the functional GIN indexes the stemmed `_search` arm reads.
+ * Keep an import run as a durable record: its lineage, its row outcomes and its prune.
  *
- * Part of search-dutch-language-quality (REQ-SDL-001): on PostgreSQL `_search`
- * also matches `to_tsvector(<config>, ...) @@ plainto_tsquery(<config>, ...)`,
- * and ChunkMapper::searchByKeyword() does the same over chunk text. These are
- * expression indexes, like Version1Date20260706101000's: no column is added, so
- * Doctrine schema introspection never sees a tsvector type.
+ * The import preview already is the run record (the file, its fingerprint,
+ * the mapping, the policy, the actor, the moment and the counts). Four columns
+ * make it one that survives itself:
+ *
+ * - `openregister_import_previews.cause_run`: the uuid of the run a retry was
+ *   made from, so a retry is a new run naming the original (D-6).
+ * - `openregister_import_previews.rows_pruned_at`: when the per-row detail was
+ *   pruned, so a pruned run says so rather than reading as one with no rows (D-5).
+ * - `openregister_import_preview_rows.source`: the row as it was submitted, so
+ *   a failed row can be exported in that shape and loaded again.
+ * - `openregister_import_preview_rows.outcome`: `written` or `failed` once a
+ *   commit wrote the row or failed to.
+ *
+ * Idempotent: every column is added only while it is missing.
  *
  * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+ * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -29,118 +38,72 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
-use OCP\IConfig;
-use OCP\IDBConnection;
+use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Adds, on PostgreSQL only, the stemmed-match GIN index on the chunk text and on
- * every existing magic table's name, description and summary.
+ * Add the run lineage, the prune mark, the submitted row and the row outcome.
  *
- * New magic tables get the same index from MagicTableIndexer. Each index is
- * created when missing (`IF NOT EXISTS`); a failure is a warning, never a
- * failed upgrade: without the index the match is still right, only slower.
- * The configuration is the saved `search.textSearchConfig` (default `dutch`).
- *
- * @SuppressWarnings(PHPMD.StaticAccess) TextSearchConfiguration::metadataIndexSql() is a pure SQL builder.
- *
- * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+ * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md
  */
-class Version1Date20261114120000 extends SimpleMigrationStep {
-	/**
-	 * Constructor.
-	 *
-	 * @param IDBConnection           $connection Database connection.
-	 * @param IConfig                 $config     Nextcloud config, for the table prefix.
-	 * @param TextSearchConfiguration $textSearch The configuration the indexes are built with.
-	 */
-	public function __construct(
-		private readonly IDBConnection $connection,
-		private readonly IConfig $config,
-		private readonly TextSearchConfiguration $textSearch,
-	) {
-	}//end __construct()
+class Version1Date20261114120000 extends TargetedMigrationStep {
+	private const PREVIEWS = 'openregister_import_previews';
+
+	private const ROWS = 'openregister_import_preview_rows';
 
 	/**
-	 * Add the indexes after the schema changes (PostgreSQL only).
+	 * Add the four columns.
 	 *
-	 * @param IOutput $output        Migration output.
-	 * @param Closure $schemaClosure Schema closure.
-	 * @param array   $options       Migration options.
+	 * @param IOutput              $output        Migration output.
+	 * @param Closure              $schemaClosure Returns the schema wrapper.
+	 * @param array<string, mixed> $options       Migration options.
 	 *
-	 * @return void
+	 * @return ISchemaWrapper The schema, changed or not: a null return drops the shared snapshot.
 	 *
-	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-an-import-leaves-a-durable-record-with-an-outcome-per-row-req-rcn-005
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-		$config = $this->textSearch->active();
-		if ($config === null) {
-			$output->info('Skipping stemmed search indexes: unsupported database platform (PostgreSQL only)');
-			return;
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		/*
+		 * @var ISchemaWrapper $schema
+		 */
+
+		$schema = $schemaClosure();
+		$changed = false;
+
+		if ($schema->hasTable(self::PREVIEWS) === true) {
+			$table = $schema->getTable(self::PREVIEWS);
+			if ($table->hasColumn('cause_run') === false) {
+				$table->addColumn('cause_run', Types::STRING, ['notnull' => false, 'length' => 36]);
+				$table->addIndex(['cause_run'], 'idx_or_imprev_cause');
+				$changed = true;
+			}
+
+			if ($table->hasColumn('rows_pruned_at') === false) {
+				$table->addColumn('rows_pruned_at', Types::DATETIME, ['notnull' => false]);
+				$changed = true;
+			}
 		}
 
-		$prefix = $this->config->getSystemValueString('dbtableprefix', 'oc_');
-		if ($schemaClosure()->hasTable('openregister_chunks') === true) {
-			$this->statement(
-				output: $output,
-				sql: 'CREATE INDEX IF NOT EXISTS idx_or_chunks_text_search_'.$config.'_gin ON '.$prefix.'openregister_chunks'
-					." USING gin (to_tsvector('".$config."', text_content))"
-			);
+		if ($schema->hasTable(self::ROWS) === true) {
+			$table = $schema->getTable(self::ROWS);
+			if ($table->hasColumn('source') === false) {
+				$table->addColumn('source', Types::TEXT, ['notnull' => false]);
+				$changed = true;
+			}
+
+			if ($table->hasColumn('outcome') === false) {
+				$table->addColumn('outcome', Types::STRING, ['notnull' => false, 'length' => 16]);
+				$changed = true;
+			}
 		}
 
-		foreach ($this->magicTables(prefix: $prefix) as $tableName) {
-			$this->statement(
-				output: $output,
-				sql: TextSearchConfiguration::metadataIndexSql(config: $config, tableName: $tableName, fullTableName: $prefix.$tableName)
-			);
-		}
-	}//end postSchemaChange()
-
-	/**
-	 * The magic tables that exist, without the prefix.
-	 *
-	 * @param string $prefix The table prefix.
-	 *
-	 * @return list<string> The bare table names.
-	 */
-	private function magicTables(string $prefix): array {
-		$pattern = str_replace('_', '\\_', $prefix.MagicMapperInterface::TABLE_PREFIX).'%';
-		try {
-			$result = $this->connection->executeQuery(
-				'SELECT tablename FROM pg_catalog.pg_tables WHERE tablename LIKE :pattern ORDER BY tablename',
-				['pattern' => $pattern]
-			);
-			$names  = $result->fetchAll(\PDO::FETCH_COLUMN);
-			$result->closeCursor();
-		} catch (Exception $e) {
-			return [];
+		if ($changed === true) {
+			$output->info('Added the import run lineage, prune mark, submitted row and row outcome columns');
 		}
 
-		$tables = [];
-		foreach ($names as $name) {
-			$tables[] = substr((string) $name, strlen($prefix));
-		}
-
-		return $tables;
-	}//end magicTables()
-
-	/**
-	 * Run one index statement; a failure is reported, not raised.
-	 *
-	 * @param IOutput $output Migration output.
-	 * @param string  $sql    The statement.
-	 *
-	 * @return void
-	 */
-	private function statement(IOutput $output, string $sql): void {
-		try {
-			$this->connection->executeStatement($sql);
-		} catch (Exception $e) {
-			$output->warning('Failed to create a stemmed search index ('.$e->getMessage().'); search stays correct, only slower.');
-		}
-	}//end statement()
+		return $schema;
+	}//end changeTargetedSchema()
 }//end class

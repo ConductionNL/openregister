@@ -24,53 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
-use OCP\Collaboration\Reference\IReference;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectPreviewInterface;
 
 /**
  * The reference-provider side of ObjectPreviewFormatter.
+ *
+ * Its methods are those of the Integrations port ObjectPreviewInterface, which
+ * the schema-scoped reference providers type against.
  */
-interface ObjectPreviewFormatterInterface {
-
-	/**
-	 * Parse a reference URL into its component parts.
-	 *
-	 * @param string $referenceText The URL to parse
-	 *
-	 * @return array{registerId: int, schemaId: int, uuid: string}|null Parsed parts or null
-	 */
-	public function parseReference(string $referenceText): ?array;
-
-	/**
-	 * The cache prefix ("{registerId}/{schemaId}/{uuid}") of a reference URL.
-	 *
-	 * @param string $referenceText The reference URL
-	 *
-	 * @return string Cache prefix, or the original text when it does not parse
-	 */
-	public function resolveCachePrefix(string $referenceText): string;
-
-	/**
-	 * Resolve a matched reference URL into a rich `IReference`.
-	 *
-	 * @param string $referenceText The matched URL
-	 *
-	 * @return IReference|null The reference object or null on failure
-	 */
-	public function buildReference(string $referenceText): ?IReference;
-
-	/**
-	 * The MDI icon URL of a schema, when its icon is in the curated set.
-	 *
-	 * @param int $schemaId The schema ID
-	 *
-	 * @return string|null URL through the `openregister.icon.mdi` route, or null
-	 */
-	public function resolveMdiIconUrl(int $schemaId): ?string;
-
-	/**
-	 * The generic OpenRegister app icon.
-	 *
-	 * @return string URL to the app icon
-	 */
-	public function getAppIconUrl(): string;
+interface ObjectPreviewFormatterInterface extends ObjectPreviewInterface {
 }//end interface

@@ -24,9 +24,9 @@ namespace OCA\OpenRegister\Controller\Support;
 
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use Psr\Log\LoggerInterface;
 
@@ -57,7 +57,7 @@ final class ConflictTrail {
 	 *
 	 * @param VersionMismatch $mismatch The versions that disagree.
 	 *
-	 * @return array<int, AuditTrail> The entries.
+	 * @return array<int, AuditRecordInterface> The entries.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
@@ -84,7 +84,7 @@ final class ConflictTrail {
 	 * @return bool True for a dated entry after that moment.
 	 */
 	private function isAfter(mixed $entry, DateTime $read): bool {
-		if (($entry instanceof AuditTrail) === false) {
+		if (($entry instanceof AuditRecordInterface) === false) {
 			return false;
 		}
 
