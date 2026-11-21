@@ -29,7 +29,8 @@ use OCP\IConfig;
 /**
  * What the dispatcher reads to decide whom a rule reaches: the object's schema
  * (where the rules are declared) and register, the shared recipient resolver,
- * and the user config the recipient's language is read from.
+ * and the user config the recipient's language is read from; for a note, its
+ * author and excerpt and the read check its recipients pass.
  *
  * @spec openspec/specs/notificatie-engine/spec.md
  */
@@ -41,12 +42,16 @@ final readonly class RuleAudience {
 	 * @param NotificationRecipientResolver $recipientResolver The shared recipient resolver.
 	 * @param ?RegisterMapperInterface      $registerMapper Resolves the object's register (default originApp, languages).
 	 * @param ?IConfig                      $config User config for the recipient's language.
+	 * @param ?NoteTriggerContext           $notes The note's author and excerpt, and the author exclusion, of a `noteAdded` firing.
+	 * @param ?ReadableRecipients           $readable The read check a `noteAdded` firing's recipients pass.
 	 */
 	public function __construct(
 		public SchemaMapperInterface $schemaMapper,
 		public NotificationRecipientResolver $recipientResolver,
 		public ?RegisterMapperInterface $registerMapper = null,
 		public ?IConfig $config = null,
+		public ?NoteTriggerContext $notes = null,
+		public ?ReadableRecipients $readable = null,
 	) {
 	}//end __construct()
 }//end class

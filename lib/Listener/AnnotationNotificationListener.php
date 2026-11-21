@@ -41,8 +41,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCP\EventDispatcher\Event;
@@ -51,9 +53,11 @@ use OCP\EventDispatcher\IEventListener;
 /**
  * Listener that fires schema-declared notifications on object events.
  *
- * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectTransitionedEvent>
+ * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectTransitionedEvent|ObjectNoteAddedEvent>
  *
  * @spec openspec/specs/event-driven-architecture/spec.md
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A listener names every event it handles and the lookups each needs.
  */
 class AnnotationNotificationListener implements IEventListener {
 	use WrittenObjectOfEvent;
@@ -72,6 +76,7 @@ class AnnotationNotificationListener implements IEventListener {
 	 * @param NotificationRuleDispatcherInterface $dispatcher Dispatcher used to fire notifications.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (request-cached) for the enqueue gate.
 	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service.
+	 * @param DeferredEntryObjectResolverInterface|null $objects Finds the object a note was added to; without it `noteAdded` fires nothing.
 	 *
 	 * @return void
 	 */
@@ -79,6 +84,7 @@ class AnnotationNotificationListener implements IEventListener {
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ListenerDeferralInterface $deferral,
+		private readonly ?DeferredEntryObjectResolverInterface $objects = null,
 	) {
 	}//end __construct()
 
@@ -104,8 +110,42 @@ class AnnotationNotificationListener implements IEventListener {
 
 		if ($event instanceof ObjectUpdatedEvent) {
 			$this->handleUpdated(event: $event);
+			return;
+		}
+
+		if ($event instanceof ObjectNoteAddedEvent) {
+			$this->handleNoteAdded(event: $event);
 		}
 	}//end handle()
+
+	/**
+	 * Dispatch or defer the `noteAdded` trigger for the object a note was added to.
+	 *
+	 * The event names the object by uuid only, so the object is looked up the
+	 * way a deferred entry is (a soft-deleted object fires nothing). The note's
+	 * id, author and visibility travel as the trigger's context; the dispatcher
+	 * reads the note text and filters the recipients.
+	 *
+	 * @param ObjectNoteAddedEvent $event The note event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-fire-when-a-note-is-added
+	 */
+	private function handleNoteAdded(ObjectNoteAddedEvent $event): void {
+		$object = $this->objects?->resolve(entry: ['uuid' => $event->getObjectUuid()]);
+		if ($object === null || $this->schemaDeclaresNotifications(object: $object) === false) {
+			return;
+		}
+
+		$context = [
+			'noteId' => $event->getNoteId(),
+			'actorType' => $event->getActorType(),
+			'actorId' => $event->getActorId(),
+			'visibility' => $event->getVisibility(),
+		];
+		$this->dispatchOrDefer(object: $object, trigger: new NotificationTrigger(name: 'noteAdded', context: $context));
+	}//end handleNoteAdded()
 
 	/**
 	 * Dispatch or defer the `created` trigger for a created object.

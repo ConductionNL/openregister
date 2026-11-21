@@ -88,6 +88,7 @@ final class NotificationTriggerMatcher {
 			'created' => $this->createdTriggerMatches(triggerSpec: $triggerSpec),
 			'updated' => $this->updatedTriggerMatches(triggerSpec: $triggerSpec),
 			'calculatedChange' => $this->calculatedChangeMatches(triggerSpec: $triggerSpec),
+			'noteAdded' => $this->noteVisibilityMatches(triggerSpec: $triggerSpec),
 			default => true,
 		};
 	}//end typeMatches()
@@ -112,6 +113,33 @@ final class NotificationTriggerMatcher {
 
 		return (string) $expected === (string) $actual;
 	}//end transitionActionMatches()
+
+	/**
+	 * Apply a `noteAdded` trigger's optional `visibility`: the note's visibility must equal it.
+	 *
+	 * A rule without `visibility` matches every note. A declared visibility
+	 * that is not a string, or a note whose visibility is unknown, does not
+	 * match, so a rule narrowed to public notes never fires on another note.
+	 *
+	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-fire-when-a-note-is-added
+	 */
+	private function noteVisibilityMatches(array $triggerSpec): bool {
+		if (array_key_exists('visibility', $triggerSpec) === false) {
+			return true;
+		}
+
+		$declared = $triggerSpec['visibility'];
+		$actual   = ($this->context['visibility'] ?? null);
+		if (is_string($declared) === false || is_string($actual) === false || $actual === '') {
+			return false;
+		}
+
+		return $declared === $actual;
+	}//end noteVisibilityMatches()
 
 	/**
 	 * Apply a `created` trigger's optional field `filter`.

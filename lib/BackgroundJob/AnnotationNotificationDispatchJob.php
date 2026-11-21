@@ -126,6 +126,7 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	 *
 	 * - `created`    → dispatch('created').
 	 * - `transition` → dispatch('transition', {action, from, to}).
+	 * - `noteAdded`  → dispatch('noteAdded', {noteId, actorType, actorId, visibility}).
 	 * - `updated`    → dispatch('updated', old/new context when a snapshot
 	 *   exists) followed by dispatch('calculatedChange', same context) —
 	 *   exactly the pair the inline listener fired.
@@ -150,8 +151,36 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 
 		if ($trigger === 'updated') {
 			$this->dispatchUpdated(entry: $entry, object: $object);
+			return;
+		}
+
+		if ($trigger === 'noteAdded') {
+			$this->dispatchNoteAdded(entry: $entry, object: $object);
 		}
 	}//end dispatchEntry()
+
+	/**
+	 * Dispatch a note added to the object, with the note's id, author and visibility.
+	 *
+	 * @param array<string, mixed> $entry  The deferred entry.
+	 * @param ObjectEntity         $object The live object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-fire-when-a-note-is-added
+	 */
+	private function dispatchNoteAdded(array $entry, ObjectEntity $object): void {
+		$this->dispatcher->dispatch(
+			object: $object,
+			trigger: 'noteAdded',
+			context: [
+				'noteId' => (string)($entry['noteId'] ?? ''),
+				'actorType' => (string)($entry['actorType'] ?? ''),
+				'actorId' => (string)($entry['actorId'] ?? ''),
+				'visibility' => (string)($entry['visibility'] ?? ''),
+			]
+		);
+	}//end dispatchNoteAdded()
 
 	/**
 	 * Dispatch a lifecycle transition with the action and the states it moved between.
