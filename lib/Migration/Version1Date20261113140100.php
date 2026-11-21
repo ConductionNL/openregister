@@ -30,7 +30,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Nullable `classification` (a column, so a list can filter on it) and
@@ -38,7 +37,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/modelling-type-catalogue-metadata/design.md
  */
-class Version1Date20261113140100 extends SimpleMigrationStep {
+class Version1Date20261113140100 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -47,18 +46,18 @@ class Version1Date20261113140100 extends SimpleMigrationStep {
 	 * @param Closure                 $schemaClosure The schema closure.
 	 * @param array<array-key, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema.
+	 * @return ISchemaWrapper|null The schema, changed or not.
 	 *
 	 * @spec openspec/changes/modelling-type-catalogue-metadata/design.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
 
 		$schema = $schemaClosure();
 		if ($schema->hasTable('openregister_schemas') === false) {
-			return null;
+			return $schema;
 		}
 
 		$table   = $schema->getTable('openregister_schemas');
@@ -75,11 +74,11 @@ class Version1Date20261113140100 extends SimpleMigrationStep {
 		}
 
 		if ($changed === false) {
-			return null;
+			return $schema;
 		}
 
 		$output->info('Added classification and catalogue to openregister_schemas');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

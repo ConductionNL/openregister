@@ -1839,6 +1839,7 @@
             "allOf",
             "oneOf",
             "anyOf",
+            "catalogue",
             "authorization",
             "sharedWith",
             "configuration",

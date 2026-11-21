@@ -68,7 +68,7 @@ class Version1Date20261113140100Test extends TestCase {
 		$schema->method('hasTable')->with('openregister_schemas')->willReturn(true);
 		$schema->method('getTable')->willReturn($table);
 
-		$this->assertNull($this->change($schema));
+		$this->assertSame($schema, $this->change($schema));
 	}
 
 	public function testWithoutTheTableNothingHappens(): void {
@@ -76,6 +76,6 @@ class Version1Date20261113140100Test extends TestCase {
 		$schema->method('hasTable')->with('openregister_schemas')->willReturn(false);
 		$schema->expects($this->never())->method('getTable');
 
-		$this->assertNull($this->change($schema));
+		$this->assertSame($schema, $this->change($schema));
 	}
 }
