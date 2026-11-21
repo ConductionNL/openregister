@@ -26,6 +26,7 @@ final class WebhooksControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ?IUserSession $userSession Constructor argument.
 	 * @param ?IGroupManager $groupManager Constructor argument.
+	 * @param ?WebhookOwnership $ownership Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -38,6 +39,7 @@ final class WebhooksControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		?\OCP\IUserSession $userSession = null,
 		?\OCP\IGroupManager $groupManager = null,
+		?\OCA\OpenRegister\Controller\Support\WebhookOwnership $ownership = null,
 	): array {
 		return [
 			$appName,
@@ -53,6 +55,7 @@ final class WebhooksControllerFactory {
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),
+				ownership: $ownership,
 			),
 		];
 	}

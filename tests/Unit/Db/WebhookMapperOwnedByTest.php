@@ -93,4 +93,29 @@ class WebhookMapperOwnedByTest extends TestCase {
 		$this->assertNull($fresh->getOwner());
 		$this->assertNull($fresh->jsonSerialize()['owner']);
 	}
+
+	public function testDisablingAnOwnersWebhooksKeepsThemAndLeavesOthersAlone(): void {
+		$this->assertSame(2, $this->mapper->disableOwnedBy('sanne'));
+
+		$enabled = [];
+		foreach ($this->mapper->findAll(\OCA\OpenRegister\Kernel\Contracts\ListQuery::unbounded()) as $hook) {
+			$enabled[$hook->getName()] = $hook->getEnabled();
+		}
+
+		ksort($enabled);
+		$this->assertSame(['admin-hook' => true, 'mark-1' => true, 'sanne-1' => false, 'sanne-2' => false], $enabled);
+		$this->assertSame(0, $this->mapper->disableOwnedBy('sanne'), 'already disabled ones are not counted again');
+		$this->assertSame(0, $this->mapper->disableOwnedBy(''));
+	}
+
+	public function testAnOwnedWebhookIsCreatedWithTheGivenOwnerNotTheBodys(): void {
+		$created = $this->mapper->createOwnedFromArray(
+			['name' => 'mine', 'url' => 'https://receiver.example/mine', 'events' => ['OCA\OpenRegister\Event\ObjectCreatedEvent'], 'owner' => 'eve'],
+			'mark'
+		);
+
+		$this->assertSame('mark', $created->getOwner());
+		$this->assertSame(['mark-1', 'mine'], array_map(static fn (Webhook $hook): string => $hook->getName(), $this->mapper->findOwnedBy('mark')));
+		$this->assertSame([], $this->mapper->findOwnedBy('eve'));
+	}
 }
