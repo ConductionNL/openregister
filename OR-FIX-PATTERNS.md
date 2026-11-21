@@ -356,3 +356,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merge-tree with main is clean and every unit suite is green, but check-migration-version-bump.php exits 1: '<version>: 2.2.0-dev.3 at the merge base, 2.2.0-dev.3 here'.
 - Cause: the PR bumped info.xml to 2.2.0-dev.3 earlier and main has since bumped to the same value, so the merge leaves no version move relative to main.
 - Fix: run the check after EVERY main merge, even a clean one; bump one step past main (2.2.0-dev.4) in its own commit (#10154, #10314, #10494).
+
+## Inherited red on main: AnonymousEnvelopeReadPathsTest (or-fix-13)
+- Symptom: tests/Unit/Middleware/AnonymousEnvelopeReadPathsTest (4 cases) TypeError: ObjectsControllerFactory::args() Argument #14 ($eventDispatcher) gets a WebhookService mock.
+- Cause: red on plain main (21 Nov, behind main HEAD at 10493 merge); the test passes positional args that no longer line up with the factory's signature.
+- Fix: none on PR branches: inherited; fix belongs in its own main PR. Confirm by running the test on origin/main.
