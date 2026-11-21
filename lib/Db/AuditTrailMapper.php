@@ -44,16 +44,20 @@ use DateTimeInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
@@ -107,11 +111,6 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @var string
 	 */
 	private const TRAIL_NOUN = 'audit trail';
-
-	/**
-	 * The most changes one slug backfill entry lists; the rest is in the log.
-	 */
-	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * The only slug backfill mode: fill slugs that are missing (a set slug is never rewritten).
@@ -262,16 +261,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @SuppressWarnings(PHPMD.StaticAccess) The collaborator asks the elevation port the action run binds.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	private function applyElevation(AuditTrail $auditTrail): void {
-		$elevation = AuditTrailCollaborators::elevationAttribution(
-			registerId: $auditTrail->getRegister(),
-			schemaId: $auditTrail->getSchema(),
-			verb: (string)$auditTrail->getAction()
-		);
+		$elevation = AuditTrailCollaborators::elevationAttribution(container: $this->container, row: $auditTrail);
 		if ($elevation === null) {
 			return;
 		}
@@ -302,7 +297,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
 	 */
 	private function applyAttributions(AuditTrail $auditTrail): void {
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		$this->processContext()?->stampFlowFrame(auditTrail: $auditTrail);
 		AuditTrailCollaborators::purposeAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
 		AuditTrailCollaborators::tokenAttribution(container: $this->container)->apply(auditTrail: $auditTrail);
 		AuditTrailCollaborators::organisationContextAttribution()->apply(auditTrail: $auditTrail);
@@ -1315,15 +1310,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
 	private function markTransitionOrigin(array $changed, ObjectEntity $objectEntity): array {
-		$automaticAction = null;
-		try {
-			$automaticAction = $this->container
-				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class)
-				->applyingAction();
-		} catch (\Throwable $passUnavailable) {
-			$automaticAction = null;
-		}
-
+		$processContext  = $this->processContext();
+		$automaticAction = $processContext?->automaticTransition();
 		if ($automaticAction !== null) {
 			$changed['automaticTransition'] = $automaticAction;
 		}
@@ -1335,8 +1323,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		// A declared reopen out of a terminal state is audited as a reopen, so
 		// an auditor can tell it from an ordinary forward move.
-		if ($this->transitionDeclaredFor(uuid: (string)$objectEntity->getUuid()) === \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN) {
-			$changed['transitionKind'] = \OCA\OpenRegister\Service\Lifecycle\GraphMoveCatalogue::REOPEN;
+		$transitionKind = $processContext?->transitionKindFor(uuid: (string)$objectEntity->getUuid());
+		if ($transitionKind !== null) {
+			$changed['transitionKind'] = $transitionKind;
 		}
 
 		return $changed;
@@ -1465,29 +1454,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end transitionSystemApp()
 
 	/**
-	 * The lifecycle action being applied to this object right now, if any.
+	 * The flow run and lifecycle move in flight, as Processes answers it, or null when it is not wired.
 	 *
-	 * Read the same way as {@see transitionSystemApp()}: unavailable means
-	 * "no named transition in flight", never a failed audit row.
+	 * Read through the container like the other ambient frames: unavailable
+	 * means "nothing in flight", never a failed audit row.
 	 *
-	 * @param string $uuid The object's uuid.
-	 *
-	 * @return string|null The declared action, or null for an ordinary write.
+	 * @return AuditProcessContextInterface|null The process context, or null.
 	 *
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-a-declared-reopen-is-the-only-move-out-of-a-terminal-state
 	 */
-	private function transitionDeclaredFor(string $uuid): ?string {
-		if ($uuid === '') {
+	private function processContext(): ?AuditProcessContextInterface {
+		try {
+			$context = $this->container->get(AuditProcessContextInterface::class);
+		} catch (Throwable $contextUnavailable) {
 			return null;
 		}
 
-		try {
-			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
-				->declaredFor($uuid);
-		} catch (\Throwable $contextUnavailable) {
+		if (($context instanceof AuditProcessContextInterface) === false) {
 			return null;
 		}
-	}//end transitionDeclaredFor()
+
+		return $context;
+	}//end processContext()
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
@@ -1528,6 +1516,51 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrail;
 	}//end applyRetentionExpiry()
+
+	/**
+	 * Record what referential integrity did to one object: build the row, stamp its expiry, insert it.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object, by whom, and the object itself when found.
+	 *
+	 * @return AuditTrail The stored row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail {
+		$auditTrail = self::integrityRow(entry: $entry);
+		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $entry->object);
+		$this->insert(entity: $auditTrail);
+
+		return $auditTrail;
+	}//end recordIntegrityAction()
+
+	/**
+	 * The unsealed row of an integrity action, scoped to the schema and register the entry names.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object.
+	 *
+	 * @return AuditTrail The row, not yet stored.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public static function integrityRow(IntegrityAuditEntry $entry): AuditTrail {
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setObjectUuid($entry->objectUuid);
+		$auditTrail->setAction($entry->action);
+		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setUser($entry->userId);
+		$auditTrail->setCreated(new DateTime());
+		if ($entry->schemaId !== null) {
+			$auditTrail->setSchema((int)$entry->schemaId);
+		}
+
+		if ($entry->registerId !== null) {
+			$auditTrail->setRegister((int)$entry->registerId);
+		}
+
+		return $auditTrail;
+	}//end integrityRow()
 
 	/**
 	 * Resolve the audit row's expiry from the object's retention policy.
@@ -2676,6 +2709,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordObjectEvent()
 
 	/**
+	 * Record an action on one object as Core names it, through recordObjectEvent().
+	 *
+	 * @param ObjectAuditEntry $entry The object, the action, its context and the explicit actor, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	public function writeObjectEvent(ObjectAuditEntry $entry): void {
+		$options = new ObjectAuditEventOptions(actor: new NamedActor(id: $entry->actorId, name: $entry->actorName));
+		$this->recordObjectEvent(
+			event: new ObjectAuditEvent(object: $entry->object, action: $entry->action, context: $entry->context, options: $options)
+		);
+	}//end writeObjectEvent()
+
+	/**
 	 * The actor a createAuditTrailEntry() row names.
 	 *
 	 * An explicit actor id is used with its name, or with itself when no name
@@ -2768,7 +2817,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setToolId($invocation->toolId);
 		$auditTrail->setParamsDigest($invocation->paramsDigest);
 		$auditTrail->setResultSummary($invocation->resultSummary);
-		$invocation->about->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $invocation->about);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end recordToolInvocation()
@@ -3000,7 +3049,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$options = $refusal->options;
 		$actor = self::refusalActor(actorId: $options->actor->id, actorReference: $options->actor->name);
 		$auditTrail = self::actorEntry(action: 'shared_master_data_write_denied', actor: $actor);
-		$options->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $options->target);
 		$auditTrail->setOrganisationId($refusal->sourceOrganisation);
 		$summary = [
 			'holderOrganisation' => $refusal->holderOrganisation,
@@ -3063,7 +3112,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	public function recordPurposeRefusal(PurposeRefusal $refusal): AuditTrail {
 		$auditTrail = self::actorEntry(action: PurposeGuardInterface::ACTION_REFUSED, actor: $this->sessionActor());
-		$refusal->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $refusal->target);
 		$auditTrail->setResultSummary(['rule' => $refusal->rule, 'declaredPurpose' => $refusal->purpose, 'refused' => true]);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3312,7 +3361,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	public function recordExport(ExportOutcome $export): AuditTrail {
 		$auditTrail = self::actorEntry(action: 'export.' . $export->outcome, actor: $this->exportActor(actorId: $export->actorId));
-		$export->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $export->target);
 		$auditTrail->setResultSummary($export->summary);
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3368,7 +3417,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail = self::actorEntry(action: 'slug.backfill.' . self::SLUG_BACKFILL_MODE, actor: $this->sessionActor());
 		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
 		$auditTrail->setChanged([]);
-		$backfill->target->stampOnto(auditTrail: $auditTrail);
+		self::stampTarget(auditTrail: $auditTrail, target: $backfill->target);
 		$auditTrail->setResultSummary($this->slugBackfillSummary(backfill: $backfill, mode: self::SLUG_BACKFILL_MODE));
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
@@ -3506,4 +3555,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 	}//end toIsoMoment()
 
+	/**
+	 * Set the register, schema, object id and object uuid of a row from the object it is about.
+	 *
+	 * Every field is set, so an unknown object clears what the row held.
+	 *
+	 * @param AuditTrail    $auditTrail The row.
+	 * @param AuditedObject $target     The object the row is about.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public static function stampTarget(AuditTrail $auditTrail, AuditedObject $target): void {
+		$auditTrail->setRegister($target->register);
+		$auditTrail->setSchema($target->schema);
+		$auditTrail->setObject($target->object);
+		$auditTrail->setObjectUuid($target->objectUuid);
+	}//end stampTarget()
 }//end class

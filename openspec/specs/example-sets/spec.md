@@ -53,6 +53,18 @@ Declared values SHALL support `{{cast:<key>.<field>}}` (a dot path into a cast p
 - **WHEN** the set is checked
 - **THEN** the placeholder SHALL be refused; `beta` must use a lookup on a business key
 
+An object MAY be marked `"optional": true`. When a lookup of an optional object finds no row, because the app that holds the row is not installed or the row is not there, the check and the install SHALL leave that object out and name it as skipped (`Skipped (optional)`), instead of refusing the set; the rest of the set SHALL be checked and written as without it, and the install SHALL still prove itself. Every other refusal of an optional object (a lookup that more than one row answers, an unresolvable placeholder, a value its schema refuses) SHALL still refuse the set. An object not marked optional SHALL keep refusing the set when a lookup finds nothing.
+
+#### Scenario: An optional publication in a set whose catalogue app is absent
+- **GIVEN** a set whose fragment declares a publication marked `"optional": true` with a lookup on a theme in a register of an app that is not installed
+- **WHEN** the set is checked and installed
+- **THEN** the publication SHALL be named as skipped, the set SHALL not be refused, and every other object of the set SHALL be written
+
+#### Scenario: Optional does not cover an ambiguous lookup
+- **GIVEN** the same optional publication, and two themes with its slug on the instance
+- **WHEN** the set is checked
+- **THEN** the set SHALL be refused naming the count, as for any lookup that more than one row answers
+
 ### Requirement: Accounts and groups come from the cast and are never taken over (REQ-EXS-003)
 
 The loader SHALL create a Nextcloud account for every cast person with a `uid`, with the cast's display name and e-mail, and every group the cast declares. A generated password SHALL be printed once on the console and SHALL NOT be written to a file, the install record or a log; `--password-from-env` SHALL read one password for every new account from `OC_PASS` instead. An account that exists and that the install record does not list as created by this set SHALL refuse the install before anything is written, unless the administrator names its uid with `--adopt`; an adopted account SHALL be recorded as adopted and SHALL NOT be deleted by remove. A group that already exists SHALL be used and SHALL NOT be deleted by remove; only memberships this set added are removed.
