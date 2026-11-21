@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Migration\Version1Date20261114230000;
+use OCA\OpenRegister\Migration\Version1Date20261114230015;
 use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
@@ -54,7 +54,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(AuditCategory::class)]
-#[CoversClass(Version1Date20261114230000::class)]
+#[CoversClass(Version1Date20261114230015::class)]
 #[UsesClass(AuditTrail::class)]
 #[UsesClass(AuditTrailMapper::class)]
 #[UsesClass(AuditTrailMapperServices::class)]
@@ -160,7 +160,7 @@ final class AuditCategoryBackfillTest extends TestCase {
 			}
 		);
 
-		$counts = (new Version1Date20261114230000(connection: $connection))->backfill();
+		$counts = (new Version1Date20261114230015(connection: $connection))->backfill();
 
 		$this->assertSame([AuditCategory::ADMINISTRATIVE => 3, AuditCategory::DOMAIN => 7], $counts);
 		$this->assertCount(2, $statements);

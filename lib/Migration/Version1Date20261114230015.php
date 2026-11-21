@@ -35,14 +35,13 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\Types;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add and backfill `openregister_audit_trails.category`.
  *
  * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
  */
-class Version1Date20261114230000 extends SimpleMigrationStep {
+class Version1Date20261114230015 extends TargetedMigrationStep {
 
 	/**
 	 * The audit table.
@@ -74,7 +73,7 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 	 *
 		 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -96,7 +95,7 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Backfill the category of every row that has none, by action.
@@ -111,7 +110,7 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 	 *
 		 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false || $schema->getTable(self::TABLE)->hasColumn('category') === false) {
 			return;
@@ -121,7 +120,7 @@ class Version1Date20261114230000 extends SimpleMigrationStep {
 		$output->info(
 			sprintf('Audit category backfilled: %d administrative, %d domain row(s).', $counts[AuditCategory::ADMINISTRATIVE], $counts[AuditCategory::DOMAIN])
 		);
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 
 	/**
 	 * Set `category` on every row without one: administrative for the
