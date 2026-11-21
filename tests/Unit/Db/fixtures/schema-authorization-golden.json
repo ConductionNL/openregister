@@ -121,6 +121,9 @@
     "validate control reveal as text": {
         "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization key 'reveal' in schema must be \"explicit\""
     },
+    "validate control onUndecidable as text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization key 'onUndecidable' in schema must be \"closed\" or \"open\""
+    },
     "permission admin group": true,
     "permission admin user group": true,
     "permission owner": true,

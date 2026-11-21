@@ -22,6 +22,8 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
+use OCA\OpenRegister\Service\Anonymisation\TextDisclosureSource;
+
 /**
  * What one entity-detection run looks at and what it keeps.
  *
@@ -37,11 +39,13 @@ final readonly class EntityDetectionQuery {
 	 * @param string     $text                Text to analyse.
 	 * @param array|null $entityTypes         Entity types to detect; null detects all.
 	 * @param float      $confidenceThreshold Minimum confidence an entity needs to be kept.
+	 * @param TextDisclosureSource|null $source The document the text belongs to; an external call records it.
 	 */
 	public function __construct(
 		public string $text,
 		public ?array $entityTypes,
 		public float $confidenceThreshold,
+		public ?TextDisclosureSource $source=null,
 	) {
 	}//end __construct()
 

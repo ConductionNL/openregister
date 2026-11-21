@@ -44,15 +44,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail\NamedActor;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -97,11 +94,13 @@ class MoveObject implements MoveObjectInterface {
 	 * @param ObjectChangeRecording    $recording The object store, the audit trail and the log a move
 	 *                                            reports to, and the dispatcher that asks the guards of
 	 *                                            values other records hold.
-	 * @param ObjectValidatorInterface $validator Validation against a schema.
+	 * @param ObjectValidatorInterface        $validator Validation against a schema.
+	 * @param RelationAddressRewriteInterface $relations The relation rows that store the object's address.
 	 */
 	public function __construct(
 		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
+		private readonly RelationAddressRewriteInterface $relations,
 	) {
 		$this->objects = $recording->objects;
 	}//end __construct()
@@ -181,38 +180,6 @@ class MoveObject implements MoveObjectInterface {
 	}//end errorsOf()
 
 	/**
-	 * Move an object, keeping its uuid and everything keyed on it.
-	 *
-	 * @param ObjectEntity $object         The object.
-	 * @param Register     $sourceRegister Where it is.
-	 * @param Schema       $sourceSchema   Where it is.
-	 * @param Register     $targetRegister Where it is going.
-	 * @param Schema       $targetSchema   Where it is going.
-	 * @param string       $actor          Who asked.
-	 *
-	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
-	 *
-	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
-	 */
-	public function move(
-		ObjectEntity $object,
-		Register $sourceRegister,
-		Schema $sourceSchema,
-		Register $targetRegister,
-		Schema $targetSchema,
-		string $actor,
-	): array {
-		return $this->perform(
-			move: new ObjectMove(
-				object: $object,
-				source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
-				target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
-				actor: $actor
-			)
-		);
-	}//end move()
-
-	/**
 	 * Perform a move, keeping the object's uuid and everything keyed on it.
 	 *
 	 * @param ObjectMove $move The move.
@@ -275,6 +242,7 @@ class MoveObject implements MoveObjectInterface {
 	 */
 	private function completeMove(ObjectMove $move): array {
 		$stranded = $this->removeFromSource(move: $move) === false;
+		$this->rewriteRelations(move: $move);
 		$this->record(move: $move, stranded: $stranded);
 
 		$errors = [];
@@ -416,6 +384,37 @@ class MoveObject implements MoveObjectInterface {
 	}//end removeFromSource()
 
 	/**
+	 * Point the relation rows that store the object's address at its new one.
+	 *
+	 * AFTER the write and the removal: the object lives at its target now,
+	 * stranded old row or not, so that is the address its links must open.
+	 * A failure here does not undo the move. The rows keep the old address,
+	 * which the old address still answers for, and the log says so.
+	 *
+	 * @param ObjectMove $move The move, already written at its target.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	private function rewriteRelations(ObjectMove $move): void {
+		$target = $move->target->ids();
+		try {
+			$this->relations->rewrite(
+				uuid: (string)$move->object->getUuid(),
+				register: (int)$target['register'],
+				schema: (int)$target['schema']
+			);
+		} catch (Throwable $e) {
+			$this->recording->logger->warning(
+				message: '[MoveObject] the relation rows of ' . (string)$move->object->getUuid()
+					. ' still name the address it moved from: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $move->source->ids(), 'to' => $target]
+			);
+		}
+	}//end rewriteRelations()
+
+	/**
 	 * Give the object the slug it may hold in the target (#4037).
 	 *
 	 * The slug was decided in the source; the target may already have a live
@@ -554,8 +553,8 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->recording->auditTrail->recordObjectEvent(
-				event: new ObjectAuditEvent(
+			$this->recording->auditTrail->writeObjectEvent(
+				entry: new ObjectAuditEntry(
 					object: $object,
 					action: self::ACTION,
 					context: [
@@ -563,7 +562,7 @@ class MoveObject implements MoveObjectInterface {
 						'to' => $move->target->ids(),
 						'strandedSourceRow' => $stranded,
 					],
-					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId))
+					actorId: $actorId
 				)
 			);
 		} catch (Throwable $e) {

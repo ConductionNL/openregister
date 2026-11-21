@@ -33,6 +33,11 @@ use Twig\Environment;
  * Pins rendered and cast values, evaluation-mode selection and the sandbox.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedExpression
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldCycleWalk
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ComputedPass
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
  */
 class ComputedFieldEvaluationGoldenTest extends TestCase {
 

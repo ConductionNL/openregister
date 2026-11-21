@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * The waiting run, the step it waits on and the task that fills it.
  *
- * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
+ * @spec openspec/specs/example-sets/spec.md
  */
 final class ExampleSetRunSlot {
 	/**

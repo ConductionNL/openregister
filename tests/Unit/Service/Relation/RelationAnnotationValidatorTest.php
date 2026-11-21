@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @covers \OCA\OpenRegister\Service\Relation\RelationDeclarationException
+ * @uses \OCA\OpenRegister\Service\Relation\DeclaredProperty
  */
 class RelationAnnotationValidatorTest extends TestCase {
 	private RelationAnnotationValidator $validator;

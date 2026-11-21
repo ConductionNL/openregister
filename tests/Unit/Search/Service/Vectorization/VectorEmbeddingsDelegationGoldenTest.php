@@ -40,6 +40,14 @@ use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
  * Pins that storage, search and statistics are passed through unchanged.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest
  */
 final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 

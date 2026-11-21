@@ -44,13 +44,14 @@ use OCA\OpenRegister\Service\Object\GroupRuleEntries;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\OrphanDeletionGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IAppConfig;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Service\Object\DraftSubject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -295,18 +296,16 @@ class LockGuardUnitsGoldenTest extends TestCase {
 		$active = new ObjectEntity();
 		$active->setStatus(ObjectEntity::STATUS_ACTIVE);
 
-		$this->assertFalse($rule->keptFromCaller(object: $active, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'anna', isAdmin: false)));
-		$this->assertFalse($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: true)));
-		$this->assertTrue($rule->keptFromCaller(object: $draft, schema: $schema, caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $active, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'anna', isAdmin: false)));
+		$this->assertFalse($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: true)));
+		$this->assertTrue($rule->keptFromCaller(subject: new DraftSubject(object: $draft, schema: $schema), caller: new DraftCaller(userId: 'bob', isAdmin: false)));
 		$this->assertTrue($rule->keptFromCaller(
-			object: $draft,
-			schema: $schema,
+			subject: new DraftSubject(object: $draft, schema: $schema),
 			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: false)
 		));
 		$this->assertFalse($rule->keptFromCaller(
-			object: $draft,
-			schema: $schema,
+			subject: new DraftSubject(object: $draft, schema: $schema),
 			caller: new DraftCaller(userId: null, isAdmin: false, commandLine: true)
 		));
 	}//end testOverrideClauseAndDraftCallerRule()

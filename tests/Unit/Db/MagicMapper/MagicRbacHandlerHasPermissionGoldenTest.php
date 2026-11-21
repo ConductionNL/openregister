@@ -43,6 +43,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
@@ -55,6 +58,16 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantLookup
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
  */
 class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 
@@ -167,13 +180,19 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 		}
 
 		$handler = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->appConfig(),
-			$this->conditionMatcher(),
-			$this->container(wiring: $wiring),
-			$this->logger()
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig()
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher(),
+				container: $this->container(wiring: $wiring),
+				logger: $this->logger()
+			)
 		);
 
 		$schema = new Schema();

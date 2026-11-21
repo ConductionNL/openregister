@@ -129,6 +129,7 @@ import {
 	publishedText,
 	publishTarget,
 } from '../../services/githubPublish.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -495,13 +496,13 @@ export default {
 		postPublish() {
 			return fetch(
 				`/index.php/apps/openregister/api/${this.entityPath}/${this.entity.id}/publish/github`,
-				{
+				withRequestToken({
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify(this.publishBody()),
-				},
+				}),
 			)
 		},
 

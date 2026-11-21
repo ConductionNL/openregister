@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Service\ExampleSet\FilledRow;
@@ -36,6 +38,12 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentRows
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetMoment
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FilledRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallStep
  */
 class ExampleSetRowInstallGapTest extends TestCase {
 
@@ -59,7 +67,7 @@ class ExampleSetRowInstallGapTest extends TestCase {
 		$record   = ['users' => []];
 		$fragment = ['app' => 'demo', 'file' => 'f.json', 'notes' => [['key' => 'n', 'data' => ['objectUuid' => '{{object:gone.id}}', 'again' => '{{object:gone.id}}']]]];
 
-		$this->assertFalse($install->fragment(fragment: $fragment, context: ['objects' => []], report: $report, record: $record));
+		$this->assertFalse($install->fragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['objects' => []], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame(['notes' => ['demo/n' => 'failed'], 'dropped' => ['f.json: note "n": cannot resolve {{object:gone.id}}']], $report);
 		$this->assertSame(['users' => []], $record);
 	}//end testAnUnresolvablePlaceholderDropsTheRow()

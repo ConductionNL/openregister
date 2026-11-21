@@ -30,6 +30,7 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Export\ExportValueRenderer
+ * @uses \OCA\OpenRegister\Service\Export\ColumnRendering
  */
 class ExportValueRendererTest extends TestCase {
 

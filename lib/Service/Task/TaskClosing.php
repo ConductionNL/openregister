@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Task;
 /**
  * The act that closes a task and the outcome it records on it.
  *
- * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
+ * @spec openspec/specs/flow-business-timers/spec.md#requirement-an-advisory-due-date-notifies-an-enforcing-expiry-transitions
  */
 final class TaskClosing {
 	/**

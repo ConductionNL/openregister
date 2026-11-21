@@ -172,24 +172,36 @@ class ReviewOutcomeService implements ReviewOutcomeServiceInterface {
 	 * @throws RuntimeException When the record cannot be read or the list cannot be made.
 	 */
 	private function transfer(string $entryUuid, ReviewerAnswer $given): string {
-		$write = new OutcomeWrite(entryUuid: $entryUuid, verb: 'transfer', what: 'the outcome');
+		$write  = new OutcomeWrite(entryUuid: $entryUuid, verb: 'transfer', what: 'the outcome');
 		$object = $this->load(write: $write);
-		$uuid = $this->transferListFor(object: $object, entryUuid: $entryUuid);
+		$uuid   = $this->transferListFor(object: $object, entryUuid: $entryUuid);
 
 		$retention = $this->retentionOf(object: $object);
-		$retention['outcome'] = [
-			'kind' => 'transfer',
-			'at' => (new DateTimeImmutable())->format('c'),
-			'by' => $given->reviewer,
-			'reason' => $given->reason,
-			'transferListUuid' => $uuid,
-		];
+		$retention['outcome'] = $this->transferOutcome(given: $given, transferListUuid: $uuid);
 		$object->setRetention($retention);
 
 		$this->write(object: $object, write: $write);
 
 		return $uuid;
 	}//end transfer()
+
+	/**
+	 * The outcome a transfer records: now, by whom, why, and onto which transfer list.
+	 *
+	 * @param ReviewerAnswer $given            The reviewer and their reason.
+	 * @param string         $transferListUuid The transfer list the entry went onto.
+	 *
+	 * @return array<string, string> The outcome.
+	 */
+	private function transferOutcome(ReviewerAnswer $given, string $transferListUuid): array {
+		return [
+			'kind' => 'transfer',
+			'at' => (new DateTimeImmutable())->format('c'),
+			'by' => $given->reviewer,
+			'reason' => $given->reason,
+			'transferListUuid' => $transferListUuid,
+		];
+	}//end transferOutcome()
 
 	/**
 	 * Put the record on a new transfer list.

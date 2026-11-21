@@ -192,19 +192,7 @@ class AnonymisationRun {
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function plan(AnonymisationSubject $subject, string $salt): AnonymisationPlan {
-		[$objectUuid, $payload, $annotation, $profileName] = [$subject->objectUuid, $subject->payload, $subject->annotation, $subject->profileName];
-		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
-
-		$profile = new SaltedProfile(rules: $this->planner->profileOf(annotation: $annotation), salt: $salt);
-		$after = $this->service->apply(payload: $payload, profile: $profile);
-		$report = $this->service->report(change: new PayloadChange(before: $payload, after: $after), profileName: $profileName);
-
-		$change = new AnonymisedPayload(
-			before: $payload, after: $after, changedProperties: array_keys($report['changed']), keptProperties: $report['kept']
-		);
-		$plan = new AnonymisationPlan(
-			objectUuid: $objectUuid, profileName: $profileName, payload: $change, saltFingerprint: $this->fingerprint(salt: $salt)
-		);
+		$plan = $this->draftPlan(subject: $subject, salt: $salt);
 
 		if ($plan->touchesAnything() === false) {
 			// 🔴 A RUN THAT CHANGES NOTHING MUST NOT REPORT SUCCESS. That is the
@@ -212,12 +200,37 @@ class AnonymisationRun {
 			// afterwards be marked anonymised while holding every value it held
 			// before.
 			throw new AnonymisationRefusedException(
-				message: sprintf('Anonymising %s would change nothing: the declared profile touches no property this record carries.', $objectUuid)
+				message: sprintf('Anonymising %s would change nothing: the declared profile touches no property this record carries.', $subject->objectUuid)
 			);
 		}
 
 		return $plan;
 	}//end plan()
+
+	/**
+	 * The plan for one record: its payload before and after the salted profile, and what changed and was kept.
+	 *
+	 * @param AnonymisationSubject $subject The record, its payload, annotation and profile name.
+	 * @param string               $salt    The run's salt.
+	 *
+	 * @return AnonymisationPlan The plan, whether or not it touches anything.
+	 */
+	private function draftPlan(AnonymisationSubject $subject, string $salt): AnonymisationPlan {
+		[$objectUuid, $payload, $annotation, $profileName] = [$subject->objectUuid, $subject->payload, $subject->annotation, $subject->profileName];
+		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
+
+		$profile = new SaltedProfile(rules: $this->planner->profileOf(annotation: $annotation), salt: $salt);
+		$after   = $this->service->apply(payload: $payload, profile: $profile);
+		$report  = $this->service->report(change: new PayloadChange(before: $payload, after: $after), profileName: $profileName);
+
+		$change = new AnonymisedPayload(
+			before: $payload, after: $after, changedProperties: array_keys($report['changed']), keptProperties: $report['kept']
+		);
+
+		return new AnonymisationPlan(
+			objectUuid: $objectUuid, profileName: $profileName, payload: $change, saltFingerprint: $this->fingerprint(salt: $salt)
+		);
+	}//end draftPlan()
 
 	/**
 	 * Apply a plan to every target, or to none of them.

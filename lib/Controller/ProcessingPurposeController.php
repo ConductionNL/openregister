@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
@@ -33,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\ProcessingPurposeControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\PurposeRegistryInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -111,7 +111,7 @@ class ProcessingPurposeController extends Controller {
 		IRequest $request,
 		ProcessingPurposeControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->purposes = $services->purposes;
 		$this->registry = $services->registry;
 		$this->auditTrail = $services->auditTrail;
@@ -194,7 +194,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse The persisted purpose, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -224,7 +223,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse The persisted purpose, or the refusal.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
@@ -252,7 +250,6 @@ class ProcessingPurposeController extends Controller {
 	 * @return JSONResponse Empty, with 204.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */

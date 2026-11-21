@@ -36,14 +36,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create openregister_calendar_feeds.
  *
  * @spec openspec/specs/calendar-provider/spec.md
  */
-class Version1Date20260914160000 extends SimpleMigrationStep {
+class Version1Date20260914160000 extends TargetedMigrationStep {
 
 	/**
 	 * The table this migration creates.
@@ -65,7 +64,7 @@ class Version1Date20260914160000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === true) {
@@ -91,5 +90,5 @@ class Version1Date20260914160000 extends SimpleMigrationStep {
 		$output->info('Created ' . self::TABLE . ' table');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

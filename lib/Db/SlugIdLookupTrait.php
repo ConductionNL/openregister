@@ -88,6 +88,25 @@ trait SlugIdLookupTrait {
 
 		$lowered = array_values(array_unique(array_map('strtolower', $slugs)));
 
+		$result = $this->selectIdsBySlug(lowered: $lowered)->executeQuery();
+		$map = array_fill_keys($lowered, []);
+		while (($row = $result->fetch()) !== false) {
+			$map[strtolower((string)$row['slug'])][] = (string)$row['id'];
+		}
+
+		$result->closeCursor();
+
+		return $map;
+	}//end findIdsBySlugs()
+
+	/**
+	 * The ids and slugs of the rows whose slug matches one of some lower-cased slugs, case-insensitively.
+	 *
+	 * @param array<int, string> $lowered The lower-cased slugs.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function selectIdsBySlug(array $lowered): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id', 'slug')
 			->from($this->getTableName())
@@ -98,16 +117,8 @@ trait SlugIdLookupTrait {
 				)
 			);
 
-		$result = $qb->executeQuery();
-		$map = array_fill_keys($lowered, []);
-		while (($row = $result->fetch()) !== false) {
-			$map[strtolower((string)$row['slug'])][] = (string)$row['id'];
-		}
-
-		$result->closeCursor();
-
-		return $map;
-	}//end findIdsBySlugs()
+		return $qb;
+	}//end selectIdsBySlug()
 
 	/**
 	 * Fetch the id and slug of every row in the table.

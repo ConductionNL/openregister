@@ -25,6 +25,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Files\Service\NoteService;
@@ -36,6 +37,12 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 /**
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider
  * @covers \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses   \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices
  */
 class ProviderItemsBelongToObjectTest extends TestCase {
 
@@ -48,7 +55,7 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 		$notes = $this->createMock(NoteService::class);
 		$notes->method('requireNoteOf')->with('uuid-mine', 5)->willThrowException(new Exception('Note not found', 404));
 		$notes->expects($this->never())->method('deleteNote');
-		$notes->expects($this->never())->method('updateNote');
+		$notes->expects($this->never())->method('editNote');
 
 		return new NotesProvider($notes, $this->createMock(IL10N::class));
 	}
@@ -60,9 +67,9 @@ class ProviderItemsBelongToObjectTest extends TestCase {
 	 */
 	private function tasksProvider(): TasksProvider {
 		$tasks = $this->createMock(TaskService::class);
-		$tasks->method('requireTaskOf')->with('uuid-mine', '7', 'task.ics')->willThrowException(new Exception('Task not found', 404));
+		$tasks->method('requireTaskAt')->with('uuid-mine', new TaskLocation(calendarId: '7', uri: 'task.ics'))->willThrowException(new Exception('Task not found', 404));
 		$tasks->expects($this->never())->method('deleteTask');
-		$tasks->expects($this->never())->method('updateTask');
+		$tasks->expects($this->never())->method('changeTask');
 
 		return new TasksProvider(
 			new TasksProviderServices(
