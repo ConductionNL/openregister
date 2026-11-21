@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
 use OCA\OpenRegister\Db\CalendarLinkDuplicates;
-use OCA\OpenRegister\Migration\Version1Date20261114100000;
+use OCA\OpenRegister\Migration\Version1Date20261114101600;
 use OCP\DB\IResult;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -37,9 +37,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Version1Date20261114100000::class)]
+#[CoversClass(Version1Date20261114101600::class)]
 #[UsesClass(CalendarLinkDuplicates::class)]
-class Version1Date20261114100000Test extends TestCase {
+class Version1Date20261114101600Test extends TestCase {
 
 	/** @var array<int, array<int, int>> Every id list a DELETE was given. */
 	private array $deleted = [];
@@ -118,7 +118,7 @@ class Version1Date20261114100000Test extends TestCase {
 		$connection->expects($this->never())->method('getQueryBuilder');
 		$output    = $this->createMock(IOutput::class);
 		$output->expects($this->never())->method('info');
-		$migration = new Version1Date20261114100000($connection);
+		$migration = new Version1Date20261114101600($connection);
 
 		$schema = $this->schema($table);
 		$migration->preSchemaChange($output, fn () => $schema, []);
@@ -128,7 +128,7 @@ class Version1Date20261114100000Test extends TestCase {
 	public function testAUniqueIndexUnderAnotherNameAndColumnOrderCounts(): void {
 		$table = $this->table([$this->index(['EVENT_UID', 'object_uuid', 'calendar_uri'], true)]);
 		$table->expects($this->never())->method('addUniqueIndex');
-		$migration = new Version1Date20261114100000($this->createMock(IDBConnection::class));
+		$migration = new Version1Date20261114101600($this->createMock(IDBConnection::class));
 
 		$schema    = $this->schema($table);
 		$this->assertSame($schema, $migration->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
@@ -148,7 +148,7 @@ class Version1Date20261114100000Test extends TestCase {
 		$output = $this->createMock(IOutput::class);
 		$output->expects($this->once())->method('info')->with('Added idx_cal_link_unique on openregister_calendar_links.');
 
-		$migration = new Version1Date20261114100000($this->createMock(IDBConnection::class));
+		$migration = new Version1Date20261114101600($this->createMock(IDBConnection::class));
 
 		$this->assertSame($schema, $migration->changeSchema($output, fn () => $schema, []));
 	}
@@ -156,7 +156,7 @@ class Version1Date20261114100000Test extends TestCase {
 	public function testAMissingTableIsLeftAlone(): void {
 		$connection = $this->createMock(IDBConnection::class);
 		$connection->expects($this->never())->method('getQueryBuilder');
-		$migration = new Version1Date20261114100000($connection);
+		$migration = new Version1Date20261114101600($connection);
 
 		$schema    = $this->schema(null);
 		$migration->preSchemaChange($this->createMock(IOutput::class), fn () => $schema, []);
@@ -176,7 +176,7 @@ class Version1Date20261114100000Test extends TestCase {
 			['id' => 5, 'object_uuid' => 'o2', 'event_uid' => 'e1', 'calendar_uri' => 'personal', 'linked_at' => '2026-09-01 00:00:00'],
 		];
 
-		(new Version1Date20261114100000($this->connection($rows)))
+		(new Version1Date20261114101600($this->connection($rows)))
 			->preSchemaChange($output, fn () => $this->schema($table), []);
 
 		$this->assertSame([[4, 9]], $this->deleted);
@@ -187,7 +187,7 @@ class Version1Date20261114100000Test extends TestCase {
 		$output->expects($this->once())->method('info')
 			->with('Removed 0 duplicate calendar link row(s), keeping the oldest of each.');
 
-		(new Version1Date20261114100000($this->connection([self::row(1, '2026-01-01 00:00:00')])))
+		(new Version1Date20261114101600($this->connection([self::row(1, '2026-01-01 00:00:00')])))
 			->preSchemaChange($output, fn () => $this->schema($this->table([])), []);
 
 		$this->assertSame([], $this->deleted);
@@ -199,7 +199,7 @@ class Version1Date20261114100000Test extends TestCase {
 			$rows[] = self::row($id, '2026-01-01 00:00:00');
 		}
 
-		(new Version1Date20261114100000($this->connection($rows)))
+		(new Version1Date20261114101600($this->connection($rows)))
 			->preSchemaChange($this->createMock(IOutput::class), fn () => $this->schema($this->table([])), []);
 
 		$this->assertSame([500, 500, 200], array_map('count', $this->deleted));

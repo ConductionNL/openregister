@@ -45,7 +45,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114101600 extends TargetedMigrationStep {
 
 	/**
 	 * The link table.
