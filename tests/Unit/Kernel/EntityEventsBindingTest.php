@@ -45,7 +45,7 @@ use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\EventDispatcher\Event;
@@ -73,7 +73,7 @@ final class EntityEventsBindingTest extends TestCase {
 
 	public function testTheContractResolvesToTheCorePublisher(): void {
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ServiceRegistrar::register(context: $context);
 
 		$this->assertContains(['alias' => EntityEventsInterface::class, 'target' => EntityEventPublisher::class], $context->aliases);
 		$this->assertTrue(is_subclass_of(EntityEventPublisher::class, EntityEventsInterface::class));
