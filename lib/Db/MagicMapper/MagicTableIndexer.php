@@ -147,12 +147,29 @@ final class MagicTableIndexer {
 		$table = $run->tableName;
 		$full = $run->fullTableName;
 
-		$this->db->executeStatement("CREATE UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx ON {$full} (_uuid)");
-		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_register_schema_idx ON {$full} (_register, _schema)");
-
 		// Organisation for multitenancy, owner for RBAC, then the frequently filtered fields.
+		$indexes = ["UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx" => '_uuid', "INDEX IF NOT EXISTS {$table}_register_schema_idx" => '_register, _schema'];
 		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
-			$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_{$field}_idx ON {$full} (_{$field})");
+			$indexes["INDEX IF NOT EXISTS {$table}_{$field}_idx"] = "_{$field}";
+		}
+
+		// Each index statement is a DDL transaction of its own on MariaDB: ten of
+		// them took 0.4 s a table, 206 of the 270 s it took to install an app with
+		// 538 schemas, where one statement adding all ten takes 0.04 s (#9945).
+		// Only for a table created just now: on an older one a missing column
+		// would refuse the whole statement instead of the one index.
+		if ($run->indexesAtOnce === true) {
+			$additions = [];
+			foreach ($indexes as $index => $columns) {
+				$additions[] = "ADD {$index} ({$columns})";
+			}
+
+			$this->db->executeStatement("ALTER TABLE {$full} " . implode(', ', $additions));
+			return;
+		}
+
+		foreach ($indexes as $index => $columns) {
+			$this->db->executeStatement("CREATE {$index} ON {$full} ({$columns})");
 		}
 	}//end createBaseIndexes()
 

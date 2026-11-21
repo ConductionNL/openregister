@@ -35,12 +35,13 @@ use DateTime;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Count what is unread per sub-resource, for one already-resolved reader.
  */
-class UnreadCountCalculator {
+class UnreadCountCalculator implements UnreadCountsInterface {
 
 	/**
 	 * Constructor.
