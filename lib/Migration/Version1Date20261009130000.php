@@ -37,14 +37,13 @@ use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `notify` to the follow table and moves the favourites in.
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
  */
-class Version1Date20261009130000 extends SimpleMigrationStep {
+class Version1Date20261009130000 extends TargetedMigrationStep {
 
 	/**
 	 * The follow table, which survives.
@@ -88,7 +87,7 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::WATCHERS_TABLE) === false) {
 			return $schema;
@@ -103,7 +102,7 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Copy every favourite in as a quiet follow, an existing follow winning.
@@ -118,7 +117,7 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		if ($this->connection->tableExists(self::FAVOURITES_TABLE) === false
 			|| $this->connection->tableExists(self::WATCHERS_TABLE) === false
 		) {
@@ -148,7 +147,7 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 			sprintf('merge-follow-and-favourites: %d favourites became quiet follows, %d were already follows', $moved, $kept)
 		);
 
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 
 	/**
 	 * One page of favourites, by id.
