@@ -273,3 +273,11 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan method.notFound on e.g. RedactionSettingsInterface::personRegister() in a class whose constructor main retyped from a concrete handler to a Kernel/Contracts port.
 - Cause: the modularity work narrowed cross-area dependencies to ports declaring only the methods main used; a PR calls more of the concrete class.
 - Fix: declare the PR's extra methods on that port when its bound implementation already has them (check ContractBindings), keeping signatures identical; do not retype back to the concrete class (see #10499).
+
+## A10/C12InterfaceBindingsTest: a new outside caller names a concrete class (or-fix-3)
+- Symptom: testOnlyTheKeptCallersNameTheClass / testNoOutsideFileNamesTheClass lists a PR file naming e.g. SlaCalculator or WorkingCalendar.
+- Fix: inject the interface (through the caller's DI-built sources bundle when the caller is built by hand, never a 'new Concrete()' default); when the interface lacks a method the caller needs and the concrete class already has it, declare it on the interface and widen the value objects that carry it. Never add the file to the kept list.
+
+## SchemaReuseHygieneTest::testEveryStepAfterRelease210IsTargeted (or-fix-3)
+- Symptom: a PR's new migration extends SimpleMigrationStep.
+- Fix: extend TargetedMigrationStep, rename changeSchema() to protected changeTargetedSchema(), drop the SimpleMigrationStep import.
