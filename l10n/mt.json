@@ -3354,7 +3354,9 @@
         "Object \"%1$s\" assigned to you": "Oġġett \"%1$s\" assenjat lilek",
         "Audit trail export ready": "L-esportazzjoni tar-reġistru tal-awditjar hija lesta",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "L-esportazzjoni tiegħek tar-reġistru tal-awditjar b'%1$s entrati ġiet issejvjata f'%2$s%3$s.",
-        "Open Files": "Iftaħ il-Fajls"
+        "Open Files": "Iftaħ il-Fajls",
+        "Its ancestor %1$s has appraisal %2$s": "L-antenat tiegħu %1$s għandu l-valutazzjoni %2$s",
+        "Its ancestor %s could not be read": "L-antenat tiegħu %s ma setax jinqara"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

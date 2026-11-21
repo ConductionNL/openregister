@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Αντικείμενο \"%1$s\" ανατέθηκε σε εσάς",
         "Audit trail export ready": "Η εξαγωγή του ίχνους ελέγχου είναι έτοιμη",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Η εξαγωγή του ίχνους ελέγχου με %1$s εγγραφές αποθηκεύτηκε στο %2$s%3$s.",
-        "Open Files": "Άνοιγμα Αρχείων"
+        "Open Files": "Άνοιγμα Αρχείων",
+        "Its ancestor %1$s has appraisal %2$s": "Ο πρόγονός του %1$s έχει αξιολόγηση %2$s",
+        "Its ancestor %s could not be read": "Δεν ήταν δυνατή η ανάγνωση του προγόνου του %s"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

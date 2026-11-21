@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objeto \"%1$s\" atribuído a si",
         "Audit trail export ready": "A exportação do registo de auditoria está pronta",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "A sua exportação do registo de auditoria com %1$s entradas foi guardada em %2$s%3$s.",
-        "Open Files": "Abrir Ficheiros"
+        "Open Files": "Abrir Ficheiros",
+        "Its ancestor %1$s has appraisal %2$s": "O seu antecessor %1$s tem a avaliação %2$s",
+        "Its ancestor %s could not be read": "Não foi possível ler o seu antecessor %s"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
