@@ -8,10 +8,10 @@
 
 ## 2. Provider
 
-- [ ] 2.1 `lib/Search/FlowTasksProvider.php` (`IFilteringProvider`, id `openregister_flow_tasks`): results per D-3 and D-4, cursor paging; registered in `lib/AppInfo/Application.php` beside `ObjectsProvider`. Verify: `tests/Unit/Search/FlowTasksProviderTest.php` for a match, a refusal and a deep-link override.
+- [x] 2.1 `lib/Search/FlowTasksProvider.php` (`IFilteringProvider`, id `openregister_flow_tasks`): results per D-3 and D-4, cursor paging; registered in `lib/AppInfo/Application.php` beside `ObjectsProvider`. Verify: `tests/Unit/Search/FlowTasksProviderTest.php` for a match, a refusal and a deep-link override.
 - [ ] 2.2 `tests/e2e/ci/flow-task-search.spec.ts`: create a task for the test user, search it in the top bar, open it. (live pass, decision 139)
 
 ## 3. Close
 
-- [ ] 3.1 `docs/`: tasks in the search bar. Tell dossiq the change name for row 9.12.
+- [x] 3.1 `docs/`: tasks in the search bar. Tell dossiq the change name for row 9.12. Docs written (`docs/features/search-and-faceting.md`, `docs/features/deep-link-registry.md#task-routes`); dossiq registers its task route with `taskUrlTemplate`.
 - [ ] 3.2 `@spec` tags; `openspec validate flow-task-search-provider --strict`.

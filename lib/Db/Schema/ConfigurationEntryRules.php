@@ -49,11 +49,14 @@ final class ConfigurationEntryRules {
 	// runs the save events per row. `orphanCleanup` is read by SaveObject: a removed
 	// reference soft-deletes the child the parent owns. `platformSharing` is read
 	// by PlatformShareGate: true offers the schema's objects for platform sharing.
+// `federatable` is read by ShareGrantor: true lets the schema's objects be shared
+// with another instance (platform-cloud-federation-provider); absent means not.
 	private const CONFIG_BOOL_FIELDS = [
 		'allowFiles',
 		'autoShare',
 		'defaultAutoShare',
 		'exportable',
+		'federatable',
 		'staging',
 		'additionalProperties',
 		'draftsVisible',
