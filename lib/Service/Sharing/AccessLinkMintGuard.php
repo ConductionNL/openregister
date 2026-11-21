@@ -89,6 +89,12 @@ class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 			return false;
 		}
 
+		// A draft preview link is minted only through the draft's own preview
+		// route, which asks who may see the draft; this general route refuses it.
+		if ($subjectType === AccessLink::SUBJECT_OBJECT_DRAFT) {
+			return false;
+		}
+
 		if ($subjectType === AccessLink::SUBJECT_VIEW) {
 			return $this->mayPublishView(viewId: trim($subjectId));
 		}

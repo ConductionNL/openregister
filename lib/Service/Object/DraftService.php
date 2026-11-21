@@ -176,6 +176,58 @@ class DraftService {
 	}//end visibleDrafts()
 
 	/**
+	 * Every draft of the given objects, grouped by object uuid, in one read.
+	 *
+	 * Not filtered for the caller: {@see visibleAmong()} decides that per object.
+	 *
+	 * @param array<int, string> $objectUuids The objects' uuids.
+	 *
+	 * @return array<string, array<int, DraftVersion>> The drafts per object uuid.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	public function draftsOf(array $objectUuids): array {
+		if ($objectUuids === []) {
+			return [];
+		}
+
+		$grouped = [];
+		foreach ($this->drafts->findForObjects(objectUuids: $objectUuids) as $draft) {
+			$grouped[(string)$draft->getObjectUuid()][] = $draft;
+		}
+
+		return $grouped;
+	}//end draftsOf()
+
+	/**
+	 * The drafts of one object the caller may see, from drafts already read.
+	 *
+	 * The caller's own drafts are always visible. The others need `update` on
+	 * the object, which needs the object itself: without it (null) they stay
+	 * hidden, so a lookup that failed never widens what is shown.
+	 *
+	 * @param array<int, DraftVersion> $drafts The object's drafts.
+	 * @param ObjectEntity|null        $object The live object, or null when it could not be read.
+	 * @param Schema                   $schema The object's schema.
+	 * @param string|null              $caller The calling user.
+	 *
+	 * @return array<int, DraftVersion> The visible drafts, in the order given.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	public function visibleAmong(array $drafts, ?ObjectEntity $object, Schema $schema, ?string $caller): array {
+		if ($caller === null || $drafts === []) {
+			return [];
+		}
+
+		if ($object !== null && $this->mayWrite(object: $object, schema: $schema, caller: $caller) === true) {
+			return array_values($drafts);
+		}
+
+		return array_values(array_filter($drafts, static fn (DraftVersion $draft): bool => $draft->getCreatedBy() === $caller));
+	}//end visibleAmong()
+
+	/**
 	 * Delete a draft the caller may see.
 	 *
 	 * @param DraftVersion $draft  The draft.
@@ -245,6 +297,44 @@ class DraftService {
 	public function merged(ObjectEntity $object, DraftVersion $draft): array {
 		return array_replace(self::liveData(object: $object), ($draft->getDelta() ?? []));
 	}//end merged()
+
+	/**
+	 * A copy of the live object carrying the merged data; never saved.
+	 *
+	 * @param ObjectEntity $object The live object.
+	 * @param DraftVersion $draft  The draft.
+	 *
+	 * @return ObjectEntity The copy.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function mergedCopy(ObjectEntity $object, DraftVersion $draft): ObjectEntity {
+		$copy = clone $object;
+		$copy->setObject($this->merged(object: $object, draft: $draft));
+
+		return $copy;
+	}//end mergedCopy()
+
+	/**
+	 * One draft by its own uuid, with no caller check.
+	 *
+	 * Only for a principal that already holds the draft by other means: a
+	 * preview link, minted by someone who could see the draft, is that principal.
+	 *
+	 * @param string $uuid The draft's uuid.
+	 *
+	 * @return DraftVersion|null The draft, or null when it is gone.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function heldByLink(string $uuid): ?DraftVersion {
+		$uuid = trim($uuid);
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $this->drafts->findByUuid(uuid: $uuid);
+	}//end heldByLink()
 
 	/**
 	 * Whether the caller may see and change a draft: its creator, or a caller with `update` on the object.

@@ -52,6 +52,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |
 | Content Versioning & Audit Trail | [versioning-and-audit.md](versioning-and-audit.md) | Compliance | Implemented | Archiefwet, BIO, AVG |
+| Draft Versions | [draft-versions.md](draft-versions.md) | Core | Implemented | Named drafts beside the published record, promotion with conflict check, expiring site preview |
 | Breaking Schema Change Notice | [schema-change-notice.md](schema-change-notice.md) | Core | Implemented | Nextcloud notifications, HTTP Link header |
 | Data Import & Export | [data-import-export.md](data-import-export.md) | Integration | Implemented | CSV, Excel, JSON, XML, OpenAPI |
 | Event-Driven Architecture | [event-driven-architecture.md](event-driven-architecture.md) | Integration | Implemented | CloudEvents v1.0, PSR-14 |
@@ -96,6 +97,7 @@ Fine-grained authorization at every level of the data hierarchy.
 Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
+- [Draft Versions](draft-versions.md) — Named drafts of a record, promotion with per-field conflict detection, and a preview link for the public website
 - [Breaking Schema Change Notice](schema-change-notice.md) — Who a breaking schema change affects, the notice they get, following a schema, the change header
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
 - [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)

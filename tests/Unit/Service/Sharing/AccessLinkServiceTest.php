@@ -492,4 +492,63 @@ class AccessLinkServiceTest extends TestCase {
 			)
 		);
 	}
+
+	public function testADraftPreviewLinkIsMintedReadOnlyOverTheDraft(): void {
+		$minted = $this->service->mint(
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT_DRAFT,
+				subjectId: 'draft-uuid',
+				terms: new AccessLinkTerms(capabilities: ['read'], expiresAt: '+1 day')
+			)
+		);
+
+		$this->assertSame('object-draft', $minted['subjectType']);
+		$this->assertSame('draft-uuid', $minted['subjectId']);
+	}
+
+	public function testADraftPreviewLinkThatWouldCommentOrUploadIsRefused(): void {
+		$this->mapper->expects($this->never())->method('insert');
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('A draft preview link can only read.');
+
+		$this->service->mint(
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT_DRAFT,
+				subjectId: 'draft-uuid',
+				terms: new AccessLinkTerms(capabilities: ['read', 'comment'], expiresAt: '+1 day')
+			)
+		);
+	}
+
+	public function testADraftPreviewLinkStillNeedsAnExpiry(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/must carry an expiry/');
+
+		$this->service->mint(
+			new LinkMintRequest(
+				minter: 'owner',
+				subjectType: AccessLink::SUBJECT_OBJECT_DRAFT,
+				subjectId: 'draft-uuid',
+				terms: new AccessLinkTerms(capabilities: ['read'])
+			)
+		);
+	}
+
+	public function testAnExpiredOrRevokedDraftPreviewLinkNoLongerResolves(): void {
+		$expired = $this->liveLink();
+		$expired->setSubjectType(AccessLink::SUBJECT_OBJECT_DRAFT);
+		$expired->setExpiresAt(new DateTime('-1 hour'));
+		$revoked = $this->liveLink();
+		$revoked->setSubjectType(AccessLink::SUBJECT_OBJECT_DRAFT);
+		$revoked->setRevokedAt(new DateTime('-1 minute'));
+		$live = $this->liveLink();
+		$live->setSubjectType(AccessLink::SUBJECT_OBJECT_DRAFT);
+		$this->mapper->method('findByAnchor')->willReturnOnConsecutiveCalls($expired, $revoked, $live);
+
+		$this->assertNull($this->service->resolve('AnchorValueThatIsOpaque'));
+		$this->assertNull($this->service->resolve('AnchorValueThatIsOpaque'));
+		$this->assertSame($live, $this->service->resolve('AnchorValueThatIsOpaque'));
+	}
 }

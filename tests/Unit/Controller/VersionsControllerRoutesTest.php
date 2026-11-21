@@ -50,6 +50,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\DraftPromoter;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\VersionsController
@@ -113,7 +115,9 @@ class VersionsControllerRoutesTest extends TestCase {
 			schemas: $this->schemas,
 			objects: $this->objects,
 			drafts: $this->drafts,
-			userSession: $this->userSession
+			userSession: $this->userSession,
+			promoter: $this->createMock(DraftPromoter::class),
+			links: $this->createMock(AccessLinkServiceInterface::class)
 		);
 	}
 
@@ -162,6 +166,7 @@ class VersionsControllerRoutesTest extends TestCase {
 			'baseVersion' => '1.0.0',
 			'created' => '2026-11-01T10:00:00+00:00',
 			'updated' => null,
+			'changedFields' => [],
 		];
 	}
 

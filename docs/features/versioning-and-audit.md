@@ -30,12 +30,11 @@ Every version is stored as a full snapshot in the audit trail. Users can:
 
 ### Draft / Published Lifecycle
 
-Objects support a draft/published lifecycle for editorial workflows:
-
-- Objects start in draft state
-- Draft changes are version-tracked but not visible to read-only users
-- Publishing promotes a draft to the active version (MINOR increment)
-- The previous published version remains in history for comparison
+A record can have named drafts beside its published version. A draft stores
+only the changed fields, is visible to its creator and to users who may change
+the record, and becomes the published version when it is promoted, after a
+per-field conflict check against the version it was made from. See
+[Draft Versions](draft-versions.md).
 
 ## Immutable Audit Trail
 

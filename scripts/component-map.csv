@@ -4360,6 +4360,7 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Controller/Support/DraftVersionRead.php,103,Controller,Service,Service/Controller/Support/DraftVersionRead.php,0,,Core
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Integrations
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
@@ -4370,6 +4371,10 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Controller/Support/DraftKeysOnList.php,188,Controller,Controller,Controller/Support/DraftKeysOnList.php,0,,Core
+Service/Object/DraftPromoter.php,274,Service,Service,Service/Object/DraftPromoter.php,0,,Core
+Exception/DraftConflictException.php,59,Exception,Exception,Exception/DraftConflictException.php,0,,Kernel
+Db/Schema/PreviewUrlTemplate.php,142,Db,Db,Db/Schema/PreviewUrlTemplate.php,0,,Core
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

@@ -150,4 +150,39 @@ final class DraftVersionMapperTest extends TestCase {
 		// Run again: the table exists, nothing is created.
 		$this->assertSame($wrapper, $migration->changeSchema($this->createMock(IOutput::class), fn () => $wrapper, []));
 	}
+
+	public function testADraftIsFoundByItsOwnUuid(): void {
+		$this->queuedRows = [[$this->row('herziening')]];
+
+		$draft = $this->mapper()->findByUuid(uuid: '1f0c2b3a-4d5e-4f60-8a7b-9c8d7e6f5a4b');
+
+		$this->assertSame('herziening', $draft?->getDraftKey());
+		$this->assertContains('#1 where(eq(uuid, :p1, NULL))', $this->queryLog);
+		$this->assertContains('#1 param :p1 = 1f0c2b3a-4d5e-4f60-8a7b-9c8d7e6f5a4b, 2', $this->queryLog);
+	}
+
+	public function testAnUnknownDraftUuidIsNull(): void {
+		$this->queuedRows = [[]];
+
+		$this->assertNull($this->mapper()->findByUuid(uuid: 'gone'));
+	}
+
+	public function testTheDraftsOfManyObjectsAreReadInOneQueryWithoutBlanksOrRepeats(): void {
+		$this->queuedRows = [[$this->row('a'), $this->row('b')]];
+
+		$drafts = $this->mapper()->findForObjects(objectUuids: ['obj-1', '', 'obj-2', 'obj-1']);
+
+		$this->assertSame(['a', 'b'], array_map(static fn (DraftVersion $draft): ?string => $draft->getDraftKey(), $drafts));
+		$this->assertCount(1, array_filter($this->queryLog, static fn (string $line): bool => str_ends_with($line, 'executeQuery()')));
+		$this->assertContains('#1 orderBy(id, ASC)', $this->queryLog);
+		$params = array_values(array_filter($this->queryLog, static fn (string $line): bool => str_contains($line, ' param ')));
+		$this->assertCount(1, $params);
+		$this->assertStringContainsString('obj-1', $params[0]);
+		$this->assertStringContainsString('obj-2', $params[0]);
+	}
+
+	public function testNoObjectsReadsNothing(): void {
+		$this->assertSame([], $this->mapper()->findForObjects(objectUuids: []));
+		$this->assertSame([], $this->queryLog);
+	}
 }
