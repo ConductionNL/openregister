@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionProviderRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
@@ -87,6 +88,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -194,19 +196,9 @@ class TransitionEngineAsSystemTest extends TestCase {
 		// saveObject() dispatches ObjectUpdatingEvent to the real listener and
 		// refuses the write when it stops the event, as MagicMapper does.
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				mixed $register = null,
-				mixed $schema = null,
-				?string $uuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $silent = false,
-				bool $_validation = true,
-				?array $uploadedFiles = null,
-				?IUser $currentUser = null,
-			): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$silent = $options->policy->silent;
+				$currentUser = $options->actor->currentUser;
 				$this->saves[] = [
 					'_rbac' => $_rbac,
 					'_multitenancy' => $_multitenancy,
@@ -460,7 +452,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $class): object {
-				if ($class === LifecycleActionContext::class) {
+				if ($class === TransitionInFlightInterface::class) {
 					return $this->actions;
 				}
 

@@ -32,12 +32,14 @@ use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Corrects a value on a record and records that it was a correction.
@@ -93,13 +95,13 @@ class CorrectionService implements CorrectionServiceInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface     $objectService The write path a correction goes through.
-	 * @param OpenRegisterActionAuthService $actionAuth    The action-rights matrix.
+	 * @param ActionRightCheckInterface     $actionAuth    The action-rights matrix.
 	 * @param IUserSession                  $userSession   Resolves the correcting user.
 	 * @param CorrectionAuditing            $auditing      The audit trail and the logger.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly OpenRegisterActionAuthService $actionAuth,
+		private readonly ActionRightCheckInterface $actionAuth,
 		private readonly IUserSession $userSession,
 		private readonly CorrectionAuditing $auditing,
 	) {
@@ -143,7 +145,13 @@ class CorrectionService implements CorrectionServiceInterface {
 		$existing  = $this->storedRecord(target: $target);
 		$before    = ($existing->getObject() ?? []);
 		$merged    = array_merge($before, $correction->values);
-		$corrected = $this->objectService->saveObject(object: $merged, register: $target->register, schema: $target->schema, uuid: $existing->getUuid());
+		$corrected = $this->objectService->saveObject(
+			object: $merged,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target->register, schema: $target->schema),
+				uuid: $existing->getUuid()
+			)
+		);
 
 		$fields  = self::fieldChanges(before: $before, values: $correction->values);
 		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];

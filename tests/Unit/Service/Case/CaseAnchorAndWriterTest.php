@@ -38,6 +38,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
  * @covers \OCA\OpenRegister\Service\Case\CaseBusinessStateWriter
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch
  */
 class CaseAnchorAndWriterTest extends TestCase {
 

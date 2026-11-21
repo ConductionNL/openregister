@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -58,6 +59,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
  * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
  * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
+ * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\File\FileTarget
+ * @uses \OCA\OpenRegister\Service\File\FileUpload
  */
 class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 
@@ -209,8 +218,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 			);
 			$noteService = $this->createMock(NoteService::class);
 			$noteService->method('createNote')->willReturnCallback(
-				function (string $uuid, string $message): array {
-					$this->calls[] = ['createNote', $uuid, $message];
+				function (NoteDraft $draft): array {
+					$message = $draft->message;
+					$this->calls[] = ['createNote', $draft->objectUuid, $message];
 					if ($message === 'fail') {
 						throw new \RuntimeException('note failed');
 					}

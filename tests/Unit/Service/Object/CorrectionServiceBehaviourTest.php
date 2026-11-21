@@ -28,7 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionAuditing;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
@@ -37,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every branch of a correction.
@@ -49,6 +50,17 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\Correction
  */
 class CorrectionServiceBehaviourTest extends TestCase {
 
@@ -62,9 +74,9 @@ class CorrectionServiceBehaviourTest extends TestCase {
 	/**
 	 * The action right check.
 	 *
-	 * @var OpenRegisterActionAuthService&MockObject
+	 * @var ActionRightCheckInterface&MockObject
 	 */
-	private OpenRegisterActionAuthService $actionAuth;
+	private ActionRightCheckInterface $actionAuth;
 
 	/**
 	 * The user session.
@@ -101,7 +113,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
-		$this->actionAuth = $this->createMock(OpenRegisterActionAuthService::class);
+		$this->actionAuth = $this->createMock(ActionRightCheckInterface::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->audit = $this->createMock(AuditTrailMapperInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -135,7 +147,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$saved->setLastLog($lastLog);
 		$this->objects->method('findSilent')->with(...FindCallShape::findSilentArgs('obj-1', [], false, 'reg', 'sch', false, false))->willReturn($existing);
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], [], 'reg', 'sch', 'u-1')
+			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'reg' && $options->target->schema == 'sch' && $options->uuid == 'u-1'))
 			->willReturn($saved);
 
 		return $saved;

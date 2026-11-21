@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCP\IUser;
 
 /**
  * Permitted actions, provenance and the deny rules of PermissionHandler.
@@ -155,4 +156,21 @@ interface PermissionExplanationInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array;
+
+	/**
+	 * The scopes a schema's department matrix compiles to for one user, for
+	 * the administrator's preview (rbac-department-role-matrix 3.2).
+	 *
+	 * It runs the same compiler the authorization path runs, with that user's
+	 * own values from the matrix's user source, and reads no objects of the
+	 * schema. A schema without a matrix compiles to nothing.
+	 *
+	 * @param Schema $schema The schema whose matrix is previewed.
+	 * @param IUser  $user   The user previewed.
+	 *
+	 * @return array{values: list<string>, scopes: array<string, mixed>} The user's own values and the compiled scopes by action.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	public function previewDepartmentMatrix(Schema $schema, IUser $user): array;
 }//end interface

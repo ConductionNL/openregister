@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pins every object-store call (and its arguments, including the RBAC and
@@ -34,6 +35,14 @@ use Psr\Log\LoggerInterface;
  * transfer-record persistence.
  *
  * @covers \OCA\OpenRegister\Service\Edepot\TransferRecordService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class TransferRecordServiceGoldenTest extends TestCase {
 
@@ -66,7 +75,8 @@ class TransferRecordServiceGoldenTest extends TestCase {
 	private function service(): TransferRecordService {
 		$store = $this->createMock(ObjectOperationsInterface::class);
 		$store->method('saveObject')->willReturnCallback(
-			function (mixed ...$args): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = ['saveObject', $args];
 				return self::entity(uuid: 'saved-uuid', data: ['stored' => true]);
 			}

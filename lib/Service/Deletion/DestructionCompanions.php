@@ -22,10 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 
 /**
  * The optional services that carry out the cascading part of a declared destruction scope.
@@ -37,15 +38,37 @@ final class DestructionCompanions {
 	 * Bundle the collaborators.
 	 *
 	 * @param ?NoteServiceInterface         $noteService     Notes on the object.
-	 * @param ?FileService                  $fileService     The object's bound folder.
-	 * @param ?TaskService                  $taskService     CalDAV tasks linked to the object.
-	 * @param ?ObjectRelationCleanupService $relationCleanup The remaining timeline links.
+	 * @param ?ObjectFilesInterface         $fileService     The object's files.
+	 * @param ?ObjectCalendarTasksInterface $taskService     CalDAV tasks linked to the object.
+	 * @param ?ObjectTimelineLinksInterface $relationCleanup The remaining timeline links.
+	 * @param ?ObjectFolderLookupInterface  $objectFolders   The object's bound folder; when absent, the file
+	 *                                                       service answers if it can look folders up.
 	 */
 	public function __construct(
 		public readonly ?NoteServiceInterface $noteService = null,
-		public readonly ?FileService $fileService = null,
-		public readonly ?TaskService $taskService = null,
-		public readonly ?ObjectRelationCleanupService $relationCleanup = null,
+		public readonly ?ObjectFilesInterface $fileService = null,
+		public readonly ?ObjectCalendarTasksInterface $taskService = null,
+		public readonly ?ObjectTimelineLinksInterface $relationCleanup = null,
+		private readonly ?ObjectFolderLookupInterface $objectFolders = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The service that finds an object's bound folder, or null when none is wired.
+	 *
+	 * @return ObjectFolderLookupInterface|null
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function objectFolders(): ?ObjectFolderLookupInterface {
+		if ($this->objectFolders !== null) {
+			return $this->objectFolders;
+		}
+
+		if ($this->fileService instanceof ObjectFolderLookupInterface) {
+			return $this->fileService;
+		}
+
+		return null;
+	}//end objectFolders()
 }//end class

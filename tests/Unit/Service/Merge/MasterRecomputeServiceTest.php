@@ -26,6 +26,7 @@ use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Each branch of one recompute.
@@ -34,6 +35,12 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Merge\MergeService
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  */
 class MasterRecomputeServiceTest extends TestCase {
 
@@ -78,9 +85,9 @@ class MasterRecomputeServiceTest extends TestCase {
 		$objects->method('find')->with(...FindCallShape::findArgs('m-1', [], false, null, null, true, true))->willReturn($master);
 		$saved = null;
 		$objects->expects($this->once())->method('saveObject')
-			->with($this->identicalTo($master), [], '3', '7', 'm-1')
+			->with($this->identicalTo($master), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '3' && $options->target->schema == '7' && $options->uuid == 'm-1'))
 			->willReturnCallback(
-				function (ObjectEntity $object) use (&$saved): ObjectEntity {
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
 					$saved = $object->getObject();
 					return $object;
 				}

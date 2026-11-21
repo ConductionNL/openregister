@@ -29,8 +29,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Organisation\OrganisationEdit as AuditedOrganisationEdit;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
@@ -201,7 +201,7 @@ class OrganisationController extends Controller {
 		IRequest $request,
 		OrganisationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
@@ -308,7 +308,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: OrganisationService::setActiveOrganisation enforces membership
 	 *   (hasUser(userId) === false throws); a user cannot activate an organisation they do not belong to.
 	 *
@@ -440,7 +439,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Self-service, no object read: creates a new organisation with the current user added as owner;
 	 *   no caller-supplied object id is read.
 	 *
@@ -517,8 +515,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function join(string $uuid): JSONResponse {
@@ -548,8 +544,6 @@ class OrganisationController extends Controller {
 	 * @return JSONResponse Success or error response.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -807,8 +801,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated organisation or error
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Already decomposed into helper methods
@@ -920,8 +912,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with patched organisation or error
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -1025,7 +1015,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Session-scoped: OrganisationService::clearCache clears only the current user's own caches keyed by UID;
 	 *   not an instance-wide admin operation despite the name.
 	 *
@@ -1433,8 +1422,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse Success or error response
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -1467,8 +1454,6 @@ class OrganisationController extends Controller {
 	 * @param string $uuid Organisation UUID to activate
 	 *
 	 * @return JSONResponse Success or error response
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
@@ -1506,8 +1491,6 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse Success or error response
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -1535,8 +1518,6 @@ class OrganisationController extends Controller {
 	 * @param string $uuid Organisation UUID to retain
 	 *
 	 * @return JSONResponse Success or error response
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
 	 */
@@ -1724,8 +1705,6 @@ class OrganisationController extends Controller {
 	 * Run tenant isolation verification checks.
 	 *
 	 * @return JSONResponse Verification report
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 * @spec openspec/specs/tenant-isolation-audit/spec.md

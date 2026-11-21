@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { withoutReadOnly } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 
 /**
  * Store for managing saved search views
@@ -102,14 +103,21 @@ async function tracked(store, task) {
  * @spec openspec/specs/saved-search-views/spec.md
  */
 async function viewsRequest(path, init) {
-	const response = await fetch(`${VIEWS_API}${path}`, {
+	const response = await fetch(`${VIEWS_API}${path}`, withRequestToken({
 		...init,
 		headers: {
 			'Content-Type': 'application/json',
 		},
-	})
+	}))
 	if (!response.ok) {
-		throw new Error(`HTTP error! status: ${response.status}`)
+		// Surface the server's own error body (it names the refused field, e.g.
+		// `kanban.groupByField`), so a caller can place the message under that
+		// picker rather than losing it to a bare status code.
+		const body = await response.json().catch(() => null)
+		const failure = new Error(body?.error || `HTTP error! status: ${response.status}`)
+		failure.status = response.status
+		failure.body = body
+		throw failure
 	}
 	return response
 }

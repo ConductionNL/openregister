@@ -70,8 +70,8 @@ class MergeControllerTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * ADR-029 / ADR-005: every merge action must declare @NoAdminRequired +
-	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 * ADR-029 / ADR-005 / ADR-054: every merge action must declare
+	 * @NoAdminRequired, must require the request token and must NOT be @PublicPage.
 	 *
 	 * @return void
 	 */
@@ -82,7 +82,7 @@ class MergeControllerTest extends TestCase {
 			$doc = $reflection->getMethod($method)->getDocComment();
 			$this->assertNotFalse($doc, sprintf('%s must have a docblock.', $method));
 			$this->assertStringContainsString('@NoAdminRequired', $doc, sprintf('%s missing @NoAdminRequired', $method));
-			$this->assertStringContainsString('@NoCSRFRequired', $doc, sprintf('%s missing @NoCSRFRequired', $method));
+			$this->assertStringNotContainsString('@NoCSRFRequired', $doc, sprintf('%s must require the request token', $method));
 			$this->assertStringNotContainsString('@PublicPage', $doc, sprintf('%s must not be @PublicPage', $method));
 		}
 	}//end testAllActionsCarryAuthAnnotations()
@@ -119,6 +119,33 @@ class MergeControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame($payload, $response->getData());
 	}//end testPreviewDelegatesToPreviewMerge()
+
+	/**
+	 * mdm-merge-relinks-every-reference task 1.3: the preview answers the
+	 * references that will move, by schema and count, as the service plans them.
+	 *
+	 * @return void
+	 */
+	public function testPreviewListsTheReferencesBySchemaAndCount(): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['from', '', 'from-uuid'],
+				['into', '', 'into-uuid'],
+			]
+		);
+
+		$references = [['schema' => 'suite', 'count' => 1], ['schema' => 'connection', 'count' => 3]];
+		$this->mergeService->method('previewMerge')->willReturn(
+			['from' => 'from-uuid', 'into' => 'into-uuid', 'postMergeGoldenRecord' => [], 'references' => $references]
+		);
+
+		$data = $this->controller->preview()->getData();
+
+		$this->assertSame($references, $data['references']);
+		foreach ($data['references'] as $reference) {
+			$this->assertSame(['schema', 'count'], array_keys($reference));
+		}
+	}//end testPreviewListsTheReferencesBySchemaAndCount()
 
 	public function testPreviewNeverWrites(): void {
 		$this->request->method('getParam')->willReturnArgument(1);

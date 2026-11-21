@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Encrypts/decrypts schema-flagged object properties at the save/render boundary.
  *
- * Reuses Nextcloud's `OCP\Security\ICrypto` (AES-256-GCM + HMAC, keyed off the
+ * Reuses Nextcloud's `OCP\Security\ICrypto` (AES-CBC with an HMAC-SHA512, keyed off the
  * instance secret in config.php) — the exact same primitive OpenRegister already
  * uses for source credentials ({@see \OCA\OpenRegister\Controller\SourcesController})
  * and the tenant audit-trail HMAC key ({@see TenantKeyService}). No new crypto is

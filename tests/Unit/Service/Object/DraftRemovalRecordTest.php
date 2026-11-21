@@ -50,6 +50,21 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Object\DeletionAttribution
+ * @uses \OCA\OpenRegister\Service\Object\DeletionIntegrity
+ * @uses \OCA\OpenRegister\Service\Object\RemovalOptions
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
+ * @uses \OCA\OpenRegister\Db\LockTerms
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\SoftDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class DraftRemovalRecordTest extends TestCase {
 
@@ -85,7 +100,7 @@ class DraftRemovalRecordTest extends TestCase {
 	 */
 	private function auditTrail(bool $fails = false): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$mapper->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use ($fails): AuditTrail {
 				if ($fails === true) {
 					throw new RuntimeException('audit table locked');
@@ -158,12 +173,10 @@ class DraftRemovalRecordTest extends TestCase {
 		return new DeleteObject(
 			$this->createMock(MagicMapper::class),
 			$this->createMock(CacheHandler::class),
-			$this->createMock(IUserSession::class),
 			new \OCA\OpenRegister\Service\Object\AuditRecording($auditTrail, $this->logger()),
 			$this->createMock(SettingsService::class),
-			$this->createMock(ReferentialIntegrityService::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(OrganisationMapper::class)
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->createMock(IUserSession::class), $this->createMock(OrganisationMapper::class), $this->logger())
 		);
 	}//end handler()
 

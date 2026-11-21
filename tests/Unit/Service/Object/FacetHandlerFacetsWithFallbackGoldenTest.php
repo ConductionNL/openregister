@@ -38,6 +38,9 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Object\FacetableFieldDiscovery
  * @covers \OCA\OpenRegister\Service\Object\FacetRun
  * @covers \OCA\OpenRegister\Service\Object\NonAggregatedFacetKey
+ * @uses \OCA\OpenRegister\Service\Object\FacetLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 
@@ -146,7 +149,8 @@ class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 		$handler = new FacetHandler(
 			new FacetLookups($mapper, $this->createMock(SchemaMapper::class)),
 			$this->createMock(FacetResponseCache::class),
-			$logger
+			$logger,
+			new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile()
 		);
 
 		$method = new ReflectionMethod(FacetHandler::class, 'calculateFacetsWithFallback');

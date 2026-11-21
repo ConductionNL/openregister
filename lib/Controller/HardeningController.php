@@ -38,8 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorExceptionInterface;
@@ -109,7 +109,7 @@ class HardeningController extends Controller {
 		IRequest $request,
 		HardeningControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->reportService = $services->reportService;
 		$this->settingsService = $services->settingsService;
 		$this->policy = $services->policy;
@@ -188,7 +188,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function updateControls(): JSONResponse {
 		$body = $this->request->getParams();
 
@@ -263,7 +262,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	public function updateFloors(): JSONResponse {
 		$body = $this->request->getParams();
 		$requested = ($body['floors'] ?? []);
@@ -327,7 +325,6 @@ class HardeningController extends Controller {
 	 *
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
-	#[NoCSRFRequired]
 	#[BruteForceProtection(action: ThrottledSurfacesInterface::ELEVATION)]
 	public function elevate(): JSONResponse {
 		$password = (string)($this->request->getParam('password') ?? '');

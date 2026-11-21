@@ -400,11 +400,19 @@ export default defineConfig({
 	use: {
 		baseURL: resolveBaseUrl(),
 		extraHTTPHeaders: {
+			'OCS-APIRequest': 'true',
 			Authorization: `Basic ${Buffer.from(
 				`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${
 					process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 				}`,
 			).toString('base64')}`,
+			// How a basic-auth client tells Nextcloud it is an API client and
+			// not a browser form. Without it every route that does not carry
+			// #[NoCSRFRequired] (the settings declarations, the destruction
+			// lists, the calculation trial, every write the app guards) answers
+			// 412 before the controller runs, and the spec fails on the
+			// framework rather than on the behaviour it is about.
+			'OCS-APIRequest': 'true',
 		},
 		// `retain-on-failure`, not `on-first-retry`. With `retries: 1` a FLAKE is
 		// exactly the case where attempt 1 fails and attempt 2 passes — and

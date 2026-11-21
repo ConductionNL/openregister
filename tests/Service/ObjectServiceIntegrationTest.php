@@ -28,7 +28,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Integration tests for ObjectService
@@ -288,13 +293,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 		], $data);
 
 		$result = $this->service->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->createdObjectUuids[] = $result->getUuid();
@@ -500,13 +505,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 		];
 
 		$result = $this->service->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -527,13 +532,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		];
 
 		$result = $this->service->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			$specificUuid,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				uuid: $specificUuid,
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -600,14 +606,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		];
 
 		$result = $this->service->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false,
-			true // silent
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null,
+				policy: new SavePolicy(silent: true)
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
@@ -717,13 +723,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		];
 
 		$updated = $this->service->saveObject(
-			$updateData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			$saved->getUuid(),
-			false,
-			false
+			object: $updateData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				uuid: $saved->getUuid(),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $updated);
@@ -744,13 +751,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$originalUuid = $saved->getUuid();
 
 		$updated = $this->service->saveObject(
-			['name' => 'Changed Name'],
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			$originalUuid,
-			false,
-			false
+			object: ['name' => 'Changed Name'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				uuid: $originalUuid,
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertSame($originalUuid, $updated->getUuid());
@@ -770,13 +778,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$saved->setObject($objectData);
 
 		$updated = $this->service->saveObject(
-			$saved,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $saved,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $updated);
@@ -1252,15 +1260,14 @@ class ObjectServiceIntegrationTest extends TestCase {
 		}
 
 		$result = $this->service->saveObjects(
-			$objects,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true
+			objects: $objects,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema),
+				validation: false,
+				events: false
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->assertIsArray($result);
@@ -1359,13 +1366,13 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		try {
 			$result = $this->service->saveObject(
-				['name' => 'Valid Object'],
-				null,
-				$this->testRegister,
-				$insertedSchema,
-				null,
-				false,
-				false
+				object: ['name' => 'Valid Object'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $this->testRegister, schema: $insertedSchema),
+					extend: null
+				),
+				_rbac: false,
+				_multitenancy: false
 			);
 
 			$this->assertInstanceOf(ObjectEntity::class, $result);

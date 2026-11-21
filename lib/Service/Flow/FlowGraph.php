@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Names places and reads edges for the definition builder.
  *
- * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowGraph {
 
@@ -62,7 +62,7 @@ class FlowGraph {
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function inPlace(string $nodeId): string {
 		return $nodeId;
@@ -79,7 +79,7 @@ class FlowGraph {
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function targetPlace(EdgeArrival $arrival, array $nodes): string {
 		if ($this->isJoin(node: ($nodes[$arrival->nodeId] ?? [])) === true) {
@@ -97,7 +97,7 @@ class FlowGraph {
 	 *
 	 * @return string The place name.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function joinPlace(string $nodeId, string $edgeId): string {
 		return $this->inPlace(nodeId: $nodeId) . self::PLACE_JOIN . $edgeId;
@@ -110,7 +110,7 @@ class FlowGraph {
 	 *
 	 * @return bool True when it is a join.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function isJoin(array $node): bool {
 		return ($node['join'] ?? false) === true;
@@ -124,7 +124,7 @@ class FlowGraph {
 	 *
 	 * @return array<array> The edges.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function incoming(string $nodeId, array $edges): array {
 		return array_values(
@@ -144,7 +144,7 @@ class FlowGraph {
 	 *
 	 * @return array<array> The edges.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function outgoing(string $nodeId, array $edges): array {
 		return array_values(
@@ -166,7 +166,7 @@ class FlowGraph {
 	 *
 	 * @return array<string> The endpoint node ids.
 	 *
-	 * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function normaliseEndpoints(mixed $value): array {
 		if ($value === null) {

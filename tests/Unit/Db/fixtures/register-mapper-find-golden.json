@@ -1098,8 +1098,8 @@
                 }
             },
             {
-                "log": "error",
-                "message": "[RegisterMapper] Register not found after filters",
+                "log": "debug",
+                "message": "[RegisterMapper] Register does not exist",
                 "context": {
                     "identifier": "missing",
                     "existsBeforeFilter": false,

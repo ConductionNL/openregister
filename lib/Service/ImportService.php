@@ -68,7 +68,12 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization
@@ -760,12 +765,13 @@ class ImportService implements ObjectImporterInterface {
 	private function saveJsonImportRow(array $row, array $target): ObjectEntity {
 		return $this->stores->objectService->saveObject(
 			object: $row['body'],
-			register: $target['register'],
-			schema: $target['schema'],
-			uuid: $row['uuid'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target['register'], schema: $target['schema']),
+				uuid: $row['uuid'],
+				actor: new SaveActor(currentUser: $target['currentUser'])
+			),
 			_rbac: $target['_rbac'],
-			_multitenancy: $target['_multitenancy'],
-			currentUser: $target['currentUser']
+			_multitenancy: $target['_multitenancy']
 		);
 	}//end saveJsonImportRow()
 
@@ -1386,13 +1392,13 @@ class ImportService implements ObjectImporterInterface {
 		try {
 			$saveResult = $this->stores->objectService->saveObjects(
 				objects: $objects,
-				register: $import['register'],
-				schema: $import['schema'],
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $import['register'], schema: $import['schema']),
+					validation: $import['validation'],
+					events: $import['events']
+				),
 				_rbac: $import['_rbac'],
-				_multitenancy: $import['_multitenancy'],
-				validation: $import['validation'],
-				events: $import['events'],
-				enrich: $import['enrich']
+				_multitenancy: $import['_multitenancy']
 			);
 		} finally {
 			// Null result = save threw; partial saves may have landed, so hint conservatively.
@@ -1590,7 +1596,7 @@ class ImportService implements ObjectImporterInterface {
 		$objectData['@self'] = $selfData;
 
 		// Validate that we're not accidentally creating invalid properties.
-		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$table->schema->getId());
+		$this->validateObjectProperties(objectData: $objectData, schema: $table->schema);
 
 		return $objectData;
 	}//end transformCsvRow()
@@ -1892,26 +1898,30 @@ class ImportService implements ObjectImporterInterface {
 	}//end clearCaches()
 
 	/**
-	 * Validate that object data only contains valid ObjectEntity properties
+	 * Warn about columns that are a common mistake for object properties.
 	 *
-	 * @param array $objectData The object data to validate
-	 * @param string $_schemaId Schema ID for debugging (unused, for future use)
+	 * A `data`, `content`, `body` or `payload` column usually holds a whole
+	 * object rather than one property; it is logged as a warning unless the
+	 * schema declares a property by that name. The row is still imported.
+	 *
+	 * @param array  $objectData The object data to validate
+	 * @param Schema $schema     The schema the row is imported into
 	 *
 	 * @return void
 	 */
-	private function validateObjectProperties(array $objectData, string $_schemaId): void {
-		// Check for invalid properties (common mistakes).
+	private function validateObjectProperties(array $objectData, Schema $schema): void {
 		$invalidProperties = ['data', 'content', 'body', 'payload'];
+		$schemaProperties  = $this->cachedSchemaProperties(schema: $schema);
 
 		foreach (array_keys($objectData) as $key) {
-			// Skip @self as it's handled separately.
-			if ($key === '@self') {
+			if (in_array($key, $invalidProperties, true) === false || isset($schemaProperties[$key]) === true) {
 				continue;
 			}
 
-			// Check for invalid properties that commonly cause issues.
-			if (in_array($key, $invalidProperties) === true) {
-			}
+			$this->runtime->logger->warning(
+				message: '[ImportService] Column "'.$key.'" is not a property of the schema and usually holds a whole object',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $key, 'schema' => (string)$schema->getId()]
+			);
 		}
 	}//end validateObjectProperties()
 

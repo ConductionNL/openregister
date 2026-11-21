@@ -21,14 +21,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\DisposalSweep;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * An app names the records it wants destroyed; OpenRegister decides which may be.
@@ -51,13 +54,13 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	 *
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
 	 * @param DestructionListWriter $writer Reads the eligible objects and saves the new list.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the destruction-list register and schema.
+	 * @param ArchivalSettingsInterface       $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
 		private readonly DestructionListWriter $writer,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly ArchivalSettingsInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -103,7 +106,10 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	private function store(array $location, array $listData): ObjectEntity {
 		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
 		// multitenancy on the list, persisted, silent.
-		return $this->writer->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+		$target  = new ObjectFindTarget(register: $location['register'], schema: $location['schema']);
+		$options = new ObjectSaveOptions(target: $target, policy: new SavePolicy(silent: true));
+
+		return $this->writer->saveObject->saveObject(data: $listData, options: $options, _rbac: false, _multitenancy: false);
 	}//end store()
 
 	/**

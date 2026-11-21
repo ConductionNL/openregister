@@ -60,7 +60,7 @@ curl -sL https://github.com/ConductionNL/openregister/releases/download/v1.0.0/s
 
 ### Update cadence
 
-A new SBOM is generated and attached on every release tag. We do not commit SBOMs into the repository tree — they are published exclusively as release assets to keep main-branch history clean and to guarantee every SBOM corresponds to an immutable release artifact.
+A new SBOM is generated and attached on every release tag. The `sbom.cdx.json` at the repository root is a snapshot of the dependencies on the `main` branch. For an SBOM that matches an immutable release, use the release assets above.
 
 ### Format
 

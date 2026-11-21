@@ -28,6 +28,8 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom
  */
 class ExampleSetTalkStoreRoomTest extends TestCase {
 

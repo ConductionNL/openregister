@@ -47,6 +47,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
  */
 final class ObjectHistoryPurposeVerdictTest extends TestCase {
 

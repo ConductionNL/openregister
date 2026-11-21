@@ -28,25 +28,25 @@ export function entityTabs() {
 	]
 }
 
-/** Rights beyond CRUD, each granted to a list of groups. */
+/** The entry that gives a special right to every signed-in user. */
+export const EVERYONE = '*'
+
+/**
+ * The choice under a special right that stands for every signed-in user.
+ *
+ * @return {{id: string, name: string}} The option
+ */
+export function everyoneOption() {
+	return { id: EVERYONE, name: t('openregister', 'Everyone') }
+}
+
+/** Rights beyond CRUD, each granted to a list of groups or to everyone. */
 export const SPECIAL_RIGHTS = [
-	{
-		right: 'object_publish',
-		inputLabel: 'Selected Special Rights Object Publish',
-		description: () =>
-			t('openregister', 'Publish objects to make them publicly available'),
-	},
 	{
 		right: 'agent_use',
 		inputLabel: 'Selected Special Rights Agent Use',
 		description: () =>
 			t('openregister', 'Use AI agents for processing and analysis'),
-	},
-	{
-		right: 'dashboard_view',
-		inputLabel: 'Selected Special Rights Dashboard View',
-		description: () =>
-			t('openregister', 'Access organisation dashboard and analytics'),
 	},
 	{
 		right: 'llm_use',
