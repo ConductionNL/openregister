@@ -37,6 +37,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IAppConfig;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -45,7 +46,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
  */
-class AppImportJobRecorder {
+class AppImportJobRecorder implements AppImportJobOwnersInterface {
 	/**
 	 * App config key prefix for the per-app job list (OpenRegister's namespace).
 	 */

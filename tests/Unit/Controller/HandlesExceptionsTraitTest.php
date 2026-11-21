@@ -25,6 +25,7 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http;
@@ -135,6 +136,33 @@ class HandlesExceptionsTraitTest extends TestCase {
 		$response = $this->consumer($this->createMock(LoggerInterface::class))->translate($subclass);
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 	}//end testSubclassesTranslateLikeTheirParents()
+
+	/**
+	 * Any exception that marks itself unavailable answers 503, not only the AppHost ones.
+	 *
+	 * @return void
+	 */
+	public function testAnyServiceUnavailableExceptionAnswers503(): void {
+		$unavailable = new class('index offline') extends \RuntimeException implements ServiceUnavailableExceptionInterface {
+		};
+
+		$response = $this->consumer($this->createMock(LoggerInterface::class))->translate($unavailable);
+
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+	}//end testAnyServiceUnavailableExceptionAnswers503()
+
+	/**
+	 * The AppHost exceptions carry the Core contract the mapping reads.
+	 *
+	 * @return void
+	 */
+	public function testTheAppHostExceptionsAreServiceUnavailable(): void {
+		$this->assertInstanceOf(ServiceUnavailableExceptionInterface::class, new FoundationUnavailableException(appId: 'myapp'));
+		$this->assertInstanceOf(
+			ServiceUnavailableExceptionInterface::class,
+			new ConfigurationMissingException(appId: 'myapp', configKey: 'register')
+		);
+	}//end testTheAppHostExceptionsAreServiceUnavailable()
 
 	public function testLegacyErrorResponseContractUnchanged(): void {
 		// Backwards compatibility for the 5 pre-existing consumers: always a

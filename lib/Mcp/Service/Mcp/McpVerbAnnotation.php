@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
+
 /**
  * One verb of the `tools` object and its config, validated against the schema's properties.
  *
@@ -97,7 +99,7 @@ final class McpVerbAnnotation {
 	}//end errors()
 
 	/**
-	 * The errors of the config's keys: unknown keys, description, scope, hints and filters, in that order.
+	 * The errors of the config's keys: unknown keys, description, scope, reach, hints and filters, in that order.
 	 *
 	 * @param array<string|int, mixed> $config The verb's config object.
 	 *
@@ -108,20 +110,21 @@ final class McpVerbAnnotation {
 			$this->unknownKeyErrors(config: $config),
 			$this->descriptionErrors(config: $config),
 			$this->scopeErrors(config: $config),
+			$this->reachErrors(config: $config),
 			$this->hintErrors(config: $config),
 			$this->filtersErrors(config: $config)
 		);
 	}//end configErrors()
 
 	/**
-	 * One error per config key outside description, scope, filters and the hints.
+	 * One error per config key outside description, scope, reach, filters and the hints.
 	 *
 	 * @param array<string|int, mixed> $config The verb's config object.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors.
 	 */
 	private function unknownKeyErrors(array $config): array {
-		$knownKeys = array_merge(['description', 'scope', 'filters'], McpAnnotationValidator::HINT_KEYS);
+		$knownKeys = array_merge(['description', 'scope', ToolReachLevels::REACH_KEY, 'filters'], McpAnnotationValidator::HINT_KEYS);
 		$errors = [];
 		foreach (array_keys($config) as $key) {
 			if (in_array((string)$key, $knownKeys, true) === false) {
@@ -165,6 +168,30 @@ final class McpVerbAnnotation {
 		$message = sprintf('x-openregister-mcp: verb "%s" `scope` must be one of [%s].', $this->verb, $scopes);
 		return [['code' => 'mcp-bad-scope', 'message' => $message]];
 	}//end scopeErrors()
+
+	/**
+	 * The error of a `reach` that is present and not one of the reach levels.
+	 *
+	 * `reach` is the widest set of principals a successful call can affect or
+	 * disclose to, the same vocabulary `#[McpTool(reach: ...)]` takes. It is
+	 * advisory for the agent grant matrix and never gates execution.
+	 *
+	 * @param array<string|int, mixed> $config The verb's config object.
+	 *
+	 * @return array<int, array{code: string, message: string}> The errors.
+	 *
+	 * @spec openspec/changes/mcp-reach-annotation/specs/ai-mcp/spec.md#requirement-a-derived-tool-entry-may-declare-its-reach
+	 */
+	private function reachErrors(array $config): array {
+		$key = ToolReachLevels::REACH_KEY;
+		if (array_key_exists($key, $config) === false || in_array($config[$key], ToolReachLevels::ORDER, true) === true) {
+			return [];
+		}
+
+		$levels = implode(', ', ToolReachLevels::ORDER);
+		$message = sprintf('x-openregister-mcp: verb "%s" `reach` must be one of [%s].', $this->verb, $levels);
+		return [['code' => 'mcp-bad-reach', 'message' => $message]];
+	}//end reachErrors()
 
 	/**
 	 * One error per annotation hint that is present and not a boolean.

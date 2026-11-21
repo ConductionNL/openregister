@@ -5,7 +5,7 @@
         "action": "create",
         "events": [
             {
-                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')"
+                "prepare": "SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric') AND table_schema = current_schema()"
             },
             {
                 "find": [
