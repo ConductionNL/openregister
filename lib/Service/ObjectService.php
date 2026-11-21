@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
@@ -127,8 +128,8 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
@@ -5225,12 +5226,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * the caller's MUST throw `DoesNotExistException` (the mappers do
      * this via the standard organisation filter).
      *
-     * @param RegisterSchemaRef $target        The register and schema slugs (both must exist in caller's org).
-     * @param array             $filters       Additional filters merged into the @self block.
-     *                                         Direct keys like 'status' are merged at the top
-     *                                         level.
-     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool              $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     * @param RegisterSchemaSlugs $target        The register and schema slugs (both must exist in caller's org).
+     * @param array               $filters       Additional filters merged into the @self block.
+     *                                           Direct keys like 'status' are merged at the top
+     *                                           level.
+     * @param bool                $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                $_multitenancy Whether to apply multi-tenancy filter (default: true).
      *
      * @psalm-param array<string, mixed> $filters
      *
@@ -5250,7 +5251,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-        RegisterSchemaRef $target,
+        RegisterSchemaSlugs $target,
         array $filters=[],
         bool $_rbac=true,
         bool $_multitenancy=true

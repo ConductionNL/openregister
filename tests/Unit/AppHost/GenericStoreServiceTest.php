@@ -35,7 +35,7 @@ use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -183,7 +183,7 @@ class GenericStoreServiceTest extends TestCase {
 		$objects = $this->createMock(ObjectServiceInterface::class);
 		$objects->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with($this->equalTo(new RegisterSchemaRef(register: 'pipelinq', schema: 'application-template')), ['kind' => 'pipeline'], true, false)
+			->with($this->equalTo(new RegisterSchemaSlugs(register: 'pipelinq', schema: 'application-template')), ['kind' => 'pipeline'], true, false)
 			->willReturn([
 				new class {
 					/**

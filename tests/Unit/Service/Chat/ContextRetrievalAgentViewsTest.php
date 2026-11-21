@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;

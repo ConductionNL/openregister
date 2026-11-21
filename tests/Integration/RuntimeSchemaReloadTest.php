@@ -48,6 +48,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Integration;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -55,7 +56,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
@@ -531,7 +531,7 @@ class RuntimeSchemaReloadTest extends TestCase {
 		// we just need to prove the slug path doesn't throw DoesNotExistException
 		// on a freshly-created pair, which would expose a missed invalidation).
 		$result = $this->objectService->searchObjectsBySlug(
-			new RegisterSchemaRef(register: $register->getSlug(), schema: $schema->getSlug()),
+			new RegisterSchemaSlugs(register: $register->getSlug(), schema: $schema->getSlug()),
 			[]
 		);
 		$this->assertIsArray($result);

@@ -25,12 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -195,7 +195,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 			->willReturn([]);
 
 		$result = $this->service->searchObjectsBySlug(
-			new RegisterSchemaRef(register: 'openbuild', schema: 'application'),
+			new RegisterSchemaSlugs(register: 'openbuild', schema: 'application'),
 			['status' => 'published']
 		);
 
@@ -226,7 +226,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			new RegisterSchemaRef(register: 'ghost-register', schema: 'application'),
+			new RegisterSchemaSlugs(register: 'ghost-register', schema: 'application'),
 			[]
 		);
 
@@ -275,7 +275,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			new RegisterSchemaRef(register: 'openbuild', schema: 'ghost-schema'),
+			new RegisterSchemaSlugs(register: 'openbuild', schema: 'ghost-schema'),
 			[]
 		);
 
@@ -321,7 +321,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			new RegisterSchemaRef(register: 'document', schema: 'anonymizationLink'),
+			new RegisterSchemaSlugs(register: 'document', schema: 'anonymizationLink'),
 			[]
 		);
 
@@ -380,7 +380,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 				}
 			);
 
-		$this->service->searchObjectsBySlug(target: new RegisterSchemaRef(register: 'document', schema: 'anonymizationLink'), filters: []);
+		$this->service->searchObjectsBySlug(target: new RegisterSchemaSlugs(register: 'document', schema: 'anonymizationLink'), filters: []);
 
 		$this->assertSame(
 			expected: ['register' => 6, 'schema' => 9177],

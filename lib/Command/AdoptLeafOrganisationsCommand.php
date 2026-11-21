@@ -48,11 +48,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -270,7 +270,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 
 		try {
 			$rows = $this->objectService->searchObjectsBySlug(
-				target: new RegisterSchemaRef(register: $registerSlug, schema: $schemaSlug),
+				target: new RegisterSchemaSlugs(register: $registerSlug, schema: $schemaSlug),
 				filters: ['_limit' => false],
 				_rbac: false,
 				_multitenancy: false

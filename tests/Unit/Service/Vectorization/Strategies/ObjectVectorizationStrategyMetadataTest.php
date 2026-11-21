@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Strategies;
 
 use JsonSerializable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use PHPUnit\Framework\MockObject\MockObject;

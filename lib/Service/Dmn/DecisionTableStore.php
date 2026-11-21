@@ -25,8 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dmn;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Throwable;
 use UnexpectedValueException;
 
@@ -185,7 +185,7 @@ class DecisionTableStore {
 	private function tableRows(): array {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
-				target: new RegisterSchemaRef(register: self::REGISTER, schema: self::SCHEMA),
+				target: new RegisterSchemaSlugs(register: self::REGISTER, schema: self::SCHEMA),
 				filters: [],
 				_rbac: false,
 				_multitenancy: false

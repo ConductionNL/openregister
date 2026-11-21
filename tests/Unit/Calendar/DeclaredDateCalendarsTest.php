@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Calendar;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Calendar\CalendarSearchQuery;
 use OCA\OpenRegister\Calendar\DeclaredDateCalendars;
 use OCA\OpenRegister\Calendar\ObjectDateCalendar;

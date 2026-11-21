@@ -27,7 +27,7 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Credential\DeclarationValidator;
 use OCA\OpenRegister\Service\Credential\DeclaredProviderApprovals;
 use OCA\OpenRegister\Service\Credential\DeclaredProviderLoader;
@@ -68,7 +68,7 @@ class DeclaredProviderResolverTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (RegisterSchemaRef $target, array $filters): array {
+			function (RegisterSchemaSlugs $target, array $filters): array {
 				$this->assertSame('credential-broker', $target->register);
 				$this->assertSame('credentialproviderapproval', $target->schema);
 				$rows = [];

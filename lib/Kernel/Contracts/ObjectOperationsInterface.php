@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
+use OCA\OpenRegister\Contract\SearchOptions;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -567,12 +570,12 @@ interface ObjectOperationsInterface {
      * the caller's MUST throw `DoesNotExistException` (the mappers do
      * this via the standard organisation filter).
      *
-     * @param RegisterSchemaRef $target        The register and schema slugs (both must exist in caller's org).
-     * @param array             $filters       Additional filters merged into the @self block.
-     *                                         Direct keys like 'status' are merged at the top
-     *                                         level.
-     * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool              $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     * @param RegisterSchemaSlugs $target        The register and schema slugs (both must exist in caller's org).
+     * @param array               $filters       Additional filters merged into the @self block.
+     *                                           Direct keys like 'status' are merged at the top
+     *                                           level.
+     * @param bool                $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                $_multitenancy Whether to apply multi-tenancy filter (default: true).
      *
      * @psalm-param array<string, mixed> $filters
      *
@@ -592,7 +595,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-    	RegisterSchemaRef $target, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
+    	RegisterSchemaSlugs $target, array $filters=[], bool $_rbac=true, bool $_multitenancy=true
     ): array|int;
 
     /**

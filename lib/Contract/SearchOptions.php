@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Contract
- * @package  OCA\OpenRegister\Kernel\Contracts
+ * @package  OCA\OpenRegister\Contract
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts;
+namespace OCA\OpenRegister\Contract;
 
 /**
  * The optional parts of an object search: the object selection, the views that scope it

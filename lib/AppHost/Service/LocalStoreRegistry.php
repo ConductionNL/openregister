@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -93,7 +94,7 @@ class LocalStoreRegistry {
 			}
 
 			$found = $objects->searchObjectsBySlug(
-				target: new RegisterSchemaRef(register: (string)$store->register, schema: (string)$store->schema),
+				target: new RegisterSchemaSlugs(register: (string)$store->register, schema: (string)$store->schema),
 				filters: $params,
 				_rbac: true,
 				_multitenancy: false

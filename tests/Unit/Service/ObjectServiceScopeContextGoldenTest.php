@@ -22,12 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -49,7 +49,7 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
- * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\ReadScope
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
@@ -215,7 +215,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             )
             ->willReturn([]);
 
-        $service->searchObjectsBySlug(new RegisterSchemaRef(register: 'r', schema: 's'), ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
+        $service->searchObjectsBySlug(new RegisterSchemaSlugs(register: 'r', schema: 's'), ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
     }
 
     public function testFindSilentDropsAPendingRefBeforeItSetsItsRegister(): void

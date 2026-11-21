@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -56,7 +56,7 @@ class FlowTimerDefinitionStoreTest extends TestCase {
 		$nameless = $this->createMock(ObjectEntity::class);
 		$nameless->method('getObject')->willReturn(['hoursPerWorkingDay' => 6]);
 		$this->objects->expects(self::once())->method('searchObjectsBySlug')
-			->with($this->equalTo(new RegisterSchemaRef(register: 'flow-timers', schema: 'working-calendar')), [], false, false)
+			->with($this->equalTo(new RegisterSchemaSlugs(register: 'flow-timers', schema: 'working-calendar')), [], false, false)
 			->willReturn([$entity, $nameless]);
 
 		$calendars = $this->store->calendars();
@@ -65,7 +65,7 @@ class FlowTimerDefinitionStoreTest extends TestCase {
 	}//end testSeededObjectsAreReadBySlugFromTheRegister()
 
 	public function testTheShippedDescriptorAnswersWhenTheRegisterIsAbsentOrEmpty(): void {
-		$this->objects->method('searchObjectsBySlug')->willReturnCallback(static function (RegisterSchemaRef $target): array {
+		$this->objects->method('searchObjectsBySlug')->willReturnCallback(static function (RegisterSchemaSlugs $target): array {
 			if ($target->schema === 'working-calendar') {
 				throw new DoesNotExistException('not seeded yet');
 			}

@@ -19,11 +19,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
-use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCP\AppFramework\IAppContainer;
@@ -52,18 +52,18 @@ use OCA\OpenRegister\Service\Object\QueryRefinements;
  * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
- * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectSelection
+ * @uses   \OCA\OpenRegister\Contract\ObjectSelection
  * @uses   \OCA\OpenRegister\Service\Object\QueryHandlers
  * @uses   \OCA\OpenRegister\Service\Object\QueryPlatform
  * @uses   \OCA\OpenRegister\Service\Object\QueryRefinements
- * @uses   \OCA\OpenRegister\Kernel\Contracts\SearchOptions
+ * @uses   \OCA\OpenRegister\Contract\SearchOptions
  * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
- * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
  * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
  * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
- * @uses \OCA\OpenRegister\Kernel\Contracts\SearchOptions
+ * @uses \OCA\OpenRegister\Contract\SearchOptions
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

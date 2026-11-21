@@ -11,9 +11,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
 use OCP\IUser;
 
 /**
@@ -291,15 +288,15 @@ interface ObjectServiceInterface {
 	 * NUMERIC ids and return nothing for a slug, silently -- which is why this
 	 * method exists and why it is on the contract.
 	 *
-	 * @param RegisterSchemaRef $target        The register slug and the schema slug.
-	 * @param array             $filters       Equality filters.
-	 * @param bool              $_rbac         Apply register RBAC.
-	 * @param bool              $_multitenancy Apply organisation scoping.
+	 * @param RegisterSchemaSlugs $target        The register slug and the schema slug.
+	 * @param array               $filters       Equality filters.
+	 * @param bool                $_rbac         Apply register RBAC.
+	 * @param bool                $_multitenancy Apply organisation scoping.
 	 *
 	 * @return array|int The matching objects, or a count.
 	 */
 	public function searchObjectsBySlug(
-		RegisterSchemaRef $target,
+		RegisterSchemaSlugs $target,
 		array $filters=[],
 		bool $_rbac=true,
 		bool $_multitenancy=true

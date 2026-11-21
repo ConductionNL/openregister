@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenRegister ObjectSelection
+ * RegisterSchemaSlugs: the register slug and the schema slug a slug search names.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Contract
- * @package  OCA\OpenRegister\Kernel\Contracts
+ * @package  OCA\OpenRegister\Contract
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,26 +22,30 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts;
+namespace OCA\OpenRegister\Contract;
 
 /**
- * The objects a search or count is restricted to: an id set and the objects one object uses.
+ * The register and schema of a slug search, as the published contract takes them.
+ *
+ * Both are slugs, resolved in the caller's organisation by
+ * {@see ObjectServiceInterface::searchObjectsBySlug()}. The class lives in the
+ * published namespace so a consuming app can build it from the contract alone.
  *
  * @spec openspec/specs/zoeken-filteren/spec.md
  */
-final class ObjectSelection {
+final class RegisterSchemaSlugs {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param array<int, string>|null $ids  The ids the search is restricted to, or null for no restriction.
-	 * @param string|null             $uses The object whose used objects are searched, or null.
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		public readonly ?array $ids = null,
-		public readonly ?string $uses = null,
+		public readonly string $register,
+		public readonly string $schema,
 	) {
 	}//end __construct()
 }//end class

@@ -12,9 +12,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
-use OCA\OpenRegister\Kernel\Contracts\ObjectSelection;
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Kernel\Contracts\SearchOptions;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -24,11 +24,11 @@ use ReflectionParameter;
  * What QueryHandler::searchObjectsPaginated() hands the database search and how it annotates the answer.
  *
  * @covers \OCA\OpenRegister\Service\Object\QueryHandler
- * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
  * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
  * @uses \OCA\OpenRegister\Service\Object\QueryRefinements
- * @uses \OCA\OpenRegister\Kernel\Contracts\SearchOptions
+ * @uses \OCA\OpenRegister\Contract\SearchOptions
  */
 class QueryHandlerSearchObjectsPaginatedTest extends TestCase {
 

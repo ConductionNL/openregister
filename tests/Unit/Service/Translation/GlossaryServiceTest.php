@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Translation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Translation\GlossaryService;
 use OCA\OpenRegister\Service\Translation\LanguagePair;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -67,7 +67,7 @@ class GlossaryServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (RegisterSchemaRef $target, array $filters=[]): array {
+			function (RegisterSchemaSlugs $target, array $filters=[]): array {
 				$schemaSlug    = (string) $target->schema;
 				$this->reads[] = [$target->register, $schemaSlug, $filters];
 				return array_map(
