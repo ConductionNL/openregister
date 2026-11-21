@@ -331,3 +331,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Db/SchemaAuthorizationGoldenTest::testAuthorizationOutcomesMatchGolden, array_keys differ by one 'validate control <key> as text' entry.
 - Cause: the test builds one case per PermissionCatalogue::CONTROL_KEYS entry; a PR adding a control key adds a case.
 - Fix: UPDATE_GOLDEN=1 on that file; the fixture diff must be only the new key's case (check its outcome is intended); commit the json (see #10381 797aae8b).
+
+## PublishedSignaturesTest: the published contract names a Kernel class (or-fix-3)
+- Symptom: PublishedSignaturesTest::testTheContractNamesOnlyPublishedClasses ('<method>() names OCA\OpenRegister\Kernel\Contracts\X, which a consuming app cannot load'), often after an ObjectServiceInterface use-block conflict.
+- Cause: main (e1fd76341bf) made lib/Contract/ObjectServiceInterface name only lib/Contract classes; a PR that gives a contract method a Kernel value object now fails.
+- Fix: a value new on the PR: move it to lib/Contract (namespace, callers, Adr011 VALUE_OBJECTS, drop from KERNEL_LEAVES). A Kernel leaf main already uses: add a small final published value in lib/Contract for that method (Kernel leaves may not extend Contract). Add each new file to ContractIsALeafTest::PUBLISHED, import it in Kernel ObjectOperationsInterface, migrate test doubles; pin the params in PublishedSignaturesTest (#9103).
