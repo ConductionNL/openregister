@@ -96,3 +96,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError in a test constructor, e.g. TokenResolver argument #4 must be AccountConsumerInterface, ConsumerMapperInterface mock given.
 - Cause: main put a Kernel/Contracts port between the class and the mapper (e.g. AccountConsumerInterface, implemented by Service/Consumer/AccountConsumerLookup).
 - Fix: keep the test's mapper mock and wrap it in the real port implementation (new AccountConsumerLookup($mapperMock)), add #[UsesClass] for it, so the test still drives the same failure paths.
+
+## Conflict in SchemaMapper::checkDataDeclarations / RecordAnnotationRefusals (or-fix-0)
+- Symptom: merge conflict in lib/Db/SchemaMapper.php (checkDataDeclarations now runSlots) and RecordAnnotationRefusals.php; a PR added a `$records->checkX()` save check.
+- Cause: main runs schema-save checks in slots of Db/SchemaMapper/SchemaDeclarationOrder; non-Db areas contribute via a SchemaDeclarationChecksEvent listener (see Listener/ReferenceCardDeclarationCheckListener).
+- Fix: take main's SchemaMapper and RecordAnnotationRefusals; add a slot constant (e.g. 235 between neighbours) to SchemaDeclarationOrder and to SchemaDeclarationOrderTest's list; put the check in a listener in its area, registered with registerEventListener; add the listener to tests/Unit/Support/ProcessDeclarationChecksDispatcher::listeners(); component-map row + python3 scripts/component-patterns.py. Example: #10300.
