@@ -149,7 +149,9 @@ class RuleRunSummaryMapperTest extends TestCase {
 	public function testAThrottledEvaluationWritesNothing(): void {
 		$this->queuedRows[] = [['id' => 7, 'rule_id' => 'rule-1', 'schema_slug' => 'zaak', 'last_verdict' => 'pass', 'last_run' => '2026-09-10 10:00:00']];
 
-		$summary = $this->mapper()->record($this->ruleRun(), new RuleEvaluation('pass', new DateTime('2026-09-10T10:00:20+00:00')));
+		// The stored row carries a bare timestamp, hydrated in the host zone; the evaluation uses the same zone so the
+		// 20-second gap holds whatever the host timezone is.
+		$summary = $this->mapper()->record($this->ruleRun(), new RuleEvaluation('pass', new DateTime('2026-09-10 10:00:20')));
 
 		$this->assertSame(7, $summary->getId());
 		$this->assertNull($summary->getLastError());
