@@ -15,6 +15,8 @@ use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Listener\ListenerBootstrap;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
+use OCA\OpenRegister\Listener\NotifyPushBatch;
+use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\PresencePushInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -26,17 +28,24 @@ use PHPUnit\Framework\TestCase;
 final class ListenerBootstrapTest extends TestCase {
 
 	/**
-	 * The bootstrap binds only the presence push; the Processes listener interface is the registrar's.
+	 * The bootstrap binds only the Platform listener classes; the Processes listener interface is the registrar's.
 	 *
 	 * @return void
 	 */
-	public function testItBindsOnlyThePresencePush(): void {
-		$this->assertSame([PresencePushInterface::class => NotifyPushListener::class], ListenerBootstrap::BINDINGS);
+	public function testItBindsOnlyThePlatformListenerClasses(): void {
+		$this->assertSame(
+			[
+				PresencePushInterface::class    => NotifyPushListener::class,
+				NotifyPushBatchInterface::class => NotifyPushBatch::class,
+			],
+			ListenerBootstrap::BINDINGS
+		);
 		$this->assertSame(DecisionTableValidationListener::class, ListenerRegistrar::BINDINGS[DecisionTableValidationListenerInterface::class]);
-	}//end testItBindsOnlyThePresencePush()
+		$this->assertArrayNotHasKey(NotifyPushBatchInterface::class, ListenerRegistrar::BINDINGS);
+	}//end testItBindsOnlyThePlatformListenerClasses()
 
 	/**
-	 * Registering aliases both interfaces, the presence push before any listener.
+	 * Registering aliases every interface, the Platform ones before any listener.
 	 *
 	 * @return void
 	 */
@@ -45,6 +54,7 @@ final class ListenerBootstrapTest extends TestCase {
 		ListenerBootstrap::register(context: $context);
 
 		$this->assertSame(['alias' => PresencePushInterface::class, 'target' => NotifyPushListener::class], $context->aliases[0]);
+		$this->assertSame(['alias' => NotifyPushBatchInterface::class, 'target' => NotifyPushBatch::class], $context->aliases[1]);
 		$this->assertContains(['alias' => DecisionTableValidationListenerInterface::class, 'target' => DecisionTableValidationListener::class], $context->aliases);
 	}//end testRegisterAliasesBothInterfaces()
 
