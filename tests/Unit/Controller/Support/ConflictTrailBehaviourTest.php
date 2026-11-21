@@ -21,8 +21,10 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\VersionMismatch;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -99,8 +101,14 @@ class ConflictTrailBehaviourTest extends TestCase {
 		$before = $this->entry('2026-05-01T09:00:00+00:00');
 		$undated = $this->entry(null);
 		$this->auditTrail->expects($this->once())
-			->method('findAll')
-			->with(25, null, ['object_uuid' => 'obj-1'])
+			->method('findTrail')
+			->with(
+				$this->callback(
+					static fn (ListQuery $query): bool => $query->limit === 25
+						&& $query->filters === ['object_uuid' => 'obj-1']
+						&& $query->sort === ['created' => 'DESC']
+				)
+			)
 			->willReturn([$later, $same, $before, $undated, 'not an entry']);
 
 		$changes = (new ConflictTrail($this->auditTrail, $this->logger))
@@ -115,7 +123,7 @@ class ConflictTrailBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testUnparseableVersionYieldsNothing(): void {
-		$this->auditTrail->expects($this->never())->method('findAll');
+		$this->auditTrail->expects($this->never())->method('findTrail');
 
 		$changes = (new ConflictTrail($this->auditTrail, $this->logger))
 			->interveningChanges($this->mismatch('not a date'));
@@ -131,16 +139,18 @@ class ConflictTrailBehaviourTest extends TestCase {
 	public function testRefusalIsRecordedWithItsContext(): void {
 		$mismatch = $this->mismatch('2026-05-01T10:00:00+00:00');
 		$this->auditTrail->expects($this->once())
-			->method('createAuditTrailEntry')
+			->method('recordObjectEvent')
 			->with(
-				$mismatch->stored,
-				'refused',
-				[
-					'reason' => 'version-conflict',
-					'expectedUpdated' => '2026-05-01T10:00:00+00:00',
-					'currentUpdated' => '2026-05-01T12:00:00+00:00',
-					'properties' => ['title', 'status'],
-				]
+				$this->callback(
+					static fn (ObjectAuditEvent $event): bool => $event->object === $mismatch->stored
+						&& $event->action === 'refused'
+						&& $event->context === [
+							'reason' => 'version-conflict',
+							'expectedUpdated' => '2026-05-01T10:00:00+00:00',
+							'currentUpdated' => '2026-05-01T12:00:00+00:00',
+							'properties' => ['title', 'status'],
+						]
+				)
 			)
 			->willReturn(new AuditTrail());
 		$this->logger->expects($this->never())->method('warning');
@@ -156,9 +166,9 @@ class ConflictTrailBehaviourTest extends TestCase {
 	 */
 	public function testRefusalWithoutConflictsRecordsNoProperties(): void {
 		$recorded = null;
-		$this->auditTrail->method('createAuditTrailEntry')->willReturnCallback(
-			static function (ObjectEntity $object, string $action, array $context) use (&$recorded): AuditTrail {
-				$recorded = $context;
+		$this->auditTrail->method('recordObjectEvent')->willReturnCallback(
+			static function (ObjectAuditEvent $event) use (&$recorded): AuditTrail {
+				$recorded = $event->context;
 				return new AuditTrail();
 			}
 		);
@@ -175,7 +185,7 @@ class ConflictTrailBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testRecordingFailureIsLogged(): void {
-		$this->auditTrail->method('createAuditTrailEntry')->willThrowException(new RuntimeException('db gone'));
+		$this->auditTrail->method('recordObjectEvent')->willThrowException(new RuntimeException('db gone'));
 		$this->logger->expects($this->once())
 			->method('warning')
 			->with('[ObjectsController] a refused write could not be recorded: db gone', $this->arrayHasKey('file'));

@@ -23,13 +23,15 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
-use OCA\OpenRegister\Service\Relation\RelationEndpoint;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
+use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectRelationsControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
@@ -90,8 +92,8 @@ class ObjectRelationsControllerDerivationTest extends TestCase {
 		$registerMapper->method('find')->willReturn(new Register());
 
 		$this->relations = $this->createMock(ObjectRelationService::class);
-		$this->relations->method('applyInheritance')->willReturnCallback(
-			static fn (ObjectEntity $parent, array $childData, array $inherits): array => ['data' => $childData, 'inherited' => []]
+		$this->relations->method('inherit')->willReturnCallback(
+			static fn (ParentInheritance $inheritance): array => ['data' => $inheritance->childData, 'inherited' => []]
 		);
 		$this->objects = $this->createMock(ObjectService::class);
 
@@ -119,12 +121,12 @@ class ObjectRelationsControllerDerivationTest extends TestCase {
 		$controller = $this->controller(['object' => ['title' => 'Kopie']]);
 		$saved      = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (array|ObjectEntity $object, ?array $extend=[], mixed $register=null, mixed $schema=null) use (&$saved): ObjectEntity {
-				$saved[] = [$object, $register, $schema];
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options=new ObjectSaveOptions()) use (&$saved): ObjectEntity {
+				$saved[] = [$object, $options->target->register, $options->target->schema];
 				throw new Exception('title is not unique');
 			}
 		);
-		$this->relations->expects($this->never())->method('recordDerivation');
+		$this->relations->expects($this->never())->method('recordDerived');
 		$this->relations->expects($this->never())->method('recordSplit');
 
 		$response = $controller->derive('zaken', 'melding', 'src-1');
@@ -143,8 +145,8 @@ class ObjectRelationsControllerDerivationTest extends TestCase {
 		$controller = $this->controller(['target' => 'far-1', 'anchor' => 'paragraph-2']);
 		$seen       = [];
 		$this->relations->method('recordProseReference')->willReturnCallback(
-			static function (RelationEndpoint $source, RelationEndpoint $far, string $anchor) use (&$seen): array {
-				$seen = [$source->uuid, $far->uuid, $anchor];
+			static function (ProseMention $mention) use (&$seen): array {
+				$seen = [$mention->source->uuid, $mention->target->uuid, $mention->anchor];
 				return [];
 			}
 		);

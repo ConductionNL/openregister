@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use Exception;
 use OCA\OpenRegister\Controller\Settings\ConfigurationSettingsController;
+use OCA\OpenRegister\Controller\Support\ConfigurationSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -62,10 +63,11 @@ class ConfigurationSettingsControllerArchivalTest extends TestCase {
 		$this->request    = $this->createMock(IRequest::class);
 		$this->settings   = $this->createMock(AppSettingsInterface::class);
 		$this->controller = new ConfigurationSettingsController(
-			'openregister',
 			$this->request,
-			$this->settings,
-			$this->createMock(LoggerInterface::class)
+			new ConfigurationSettingsControllerServices(
+				settingsService: $this->settings,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
