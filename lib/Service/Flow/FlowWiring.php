@@ -442,7 +442,10 @@ final class FlowWiring {
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),
+				// Marks rows whose user assignee is away (assigneeAbsent,
+				// absentUntil), tasks-delegation-and-substitution task 3.4.
+				substitution: $container->get(\OCA\OpenRegister\Service\Task\TaskSubstitution::class)
 			);
 	}//end buildTaskInboxService()
 
