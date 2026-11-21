@@ -114,6 +114,16 @@ final class ObjectCountMetricsProviderTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 	}//end setUp()
 
+	public function testTheTableListingStaysInsideTheInstancesOwnDatabase(): void {
+		$this->ids = ['openregister_registers' => [1], 'openregister_schemas' => [5]];
+		$this->magicRows = ['oc_openregister_table_1_5' => 3];
+
+		$this->metric();
+
+		$this->assertStringContainsString('FROM information_schema.tables', $this->prepared[0]);
+		$this->assertStringEndsWith('WHERE table_name LIKE ? AND table_schema = DATABASE()', $this->prepared[0]);
+	}//end testTheTableListingStaysInsideTheInstancesOwnDatabase()
+
 	public function testCountsTheLiveRowsOfEveryMagicTableByRegisterAndSchema(): void {
 		$this->ids = ['openregister_registers' => [1, 2], 'openregister_schemas' => [5, 6]];
 		$this->magicRows = ['oc_openregister_table_1_5' => 500, 'oc_openregister_table_1_6' => 200, 'oc_openregister_table_2_5' => 7];

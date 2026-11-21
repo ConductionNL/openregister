@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -183,7 +184,8 @@ class ObjectCountMetricsProvider implements IMetricsProvider {
 	/**
 	 * The magic tables that exist, by their prefixed name, register and schema id.
 	 *
-	 * Only a name matching `openregister_table_<digits>_<digits>` after the prefix is
+	 * Only tables of the instance's own database are listed (CatalogueScope), and only a
+	 * name matching `openregister_table_<digits>_<digits>` after the prefix is
 	 * returned, so nothing but those characters and the configured prefix reaches the SQL.
 	 *
 	 * @return array<int, array{name: string, register: int, schema: int}>
@@ -196,7 +198,9 @@ class ObjectCountMetricsProvider implements IMetricsProvider {
 			throw new \RuntimeException('the table prefix is not a plain identifier');
 		}
 
-		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?');
+		$stmt = $this->db->prepare(
+			'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND '.(new CatalogueScope(db: $this->db))->condition()
+		);
 		$result = $stmt->execute([$prefix.'openregister_table_%']);
 		$tables = [];
 		foreach ($result->fetchAll() as $row) {
