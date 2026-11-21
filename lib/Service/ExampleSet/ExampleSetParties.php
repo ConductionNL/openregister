@@ -139,7 +139,6 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
 		$data = $row->data;
 		$objectUuid = (string) $data['objectUuid'];
 		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
@@ -148,7 +147,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		}
 
 		try {
-			$this->import(app: $app, object: $object, data: $data);
+			$this->import(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -159,17 +158,16 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * Link the party through the party role service.
 	 *
-	 * @param string               $app    The app that ships the fragment, recorded as the linker.
-	 * @param ObjectEntity         $object The object.
-	 * @param array<string, mixed> $data   The filled link fields.
+	 * @param ExampleSetRow $row    The link row: the app that ships the fragment, recorded as the linker, and the filled link fields.
+	 * @param ObjectEntity  $object The object.
 	 *
 	 * @return void
 	 */
-	private function import(string $app, ObjectEntity $object, array $data): void {
+	private function import(ExampleSetRow $row, ObjectEntity $object): void {
 		$this->roles()->importParty(
 			object: $object,
-			payload: array_diff_key($data, ['objectUuid' => true]),
-			linkedBy: $app
+			payload: array_diff_key($row->data, ['objectUuid' => true]),
+			linkedBy: $row->app
 		);
 	}//end import()
 

@@ -39,7 +39,7 @@ interface FlowTimerEventMapperInterface {
 	 *
 	 * @return FlowTimerEvent The inserted row.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function insert(Entity $entity): FlowTimerEvent;
 
@@ -50,7 +50,7 @@ interface FlowTimerEventMapperInterface {
 	 *
 	 * @return array<int, FlowTimerEvent> The events.
 	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function findByTimer(string $timerUuid): array;
 }//end interface

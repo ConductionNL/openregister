@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Query;
  * satisfies every condition (a beschikking whose subsidieaanvraag belongs to
  * one case).
  *
- * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowFilter {

@@ -255,7 +255,10 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 		'owner' => [
 			'uid' => 'o',
 		],
-		'organisation' => 'org-x',
+		'organisation' => [
+			'uuid' => 'organisation-v',
+			'name' => 'Organisation',
+		],
 		'groups' => [
 			'k' => 'groups',
 		],
@@ -386,13 +389,34 @@ final class ObjectEntityObjectArrayGoldenTest extends TestCase {
 				'register' => ['id' => 1],
 				'schema' => ['id' => 2],
 				'owner' => ['uid' => 'o'],
-				'organisation' => 'org-x',
+				'organisation' => ['uuid' => 'organisation-v', 'name' => 'Organisation'],
 				'application' => ['id' => 3],
 			],
 		];
 
 		$this->assertSame(self::RENDERED_ARRAY, $this->rendered(unreadCounts: ['notes' => 2])->getObjectArray($object));
 	}//end testRenderedEntityWithSelfOverrides()
+
+	/**
+	 * A '@self' organisation in the data that is not the record's own leaves the record's organisation.
+	 *
+	 * @return void
+	 */
+	public function testDataSelfOrganisationNeverReplacesTheRecordsOrganisation(): void {
+		$entity = $this->populated();
+
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['uuid' => 'org-x']]])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['id' => 'org-x']]])['organisation']);
+		self::assertSame(expected: 'organisation-v', actual: $entity->getObjectArray(['@self' => ['organisation' => ['name' => 'no id']]])['organisation']);
+
+		$entity->setObject(['title' => 't', '@self' => ['organisation' => 'org-x']]);
+		self::assertSame(expected: 'organisation-v', actual: $entity->jsonSerialize()['@self']['organisation']);
+
+		$orgless = new ObjectEntity();
+		self::assertNull(actual: $orgless->getObjectArray(['@self' => ['organisation' => 'org-x']])['organisation']);
+		self::assertNull(actual: $orgless->getObjectArray(['@self' => ['organisation' => ['uuid' => '']]])['organisation']);
+	}//end testDataSelfOrganisationNeverReplacesTheRecordsOrganisation()
 
 	/**
 	 * Scalar '@self' values, a null organisation and a non-array '@self' override nothing.

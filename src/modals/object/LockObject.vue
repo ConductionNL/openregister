@@ -1,29 +1,18 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { objectName } from './objectName.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'lockObject'"
-		:name="
-			'Lock '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
-		"
+		:name="'Lock ' + (objectName(objectStore.objectItem) || 'Object')"
 		size="normal"
 		noClose>
 		<p v-if="success === null">
 			Do you want to lock
-			<b>{{
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-			}}</b
+			<b>{{ objectName(objectStore.objectItem) }}</b
 			>? Locking an object prevents other users from modifying it until it is
 			unlocked. You can specify an optional process name to indicate why it's
 			locked and a duration after which it will automatically unlock. Only the

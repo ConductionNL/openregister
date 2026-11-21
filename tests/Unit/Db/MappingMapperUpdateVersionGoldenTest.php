@@ -38,6 +38,9 @@ use RuntimeException;
  * Golden version bump, write order and cache start-up of MappingMapper.
  *
  * @covers \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Mapping\MappingSlug
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 final class MappingMapperUpdateVersionGoldenTest extends TestCase {
 

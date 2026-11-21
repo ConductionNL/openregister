@@ -43,6 +43,9 @@ use OCA\OpenRegister\Db\RegisterMapperServices;
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\SlugIdLookupTrait
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
+ * @uses \OCA\OpenRegister\Db\RegisterMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 class SlugIdLookupGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

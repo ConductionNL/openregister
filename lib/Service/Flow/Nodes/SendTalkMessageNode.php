@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use UnexpectedValueException;
 
@@ -50,8 +51,14 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	IFlowNodeConfigKeys,
 	IFlowNodeConfigForm,
 	IFlowNodeTaxonomy,
-	IFlowNodePreview
+	IFlowNodePreview,
+	IFlowNodeRequiresRight
 {
+
+	/**
+	 * The right an author needs to use this step.
+	 */
+	public const RIGHT = 'flow.node.send-talk-message';
 
 	/**
 	 * The step type this node answers to.
@@ -110,7 +117,7 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['conversation', 'message'];
@@ -172,4 +179,28 @@ class SendTalkMessageNode extends MessagingNodeBase implements
 	protected function send(MessageSend $step): void {
 		$this->messaging->talk(request: $step);
 	}//end send()
+
+	/**
+	 * The right an author needs to put this step in a flow.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return string|null The right, or null.
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function requiredRight(array $config): ?string {
+		return self::RIGHT;
+	}//end requiredRight()
+
+	/**
+	 * Every right this step can require, with its description.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-a-flow-step-type-can-require-a-named-right
+	 */
+	public function declaredRights(): array {
+		return [self::RIGHT => 'Put a step that posts Talk messages in a flow.'];
+	}//end declaredRights()
 }//end class

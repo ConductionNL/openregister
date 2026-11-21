@@ -53,6 +53,7 @@ use RuntimeException;
 use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
 use OCA\OpenRegister\Service\Form\FormSubmitKeeping;
 use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -92,6 +93,20 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Service\Form\FormUploadClaims
  * @uses \OCA\OpenRegister\Service\Form\NestedIdentityGuard
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Form\FormFinding
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitFailure
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadClaim
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadTarget
+ * @uses \OCA\OpenRegister\Service\Form\IdempotentRequest
+ * @uses \OCA\OpenRegister\Service\Form\OwnedDraft
+ * @uses \OCA\OpenRegister\Service\Object\DraftAddress
+ * @uses \OCA\OpenRegister\Service\Object\OwnDraftSearch
  */
 class FormSubmitServiceTest extends TestCase {
 
@@ -367,21 +382,16 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	private function fakeSave(
 		array|ObjectEntity $object,
-		?array $extend = [],
-		Register|string|int|null $register = null,
-		Schema|string|int|null $schema = null,
-		?string $uuid = null,
+		ObjectSaveOptions $options = new ObjectSaveOptions(),
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		bool $_dedupOverride = false,
-		?string $_owner = null,
 	): ObjectEntity {
+		$schema = $options->target->schema;
+		$uuid = $options->uuid;
+		$uploadedFiles = $options->uploadedFiles;
+		$currentUser = $options->actor->currentUser;
+		$_unowned = $options->actor->unowned;
+		$_owner = $options->actor->owner;
 		$this->assertInstanceOf(Schema::class, $schema);
 		if ($this->duringSave !== null) {
 			$hook = $this->duringSave;

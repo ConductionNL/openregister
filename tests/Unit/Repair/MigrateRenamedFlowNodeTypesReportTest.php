@@ -34,6 +34,9 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Repair\MigrateRenamedFlowNodeTypes
  * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Repair\FlowNodeTypeRewrite
  */
 final class MigrateRenamedFlowNodeTypesReportTest extends TestCase {
 

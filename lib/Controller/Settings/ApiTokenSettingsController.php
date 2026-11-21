@@ -20,9 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApiTokenProbe;
 use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\AppFramework\Controller;
@@ -118,7 +118,7 @@ class ApiTokenSettingsController extends Controller {
 		IRequest $request,
 		ApiTokenSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->config = $services->reporting->appConfig;
 		$this->settingsService = $services->settingsService;
 		$this->clientService = $services->clientService;
@@ -169,8 +169,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Save API tokens for GitHub and GitLab
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with save result
 	 *
@@ -252,8 +250,6 @@ class ApiTokenSettingsController extends Controller {
 	/**
 	 * Test GitHub API token
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Test result
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
@@ -334,8 +330,6 @@ class ApiTokenSettingsController extends Controller {
 
 	/**
 	 * Test GitLab API token
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result
 	 *

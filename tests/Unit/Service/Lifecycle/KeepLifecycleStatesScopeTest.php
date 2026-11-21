@@ -40,7 +40,7 @@ class KeepLifecycleStatesScopeTest extends TestCase {
 	 * @var array<string, string>
 	 */
 	private const ALLOWED_CALLERS = [
-		'lib/Controller/RegistersController.php' => 'an administrator\'s historic import, after the administrator check',
+		'lib/Service/Lifecycle/LifecycleStatesKeeper.php' => 'the Core port\'s answer; RegistersController asks it only for an administrator\'s historic import, after the administrator check',
 	];
 
 	public function testTheScopeEndsWhenTheOperationThrows(): void {

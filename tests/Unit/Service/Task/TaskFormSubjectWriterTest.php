@@ -52,10 +52,26 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
  * @covers \OCA\OpenRegister\Service\Task\TaskFormInlineSave
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSubmission
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectTransition
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Exception\InvalidTransitionInputException
+ * @uses \OCA\OpenRegister\Exception\TaskFormRefusedException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class TaskFormSubjectWriterTest extends TestCase {
 
@@ -149,7 +165,7 @@ class TaskFormSubjectWriterTest extends TestCase {
 			->willReturn(['title' => 'New']);
 		$this->objects->expects($this->once())->method('find')->with('obj-1')->willReturn(self::subject());
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], [], '5', '6', 'obj-1', true, true, false, true, null, $this->user)
+			->with(['title' => 'New', 'keep' => 1, 'id' => 'obj-1'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == '5' && $options->target->schema == '6' && $options->uuid == 'obj-1' && $options->policy->silent === false && $options->policy->validation === true && $options->uploadedFiles === null && $options->actor->currentUser == $this->user), true, true)
 			->willReturn(self::subject());
 		$this->runContext->expects($this->once())->method('push')->with(new FlowRunFrame('run-1', 'task-form', 0));
 		$this->runContext->expects($this->once())->method('pop');

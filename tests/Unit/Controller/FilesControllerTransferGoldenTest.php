@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -57,6 +58,10 @@ use OCA\OpenRegister\Service\File\FileTransfer;
  * @uses \OCA\OpenRegister\Exception\ObjectFileAccessDeniedException
  * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\File\FileTransfer
  */
 class FilesControllerTransferGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-transfer-golden.json';
@@ -232,6 +237,7 @@ class FilesControllerTransferGoldenTest extends TestCase {
 			return $next === null ? null : $this->object(uuid: $next . '-uuid');
 		});
 		$service->method('find')->willReturnCallback(function (...$args) {
+			$args          = FindCallShape::find(args: $args);
 			$this->calls[] = ['objectService.find' => array_map(fn ($a) => is_scalar($a) ? $a : gettype($a), $args)];
 			return $this->object(uuid: 'found-' . $args[0]);
 		});

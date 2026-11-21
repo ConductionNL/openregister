@@ -101,7 +101,7 @@ class CredentialStoreResolver {
 	 *
 	 * @var string
 	 */
-	private const SECRET_SERVICE_NAME = 'SecretService';
+	private const VAULT_SERVICE_NAME = 'SecretService';
 
 	/**
 	 * Application-scoped seam methods that must exist on the secret service.
@@ -293,6 +293,6 @@ class CredentialStoreResolver {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	protected function secretServiceClass(): string {
-		return $this->resolveNamespace() . self::SECRET_SERVICE_NAME;
+		return $this->resolveNamespace() . self::VAULT_SERVICE_NAME;
 	}//end secretServiceClass()
 }//end class

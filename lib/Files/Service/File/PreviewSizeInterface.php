@@ -22,40 +22,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
+
 /**
  * The width and height, in pixels, a file preview is asked for.
  *
  * The preview generator outside the Files component reads a size through
  * this interface, so it does not name the concrete value object.
  *
+ * Its methods are the Core port PreviewDimensionsInterface, which the preview handler reads; this
+ * name stays for the Files callers.
+ *
  * @spec openspec/specs/file-actions/spec.md
  */
-interface PreviewSizeInterface {
-
-	/**
-	 * The width in pixels.
-	 *
-	 * @return int The width.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function width(): int;
-
-	/**
-	 * The height in pixels.
-	 *
-	 * @return int The height.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function height(): int;
-
-	/**
-	 * Describes the size as width x height.
-	 *
-	 * @return string The label.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function label(): string;
+interface PreviewSizeInterface extends PreviewDimensionsInterface {
 }//end interface

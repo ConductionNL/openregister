@@ -48,6 +48,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeFieldDecisionTest extends TestCase {
 
@@ -238,7 +239,8 @@ class MergeFieldDecisionTest extends TestCase {
 
 		$survivorPayload = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$survivorPayload): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$survivorPayload): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$subject = ($args[0] ?? null);
 				if ($subject instanceof ObjectEntity && $subject->getUuid() === 'into-uuid') {
 					$survivorPayload = $subject->getObject();
@@ -340,7 +342,8 @@ class MergeFieldDecisionTest extends TestCase {
 
 		$survivorPayload = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$survivorPayload): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$survivorPayload): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$subject = ($args[0] ?? null);
 				if ($subject instanceof ObjectEntity && $subject->getUuid() === 'into-uuid') {
 					$survivorPayload = $subject->getObject();
@@ -454,7 +457,8 @@ class MergeFieldDecisionTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function (...$args): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$subject = ($args[0] ?? null);
 				if ($subject instanceof ObjectEntity) {
 					return $subject;

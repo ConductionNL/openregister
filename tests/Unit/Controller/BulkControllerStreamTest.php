@@ -48,6 +48,19 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Object\BatchOperationStatus
  * @uses   \OCA\OpenRegister\Dto\BulkSaveOutcome
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveBatch
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveCounts
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveReport
+ * @uses \OCA\OpenRegister\Controller\Support\BulkSaveSummary
+ * @uses \OCA\OpenRegister\Controller\Support\SessionPrincipal
+ * @uses \OCA\OpenRegister\Dto\BulkRowCount
+ * @uses \OCA\OpenRegister\Dto\BulkSaveOutcomes
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Dto\StreamedRowCount
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
  */
 class BulkControllerStreamTest extends TestCase {
 
