@@ -34,6 +34,21 @@ let fallbackUid = 0
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
+/**
+ * The attributes of a tab's panel, tied to its tab button.
+ *
+ * @param {number} uid The tab's id
+ * @return {object} The attributes
+ */
+function panelAttributes(uid) {
+	return {
+		role: 'tabpanel',
+		id: `app-tabpanel-${uid}`,
+		'aria-labelledby': `app-tab-${uid}`,
+		class: 'app-tab-panel',
+	}
+}
+
 export default {
 	name: 'AppTab',
 	inject: {
@@ -85,16 +100,7 @@ export default {
 		if (this.appTabs.isActive(this.uid) !== true) {
 			return null
 		}
-		return h(
-			'div',
-			{
-				role: 'tabpanel',
-				id: `app-tabpanel-${this.uid}`,
-				'aria-labelledby': `app-tab-${this.uid}`,
-				class: 'app-tab-panel',
-			},
-			this.$slots.default?.(),
-		)
+		return h('div', panelAttributes(this.uid), this.$slots.default?.())
 	},
 }
 </script>
