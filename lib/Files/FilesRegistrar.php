@@ -64,6 +64,7 @@ use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
@@ -103,6 +104,7 @@ final class FilesRegistrar
         FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
+        FileSizeTotalsInterface::class            => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileReadRestrictionInterface::class       => FileRestrictionGuard::class,

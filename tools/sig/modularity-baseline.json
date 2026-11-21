@@ -37,10 +37,7 @@
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
-  "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php"
+  "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -655,6 +652,7 @@
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
   "lib/Kernel/Contracts/Core/DependentValueCheckInterface.php",
   "lib/Kernel/Contracts/Core/DerivedTranslationsInterface.php",
+  "lib/Kernel/Contracts/Core/EntityFolderInterface.php",
   "lib/Kernel/Contracts/Core/EnvelopedDefinitionControllerInterface.php",
   "lib/Kernel/Contracts/Core/ExportGuardInterface.php",
   "lib/Kernel/Contracts/Core/ExpressionDefaultRefusalInterface.php",
@@ -666,6 +664,7 @@
   "lib/Kernel/Contracts/Core/FileNodeLookupInterface.php",
   "lib/Kernel/Contracts/Core/FileReadRestrictionInterface.php",
   "lib/Kernel/Contracts/Core/FileSettingsReaderInterface.php",
+  "lib/Kernel/Contracts/Core/FileSizeTotalsInterface.php",
   "lib/Kernel/Contracts/Core/FileTagCatalogueInterface.php",
   "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
@@ -2218,8 +2217,8 @@
  "exposed_loc": {
   "Compliance": 14300,
   "Configuration": 874,
-  "Core": 57302,
-  "Files": 1262,
+  "Core": 57319,
+  "Files": 1263,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1760,
@@ -2688,6 +2687,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462110,
- "violation_degree": 0.0052
+ "total_loc": 462131,
+ "violation_degree": 0.0049
 }
