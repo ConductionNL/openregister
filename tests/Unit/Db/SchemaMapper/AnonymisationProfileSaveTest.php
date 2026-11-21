@@ -24,7 +24,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db\SchemaMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ArchivalDeclarationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
+use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
 use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -32,10 +36,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * RecordAnnotationRefusals::checkAnonymisationProfile().
+ * ArchivalDeclarationRefusals::checkAnonymisationProfile().
  */
-#[CoversClass(RecordAnnotationRefusals::class)]
+#[CoversClass(ArchivalDeclarationRefusals::class)]
 #[UsesClass(\OCA\OpenRegister\Service\Archival\AnonymisationPlanner::class)]
+#[CoversClass(ArchivalDeclarationChecksListener::class)]
+#[UsesClass(SchemaDeclarationChecksEvent::class)]
+#[UsesClass(\OCA\OpenRegister\Db\SchemaMapper\PositionedDeclarationCheck::class)]
+#[UsesClass(DiscardedAnnotations::class)]
 class AnonymisationProfileSaveTest extends TestCase {
 
 	/**
@@ -64,10 +72,10 @@ class AnonymisationProfileSaveTest extends TestCase {
 	/**
 	 * The subject under test.
 	 *
-	 * @return RecordAnnotationRefusals
+	 * @return ArchivalDeclarationRefusals
 	 */
-	private function refusals(): RecordAnnotationRefusals {
-		return new RecordAnnotationRefusals(logger: new NullLogger());
+	private function refusals(): ArchivalDeclarationRefusals {
+		return new ArchivalDeclarationRefusals(logger: new NullLogger());
 	}//end refusals()
 
 	/**
@@ -116,4 +124,27 @@ class AnonymisationProfileSaveTest extends TestCase {
 
 		$this->refusals()->checkAnonymisationProfile(schema: $this->schema($profile, $profile));
 	}//end testAProfileDeclaredInBothPlacesIsRefused()
+
+	/**
+	 * The schema save runs the check: the archival listener's ARCHIVAL slot refuses a profile naming an undeclared property.
+	 *
+	 * @return void
+	 */
+	public function testTheArchivalSlotOfTheSaveRunsTheCheck(): void {
+		$event = new SchemaDeclarationChecksEvent();
+		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
+
+		$archival = array_values(
+			array_filter(
+				$event->checks(),
+				static fn ($check): bool => $check->position() === SchemaDeclarationOrder::ARCHIVAL
+			)
+		);
+		$this->assertCount(1, $archival);
+
+		// The profile sits in the archive block, so the archival annotation check before it has nothing to refuse.
+		$bad = ['naamVanBetrokkene' => ['treatment' => AnonymisationProfile::REMOVE]];
+		$this->expectExceptionMessage('naamVanBetrokkene');
+		$archival[0]->check($this->schema(null, $bad), new DiscardedAnnotations());
+	}//end testTheArchivalSlotOfTheSaveRunsTheCheck()
 }//end class
