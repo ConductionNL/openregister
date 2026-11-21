@@ -49,10 +49,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Throwable;
 
 /**
@@ -83,27 +80,6 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
-	 * External-call router.
-	 *
-	 * @var ExternalIntegrationRouterInterface
-	 */
-	private ExternalIntegrationRouterInterface $router;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private IAppManager $appManager;
-
-	/**
-	 * Localisation.
-	 *
-	 * @var IL10N
-	 */
-	private IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ConnectorRouting $routing The router, app manager (isEnabled check) and localisation.
@@ -119,9 +95,7 @@ class XwikiProvider extends AbstractIntegrationProvider {
 		ConnectorRouting $routing,
 		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
-		$this->router     = $routing->router;
-		$this->appManager = $routing->appManager;
-		$this->l10n       = $routing->l10n;
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	/**
@@ -196,17 +170,15 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * raises ProviderUnavailableException which the controller maps to
 	 * details.cause).
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional: `_search`, `_limit`, `_page`.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedOrSourced(ref: $ref, filters: $filters);
 	}//end list()
 
 	/**
@@ -263,7 +235,10 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	private function linkedPageRow(XwikiLink $link, array $scope): array {
 		$row = $this->cachedLinkRow(link: $link);
 		try {
-			$enriched = $this->get(register: $scope['register'], schema: $scope['schema'], objectId: $scope['object'], entityId: $row['reference']);
+			$enriched = $this->get(
+				ref: new ObjectRef(register: $scope['register'], schema: $scope['schema'], id: $scope['object']),
+				entityId: $row['reference']
+			);
 		} catch (Throwable $e) {
 			// Upstream unreachable — fall back to the cached row.
 			return $this->normalizeRow(row: $row);

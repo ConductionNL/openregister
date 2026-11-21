@@ -252,6 +252,7 @@ import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { bulkResultOf, postJson } from './schemaBulkRequest.js'
 import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
@@ -334,27 +335,10 @@ export default {
 
 			try {
 				// Call the new direct validation API
-				const response = await fetch(
+				const response = await postJson(
 					`/index.php/apps/openregister/api/bulk/schema/${schemaStore.schemaItem.id}/validate`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
 				)
-
-				if (!response.ok) {
-					throw new Error(`Validation failed: ${response.statusText}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
-				this.validationResults = data
+				this.validationResults = await bulkResultOf(response, 'Validation')
 			} catch (err) {
 				this.error = err.message || 'An error occurred during validation'
 				console.error('Validation error:', err)
@@ -391,6 +375,7 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
+@use './schemaCountSummary.scss' as *;
 
 @include loading-container-2-rules;
 
@@ -400,25 +385,7 @@ export default {
 
 @include object-count-section-rules;
 
-@include object-count-centered-rules;
-
-.count-label {
-	color: var(--color-text-lighter);
-}
-
-@include loading-count-rules;
-
-.breakdown-item:last-child {
-	margin-bottom: 0;
-}
-
-@include breakdown-label-rules;
-
-.steps-section {
-	margin-bottom: 2rem;
-}
-
-@include steps-section-h4-rules;
+@include schema-count-summary-rules;
 
 .results-container {
 	padding: 1rem 0;

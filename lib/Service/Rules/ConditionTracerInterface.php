@@ -31,12 +31,10 @@ interface ConditionTracerInterface {
 	/**
 	 * The verdict of a condition with the operand that decided it.
 	 *
-	 * @param mixed                $condition The condition as the author declared it.
-	 * @param array<string, mixed> $document  The data the condition was evaluated against.
-	 * @param string               $verdict   The verdict the owning engine reached.
-	 * @param string|null          $message   The engine's own sentence, when it has one.
+	 * @param ConditionJudgement $judgement The condition, the data it was evaluated against, the verdict the owning
+	 *                                      engine reached and that engine's own sentence, when it has one.
 	 *
 	 * @return RuleTrace The verdict with its deciding operand, when one decided.
 	 */
-	public function trace(mixed $condition, array $document, string $verdict, ?string $message = null): RuleTrace;
+	public function trace(ConditionJudgement $judgement): RuleTrace;
 }//end interface

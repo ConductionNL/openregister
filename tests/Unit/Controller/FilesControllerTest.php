@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Files\Controller\FilesController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -69,6 +71,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataPassesEveryFieldThrough(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn([
 			'description' => 'a scanned invoice',
 			'category' => 'finance',
@@ -101,6 +104,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataLeavesAbsentFieldsAlone(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn(['category' => 'finance']);
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
@@ -119,6 +123,7 @@ class FilesControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUpdateMetadataClearsOnAnEmptyString(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$this->request->method('getParams')->willReturn(['description' => '']);
 		$this->objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
 
@@ -1243,9 +1248,8 @@ class FilesControllerTest extends TestCase {
 
 		$storedNames = [];
 		$this->fileService->method('addFile')
-			->willReturnCallback(function (...$args) use (&$storedNames) {
-				$named = func_get_args();
-				$fileName = $named[1] ?? '';
+			->willReturnCallback(function (FileTarget $target, FileUpload $upload) use (&$storedNames) {
+				$fileName = $upload->fileName;
 				if ($fileName === 'rejected.png') {
 					throw new Exception("File 'rejected.png' contains PHP code. PHP files are blocked for security reasons.");
 				}
@@ -1367,6 +1371,7 @@ class FilesControllerTest extends TestCase {
 	// ==================== update() Tests ====================
 
 	public function testUpdateSuccess(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1385,6 +1390,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateMetadataOnly(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1413,6 +1419,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateGeneralException(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1431,6 +1438,7 @@ class FilesControllerTest extends TestCase {
 	}
 
 	public function testUpdateNoTagsProvided(): void {
+		$this->fileService->method('getFile')->willReturn($this->createMock(File::class));
 		$object = $this->createMock(ObjectEntity::class);
 		$this->setupObjectServiceMocks($object);
 
@@ -1499,12 +1507,33 @@ class FilesControllerTest extends TestCase {
 
 	public function testDownloadByIdSuccess(): void {
 		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(1);
 		$this->fileService->method('getFileById')->willReturn($file);
 
 		$streamResponse = $this->createMock(StreamResponse::class);
 		$this->fileService->method('streamFile')->willReturn($streamResponse);
 
-		$result = $this->controller->downloadById(1);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn($user);
+		$userFolder = $this->createMock(\OCP\Files\Folder::class);
+		$userFolder->method('getFirstNodeById')->with(1)->willReturn($file);
+		$this->rootFolder->method('getUserFolder')->with('alice')->willReturn($userFolder);
+
+		$controller = FilesControllerFactory::create(
+			$this->request,
+			$this->fileService,
+			$this->objectService,
+			$this->rootFolder,
+			$this->userManager,
+			$this->createMock(IEventDispatcher::class),
+			null,
+			null,
+			$userSession
+		);
+
+		$result = $controller->downloadById(1);
 
 		$this->assertNotInstanceOf(JSONResponse::class, $result);
 	}

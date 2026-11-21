@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportRequest;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
@@ -59,7 +59,7 @@ class SubjectExportController extends Controller {
 		IRequest $request,
 		private readonly SubjectExportServiceInterface $exports,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
@@ -74,7 +74,6 @@ class SubjectExportController extends Controller {
 	 * @return JSONResponse The recorded request.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: the assembler is
 	 *   DataSubjectRequestService::assembleAccessExport, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever exports what it may read.

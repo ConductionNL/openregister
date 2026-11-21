@@ -31,11 +31,13 @@ use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * CaseRealisationServiceDecisionsTest.
@@ -103,13 +105,7 @@ class CaseRealisationServiceDecisionsTest extends TestCase {
 
 	public function testAStageWithAFlowIsRealisedAsARunForTheAccountActor(): void {
 		$item = $this->item(CaseItem::TYPE_STAGE, 'intake', ['intake' => ' flow-9 ']);
-		$this->runs->expects($this->once())->method('queue')->with(
-			'flow-9',
-			['uuid' => 'case-1', 'register' => '7', 'schema' => '8'],
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-1'],
-			'alice'
-		)->willReturn($this->flowRun('run-1'));
+		$this->runs->expects($this->once())->method('queueRun')->with('flow-9', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => 'case-1', 'register' => '7', 'schema' => '8'], trigger: CaseRealisationService::RUN_TRIGGER, context: ['caseItem' => 'item-1'], user: 'alice')))->willReturn($this->flowRun('run-1'));
 
 		$this->service->realise($item, 'alice');
 
@@ -119,8 +115,8 @@ class CaseRealisationServiceDecisionsTest extends TestCase {
 
 	public function testARunQueuedByASystemActorHasNoUser(): void {
 		$item = $this->item(CaseItem::TYPE_PROCESS_TASK, 'calc', ['calc' => 'flow-9']);
-		$this->runs->expects($this->once())->method('queue')
-			->with('flow-9', $this->anything(), $this->anything(), $this->anything(), null)
+		$this->runs->expects($this->once())->method('queueRun')
+			->with('flow-9', $this->callback(fn (FlowRunQueueOptions $o): bool => $o->user === null))
 			->willReturn($this->flowRun('run-1'));
 
 		$this->service->realise($item, 'system:procest');
@@ -134,7 +130,7 @@ class CaseRealisationServiceDecisionsTest extends TestCase {
 			$this->assertSame(CaseItem::REALISATION_NONE, $item->getRealisationKind());
 			$this->assertNull($item->getRealisationUuid());
 		}
-		$this->runs->expects($this->never())->method('queue');
+		$this->runs->expects($this->never())->method('queueRun');
 	}
 
 	public function testOnlyRealAccountsCountAsAccountActors(): void {
@@ -234,7 +230,7 @@ class CaseRealisationServiceDecisionsTest extends TestCase {
 		$item->setRealisationKind(CaseItem::REALISATION_TASK);
 		$item->setRealisationUuid('task-1');
 		$this->tasks->expects($this->once())->method('terminateAsMoot')
-			->with('task-1', 'stage exited', 'case-item:item-1')
+			->with('task-1', new TaskTrigger(source: 'case-item:item-1', reason: 'stage exited'))
 			->willReturn($this->task('task-1', Task::STATE_TERMINATED));
 
 		$this->service->terminate($item, 'stage exited');

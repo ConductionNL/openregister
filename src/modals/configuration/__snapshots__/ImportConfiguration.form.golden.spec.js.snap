@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ImportConfiguration form (golden) checks the tokens with a failed check 1`] = `
+{
+  "github": false,
+  "gitlab": false,
+  "request": [
+    [
+      "/apps/openregister/api/settings/api-tokens",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration form (golden) checks the tokens with both tokens 1`] = `
+{
+  "github": true,
+  "gitlab": true,
+  "request": [
+    [
+      "/apps/openregister/api/settings/api-tokens",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration form (golden) checks the tokens with empty tokens 1`] = `
+{
+  "github": false,
+  "gitlab": false,
+  "request": [
+    [
+      "/apps/openregister/api/settings/api-tokens",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration form (golden) checks the tokens with no tokens 1`] = `
+{
+  "github": false,
+  "gitlab": false,
+  "request": [
+    [
+      "/apps/openregister/api/settings/api-tokens",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration form (golden) resets every field of the form 1`] = `"{"activeTab":"dirty","loading":false,"success":false,"successMessage":"","error":null,"hasGithubToken":"dirty","hasGitlabToken":"dirty","searchQuery":"","searchSource":"dirty","searchLoading":"dirty","searchResults":[],"searchError":null,"hasSearched":false,"repoSource":"dirty","repoOwner":"","repoNamespace":"","repoName":"","branches":[],"selectedBranch":null,"configFiles":[],"selectedFile":null,"importUrl":"","urlError":null,"selectedUploadFile":null,"isDragging":false,"fileError":null,"syncEnabled":true,"syncInterval":24}"`;
+
+exports[`ImportConfiguration form (golden) searches and finds configurations 1`] = `
+{
+  "calls": [
+    [
+      "github",
+      "q",
+    ],
+  ],
+  "during": {
+    "hasSearched": true,
+    "loading": true,
+    "results": [],
+  },
+  "error": null,
+  "loading": false,
+  "results": [
+    {
+      "id": 1,
+    },
+  ],
+  "searchError": null,
+}
+`;
+
+exports[`ImportConfiguration form (golden) searches and reports a failed search 1`] = `
+{
+  "calls": [
+    [
+      "github",
+      "q",
+    ],
+  ],
+  "during": {
+    "hasSearched": true,
+    "loading": true,
+    "results": [],
+  },
+  "error": "rate limited",
+  "loading": false,
+  "results": [],
+  "searchError": "rate limited",
+}
+`;
+
+exports[`ImportConfiguration form (golden) searches and reports a failure without a message 1`] = `
+{
+  "calls": [
+    [
+      "github",
+      "q",
+    ],
+  ],
+  "during": {
+    "hasSearched": true,
+    "loading": true,
+    "results": [],
+  },
+  "error": "Failed to search configurations",
+  "loading": false,
+  "results": [],
+  "searchError": "Failed to search configurations",
+}
+`;
+
+exports[`ImportConfiguration form (golden) uploads a file and imports the file 1`] = `
+{
+  "fields": [
+    [
+      "file",
+      "c.json",
+    ],
+    [
+      "force",
+      "true",
+    ],
+    [
+      "appId",
+      "uploaded-config",
+    ],
+  ],
+  "options": {
+    "headers": {
+      "Content-Type": "multipart/form-data",
+    },
+  },
+  "outcome": {
+    "returned": {
+      "ok": true,
+    },
+  },
+  "url": "/apps/openregister/api/configurations/import",
+}
+`;
+
+exports[`ImportConfiguration form (golden) uploads a file and refuses an error answer 1`] = `
+{
+  "fields": [
+    [
+      "file",
+      "c.json",
+    ],
+    [
+      "force",
+      "true",
+    ],
+    [
+      "appId",
+      "uploaded-config",
+    ],
+  ],
+  "options": {
+    "headers": {
+      "Content-Type": "multipart/form-data",
+    },
+  },
+  "outcome": {
+    "threw": "Invalid file",
+  },
+  "url": "/apps/openregister/api/configurations/import",
+}
+`;

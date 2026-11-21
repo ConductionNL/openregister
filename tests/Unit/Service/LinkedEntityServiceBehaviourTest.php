@@ -28,8 +28,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\LinkedEntityIntegrations;
 use OCA\OpenRegister\Service\LinkedEntityMappers;
 use OCA\OpenRegister\Service\LinkedEntityService;
@@ -55,6 +56,9 @@ use OCA\OpenRegister\Service\EntityLink;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses \OCA\OpenRegister\Db\Schema\LinkedTypesRule
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\EntityLink
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class LinkedEntityServiceBehaviourTest extends TestCase {
 
@@ -208,7 +212,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->expects($this->never())->method('update');
 
 		$this->expectExceptionMessage('Cannot resolve schema for linked-entity write permission check.');
-		$this->service()->removeLink('o-1', 'notes', 'n-1');
+		$this->service()->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-1'));
 	}//end testAnObjectWithoutASchemaIsNotWritten()
 
 	/**
@@ -226,10 +230,10 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$this->magicMapper->method('find')->willReturn($object);
 		$this->schemaMapper->method('find')->with('7')->willReturn($schema);
 		$this->permissionHandler->expects($this->once())->method('checkPermission')
-			->with($this->identicalTo($schema), 'update', null, 'alice', true, $this->identicalTo($object));
+			->with($this->identicalTo($schema), 'update', new PermissionCheckOptions(objectOwner: 'alice', object: $object));
 		$this->magicMapper->expects($this->once())->method('update')->with($this->identicalTo($object));
 
-		$this->assertSame(['n-1', 'n-3'], $this->service()->removeLink('o-1', 'notes', 'n-2'));
+		$this->assertSame(['n-1', 'n-3'], $this->service()->removeLink('o-1', new EntityLink(type: 'notes', entityId: 'n-2')));
 		$this->assertSame(['n-1', 'n-3'], $object->getNotes());
 	}//end testRemoveKeepsTheOtherIdsAndWritesAfterTheCheck()
 

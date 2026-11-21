@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -183,7 +184,7 @@ class NotificationCoalescerGoldenTest extends TestCase {
 		$answers = [];
 		foreach (self::script() as [$rule, $recipient, $override, $now]) {
 			$clock     = $now;
-			$answers[] = (int) $coalescer->shouldDispatch($rule, $recipient, $override);
+			$answers[] = (int) $coalescer->shouldDispatch(new CoalesceBucket($rule, $recipient), $override);
 		}
 
 		$inspect = [];

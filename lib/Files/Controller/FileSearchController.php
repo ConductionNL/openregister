@@ -23,16 +23,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 
 /**
  * FileSearchController
@@ -85,7 +87,7 @@ class FileSearchController extends Controller {
 		IRequest $request,
 		FileSearchControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->vectorService = $services->vectorService;
 		$this->chunkMapper = $services->chunkMapper;
 		$this->readScope = $services->readScope;
@@ -97,7 +99,6 @@ class FileSearchController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt No caller-supplied id: free-text semantic search over the file vector index;
 	 *   takes a query string, not an object or file id.
 	 *
@@ -133,9 +134,7 @@ class FileSearchController extends Controller {
 			// open in Nextcloud are returned (openregister#4097).
 			$results = $this->readScope->readableResults(
 				results: $this->vectorService->semanticSearch(
-					query: $query,
-					limit: $limit,
-					filters: ['entity_type' => 'file']
+					request: new SemanticSearchRequest(query: $query, limit: $limit, filters: ['entity_type' => 'file'])
 				)
 			);
 
@@ -179,8 +178,6 @@ class FileSearchController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with hybrid search results or error
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.2
@@ -209,9 +206,7 @@ class FileSearchController extends Controller {
 			// entity type (openregister#4097).
 			$keywordResults = $this->readScope->readableResults(
 				results: $this->chunkMapper->searchByKeyword(
-					query: $query,
-					limit: $limit * 2,
-					filters: ['source_type' => 'file']
+					search: new KeywordChunkSearch(query: $query, limit: $limit * 2, filters: ['source_type' => 'file'])
 				)
 			);
 

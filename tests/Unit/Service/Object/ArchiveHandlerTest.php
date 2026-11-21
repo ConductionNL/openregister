@@ -44,6 +44,15 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Db\FreezeTerms
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
+ * @uses \OCA\OpenRegister\Service\Object\ObjectStateRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectStateTransition
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 final class ArchiveHandlerTest extends TestCase {
 
@@ -315,8 +324,6 @@ final class ArchiveHandlerTest extends TestCase {
 				$this->anything(),
 				'update',
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			);
 
@@ -426,32 +433,4 @@ final class ArchiveHandlerTest extends TestCase {
 		$this->assertNull($result['frozen']);
 		$this->assertFalse($object->isFrozen());
 	}//end testUnfreezeClearsTheMarker()
-
-	/**
-	 * Other apps call archive, unarchive and unfreeze by class name with the
-	 * identifier, reason, register and schema, positionally and by name.
-	 *
-	 * @return void
-	 */
-	public function testTheIdentifierSignaturesAnswerPositionallyAndByName(): void {
-		$object = $this->object();
-		$this->resolvesTo(object: $object);
-		$this->persistsVerbatim();
-		$handler = $this->handler();
-
-		$this->assertSame('positional', $handler->archive(self::OBJ, 'positional', 'zaken', 'zaak')['archived']['reason']);
-		$this->assertNull($handler->unarchive(self::OBJ, 'back', '1', '2')['archived']);
-		$this->assertSame('named', $handler->archive(identifier: self::OBJ, reason: 'named', register: '1', schema: '2')['archived']['reason']);
-		$this->assertNull($handler->unarchive(identifier: self::OBJ, reason: 'back')['archived']);
-		$this->assertFalse($object->isArchived());
-
-		$object->freeze(userSession: $this->session, reason: 'bezwaar');
-		$this->assertNull($handler->unfreeze(self::OBJ, 'release', 'zaken', 'zaak')['frozen']);
-		$object->freeze(userSession: $this->session, reason: 'bezwaar');
-		$this->assertNull($handler->unfreeze(identifier: self::OBJ, reason: 'release')['frozen']);
-		$this->assertFalse($object->isFrozen());
-
-		$this->expectException(DoesNotExistException::class);
-		$handler->archive(self::OBJ, null, '99', null);
-	}//end testTheIdentifierSignaturesAnswerPositionallyAndByName()
 }//end class

@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Flow;
  * and whether the channel takes bare addresses (email) or treats them as
  * unknown (notifications).
  *
- * Built by {@see FlowRecipientAddresses::resolveRecipients()} once per item.
+ * Built by {@see FlowRecipientAddresses::resolveAll()} once per item.
  *
  * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
  */

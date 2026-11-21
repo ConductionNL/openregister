@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+
 /**
  * The methods of ImportPreviewRowMapper that callers outside the Db component use.
  *
@@ -33,12 +35,29 @@ interface ImportPreviewRowMapperInterface {
 	/**
 	 * One page of a preview's rows, in file order.
 	 *
-	 * @param int $previewId The preview id.
-	 * @param string|null $decision Optional decision filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param int       $previewId The preview id.
+	 * @param ListQuery $query     The page (unbounded for every row) and an optional `decision` filter.
 	 *
 	 * @return ImportPreviewRow[] The rows.
 	 */
-	public function findByPreview(int $previewId, ?string $decision = null, ?int $limit = null, ?int $offset = null): array;
+	public function findByPreview(int $previewId, ListQuery $query): array;
+
+	/**
+	 * One page of a run's failed rows, in file order: skipped, refused, or a write that failed.
+	 *
+	 * @param int       $previewId The run's id.
+	 * @param ListQuery $query     The page.
+	 *
+	 * @return ImportPreviewRow[] The rows.
+	 */
+	public function findFailed(int $previewId, ListQuery $query): array;
+
+	/**
+	 * Remove every row of a preview.
+	 *
+	 * @param int $previewId The preview id.
+	 *
+	 * @return void
+	 */
+	public function deleteByPreview(int $previewId): void;
 }//end interface

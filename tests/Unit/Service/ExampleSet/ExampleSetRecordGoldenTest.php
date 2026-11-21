@@ -27,11 +27,17 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart;
+use OCA\OpenRegister\Service\ExampleSet\FragmentPart;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentDeclarations
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentPart
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RecordLedger
  */
 class ExampleSetRecordGoldenTest extends TestCase {
 	/**
@@ -124,11 +130,11 @@ class ExampleSetRecordGoldenTest extends TestCase {
 			],
 		];
 		$report   = [];
-		$this->assertTrue(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'notes', noun: 'note'), fragment: $fragment, report: $report, record: $record));
+		$this->assertTrue(ExampleSetRecord::letGoUndeclared(declaring: new FragmentPart(fragment: $fragment, part: new ExampleSetRecordPart(part: 'notes', noun: 'note')), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame(['demo/kept', 'demo/', 'other/gone', 'demo/o#references'], array_keys(array: $record['notes']));
 		$this->assertSame(['left' => ['note demo/gone: the set no longer declares it', 'note demo/also-gone: the set no longer declares it']], $report);
-		$this->assertFalse(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'notes', noun: 'note'), fragment: $fragment, report: $report, record: $record));
+		$this->assertFalse(ExampleSetRecord::letGoUndeclared(declaring: new FragmentPart(fragment: $fragment, part: new ExampleSetRecordPart(part: 'notes', noun: 'note')), ledger: new RecordLedger(report: $report, record: $record)));
 		$empty = [];
-		$this->assertFalse(ExampleSetRecord::letGoUndeclared(part: new ExampleSetRecordPart(part: 'tasks', noun: 'task'), fragment: ['app' => 'demo'], report: $report, record: $empty));
+		$this->assertFalse(ExampleSetRecord::letGoUndeclared(declaring: new FragmentPart(fragment: ['app' => 'demo'], part: new ExampleSetRecordPart(part: 'tasks', noun: 'task')), ledger: new RecordLedger(report: $report, record: $empty)));
 	}//end testLetGoUndeclared()
 }//end class

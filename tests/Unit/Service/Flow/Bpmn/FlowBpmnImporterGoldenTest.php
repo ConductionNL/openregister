@@ -36,6 +36,14 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
+ * @uses \OCA\OpenRegister\Exception\BpmnImportRefused
+ * @uses \OCA\OpenRegister\Exception\BpmnSchemaInvalid
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnDiagramLayout
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnImportPass
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnReading
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
  */
 class FlowBpmnImporterGoldenTest extends TestCase {
 

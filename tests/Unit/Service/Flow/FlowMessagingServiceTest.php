@@ -366,11 +366,9 @@ class FlowMessagingServiceTest extends TestCase {
 		$this->notificationManager->expects($this->never())->method('notify');
 		$this->mailer->expects($this->never())->method('send');
 
-		$messages = $this->makeService()->previewMessages(
+		$messages = $this->makeService()->preview(
 			channel: 'email',
-			config: ['recipients' => ['bob', 'carol'], 'subject' => 'About {{ name }}', 'body' => 'Hello'],
-			items: $this->itemsOf(['name' => 'Case 7']),
-			context: $this->contextFor()
+			step: new MessageSend(config: ['recipients' => ['bob', 'carol'], 'subject' => 'About {{ name }}', 'body' => 'Hello'], items: $this->itemsOf(['name' => 'Case 7']), context: $this->contextFor())
 		);
 
 		self::assertSame([['channel' => 'email', 'to' => ['bob', 'carol'], 'subject' => 'About Case 7', 'body' => 'Hello']], $messages);
@@ -384,11 +382,9 @@ class FlowMessagingServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testTalkPreviewNamesTheConversationAndPostsNothing(): void {
-		$messages = $this->makeService()->previewMessages(
+		$messages = $this->makeService()->preview(
 			channel: 'talk',
-			config: ['conversation' => 'abc123', 'message' => 'News on {{ name }}'],
-			items: $this->itemsOf(['name' => 'Case 7']),
-			context: $this->contextFor()
+			step: new MessageSend(config: ['conversation' => 'abc123', 'message' => 'News on {{ name }}'], items: $this->itemsOf(['name' => 'Case 7']), context: $this->contextFor())
 		);
 
 		self::assertSame([['channel' => 'talk', 'to' => ['abc123'], 'subject' => '', 'body' => 'News on Case 7']], $messages);

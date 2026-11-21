@@ -31,8 +31,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -95,10 +93,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * MUST return null when the user is absent OR the acting user may not read it,
 	 * so the two cases are indistinguishable (no enumeration oracle).
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param string $id The user uid.
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
 	 *
@@ -106,8 +102,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		return $this->findUser(binding: new SourcedObjectBinding(register: $register, schema: $schema), id: $id);
+	public function find(SourcedTable $source, string $id): ?ObjectEntity {
+		return $this->findUser(binding: $source->binding(), id: $id);
 	}//end find()
 
 	/**
@@ -139,10 +135,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * Honours `filters.search`/`_search`, `limit` and `offset`. An admin sees
 	 * every user; a plain user sees only themselves.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
+	 * @param SourcedTable $source The register, the sourced schema and its object-source `config` block.
 	 * @param array<string, mixed> $query Query (filters/search/limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
 	 *
 	 * @return ObjectEntity[] The matching virtual objects.
 	 *
@@ -150,8 +144,8 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		return $this->listUsers(binding: new SourcedObjectBinding(register: $register, schema: $schema), query: $query);
+	public function findAll(SourcedTable $source, array $query = []): array {
+		return $this->listUsers(binding: $source->binding(), query: $query);
 	}//end findAll()
 
 	/**
@@ -189,26 +183,48 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$search = (string)($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? '');
-		$limit = (int)($query['limit'] ?? 200);
-		$offset = (int)($query['offset'] ?? 0);
+		$page = new DirectoryPage(query: $query);
 
 		try {
-			// A plain user only ever sees their own account.
-			if ($this->isAdmin(user: $acting) === false) {
-				if ($search !== '' && str_contains(strtolower($acting->getUID()), strtolower($search)) === false) {
-					return [];
-				}
-
-				return [$acting];
-			}
-
-			return array_values($this->userManager->search($search, $limit, $offset));
+			return $this->visibleUsers(acting: $acting, page: $page);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:user-directory-source] could not list users: ' . $e->getMessage());
 			return [];
 		}
 	}//end readUsers()
+
+	/**
+	 * The users an acting user sees: the directory for an admin, their own account otherwise.
+	 *
+	 * @param IUser         $acting The acting user.
+	 * @param DirectoryPage $page   The search term and page.
+	 *
+	 * @return array<int, IUser> The visible users.
+	 */
+	private function visibleUsers(IUser $acting, DirectoryPage $page): array {
+		// A plain user only ever sees their own account.
+		if ($this->isAdmin(user: $acting) === false) {
+			return $this->ownAccountMatching(acting: $acting, search: $page->search);
+		}
+
+		return array_values($this->userManager->search($page->search, $page->limit, $page->offset));
+	}//end visibleUsers()
+
+	/**
+	 * The acting user's own account, when its uid contains the search term.
+	 *
+	 * @param IUser  $acting The acting user.
+	 * @param string $search The search term, '' for any.
+	 *
+	 * @return array<int, IUser> The account, or nothing.
+	 */
+	private function ownAccountMatching(IUser $acting, string $search): array {
+		if ($search !== '' && str_contains(strtolower($acting->getUID()), strtolower($search)) === false) {
+			return [];
+		}
+
+		return [$acting];
+	}//end ownAccountMatching()
 
 	/**
 	 * Whether the acting user may read the given user's projection.

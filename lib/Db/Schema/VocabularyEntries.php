@@ -248,6 +248,18 @@ final class VocabularyEntries {
 			return $normalised;
 		}
 
+		return self::withPartyKindLists(normalised: $normalised, entry: $entry);
+	}//end normalisePartyKind()
+
+	/**
+	 * Add the non-empty `roles` and `identityShapes` lists of a party-kind entry.
+	 *
+	 * @param array<string, mixed> $normalised The entry normalised so far.
+	 * @param array<string, mixed> $entry      The configured entry.
+	 *
+	 * @return array<string, mixed> The entry with its distinct, non-empty lists.
+	 */
+	private static function withPartyKindLists(array $normalised, array $entry): array {
 		foreach (['roles', 'identityShapes'] as $listKey) {
 			$list = self::distinctStrings(value: ($entry[$listKey] ?? null));
 			if ($list !== []) {
@@ -256,7 +268,7 @@ final class VocabularyEntries {
 		}
 
 		return $normalised;
-	}//end normalisePartyKind()
+	}//end withPartyKindLists()
 
 	/**
 	 * The distinct, trimmed, non-empty strings of a list, in order; [] for anything else.

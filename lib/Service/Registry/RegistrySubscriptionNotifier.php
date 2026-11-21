@@ -31,6 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Registry;
 
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\RegistrySubscriptionEndedEvent;
@@ -79,10 +82,12 @@ class RegistrySubscriptionNotifier {
 			identityValue: $identity->identityValue,
 		));
 
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: 'registry.subscription.requested',
-			context: ['registry' => $identity->registry],
+		$this->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'registry.subscription.requested',
+				context: ['registry' => $identity->registry]
+			)
 		);
 	}//end requested()
 
@@ -104,10 +109,12 @@ class RegistrySubscriptionNotifier {
 			identityValue: $identity->identityValue,
 		));
 
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: 'registry.subscription.ended',
-			context: ['registry' => $identity->registry],
+		$this->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'registry.subscription.ended',
+				context: ['registry' => $identity->registry]
+			)
 		);
 	}//end ended()
 
@@ -126,12 +133,13 @@ class RegistrySubscriptionNotifier {
 	 */
 	public function auditInboundUpdate(ObjectEntity $object, InboundUpdate $update): void {
 		$registry = $update->identity->registry;
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: 'registry.update',
-			context: ['registry' => $registry, 'eventReference' => $update->eventReference, 'properties' => $update->propertyNames()],
-			actorId: 'registry:' . $registry,
-			actorName: 'Registry (' . $registry . ')',
+		$this->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'registry.update',
+				context: ['registry' => $registry, 'eventReference' => $update->eventReference, 'properties' => $update->propertyNames()],
+				options: new ObjectAuditEventOptions(actor: new NamedActor(id: 'registry:' . $registry, name: 'Registry (' . $registry . ')'))
+			)
 		);
 	}//end auditInboundUpdate()
 }//end class

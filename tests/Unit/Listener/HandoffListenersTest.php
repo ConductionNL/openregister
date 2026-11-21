@@ -37,9 +37,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -223,12 +226,9 @@ class HandoffListenersTest extends TestCase {
 
 		return new ObjectTransitionedEvent(
 			object: $object,
-			action: 'transition',
-			from: 'new',
-			to: $to,
-			userId: $userId,
-			register: 'pipelinq-register',
-			schema: 'deal'
+			move: new TransitionMove(action: 'transition', from: 'new', to: $to),
+			scope: new RegisterSchemaRef(register: 'pipelinq-register', schema: 'deal'),
+			actor: new TransitionActor(userId: $userId),
 		);
 
 	}//end transitionEvent()

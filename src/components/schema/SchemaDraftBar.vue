@@ -82,7 +82,7 @@ export default {
 		 *
 		 * @param {boolean} acknowledgeBreaking - Accept the breaking change
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async publish(acknowledgeBreaking) {
 			this.busy = true
@@ -112,7 +112,7 @@ export default {
 		 * Discard the draft; the published schema stays as it is.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 * @spec openspec/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 		 */
 		async discard() {
 			this.busy = true

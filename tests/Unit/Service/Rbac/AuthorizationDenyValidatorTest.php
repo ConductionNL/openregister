@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyCollision
+ * @uses   \OCA\OpenRegister\Service\Rbac\DenyCollision
  */
 class AuthorizationDenyValidatorTest extends TestCase {
 

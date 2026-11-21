@@ -81,54 +81,39 @@ import {
 			</template>
 
 			<!-- Charts -->
-			<div class="chartGrid">
-				<!-- Audit Trail Actions Chart -->
-				<div class="chartCard">
-					<h3>Audit Trail Actions</h3>
-					<Apexchart
-						type="line"
-						height="350"
-						:options="auditTrailChartOptions"
-						:series="
-							dashboardStore.chartData.auditTrailActions?.series || []
-						" />
-				</div>
+			<DetailChartGrid
+				:chartData="dashboardStore.chartData"
+				distributionKey="objectsBySchema"
+				distributionTitle="Objects by Schema"
+				:auditOptions="auditTrailChartOptions"
+				:distributionOptions="schemaChartOptions"
+				:sizeOptions="sizeChartOptions" />
 
-				<!-- Objects by Schema Chart -->
-				<div class="chartCard">
-					<h3>Objects by Schema</h3>
-					<Apexchart
-						type="pie"
-						height="350"
-						:options="schemaChartOptions"
-						:series="
-							dashboardStore.chartData.objectsBySchema?.series || []
-						"
-						:labels="
-							dashboardStore.chartData.objectsBySchema?.labels || []
-						" />
-				</div>
-
-				<!-- Objects by Size Chart -->
-				<div class="chartCard">
-					<h3>Objects by Size Distribution</h3>
-					<Apexchart
-						type="bar"
-						height="350"
-						:options="sizeChartOptions"
-						:series="[
-							{
-								name: 'Objects',
-								data:
-									dashboardStore.chartData.objectsBySize?.series
-									|| [],
-							},
-						]" />
-				</div>
+			<!-- Schemas: as cards, or the register's model as a diagram -->
+			<div
+				v-if="register"
+				class="schemaViewSwitch"
+				role="group"
+				:aria-label="t('openregister', 'Schemas')">
+				<NcButton
+					:variant="schemaView === 'cards' ? 'primary' : 'secondary'"
+					:aria-pressed="schemaView === 'cards' ? 'true' : 'false'"
+					data-testid="schema-view-cards"
+					@click="schemaView = 'cards'">
+					{{ t('openregister', 'Cards') }}
+				</NcButton>
+				<NcButton
+					:variant="schemaView === 'diagram' ? 'primary' : 'secondary'"
+					:aria-pressed="schemaView === 'diagram' ? 'true' : 'false'"
+					data-testid="schema-view-diagram"
+					@click="schemaView = 'diagram'">
+					{{ t('openregister', 'Diagram') }}
+				</NcButton>
 			</div>
-
-			<!-- Schemas -->
-			<div v-if="loadingSchemas" class="loadingContainer">
+			<RegisterModelDiagram
+				v-if="register && schemaView === 'diagram'"
+				:registerId="register.id" />
+			<div v-else-if="loadingSchemas" class="loadingContainer">
 				<NcLoadingIcon :size="32" />
 				<span>Loading schemas...</span>
 			</div>
@@ -246,6 +231,14 @@ import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import DetailChartGrid from './DetailChartGrid.vue'
+import RegisterModelDiagram from './RegisterModelDiagram.vue'
+import { findActiveRegister } from './activeRegister.js'
+import {
+	auditTrailChartOptions,
+	distributionChartOptions,
+	sizeChartOptions,
+} from './detailChartOptions.js'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
@@ -259,6 +252,8 @@ export default {
 		NcActionButton,
 		NcButton,
 		CnDetailPage,
+		DetailChartGrid,
+		RegisterModelDiagram,
 		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -280,6 +275,8 @@ export default {
 			// True until mounted() has hydrated the register, so a deep link shows
 			// the loading state instead of flashing "Register not found".
 			hydrating: true,
+			// Which rendering of the schemas shows: `cards` or `diagram`.
+			schemaView: 'cards',
 		}
 	},
 
@@ -291,17 +288,7 @@ export default {
 		 * @return {object|undefined}
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from the register
-			// store, falling back to the route param on a deep link / page refresh.
-			const registerId =
-				registerStore.getRegisterItem?.id || this.$route.params.id
-			if (!registerId) {
-				return undefined
-			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			return findActiveRegister(this.$route)
 		},
 
 		/**
@@ -311,47 +298,10 @@ export default {
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
-			return {
-				chart: {
-					type: 'line',
-					toolbar: {
-						show: true,
-					},
-
-					zoom: {
-						enabled: true,
-					},
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData.auditTrailActions?.labels || [],
-
-					title: {
-						text: 'Date',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Actions',
-					},
-				},
-
-				colors: ['#41B883', '#E46651', '#00D8FF'],
-				stroke: {
-					curve: 'smooth',
-					width: 2,
-				},
-
-				legend: {
-					position: 'top',
-				},
-
-				theme: {
-					mode: getTheme(),
-				},
-			}
+			return auditTrailChartOptions(
+				dashboardStore.chartData.auditTrailActions?.labels || [],
+				getTheme(),
+			)
 		},
 
 		/**
@@ -361,31 +311,9 @@ export default {
 		 * @return {object}
 		 */
 		schemaChartOptions() {
-			return {
-				chart: {
-					type: 'pie',
-				},
-
-				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
-				legend: {
-					position: 'bottom',
-				},
-
-				responsive: [
-					{
-						breakpoint: 480,
-						options: {
-							chart: {
-								width: 200,
-							},
-
-							legend: {
-								position: 'bottom',
-							},
-						},
-					},
-				],
-			}
+			return distributionChartOptions(
+				dashboardStore.chartData.objectsBySchema?.labels || [],
+			)
 		},
 
 		/**
@@ -395,36 +323,9 @@ export default {
 		 * @return {object}
 		 */
 		sizeChartOptions() {
-			return {
-				chart: {
-					type: 'bar',
-				},
-
-				plotOptions: {
-					bar: {
-						horizontal: false,
-						columnWidth: '55%',
-						endingShape: 'rounded',
-					},
-				},
-
-				xaxis: {
-					categories: dashboardStore.chartData.objectsBySize?.labels || [],
-					title: {
-						text: 'Size Range',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Objects',
-					},
-				},
-
-				fill: {
-					opacity: 1,
-				},
-			}
+			return sizeChartOptions(
+				dashboardStore.chartData.objectsBySize?.labels || [],
+			)
 		},
 	},
 
@@ -697,6 +598,12 @@ export default {
 <style lang="scss" scoped>
 @use '../../styles/views.scss' as *;
 
+.schemaViewSwitch {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
 .loadingContainer {
 	display: flex;
 	align-items: center;
@@ -712,8 +619,6 @@ export default {
 	gap: 20px;
 	padding: 20px;
 }
-
-@include chart-card;
 
 .cardGrid {
 	display: grid;

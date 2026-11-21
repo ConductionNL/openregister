@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
@@ -59,6 +60,22 @@ interface VectorizationServiceInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function clearAllEmbeddings(): array;
+
+	/**
+	 * Generate an embedding for a text
+	 *
+	 * @param string      $text     Text to embed
+	 * @param string|null $provider Embedding provider (null = use default from settings)
+	 *
+	 * @return array Embedding data: `embedding` (float[]), `model` and `dimensions`.
+	 *
+	 * @throws \Exception If embedding generation fails
+	 *
+	 * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function generateEmbedding(string $text, ?string $provider = null): array;
 
 	/**
 	 * Get vector statistics
@@ -105,10 +122,7 @@ interface VectorizationServiceInterface {
 	 *
 	 * Delegates to VectorEmbeddings.
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -116,7 +130,7 @@ interface VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
 	 */
-	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array;
+	public function semanticSearch(SemanticSearchRequest $request): array;
 
 	/**
 	 * Test embedding generation with custom configuration

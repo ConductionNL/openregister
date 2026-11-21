@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -122,8 +122,8 @@ class MagicMapperTableListingTest extends TestCase {
 
 	public function testFindAllInRegisterSchemaTablePassesZeroLimitAndOffset(): void {
 		[$register, $schema] = $this->table();
-		$this->mapper()->findAllInRegisterSchemaTable($register, $schema, 0, 0, null, []);
-		$this->mapper()->findAllInRegisterSchemaTable($register, $schema, null, null, ['a' => 1], ['b' => 'DESC']);
+		$this->mapper()->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema), new ListQuery(0, 0));
+		$this->mapper()->findAllInRegisterSchemaTable(new RegisterSchema($register, $schema), new ListQuery(ListQuery::UNBOUNDED, null, ['a' => 1], ['b' => 'DESC']));
 
 		$this->assertSame([['_limit' => 0, '_offset' => 0], ['_order' => ['b' => 'DESC'], 'a' => 1]], $this->queries);
 	}//end testFindAllInRegisterSchemaTablePassesZeroLimitAndOffset()

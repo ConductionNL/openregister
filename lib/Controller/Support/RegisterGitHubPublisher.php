@@ -26,6 +26,8 @@ use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Publishes a register's OpenAPI file to GitHub.
@@ -125,13 +127,12 @@ final class RegisterGitHubPublisher {
 	private function pushOas(Register $register, array $target): array {
 		$oasData = $this->services->integrations->oasService->createOas((string) $register->getId());
 		$result  = $this->services->integrations->githubService->publishConfiguration(
-			owner: $target['owner'],
-			repo: $target['repo'],
-			path: $target['path'],
-			branch: $target['branch'],
-			content: json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
-			commitMessage: $target['commitMessage'],
-			fileSha: $this->fileSha(target: $target)
+			location: self::targetFile(target: $target),
+			write: new GitHubFileWrite(
+				content: json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+				commitMessage: $target['commitMessage'],
+				fileSha: $this->fileSha(target: $target)
+			)
 		);
 		$this->logPushed(register: $register, target: $target + ['file_url' => $result['file_url'] ?? null]);
 		return $result;
@@ -203,7 +204,7 @@ final class RegisterGitHubPublisher {
 	private function fileSha(array $target): ?string {
 		try {
 			$client = $this->services->integrations->githubService;
-			return $client->getFileSha(owner: $target['owner'], repo: $target['repo'], path: $target['path'], branch: $target['branch']);
+			return $client->getFileSha(location: self::targetFile(target: $target));
 		} catch (Exception $e) {
 			$this->session->logger->debug(
 				message: '[RegistersController] File does not exist, will create new file',
@@ -212,6 +213,17 @@ final class RegisterGitHubPublisher {
 			return null;
 		}
 	}//end fileSha()
+
+	/**
+	 * The GitHub file a publish target names.
+	 *
+	 * @param array{owner: string, repo: string, path: string, branch: string} $target The target.
+	 *
+	 * @return GitHubFileLocation
+	 */
+	private static function targetFile(array $target): GitHubFileLocation {
+		return new GitHubFileLocation(owner: $target['owner'], repo: $target['repo'], path: $target['path'], branch: $target['branch']);
+	}//end targetFile()
 
 	/**
 	 * The default branch of the target repository, null when GitHub could not tell.
