@@ -36,12 +36,11 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\Types;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds and backfills the redaction decision columns.
  */
-class Version1Date20261114100100 extends SimpleMigrationStep {
+class Version1Date20261114100100 extends TargetedMigrationStep {
 
 	private const TABLE = 'openregister_entity_relations';
 
@@ -64,7 +63,7 @@ class Version1Date20261114100100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.1
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -89,7 +88,7 @@ class Version1Date20261114100100 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Backfill the decision of existing rows from `skip_anonymization`.
@@ -102,7 +101,7 @@ class Version1Date20261114100100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.1
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		if ($this->connection->tableExists(self::TABLE) === false) {
 			return;
 		}
@@ -118,5 +117,5 @@ class Version1Date20261114100100 extends SimpleMigrationStep {
 			$output->info(sprintf('Backfilled %d entity relations as %s', $rows, $decision));
 		}
 
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 }//end class
