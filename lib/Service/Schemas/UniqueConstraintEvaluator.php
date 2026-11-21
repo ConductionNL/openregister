@@ -103,6 +103,31 @@ class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 	}//end constraints()
 
 	/**
+	 * The names an upsert may use as its key.
+	 *
+	 * These are the schema's uniqueness constraints with action `refuse`,
+	 * the legacy `unique` key included and named by its properties joined
+	 * with `+`. A `report` constraint allows duplicates on purpose, so it
+	 * never identifies one record.
+	 *
+	 * @param array<string,mixed>|null $configuration The schema's configuration block.
+	 *
+	 * @return array<int, string> The constraint names, in declaration order.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	public function upsertKeys(?array $configuration): array {
+		$keys = [];
+		foreach ($this->constraints(configuration: $configuration, includeLegacy: true) as $constraint) {
+			if ($constraint['action'] === self::ACTION_REFUSE) {
+				$keys[] = $constraint['name'];
+			}
+		}
+
+		return $keys;
+	}//end upsertKeys()
+
+	/**
 	 * The schema's identity: the declared `refuse` constraint that says `identity: true`.
 	 *
 	 * Only a well-formed `refuse` constraint can be the identity, because a

@@ -162,6 +162,40 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end findByFileId()
 
 	/**
+	 * One page of the ids of the files that hold detected entities, ascending.
+	 *
+	 * For callers that report across every file with entities, such as a
+	 * personal data overview: they read page after page with the last file id
+	 * they saw until a page comes back shorter than the limit. Ids only: the
+	 * caller decides per file whether its reader may see it.
+	 *
+	 * @param int $afterFileId Only files with an id above this one.
+	 * @param int $limit       The page size, 1 to 1000.
+	 *
+	 * @return int[] The distinct file ids, lowest first.
+	 */
+	public function findFileIdsWithEntities(int $afterFileId=0, int $limit=500): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('file_id')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('file_id'))
+			->andWhere($qb->expr()->gt('file_id', $qb->createNamedParameter($afterFileId, IQueryBuilder::PARAM_INT)))
+			->orderBy('file_id', 'ASC')
+			->setMaxResults(max(1, min($limit, self::MAX_IN_LIST_SIZE)));
+
+		$result = $qb->executeQuery();
+		$rows   = $result->fetchAll();
+		$result->closeCursor();
+
+		$ids = [];
+		foreach ($rows as $row) {
+			$ids[] = (int) ($row['file_id'] ?? 0);
+		}
+
+		return $ids;
+	}//end findFileIdsWithEntities()
+
+	/**
 	 * One page of the entity relations that carry bases, in id order.
 	 *
 	 * For callers that walk every recorded basis once, such as an upgrade
