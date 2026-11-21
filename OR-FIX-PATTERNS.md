@@ -268,3 +268,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: conflict in lib/Db/SchemaMapper.php (checkDataDeclarations is now runSlots/dataSteps) and in lib/Db/SchemaMapper/RecordAnnotationRefusals.php, for a PR that added a $records->checkX() call.
 - Cause: main runs save checks in numbered slots (SchemaDeclarationOrder); area checks come from listeners on SchemaDeclarationChecksEvent (archival/retention: ArchivalDeclarationRefusals + ArchivalDeclarationChecksListener).
 - Fix: take main's SchemaMapper and RecordAnnotationRefusals; move the PR's method into the owning area's refusals class and call it from that listener, inside the neighbouring slot's closure (keeps SchemaDeclarationOrderTest's slot list) or as a new slot (then update that test and the listener test); rename the test's subject class; add a listener test that the slot runs it. See #10132, #10232.
+
+## Method not found on a narrowed Kernel port after merging main (or-fix-19)
+- Symptom: phpstan method.notFound on e.g. RedactionSettingsInterface::personRegister() in a class whose constructor main retyped from a concrete handler to a Kernel/Contracts port.
+- Cause: the modularity work narrowed cross-area dependencies to ports declaring only the methods main used; a PR calls more of the concrete class.
+- Fix: declare the PR's extra methods on that port when its bound implementation already has them (check ContractBindings), keeping signatures identical; do not retype back to the concrete class (see #10499).
