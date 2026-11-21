@@ -42,7 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Carries the task as it was persisted in its terminal state.
@@ -59,12 +59,12 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Task $task      The task, already persisted in a terminal state.
-	 * @param bool $committed TRUE when the terminal write's transaction has
-	 *                        closed; FALSE when dispatched inside it.
+	 * @param TaskInterface $task      The task, already persisted in a terminal state.
+	 * @param bool          $committed TRUE when the terminal write's transaction has
+	 *                                 closed; FALSE when dispatched inside it.
 	 */
 	public function __construct(
-		Task $task,
+		TaskInterface $task,
 		private readonly bool $committed = true,
 	) {
 		parent::__construct(task: $task);
@@ -97,7 +97,7 @@ class TaskTerminalEvent extends AbstractTaskEvent {
 	/**
 	 * The terminal state.
 	 *
-	 * @return string One of Task::TERMINAL_STATES.
+	 * @return string One of the task's terminal states.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */

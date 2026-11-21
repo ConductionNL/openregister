@@ -34,14 +34,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the erasure preview table.
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class Version1Date20260915114700 extends SimpleMigrationStep {
+class Version1Date20260915114700 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -53,7 +52,7 @@ class Version1Date20260915114700 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -94,5 +93,5 @@ class Version1Date20260915114700 extends SimpleMigrationStep {
 		}//end if
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
