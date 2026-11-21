@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add `reminder_sent` and `reminder_stopped` to openregister_notification_dedupe.
@@ -40,7 +39,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
  */
-class Version1Date20261114100000 extends SimpleMigrationStep {
+class Version1Date20261114100000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -58,7 +57,7 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -80,5 +79,5 @@ class Version1Date20261114100000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
