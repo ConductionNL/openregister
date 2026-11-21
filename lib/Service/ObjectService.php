@@ -7815,8 +7815,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $data['id'] = ($stored->getUuid() ?? $objectId);
         return $this->saveObject(
             object: $data,
-            register: $stored->getRegister(),
-            schema: $stored->getSchema(),
+            options: new ObjectSaveOptions(
+                target: new ObjectFindTarget(register: $stored->getRegister(), schema: $stored->getSchema())
+            ),
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );

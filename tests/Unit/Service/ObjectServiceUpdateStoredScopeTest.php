@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -60,7 +61,6 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 use ReflectionProperty;
 use Throwable;
 
@@ -178,17 +178,15 @@ class ObjectServiceUpdateStoredScopeTest extends TestCase {
 			)
 		);
 
-		$positions = [];
-		foreach ((new ReflectionMethod(SaveObject::class, 'saveObject'))->getParameters() as $parameter) {
-			$positions[$parameter->getName()] = $parameter->getPosition();
-		}
-
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (mixed ...$arguments) use ($positions): ObjectEntity {
-				$save = [];
-				foreach ($positions as $name => $position) {
-					$save[$name] = ($arguments[$position] ?? null);
-				}
+			function (array $data, ObjectSaveOptions $options=new ObjectSaveOptions()): ObjectEntity {
+				$save = [
+					'data'         => $data,
+					'register'     => $options->target->register,
+					'schema'       => $options->target->schema,
+					'uuid'         => $options->uuid,
+					'failIfExists' => $options->policy->failIfExists,
+				];
 
 				$this->saves[] = $save;
 
