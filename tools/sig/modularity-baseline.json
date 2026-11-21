@@ -42,12 +42,9 @@
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php",
   "lib/Service/ObjectSource/ObjectSourceWiring.php -> lib/Service/CalendarEventService.php",
-  "lib/Service/ObjectSource/ViewSourceMappers.php -> lib/Search/Db/ViewMapperInterface.php",
   "lib/Service/OrganisationUsageService.php -> lib/Files/Db/FileMapperInterface.php",
-  "lib/Service/Rbac/SharerFolderAccess.php -> lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Service/RegisterService.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php",
-  "lib/Service/Sharing/AccessLinkViewReaders.php -> lib/Search/Db/ViewMapperInterface.php"
+  "lib/Service/RegisterServiceHelpers.php -> lib/Service/FileFolderServiceInterface.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -596,7 +593,6 @@
   "lib/Files/Service/File/FileOwnershipHandlerInterface.php",
   "lib/Files/Service/File/FileRestrictionGuardInterface.php",
   "lib/Files/Service/File/MaskForm.php",
-  "lib/Files/Service/File/ObjectFileAccess.php",
   "lib/Files/Service/File/Pdf/Fallback/NcOfficeConverterInterface.php",
   "lib/Files/Service/File/RegisterFolderProvisionerInterface.php",
   "lib/Files/Service/RiskLevelServiceInterface.php",
@@ -684,6 +680,7 @@
   "lib/Kernel/Contracts/Core/ObjectArchivalMetadataInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
+  "lib/Kernel/Contracts/Core/ObjectFileRightsInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFilesArchiveInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderAccessInterface.php",
   "lib/Kernel/Contracts/Core/ObjectFolderLookupInterface.php",
@@ -735,6 +732,7 @@
   "lib/Kernel/Contracts/Core/TwigFunctionsInstallerInterface.php",
   "lib/Kernel/Contracts/Core/UnreadCountsInterface.php",
   "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
+  "lib/Kernel/Contracts/Core/ViewFinderInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
@@ -2221,14 +2219,14 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 874,
-  "Core": 57257,
-  "Files": 1458,
+  "Core": 57275,
+  "Files": 1262,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1759,
   "Platform": 61,
   "Processes": 27092,
-  "Search": 1343
+  "Search": 1344
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2691,6 +2689,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462024,
- "violation_degree": 0.006
+ "total_loc": 462046,
+ "violation_degree": 0.0057
 }
