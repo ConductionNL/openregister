@@ -36,6 +36,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
@@ -141,6 +142,7 @@ final class FlowWiring {
 		CurrentFlowRunInterface::class => FlowRunContext::class,
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		NodeRightsMapInterface::class => FlowNodeRightsGuard::class,
 		ProcessingReadsInterface::class => ReadHistoryService::class,
 		UserCalendarEventsInterface::class => CalendarEventService::class,
 		TaskGaugeInterface::class => TaskMetricsProvider::class,

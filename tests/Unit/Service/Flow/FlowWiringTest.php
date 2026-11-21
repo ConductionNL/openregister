@@ -33,6 +33,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\NodeRightsMapInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\LinkedFlowOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
@@ -60,6 +61,7 @@ use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
@@ -328,6 +330,9 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * The schedule flow store, the current-run port, the sequence service, the node rights map, the calendar link, transition-in-flight,
+	 * write elevation, date events, task row, watcher and run-record ports, the schema rename and form dependents checks, the built-in tool
+	 * providers, the lifecycle transition and expression-defaults ports and the area's own interfaces are bound, and only these aliases are registered.
 	 * The Core save-rule ports are answered by the decision-table guard and the dependent-value rule.
 	 *
 	 * @return void
@@ -362,6 +367,7 @@ final class FlowWiringTest extends TestCase {
 				CurrentFlowRunInterface::class             => FlowRunContext::class,
 				ScheduleFlowStoreInterface::class          => ScheduleFlowStore::class,
 				SequenceServiceInterface::class            => SequenceService::class,
+				NodeRightsMapInterface::class              => FlowNodeRightsGuard::class,
 				ProcessingReadsInterface::class            => ReadHistoryService::class,
 				UserCalendarEventsInterface::class         => CalendarEventService::class,
 				TaskGaugeInterface::class                  => TaskMetricsProvider::class,

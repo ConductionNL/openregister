@@ -1,7 +1,5 @@
 {
  "against_order": [
-  "lib/Controller/ActionRightsController.php -> lib/Service/Flow/FlowNodeRightsGuardInterface.php",
-  "lib/Controller/ActionRightsController.php -> lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Controller/ActionRightsController.php -> lib/Settings/OpenRegisterAdmin.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/FeatureShape.php",
   "lib/Controller/ObjectsController.php -> lib/Search/Service/Geo/GeoResponseCrsFactory.php",
@@ -682,6 +680,7 @@
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
   "lib/Kernel/Contracts/Core/LifecycleStatesKeeperInterface.php",
   "lib/Kernel/Contracts/Core/MigrationPackDefinitionsInterface.php",
+  "lib/Kernel/Contracts/Core/NodeRightsMapInterface.php",
   "lib/Kernel/Contracts/Core/ObjectArchivalMetadataInterface.php",
   "lib/Kernel/Contracts/Core/ObjectAuditEntry.php",
   "lib/Kernel/Contracts/Core/ObjectFileRecordsInterface.php",
@@ -1418,7 +1417,6 @@
   "lib/Service/Flow/FlowTriggerValidatorInterface.php",
   "lib/Service/Flow/FlowVersionService.php",
   "lib/Service/Flow/FlowVersionServiceInterface.php",
-  "lib/Service/Flow/IFlowNodeRequiresRight.php",
   "lib/Service/Flow/Nodes/ActionInputsNode.php",
   "lib/Service/Flow/Nodes/ActionInputsNodeInterface.php",
   "lib/Service/Flow/Nodes/AwaitSignalNode.php",
@@ -2223,13 +2221,13 @@
  "exposed_loc": {
   "Compliance": 14297,
   "Configuration": 874,
-  "Core": 57248,
+  "Core": 57256,
   "Files": 1458,
   "Integrations": 17733,
   "Kernel": 8464,
   "Notifications": 1759,
   "Platform": 61,
-  "Processes": 27101,
+  "Processes": 27092,
   "Search": 1343
  },
  "kernel_files": [
@@ -2693,6 +2691,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 10402,
- "total_loc": 462014,
- "violation_degree": 0.0062
+ "total_loc": 462023,
+ "violation_degree": 0.006
 }
