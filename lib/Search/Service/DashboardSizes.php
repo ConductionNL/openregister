@@ -164,9 +164,7 @@ class DashboardSizes {
 		$scope = new DashboardScope(registerId: $registerId, schemaId: $schemaId);
 
 		try {
-			foreach ($this->auditTrailMapper->findTrail(query: ListQuery::unbounded(filters: $scope->logFilters(), sort: ['created' => 'DESC'])) as $log) {
-				$this->resaveLog(log: $log, tally: $tally);
-			}
+			$this->resaveLogs(query: ListQuery::unbounded(filters: $scope->logFilters(), sort: ['created' => 'DESC']), tally: $tally);
 
 			return $tally->toArray();
 		} catch (Exception $e) {
@@ -176,22 +174,27 @@ class DashboardSizes {
 	}//end recalculateLogSizes()
 
 	/**
-	 * Update one log to trigger its size recalculation, counting the outcome.
+	 * Re-save every log the query finds, to trigger its size recalculation, counting each outcome.
 	 *
-	 * @param \OCA\OpenRegister\Db\AuditTrail $log   The log.
-	 * @param SizeTally                        $tally The running outcome.
+	 * Each row goes from the audit trail port straight back to it, so the
+	 * dashboard needs no knowledge of the row's type.
+	 *
+	 * @param ListQuery $query The filters and order of the logs.
+	 * @param SizeTally $tally The running outcome.
 	 *
 	 * @return void
 	 */
-	private function resaveLog(\OCA\OpenRegister\Db\AuditTrail $log, SizeTally $tally): void {
-		try {
-			$this->auditTrailMapper->update($log);
-			$tally->addProcessed();
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to update log ' . $log->getId() . ': ' . $e->getMessage());
-			$tally->addFailed();
+	private function resaveLogs(ListQuery $query, SizeTally $tally): void {
+		foreach ($this->auditTrailMapper->findTrail(query: $query) as $log) {
+			try {
+				$this->auditTrailMapper->update($log);
+				$tally->addProcessed();
+			} catch (Exception $e) {
+				$this->logError(message: 'Failed to update log ' . $log->getId() . ': ' . $e->getMessage());
+				$tally->addFailed();
+			}
 		}
-	}//end resaveLog()
+	}//end resaveLogs()
 
 	/**
 	 * Recalculate sizes for both objects and logs in specified registers and/or schemas

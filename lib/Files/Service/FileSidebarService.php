@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
 
+use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -427,14 +428,17 @@ class FileSidebarService {
 	 *   entities: array<int, array{type: string, count: int}>,
 	 *   anonymized: bool,
 	 *   anonymizedAt: string|null,
-	 *   anonymizedFileId: int|null
-	 * }
+	 *   anonymizedFileId: int|null,
+	 *   archive?: array<string, mixed>
+	 * } extractionStatus is `partial` for an archive with a member that was not read.
 	 *
 	 * @spec openspec/specs/files-sidebar-tabs/spec.md
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-what-could-not-be-opened-is-reported-req-ams-003
 	 */
 	public function getExtractionStatus(int $fileId): array {
 		// Get chunks for this file.
-		$chunkCount = count($this->chunkMapper->findBySource('file', $fileId));
+		$chunks     = $this->chunkMapper->findBySource('file', $fileId);
+		$chunkCount = count($chunks);
 
 		// If no chunks exist, this file has not been extracted.
 		if ($chunkCount === 0) {
@@ -446,12 +450,47 @@ class FileSidebarService {
 		$entityRelations = $this->entityRelationMapper->findByFileId($fileId);
 		$entities        = $this->entitiesByType(entityRelations: $entityRelations);
 
-		return [
+		$status = [
 			'fileId' => $fileId, 'extractionStatus' => 'completed', 'chunkCount' => $chunkCount, 'entityCount' => count($entityRelations),
 			'riskLevel' => $this->riskLevelService->getRiskLevel($fileId), 'extractedAt' => $extractedAt, 'entities' => $entities,
 			'anonymized' => $this->anyAnonymized(entityRelations: $entityRelations), 'anonymizedAt' => null, 'anonymizedFileId' => null,
 		];
+
+		$archive = $this->archiveReport(chunks: $chunks);
+		if ($archive !== null) {
+			// An archive any member of which was not read is only partly indexed (REQ-AMS-003).
+			$status['archive'] = $archive;
+			if (($archive['status'] ?? 'complete') !== 'complete') {
+				$status['extractionStatus'] = 'partial';
+			}
+		}
+
+		return $status;
 	}//end getExtractionStatus()
+
+	/**
+	 * The archive report an archive's metadata chunk keeps, if the file is one.
+	 *
+	 * @param array<int, mixed> $chunks The file's chunks.
+	 *
+	 * @return array<string, mixed>|null The report: type, status, members read and the members not read with the reason.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-what-could-not-be-opened-is-reported-req-ams-003
+	 */
+	private function archiveReport(array $chunks): ?array {
+		foreach ($chunks as $chunk) {
+			if (($chunk instanceof Chunk) === false || $chunk->getChunkIndex() !== -1) {
+				continue;
+			}
+
+			$reference = ($chunk->getPositionReference() ?? []);
+			if (is_array($reference['archive'] ?? null) === true) {
+				return $reference['archive'];
+			}
+		}
+
+		return null;
+	}//end archiveReport()
 
 	/**
 	 * When the file's chunks were last updated, as ISO 8601, or null.

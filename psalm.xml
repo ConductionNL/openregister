@@ -34,6 +34,13 @@
                      uses OC_User's incognito mode because it is the only switch
                      Session::getUser() honours before its user_id fallback (WOO-578). -->
                 <referencedClass name="OC_User"/>
+                <!-- Nextcloud's own migration classes: not in nextcloud/ocp, present in
+                     every supported Nextcloud. The targeted migration path stands in
+                     for MigrationService and Migrator on an upgrade and works on the
+                     connection and schema wrapper they use (#10612). -->
+                <referencedClass name="OC\DB\Connection"/>
+                <referencedClass name="OC\DB\MigrationService"/>
+                <referencedClass name="OC\DB\SchemaWrapper"/>
                 <!-- Nextcloud OCP Classes -->
                 <referencedClass name="OCP\AppFramework\App"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>

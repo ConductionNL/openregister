@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface;
+use OCA\OpenRegister\Service\Dbal\QueryPreviewService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 
@@ -40,6 +41,7 @@ final class SourcesDomain {
 	 * @param HarvestPipelineServiceInterface       $pipeline             Harvest pipeline orchestrator
 	 * @param DbalConnectionFactoryInterface                 $connectionFactory    Opens read-only DBAL connections for database sources
 	 * @param DatabaseIntrospectionServiceInterface $introspectionService Introspects a database source into a virtual register
+	 * @param QueryPreviewService|null              $queryPreview         Previews a query-backed schema's SQL (null: built on demand)
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
@@ -48,6 +50,7 @@ final class SourcesDomain {
 		public readonly HarvestPipelineServiceInterface $pipeline,
 		public readonly DbalConnectionFactoryInterface $connectionFactory,
 		public readonly DatabaseIntrospectionServiceInterface $introspectionService,
+		public readonly ?QueryPreviewService $queryPreview = null,
 	) {
 	}//end __construct()
 }//end class

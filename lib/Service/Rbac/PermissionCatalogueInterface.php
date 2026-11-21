@@ -141,6 +141,11 @@ interface PermissionCatalogueInterface {
 		// A map of actions, not a verb: read as a verb it refused every schema
 		// that declared one, and the mcp strip would reindex it into a list.
 		AuthorizationBlock::CONDITIONS_KEY,
+		// `onUndecidable: closed|open` says what an access question that
+		// cannot be decided means (UndecidablePosture). A setting, not a verb:
+		// read as a verb the narrower and the catalogue would treat it as a
+		// grantable action. AuthorizationControlKeys checks its value.
+		UndecidablePosture::KEY,
 	];
 
 	/**

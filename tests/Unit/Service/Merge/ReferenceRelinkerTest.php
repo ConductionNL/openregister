@@ -133,6 +133,13 @@ final class ReferenceRelinkerTest extends TestCase {
 		$this->assertSame([], $this->relinker($this->finder([$object]))->plan(self::LOSER, self::SURVIVOR)->moves);
 	}
 
+	public function testTheSurvivorIsListedOnceWhenTheLoserComesFirst(): void {
+		$object = new ReferencingObject('suite-basis', 'catalogus', 'suite', ['applications' => [self::LOSER, 'other', self::SURVIVOR]]);
+		$plan   = $this->relinker($this->finder([$object]))->plan(self::LOSER, self::SURVIVOR);
+
+		$this->assertSame([self::SURVIVOR, 'other'], $plan->moves[0]->after, 'the survivor already in the list is the duplicate the merge creates');
+	}
+
 	public function testAnArrayWithoutTheSurvivorKeepsEveryElement(): void {
 		$object = new ReferencingObject('x', 'r', 's', ['applications' => ['other', self::LOSER]]);
 		$plan   = $this->relinker($this->finder([$object]))->plan(self::LOSER, self::SURVIVOR);

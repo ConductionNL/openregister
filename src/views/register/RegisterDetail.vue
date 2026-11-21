@@ -89,8 +89,31 @@ import {
 				:distributionOptions="schemaChartOptions"
 				:sizeOptions="sizeChartOptions" />
 
-			<!-- Schemas -->
-			<div v-if="loadingSchemas" class="loadingContainer">
+			<!-- Schemas: as cards, or the register's model as a diagram -->
+			<div
+				v-if="register"
+				class="schemaViewSwitch"
+				role="group"
+				:aria-label="t('openregister', 'Schemas')">
+				<NcButton
+					:variant="schemaView === 'cards' ? 'primary' : 'secondary'"
+					:aria-pressed="schemaView === 'cards' ? 'true' : 'false'"
+					data-testid="schema-view-cards"
+					@click="schemaView = 'cards'">
+					{{ t('openregister', 'Cards') }}
+				</NcButton>
+				<NcButton
+					:variant="schemaView === 'diagram' ? 'primary' : 'secondary'"
+					:aria-pressed="schemaView === 'diagram' ? 'true' : 'false'"
+					data-testid="schema-view-diagram"
+					@click="schemaView = 'diagram'">
+					{{ t('openregister', 'Diagram') }}
+				</NcButton>
+			</div>
+			<RegisterModelDiagram
+				v-if="register && schemaView === 'diagram'"
+				:registerId="register.id" />
+			<div v-else-if="loadingSchemas" class="loadingContainer">
 				<NcLoadingIcon :size="32" />
 				<span>Loading schemas...</span>
 			</div>
@@ -209,6 +232,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import DetailChartGrid from './DetailChartGrid.vue'
+import RegisterModelDiagram from './RegisterModelDiagram.vue'
 import { findActiveRegister } from './activeRegister.js'
 import {
 	auditTrailChartOptions,
@@ -229,6 +253,7 @@ export default {
 		NcButton,
 		CnDetailPage,
 		DetailChartGrid,
+		RegisterModelDiagram,
 		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -250,6 +275,8 @@ export default {
 			// True until mounted() has hydrated the register, so a deep link shows
 			// the loading state instead of flashing "Register not found".
 			hydrating: true,
+			// Which rendering of the schemas shows: `cards` or `diagram`.
+			schemaView: 'cards',
 		}
 	},
 
@@ -570,6 +597,12 @@ export default {
 
 <style lang="scss" scoped>
 @use '../../styles/views.scss' as *;
+
+.schemaViewSwitch {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
 
 .loadingContainer {
 	display: flex;
