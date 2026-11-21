@@ -11,14 +11,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
-use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IUser;
 
 /**
@@ -113,6 +105,16 @@ use OCP\IUser;
  *
  * Returns are the entity INTERFACE, satisfied covariantly by the concrete
  * `ObjectEntity`.
+ *
+ * The option and result values (`ObjectSaveOptions`, `BulkSaveOptions`,
+ * `ObjectFindOptions`, `ObjectDeletion`, `ObjectPatch`, `LockRequest`,
+ * `UnlockRequest`, `ObjectValidationVerdict`) are this namespace's own
+ * classes, so a consuming app needs nothing beyond this directory. The
+ * deprecated `Kernel\Contracts\Value\` names extend them: a consumer passing
+ * either is accepted, and `validateObject()` may return the old subclass,
+ * which is both. An implementation or test double must type these
+ * parameters with the names here (or wider); one still typed with the old
+ * Kernel names is narrower than this interface and fatals at class load.
  *
  * `saveObject()` takes `array`, not `array|ObjectEntityInterface`. The
  * implementation accepts `array|ObjectEntity`, and `array|ObjectEntity` is
