@@ -245,7 +245,7 @@ class AppHostSettingsServiceFeaturesTest extends TestCase {
 				return [];
 			}
 		};
-		$this->container->method('get')->with('OCA\OpenRegister\Service\ConfigurationServiceInterface')
+		$this->container->method('get')->with('OCA\OpenRegister\Service\AppConfigurationImporterInterface')
 			->willReturn($configuration);
 
 		$result = $this->service([['info' => ['title' => 'x']], '2.0.0', true])->loadConfiguration(force: true);

@@ -41,8 +41,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -254,11 +254,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Connect for a single-object read; an unreachable database finds nothing.
 	 *
-	 * @param Source $source The backing database source.
+	 * @param SourceInterface $source The backing database source.
 	 *
 	 * @return Connection|null The connection, or null when it cannot be opened.
 	 */
-	private function connectForFind(Source $source): ?Connection {
+	private function connectForFind(SourceInterface $source): ?Connection {
 		try {
 			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
@@ -347,13 +347,13 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Connect for a list read; a missing driver extension lists nothing.
 	 *
-	 * @param Source $source The backing database source.
+	 * @param SourceInterface $source The backing database source.
 	 *
 	 * @return Connection|null The connection, or null when the driver is missing.
 	 *
 	 * @throws DbalObjectSourceException When the external database is unreachable (503).
 	 */
-	private function connectForList(Source $source): ?Connection {
+	private function connectForList(SourceInterface $source): ?Connection {
 		try {
 			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
@@ -569,14 +569,14 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * The value field is checked before connecting, so a misconfigured field
 	 * answers null without touching the external database.
 	 *
-	 * @param Source          $source      The backing database source.
+	 * @param SourceInterface $source      The backing database source.
 	 * @param DbalAggregation $aggregation The metric, field, filter and columns.
 	 *
 	 * @return Connection|null Null when the field is not a column or the driver is missing.
 	 *
 	 * @throws DbalObjectSourceException When the external database is unreachable.
 	 */
-	private function aggregationConnection(Source $source, DbalAggregation $aggregation): ?Connection {
+	private function aggregationConnection(SourceInterface $source, DbalAggregation $aggregation): ?Connection {
 		if ($aggregation->lacksValueField() === true) {
 			return null;
 		}
@@ -587,7 +587,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Open the connection an aggregation runs on, or null when the source's driver is not installed.
 	 *
-	 * @param Source $source The backing source.
+	 * @param SourceInterface $source The backing source.
 	 *
 	 * @return Connection|null The connection, or null so the caller falls back.
 	 *
@@ -595,7 +595,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function connectUnlessDriverMissing(Source $source): ?Connection {
+	private function connectUnlessDriverMissing(SourceInterface $source): ?Connection {
 		try {
 			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
@@ -613,7 +613,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @param array<string, mixed> $config The object-source config block.
 	 * @param Schema $schema The sourced schema.
 	 *
-	 * @return array{0: Source, 1: array<int, string>}|null [source, columns] or null when unresolvable.
+	 * @return array{0: SourceInterface, 1: array<int, string>}|null [source, columns] or null when unresolvable.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
@@ -645,12 +645,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @param array<string, mixed> $config The object-source config block.
 	 *
-	 * @return Source|null The source, or null when not found / not a database source.
+	 * @return SourceInterface|null The source, or null when not found / not a database source.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
 	 */
-	private function resolveSource(array $config): ?Source {
+	private function resolveSource(array $config): ?SourceInterface {
 		$sourceId = (string)($config['sourceId'] ?? '');
 		if ($sourceId === '') {
 			return null;
@@ -673,18 +673,18 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Whether a loaded source is a database source.
 	 *
-	 * @param Source|null $source The loaded source.
+	 * @param SourceInterface|null $source The loaded source.
 	 *
 	 * @return bool
 	 */
-	private static function isDatabaseSource(?Source $source): bool {
+	private static function isDatabaseSource(?SourceInterface $source): bool {
 		return $source !== null && (string)$source->getType() === 'database';
 	}//end isDatabaseSource()
 
 	/**
 	 * Open the read-only DBAL connection for a source.
 	 *
-	 * @param Source $source The backing source.
+	 * @param SourceInterface $source The backing source.
 	 *
 	 * @return Connection The connection.
 	 *
@@ -692,20 +692,20 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function connect(Source $source): Connection {
+	private function connect(SourceInterface $source): Connection {
 		return $this->connectionFactory->getConnection(source: $source);
 	}//end connect()
 
 	/**
 	 * Whether the source's configured driver extension is absent on this instance.
 	 *
-	 * @param Source $source The backing source.
+	 * @param SourceInterface $source The backing source.
 	 *
 	 * @return bool True when the driver extension is missing.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function driverMissing(Source $source): bool {
+	private function driverMissing(SourceInterface $source): bool {
 		$config = ($source->getAuthConfig() ?? []);
 		$driver = (string)($config['driver'] ?? '');
 		return ($this->connectionFactory->isDriverAvailable(driver: $driver) === false);
