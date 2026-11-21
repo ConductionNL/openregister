@@ -577,6 +577,28 @@ exports[`register card schema actions golden removeSchemaFromRegister has object
 }
 `;
 
+exports[`register card schema actions golden removeSchemaFromRegister one object 1`] = `
+{
+  "input": [
+    {
+      "id": 4,
+      "stats": {
+        "objects": {
+          "total": 1,
+        },
+      },
+      "title": "Single",
+    },
+  ],
+  "mockLog": [
+    [
+      "error",
+      "Cannot remove schema {schema} because it contains {count} objects {"schema":"Single","count":1}",
+    ],
+  ],
+}
+`;
+
 exports[`register card schema actions golden setSchemaConfiguration blob 1`] = `
 {
   "input": [
