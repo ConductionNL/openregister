@@ -346,3 +346,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: reviewer BLOCK 'feature ticked but unwired'; unit tests green because the param is nullable and the feature degrades to off.
 - Cause: main registers the service by hand in an area wiring (e.g. FlowWiring::buildTaskInboxService) with named args; a PR param added to the constructor is never passed.
 - Fix: add the named arg in the wiring builder ($container->get(X::class)) and a wiring test that reads the private property of the built service (ReflectionProperty) and asserts the instance. See #10269.
+
+## PR's version bump absorbed by main (or-fix-8)
+- Symptom: unit suite green after the main merge, but php scripts/check-migration-version-bump.php --base=origin/main exits 1 on a PR that once bumped info.xml.
+- Cause: main later moved <version> to the same value the PR had picked, so after the merge the PR adds migrations at main's version.
+- Fix: bump <version> one past main's in its own commit after the merge and rerun the check (#5968, #10568). Run the check on every migration PR even when tests are green.
