@@ -3689,3 +3689,4 @@ or-fix-4 done: main still e158c36a; share 8084 8344 9404 9824 9844 9864 10244 10
 2026-11-22T04:03:41Z integrator-20261111T115842-a749432d RED tree 1ae786ca4c prs 1 front=skip: Tests: 63468, Assertions: 222602, Errors: 7, Failures: 4, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Db\AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce
 2026-11-22T04:05:32Z session-20261122T040532-12ba015f or-fix-9 start
 2026-11-22T04:06:11Z session-20261122T040532-12ba015f or-fix-9: main e158c36a unchanged; lane share 9029 9709 9869 9909 10129 10269 10509 10529 10549 10569 10629 10869 all APPROVE at unchanged heads, none parked/BLOCK; same heads and main as the 03:44 green merged-tree check; nothing to fix
+2026-11-22T04:06:33Z or-fix-11: share 8951 9011 9131 10451 10491 10531 10631 unchanged at head, main still e158c36a (same as 01:59 run: none conflicting, none adds unit reds); 10631 BLOCK stands on the dbal 4 product question; nothing pushed
