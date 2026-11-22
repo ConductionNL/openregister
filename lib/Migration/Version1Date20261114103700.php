@@ -26,14 +26,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * tasks-delegation-and-substitution 1.1: `required_mandate` and
  * `mandate_evidence` on `openregister_tasks`, and `mandate_evidence` on
  * `openregister_task_audit`. All nullable, so existing rows are unaffected.
  */
-class Version1Date20261114103700 extends SimpleMigrationStep {
+class Version1Date20261114103700 extends TargetedMigrationStep {
 
 	public const TASKS = 'openregister_tasks';
 
@@ -50,7 +49,7 @@ class Version1Date20261114103700 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-human-tasks/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TASKS) === true) {
@@ -72,5 +71,5 @@ class Version1Date20261114103700 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class
