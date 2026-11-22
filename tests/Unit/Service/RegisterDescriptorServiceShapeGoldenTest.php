@@ -177,10 +177,10 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['appId' => 'fixtureapp', 'slug' => 'old', 'title' => 'old', 'state' => 'behind', 'installedVersion' => '1.9.0', 'shippedVersion' => '2.0.0', 'descriptor' => 'b_register.json'],
-				['appId' => 'fixtureapp', 'slug' => 'same', 'title' => 'Same', 'state' => 'current', 'installedVersion' => '1.0.0', 'shippedVersion' => '1.0.0', 'descriptor' => 'b_register.json'],
-				['appId' => 'n8n', 'slug' => 'Flows', 'title' => 'Flows', 'state' => 'absent', 'installedVersion' => null, 'shippedVersion' => '1.3.0', 'descriptor' => 'a_register.json'],
-				['appId' => 'n8n', 'slug' => 'plain', 'title' => 'plain', 'state' => 'current', 'installedVersion' => '0.0.2', 'shippedVersion' => '0.0.1', 'descriptor' => 'a_register.json'],
+				['appId' => 'fixtureapp', 'slug' => 'old', 'title' => 'old', 'state' => 'behind', 'installedVersion' => '1.9.0', 'shippedVersion' => '2.0.0', 'descriptor' => 'b_register.json', 'heldBack' => null],
+				['appId' => 'fixtureapp', 'slug' => 'same', 'title' => 'Same', 'state' => 'current', 'installedVersion' => '1.0.0', 'shippedVersion' => '1.0.0', 'descriptor' => 'b_register.json', 'heldBack' => null],
+				['appId' => 'n8n', 'slug' => 'Flows', 'title' => 'Flows', 'state' => 'absent', 'installedVersion' => null, 'shippedVersion' => '1.3.0', 'descriptor' => 'a_register.json', 'heldBack' => null],
+				['appId' => 'n8n', 'slug' => 'plain', 'title' => 'plain', 'state' => 'current', 'installedVersion' => '0.0.2', 'shippedVersion' => '0.0.1', 'descriptor' => 'a_register.json', 'heldBack' => null],
 			],
 			$this->service->inventory()
 		);

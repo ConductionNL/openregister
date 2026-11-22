@@ -479,6 +479,52 @@ class ShippedConfigurationGuardTest extends TestCase {
 	}//end testByDefaultTheBaselineIsStillRecorded()
 
 	/**
+	 * A baseline is recorded with an empty declaration as `[]`, the entity's own spelling.
+	 *
+	 * @return void
+	 */
+	public function testABaselineRecordsAnAbsentAuthorizationAsAnEmptyArray(): void {
+		$incoming = ['properties' => ['zaaknummer' => ['type' => 'string']], 'authorization' => null];
+
+		$this->guard(baseline: null)->recordShippedSchema(slug: 'zaak', shipped: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0'));
+
+		$this->assertSame([], $this->recorded[0]['definition']['authorization']);
+	}//end testABaselineRecordsAnAbsentAuthorizationAsAnEmptyArray()
+
+	/**
+	 * The upgrade the launchpad Dashboard met: a null baseline, the entity default live, and a shipped read rule.
+	 *
+	 * @return void
+	 */
+	public function testAShippedReadRuleLandsOnASchemaHoldingTheEntityDefault(): void {
+		$rule = ['read' => ['launchpad-audience']];
+		$result = $this->guard(baseline: ['properties' => [], 'authorization' => null])->guardUpgrade(
+			upgrade: new SchemaUpgrade(
+				slug: 'dashboard',
+				live: ['properties' => [], 'required' => [], 'authorization' => []],
+				incoming: new ShippedDefinition(definition: ['properties' => [], 'authorization' => $rule], app: 'launchpad', appVersion: '1.0.1')
+			)
+		);
+
+		$this->assertSame([], $result['conflicts']);
+		$this->assertSame($rule, $result['definition']['authorization']);
+	}//end testAShippedReadRuleLandsOnASchemaHoldingTheEntityDefault()
+
+	/**
+	 * Resetting an empty authorization to an absent one is refused: they are the same part.
+	 *
+	 * @return void
+	 */
+	public function testResettingAnEmptyAuthorizationToAnAbsentOneIsRefused(): void {
+		$preview = $this->guard(baseline: ['properties' => ['zaaknummer' => ['type' => 'string']]])->previewPartReset(
+			request: new ResetRequest(slug: 'zaak', live: ['properties' => ['zaaknummer' => ['type' => 'string']], 'authorization' => []], path: 'authorization')
+		);
+
+		$this->assertFalse($preview['applicable']);
+		$this->assertStringContainsString('already matches', $preview['reason']);
+	}//end testResettingAnEmptyAuthorizationToAnAbsentOneIsRefused()
+
+	/**
 	 * 🔴 `occ ... --import` IS THE DECISION REQ-LCA-003 WAITS FOR.
 	 *
 	 * Under the administrator's re-import the file's authorization block is

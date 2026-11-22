@@ -313,7 +313,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['problems-only', null, false, false, md5('Show only registers that are absent or behind the descriptor their app ships')],
+				['problems-only', null, false, false, md5('Show only registers that are absent, behind the descriptor their app ships, or holding back an authorization block their app ships until an administrator accepts it')],
 				['import', null, true, true, '02b873daa0275c596c2562abf76637be'],
 				['mock', null, false, false, 'f0b88f5f959af62e607eb5ad26683e12'],
 				['app', null, true, true, md5('The app whose configuration --import re-imports.')],

@@ -52,7 +52,7 @@ final class ShippedSchemaBaseline
 	 *
 	 * @var array<int, string>
 	 */
-	private const GUARDED_PARTS = ['properties', 'required', 'authorization'];
+	public const GUARDED_PARTS = ['properties', 'required', 'authorization'];
 
 	/**
 	 * The schema parts the guard kept local since the last report.

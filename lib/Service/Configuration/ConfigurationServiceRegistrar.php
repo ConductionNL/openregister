@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
+use OCA\OpenRegister\SetupCheck\HeldBackShippedAuthorizationCheck;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IContainer;
 use Psr\Container\ContainerInterface;
@@ -163,6 +164,9 @@ final class ConfigurationServiceRegistrar {
 		// Register ExportHandler with workflow dependencies.
 		$context->registerService(ConfigurationExportHandler::class, self::buildExportHandler(...));
 		$context->registerService(ConfigurationService::class, self::buildConfigurationService(...));
+
+		// Shipped authorization an upgrade held back, on the administration overview.
+		$context->registerSetupCheck(HeldBackShippedAuthorizationCheck::class);
 
 		// Bind the translation provider the admin settings select: Nextcloud
 		// Task Processing only when an administrator chose it and confirmed

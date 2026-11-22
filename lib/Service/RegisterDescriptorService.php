@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\ShippedBaseline\HeldBackAuthorization;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -98,6 +99,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 * @param RegisterMapperInterface       $registerMapper       Reads the registers that actually exist.
 	 * @param RegisterImporters $importers Performs the mock import, runs a counted re-import and the app's real, forced import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
+	 * @param HeldBackAuthorization|null $heldBack       Names the shipped authorization blocks an upgrade holds back; none when null.
 	 *
 	 * @return void
 	 */
@@ -106,6 +108,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 		private readonly RegisterMapperInterface $registerMapper,
 		RegisterImporters $importers,
 		private readonly LoggerInterface $logger,
+		private readonly ?HeldBackAuthorization $heldBack = null,
 	) {
 		$this->configurationService = $importers->configurationService;
 		$this->counted = $importers->counted;
@@ -118,7 +121,8 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 * One row per declared register — an app shipping several descriptors, as
 	 * OpenRegister itself does, contributes several rows.
 	 *
-	 * @return array<int, array<string, string|null>> Rows: appId, slug, title, state, installedVersion, shippedVersion, descriptor.
+	 * @return array<int, array<string, string|null>> Rows: appId, slug, title, state, installedVersion, shippedVersion, descriptor,
+	 *                                                 heldBack (`schema: block` entries joined by `, `, or null).
 	 *
 	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
@@ -167,11 +171,57 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			$rows[] = ['appId' => $descriptor['owner']]
 				+ $this->registerIdentity(slug: $slug, register: $register)
 				+ $this->registerState(register: $register, current: ($installed[strtolower($slug)] ?? null))
-				+ ['descriptor' => $descriptor['file']];
+				+ ['descriptor' => $descriptor['file']]
+				+ ['heldBack' => $this->heldBackIn(descriptor: $descriptor['data'], register: $register)];
 		}
 
 		return $rows;
 	}//end descriptorRows()
+
+	/**
+	 * The shipped authorization blocks an upgrade holds back for one register's schemas.
+	 *
+	 * 🔴 A HELD-BACK READ RULE LEAVES THE SCHEMA OPEN. The register is current
+	 * by version while the access policy its app ships never applied, so the
+	 * row names each such block rather than letting `current` stand alone.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor document.
+	 * @param mixed                $register   The register declaration.
+	 *
+	 * @return string|null `schema: block` entries joined by `, `, or null when none is held back.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function heldBackIn(array $descriptor, mixed $register): ?string {
+		$listed = ($register['schemas'] ?? []);
+		$components = ($descriptor['components']['schemas'] ?? []);
+		if ($this->heldBack === null || is_array($listed) === false || is_array($components) === false) {
+			return null;
+		}
+
+		$listed = array_map('strtolower', array_filter($listed, 'is_string'));
+		$entries = [];
+		foreach ($components as $key => $schema) {
+			if (is_array($schema) === false) {
+				continue;
+			}
+
+			$slug = (string)($schema['slug'] ?? $key);
+			if (in_array(strtolower($slug), $listed, true) === false) {
+				continue;
+			}
+
+			foreach ($this->heldBack->roots(slug: $slug, shipped: $schema) as $root) {
+				$entries[] = $slug . ': ' . $root;
+			}
+		}
+
+		if ($entries === []) {
+			return null;
+		}
+
+		return implode(', ', $entries);
+	}//end heldBackIn()
 
 	/**
 	 * The app a descriptor's rows are attributed to.

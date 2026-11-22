@@ -55,7 +55,8 @@ class DescriptorListCommand extends Command {
 		[
 			'problems-only',
 			InputOption::VALUE_NONE,
-			'Show only registers that are absent or behind the descriptor their app ships',
+			'Show only registers that are absent, behind the descriptor their app ships, '
+				.'or holding back an authorization block their app ships until an administrator accepts it',
 		],
 		[
 			'import',
@@ -184,10 +185,19 @@ class DescriptorListCommand extends Command {
 			return $rows;
 		}
 
-		return array_values(
-			array_filter($rows, static fn (array $row): bool => $row['state'] !== RegisterDescriptorServiceInterface::STATE_CURRENT)
-		);
+		return array_values(array_filter($rows, self::isProblem(...)));
 	}//end visibleRows()
+
+	/**
+	 * Whether a row needs an administrator: absent, behind, or holding back shipped access rules.
+	 *
+	 * @param array<string, string|null> $row One inventory row.
+	 *
+	 * @return bool True for a problem row.
+	 */
+	private static function isProblem(array $row): bool {
+		return $row['state'] !== RegisterDescriptorServiceInterface::STATE_CURRENT || ($row['heldBack'] ?? null) !== null;
+	}//end isProblem()
 
 	/**
 	 * The tally line: every row counted, whatever the filter showed.
@@ -202,11 +212,20 @@ class DescriptorListCommand extends Command {
 			RegisterDescriptorServiceInterface::STATE_BEHIND  => 0,
 			RegisterDescriptorServiceInterface::STATE_ABSENT  => 0,
 		];
+		$heldBack = 0;
 		foreach ($rows as $row) {
 			$counts[$row['state']]++;
+			if (($row['heldBack'] ?? null) !== null) {
+				$heldBack++;
+			}
 		}
 
-		return sprintf('%d declared · %d current · %d behind · %d ABSENT', count($rows), ...array_values($counts));
+		$summary = sprintf('%d declared · %d current · %d behind · %d ABSENT', count($rows), ...array_values($counts));
+		if ($heldBack > 0) {
+			$summary .= sprintf(' · %d holding back shipped access rules', $heldBack);
+		}
+
+		return $summary;
 	}//end summary()
 
 	/**
@@ -419,10 +438,34 @@ class DescriptorListCommand extends Command {
 
 		$line = sprintf('  %-22s %-24s %-9s %s', $row['appId'], $row['slug'], $row['state'], $versions);
 		$tag  = (self::STATE_TAGS[$row['state']] ?? null);
-		if ($tag === null) {
-			return $line;
+		if ($tag !== null) {
+			$line = sprintf('<%1$s>%2$s</%1$s>', $tag, $line);
 		}
 
-		return sprintf('<%1$s>%2$s</%1$s>', $tag, $line);
+		return $line . self::heldBackNote(row: $row);
 	}//end formatRow()
+
+	/**
+	 * The note under a row whose shipped authorization waits for an administrator, or nothing.
+	 *
+	 * Rendered as an error: until accepted, the schema runs without the access
+	 * policy its app ships.
+	 *
+	 * @param array<string, string|null> $row One inventory row.
+	 *
+	 * @return string The note, starting on a new line, or an empty string.
+	 */
+	private static function heldBackNote(array $row): string {
+		$heldBack = ($row['heldBack'] ?? null);
+		if ($heldBack === null) {
+			return '';
+		}
+
+		return sprintf(
+			"\n<error>    shipped authorization held back, waiting for acceptance (--import=%s --app=%s): %s</error>",
+			$row['slug'],
+			$row['appId'],
+			$heldBack
+		);
+	}//end heldBackNote()
 }//end class

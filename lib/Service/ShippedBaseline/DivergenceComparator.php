@@ -11,6 +11,15 @@
  * kept, every part falls into one of four states, three of which have an
  * obvious answer and only the fourth needs a person.
  *
+ * 🔴 AN EMPTY DECLARATION IS AN ABSENT ONE. A schema entity holds `[]` for an
+ * authorization block, a property list or a required list nobody declared,
+ * while a shipped file leaves the key out or writes `null`. Compared as
+ * values, the entity default reads as a local change, so a shipped
+ * authorization block meets a "conflict" on every unattended upgrade and is
+ * held back, leaving the schema open. At a declaration root
+ * ({@see self::isDeclarationRoot()}) `[]`, `null` and a missing key are the
+ * same part. Deeper down `[]` keeps its meaning: `read: []` is a rule.
+ *
  * 🔴 AN ABSENT BASELINE IS NOT AN EMPTY ONE. Before this change shipped, no
  * instance had a baseline, and treating "no baseline" as "the shipped
  * definition was empty" would make every existing property read as a local
@@ -164,8 +173,8 @@ class DivergenceComparator {
 	private function localDivergences(array $shipped, array $live): array {
 		$divergences = [];
 		foreach (self::sortedPaths(shipped: $shipped, live: $live) as $path) {
-			$shippedPart = ($shipped[$path] ?? self::ABSENT);
-			$livePart = ($live[$path] ?? self::ABSENT);
+			$shippedPart = self::partIn(flat: $shipped, path: $path);
+			$livePart = self::partIn(flat: $live, path: $path);
 			if ($this->identical(a: $shippedPart, b: $livePart) === false) {
 				$divergences[] = array_merge(
 					['path' => $path, 'state' => self::LOCAL],
@@ -272,7 +281,7 @@ class DivergenceComparator {
 	/**
 	 * What one path holds in each flattened revision, or {@see self::ABSENT}.
 	 *
-	 * A part holding null reads as absent, as the `??` lookup always has.
+	 * A part holding null, or an empty declaration root, reads as absent.
 	 *
 	 * @param DescriptorRevisions $flat The flattened revisions.
 	 * @param string|int          $path The path.
@@ -281,11 +290,123 @@ class DivergenceComparator {
 	 */
 	private static function partAt(DescriptorRevisions $flat, string|int $path): PartRevisions {
 		return new PartRevisions(
-			baseline: ($flat->baseline[$path] ?? self::ABSENT),
-			live: ($flat->live[$path] ?? self::ABSENT),
-			incoming: ($flat->incoming[$path] ?? self::ABSENT)
+			baseline: self::partIn(flat: $flat->baseline, path: $path),
+			live: self::partIn(flat: $flat->live, path: $path),
+			incoming: self::partIn(flat: $flat->incoming, path: $path)
 		);
 	}//end partAt()
+
+	/**
+	 * What one flattened revision holds at a path, or {@see self::ABSENT}.
+	 *
+	 * Absent: the path is missing, holds null, or is an empty declaration root.
+	 *
+	 * @param array<string|int, mixed> $flat The flattened revision.
+	 * @param string|int               $path The path.
+	 *
+	 * @return mixed The part, or ABSENT.
+	 */
+	private static function partIn(array $flat, string|int $path): mixed {
+		$part = ($flat[$path] ?? self::ABSENT);
+		if ($part === [] && self::isDeclarationRoot(path: (string)$path) === true) {
+			return self::ABSENT;
+		}
+
+		return $part;
+	}//end partIn()
+
+	/**
+	 * Whether two flattened revisions hold the same part at a path, absence and emptiness alike.
+	 *
+	 * @param array<string|int, mixed> $shipped The flattened baseline.
+	 * @param array<string|int, mixed> $live    The flattened live definition.
+	 * @param string                   $path    The path.
+	 *
+	 * @return bool True when the part did not move.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function samePartAt(array $shipped, array $live, string $path): bool {
+		return $this->identical(a: self::partIn(flat: $shipped, path: $path), b: self::partIn(flat: $live, path: $path));
+	}//end samePartAt()
+
+	/**
+	 * Whether a path names a whole declaration, for which empty means none.
+	 *
+	 * A top-level part (`properties`, `required`, `authorization`,
+	 * `configuration`), one property's `authorization` block, or one guarded
+	 * annotation under `configuration`.
+	 *
+	 * @param string $path A flattened path.
+	 *
+	 * @return bool True for a declaration root.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public static function isDeclarationRoot(string $path): bool {
+		$segments = explode(DescriptorParts::SEPARATOR, $path);
+		$depth = count($segments);
+		if ($depth === 1) {
+			return true;
+		}
+
+		if ($depth === 2) {
+			return $segments[0] === GuardedAnnotations::PART;
+		}
+
+		return $depth === 3 && $segments[0] === 'properties' && $segments[2] === 'authorization';
+	}//end isDeclarationRoot()
+
+	/**
+	 * A shipped definition as it is recorded as a baseline: an empty declaration root holds `[]`, never `null`.
+	 *
+	 * The comparison already reads both as absent; recording one spelling keeps
+	 * the stored baseline, the reset preview and the report agreeing with it.
+	 *
+	 * @param array<string, mixed> $definition The shipped definition.
+	 *
+	 * @return array<string, mixed> The definition to record.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	public function recordable(array $definition): array {
+		foreach ($definition as $part => $value) {
+			if ($value === null) {
+				$definition[$part] = [];
+			}
+		}
+
+		foreach ([GuardedAnnotations::PART, 'properties'] as $container) {
+			if (is_array($definition[$container] ?? null) === true) {
+				$definition[$container] = self::withEmptyChildren(container: $container, children: $definition[$container]);
+			}
+		}
+
+		return $definition;
+	}//end recordable()
+
+	/**
+	 * The children of a top-level part with each null declaration root under them made `[]`.
+	 *
+	 * @param string       $container `configuration` or `properties`.
+	 * @param array<mixed> $children  The part's children.
+	 *
+	 * @return array<mixed> The children.
+	 */
+	private static function withEmptyChildren(string $container, array $children): array {
+		foreach ($children as $key => $child) {
+			if ($container === GuardedAnnotations::PART && $child === null) {
+				$children[$key] = [];
+			}
+
+			$isProperty = ($container === 'properties' && is_array($child) === true);
+			if ($isProperty === true && array_key_exists('authorization', $child) === true && $child['authorization'] === null) {
+				$children[$key]['authorization'] = [];
+			}
+		}
+
+		return $children;
+	}//end withEmptyChildren()
 
 	/**
 	 * Whether two part values are the same, absence included.

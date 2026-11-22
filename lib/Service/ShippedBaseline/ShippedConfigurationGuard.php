@@ -245,7 +245,7 @@ class ShippedConfigurationGuard {
 
 		$incoming = $run->upgrade->incoming;
 		$shipped = new ShippedDefinition(definition: $definition, app: $incoming->app, appVersion: $incoming->appVersion);
-		$this->baselines->record(subject: $this->baselines->schemaSubject(slug: $run->upgrade->slug), shipped: $shipped);
+		$this->recordShippedSchema(slug: $run->upgrade->slug, shipped: $shipped);
 	}//end recordBaseline()
 
 	/**
@@ -373,7 +373,13 @@ class ShippedConfigurationGuard {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function recordShippedSchema(string $slug, ShippedDefinition $shipped): bool {
-		return $this->baselines->record(subject: $this->baselines->schemaSubject(slug: $slug), shipped: $shipped);
+		$recordable = new ShippedDefinition(
+			definition: $this->comparator->recordable(definition: $shipped->definition),
+			app: $shipped->app,
+			appVersion: $shipped->appVersion
+		);
+
+		return $this->baselines->record(subject: $this->baselines->schemaSubject(slug: $slug), shipped: $recordable);
 	}//end recordShippedSchema()
 
 	/**
@@ -481,12 +487,12 @@ class ShippedConfigurationGuard {
 			];
 		}
 
-		if ($hasShipped === true && $hasLive === true && $flat['shipped'][$path] === $flat['live'][$path]) {
+		if ($this->comparator->samePartAt(shipped: $flat['shipped'], live: $flat['live'], path: $path) === true) {
 			return [
 				'applicable' => false,
 				'reason' => sprintf('"%s" already matches what was shipped', $path),
-				'from' => $flat['live'][$path],
-				'to' => $flat['shipped'][$path],
+				'from' => ($flat['live'][$path] ?? null),
+				'to' => ($flat['shipped'][$path] ?? null),
 				'definition' => $live,
 			];
 		}

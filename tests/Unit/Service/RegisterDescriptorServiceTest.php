@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\RegisterImporters;
+use OCA\OpenRegister\Service\ShippedBaseline\HeldBackAuthorization;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
@@ -83,7 +84,18 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->containers           = $this->createMock(AppContainerLocator::class);
 		$this->decision             = new ShippedAuthorizationDecision();
 
-		$this->service = new RegisterDescriptorService(
+		$this->service = $this->buildService();
+	}
+
+	/**
+	 * The service over the test's collaborators.
+	 *
+	 * @param HeldBackAuthorization|null $heldBack Names held-back authorization blocks; none when null.
+	 *
+	 * @return RegisterDescriptorService
+	 */
+	private function buildService(?HeldBackAuthorization $heldBack = null): RegisterDescriptorService {
+		return new RegisterDescriptorService(
 			$this->appManager,
 			$this->registerMapper,
 			new RegisterImporters(
@@ -99,7 +111,8 @@ class RegisterDescriptorServiceTest extends TestCase {
 				documents: new RegisterDocumentLoader(appManager: $this->appManager)
 			)
 			),
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$heldBack
 		);
 	}
 
@@ -172,6 +185,40 @@ class RegisterDescriptorServiceTest extends TestCase {
 		}
 
 		file_put_contents($this->appRoot . '/lib/Settings/' . $file, json_encode($descriptor));
+	}
+
+	public function testACurrentRegisterNamesTheShippedAuthorizationItHoldsBack(): void {
+		$this->writeDescriptor(file: 'launchpad_register.json', slug: 'launchpad', version: '1.0.1');
+		$path = $this->appRoot . '/lib/Settings/launchpad_register.json';
+		$descriptor = json_decode((string)file_get_contents($path), true);
+		$descriptor['components']['registers']['launchpad']['schemas'] = ['dashboard', 'note'];
+		$descriptor['components']['schemas'] = [
+			'Dashboard' => ['slug' => 'dashboard', 'authorization' => ['read' => ['launchpad-audience']]],
+			'note' => ['properties' => []],
+			'unlisted' => ['authorization' => ['read' => ['x']]],
+		];
+		file_put_contents($path, json_encode($descriptor));
+		$this->expectApp(appId: 'launchpad');
+		$this->registerMapper->method('findAll')->willReturn([$this->register(slug: 'launchpad', version: '1.0.1')]);
+
+		$heldBack = $this->createMock(HeldBackAuthorization::class);
+		$heldBack->expects($this->exactly(2))->method('roots')->willReturnCallback(
+			static fn (string $slug, array $shipped): array => ($slug === 'dashboard' ? ['authorization'] : [])
+		);
+
+		$rows = $this->buildService(heldBack: $heldBack)->inventory();
+
+		$this->assertCount(1, $rows);
+		$this->assertSame(RegisterDescriptorService::STATE_CURRENT, $rows[0]['state']);
+		$this->assertSame('dashboard: authorization', $rows[0]['heldBack']);
+	}
+
+	public function testWithoutTheHeldBackReaderTheColumnIsNull(): void {
+		$this->writeDescriptor(file: 'launchpad_register.json', slug: 'launchpad', version: '1.0.1');
+		$this->expectApp(appId: 'launchpad');
+		$this->registerMapper->method('findAll')->willReturn([]);
+
+		$this->assertNull($this->service->inventory()[0]['heldBack']);
 	}
 
 	/**

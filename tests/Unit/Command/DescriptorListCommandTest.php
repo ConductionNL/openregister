@@ -102,6 +102,39 @@ class DescriptorListCommandTest extends TestCase {
 		$this->assertStringContainsString('2 declared', $output);
 	}
 
+	public function testProblemsOnlyListsACurrentRegisterHoldingBackShippedAuthorization(): void {
+		$held = $this->row('launchpad', 'launchpad', RegisterDescriptorService::STATE_CURRENT, '1.3.0');
+		$held['heldBack'] = 'dashboard: authorization';
+		$this->descriptors->method('inventory')->willReturn(
+			[
+				$this->row('openregister', 'flows', RegisterDescriptorService::STATE_CURRENT, '1.3.0'),
+				$held,
+			]
+		);
+
+		$this->tester->execute(['--problems-only' => true]);
+		$output = $this->tester->getDisplay();
+
+		$this->assertStringNotContainsString(' flows ', $output);
+		$this->assertStringContainsString('launchpad', $output);
+		$this->assertStringContainsString('shipped authorization held back', $output);
+		$this->assertStringContainsString('dashboard: authorization', $output);
+		$this->assertStringContainsString('--import=launchpad --app=launchpad', $output);
+		$this->assertStringContainsString('1 holding back shipped access rules', $output);
+	}
+
+	public function testARowWithNothingHeldBackPrintsNoNoteAndNoCount(): void {
+		$row = $this->row('openregister', 'flows', RegisterDescriptorService::STATE_CURRENT, '1.3.0');
+		$row['heldBack'] = null;
+		$this->descriptors->method('inventory')->willReturn([$row]);
+
+		$this->tester->execute(['--problems-only' => true]);
+		$output = $this->tester->getDisplay();
+
+		$this->assertStringNotContainsString('held back', $output);
+		$this->assertStringNotContainsString('holding back', $output);
+	}
+
 	public function testAnInstanceWithNoDescriptorsSaysSoRatherThanPrintingNothing(): void {
 		$this->descriptors->method('inventory')->willReturn([]);
 
