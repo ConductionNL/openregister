@@ -394,3 +394,13 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Service/Flow/FlowEngineOversightTest (5 cases) Error: Class "Unit\Service\Flow\FlowSubject" not found.
 - Cause: red on plain main e158c36ac (21 Nov); the test resolves FlowSubject in its own (non-OCA) namespace. Not a PR defect.
 - Fix: none on PR branches: inherited; confirm on origin/main. Also still red on main: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce, AnonymousEnvelopeReadPathsTest.
+
+## Inherited red on main: ReservedColumnNamesTest (or-fix-3)
+- Symptom: tests/Unit/Migration/ReservedColumnNamesTest (5 errors) RuntimeException: raw.githubusercontent.com/MariaDB/server/10.5/sql/lex.h answered HTTP 404.
+- Cause: red on plain main e158c36ac (22 Nov); tests/Support/ReservedWordSource fetches an upstream file that moved. Not a PR defect.
+- Fix: none on PR branches: inherited; the source URL needs updating on main.
+
+## Test env trap: symlinked vendor in a worktree runs main's lib (or-fix-3)
+- Symptom: in a second worktree, PR tests fail with TypeErrors against the old signature, or A18InterfaceBindingsTest lists a class's own file as a caller.
+- Cause: a symlinked vendor/ makes composer's autoloader resolve lib/ from the symlink target checkout, not the worktree.
+- Fix: never symlink vendor; copy it with cp -al (hardlinks) into each worktree.
