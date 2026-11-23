@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
 use OCA\OpenRegister\Service\Flow\FlowProgressPeriod;
 use OCA\OpenRegister\Service\Flow\FlowProgressService;
@@ -79,7 +79,7 @@ class FlowProgressController extends Controller {
 		private readonly FlowProgressService $progress,
 		private readonly TaskTemporalProjection $temporal,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
