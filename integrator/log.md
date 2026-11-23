@@ -1,0 +1,1 @@
+2026-11-23T15:26:53Z NORESULT prs=7667,7828,7830,8084,8344,8456,8819,8951 main=223a653f28 integrator-cloud (suite green after inherited main reds; floor PASS; checker floor NORESULT twice: gitleaks absent, install refused)
