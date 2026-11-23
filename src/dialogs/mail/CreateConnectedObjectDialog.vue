@@ -73,9 +73,6 @@
 					:required="field.required"
 					class="or-create-connected-dialog__input" />
 
-				<p v-if="field.hint" class="or-create-connected-dialog__hint">
-					{{ field.hint }}
-				</p>
 			</div>
 		</div>
 
@@ -283,7 +280,6 @@ export default {
 					control: this.controlFor(key, def),
 					options,
 					required: (this.schema?.required || []).includes(key),
-					hint: typeof def.description === 'string' ? def.description : '',
 				}
 			})
 		},
@@ -379,9 +375,9 @@ export default {
 </script>
 
 <style scoped>
-/* Drawn as the DqNieuweZaak board: an intro line, a two-column grid of fields
- * with "(optional)" after the labels that are not required, hints under the
- * fields, and Cancel and Create on the right. */
+/* Drawn as the DqNieuweZaak board: the title on the left, an intro line, a
+ * two-column grid of fields with "(optional)" after the labels that are not
+ * required, and Cancel and Create on the right. */
 .or-create-connected-dialog :deep(.modal-container) {
 	max-width: 720px;
 }
@@ -444,11 +440,20 @@ textarea.or-create-connected-dialog__input {
 	width: 100%;
 }
 
-.or-create-connected-dialog__hint {
-	margin: 0;
-	font-size: 12px;
-	line-height: 16px;
-	color: var(--color-text-maxcontrast);
+.or-create-connected-dialog :deep(.dialog__name) {
+	text-align: start;
+	font-size: 20px;
+	line-height: 26px;
+}
+
+.or-create-connected-dialog :deep(.dialog__actions) {
+	justify-content: flex-end;
+}
+
+.or-create-connected-dialog :deep(.dialog__actions .button-vue) {
+	flex: 0 0 auto;
+	width: auto;
+	min-height: 40px;
 }
 
 @media (max-width: 600px) {
