@@ -40,6 +40,7 @@ components:
       - ".*/lib/Service/Lifecycle/TransitionMove[.]php"
       - ".*/lib/Service/Object/BatchOperationStatusInterface[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
+      - ".*/lib/Service/Search/TextSearchConfiguration[.]php"
       - ".*/lib/Support/.*"
     exclude:
       - ".*/lib/Kernel/Contracts/(Compliance|Configuration|Core|Files|Integrations|Notifications|Processes|Search)/.*"
@@ -1160,7 +1161,6 @@ components:
       - ".*/lib/Service/Search/SearchTokenStream[.]php"
       - ".*/lib/Service/Search/SnippetBuilder[.]php"
       - ".*/lib/Service/Search/SynonymCaps[.]php"
-      - ".*/lib/Service/Search/TextSearchConfiguration[.]php"
       - ".*/lib/Service/Search/TokenizeRun[.]php"
       - ".*/lib/Service/Security/[^/]*"
       - ".*/lib/Service/Serializer/[^/]*"

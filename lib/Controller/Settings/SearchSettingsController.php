@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -55,7 +55,7 @@ class SearchSettingsController extends Controller {
 		IRequest $request,
 		private readonly TextSearchConfiguration $textSearch,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -67,7 +67,7 @@ class SearchSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function show(): JSONResponse {
 		return new JSONResponse(data: $this->settings());
 	}//end show()
@@ -81,7 +81,7 @@ class SearchSettingsController extends Controller {
 	 *
 	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function update(string $textSearchConfig=''): JSONResponse {
 		try {
 			$this->textSearch->save(name: $textSearchConfig);
