@@ -54,6 +54,13 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 	 */
 	private array $store = [];
 
+	/**
+	 * The time to live each stored key was given, in seconds.
+	 *
+	 * @var array<string,int>
+	 */
+	private array $ttls = [];
+
 	private XwikiLinkService $service;
 
 	protected function setUp(): void {
@@ -72,6 +79,7 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 		$cache->method('set')->willReturnCallback(
 			function (string $key, mixed $value, int $ttl): bool {
 				$this->store[$key] = $value;
+				$this->ttls[$key]  = $ttl;
 				return true;
 			}
 		);
@@ -105,6 +113,7 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 
 		$this->assertSame($first, $second);
 		$this->assertSame('Policies.Street lighting', $second['results'][0]['reference']);
+		$this->assertSame([300], array_values($this->ttls));
 	}//end testARepeatedSearchIsAnsweredFromTheCache()
 
 	public function testAnotherQueryAsksTheSourceAgain(): void {

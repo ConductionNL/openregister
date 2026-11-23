@@ -89,9 +89,11 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	// 24 hours in seconds.
 
 	/**
-	 * Seconds a page search answer is reused, per user and query.
+	 * Seconds a page search answer is reused, per user and query. An
+	 * uncached answer costs 0.6-0.7 s (a call through the integriq source);
+	 * wiki pages change slowly.
 	 */
-	private const SEARCH_CACHE_TTL = 60;
+	private const SEARCH_CACHE_TTL = 300;
 
 	/**
 	 * Constructor.
