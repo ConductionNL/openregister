@@ -598,14 +598,15 @@ export default {
 			this.creating[schema.id] = true
 			try {
 				const envelope = await this.fetchEnvelope()
+				const values = this.buildPlaceholders(envelope)
 				const data = this.applyTemplate(
 					schema.configuration.mailObjectTemplate,
-					this.buildPlaceholders(envelope),
+					values,
 				)
 				const offered = createDialogFor(this.registerCache[schema.id], schema)
 				if (offered) {
 					this.creating[schema.id] = false
-					await this.createWithOfferedDialog(offered, schema, data)
+					await this.createWithOfferedDialog(offered, schema, data, values)
 					return
 				}
 				this.createDialog = { show: true, schema, data }
@@ -619,21 +620,24 @@ export default {
 
 		/**
 		 * Create through the dialog the schema's own app offers, then connect
-		 * the mail to what it created. A cancel connects nothing.
+		 * the mail to what it created. A cancel connects nothing. The app gets
+		 * the mail's template values too, so it can fill fields of its own
+		 * with the same placeholders the schema's template uses.
 		 *
 		 * @param {object} offered The app's entry, with `open`.
 		 * @param {object} schema The schema to create.
 		 * @param {object} data The mail template filled from the open mail.
+		 * @param {object} values The template's placeholder values for the open mail.
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		async createWithOfferedDialog(offered, schema, data) {
+		async createWithOfferedDialog(offered, schema, data, values) {
 			let created
 			try {
 				created = await offered.open({
 					initialData: data,
 					register: this.registerCache[schema.id],
 					schema,
-					mail: { accountId: this.accountId, messageId: this.messageId },
+					mail: { accountId: this.accountId, messageId: this.messageId, values },
 				})
 			} catch {
 				showError(t('openregister', 'Failed to create {name} from email', { name: itemName(schema) }))
