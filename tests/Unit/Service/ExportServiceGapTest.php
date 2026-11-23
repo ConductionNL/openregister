@@ -48,7 +48,6 @@ class ExportServiceGapTest extends TestCase {
 
 		$this->exportService = new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
