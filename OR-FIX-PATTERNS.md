@@ -634,3 +634,11 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Fix: change the test's use line and @uses to OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest (see #10493).
 ## Inherited on main 6e870ca5 (23 Nov 21:30Z): 4 Files -> Core edges (or-fix-2)
 - ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline is red on plain main: DecisionMetadataEdit -> Db/EntityRelation, Files/Service/File/ManagedFiles -> Service/File/DocumentStore and ManagedFileOwnerLookup, Kernel/Contracts/Files/EntityMentionDecisionsInterface -> Db/EntityRelation. Inherited; subtract these from a PR merge's list, do not fix them in a PR.
+
+## Inherited red on main 6e870ca5: ComponentDependencyRulesTest 4 Files -> Core edges (or-fix-6)
+- Symptom: testNoComponentEdgeBeyondTheBaseline lists DecisionMetadataEdit/EntityMentionDecisionsInterface -> Db/EntityRelation and ManagedFiles -> DocumentStore/ManagedFileOwnerLookup (Files -> Core) on every merged PR.
+- Cause: red on main itself (6e870ca5). Inherited; count the PR's edges with python3 scripts/component-deps.py (4 = none of its own).
+
+## A feature cluster mapped Configuration extends a Core feature (or-fix-6)
+- Symptom: ~10 edges '<PR file> -> lib/Service/Schemas/GeneratedIdentifier*.php (Configuration -> Core)' plus '-> SequenceServiceInterface (Configuration -> Processes)'.
+- Fix: remap the whole PR cluster (its csv rows only) to the component it extends (Core); a Processes SequenceService call with SequenceScope(0,0,key) becomes Core's Kernel/Contracts/Core/RunningNumbersInterface (same scope); controller AppIdentity + AdminSettingDelegation::OPEN_REGISTER_ADMIN (#10516 7aa7241c).
