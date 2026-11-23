@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -57,19 +57,19 @@ class AttachTargetSearch {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface   $registerMapper The registers.
-	 * @param SchemaMapperInterface     $schemaMapper   The schemas.
-	 * @param PermissionCheckInterface  $permissions    The platform's verdict on who may change what.
-	 * @param ObjectOperationsInterface $objects        The object search.
-	 * @param LoggerInterface           $logger         The logger.
-	 * @param AttachTargetFilter|null   $filter         The offer rule.
+	 * @param RegisterMapperInterface    $registerMapper The registers.
+	 * @param SchemaMapperInterface      $schemaMapper   The schemas.
+	 * @param SchemaWriteRightsInterface $permissions    The platform's verdict on who may change what.
+	 * @param ObjectOperationsInterface  $objects        The object search.
+	 * @param LoggerInterface            $logger         The logger.
+	 * @param AttachTargetFilter|null    $filter         The offer rule.
 	 *
 	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionCheckInterface $permissions,
+		private readonly SchemaWriteRightsInterface $permissions,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 		?AttachTargetFilter $filter = null,
@@ -159,9 +159,8 @@ class AttachTargetSearch {
 	 */
 	private function mayChange(Schema $schema, Register $register): bool {
 		try {
-			return $this->permissions->hasPermission(
+			return $this->permissions->mayUpdate(
 				schema: $schema,
-				action: 'update',
 				register: (string)$register->getId()
 			);
 		} catch (Throwable $e) {

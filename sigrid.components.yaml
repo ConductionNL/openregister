@@ -697,6 +697,7 @@ components:
       - ".*/lib/Service/Object/SchemaTypeConverter[.]php"
       - ".*/lib/Service/Object/SchemaTypeConverterInterface[.]php"
       - ".*/lib/Service/Object/SchemaUriResolverInterface[.]php"
+      - ".*/lib/Service/Object/SchemaWriteRights[.]php"
       - ".*/lib/Service/Object/SearchLenses[.]php"
       - ".*/lib/Service/Object/SearchOptions[.]php"
       - ".*/lib/Service/Object/SearchPageRun[.]php"

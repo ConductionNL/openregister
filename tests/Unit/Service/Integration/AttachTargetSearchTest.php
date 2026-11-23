@@ -38,6 +38,7 @@ use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetSearch;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Object\SchemaWriteRights;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,6 +56,7 @@ use RuntimeException;
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(ObjectEntity::class)]
+#[UsesClass(SchemaWriteRights::class)]
 class AttachTargetSearchTest extends TestCase {
 
 	/**
@@ -97,7 +99,7 @@ class AttachTargetSearchTest extends TestCase {
 		return new AttachTargetSearch(
 			registerMapper: $this->registers,
 			schemaMapper: $this->schemas,
-			permissions: $this->permissions,
+			permissions: new SchemaWriteRights(permissions: $this->permissions),
 			objects: $this->objects,
 			logger: $this->createMock(LoggerInterface::class)
 		);

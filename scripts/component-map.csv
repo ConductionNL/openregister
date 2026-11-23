@@ -1258,6 +1258,7 @@ Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
+Kernel/Contracts/SchemaWriteRightsInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppSettingsInterface.php,42,Kernel,Kernel,Kernel/Contracts/AppSettingsInterface.php,0,,Kernel
 Kernel/Contracts/ContactMatcherInterface.php,11,Kernel,Kernel,Kernel/Contracts/ContactMatcherInterface.php,0,,Kernel
 Kernel/Contracts/EmbeddingGeneratorInterface.php,6,Kernel,Kernel,Kernel/Contracts/EmbeddingGeneratorInterface.php,0,,Kernel
@@ -2802,6 +2803,7 @@ Service/Object/PerformanceHandler.php,87,Service,Service,Service/Object/Performa
 Service/Object/PerformanceOptimizationHandler.php,38,Service,Service,Service/Object/PerformanceOptimizationHandler.php,0,,Core
 Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Core
 Service/Object/PermissionHandler.php,1872,Service,Access,Access/Service/Object/PermissionHandler.php,22,5,Core
+Service/Object/SchemaWriteRights.php,,Service,,,,,Core
 Service/Object/PinnedTable.php,10,Service,Service,Service/Object/PinnedTable.php,0,,Core
 Service/Object/PreservedListing.php,11,Service,Service,Service/Object/PreservedListing.php,0,,Core
 Service/Object/PreservedListLens.php,53,Service,Service,Service/Object/PreservedListLens.php,0,,Core
