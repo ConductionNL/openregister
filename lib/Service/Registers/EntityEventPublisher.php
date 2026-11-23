@@ -45,7 +45,6 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceDeletedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
-use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
@@ -53,7 +52,6 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
-use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -390,20 +388,6 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	public function flowRunTerminal(string $runUuid, string $status): void {
 		$this->dispatcher->dispatchTyped(new FlowRunTerminalEvent(runUuid: $runUuid, status: $status));
 	}//end flowRunTerminal()
-
-	/**
-	 * A task reached a terminal state.
-	 *
-	 * @param Entity $task The task as persisted.
-	 * @param bool $committed Whether the write that made it terminal is already committed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
-	 */
-	public function taskTerminal(Entity $task, bool $committed): void {
-		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: self::narrow(entity: $task, class: TaskInterface::class), committed: $committed));
-	}//end taskTerminal()
 
 	/**
 	 * The entity as the class its event carries, refused when a caller passed another class.

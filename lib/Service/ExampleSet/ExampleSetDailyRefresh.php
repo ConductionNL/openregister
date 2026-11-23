@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCP\IAppConfig;
 use Throwable;
 
@@ -136,7 +137,7 @@ class ExampleSetDailyRefresh implements ExampleSetDailyRefreshInterface, Example
 	private function refresh(string $set, ?DateTimeImmutable $today): array {
 		try {
 			$plan   = ($this->catalogue->gather(set: $set) + ['refresh' => true]);
-			$result = $this->installer->install(plan: $plan, today: $today);
+			$result = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $today));
 		} catch (Throwable $e) {
 			return ['ok' => false, 'skipped' => $e->getMessage()];
 		}

@@ -64,6 +64,10 @@ final class LeafRegistration {
 	private const GENERIC_INITIALIZE_ACTIONS = 'OCA\\OpenRegister\\AppHost\\Repair\\GenericInitializeActions';
 	private const GENERIC_ADMIN_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings';
 	private const GENERIC_SETTINGS_SECTION = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
+	private const SETTINGS_PLACEMENT = 'OCA\\OpenRegister\\AppHost\\Settings\\SettingsPlacement';
+	private const SECTION_APPEARANCE = 'OCA\\OpenRegister\\AppHost\\Settings\\SectionAppearance';
+	private const ADMIN_FORM_SERVICES = 'OCA\\OpenRegister\\AppHost\\Settings\\AdminFormServices';
+	private const CREDENTIAL_ONBOARDING = 'OCA\\OpenRegister\\AppHost\\Repair\\CredentialOnboarding';
 	private const GENERIC_DEEPLINK_LISTENER = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
 	/**
@@ -499,13 +503,16 @@ final class LeafRegistration {
 	private static function initializeSettingsFactory(string $appId): \Closure {
 		return static function (ContainerInterface $c) use ($appId) {
 			$class = self::GENERIC_INITIALIZE_SETTINGS;
+			$onboarding = self::CREDENTIAL_ONBOARDING;
 			return new $class(
 				appId: $appId,
 				settingsService: $c->get(self::GENERIC_SETTINGS_SERVICE),
 				logger: $c->get('Psr\\Log\\LoggerInterface'),
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
-				applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
+				onboarding: new $onboarding(
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					tokenService: $c->get('OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService'),
+					applicationRegistrar: $c->get('OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar')
+				)
 			);
 		};
 	}//end initializeSettingsFactory()
@@ -543,13 +550,15 @@ final class LeafRegistration {
 
 		return static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
 			$class = self::GENERIC_ADMIN_SETTINGS;
+			$placement = self::SETTINGS_PLACEMENT;
+			$services = self::ADMIN_FORM_SERVICES;
 			return new $class(
-				appId: $appId,
-				sectionId: $sectionId,
-				priority: $adminPriority,
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
-				appConfig: $c->get('OCP\\IAppConfig')
+				placement: new $placement(appId: $appId, sectionId: $sectionId, priority: $adminPriority),
+				services: new $services(
+					appManager: $c->get('OCP\\App\\IAppManager'),
+					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
+					appConfig: $c->get('OCP\\IAppConfig')
+				)
 			);
 		};
 	}//end adminSettingsFactory()
@@ -565,12 +574,11 @@ final class LeafRegistration {
 	private static function settingsSectionFactory(string $appId, array $section): \Closure {
 		return static function (ContainerInterface $c) use ($appId, $section) {
 			$class = self::GENERIC_SETTINGS_SECTION;
+			$placement = self::SETTINGS_PLACEMENT;
+			$appearance = self::SECTION_APPEARANCE;
 			return new $class(
-				sectionId: $section['id'],
-				name: $section['name'],
-				appId: $appId,
-				iconFile: $section['icon'],
-				priority: $section['priority'],
+				placement: new $placement(appId: $appId, sectionId: $section['id'], priority: $section['priority']),
+				appearance: new $appearance(name: $section['name'], iconFile: $section['icon']),
 				urlGenerator: $c->get('OCP\\IURLGenerator')
 			);
 		};
