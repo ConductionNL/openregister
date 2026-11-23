@@ -104,6 +104,51 @@ class TranslationHandlerTranslatedNameTest extends TestCase {
 	}//end testNothingToReplace()
 
 	/**
+	 * An untranslated property that also carries the name does not hide the translated one.
+	 *
+	 * @return void
+	 */
+	public function testAnUntranslatedPropertyWithTheSameTextDoesNotWin(): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'subject' => ['type' => 'string', 'translatable' => true],
+				'title' => ['type' => 'string', 'translatable' => true],
+			]
+		);
+		$stored = ['subject' => ['nl' => 'Omgevingsvergunning'], 'title' => ['nl' => 'Omgevingsvergunning', 'en' => 'Environmental permit']];
+		$resolved = ['subject' => 'Omgevingsvergunning', 'title' => 'Environmental permit'];
+
+		self::assertSame(
+			expected: 'Environmental permit',
+			actual: $this->handler()->translatedName(stored: $stored, resolved: $resolved, schema: $schema, name: 'Omgevingsvergunning')
+		);
+	}//end testAnUntranslatedPropertyWithTheSameTextDoesNotWin()
+
+	/**
+	 * The configured name field decides between properties that both carry the name.
+	 *
+	 * @return void
+	 */
+	public function testTheConfiguredNameFieldDecides(): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'subject' => ['type' => 'string', 'translatable' => true],
+				'title' => ['type' => 'string', 'translatable' => true],
+			]
+		);
+		$schema->setConfiguration(['objectNameField' => 'title']);
+		$stored = ['subject' => ['nl' => 'Vergunning', 'en' => 'Permit topic'], 'title' => ['nl' => 'Vergunning', 'en' => 'Permit']];
+		$resolved = ['subject' => 'Permit topic', 'title' => 'Permit'];
+
+		self::assertSame(
+			expected: 'Permit',
+			actual: $this->handler()->translatedName(stored: $stored, resolved: $resolved, schema: $schema, name: 'Vergunning')
+		);
+	}//end testTheConfiguredNameFieldDecides()
+
+	/**
 	 * A request for all translations keeps the stored name.
 	 *
 	 * @return void

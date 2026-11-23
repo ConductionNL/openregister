@@ -143,6 +143,7 @@ class TranslationHandler implements TranslationHandlerInterface {
 			return null;
 		}
 
+		$candidates = [];
 		foreach ($this->propertiesToResolve(schema: $schema) as $propName) {
 			$map = ($stored[$propName] ?? null);
 			$text = ($resolved[$propName] ?? null);
@@ -151,6 +152,20 @@ class TranslationHandler implements TranslationHandlerInterface {
 			}
 
 			if (in_array($name, $map, true) === true) {
+				$candidates[$propName] = $text;
+			}
+		}
+
+		// Several properties can carry the name in the source language (a title
+		// and an untranslated subject); the configured name field decides, else
+		// the first one that has a translation for this reader.
+		$nameField = ($schema->getConfiguration()['objectNameField'] ?? null);
+		if (is_string($nameField) === true && isset($candidates[$nameField]) === true) {
+			return $candidates[$nameField];
+		}
+
+		foreach ($candidates as $text) {
+			if ($text !== $name) {
 				return $text;
 			}
 		}
