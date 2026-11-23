@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Controller\CredentialProviderApprovalController;
-use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -50,7 +49,6 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Credential\DeclaredProviderApprovals
  * @uses   \OCA\OpenRegister\Service\Credential\DeclarationValidator
  * @uses   \OCA\OpenRegister\Service\Credential\ProviderCatalogue
- * @uses   \OCA\OpenRegister\Controller\Support\AdministratorOnlyGate
  *
  * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
  */
@@ -308,6 +306,6 @@ class DeclaredProviderDecisionsTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(static fn (string $key, mixed $default = null): mixed => $key === 'note' ? 'Checked the host.' : $default);
 		[$decisions] = $this->services();
 
-		return new CredentialProviderApprovalController($request, new AdministratorOnlyGate($session, $groups), $session, $decisions);
+		return new CredentialProviderApprovalController($request, $groups, $session, $decisions);
 	}
 }

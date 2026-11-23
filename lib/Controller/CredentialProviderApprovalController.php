@@ -5,7 +5,7 @@
  *
  * Three admin-only routes over DeclaredProviderDecisions. Nextcloud's
  * `AuthorizedAdminSetting` admits only administrators (and delegated admins of
- * the OpenRegister settings); the in-body AdministratorOnlyGate then admits only
+ * the OpenRegister settings); the in-body administrator check then admits only
  * a real administrator, so a delegated admin cannot open a host to an app.
  * Nothing is written for a refused caller.
  *
@@ -28,14 +28,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Credential\DeclaredProviderDecisionRefused;
 use OCA\OpenRegister\Service\Credential\DeclaredProviderDecisions;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -57,7 +57,7 @@ class CredentialProviderApprovalController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest                  $request     The request.
-	 * @param AdministratorOnlyGate     $gate        Refuses a caller who is not an administrator.
+	 * @param IGroupManager             $groups      Tells a real administrator from anyone else.
 	 * @param IUserSession              $userSession The deciding administrator.
 	 * @param DeclaredProviderDecisions $decisions   Records the decision.
 	 *
@@ -65,11 +65,11 @@ class CredentialProviderApprovalController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly AdministratorOnlyGate $gate,
+		private readonly IGroupManager $groups,
 		private readonly IUserSession $userSession,
 		private readonly DeclaredProviderDecisions $decisions,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -81,7 +81,7 @@ class CredentialProviderApprovalController extends Controller {
 	 *
 	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function approve(string $identifier): JSONResponse {
 		return $this->decide(identifier: $identifier, decision: DeclaredProviderDecisions::APPROVE);
 	}//end approve()
@@ -95,7 +95,7 @@ class CredentialProviderApprovalController extends Controller {
 	 *
 	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function reject(string $identifier): JSONResponse {
 		return $this->decide(identifier: $identifier, decision: DeclaredProviderDecisions::REJECT);
 	}//end reject()
@@ -109,7 +109,7 @@ class CredentialProviderApprovalController extends Controller {
 	 *
 	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function revoke(string $identifier): JSONResponse {
 		return $this->decide(identifier: $identifier, decision: DeclaredProviderDecisions::REVOKE);
 	}//end revoke()
@@ -123,9 +123,13 @@ class CredentialProviderApprovalController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function decide(string $identifier, string $decision): JSONResponse {
-		$refusal = $this->gate->refusal(forbidden: self::ADMIN_ONLY);
-		if ($refusal !== null) {
-			return $refusal;
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
+
+		if ($this->groups->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(data: ['error' => self::ADMIN_ONLY], statusCode: 403);
 		}
 
 		$note = $this->request->getParam('note', '');
