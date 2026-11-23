@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\GraphQL;
 use GraphQL\Language\AST\OperationDefinitionNode;
 use GraphQL\Language\Parser;
 use OCA\OpenRegister\Exception\ReadOnlyQueryException;
+use OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 
 /**
@@ -44,7 +45,7 @@ use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
  *
  * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
  */
-class AdminQueryRunner {
+class AdminQueryRunner implements AdminQueryRunnerInterface {
 
 	/**
 	 * The most rows a run may return across all its lists.

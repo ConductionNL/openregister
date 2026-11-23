@@ -29,6 +29,7 @@ namespace Unit\Service\GraphQL;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\GraphQL\AdminQueryAudit;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IUser;
@@ -74,7 +75,7 @@ class AdminQueryAuditTest extends TestCase {
 	}//end setUp()
 
 	private function audit(): AdminQueryAudit {
-		return new AdminQueryAudit($this->auditTrailMapper, $this->userSession, $this->organisations);
+		return new AdminQueryAudit(new AuditEntryWriter(mapper: $this->auditTrailMapper), $this->userSession, $this->organisations);
 	}//end audit()
 
 	private function signedInAs(string $uid): void {

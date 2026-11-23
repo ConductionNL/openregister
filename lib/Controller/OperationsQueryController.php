@@ -34,13 +34,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Exception\NoTabularResultException;
 use OCA\OpenRegister\Exception\ReadOnlyQueryException;
-use OCA\OpenRegister\Search\Service\GraphQL\BoundedRun;
+use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 use OCA\OpenRegister\Service\GraphQL\AdminQueryAudit;
 use OCA\OpenRegister\Service\GraphQL\AdminQueryExport;
-use OCA\OpenRegister\Service\GraphQL\AdminQueryRunner;
+use OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -58,7 +58,7 @@ class OperationsQueryController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest         $request The HTTP request.
-	 * @param AdminQueryRunner $runner  The read-only, bounded GraphQL runner.
+	 * @param AdminQueryRunnerInterface $runner  The read-only, bounded GraphQL runner.
 	 * @param AdminQueryExport $export  The first-list flattener and CSV/JSON writer.
 	 * @param AdminQueryAudit  $audit   The run and download audit writer.
 	 *
@@ -66,11 +66,11 @@ class OperationsQueryController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly AdminQueryRunner $runner,
+		private readonly AdminQueryRunnerInterface $runner,
 		private readonly AdminQueryExport $export,
 		private readonly AdminQueryAudit $audit,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -224,7 +224,7 @@ class OperationsQueryController extends Controller {
 		}
 
 		foreach ($errors as $error) {
-			if (($error['extensions']['code'] ?? null) === BoundedRun::TIMEOUT_CODE) {
+			if (($error['extensions']['code'] ?? null) === BoundedQueryRunInterface::TIMEOUT_CODE) {
 				return 'timeout';
 			}
 		}

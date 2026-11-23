@@ -82,6 +82,10 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 			$row->setObjectUuid($entry->objectUuid);
 		}
 
+		if ($entry->organisationId !== null) {
+			$row->setOrganisationId($entry->organisationId);
+		}
+
 		return $row;
 	}//end rowFor()
 

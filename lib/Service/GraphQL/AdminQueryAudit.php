@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
@@ -72,14 +72,14 @@ class AdminQueryAudit {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface     $auditTrailMapper The audit trail writer.
+	 * @param AuditEntryWriterInterface     $auditEntries     The audit trail writer.
 	 * @param IUserSession                  $userSession      The acting administrator.
 	 * @param OrganisationServiceInterface  $organisations    The active organisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly AuditEntryWriterInterface $auditEntries,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisations,
 	) {
@@ -101,15 +101,21 @@ class AdminQueryAudit {
 	 * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
 	 */
 	public function record(string $action, string $query, array $variables, ?string $operation, array $outcome): void {
-		$row = new AuditTrail();
-		$row->setUuid((string) Uuid::v4());
-		$row->setAction($action);
-		$row->setUser($this->userSession->getUser()?->getUID());
-		$row->setOrganisationId($this->activeOrganisationId());
-		$row->setCreated(new DateTime());
-		$row->setChanged($this->changed(query: $query, variables: $variables, operation: $operation, outcome: $outcome));
+		$user = $this->userSession->getUser();
 
-		$this->auditTrailMapper->insertAuditTrails([$row]);
+		$this->auditEntries->writeAuditEntries(
+			[
+				new AuditEntry(
+					uuid: (string) Uuid::v4(),
+					action: $action,
+					user: (string) $user?->getUID(),
+					userName: (string) $user?->getDisplayName(),
+					changed: $this->changed(query: $query, variables: $variables, operation: $operation, outcome: $outcome),
+					created: new DateTimeImmutable(),
+					organisationId: $this->activeOrganisationId()
+				),
+			]
+		);
 	}//end record()
 
 	/**

@@ -4227,9 +4227,9 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
-Controller/OperationsQueryController.php,,Controller,,,,,Configuration
+Controller/OperationsQueryController.php,,Controller,,,,,Core
 Search/Service/GraphQL/BoundedRun.php,,Search,,,,,Search
-Service/GraphQL/AdminQueryRunner.php,,Service,,,,,Core
+Service/GraphQL/AdminQueryRunner.php,,Service,,,,,Search
 Service/GraphQL/AdminQueryAudit.php,,Service,,,,,Core
 Service/GraphQL/AdminQueryExport.php,,Service,,,,,Core
 Exception/ReadOnlyQueryException.php,,Exception,,,,,Kernel
@@ -4647,3 +4647,5 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/BoundedQueryRunInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AdminQueryRunnerInterface.php,,Kernel,,,,,Kernel

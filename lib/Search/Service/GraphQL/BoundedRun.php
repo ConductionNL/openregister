@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 
 /**
  * One run's remaining rows and its deadline, mutated as each list spends them.
@@ -45,21 +46,7 @@ use GraphQL\Error\Error;
  *
  * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
  */
-final class BoundedRun {
-
-	/**
-	 * The context key this run is carried under.
-	 *
-	 * @var string
-	 */
-	public const CONTEXT_KEY = 'boundedRun';
-
-	/**
-	 * The error code a passed deadline carries.
-	 *
-	 * @var string
-	 */
-	public const TIMEOUT_CODE = 'QUERY_TIMEOUT';
+final class BoundedRun implements BoundedQueryRunInterface {
 
 	/**
 	 * The rows still allowed across the rest of the run.

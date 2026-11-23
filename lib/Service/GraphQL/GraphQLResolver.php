@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\GraphQL\BoundedRun;
+use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -159,8 +159,8 @@ class GraphQLResolver {
 		// document and refuses the rest once its deadline has passed. The cap
 		// and deadline ride in the context; an ordinary GraphQL request carries
 		// neither, so nothing here changes for it.
-		$bounded = ($context[BoundedRun::CONTEXT_KEY] ?? null);
-		if ($bounded instanceof BoundedRun === true) {
+		$bounded = ($context[BoundedQueryRunInterface::CONTEXT_KEY] ?? null);
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
 			$bounded->assertWithinDeadline();
 			$args['first'] = $bounded->clampFirst(requested: (int) ($args['first'] ?? 20));
 		}
@@ -181,7 +181,7 @@ class GraphQLResolver {
 			}
 		}
 
-		if ($bounded instanceof BoundedRun === true) {
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
 			$bounded->consume(rows: count($filteredResults));
 		}
 
