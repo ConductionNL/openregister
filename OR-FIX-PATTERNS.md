@@ -680,3 +680,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main e353e627+ the csv keeps rows for Files/Service/File/ManagedFiles.php and Files/Service/FileSettingRules.php (no such file), or Db/DecisionMetadataEdit.php stays on Files; PRs that merged main 01cb1831 carry them.
 - Cause: main 5f24d440 reverted the Files-owned ports merge; the PR side of the csv conflict hunk still has the reverted rows.
 - Fix: after bin/component-map-merge.py, delete those two rows (main's Core row for DecisionMetadataEdit wins), regenerate the yaml; the csv diff vs main must show only the PR's own files.
+## Main e353e627 (#11024) reverted the Files-owned ports: conflicts in FilesRegistrar, its test, component-map.csv (or-fix-5)
+- Symptom: a PR that merged main 6e870ca5 conflicts in lib/Files/FilesRegistrar.php BINDINGS/uses, FilesRegistrarTest assertCount, and csv rows Files/Service/File/ManagedFiles.php, Files/Service/FileSettingRules.php.
+- Cause: #11024 deleted ManagedFiles, FileSettingRules and Kernel/Contracts/Files/{CallerFileRights,EntityMentionDecisions,FileSettingRules,ManagedFiles,OfficeDocumentConversion,RegisterFolderProvisioning}Interface; main's FilesRegistrar has 32 bindings again; the 4 Files->Core edges are gone (Architecture green on main).
+- Fix: take main's side, re-add only the PR's own bindings/uses/csv rows, count = 32 + PR's own; drop the ManagedFiles/FileSettingRules csv rows; run component-patterns.py (#10525, #5968).
