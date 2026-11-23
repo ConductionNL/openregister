@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Webhook;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface;
 use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCP\IAppConfig;
 use Throwable;
@@ -79,7 +79,7 @@ class OwnedWebhookValidator {
 	 *
 	 * @param RegisterMapperInterface  $registers   Resolves the register in scope.
 	 * @param SchemaMapperInterface    $schemas     Resolves the schemas in scope.
-	 * @param PermissionCheckInterface $permissions The owner's read right on each schema.
+	 * @param SchemaReadRightInterface $permissions The owner's read right on each schema.
 	 * @param WebhookMapperInterface   $webhooks    Counts the webhooks the owner has.
 	 * @param IAppConfig               $appConfig   Holds the per-owner cap.
 	 *
@@ -88,7 +88,7 @@ class OwnedWebhookValidator {
 	public function __construct(
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly PermissionCheckInterface $permissions,
+		private readonly SchemaReadRightInterface $permissions,
 		private readonly WebhookMapperInterface $webhooks,
 		private readonly IAppConfig $appConfig,
 	) {
@@ -267,7 +267,7 @@ class OwnedWebhookValidator {
 
 		try {
 			$entity = $this->schemas->find(id: $schema);
-			$may    = $this->permissions->hasPermission(schema: $entity, action: 'read', userId: $owner, register: $registerId);
+			$may    = $this->permissions->mayRead(schema: $entity, userId: $owner, register: $registerId);
 		} catch (Throwable) {
 			return null;
 		}

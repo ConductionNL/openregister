@@ -26,6 +26,7 @@ use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Controller\Support\TasksPlatform;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Controller\Support\WebhookOwnership;
+use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhooksMappers;
 use OCA\OpenRegister\Controller\WebhooksController;
@@ -57,6 +58,7 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(Webhook::class)]
 #[UsesClass(WebhookLog::class)]
 #[UsesClass(WebhookOwnership::class)]
+#[UsesClass(OwnedWebhookView::class)]
 #[UsesClass(WebhooksControllerServices::class)]
 #[UsesClass(WebhooksMappers::class)]
 #[UsesClass(TasksPlatform::class)]
@@ -125,7 +127,16 @@ class WebhooksControllerOwnedTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$session,
 			$groups,
-			$ownership === true ? new WebhookOwnership(actionAuth: $this->actionAuth, validator: $this->validator) : null,
+			$ownership === true ? new WebhookOwnership(
+				view: new OwnedWebhookView(
+					users: $this->createMock(\OCP\IUserManager::class),
+					actionAuth: $this->actionAuth,
+					webhooks: $this->createMock(\OCA\OpenRegister\Db\WebhookMapperInterface::class),
+					container: $this->createMock(\Psr\Container\ContainerInterface::class),
+					logger: $this->createMock(LoggerInterface::class)
+				),
+				validator: $this->validator
+			) : null,
 		);
 	}//end controllerAs()
 

@@ -43,7 +43,6 @@ use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookDelivery;
-use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -518,7 +517,7 @@ class WebhooksController extends Controller {
 		}
 
 		try {
-			return $this->ownership->actionAuth->can(user: $user, action: OwnedWebhookView::RIGHT);
+			return $this->ownership->view->holdsTheRight(user: $user);
 		} catch (\Throwable $e) {
 			$this->logger->warning(message: '[WebhooksController] The action rights could not be read: ' . $e->getMessage());
 			return false;

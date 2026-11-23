@@ -100,6 +100,19 @@ class OwnedWebhookView {
 	}//end __construct()
 
 	/**
+	 * Whether a person holds the right to own webhooks.
+	 *
+	 * @param IUser $user The person.
+	 *
+	 * @return bool True when they hold `webhook.own`; an unreadable matrix throws, so the caller decides.
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function holdsTheRight(IUser $user): bool {
+		return $this->actionAuth->can(user: $user, action: self::RIGHT);
+	}//end holdsTheRight()
+
+	/**
 	 * The payload this webhook may deliver for the event, or null when it delivers nothing.
 	 *
 	 * @param Webhook      $webhook The webhook.

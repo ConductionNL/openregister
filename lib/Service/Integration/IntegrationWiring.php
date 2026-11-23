@@ -220,6 +220,9 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// A removed or disabled person's owned webhooks are disabled, kept for review.
+		$context->registerEventListener(\OCP\User\Events\BeforeUserDeletedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		$context->registerEventListener(\OCP\User\Events\UserChangedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}

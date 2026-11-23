@@ -4380,9 +4380,9 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
-Controller/Support/WebhookOwnership.php,,Controller,,,,,Core
-Service/Webhook/OwnedWebhookValidator.php,,Service,,,,,Core
-Listener/OwnedWebhooksEndWithOwnerListener.php,,Listener,,,,,Processes
+Controller/Support/WebhookOwnership.php,,Controller,,,,,Integrations
+Service/Webhook/OwnedWebhookValidator.php,,Service,,,,,Integrations
+Listener/OwnedWebhooksEndWithOwnerListener.php,,Listener,,,,,Integrations
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
@@ -4643,3 +4643,5 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/SchemaReadRightInterface.php,,Kernel,,,,,Kernel
+Service/Object/SchemaReadRight.php,,Service,,,,,Core

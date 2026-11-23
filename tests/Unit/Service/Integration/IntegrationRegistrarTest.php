@@ -101,6 +101,8 @@ class IntegrationRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+				['event' => 'OCP\User\Events\BeforeUserDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\User\Events\UserChangedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
 			],
 			actual: $context->listeners
 		);

@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(Webhook::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\SchemaReadRight::class)]
 class OwnedWebhookValidatorTest extends TestCase {
 
 	private RegisterMapperInterface&MockObject $registers;
@@ -103,7 +104,7 @@ class OwnedWebhookValidatorTest extends TestCase {
 		$this->validator = new OwnedWebhookValidator(
 			registers: $this->registers,
 			schemas: $this->schemas,
-			permissions: $this->permissions,
+			permissions: new \OCA\OpenRegister\Service\Object\SchemaReadRight(permissions: $this->permissions),
 			webhooks: $this->webhooks,
 			appConfig: $this->appConfig,
 		);
@@ -228,7 +229,7 @@ class OwnedWebhookValidatorTest extends TestCase {
 		$validator = new OwnedWebhookValidator(
 			registers: $this->registers,
 			schemas: $this->schemas,
-			permissions: $this->permissions,
+			permissions: new \OCA\OpenRegister\Service\Object\SchemaReadRight(permissions: $this->permissions),
 			webhooks: $this->webhooks,
 			appConfig: $appConfig,
 		);

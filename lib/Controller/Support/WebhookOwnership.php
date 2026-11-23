@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Service\OwnedWebhookView;
 use OCA\OpenRegister\Service\Webhook\OwnedWebhookValidator;
 
 /**
@@ -37,13 +37,13 @@ final class WebhookOwnership {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param OpenRegisterActionAuthService $actionAuth The action-rights matrix.
+	 * @param OwnedWebhookView              $view       Tells who holds the right to own webhooks.
 	 * @param OwnedWebhookValidator         $validator  Checks an owned webhook's subscription.
 	 *
 	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
 	 */
 	public function __construct(
-		public readonly OpenRegisterActionAuthService $actionAuth,
+		public readonly OwnedWebhookView $view,
 		public readonly OwnedWebhookValidator $validator,
 	) {
 	}//end __construct()
