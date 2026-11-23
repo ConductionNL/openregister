@@ -84,11 +84,9 @@ describe('MailSidebar', () => {
 		)
 	})
 
-	it('hints to pick an email only when none is open', () => {
-		expect(mountSidebar().find('.or-mail-sidebar__hint').exists()).toBe(false)
-		expect(mountSidebar(null).find('.or-mail-sidebar__hint').text()).toBe(
-			'Select an email to see its connections',
-		)
+	it('marks the panel idle only while no email is open', () => {
+		expect(mountSidebar().classes()).not.toContain('or-mail-sidebar-root--idle')
+		expect(mountSidebar(null).classes()).toContain('or-mail-sidebar-root--idle')
 	})
 
 	it('collapses on close and remembers it', async () => {
