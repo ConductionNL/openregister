@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,9 +42,9 @@ class TaskBuilderTest extends TestCase {
 	/**
 	 * The catalogue, answering for the verbs it is told about.
 	 *
-	 * @var PermissionCatalogueInterface&MockObject
+	 * @var MandateEvidenceInterface&MockObject
 	 */
-	private PermissionCatalogueInterface&MockObject $catalogue;
+	private MandateEvidenceInterface&MockObject $catalogue;
 
 	/**
 	 * A catalogue that knows `decide` only.
@@ -52,7 +52,7 @@ class TaskBuilderTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->catalogue = $this->createMock(PermissionCatalogueInterface::class);
+		$this->catalogue = $this->createMock(MandateEvidenceInterface::class);
 		$this->catalogue->method('isGrantable')->willReturnCallback(static fn (string $verb): bool => $verb === 'decide');
 	}//end setUp()
 

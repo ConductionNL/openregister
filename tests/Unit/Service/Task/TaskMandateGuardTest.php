@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
+use OCA\OpenRegister\Service\Rbac\MandateEvidence;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Task\TaskMandateGuard;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -43,6 +44,7 @@ use RuntimeException;
  * The three cases of design D-2 and the fail-closed edges.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskMandateGuard
+ * @covers \OCA\OpenRegister\Service\Rbac\MandateEvidence
  * @covers \OCA\OpenRegister\Exception\TaskMandateRefusedException
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\ObjectEntity
@@ -123,10 +125,12 @@ class TaskMandateGuardTest extends TestCase {
 		$catalog->method('schemas')->willReturn($this->schemas);
 
 		return new TaskMandateGuard(
-			permissions: $this->permissions,
-			objects: $this->objects,
-			catalog: $catalog,
-			catalogue: $this->catalogue,
+			mandates: new MandateEvidence(
+				permissions: $this->permissions,
+				objects: $this->objects,
+				catalog: $catalog,
+				catalogue: $this->catalogue
+			),
 			logger: $this->logger
 		);
 	}//end guard()

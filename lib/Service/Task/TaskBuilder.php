@@ -35,7 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -121,7 +121,7 @@ class TaskBuilder {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionCatalogueInterface|null $catalogue The grantable verbs a
+	 * @param MandateEvidenceInterface|null $catalogue The grantable verbs a
 	 *                                            `requiredMandate` must name.
 	 *                                            Absent, a task that names a
 	 *                                            mandate is refused: a verb
@@ -131,7 +131,7 @@ class TaskBuilder {
 	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-may-name-the-mandate-its-performer-needs
 	 */
 	public function __construct(
-		private readonly ?PermissionCatalogueInterface $catalogue = null,
+		private readonly ?MandateEvidenceInterface $catalogue = null,
 	) {
 	}//end __construct()
 

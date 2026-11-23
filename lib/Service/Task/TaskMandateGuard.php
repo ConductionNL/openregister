@@ -23,16 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskMandateRefusedException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Service\Object\ProvenanceRequest;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,8 +34,8 @@ use Throwable;
  *
  * FAILS CLOSED. A subject that cannot be loaded, a verb the catalogue does not
  * know, a missing collaborator, or a permission check that throws all refuse.
- * The check never runs as the system: it asks about the named person, through
- * the same per-user permission question the object endpoints ask.
+ * The permission question itself is Core's, asked through the Kernel port
+ * MandateEvidenceInterface about the named person, never as the system.
  *
  * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-delegate-must-hold-the-tasks-mandate
  */
@@ -66,19 +59,13 @@ class TaskMandateGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionHandlerInterface|null   $permissions The per-user permission check and its provenance.
-	 * @param ObjectOperationsInterface|null    $objects     Loads the task's subject object.
-	 * @param SchemaCatalogInterface|null       $catalog     Loads the subject's schema.
-	 * @param PermissionCatalogueInterface|null $catalogue   The grantable verbs, and who declared each.
-	 * @param LoggerInterface|null              $logger      Where a check that broke is recorded.
+	 * @param MandateEvidenceInterface|null $mandates Whether a person holds a verb, and what granted it.
+	 * @param LoggerInterface|null          $logger   Where a check that broke is recorded.
 	 *
 	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-delegate-must-hold-the-tasks-mandate
 	 */
 	public function __construct(
-		private readonly ?PermissionHandlerInterface $permissions = null,
-		private readonly ?ObjectOperationsInterface $objects = null,
-		private readonly ?SchemaCatalogInterface $catalog = null,
-		private readonly ?PermissionCatalogueInterface $catalogue = null,
+		private readonly ?MandateEvidenceInterface $mandates = null,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
@@ -177,149 +164,21 @@ class TaskMandateGuard {
 	 * @return array|null The evidence, or null.
 	 */
 	private function evidence(Task $task, string $uid, string $verb): ?array {
-		if ($this->permissions === null || $this->catalog === null || $this->catalogue === null) {
+		if ($this->mandates === null) {
 			return null;
 		}
 
-		if ($this->catalogue->isGrantable(verb: $verb) === false) {
-			return null;
+		$subject = trim((string)$task->getObjectUuid());
+		if ($subject === '') {
+			$subject = null;
 		}
 
-		$object = $this->subjectOf(task: $task);
-		$schema = $this->schemaOf(task: $task, object: $object);
-		if ($schema === null) {
-			return null;
-		}
-
-		$register = $object?->getRegister();
-		if ($register === null && $task->getRegisterId() !== null) {
-			$register = (string)$task->getRegisterId();
-		}
-
-		$holds = $this->permissions->hasPermission(
-			schema: $schema,
-			action: $verb,
-			userId: $uid,
-			object: $object,
-			register: $register
+		return $this->mandates->evidence(
+			verb: $verb,
+			uid: $uid,
+			objectUuid: $subject,
+			registerId: $task->getRegisterId(),
+			schemaId: $task->getSchemaId()
 		);
-		if ($holds !== true) {
-			return null;
-		}
-
-		return $this->provenance(verb: $verb, uid: $uid, schema: $schema, object: $object);
 	}//end evidence()
-
-	/**
-	 * The task's subject object, read without the caller's rights: the
-	 * question is the delegate's rights, asked next.
-	 *
-	 * @param Task $task The task.
-	 *
-	 * @return ObjectEntity|null The subject, or null when the task has none.
-	 *
-	 * @throws \RuntimeException When the task names a subject that cannot be loaded.
-	 */
-	private function subjectOf(Task $task): ?ObjectEntity {
-		$uuid = trim((string)$task->getObjectUuid());
-		if ($uuid === '') {
-			return null;
-		}
-
-		$object = $this->objects?->find(
-			id: $uuid,
-			options: new ObjectFindOptions(register: $task->getRegisterId(), schema: $task->getSchemaId(), render: false, audit: false),
-			_rbac: false,
-			_multitenancy: false
-		);
-		if ($object === null) {
-			throw new \RuntimeException(sprintf('The subject %s of the task could not be loaded.', $uuid));
-		}
-
-		return $object;
-	}//end subjectOf()
-
-	/**
-	 * The schema the check runs against: the subject's, else the task's.
-	 *
-	 * @param Task              $task   The task.
-	 * @param ObjectEntity|null $object The subject.
-	 *
-	 * @return Schema|null The schema, or null when neither names one.
-	 */
-	private function schemaOf(Task $task, ?ObjectEntity $object): ?Schema {
-		$schemaId = $object?->getSchema();
-		if (($schemaId === null || $schemaId === '') && $task->getSchemaId() !== null) {
-			$schemaId = (string)$task->getSchemaId();
-		}
-
-		if ($schemaId === null || $schemaId === '') {
-			return null;
-		}
-
-		return $this->catalog?->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
-	}//end schemaOf()
-
-	/**
-	 * What granted the verb: the rule the provenance names, or the app that
-	 * decided its own verb.
-	 *
-	 * @param string            $verb   The verb.
-	 * @param string            $uid    The person.
-	 * @param Schema            $schema The schema.
-	 * @param ObjectEntity|null $object The subject.
-	 *
-	 * @return array{verb: string, source: string, rule: mixed, until: string|null, app?: string} The evidence.
-	 */
-	private function provenance(string $verb, string $uid, Schema $schema, ?ObjectEntity $object): array {
-		$record = ($this->permissions?->provenanceFor(
-			request: new ProvenanceRequest(schema: $schema, actions: [$verb], userId: $uid, object: $object)
-		)[$verb] ?? []);
-
-		if (($record['granted'] ?? false) === true) {
-			$rule = ($record['role'] ?? null) ?? ($record['rule'] ?? null);
-
-			return [
-				'verb' => $verb,
-				'source' => (string)($record['source'] ?? 'none'),
-				'rule' => $rule,
-				'until' => $this->untilOf(rule: ($record['rule'] ?? null)),
-			];
-		}
-
-		// Granted by hasPermission yet named by no rule in the cascade: an
-		// app decided its own verb through its vote, or nothing narrowed it.
-		$declaration = $this->catalogue?->declarationFor(verb: $verb);
-		if ($declaration !== null && ($declaration['canonical'] ?? true) === false) {
-			return [
-				'verb' => $verb,
-				'source' => self::SOURCE_CUSTOM,
-				'rule' => null,
-				'until' => null,
-				'app' => (string)($declaration['app'] ?? ''),
-			];
-		}
-
-		return [
-			'verb' => $verb,
-			'source' => (string)($record['source'] ?? 'none'),
-			'rule' => null,
-			'until' => null,
-		];
-	}//end provenance()
-
-	/**
-	 * The end date a grant entry carries, when it carries one.
-	 *
-	 * @param mixed $rule The grant entry.
-	 *
-	 * @return string|null The `until`, or null.
-	 */
-	private function untilOf(mixed $rule): ?string {
-		if (is_array($rule) === false || isset($rule['until']) === false || is_scalar($rule['until']) === false) {
-			return null;
-		}
-
-		return (string)$rule['until'];
-	}//end untilOf()
 }//end class

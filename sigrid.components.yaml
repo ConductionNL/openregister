@@ -938,6 +938,7 @@ components:
       - ".*/lib/Service/Rbac/LapseWindow[.]php"
       - ".*/lib/Service/Rbac/LinkInvitation[.]php"
       - ".*/lib/Service/Rbac/LinkProtection[.]php"
+      - ".*/lib/Service/Rbac/MandateEvidence[.]php"
       - ".*/lib/Service/Rbac/MaskedWrite[.]php"
       - ".*/lib/Service/Rbac/MatrixCaller[.]php"
       - ".*/lib/Service/Rbac/MatrixCompileRun[.]php"
