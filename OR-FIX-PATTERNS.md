@@ -560,3 +560,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## A PR's shared Core helper becomes ten cross-component edges after main's area remap (or-fix-18)
 - Symptom: ComponentDependencyRulesTest lists many '<area file> -> lib/Service/.../<Helper>.php (<Area> -> Core)' edges, all to one new PR helper.
 - Fix: when the helper depends only on Kernel-mapped classes (Db/Register, Db/Schema, Db/*MapperInterface are Kernel in the csv), set its csv component to Kernel and regenerate the yaml; no move needed (#10538 SchemaRefInRegister).
+## New feature files mapped to one area but straddling Core after main's remap (or-fix-12)
+- Symptom: ComponentDependencyRulesTest lists a PR's new store/helper -> Db/MagicMapperInterface or Service/FileService (Compliance -> Core/Files) and SaveObject -> <PR helper> (Core -> Compliance).
+- Fix: remap by dependencies, not by feature: a static reader over entities only (Schema/ObjectEntity/Register are Kernel) and an interface naming only entities -> Kernel; the persistence adapter -> Core, bound in CoreServiceBindings; type its collaborators on Core interfaces (ObjectFilesInterface for FileService, AuditTrailMapperInterface for AuditTrailMapper). csv last column + component-patterns.py. See #10232 1047370c.
