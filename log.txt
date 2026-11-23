@@ -3878,3 +3878,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-23T20:42:26Z integrator-20261123T185213-ed14d34e MERGED-TREE 7840b10ac2: 1 PRs, main now 4421348cf8 = tested tree
 2026-11-23T20:50:59Z integrator-20261123T185213-ed14d34e GREEN tree 8835639db4 on dev 4421348cf8 prs 8 front=skip: Tests: 63589, Assertions: 223605, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-23T20:51:19Z integrator-20261123T185213-ed14d34e PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
