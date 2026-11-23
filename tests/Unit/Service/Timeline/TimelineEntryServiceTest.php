@@ -26,9 +26,7 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
@@ -392,11 +390,10 @@ class TimelineEntryServiceTest extends TestCase {
 	 * @param array<int, ObjectAuditEvent> $events Filled with the audited events.
 	 */
 	private function auditedService(array &$events): TimelineEntryService {
-		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(
-			static function (ObjectAuditEvent $event) use (&$events): AuditTrail {
-				$events[] = $event;
-				return new AuditTrail();
+		$this->visibility->method('auditTimelineEvent')->willReturnCallback(
+			static function (ObjectEntity $object, string $action, array $context) use (&$events): bool {
+				$events[] = new ObjectAuditEvent(object: $object, action: $action, context: $context);
+				return true;
 			}
 		);
 
@@ -404,8 +401,7 @@ class TimelineEntryServiceTest extends TestCase {
 			new TimelineEntryRecords(entryMapper: $this->entryMapper, kinds: $this->kinds, languages: new LanguageDetector()),
 			$this->visibility,
 			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$audit
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

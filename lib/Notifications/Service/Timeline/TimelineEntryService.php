@@ -33,8 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
@@ -74,7 +72,6 @@ class TimelineEntryService {
 	 * @param TimelineVisibilityService $visibility  Normalises the flag and decides who may set it.
 	 * @param IUserSession              $userSession The caller.
 	 * @param LoggerInterface           $logger      Logger for the fail-open paths.
-	 * @param AuditTrailMapperInterface|null $auditTrail Writes a withdrawal on the object's audit trail.
 	 *
 	 * @return void
 	 */
@@ -83,7 +80,6 @@ class TimelineEntryService {
 		private readonly TimelineVisibilityService $visibility,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ?AuditTrailMapperInterface $auditTrail = null,
 	) {
 	}//end __construct()
 
@@ -316,21 +312,11 @@ class TimelineEntryService {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
 	 */
 	private function auditWithdrawal(ObjectEntity $object, TimelineEntry $entry): void {
-		if ($this->auditTrail === null) {
-			return;
-		}
-
-		try {
-			$this->auditTrail->recordObjectEvent(
-				event: new ObjectAuditEvent(
-					object: $object,
-					action: self::WITHDRAW_AUDIT_ACTION,
-					context: ['entry' => $entry->getUuid()] + ($entry->withdrawal() ?? [])
-				)
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('[TimelineEntryService] The withdrawal could not be audited', ['entry' => $entry->getUuid(), 'error' => $e->getMessage()]);
-		}
+		$this->visibility->auditTimelineEvent(
+			object: $object,
+			action: self::WITHDRAW_AUDIT_ACTION,
+			context: ['entry' => $entry->getUuid()] + ($entry->withdrawal() ?? [])
+		);
 	}//end auditWithdrawal()
 
 	/**
