@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Retention;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\Retention\ExpiredObjectSources;
 use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
 use OCP\IDBConnection;
@@ -63,11 +63,11 @@ final class ExpiredObjectStoreTest extends TestCase {
 
 	private MagicMapperInterface&MockObject $magic;
 
-	private AuditTrailMapper&MockObject $audit;
+	private AuditTrailMapperInterface&MockObject $audit;
 
 	private ObjectOperationsInterface&MockObject $objects;
 
-	private FileService&MockObject $files;
+	private ObjectFilesInterface&MockObject $files;
 
 	private ExpiredObjectStore $store;
 
@@ -80,9 +80,9 @@ final class ExpiredObjectStoreTest extends TestCase {
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->schemas   = $this->createMock(SchemaMapperInterface::class);
 		$this->magic     = $this->createMock(MagicMapperInterface::class);
-		$this->audit     = $this->createMock(AuditTrailMapper::class);
+		$this->audit     = $this->createMock(AuditTrailMapperInterface::class);
 		$this->objects   = $this->createMock(ObjectOperationsInterface::class);
-		$this->files     = $this->createMock(FileService::class);
+		$this->files     = $this->createMock(ObjectFilesInterface::class);
 		$this->store     = new ExpiredObjectStore(
 			sources: new ExpiredObjectSources(
 				registers: $this->registers,

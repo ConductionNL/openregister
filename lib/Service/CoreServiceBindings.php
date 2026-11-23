@@ -245,6 +245,8 @@ use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStoreInterface;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface;
@@ -352,6 +354,7 @@ final class CoreServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
 		TranslationCompletenessInterface::class => TranslationStatusService::class,

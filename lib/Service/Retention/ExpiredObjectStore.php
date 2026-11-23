@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -49,13 +49,13 @@ class ExpiredObjectStore implements ExpiredObjectStoreInterface {
 	 *
 	 * @param ExpiredObjectSources      $sources The mappers and the connection.
 	 * @param ObjectOperationsInterface $objects The object service.
-	 * @param FileService               $files   The file service.
+	 * @param ObjectFilesInterface      $files   The file service.
 	 * @param LoggerInterface           $logger  The logger.
 	 */
 	public function __construct(
 		private readonly ExpiredObjectSources $sources,
 		private readonly ObjectOperationsInterface $objects,
-		private readonly FileService $files,
+		private readonly ObjectFilesInterface $files,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

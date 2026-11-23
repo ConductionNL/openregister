@@ -39,6 +39,8 @@ components:
       - ".*/lib/Service/Lifecycle/TransitionActor[.]php"
       - ".*/lib/Service/Lifecycle/TransitionMove[.]php"
       - ".*/lib/Service/Object/BatchOperationStatusInterface[.]php"
+      - ".*/lib/Service/Retention/ExpiredObjectStoreInterface[.]php"
+      - ".*/lib/Service/Retention/ExpiryDeclaration[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
@@ -1080,6 +1082,8 @@ components:
       - ".*/lib/Service/Relation/[^/]*"
       - ".*/lib/Service/Resolver/[^/]*"
       - ".*/lib/Service/Resolver/Exception/[^/]*"
+      - ".*/lib/Service/Retention/ExpiredObjectSources[.]php"
+      - ".*/lib/Service/Retention/ExpiredObjectStore[.]php"
       - ".*/lib/Service/Rules/DependentValueDeclarationException[.]php"
       - ".*/lib/Service/Schema/[^/]*"
       - ".*/lib/Service/SchemaImport/[^/]*"
@@ -2047,7 +2051,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditService[.]php"
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
       - ".*/lib/Service/Rbac/AuditRowWriter[.]php"
-      - ".*/lib/Service/Retention/[^/]*"
+      - ".*/lib/Service/Retention/ExpiredObjectSweeper[.]php"
       - ".*/lib/Service/Schemas/ArchivalDeclarationValidators[.]php"
       - ".*/lib/Service/Settings/ArchivalSettingsReaderInterface[.]php"
   - name: Integrations

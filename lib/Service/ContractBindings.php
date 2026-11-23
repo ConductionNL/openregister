@@ -344,8 +344,6 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
-use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
-use OCA\OpenRegister\Service\Retention\ExpiredObjectStoreInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
@@ -622,7 +620,6 @@ final class ContractBindings {
 		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		DependentValueTableInterface::class => DependentValueTable::class,
-		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		EndNodeInterface::class => EndNode::class,
 		EndpointServiceInterface::class => EndpointService::class,

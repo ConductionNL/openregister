@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Retention;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -36,17 +36,17 @@ final class ExpiredObjectSources {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registers The register mapper.
-	 * @param SchemaMapperInterface   $schemas   The schema mapper.
-	 * @param MagicMapperInterface    $magic     The magic-table mapper.
-	 * @param AuditTrailMapper        $audit     The audit trail.
-	 * @param IDBConnection           $db        The connection.
+	 * @param RegisterMapperInterface   $registers The register mapper.
+	 * @param SchemaMapperInterface     $schemas   The schema mapper.
+	 * @param MagicMapperInterface      $magic     The magic-table mapper.
+	 * @param AuditTrailMapperInterface $audit     The audit trail.
+	 * @param IDBConnection             $db        The connection.
 	 */
 	public function __construct(
 		public readonly RegisterMapperInterface $registers,
 		public readonly SchemaMapperInterface $schemas,
 		public readonly MagicMapperInterface $magic,
-		public readonly AuditTrailMapper $audit,
+		public readonly AuditTrailMapperInterface $audit,
 		public readonly IDBConnection $db,
 	) {
 	}//end __construct()
