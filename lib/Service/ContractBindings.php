@@ -38,6 +38,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
@@ -781,6 +782,7 @@ final class ContractBindings {
 		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
 		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		SupportBundleServiceInterface::class => SupportBundleService::class,
+		TablePdfRendererInterface::class => ExportService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskFormCompletionInterface::class => TaskFormCompletion::class,
 		TaskFormResolverInterface::class => TaskFormResolver::class,

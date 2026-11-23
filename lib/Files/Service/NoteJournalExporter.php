@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
 
-use OCA\OpenRegister\Service\Export\RowsTable;
-
 /**
  * Writes the notes of one object, oldest first, with author, time and lock state.
  *
@@ -80,11 +78,11 @@ class NoteJournalExporter {
 	 * @param string                           $title The object's title for the heading.
 	 * @param array<int, array<string, mixed>> $notes The notes as NoteService lists them.
 	 *
-	 * @return RowsTable The sheet's table.
+	 * @return array{title: string, columns: array<string, string>, rows: array<int, array<string, string>>, wholeCells: bool} The sheet's table, as the PDF table renderer takes it.
 	 *
 	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
 	 */
-	public function table(string $title, array $notes): RowsTable {
+	public function table(string $title, array $notes): array {
 		$rows = [];
 		foreach ($this->chronological(notes: $notes) as $note) {
 			$rows[] = [
@@ -95,12 +93,12 @@ class NoteJournalExporter {
 			];
 		}
 
-		return new RowsTable(
-			title: 'Journal: ' . trim($title),
-			columns: ['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'],
-			rows: $rows,
-			wholeCells: true
-		);
+		return [
+			'title'      => 'Journal: ' . trim($title),
+			'columns'    => ['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'],
+			'rows'       => $rows,
+			'wholeCells' => true,
+		];
 	}//end table()
 
 	/**

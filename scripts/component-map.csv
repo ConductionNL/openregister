@@ -1281,6 +1281,7 @@ Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/
 Kernel/Contracts/ScheduledReportsInterface.php,15,Kernel,Kernel,Kernel/Contracts/ScheduledReportsInterface.php,0,,Kernel
 Kernel/Contracts/SchemaExplorationInterface.php,7,Kernel,Kernel,Kernel/Contracts/SchemaExplorationInterface.php,0,,Kernel
 Kernel/Contracts/SchemaInterface.php,75,Kernel,Kernel,Kernel/Contracts/SchemaInterface.php,1,,Kernel
+Kernel/Contracts/TablePdfRendererInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/TaskInterface.php,23,Kernel,Kernel,Kernel/Contracts/TaskInterface.php,7,,Kernel
 Kernel/Contracts/TaskManagerInterface.php,20,Kernel,Kernel,Kernel/Contracts/TaskManagerInterface.php,0,,Kernel
 Kernel/Contracts/VocabularyImporterInterface.php,10,Kernel,Kernel,Kernel/Contracts/VocabularyImporterInterface.php,0,,Kernel

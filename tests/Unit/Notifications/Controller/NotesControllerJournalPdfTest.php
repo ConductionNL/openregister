@@ -36,14 +36,13 @@ use OCA\OpenRegister\Files\Service\NoteJournalExporter;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Notifications\Controller\NotesController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotePath;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
-use OCA\OpenRegister\Service\Export\RowsTable;
-use OCA\OpenRegister\Service\ExportService;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -59,14 +58,13 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ObjectNotesQuery::class)]
 #[UsesClass(ListQuery::class)]
 #[UsesClass(NotePath::class)]
-#[UsesClass(RowsTable::class)]
 #[UsesClass(OfficeServerRequiredException::class)]
 #[UsesClass(ExportTooLargeException::class)]
 class NotesControllerJournalPdfTest extends TestCase {
 
 	private NoteService&MockObject $notes;
 
-	private ExportService&MockObject $export;
+	private TablePdfRendererInterface&MockObject $export;
 
 	private function controller(string $format = 'pdf', bool $withExport = true): NotesController {
 		$object = new ObjectEntity();
@@ -87,7 +85,7 @@ class NotesControllerJournalPdfTest extends TestCase {
 		);
 		$visibility = $this->createMock(TimelineVisibilityService::class);
 		$visibility->method('effectiveFilter')->willReturn('public');
-		$this->export = $this->createMock(ExportService::class);
+		$this->export = $this->createMock(TablePdfRendererInterface::class);
 
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnMap([['format', null, $format]]);
@@ -108,9 +106,9 @@ class NotesControllerJournalPdfTest extends TestCase {
 		$controller = $this->controller();
 		$this->export->method('isPdfAvailable')->willReturn(true);
 		$tables = [];
-		$this->export->expects($this->once())->method('renderTableToPdf')->willReturnCallback(
-			function (RowsTable $table) use (&$tables): string {
-				$tables[] = $table;
+		$this->export->expects($this->once())->method('renderRowsToPdf')->willReturnCallback(
+			function (string $title, array $columns, array $rows, bool $wholeCells) use (&$tables): string {
+				$tables[] = (object)['title' => $title, 'columns' => $columns, 'rows' => $rows, 'wholeCells' => $wholeCells];
 				return '%PDF-1.7 journal';
 			}
 		);
@@ -130,7 +128,7 @@ class NotesControllerJournalPdfTest extends TestCase {
 	public function testWithoutAnOfficeServerThePdfJournalIsRefused501AndReadsNoNotes(): void {
 		$controller = $this->controller();
 		$this->export->method('isPdfAvailable')->willReturn(false);
-		$this->export->expects($this->never())->method('renderTableToPdf');
+		$this->export->expects($this->never())->method('renderRowsToPdf');
 		$this->notes->expects($this->never())->method('listNotes');
 
 		$response = $controller->journal('reg', 'sch', 'uuid-1');
@@ -149,7 +147,7 @@ class NotesControllerJournalPdfTest extends TestCase {
 	public function testAConversionThatFailsIsRefused501(): void {
 		$controller = $this->controller();
 		$this->export->method('isPdfAvailable')->willReturn(true);
-		$this->export->method('renderTableToPdf')->willThrowException(new OfficeServerRequiredException());
+		$this->export->method('renderRowsToPdf')->willThrowException(new OfficeServerRequiredException());
 
 		$this->assertSame(501, $controller->journal('reg', 'sch', 'uuid-1')->getStatus());
 	}
@@ -157,7 +155,7 @@ class NotesControllerJournalPdfTest extends TestCase {
 	public function testTooManyNotesForOnePdfAreRefusedWithTheCounts(): void {
 		$controller = $this->controller();
 		$this->export->method('isPdfAvailable')->willReturn(true);
-		$this->export->method('renderTableToPdf')->willThrowException(new ExportTooLargeException(rowCount: 6000, maxRows: 5000));
+		$this->export->method('renderRowsToPdf')->willThrowException(new ExportTooLargeException(rowCount: 6000, maxRows: 5000));
 
 		$response = $controller->journal('reg', 'sch', 'uuid-1');
 
@@ -169,7 +167,7 @@ class NotesControllerJournalPdfTest extends TestCase {
 
 	public function testAnotherFormatStaysMarkdownAndNeverAsksForAPdf(): void {
 		$controller = $this->controller(format: 'md');
-		$this->export->expects($this->never())->method('renderTableToPdf');
+		$this->export->expects($this->never())->method('renderRowsToPdf');
 
 		$response = $controller->journal('reg', 'sch', 'uuid-1');
 

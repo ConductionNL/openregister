@@ -134,16 +134,16 @@ class NoteJournalExporterTest extends TestCase {
 
 		$table = (new NoteJournalExporter())->table(title: ' Vergunning 42 ', notes: $notes);
 
-		$this->assertSame('Journal: Vergunning 42', $table->title);
-		$this->assertSame(['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'], $table->columns);
-		$this->assertTrue($table->wholeCells);
+		$this->assertSame('Journal: Vergunning 42', $table['title']);
+		$this->assertSame(['time' => 'Time', 'author' => 'Author', 'lock' => 'Lock', 'message' => 'Note'], $table['columns']);
+		$this->assertTrue($table['wholeCells']);
 		$this->assertSame(
 			[
 				['time' => '2026-11-13T09:00:00+00:00', 'author' => 'bram', 'lock' => '', 'message' => rtrim($long)],
 				['time' => '2026-11-13T10:00:00+00:00', 'author' => 'Anna de Vries', 'lock' => 'Locked by Tess Leider on 2026-11-13T10:30:00+00:00', 'message' => '## Afspraak'],
 				['time' => '2026-11-13T12:00:00+00:00', 'author' => 'Anna de Vries', 'lock' => '', 'message' => 'Derde'],
 			],
-			$table->rows
+			$table['rows']
 		);
 	}
 
@@ -152,7 +152,7 @@ class NoteJournalExporterTest extends TestCase {
 			['id' => 1, 'message' => 'x', 'actorDisplayName' => 'Eve *vet*', 'createdAt' => '2026-11-13T09:00:00+00:00', 'locked' => true, 'lockedBy' => 'kees', 'lockedAt' => 'later'],
 		];
 
-		$rows = (new NoteJournalExporter())->table(title: 'X', notes: $notes)->rows;
+		$rows = (new NoteJournalExporter())->table(title: 'X', notes: $notes)['rows'];
 
 		// The PDF section escapes cells itself; Markdown escaping would print backslashes.
 		$this->assertSame('Eve *vet*', $rows[0]['author']);
@@ -162,8 +162,8 @@ class NoteJournalExporterTest extends TestCase {
 	public function testAnObjectWithoutNotesHasAnEmptySheetTable(): void {
 		$table = (new NoteJournalExporter())->table(title: 'Leeg', notes: []);
 
-		$this->assertSame('Journal: Leeg', $table->title);
-		$this->assertSame([], $table->rows);
+		$this->assertSame('Journal: Leeg', $table['title']);
+		$this->assertSame([], $table['rows']);
 	}
 
 	/**
@@ -178,7 +178,7 @@ class NoteJournalExporterTest extends TestCase {
 			['id' => 1, 'message' => "# Contact\n<script>x()</script>", 'actorId' => 'anna', 'createdAt' => '2026-11-13T09:00:00+00:00', 'locked' => false],
 		];
 
-		$html = (new RowsPdfSection())->build((new NoteJournalExporter())->table(title: 'Zaak', notes: $notes));
+		$html = (new RowsPdfSection())->build(new RowsTable(...(new NoteJournalExporter())->table(title: 'Zaak', notes: $notes)));
 
 		$this->assertStringContainsString('<td># Contact' . "\n" . '&lt;script&gt;x()&lt;/script&gt;</td>', $html);
 		$this->assertStringNotContainsString('<script>', $html);

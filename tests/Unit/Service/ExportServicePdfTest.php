@@ -506,6 +506,22 @@ class ExportServicePdfTest extends TestCase {
 	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
 
 	/**
+	 * Rows another component built through the table PDF port render as the same table would,
+	 * whole cells included, and the row cap still applies.
+	 */
+	public function testRenderRowsToPdfThroughThePortRendersTheTable(): void {
+		$long = str_repeat('lang ', 200);
+		$pdf  = $this->service->renderRowsToPdf(title: 'Journal: Zaak', columns: ['message' => 'Note'], rows: [['message' => $long]], wholeCells: true);
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Journal: Zaak', $this->convertedOdtText());
+		$this->assertStringContainsString(trim($long), $this->convertedOdtText());
+
+		$this->expectException(ExportTooLargeException::class);
+		$this->service->renderRowsToPdf(title: 'T', columns: ['a' => 'A'], rows: array_fill(0, ExportService::MAX_PDF_EXPORT_ROWS + 1, ['a' => 'x']));
+	}//end testRenderRowsToPdfThroughThePortRendersTheTable()
+
+	/**
 	 * The row cap applies to rows handed in, before anything is rendered.
 	 */
 	public function testRenderRowsToPdfRefusesMoreRowsThanTheCap(): void {

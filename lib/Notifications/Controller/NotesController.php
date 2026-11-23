@@ -213,11 +213,15 @@ class NotesController extends Controller {
 		}
 
 		try {
-			$pdf = $export->renderTableToPdf(
-				table: (new NoteJournalExporter())->table(
-					title: $this->journalTitle(object: $object),
-					notes: $this->everyVisibleNote(object: $object)
-				)
+			$table = (new NoteJournalExporter())->table(
+				title: $this->journalTitle(object: $object),
+				notes: $this->everyVisibleNote(object: $object)
+			);
+			$pdf   = $export->renderRowsToPdf(
+				title: $table['title'],
+				columns: $table['columns'],
+				rows: $table['rows'],
+				wholeCells: $table['wholeCells']
 			);
 		} catch (OfficeServerRequiredException $e) {
 			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
