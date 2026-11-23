@@ -613,3 +613,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Writing an audit row from outside Compliance: new AuditTrail() is a Core/X -> Compliance edge (or-fix-3)
 - Symptom: ComponentDependencyRulesTest lists '<file> -> lib/Db/AuditTrail.php (Core -> Compliance)' for a PR audit helper doing new AuditTrail() + AuditTrailMapperInterface::insertAuditTrails.
 - Fix: build a Kernel\Contracts\Core\AuditEntry and call AuditEntryWriterInterface::writeAuditEntries (Core); tests wrap the mapper mock in new AuditEntryWriter(mapper: ...). AuditEntry has no organisation field on main: #10283 (or-fix-3) adds optional trailing organisationId stamped by AuditEntryWriter. Also: a Core class reading a Search value (BoundedRun) gets a Kernel-root interface carrying its constants.
+## Trap: component-deps.py reports 0 for files you have not git-added; Kernel/Contracts/Core is Core (or-fix-9)
+- Symptom: python3 scripts/component-deps.py says 0 new edges, yet ComponentDependencyRulesTest lists edges to your new port, and testPhpReaderAgreesWithTheScript fails with a huge array diff.
+- Cause: the script reads git-tracked files only; the PHP reader walks lib/. And lib/Kernel/Contracts/Core/* maps to Core, not Kernel: a Processes caller of a port there is still Processes -> Core.
+- Fix: git add new files before running the script; put a cross-area port in root lib/Kernel/Contracts (csv ',,Kernel,Kernel,...,0,,Kernel'), implement it in the owning area, bind it there (#10269 4b09b541 MandateEvidenceInterface).
