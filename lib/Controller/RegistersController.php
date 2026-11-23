@@ -25,7 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
@@ -258,7 +258,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			message: '[RegistersController] Constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->downloads = new RegisterDownloads(services: $services);
 		$this->statistics = new RegisterStatistics(services: $services);
