@@ -39,7 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use Psr\Log\LoggerInterface;
@@ -226,7 +225,7 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 		}
 
 		$filters = $this->filtersFor(payload: $payload, spec: $spec);
-		return AggregationQuery::create(metric: $metric, field: $field, filter: $filters, layout: new AggregationLayout(groupBy: $groupBy));
+		return AggregationQuery::grouped(metric: $metric, field: $field, filter: $filters, groupBy: $groupBy);
 	}//end queryFor()
 
 	/**

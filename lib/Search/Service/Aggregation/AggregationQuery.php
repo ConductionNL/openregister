@@ -144,6 +144,26 @@ class AggregationQuery {
 	}//end create()
 
 	/**
+	 * A query grouped by the given groupBy only (no date buckets, metric list or running total).
+	 *
+	 * For callers outside the Search area that only group: they name this query, not its layout.
+	 *
+	 * @param string               $metric  One of METRIC_*.
+	 * @param ?string              $field   Field for non-count metrics; null for count.
+	 * @param array<string, mixed> $filter  Filter map.
+	 * @param ?array               $groupBy The groupBy, or null for a single value.
+	 *
+	 * @return self
+	 *
+	 * @throws InvalidArgumentException When the input is invalid.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	public static function grouped(string $metric, ?string $field = null, array $filter = [], ?array $groupBy = null): self {
+		return self::create(metric: $metric, field: $field, filter: $filter, layout: new AggregationLayout(groupBy: $groupBy));
+	}//end grouped()
+
+	/**
 	 * The layout this query was created with, for rebuilding an equivalent query.
 	 *
 	 * @return AggregationLayout

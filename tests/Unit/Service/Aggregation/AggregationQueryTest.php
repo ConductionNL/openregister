@@ -486,4 +486,26 @@ class AggregationQueryTest extends TestCase {
 		AggregationQuery::create(metric: 'count', layout: new AggregationLayout(cumulative: true));
 	}//end testLayoutIsValidatedByCreate()
 
+	public function testGroupedBuildsTheSameQueryAsCreateWithAGroupByLayout(): void {
+		$grouped = AggregationQuery::grouped(metric: 'sum', field: 'amount', filter: ['status' => 'open'], groupBy: ['field' => 'region']);
+		$created = AggregationQuery::create(metric: 'sum', field: 'amount', filter: ['status' => 'open'], layout: new AggregationLayout(groupBy: ['field' => 'region']));
+
+		$this->assertEquals($created, $grouped);
+		$this->assertSame(['field' => 'region'], $grouped->groupBy);
+		$this->assertNull($grouped->dateBucket);
+		$this->assertFalse($grouped->cumulative);
+	}//end testGroupedBuildsTheSameQueryAsCreateWithAGroupByLayout()
+
+	public function testGroupedWithoutGroupByIsASingleValueQuery(): void {
+		$query = AggregationQuery::grouped(metric: 'count');
+
+		$this->assertNull($query->groupBy);
+		$this->assertEquals(AggregationQuery::create(metric: 'count'), $query);
+	}//end testGroupedWithoutGroupByIsASingleValueQuery()
+
+	public function testGroupedValidatesTheGroupBy(): void {
+		$this->expectException(InvalidArgumentException::class);
+		AggregationQuery::grouped(metric: 'count', groupBy: ['fields' => []]);
+	}//end testGroupedValidatesTheGroupBy()
+
 }//end class
