@@ -423,3 +423,5 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ClassAliasMapBehaviourTest (2), ClassAliasMapEagerOrderTest (2) and FlowEngineRegistrationListenerTest::testTheOperationIsResolvedByItsClassName error with Class "OCP\EventDispatcher\Event" not found in tests/stubs/Integriq/Event/ConnectionStatusReportedEvent.php.
 - Cause: these run in a separate process, which does not inherit the -d auto_prepend_file OCP autoloader; red identically on plain main 223a653f2 (23 Nov). Not a PR defect.
 - Fix: none on PR branches: inherited env artefact; compare against plain main before chasing it.
+## Version1Date20261121170000 shared by #10314 and #10531 (or-fix-11)
+- Same clash as the 20261114100000 entry: two open PRs add different steps under one class name. #10531 moved to ...170011 (94e3905e); #10451 moved its 100000 step to ...100011 (2f378e57). Still clashing: #10314 none now; #10499 and #10518 still share 20261114100000 with each other.
