@@ -25,3 +25,4 @@
 2026-11-23T08:33:11Z ncvue-0 no open PRs with N%6==0 (open: 2215 2213 2211 2209 2133 2132 1726 1720 1718 1714 1712); lane share empty, main 9eafa328
 2026-11-23T08:33:34Z ncvue-3 #2133 and #2211 retargeted to main, main merged in, all local gates green, pushed; admin merge REFUSED by session permission check, both left open ready to merge; main 9eafa328
 2026-11-23T08:44:15Z ncvue-1 #2215 merged (pinia 4.1.0); lane share done, main 8e9ba950. Note: check:jsdoc fails on main (16 components below ratchet, pre-existing); useOfflineQueue spec flaky under full-suite load
+2026-11-23T08:48:22Z ncvue-4 #1726 merged (sub-tabs on main's strip; empty-panel fix + test), main 3813fb27; #1714 being worked by another session (pushed 08:32), skipped
