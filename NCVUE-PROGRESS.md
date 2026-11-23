@@ -11,3 +11,4 @@
 2026-11-23T08:08:41Z ncvue-1 start
 2026-11-23T08:08:39Z ncvue-5 start
 2026-11-23T08:08:42Z ncvue-3 start
+2026-11-23T08:11:41Z ncvue-5 closed #1727 (superseded by reports-page-catalogue on main) and #2015 (screens.md already on main via #2139)
