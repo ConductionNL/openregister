@@ -52,10 +52,8 @@ final class AccessListenerRegistrar {
 		);
 
 		// A share made from the platform's own sharing surface on an object's
-		// folder passes the schema's opt-in and the permission mapping.
-		$context->registerEventListener(
-			\OCP\Share\Events\BeforeShareCreatedEvent::class,
-			\OCA\OpenRegister\Listener\PlatformShareRoutingListener::class
-		);
+		// folder passes the schema's opt-in and the permission mapping: a Core
+		// listener, registered through Core's slot at this position.
+		\OCA\OpenRegister\Listener\CoreListenerRegistrar::platformShareRouting(context: $context);
 	}//end register()
 }//end class
