@@ -632,3 +632,5 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: Error: Class "OCA\OpenRegister\Mcp\Service\ChatMessageRequest" not found (tests calling ResponseGenerationHandler/ChatService).
 - Cause: main moved the value object to lib/Kernel/Contracts/Value/ChatMessageRequest.php (same constructor).
 - Fix: change the test's use line and @uses to OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest (see #10493).
+## Inherited on main 6e870ca5 (23 Nov 21:30Z): 4 Files -> Core edges (or-fix-2)
+- ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline is red on plain main: DecisionMetadataEdit -> Db/EntityRelation, Files/Service/File/ManagedFiles -> Service/File/DocumentStore and ManagedFileOwnerLookup, Kernel/Contracts/Files/EntityMentionDecisionsInterface -> Db/EntityRelation. Inherited; subtract these from a PR merge's list, do not fix them in a PR.
