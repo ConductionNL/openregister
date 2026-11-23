@@ -73,6 +73,30 @@ export function parseMailUrl(url) {
  * @param {Function} [options.onChange] Callback when accountId/messageId change.
  * @return {object} Reactive state with accountId, messageId, and isMessageView.
  */
+const URL_CHANGE_EVENT = 'or-mail-urlchange'
+
+/**
+ * Let a pushState or replaceState announce itself, once per page: Mail's
+ * router changes the URL that way and fires no event, so without this the
+ * panel learned of a newly opened mail only at its next poll.
+ *
+ * @spec openspec/specs/mail-sidebar/spec.md
+ */
+export function announceHistoryChanges() {
+	if (window.history.__orMailAnnounced) {
+		return
+	}
+	for (const method of ['pushState', 'replaceState']) {
+		const original = window.history[method]
+		window.history[method] = function(...args) {
+			const result = original.apply(this, args)
+			window.dispatchEvent(new Event(URL_CHANGE_EVENT))
+			return result
+		}
+	}
+	window.history.__orMailAnnounced = true
+}
+
 export function useMailObserver(options = {}) {
 	const debounceMs = options.debounceMs || 300
 	const onChange = options.onChange || null
@@ -136,14 +160,18 @@ export function useMailObserver(options = {}) {
 		// Listen for popstate (browser back/forward).
 		window.addEventListener('popstate', checkUrlChange)
 
-		// Poll for URL changes (catches Vue Router pushState which doesn't fire events).
-		// This is the most reliable way to detect SPA navigation.
+		// Mail's router pushes the URL: hear it at once.
+		announceHistoryChanges()
+		window.addEventListener(URL_CHANGE_EVENT, checkUrlChange)
+
+		// Poll as a fallback, for a URL change that bypasses the history API.
 		urlPollInterval = setInterval(checkUrlChange, 500)
 	})
 
 	onBeforeUnmount(() => {
 		window.removeEventListener('hashchange', checkUrlChange)
 		window.removeEventListener('popstate', checkUrlChange)
+		window.removeEventListener(URL_CHANGE_EVENT, checkUrlChange)
 		if (urlPollInterval) {
 			clearInterval(urlPollInterval)
 		}

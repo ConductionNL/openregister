@@ -8,7 +8,7 @@
  */
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { parseMailUrl, useMailObserver } from './useMailObserver.js'
+import { announceHistoryChanges, parseMailUrl, useMailObserver } from './useMailObserver.js'
 
 describe('parseMailUrl', () => {
 	it.each([
@@ -60,13 +60,13 @@ describe('useMailObserver', () => {
 		expect(state.isMessageView.value).toBe(true)
 	})
 
-	it('picks up a pushState navigation on the next poll, debounced', () => {
+	it('hears a pushState navigation at once, debounced, without waiting for the poll', () => {
 		const onChange = jest.fn()
 		const { state } = observe({ onChange, debounceMs: 100 })
 		window.history.pushState(null, '', '/apps/mail/box/7')
-		jest.advanceTimersByTime(500)
+		jest.advanceTimersByTime(99)
 		expect(onChange).not.toHaveBeenCalled()
-		jest.advanceTimersByTime(100)
+		jest.advanceTimersByTime(1)
 		expect(onChange).toHaveBeenCalledWith({
 			accountId: 7,
 			messageId: null,
@@ -118,5 +118,18 @@ describe('useMailObserver', () => {
 		window.dispatchEvent(new Event('popstate'))
 		jest.advanceTimersByTime(2000)
 		expect(onChange).not.toHaveBeenCalled()
+	})
+})
+
+describe('announceHistoryChanges', () => {
+	it('announces pushState and replaceState once, however often it is called', () => {
+		const heard = jest.fn()
+		window.addEventListener('or-mail-urlchange', heard)
+		announceHistoryChanges()
+		announceHistoryChanges()
+		window.history.pushState(null, '', '/apps/mail/box/1/thread/5')
+		window.history.replaceState(null, '', '/apps/mail/box/1/thread/6')
+		expect(heard).toHaveBeenCalledTimes(2)
+		window.removeEventListener('or-mail-urlchange', heard)
 	})
 })

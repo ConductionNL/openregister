@@ -137,7 +137,6 @@ describe('MailSidebar', () => {
 
 	it('passes the observed ids to its sections', async () => {
 		const wrapper = await mountSidebar()
-		await wrapper.find('.or-mail-panel__found-toggle').trigger('click')
 		for (const name of ['ObjectsTab', 'ActionsTab', 'EntitiesTab']) {
 			const tab = wrapper.findComponent({ name })
 			expect(tab.props()).toEqual({ accountId: 1, messageId: 42 })
@@ -149,17 +148,17 @@ describe('MailSidebar', () => {
 		expect((await mountSidebar(null)).classes()).toContain('or-mail-sidebar-root--idle')
 	})
 
-	it('folds out what was found in the mail, and folds it in for the next mail', async () => {
+	it('shows what was found in the mail unfolded, folds it on request, and unfolds it again for the next mail', async () => {
 		const wrapper = await mountSidebar()
 		const toggle = wrapper.find('.or-mail-panel__found-toggle')
-		expect(toggle.attributes('aria-expanded')).toBe('false')
-		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(false)
-		await toggle.trigger('click')
 		expect(toggle.attributes('aria-expanded')).toBe('true')
 		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(true)
+		await toggle.trigger('click')
+		expect(toggle.attributes('aria-expanded')).toBe('false')
+		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(false)
 		mockObserved.messageId.value = 43
 		await flushPromises()
-		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(true)
 	})
 
 	it('closes from its head and opens again from the pressed Connections button, and remembers it', async () => {
@@ -218,7 +217,6 @@ describe('MailSidebar', () => {
 
 	it('hands a found value to the search, and labels the attachment action by the connected kind', async () => {
 		const wrapper = await mountSidebar()
-		await wrapper.find('.or-mail-panel__found-toggle').trigger('click')
 		await wrapper.findComponent({ name: 'EntitiesTab' }).vm.$emit('search', 'Lindelaan 14')
 		expect(mockSearchFor).toHaveBeenCalledWith('Lindelaan 14')
 		expect(mockAddToObject.label.value).toBe('')

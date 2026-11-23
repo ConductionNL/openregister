@@ -143,7 +143,8 @@ export default {
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
 	setup() {
-		const mailObserver = useMailObserver({ debounceMs: 300 })
+		// Short debounce: URL changes are heard as they happen, and a mail shows its connections as it opens.
+		const mailObserver = useMailObserver({ debounceMs: 50 })
 		useAttachmentDrag()
 		// The items the open mail is connected to, as the card list reports them.
 		const connected = ref([])
@@ -159,7 +160,8 @@ export default {
 	data() {
 		return {
 			collapsed: false,
-			foundOpen: false,
+			// The found values show unfolded, as MlConnections draws them.
+			foundOpen: true,
 			subject: '',
 			// How many items the open mail is connected to; null until known.
 			objectsCount: null,
@@ -189,12 +191,12 @@ export default {
 		messageId: {
 			immediate: true,
 			/**
-			 * A new email: fold in what was found and read its subject.
+			 * A new email: unfold what was found and read its subject.
 			 *
 			 * @spec openspec/specs/mail-sidebar/spec.md
 			 */
 			handler() {
-				this.foundOpen = false
+				this.foundOpen = true
 				this.objectsCount = null
 				this.justConnected = null
 				this.loadSubject()
