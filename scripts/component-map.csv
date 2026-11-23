@@ -4355,13 +4355,14 @@ Search/Service/Quality/NearDuplicateScope.php,,Search,,,,,Search
 Search/Service/Quality/ObjectTextSimilarity.php,,Search,,,,,Search
 Service/Quality/TextSignature.php,,Service,,,,,Core
 Service/Quality/TextSignatureStore.php,,Service,,,,,Core
-BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Core
+BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Db/CalendarLinkDuplicates.php,,Db,,,,,Integrations
 Migration/Version1Date20261114101600.php,,Migration,,,,,Platform
 Service/CalendarEvent/InboundCalendarObject.php,,Service,,,,,Integrations
 Service/CalendarEvent/CalendarLinkInboundSync.php,,Service,,,,,Integrations
 Listener/CalendarObjectChangedListener.php,,Listener,,,,,Integrations
 Listener/CalendarObjectDeletedListener.php,,Listener,,,,,Integrations
+Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integrations
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
