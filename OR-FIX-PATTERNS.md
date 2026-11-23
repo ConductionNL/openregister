@@ -452,3 +452,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: src/services/initial-data.golden.spec.js '<Component> starts from the recorded state' fails, snapshot + only the PR's new data() keys; PHP suites all green, so PHP-only checks miss it.
 - Cause: the golden pins every settings component's data() shape; a PR adding fields to e.g. FileConfiguration.vue never re-recorded it.
 - Fix: npx jest --findRelatedTests <PR's src files> on the merged tree (npm ci --ignore-scripts, ~30s); then npx jest src/services/initial-data.golden.spec.js -u, check the .snap diff is only the PR's keys, commit (#10494 90b4b7a5).
+
+## Recorded-call goldens pin a method's argument list (or-fix-3)
+- Symptom: MagicMapperSearchObjectsPaginatedTest (4 data sets, 'findMultiple [["u1"],false,null]' vs '...,null,null]') and RelationHandlerLookupsGoldenTest red on a PR that adds an optional trailing param to findMultiple/findMultipleAcrossAllMagicTables.
+- Cause: those tests record func_get_args of mapper doubles; a forwarding call that now passes the new param (null) adds an element.
+- Fix: sed the 'findMultiple [...]' strings in tests/Unit/Db/MagicMapper/fixtures/search-objects-paginated.php; OR_GOLDEN_RECORD=1 phpunit RelationHandlerLookupsGoldenTest; the diff must be only the added nulls (#11003 962507b4).
