@@ -17,7 +17,7 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapabilityServices;
 use OCA\OpenRegister\Capabilities\PlatformCapability;
 use OCA\OpenRegister\Capabilities\SearchScopesCapability;
 use OCA\OpenRegister\Capabilities\UrnCapability;
-use OCA\OpenRegister\Service\SemanticProviderCatalogue;
+use OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -62,7 +62,7 @@ class CapabilityRegistrarTest extends TestCase {
 	}//end testRegistersTheCapabilitiesInOrder()
 
 	/**
-	 * The integrations capability is built with the container's semantic provider catalogue,
+	 * The integrations capability is built with the container's semantic provider port (the Core catalogue),
 	 * so `semanticProviders` advertises the cached list rather than always [].
 	 *
 	 * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
@@ -77,20 +77,20 @@ class CapabilityRegistrarTest extends TestCase {
 		);
 		CapabilityRegistrar::register(context: $context);
 
-		$catalogue = $this->createMock(originalClassName: SemanticProviderCatalogue::class);
+		$catalogue = $this->createMock(originalClassName: SemanticProvidersInterface::class);
 		$requested = [];
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($catalogue, &$requested) {
 				$requested[] = $id;
-				return $id === SemanticProviderCatalogue::class ? $catalogue : $this->createMock(originalClassName: $id);
+				return $id === SemanticProvidersInterface::class ? $catalogue : $this->createMock(originalClassName: $id);
 			}
 		);
 
 		$capability = $factories[IntegrationsCapability::class]($container);
 		$services   = (new ReflectionProperty(IntegrationsCapability::class, 'services'))->getValue($capability);
 
-		$this->assertContains(needle: SemanticProviderCatalogue::class, haystack: $requested);
+		$this->assertContains(needle: SemanticProvidersInterface::class, haystack: $requested);
 		$this->assertInstanceOf(expected: IntegrationsCapabilityServices::class, actual: $services);
 		$this->assertSame(expected: $catalogue, actual: $services->semanticProviders);
 	}//end testTheIntegrationsCapabilityReadsTheSemanticProviderCatalogue()

@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface;
 use OCP\App\IAppManager;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -46,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
  */
-class SemanticProviderCatalogue {
+class SemanticProviderCatalogue implements SemanticProvidersInterface {
 
 	/**
 	 * The distributed cache namespace; {@see self::clear()} empties all of it.

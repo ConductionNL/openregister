@@ -773,9 +773,7 @@ final class ListenerRegistrar {
 		CoreListenerRegistrar::stateHistory(context: $context);
 
 		// The semantic provider list the integrations capability advertises follows schemas, registers and apps.
-		foreach (SemanticProviderCacheListener::EVENTS as $semanticProviderEvent) {
-			$context->registerEventListener($semanticProviderEvent, SemanticProviderCacheListener::class);
-		}
+		CoreListenerRegistrar::semanticProviders(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
