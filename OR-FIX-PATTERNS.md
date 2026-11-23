@@ -413,3 +413,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: reviewer BLOCK 'never active in production'; unit tests green because the PR's test builds the service by hand with the new param, which defaults to null.
 - Cause: integration providers and link services are built from the BuiltinIntegrationServices::FACTORIES table (named args), not by DI autowiring; a param added to the constructor is never passed.
 - Fix: add 'param' => <Interface>::class to the class's FACTORIES entry; BuiltinIntegrationServicesTableTest pins a sha256 of the table: copy the actual hash; add a test that BuiltinIntegrationServices::build() hands the instance in (ReflectionProperty on the built service). See #11005 1b1ba39a.
+
+## Order-dependent red: ExampleSetTalkStoreBehaviourTest when running all of tests/Unit/Service (or-fix-9)
+- Symptom: testTalkIsUnavailableWhenItsServicesDoNotLoad fails 'this test needs an instance without Talk classes' only when a wide directory (tests/Unit/Service) runs in one process.
+- Cause: an earlier test in the same process defines OCA\Talk stub classes; class_exists then stays true. Green alone and on main; not a PR defect.
+- Fix: none; rerun tests/Unit/Service/ExampleSet alone to confirm.
