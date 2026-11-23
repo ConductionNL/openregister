@@ -126,7 +126,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
