@@ -640,6 +640,26 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->assertFalse($result);
 	}
 
+	public function testIsFilePropertyWithLongNonBase64String(): void {
+		// Over 100 chars but not valid strict base64 (raw PDF-like bytes): the
+		// strict base64_decode() returns false, and the heuristic MUST say no.
+		$value = "%PDF-1.4\n" . str_repeat("\x00\xff binary ", 20);
+		$this->assertGreaterThan(100, strlen($value));
+
+		$result = $this->handler->isFileProperty($value);
+
+		$this->assertFalse($result);
+	}
+
+	public function testIsFilePropertyWithArrayOfLongNonBase64Strings(): void {
+		// Same as above for the array-item branch.
+		$value = ["%PDF-1.4\n" . str_repeat("\x00\xff binary ", 20)];
+
+		$result = $this->handler->isFileProperty($value);
+
+		$this->assertFalse($result);
+	}
+
 	public function testIsFilePropertyWithSchemaNoType(): void {
 		$schema = new Schema();
 		$schema->setProperties([
