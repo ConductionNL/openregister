@@ -4637,6 +4637,7 @@ Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Service/User/UserAccountStores.php,,Service,,,,,Core
 Service/User/UserPlatform.php,,Service,,,,,Core
 Service/User/UserStorage.php,,Service,,,,,Core
+Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
