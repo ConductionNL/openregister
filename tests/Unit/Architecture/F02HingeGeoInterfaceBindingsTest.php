@@ -27,6 +27,7 @@ use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
@@ -67,9 +68,9 @@ final class F02HingeGeoInterfaceBindingsTest extends TestCase {
 		ConflictPolicy::class => [ConflictPolicyNames::class, null],
 		FormDependentsCheck::class => [FormDependentsCheckInterface::class, ContractBindings::class],
 		GeoResponseCrs::class => [GeoResponseCrsInterface::class, null],
-		InheritedGeoCollector::class => [InheritedGeoCollectorInterface::class, ContractBindings::class],
-		ListPresentationResolver::class => [ListPresentationResolverInterface::class, ContractBindings::class],
-		ReferencedByService::class => [ReferencedByServiceInterface::class, ContractBindings::class],
+		InheritedGeoCollector::class => [InheritedGeoCollectorInterface::class, CoreServiceBindings::class],
+		ListPresentationResolver::class => [ListPresentationResolverInterface::class, CoreServiceBindings::class],
+		ReferencedByService::class => [ReferencedByServiceInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
