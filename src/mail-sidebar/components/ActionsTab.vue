@@ -88,6 +88,7 @@
 			:show="createDialog.show"
 			:schema="createDialog.schema"
 			:initialData="createDialog.data"
+			:register="createDialog.schema ? registerCache[createDialog.schema.id] : null"
 			:saving="createSaving"
 			@cancel="closeCreate"
 			@confirm="submitCreate" />
