@@ -5,7 +5,7 @@
  * @spec exclude Unit test of client-side form control choice.
  */
 import axios from '@nextcloud/axios'
-import CreateConnectedObjectDialog, { isRelation, relationOptions } from './CreateConnectedObjectDialog.vue'
+import CreateConnectedObjectDialog, { dateOf, isoDateOf, isRelation, relationOptions } from './CreateConnectedObjectDialog.vue'
 
 jest.mock('@nextcloud/axios', () => ({ get: jest.fn() }))
 jest.mock('@nextcloud/router', () => ({
@@ -14,7 +14,6 @@ jest.mock('@nextcloud/router', () => ({
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
 jest.mock('vue-material-design-icons/Plus.vue', () => ({}))
-jest.mock('../../components/shared/CloseCancelButton.vue', () => ({}))
 
 const { controlFor } = CreateConnectedObjectDialog.methods
 
@@ -78,5 +77,22 @@ describe('CreateConnectedObjectDialog relations', () => {
 
 		const fields = CreateConnectedObjectDialog.computed.fields.call({ ...vm, controlFor: CreateConnectedObjectDialog.methods.controlFor, humanize: CreateConnectedObjectDialog.methods.humanize })
 		expect(fields[0]).toMatchObject({ key: 'caseType', control: 'select', options: [{ value: WOO, label: 'Woo-verzoek' }] })
+	})
+})
+
+describe('CreateConnectedObjectDialog dates', () => {
+	it('reads a stored calendar date or timestamp as a local date', () => {
+		const date = dateOf('2026-11-23')
+		expect([date.getFullYear(), date.getMonth(), date.getDate()]).toEqual([2026, 10, 23])
+		expect(dateOf('2026-11-23T09:05:00+01:00').getDate()).toBe(23)
+		expect(dateOf('')).toBeNull()
+		expect(dateOf(null)).toBeNull()
+		expect(dateOf('23/11/2026')).toBeNull()
+	})
+
+	it('stores a picked date as a calendar date, and a cleared one as empty', () => {
+		expect(isoDateOf(new Date(2026, 0, 5))).toBe('2026-01-05')
+		expect(isoDateOf(null)).toBe('')
+		expect(isoDateOf(new Date('nonsense'))).toBe('')
 	})
 })
