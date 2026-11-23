@@ -462,3 +462,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: reviewer BLOCK 'findMultipleOptimized returns rows unresolved (no allOf merge)'; unit tests green because mocks return finished schemas.
 - Cause: find() runs SchemaComposition::resolve (allOf merge, oneOf/anyOf checks, throws on a broken parent); the batch query returns stored rows, so an allOf child has only its delta properties/config.
 - Fix: keep the batch for plain schemas; send rows with non-empty getAllOf/getOneOf/getAnyOf (and non-numeric ids) back through find() in a try/catch, in the original order; add a test where the batch returns a delta-only allOf row and find() the resolved one (#11015 02fa7bee).
+## EntityInterfacesTest: a PR's new public entity method is not on the Kernel interface (or-fix-13)
+- Symptom: tests/Unit/Kernel/EntityInterfacesTest::testEveryExplicitPublicMethodIsOnTheInterface with data set "Schema" (or Register, ...), actual [ '<method>' ].
+- Cause: main requires every explicit, non-static public method of a Db entity on its Kernel/Contracts/<Entity>Interface; a PR adds e.g. Schema::getPreviewUrl() to the entity only. Clean auto-merge.
+- Fix: declare the method with the same signature on lib/Kernel/Contracts/<Entity>Interface.php (no other implementors besides the entity; check with grep 'implements.*<Entity>Interface'); a test reading it through the interface. Not ENTITY_ONLY unless it is a mapper-only helper (#10533 06f240b0).
