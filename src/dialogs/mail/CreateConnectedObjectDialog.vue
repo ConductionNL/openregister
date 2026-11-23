@@ -300,8 +300,8 @@ export default {
 					)
 					const objects = Array.isArray(response.data?.results) ? response.data.results : []
 					this.relations = { ...this.relations, [key]: relationOptions(objects, filter, String(this.initialData[key] ?? '')) }
-				} catch (err) {
-					console.error('[CreateConnectedObjectDialog] Could not read the choices of', key, err)
+				} catch {
+					// The current value stays the only choice.
 				}
 			}))
 		},
