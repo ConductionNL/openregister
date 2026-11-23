@@ -127,4 +127,29 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame([], $this->store);
 	}//end testADegradedAnswerIsNotCached()
+
+	public function testTheAvailablePagesAreAnsweredFromTheCacheAndASearchDoesNotShareTheirEntry(): void {
+		$this->signIn('pieter');
+		$this->provider->expects($this->exactly(2))
+			->method('list')
+			->willReturn([['reference' => 'Workplace.Laptop', 'title' => 'Laptop', 'space' => 'Workplace']]);
+
+		$first  = $this->service->getAvailablePages(null);
+		$second = $this->service->getAvailablePages(null);
+		$this->service->searchPages(new ListQuery(limit: 25, offset: 0, search: ''));
+
+		$this->assertSame($first, $second);
+		$this->assertSame(1, $second['total']);
+	}//end testTheAvailablePagesAreAnsweredFromTheCacheAndASearchDoesNotShareTheirEntry()
+
+	public function testUnavailablePagesAreNotCached(): void {
+		$this->signIn('pieter');
+		$this->provider->expects($this->exactly(2))
+			->method('list')
+			->willThrowException(new ProviderUnavailableException('down', ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN));
+
+		$this->service->getAvailablePages('street');
+		$this->assertTrue($this->service->getAvailablePages('street')['unavailable']);
+		$this->assertSame([], $this->store);
+	}//end testUnavailablePagesAreNotCached()
 }//end class

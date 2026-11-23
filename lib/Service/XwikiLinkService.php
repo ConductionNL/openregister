@@ -455,12 +455,24 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			$filters['_search'] = $search;
 		}
 
+		// The widget and the picker list the same pages on every page load; a
+		// failure is never cached, so a recovered source shows at once.
+		$cache    = $this->searchCache();
+		$cacheKey = hash('sha256', json_encode(['available', (string)($this->runtime->userSession()->getUser()?->getUID() ?? ''), $filters], JSON_THROW_ON_ERROR));
+		$cached   = $cache?->get($cacheKey);
+		if (is_array($cached) === true) {
+			return $cached;
+		}
+
 		$outcome = $this->browse(filters: $filters, caller: 'getAvailablePages');
 		if ($outcome['cause'] !== null) {
 			return $this->unavailableState(cause: $outcome['cause']);
 		}
 
-		return ['results' => $outcome['results'], 'total' => count($outcome['results'])];
+		$result = ['results' => $outcome['results'], 'total' => count($outcome['results'])];
+		$cache?->set($cacheKey, $result, self::SEARCH_CACHE_TTL);
+
+		return $result;
 	}//end getAvailablePages()
 
 	/**
