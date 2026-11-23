@@ -33,6 +33,7 @@ use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
+use OCA\OpenRegister\Service\Resilience\DependencyBreaker;
 use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Tests\Unit\Service\Resilience\FakeMemcache;
@@ -50,6 +51,7 @@ require_once __DIR__ . '/../Resilience/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
+ * @uses   \OCA\OpenRegister\Service\Resilience\DependencyBreaker
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
  */
 class ResponseGenerationBreakerTest extends TestCase {
@@ -124,7 +126,7 @@ class ResponseGenerationBreakerTest extends TestCase {
 		$registry = $this->createMock(BreakerRegistry::class);
 		$registry->method('breaker')->willReturn($this->breaker);
 
-		return new ResponseGenerationHandler(settingsService: $settings, toolHandler: $tools, logger: new NullLogger(), breakers: $registry);
+		return new ResponseGenerationHandler(settingsService: $settings, toolHandler: $tools, logger: new NullLogger(), breakers: new DependencyBreaker($registry));
 	}
 
 	private function ask(ResponseGenerationHandler $handler): string {

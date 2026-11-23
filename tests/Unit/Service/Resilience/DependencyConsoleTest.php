@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Resilience;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Service\Audit\OperatorActionAudit;
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
@@ -50,6 +52,8 @@ require_once __DIR__ . '/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\DatabasePressureMeter
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
  * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Service\Audit\AuditEntryWriter
+ * @uses   \OCA\OpenRegister\Service\Audit\OperatorActionAudit
  */
 class DependencyConsoleTest extends TestCase {
 
@@ -99,7 +103,7 @@ class DependencyConsoleTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new DependencyConsole(breakers: $registry, pressure: $pressure, auditTrails: $auditTrails, userSession: $session, logger: $logger ?? new NullLogger());
+		return new DependencyConsole(breakers: $registry, pressure: $pressure, audit: new OperatorActionAudit(entries: new AuditEntryWriter(mapper: $auditTrails), userSession: $session), logger: $logger ?? new NullLogger());
 	}
 
 	private function open(string $key): void {

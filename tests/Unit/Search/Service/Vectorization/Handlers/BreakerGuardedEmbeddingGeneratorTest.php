@@ -32,6 +32,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHan
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
+use OCA\OpenRegister\Service\Resilience\DependencyBreaker;
 use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCA\OpenRegister\Tests\Unit\Service\Resilience\FakeMemcache;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -48,6 +49,7 @@ require_once __DIR__ . '/../../../../Service/Resilience/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
+ * @uses   \OCA\OpenRegister\Service\Resilience\DependencyBreaker
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
  */
 class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
@@ -73,7 +75,7 @@ class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
 		$inner = $this->createMock(EmbeddingGeneratorInterface::class);
 		$inner->expects($this->once())->method('embedText')->with('hello')->willReturn([0.1, 0.2]);
 
-		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->breaker);
+		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->guardBreaker());
 
 		$this->assertSame([0.1, 0.2], $guarded->embedText('hello'));
 		$state = $this->breaker->state(BreakerRegistry::llmKey());
@@ -85,7 +87,7 @@ class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
 		$inner = $this->createMock(EmbeddingGeneratorInterface::class);
 		$inner->method('embedDocuments')->willThrowException(new RuntimeException('provider down'));
 
-		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->breaker);
+		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->guardBreaker());
 
 		try {
 			$guarded->embedDocuments([new Document()]);
@@ -105,7 +107,7 @@ class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
 		$inner->expects($this->never())->method('embedDocuments');
 		$inner->method('getEmbeddingLength')->willReturn(768);
 
-		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->breaker);
+		$guarded = new BreakerGuardedEmbeddingGenerator(inner: $inner, breaker: $this->guardBreaker());
 
 		$refusals = 0;
 		foreach ([fn () => $guarded->embedText('x'), fn () => $guarded->embedDocument(new Document()), fn () => $guarded->embedDocuments([])] as $call) {
@@ -131,7 +133,7 @@ class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
 
 		$registry = $this->createMock(BreakerRegistry::class);
 		$registry->method('breaker')->willReturn($this->breaker);
-		$guardedHandler = new EmbeddingGeneratorHandler(logger: new NullLogger(), breakers: $registry);
+		$guardedHandler = new EmbeddingGeneratorHandler(logger: new NullLogger(), breakers: new DependencyBreaker($registry));
 		$this->seed(handler: $guardedHandler, generator: $provider);
 		$guarded = $guardedHandler->getGenerator($config);
 
@@ -145,4 +147,16 @@ class BreakerGuardedEmbeddingGeneratorTest extends TestCase {
 	private function seed(EmbeddingGeneratorHandler $handler, EmbeddingGeneratorInterface $generator): void {
 		(new ReflectionProperty(EmbeddingGeneratorHandler::class, 'generatorCache'))->setValue($handler, ['ollama_nomic-embed-text' => $generator]);
 	}
+
+	/**
+	 * The test's breaker behind the Kernel breaker port.
+	 *
+	 * @return DependencyBreaker The port.
+	 */
+	private function guardBreaker(): DependencyBreaker {
+		$registry = $this->createMock(BreakerRegistry::class);
+		$registry->method('breaker')->willReturn($this->breaker);
+
+		return new DependencyBreaker($registry);
+	}//end guardBreaker()
 }

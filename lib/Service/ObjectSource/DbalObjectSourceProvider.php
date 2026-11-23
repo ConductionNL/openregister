@@ -48,8 +48,8 @@ use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\ReadOnlyQueryGuard;
 use OCA\OpenRegister\Service\Dbal\ReadOnlyReadScope;
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
-use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DependencyRefusalInterface;
 use WeakMap;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -131,7 +131,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 * @param ReadOnlyReadScope|null $readScope  Runs a query-backed read read-only with a statement timeout.
 	 * @param ReadOnlyQueryGuard|null $queryGuard Refuses a query-backed schema's SQL that is not a single read.
-	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves the sources unguarded.
+	 * @param DependencyBreakerInterface|null $breakers The dependency breakers; null leaves the sources unguarded.
 	 *
 	 * @return void
 	 */
@@ -141,7 +141,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		private readonly LoggerInterface $logger,
 		?ReadOnlyReadScope $readScope = null,
 		?ReadOnlyQueryGuard $queryGuard = null,
-		private readonly ?BreakerRegistry $breakers = null,
+		private readonly ?DependencyBreakerInterface $breakers = null,
 	) {
 		$this->breakerKeys = new WeakMap();
 		$this->aggregator = new DbalAggregator(logger: $logger);
@@ -716,18 +716,18 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @return Connection The connection.
 	 *
 	 * @throws DbalConnectionException On any connection/credential error (fail closed).
-	 * @throws DependencyUnavailableException While the source's breaker is open.
+	 * @throws DependencyRefusalInterface While the source's breaker is open.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function connect(SourceInterface $source): Connection {
-		$breaker = $this->breakers?->breaker();
+		$breaker = $this->breakers;
 		if ($breaker === null) {
 			return $this->connectionFactory->getConnection(source: $source);
 		}
 
-		$key = 'source:' . (string)$source->getId();
+		$key = $breaker->sourceKey(sourceId: (string)$source->getId());
 		$breaker->allow(key: $key);
 
 		try {
@@ -752,7 +752,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function countOutcome(Connection $connection, bool $failed): void {
-		$breaker = $this->breakers?->breaker();
+		$breaker = $this->breakers;
 		$key = ($this->breakerKeys[$connection] ?? null);
 		if ($breaker === null || $key === null) {
 			return;

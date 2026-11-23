@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
+use OCA\OpenRegister\Service\Resilience\DependencyBreaker;
 use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookEvent;
@@ -68,6 +69,7 @@ require_once __DIR__ . '/Resilience/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
+ * @uses   \OCA\OpenRegister\Service\Resilience\DependencyBreaker
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
  */
 class WebhookServiceBreakerTest extends TestCase {
@@ -121,7 +123,7 @@ class WebhookServiceBreakerTest extends TestCase {
 			),
 			dispatch: new WebhookDispatchServices(jobList: $this->createMock(IJobList::class)),
 			logger: new NullLogger(),
-			breakers: $registry
+			breakers: new DependencyBreaker($registry)
 		);
 
 		$client = $this->createMock(GuzzleClient::class);

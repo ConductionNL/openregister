@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
-use OCA\OpenRegister\Service\Resilience\DependencyConsole;
+use OCA\OpenRegister\Kernel\Contracts\DependencyConsoleInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -44,15 +44,15 @@ class OperationsDependenciesController extends Controller implements Maintenance
 	 * Constructor.
 	 *
 	 * @param IRequest          $request The request.
-	 * @param DependencyConsole $console The breakers' list and reset.
+	 * @param DependencyConsoleInterface $console The breakers' list and reset.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly DependencyConsole $console,
+		private readonly DependencyConsoleInterface $console,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

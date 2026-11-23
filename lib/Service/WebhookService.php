@@ -38,8 +38,8 @@ use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
-use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DependencyRefusalInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -95,7 +95,7 @@ class WebhookService {
 	 * @param WebhookStores           $stores           Webhook, log and mapping stores
 	 * @param WebhookDispatchServices $dispatch         Job list, CloudEvent formatter and interception cache
 	 * @param LoggerInterface         $logger           Logger
-	 * @param BreakerRegistry|null    $breakers         The receiver breakers; null sends every delivery unguarded
+	 * @param DependencyBreakerInterface|null    $breakers         The receiver breakers; null sends every delivery unguarded
 	 *
 	 * @return void
 	 */
@@ -103,7 +103,7 @@ class WebhookService {
 		private readonly WebhookStores $stores,
 		private readonly WebhookDispatchServices $dispatch,
 		private readonly LoggerInterface $logger,
-		private readonly ?BreakerRegistry $breakers = null,
+		private readonly ?DependencyBreakerInterface $breakers = null,
 	) {
 		$this->initializeHttpClient();
 	}//end __construct()
@@ -720,8 +720,8 @@ class WebhookService {
 		$breakerKey = $this->receiverBreakerKey(webhook: $webhook);
 		if ($breakerKey !== null) {
 			try {
-				$this->breakers?->breaker()->allow(key: $breakerKey);
-			} catch (DependencyUnavailableException $open) {
+				$this->breakers->allow(key: $breakerKey);
+			} catch (DependencyRefusalInterface $open) {
 				return $this->deferDelivery(delivery: $attempt, refusal: $open);
 			}
 		}
@@ -749,7 +749,6 @@ class WebhookService {
 	 *
 	 * @return string|null The `webhook:{host}` key.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) BreakerRegistry::webhookKey() is the one spelling of the key.
 	 *
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
@@ -763,7 +762,7 @@ class WebhookService {
 			return null;
 		}
 
-		return BreakerRegistry::webhookKey(host: $host);
+		return $this->breakers->webhookKey(host: $host);
 	}//end receiverBreakerKey()
 
 	/**
@@ -780,7 +779,7 @@ class WebhookService {
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function countReceiverOutcome(?string $key, int $statusCode): void {
-		$breaker = $this->breakers?->breaker();
+		$breaker = $this->breakers;
 		if ($key === null || $breaker === null) {
 			return;
 		}
@@ -802,13 +801,13 @@ class WebhookService {
 	 * statistics are not touched.
 	 *
 	 * @param WebhookDeliveryAttempt         $delivery The delivery and its log row.
-	 * @param DependencyUnavailableException $refusal  The open breaker's refusal.
+	 * @param DependencyRefusalInterface $refusal  The open breaker's refusal.
 	 *
 	 * @return bool Always false: the delivery has not happened.
 	 *
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
-	private function deferDelivery(WebhookDeliveryAttempt $delivery, DependencyUnavailableException $refusal): bool {
+	private function deferDelivery(WebhookDeliveryAttempt $delivery, DependencyRefusalInterface $refusal): bool {
 		$log = $delivery->log;
 		$log->setSuccess(false);
 		$log->setAttempt(($log->getAttempt() - 1));

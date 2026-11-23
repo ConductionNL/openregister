@@ -22,12 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Resilience;
 
-use DateTime;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\DependencyConsoleInterface;
+use OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
@@ -38,7 +35,7 @@ use Throwable;
  *
  * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
  */
-class DependencyConsole {
+class DependencyConsole implements DependencyConsoleInterface {
 
 	/**
 	 * The audit action of a reset.
@@ -50,8 +47,7 @@ class DependencyConsole {
 	 *
 	 * @param BreakerRegistry           $breakers    The breakers.
 	 * @param DatabasePressureMeter     $pressure    The database-pressure meter.
-	 * @param AuditTrailMapperInterface $auditTrails The hash-chained audit trail.
-	 * @param IUserSession              $userSession The administrator.
+	 * @param OperatorActionAuditInterface $audit  The audit trail, written as the administrator.
 	 * @param LoggerInterface           $logger      The logger.
 	 *
 	 * @return void
@@ -59,8 +55,7 @@ class DependencyConsole {
 	public function __construct(
 		private readonly BreakerRegistry $breakers,
 		private readonly DatabasePressureMeter $pressure,
-		private readonly AuditTrailMapperInterface $auditTrails,
-		private readonly IUserSession $userSession,
+		private readonly OperatorActionAuditInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -128,27 +123,17 @@ class DependencyConsole {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 */
 	private function audit(string $key, string $before): void {
-		$user = $this->userSession->getUser();
-
-		$row = new AuditTrail();
-		$row->setUuid((string) Uuid::v4());
-		$row->setAction(self::RESET_ACTION);
-		$row->setUser($user?->getUID());
-		$row->setUserName($user?->getDisplayName());
-		$row->setCreated(new DateTime());
-		$row->setChanged(
-			[
-				'dependency' => DependencyUnavailableException::classOf(key: $key),
-				'key' => $key,
-				'state' => ['old' => $before, 'new' => 'closed'],
-			]
-		);
-
 		try {
-			$this->auditTrails->insertAuditTrails(entries: [$row]);
+			$this->audit->record(
+				action: self::RESET_ACTION,
+				changed: [
+					'dependency' => DependencyUnavailableException::classOf(key: $key),
+					'key' => $key,
+					'state' => ['old' => $before, 'new' => 'closed'],
+				]
+			);
 		} catch (Throwable $e) {
 			$this->logger->error('[DependencyConsole] reset of ' . $key . ' not audited: ' . $e->getMessage());
 		}

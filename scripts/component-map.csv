@@ -363,7 +363,7 @@ Controller/SelectielijstController.php,166,Controller,Compliance,Compliance/Cont
 Controller/SelectielijstReferenceController.php,29,Controller,Compliance,Compliance/Controller/SelectielijstReferenceController.php,0,,Compliance
 Controller/Settings/ApiTokenSettingsController.php,219,Controller,Configuration,Configuration/Controller/Settings/ApiTokenSettingsController.php,0,,Configuration
 Controller/Settings/AuditSettingsController.php,52,Controller,Compliance,Compliance/Controller/Settings/AuditSettingsController.php,0,,Configuration
-Controller/Settings/LoadSheddingSettingsController.php,96,Controller,Configuration,Configuration/Controller/Settings/LoadSheddingSettingsController.php,0,,Configuration
+Controller/Settings/LoadSheddingSettingsController.php,96,Controller,Configuration,Configuration/Controller/Settings/LoadSheddingSettingsController.php,0,,Platform
 Controller/Settings/CacheSettingsController.php,194,Controller,Configuration,Configuration/Controller/Settings/CacheSettingsController.php,0,,Configuration
 Controller/Settings/ConfigurationSettingsController.php,150,Controller,Configuration,Configuration/Controller/Settings/ConfigurationSettingsController.php,0,,Configuration
 Controller/Settings/EdepotSettingsController.php,167,Controller,Compliance,Compliance/Controller/Settings/EdepotSettingsController.php,0,,Configuration
@@ -3124,7 +3124,7 @@ Service/Resilience/DatabasePressureMeter.php,330,Service,Platform,Platform/Servi
 Service/Resilience/DependencyConsole.php,150,Service,Platform,Platform/Service/Resilience/DependencyConsole.php,0,,Platform
 Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
 Service/Resilience/LoadSheddingSettings.php,181,Service,Platform,Platform/Service/Resilience/LoadSheddingSettings.php,0,,Platform
-Service/Resilience/Sheddable.php,15,Service,Platform,Platform/Service/Resilience/Sheddable.php,0,,Platform
+Service/Resilience/Sheddable.php,15,Service,Platform,Platform/Service/Resilience/Sheddable.php,0,,Kernel
 Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core
 Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Core
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
@@ -4647,3 +4647,10 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/DependencyBreakerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DependencyRefusalInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ConnectionStatusReportInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/OperatorActionAuditInterface.php,,Kernel,,,,,Kernel
+Service/Resilience/DependencyBreaker.php,,Service,,,,,Platform
+Service/Audit/OperatorActionAudit.php,,Service,,,,,Core
+Kernel/Contracts/DependencyConsoleInterface.php,,Kernel,,,,,Kernel

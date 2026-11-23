@@ -44,8 +44,8 @@ use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
 use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
-use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DependencyRefusalInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
@@ -90,7 +90,7 @@ class ResponseGenerationHandler {
 	 * @param SettingsServiceInterface $settingsService Settings service for LLM config.
 	 * @param ToolManagementHandler $toolHandler Tool management handler.
 	 * @param LoggerInterface $logger Logger.
-	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves the provider unguarded.
+	 * @param DependencyBreakerInterface|null $breakers The dependency breakers; null leaves the provider unguarded.
 	 *
 	 * @return void
 	 *
@@ -100,7 +100,7 @@ class ResponseGenerationHandler {
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly ToolManagementHandler $toolHandler,
 		private readonly LoggerInterface $logger,
-		private readonly ?BreakerRegistry $breakers = null,
+		private readonly ?DependencyBreakerInterface $breakers = null,
 	) {
 	}//end __construct()
 
@@ -181,7 +181,7 @@ class ResponseGenerationHandler {
 				request: $this->chatRequest(run: $run),
 				timings: ['start' => $run->startTime, 'tools' => $run->toolsTime]
 			);
-		} catch (DependencyUnavailableException $e) {
+		} catch (DependencyRefusalInterface $e) {
 			// An open `llm` breaker: left as is, so the middleware answers 503.
 			throw $e;
 		} catch (Exception $e) {
@@ -589,9 +589,8 @@ class ResponseGenerationHandler {
 	 * @return array{response: string, chat: OpenAIChat|OllamaChat} The response and the chat client used.
 	 *
 	 * @throws Exception When the API call fails.
-	 * @throws DependencyUnavailableException While the `llm` breaker is open.
+	 * @throws DependencyRefusalInterface While the `llm` breaker is open.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) BreakerRegistry::llmKey() is the one spelling of the key.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
@@ -606,12 +605,12 @@ class ResponseGenerationHandler {
 			return ['response' => $this->invokeChatWithTools(chat: $chat, request: $request), 'chat' => $chat];
 		};
 
-		$breaker = $this->breakers?->breaker();
+		$breaker = $this->breakers;
 		if ($breaker === null) {
 			return $chatWith();
 		}
 
-		return $breaker->call(key: BreakerRegistry::llmKey(), call: $chatWith);
+		return $breaker->call(key: $breaker->llmKey(), call: $chatWith);
 	}//end runChat()
 
 	/**

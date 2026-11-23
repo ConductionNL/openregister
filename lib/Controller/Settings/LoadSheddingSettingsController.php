@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Resilience\LoadSheddingSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -59,7 +59,7 @@ class LoadSheddingSettingsController extends Controller {
 		IRequest $request,
 		private readonly LoadSheddingSettings $settings,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

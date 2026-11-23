@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Resilience;
 
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -54,6 +53,33 @@ class BreakerRegistry {
 	private const CONFIG_GROUP = 'load_shedding';
 
 	/**
+	 * The connection keys the admin connections page declares (ConnectionReporter::KEYS).
+	 *
+	 * Restated here so load shedding (Platform) does not name the reporter
+	 * (Integrations); BreakerRegistryTest keeps the two lists equal.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CONNECTION_KEYS = [
+		'llm',
+		'anonymiser',
+		'translation',
+		'dsar-identity',
+		'dsar-regulator',
+		'edepot',
+		'github',
+		'gitlab',
+		'brp',
+		'kvk',
+		'opencorporates',
+		'openproject',
+		'xwiki',
+		'message-dispatch',
+		'pdok',
+		'office-converter',
+	];
+
+	/**
 	 * The shared breaker, built once per request.
 	 *
 	 * @var CircuitBreaker|null
@@ -67,7 +93,7 @@ class BreakerRegistry {
 	 * @param IAppConfig      $appConfig    The thresholds source.
 	 * @param ITimeFactory    $clock        The clock.
 	 * @param LoggerInterface $logger       The logger.
-	 * @param ConnectionReporterInterface|null $connections Told when a breaker on a declared connection opens or closes.
+	 * @param ConnectionStatusReportInterface|null $connections Told when a breaker on a declared connection opens or closes.
 	 *
 	 * @return void
 	 */
@@ -76,7 +102,7 @@ class BreakerRegistry {
 		private readonly IAppConfig $appConfig,
 		private readonly ITimeFactory $clock,
 		private readonly LoggerInterface $logger,
-		private readonly ?ConnectionReporterInterface $connections = null,
+		private readonly ?ConnectionStatusReportInterface $connections = null,
 	) {
 	}//end __construct()
 
@@ -104,7 +130,7 @@ class BreakerRegistry {
 			return null;
 		}
 
-		if (in_array($name, ConnectionReporter::KEYS, true) === false) {
+		if (in_array($name, self::CONNECTION_KEYS, true) === false) {
 			return null;
 		}
 

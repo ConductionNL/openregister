@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
+use OCA\OpenRegister\Service\Resilience\DependencyBreaker;
 use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCA\OpenRegister\Tests\Unit\Service\Resilience\FakeMemcache;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -51,6 +52,7 @@ require_once __DIR__ . '/../Resilience/FakeMemcache.php';
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
+ * @uses   \OCA\OpenRegister\Service\Resilience\DependencyBreaker
  * @uses   \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
  */
 class DbalObjectSourceBreakerTest extends TestCase {
@@ -125,7 +127,7 @@ class DbalObjectSourceBreakerTest extends TestCase {
 		$registry = $this->createMock(BreakerRegistry::class);
 		$registry->method('breaker')->willReturn($this->breaker);
 
-		return new DbalObjectSourceProvider(sourceMapper: $sourceMapper, connectionFactory: $factory, logger: new NullLogger(), breakers: $registry);
+		return new DbalObjectSourceProvider(sourceMapper: $sourceMapper, connectionFactory: $factory, logger: new NullLogger(), breakers: new DependencyBreaker($registry));
 	}
 
 	/**

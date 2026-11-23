@@ -24,8 +24,7 @@ namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
 
 use LLPhant\Embeddings\Document;
 use LLPhant\Embeddings\EmbeddingGenerator\EmbeddingGeneratorInterface;
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
-use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
+use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
 
 /**
  * Wraps a provider's embedding generator so every embedding call goes through
@@ -35,8 +34,6 @@ use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
  * `getEmbeddingLength()` is passed through unguarded: it is the vector size,
  * not an embedding, and callers ask it when building indexes.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) BreakerRegistry::llmKey() is the one spelling of the key.
- *
  * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
  */
 final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterface {
@@ -45,13 +42,13 @@ final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterf
 	 * Constructor.
 	 *
 	 * @param EmbeddingGeneratorInterface $inner   The provider's generator.
-	 * @param CircuitBreaker              $breaker The breaker the `llm` key lives on.
+	 * @param DependencyBreakerInterface   $breaker The breaker the `llm` key lives on.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly EmbeddingGeneratorInterface $inner,
-		private readonly CircuitBreaker $breaker,
+		private readonly DependencyBreakerInterface $breaker,
 	) {
 	}//end __construct()
 
@@ -77,7 +74,7 @@ final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterf
 	 */
 	public function embedText(string $text): array {
 		return $this->breaker->call(
-			key: BreakerRegistry::llmKey(),
+			key: $this->breaker->llmKey(),
 			call: fn (): array => $this->inner->embedText($text)
 		);
 	}//end embedText()
@@ -93,7 +90,7 @@ final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterf
 	 */
 	public function embedDocument(Document $document): Document {
 		return $this->breaker->call(
-			key: BreakerRegistry::llmKey(),
+			key: $this->breaker->llmKey(),
 			call: fn (): Document => $this->inner->embedDocument($document)
 		);
 	}//end embedDocument()
@@ -109,7 +106,7 @@ final class BreakerGuardedEmbeddingGenerator implements EmbeddingGeneratorInterf
 	 */
 	public function embedDocuments(array $documents): array {
 		return $this->breaker->call(
-			key: BreakerRegistry::llmKey(),
+			key: $this->breaker->llmKey(),
 			call: fn (): array => $this->inner->embedDocuments($documents)
 		);
 	}//end embedDocuments()
