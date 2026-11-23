@@ -278,3 +278,10 @@ require_once __DIR__ . '/stubs/ContextChatStubs.php';
 
 // Integriq's events, sent by class-name string; see the stub file.
 require_once __DIR__ . '/stubs/IntegriqStubs.php';
+
+// Keep the old name of every moved class working, as Application::register() does at
+// boot (ADR-012 Rule 4): a test, mock or implementer that still names a class by its
+// old name in appinfo/class-aliases.json resolves without a live Nextcloud. Last,
+// because an eager entry autoloads its new class now, and that class may extend an
+// OCP or stub type registered above. Lazy entries are aliased on first autoload.
+\OCA\OpenRegister\AppInfo\ClassAliasMap::fromFile()->aliasClasses();
