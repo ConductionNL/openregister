@@ -73,6 +73,16 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 			}
 			return $found;
 		});
+		$this->schemas->method('findMultipleOptimized')->willReturnCallback(function (array $ids): array {
+			$this->schemaFinds++;
+			$found = [];
+			foreach ($ids as $id) {
+				if (($this->schemaById[(string) $id] ?? null) instanceof Schema) {
+					$found[$id] = $this->schemaById[(string) $id];
+				}
+			}
+			return $found;
+		});
 	}
 
 	private function refresher(): ReferencedCalculationRefresher {
@@ -163,6 +173,22 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 
 		// The second refresh only re-finds the updated object's own schema.
 		$this->assertSame($afterFirst + 1, $this->schemaFinds);
+	}
+
+	public function testTheRegisterSchemasAreReadInOneBatch(): void {
+		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([]);
+		$batches = [];
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturnCallback(fn (string|int $id): Schema => $this->schemaById[(string) $id]);
+		$schemas->method('findMultipleOptimized')->willReturnCallback(function (array $ids) use (&$batches): array {
+			$batches[] = $ids;
+			return ['1' => $this->schemaById['1'], '2' => $this->schemaById['2']];
+		});
+		$this->schemas = $schemas;
+
+		$this->refresher()->refresh($this->caseType(['startableFlows' => [1]]), null);
+
+		$this->assertSame([[1, 2, 99]], $batches);
 	}
 
 	public function testAFailedReferrerLookupIsLoggedAndSavesNothing(): void {

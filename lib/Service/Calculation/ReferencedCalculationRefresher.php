@@ -251,13 +251,7 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		}
 
 		$dependents = [];
-		foreach ($register->getSchemas() as $schemaId) {
-			try {
-				$schema = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
-			} catch (Throwable) {
-				continue;
-			}
-
+		foreach ($this->registerSchemas(register: $register) as $schema) {
 			foreach ($this->dependencies(schema: $schema, target: $target) as $field => $reads) {
 				$dependents[] = ['schema' => $schema, 'field' => $field, 'reads' => $reads];
 			}
@@ -266,6 +260,39 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		$this->found[$key] = $dependents;
 		return $dependents;
 	}//end dependentsOf()
+
+	/**
+	 * The schemas of a register, numeric ids in one query and any other identifier on its own.
+	 *
+	 * Every update of an object asks this for its register; one find() per
+	 * schema was 187 queries (about 0.3 s) on a register of 187 schemas.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, Schema> The schemas that could be loaded.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 */
+	private function registerSchemas(Register $register): array {
+		$ids     = (array)($register->getSchemas() ?? []);
+		$numeric = array_values(array_filter($ids, static fn ($id): bool => is_numeric($id) === true));
+		$schemas = [];
+		try {
+			$schemas = array_values($this->catalog->schemas()->findMultipleOptimized(ids: array_map('intval', $numeric)));
+		} catch (Throwable) {
+			$schemas = [];
+		}
+
+		foreach (array_diff($ids, $numeric) as $schemaId) {
+			try {
+				$schemas[] = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			} catch (Throwable) {
+				continue;
+			}
+		}
+
+		return $schemas;
+	}//end registerSchemas()
 
 	/**
 	 * The fields of the target schema a schema's materialised calculations read, by the field that points at it.
