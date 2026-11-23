@@ -1222,23 +1222,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end existsTableForRegisterSchema()
 
 	/**
-	 * Save objects to register+schema-specific table
-	 *
-	 * @param array $objects Array of object data to save
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
-	 *
-	 * @throws Exception If save operation fails
-	 *
-	 * @return string[]
-	 *
-	 * @psalm-return list<non-empty-string>
-	 */
-	public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array {
-		return $this->saveObjectsIn(table: new RegisterSchema(register: $register, schema: $schema), objects: $objects);
-	}//end saveObjectsToRegisterSchemaTable()
-
-	/**
 	 * Save multiple objects to a register+schema table.
 	 *
 	 * @param RegisterSchema $table   The register and schema whose table to use.
@@ -1249,7 +1232,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<non-empty-string>
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function saveObjectsIn(RegisterSchema $table, array $objects): array {
+	public function saveObjectsToRegisterSchemaTable(RegisterSchema $table, array $objects): array {
 		$register = $table->register;
 		$schema   = $table->schema;
 
@@ -1304,24 +1287,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 			throw $e;
 		}//end try
-	}//end saveObjectsIn()
-
-	/**
-	 * Search objects in register+schema-specific table
-	 *
-	 * @param array $query Search query parameters
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
-	 *
-	 * @throws Exception If search operation fails
-	 *
-	 * @return ObjectEntity[]
-	 *
-	 * @psalm-return list<ObjectEntity>
-	 */
-	public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array {
-		return $this->searchIn(table: new RegisterSchema(register: $register, schema: $schema), query: $query);
-	}//end searchObjectsInRegisterSchemaTable()
+	}//end saveObjectsToRegisterSchemaTable()
 
 	/**
 	 * Search objects in a register+schema table.
@@ -1334,7 +1300,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<ObjectEntity>
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function searchIn(RegisterSchema $table, array $query): array {
+	public function searchObjectsInRegisterSchemaTable(RegisterSchema $table, array $query): array {
 		$register = $table->register;
 		$schema   = $table->schema;
 
@@ -1372,7 +1338,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 			throw $e;
 		}//end try
-	}//end searchIn()
+	}//end searchObjectsInRegisterSchemaTable()
 
 	/**
 	 * Get the list of filter properties that were ignored during the last search.
@@ -1562,23 +1528,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end runCountQuery()
 
 	/**
-	 * Get simple facets for a register+schema specific table.
-	 *
-	 * This method retrieves facet data (aggregations) from a dedicated magic mapper table
-	 * based on register+schema combination. It supports both metadata facets (@self fields)
-	 * and schema property facets.
-	 *
-	 * @param array $query Search parameters including _facets configuration.
-	 * @param Register $register The register context for table selection.
-	 * @param Schema $schema The schema for table selection.
-	 *
-	 * @return array Facet results with buckets.
-	 */
-	public function getSimpleFacetsFromRegisterSchemaTable(array $query, Register $register, Schema $schema): array {
-		return $this->facetsIn(table: new RegisterSchema(register: $register, schema: $schema), query: $query);
-	}//end getSimpleFacetsFromRegisterSchemaTable()
-
-	/**
 	 * Get simple facets for a register+schema table.
 	 *
 	 * @param RegisterSchema $table The register and schema whose table to use.
@@ -1587,7 +1536,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Facet results with buckets.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function facetsIn(RegisterSchema $table, array $query): array {
+	public function getSimpleFacetsFromRegisterSchemaTable(RegisterSchema $table, array $query): array {
 		$register = $table->register;
 		$schema   = $table->schema;
 
@@ -1637,7 +1586,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 			return [];
 		}//end try
-	}//end facetsIn()
+	}//end getSimpleFacetsFromRegisterSchemaTable()
 
 	/**
 	 * Get facets using UNION ALL across multiple register+schema tables.
@@ -2809,9 +2758,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		$results = $this->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $register,
-			schema: $schema
+			table: new RegisterSchema(register: $register, schema: $schema),
+			query: $query
 		);
 
 		$this->logger->debug(
@@ -4030,14 +3978,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Update table indexes
 	 *
 	 * @param string $tableName The table name
-	 * @param Register $register The register context
 	 * @param Schema $schema The schema for index analysis
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/modelling-property-index-switch/tasks.md#1-backend
 	 */
-	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void {
+	public function updateTableIndexes(string $tableName, Schema $schema): void {
 		// Create what the properties ask for, then drop the convention-named
 		// property indexes they no longer ask for (modelling-property-index-switch D-2).
 		$this->createTableIndexes(tableName: $tableName, schema: $schema);
@@ -6513,7 +6460,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$query = array_merge($query, $filters);
 
-		return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
+		return $this->searchObjectsInRegisterSchemaTable(table: $table, query: $query);
 	}//end findAllInRegisterSchemaTable()
 
 	/**
@@ -7259,7 +7206,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function softDeleteRow(MagicTableTarget $target, ObjectEntity $entity): void {
 		if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
 			// Mark as deleted using entity method.
-			$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+			$entity->softDelete(userSession: $this->userSession, deletion: new SoftDeletion(reason: 'Soft deleted via MagicMapper', retentionDays: 30));
 		}
 
 		// Update entity in table with deleted field set.
@@ -10304,9 +10251,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
 
 				return $this->getSimpleFacetsFromRegisterSchemaTable(
-					query: $query,
-					register: $register,
-					schema: $schema
+					table: new RegisterSchema(register: $register, schema: $schema),
+					query: $query
 				);
 			} catch (\Exception $e) {
 				$this->logger->warning(
@@ -10616,9 +10562,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				$query['_rbac'] = $_rbac;
 				$query['_multitenancy'] = $_multitenancy;
 				return $this->searchObjectsInRegisterSchemaTable(
-					query: $query,
-					register: $register,
-					schema: $schema
+					table: new RegisterSchema(register: $register, schema: $schema),
+					query: $query
 				);
 			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
 				// Fail loud (design intent): a filter on an encrypted property, or a
@@ -11190,9 +11135,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$searchStart = microtime(true);
 		$results     = $this->searchObjectsInRegisterSchemaTable(
-			query: array_replace($request['search'], $flags),
-			register: $pair['register'],
-			schema: $pair['schema']
+			table: new RegisterSchema(register: $pair['register'], schema: $pair['schema']),
+			query: array_replace($request['search'], $flags)
 		);
 		$searchTime  = round((microtime(true) - $searchStart) * 1000, 2);
 
