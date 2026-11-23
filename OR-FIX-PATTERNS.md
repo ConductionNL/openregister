@@ -418,3 +418,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: testTalkIsUnavailableWhenItsServicesDoNotLoad fails 'this test needs an instance without Talk classes' only when a wide directory (tests/Unit/Service) runs in one process.
 - Cause: an earlier test in the same process defines OCA\Talk stub classes; class_exists then stays true. Green alone and on main; not a PR defect.
 - Fix: none; rerun tests/Unit/Service/ExampleSet alone to confirm.
+
+## Test env trap: process-isolated tests lose the OCP prepend (or-fix-12)
+- Symptom: ClassAliasMapBehaviourTest (2), ClassAliasMapEagerOrderTest (2) and FlowEngineRegistrationListenerTest::testTheOperationIsResolvedByItsClassName error with Class "OCP\EventDispatcher\Event" not found in tests/stubs/Integriq/Event/ConnectionStatusReportedEvent.php.
+- Cause: these run in a separate process, which does not inherit the -d auto_prepend_file OCP autoloader; red identically on plain main 223a653f2 (23 Nov). Not a PR defect.
+- Fix: none on PR branches: inherited env artefact; compare against plain main before chasing it.
