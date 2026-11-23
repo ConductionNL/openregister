@@ -351,9 +351,9 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magic),
 				db: $db,
-				cache: $cache,
 				dbalSourceProvider: $dbal
 			),
+			cache: $cache,
 			access: new AggregationAccess(
 				permissionHandler: $permissions,
 				organizationHandler: $orgHandler,

@@ -381,9 +381,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-				db: $db,
-				cache: $cache
+				db: $db
 			),
+			cache: $cache,
 			access: new AggregationAccess(
 				permissionHandler: $permissionHandler,
 				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')

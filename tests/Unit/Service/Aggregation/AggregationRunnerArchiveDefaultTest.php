@@ -336,9 +336,9 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-				db: $this->db,
-				cache: $this->cache
+				db: $this->db
 			),
+			cache: $this->cache,
 			access: new AggregationAccess(
 				permissionHandler: $this->permissionHandler,
 				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')

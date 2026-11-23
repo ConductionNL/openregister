@@ -524,9 +524,9 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
-				db: $db,
-				cache: $cache
+				db: $db
 			),
+			cache: $cache,
 			access: new AggregationAccess(
 				permissionHandler: $permissionHandler,
 				organizationHandler: $orgHandler

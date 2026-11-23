@@ -122,9 +122,9 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
-				db: $this->createMock(originalClassName: IDBConnection::class),
-				cache: $this->createMock(originalClassName: AggregationCache::class)
+				db: $this->createMock(originalClassName: IDBConnection::class)
 			),
+			cache: $this->createMock(originalClassName: AggregationCache::class),
 			access: new AggregationAccess(
 				permissionHandler: $permissions,
 				organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),

@@ -195,9 +195,9 @@ class AggregationRunnerTranslatableKeysGoldenTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
-				db: $this->createMock(IDBConnection::class),
-				cache: $this->createMock(AggregationCache::class)
+				db: $this->createMock(IDBConnection::class)
 			),
+			cache: $this->createMock(AggregationCache::class),
 			access: new AggregationAccess(
 				permissionHandler: $this->createMock(PermissionHandler::class),
 				organizationHandler: $this->createMock(MagicOrganizationHandler::class)

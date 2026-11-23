@@ -86,9 +86,9 @@ class AggregationRunnerHelperCharacterisationTest extends TestCase {
 			sources: new AggregationSources(
 				catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
 				db: $this->createMock(IDBConnection::class),
-				cache: $this->createMock(AggregationCache::class),
 				dbalSourceProvider: $dbal
 			),
+			cache: $this->createMock(AggregationCache::class),
 			access: new AggregationAccess(
 				permissionHandler: $this->createMock(PermissionHandler::class),
 				organizationHandler: $this->createMock(MagicOrganizationHandler::class)

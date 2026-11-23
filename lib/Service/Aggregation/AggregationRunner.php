@@ -288,7 +288,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AggregationSources      $sources      The schema catalogue, native SQL connection, result cache and DBAL provider.
+	 * @param AggregationSources      $sources      The schema catalogue, native SQL connection and DBAL provider.
+	 * @param AggregationCacheInterface $cache      60s aggregation result cache.
 	 * @param AggregationAccess       $access       Schema RBAC, the organisation boundary, property RBAC and explicit reveal.
 	 * @param AggregationCaller       $caller       The session, the active organisation and the placeholder resolver.
 	 * @param AggregationPresentation $presentation Group-key translation, language negotiation and the logger.
@@ -299,6 +300,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	public function __construct(
 		AggregationSources $sources,
+		AggregationCacheInterface $cache,
 		AggregationAccess $access,
 		AggregationCaller $caller,
 		AggregationPresentation $presentation,
@@ -306,7 +308,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		$catalog = $sources->catalog;
 		$this->placeholders = $caller->placeholders;
 		$this->db = $sources->db;
-		$this->cache = $sources->cache;
+		$this->cache = $cache;
 		$this->permissionHandler = $access->permissionHandler;
 		$this->userSession = $caller->userSession;
 		$this->organisationService = $caller->organisationService;

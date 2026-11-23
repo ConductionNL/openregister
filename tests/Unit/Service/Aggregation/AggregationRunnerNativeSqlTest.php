@@ -289,9 +289,9 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		return new AggregationRunner(
 			sources: new AggregationSources(
 				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-				db: $db,
-				cache: $this->createMock(AggregationCache::class)
+				db: $db
 			),
+			cache: $this->createMock(AggregationCache::class),
 			access: new AggregationAccess(
 				permissionHandler: $this->createMock(PermissionHandler::class),
 				organizationHandler: $orgHandler
