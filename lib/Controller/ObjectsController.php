@@ -6621,8 +6621,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
-			properties: $patch->schema->getProperties(),
-			suppliedKeys: $patch->suppliedKeys
+			properties: array_diff_key($patch->schema->getProperties(), array_flip($patch->suppliedKeys))
 		);
 	}//end restoreStringTypedValues()
 
