@@ -45,13 +45,15 @@ interface SchemaTypeConverterInterface {
 	/**
 	 * Restore untouched string-typed properties that the read decoded into arrays.
 	 *
-	 * @param array $data         The object data about to be saved.
-	 * @param array $properties   The schema's property definitions, keyed by property name.
-	 * @param array $suppliedKeys Keys the caller actually sent; these are left exactly as merged.
+	 * A key without a property definition is left exactly as it is, so a caller that must keep the keys it
+	 * was sent passes the definitions without those keys.
+	 *
+	 * @param array $data       The object data about to be saved.
+	 * @param array $properties The property definitions to restore by, keyed by property name.
 	 *
 	 * @return array The data with untouched string-typed JSON values restored to their stored form.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array;
+	public function restoreStringTypedValues(array $data, array $properties): array;
 }//end interface
