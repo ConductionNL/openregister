@@ -41,6 +41,7 @@ use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Contract\LockRequest as PublishedLockRequest;
 
 /**
  * The appConfig-backed advisory lock store.
@@ -99,7 +100,7 @@ class AdvisoryLockStore {
 	 * A still-valid lock raises LockedException; an expired one is silently
 	 * overwritten.
 	 *
-	 * @param LockRequest $request The identifier, the process tag and the duration in seconds.
+	 * @param PublishedLockRequest $request The identifier, the process tag and the duration in seconds.
 	 *
 	 * @return array{uuid: string, locked: array<string, mixed>} Advisory lock result.
 	 *
@@ -107,7 +108,7 @@ class AdvisoryLockStore {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function acquire(LockRequest $request): array {
+	public function acquire(PublishedLockRequest $request): array {
 		$now = new DateTime();
 		$lock = $this->payload(request: $request, now: $now, ownerId: $this->userSession->getUser()?->getUID());
 
@@ -284,11 +285,11 @@ class AdvisoryLockStore {
 	/**
 	 * Log an acquired advisory lock.
 	 *
-	 * @param LockRequest $request The lock request.
+	 * @param PublishedLockRequest $request The lock request.
 	 *
 	 * @return void
 	 */
-	private function logAcquired(LockRequest $request): void {
+	private function logAcquired(PublishedLockRequest $request): void {
 		$this->logger->info(
 			message: '[AdvisoryLockStore] Advisory (pre-creation) lock acquired',
 			context: [
@@ -303,13 +304,13 @@ class AdvisoryLockStore {
 	/**
 	 * The stored payload of an advisory lock taken now, for the default duration when none was asked.
 	 *
-	 * @param LockRequest $request The process tag and the duration in seconds.
-	 * @param DateTime    $now     The moment the lock is taken.
-	 * @param string|null $ownerId The holder.
+	 * @param PublishedLockRequest $request The process tag and the duration in seconds.
+	 * @param DateTime             $now     The moment the lock is taken.
+	 * @param string|null          $ownerId The holder.
 	 *
 	 * @return array<string, mixed> The lock payload.
 	 */
-	private function payload(LockRequest $request, DateTime $now, ?string $ownerId): array {
+	private function payload(PublishedLockRequest $request, DateTime $now, ?string $ownerId): array {
 		$duration = ($request->duration ?? self::DEFAULT_DURATION);
 		$expiration = (clone $now)->modify("+{$duration} seconds");
 
