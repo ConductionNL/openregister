@@ -6,7 +6,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Contract
- * @package  OCA\OpenRegister\Kernel\Contracts\Core
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -17,10 +17,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts\Core;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * The duplicate guard of a create.
@@ -68,12 +67,12 @@ interface CreateGuardInterface {
 	 * Best-effort: the object is already written, and losing the audit row must
 	 * not undo a save that succeeded.
 	 *
-	 * @param ObjectEntity                     $object  The object that was created anyway.
+	 * @param ObjectEntityInterface            $object  The object that was created anyway.
 	 * @param array<int, array<string, mixed>> $matches The matches it was created over.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	public function recordOverride(ObjectEntity $object, array $matches): void;
+	public function recordOverride(ObjectEntityInterface $object, array $matches): void;
 }//end interface

@@ -534,7 +534,6 @@
   "lib/Kernel/Contracts/Core/BundleImport.php",
   "lib/Kernel/Contracts/Core/CascadeRetentionCheckInterface.php",
   "lib/Kernel/Contracts/Core/ContactMatchCacheInterface.php",
-  "lib/Kernel/Contracts/Core/CreateGuardInterface.php",
   "lib/Kernel/Contracts/Core/CredentialSecretReaderInterface.php",
   "lib/Kernel/Contracts/Core/CurrentFlowRunInterface.php",
   "lib/Kernel/Contracts/Core/DeclarationRefusalInterface.php",
@@ -617,6 +616,8 @@
   "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
   "lib/Kernel/Contracts/Core/ViewFinderInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
+  "lib/Kernel/Contracts/CreateCandidate.php",
+  "lib/Kernel/Contracts/CreateGuardInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -858,7 +859,6 @@
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Search/Service/Search/PlaceholderResolverInterface.php",
   "lib/Search/Service/Search/PlaceholderResolvers.php",
@@ -1841,15 +1841,15 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 14300,
+  "Compliance": 14297,
   "Configuration": 874,
-  "Core": 35056,
+  "Core": 35031,
   "Files": 1263,
   "Integrations": 17689,
-  "Kernel": 6027,
+  "Kernel": 6048,
   "Notifications": 1760,
   "Platform": 0,
-  "Processes": 27041,
+  "Processes": 27042,
   "Search": 1317
  },
  "kernel_files": [
@@ -2050,6 +2050,8 @@
   "lib/Kernel/Contracts/ContactMatcherInterface.php",
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
+  "lib/Kernel/Contracts/CreateCandidate.php",
+  "lib/Kernel/Contracts/CreateGuardInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -2176,7 +2178,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 7631,
- "total_loc": 462408,
+ "kernel_loc": 7652,
+ "total_loc": 462481,
  "violation_degree": 0.0056
 }

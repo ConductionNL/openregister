@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\CreateGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 
 /**
  * The part of DedupCreatePolicy that code outside the Search component uses.

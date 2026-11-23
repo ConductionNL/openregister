@@ -700,8 +700,6 @@ deptrac:
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
-          value: 'lib/Search/Service/Quality/CreateCandidate[.]php$'
-        - type: directory
           value: 'lib/Search/Service/Search/PlaceholderResolver[.]php$'
         - type: directory
           value: 'lib/Search/Service/Search/PlaceholderResolverInterface[.]php$'
@@ -3074,6 +3072,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraph[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/LifecycleGraphBlock[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraphCheck[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraphMovesValidator[.]php$'
@@ -3132,7 +3132,11 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/StateSave[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/SystemApproval[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/TransitionAttempt[.]php$'
+        - type: directory
+          value: 'lib/Service/Lifecycle/TransitionCommand[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/TransitionDispatch[.]php$'
         - type: directory
@@ -3144,7 +3148,11 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/TransitionRequest[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/TransitionRun[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/TransitionSubjects[.]php$'
+        - type: directory
+          value: 'lib/Service/Lifecycle/TransitionSubmission[.]php$'
         - type: directory
           value: 'lib/Service/ObjectAction/[^/]*$'
         - type: directory
@@ -4820,45 +4828,7 @@ deptrac:
         - type: directory
           value: 'lib/Search/Service/Integration/[^/]*$'
         - type: directory
-          value: 'lib/Search/Service/Quality/ComparedValues[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupConfig[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupCreatePolicy[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupCreatePolicyInterface[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupOverrideAudit[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupRuleResolver[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupRun[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DedupScoringSources[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DismissedPairStore[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DuplicateDetectionService[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/DuplicateDetectionServiceInterface[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/NearDuplicateScope[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/ObjectTextSimilarity[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/PairDismissal[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/PayloadComparator[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/ReviewedPair[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/SimilarityCalculator[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/TextGroupFinder[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/TextGroups[.]php$'
-        - type: directory
-          value: 'lib/Search/Service/Quality/UniqueHintAnnotationValidator[.]php$'
+          value: 'lib/Search/Service/Quality/[^/]*$'
         - type: directory
           value: 'lib/Search/Service/Reporting/[^/]*$'
         - type: directory
