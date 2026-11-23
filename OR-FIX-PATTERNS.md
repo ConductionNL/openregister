@@ -575,3 +575,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Non-Core controllers adopting HandlesExceptionsTrait trip ComponentDependencyRulesTest (or-fix-13)
 - Symptom: 'lib/Controller/<X>Controller.php -> lib/Controller/Trait/HandlesExceptionsTrait.php (<Area> -> Core)' for each controller a PR moves onto the trait.
 - Fix (#10553 44725b55): set the csv component to Kernel for the trait and the leaf exceptions it names (Exception/AppendOnly, DatabaseConstraint(+Messages), SchemaNotFound, Service/Resolver/Exception/*: add rows for Resolver{ConfigException,ConfigKey}, UnresolvedValueException), regenerate the yaml; the trait matches root Kernel\Contracts\UnavailableServiceExceptionInterface, which Kernel\Contracts\Core\ServiceUnavailableExceptionInterface extends (a csv row cannot remap a Kernel/Contracts/Core file). Once that lands on main, other PRs need only the merge.
+## Grandfathered edge splits into a new file edge after a value-object refactor (or-fix-18)
+- Symptom: ComponentDependencyRulesTest lists '<main caller> -> <PR's new value object> (<A> -> <B>)' while the baseline already holds '<main caller> -> <class the value belongs to>'.
+- Cause: the PR introduced a part object (e.g. AggregationLayout) that callers in another area must now name.
+- Fix: give the grandfathered class a small named constructor taking the plain values (AggregationQuery::grouped(groupBy:)) and use it in the outside caller; test it equals the create() form. Never extend the baseline (#9818).
