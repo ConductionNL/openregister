@@ -40,6 +40,7 @@ components:
       - ".*/lib/Service/Lifecycle/TransitionMove[.]php"
       - ".*/lib/Service/Object/BatchOperationStatusInterface[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
+      - ".*/lib/Service/Schemas/SchemaRefInRegister[.]php"
       - ".*/lib/Support/.*"
     exclude:
       - ".*/lib/Kernel/Contracts/(Compliance|Configuration|Core|Files|Integrations|Notifications|Processes|Search)/.*"
@@ -1123,7 +1124,6 @@ components:
       - ".*/lib/Service/Schemas/SchemaCacheHandlerInterface[.]php"
       - ".*/lib/Service/Schemas/SchemaCacheSlot[.]php"
       - ".*/lib/Service/Schemas/SchemaDeclarationValidators[.]php"
-      - ".*/lib/Service/Schemas/SchemaRefInRegister[.]php"
       - ".*/lib/Service/Schemas/ScopedField[.]php"
       - ".*/lib/Service/Schemas/ScopedPropertyCensus[.]php"
       - ".*/lib/Service/Schemas/ScopedPropertyDeclaration[.]php"
