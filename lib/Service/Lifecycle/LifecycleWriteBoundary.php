@@ -113,16 +113,16 @@ final class LifecycleWriteBoundary {
 	 * never leaves the declaration in place: a leaked declaration would make
 	 * a later, unrelated save of the same object be judged as this action.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $action The transition being performed.
+	 * @param TransitionRequest $request The object (its uuid is declared) and the transition being performed.
 	 * @param callable(): ObjectEntity $write Performs the write; called exactly once.
 	 *
 	 * @return ObjectEntity Whatever $write returned.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function declaringAction(string $uuid, string $action, callable $write): ObjectEntity {
-		$this->actions->declare(uuid: $uuid, action: $action);
+	public function declaringAction(TransitionRequest $request, callable $write): ObjectEntity {
+		$uuid = (string)$request->object->getUuid();
+		$this->actions->declare(uuid: $uuid, action: $request->action);
 		try {
 			return $write();
 		} finally {
@@ -138,16 +138,16 @@ final class LifecycleWriteBoundary {
 	 * caller instead. Release happens in a `finally`, for the same reason
 	 * {@see declaringAction()} releases there.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $app The app id that approved the caller itself.
+	 * @param SystemApproval $approval The app that approved the caller itself, and the object's uuid.
 	 * @param callable(): ObjectEntity $write Performs the write; called exactly once.
 	 *
 	 * @return ObjectEntity Whatever $write returned.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function runningAsSystem(string $uuid, string $app, callable $write): ObjectEntity {
-		$this->actions->enterSystem(uuid: $uuid, app: $app);
+	public function runningAsSystem(SystemApproval $approval, callable $write): ObjectEntity {
+		$uuid = $approval->uuid;
+		$this->actions->enterSystem(uuid: $uuid, app: $approval->app);
 		try {
 			return $write();
 		} finally {
