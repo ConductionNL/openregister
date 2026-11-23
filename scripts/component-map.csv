@@ -4648,4 +4648,9 @@ Migration/Version1Date20261114200000.php,,Migration,,,,,Platform
 Service/Form/LinkUpdateRun.php,,Service,,,,,Processes
 Controller/AccessLinkJourneyController.php,,Controller,,,,,Core
 Controller/Support/LinkJourneyGate.php,,Controller,,,,,Core
+Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
+Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
