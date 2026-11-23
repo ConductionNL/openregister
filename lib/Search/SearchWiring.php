@@ -48,9 +48,7 @@ use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -64,8 +62,6 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
-use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
-use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
@@ -98,13 +94,12 @@ final class SearchWiring {
 		GeoFilterParserInterface::class => GeoFilterParser::class,
 		SpatialFilterInterface::class => SpatialFilter::class,
 		MetricsRetentionInterface::class => MetricsService::class,
-		PlaceholderResolverInterface::class => PlaceholderResolver::class,
-		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
 		AggregationAnnotationValidatorInterface::class => AggregationAnnotationValidator::class,
 		DedupCreatePolicyInterface::class => DedupCreatePolicy::class,
+		CreateGuardInterface::class => DedupCreatePolicy::class,
 		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
@@ -112,7 +107,6 @@ final class SearchWiring {
 		ViewMapperInterface::class => ViewMapper::class,
 		ViewFinderInterface::class => ViewMapper::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
-		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 		StoredViewQueriesInterface::class => StoredViewQueries::class,
 		\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class => \OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class,
 	];

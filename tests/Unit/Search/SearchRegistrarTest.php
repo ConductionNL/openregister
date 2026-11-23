@@ -23,7 +23,7 @@ use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -87,7 +87,7 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(24, $expected);
+		$this->assertCount(22, $expected);
 		$this->assertSame(\OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class, SearchRegistrar::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class]);
 		$this->assertSame(ViewMapper::class, SearchRegistrar::BINDINGS[ViewFinderInterface::class]);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
@@ -112,17 +112,14 @@ final class SearchRegistrarTest extends TestCase {
 	}//end testTheDeclarationCheckListenersAreRegistered()
 
 	/**
-	 * The Core filter-placeholders port and the Search resolver contract resolve
-	 * to the same resolver, so the aggregation runner resolves exactly what it did.
+	 * The placeholder resolver and the property search profile count to Core, so
+	 * Search no longer binds them; Core's own map does.
 	 *
 	 * @return void
 	 */
-	public function testTheFilterPlaceholdersPortIsThePlaceholderResolver(): void {
-		$this->assertSame(expected: PlaceholderResolver::class, actual: SearchRegistrar::BINDINGS[FilterPlaceholdersInterface::class]);
-		$this->assertSame(
-			expected: SearchRegistrar::BINDINGS[PlaceholderResolverInterface::class],
-			actual: SearchRegistrar::BINDINGS[FilterPlaceholdersInterface::class]
-		);
-		$this->assertTrue(is_subclass_of(PlaceholderResolverInterface::class, FilterPlaceholdersInterface::class));
-	}//end testTheFilterPlaceholdersPortIsThePlaceholderResolver()
+	public function testSearchNoLongerBindsThePlaceholdersOrTheSearchProfile(): void {
+		$this->assertArrayNotHasKey(key: FilterPlaceholdersInterface::class, array: SearchRegistrar::BINDINGS);
+		$this->assertArrayNotHasKey(key: PlaceholderResolverInterface::class, array: SearchRegistrar::BINDINGS);
+		$this->assertArrayNotHasKey(key: PropertySearchProfileInterface::class, array: SearchRegistrar::BINDINGS);
+	}//end testSearchNoLongerBindsThePlaceholdersOrTheSearchProfile()
 }//end class
