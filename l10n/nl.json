@@ -3718,7 +3718,14 @@
         "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "Een brekende wijziging van schema \"%1$s\" is doorgevoerd als versie %2$s. Bekijk het wijzigingslogboek voor je volgende aanroep.",
         "Note from the administrator: %s": "Toelichting van de beheerder: %s",
         "Open changelog": "Wijzigingslogboek openen",
-        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Uw opgeslagen weergaven en de objecten die u volgt. De objecten zelf blijven bij uw organisatie."
+        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Uw opgeslagen weergaven en de objecten die u volgt. De objecten zelf blijven bij uw organisatie.",
+        "Close connections": "Koppelingen sluiten",
+        "Found in this mail": "Gevonden in deze e-mail",
+        "Names, addresses and numbers": "Namen, adressen en nummers",
+        "Connected to": "Gekoppeld aan",
+        "Drop an attachment here to add it": "Sleep een bijlage hierheen om die toe te voegen",
+        "Number or words": "Nummer of woorden",
+        "New {name} from this mail": "Nieuwe {name} vanuit deze e-mail"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

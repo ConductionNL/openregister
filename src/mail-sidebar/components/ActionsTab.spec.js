@@ -127,7 +127,7 @@ describe('ActionsTab schemas', () => {
 	it('offers only schemas that link to mail, one block each', async () => {
 		const wrapper = await mountTab()
 		const labels = wrapper.findAll('.or-action-label').map((l) => l.text())
-		expect(labels).toEqual(['Connect to Leads', 'Connect to Notes'])
+		expect(labels).toEqual(['Leads', 'Notes'])
 		expect(wrapper.find('.or-tab-loading').exists()).toBe(false)
 	})
 
@@ -135,7 +135,7 @@ describe('ActionsTab schemas', () => {
 		const wrapper = await mountTab()
 		const buttons = wrapper.findAll('.or-action-create')
 		expect(buttons).toHaveLength(1)
-		expect(buttons[0].text()).toBe('New Leads from this email')
+		expect(buttons[0].text()).toBe('New Leads from this mail')
 	})
 
 	it('says there is nothing to connect to when no schema links to mail', async () => {
