@@ -25,6 +25,7 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Integration\BuiltinIntegrationServices;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\XwikiLinkService;
@@ -37,6 +38,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionProperty;
 
 /**
  * A page search answer is reused per user and query; a degraded answer is never stored.
@@ -127,4 +129,30 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame([], $this->store);
 	}//end testADegradedAnswerIsNotCached()
+
+	public function testTheWiredServiceGetsTheCacheFactory(): void {
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$container    = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($cacheFactory): object {
+				if ($id === ICacheFactory::class) {
+					return $cacheFactory;
+				}
+
+				if ($id === LinkServiceRuntime::class) {
+					return new LinkServiceRuntime(
+						$this->createMock(IAppManager::class),
+						$this->createMock(IUserSession::class),
+						$this->createMock(LoggerInterface::class)
+					);
+				}
+
+				return $this->createMock($id);
+			}
+		);
+
+		$service = BuiltinIntegrationServices::build(container: $container, class: XwikiLinkService::class);
+
+		$this->assertSame($cacheFactory, (new ReflectionProperty(XwikiLinkService::class, 'cacheFactory'))->getValue($service));
+	}//end testTheWiredServiceGetsTheCacheFactory()
 }//end class
