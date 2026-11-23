@@ -191,6 +191,42 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$this->assertSame([[1, 2, 99]], $batches);
 	}
 
+	public function testAComposedSchemaFromTheBatchIsResolvedThroughFind(): void {
+		// The stored row of an allOf child carries only its delta: no calculation of its own.
+		$row = new Schema();
+		$row->setId(3);
+		$row->setSlug('subcase');
+		$row->setAllOf(['2']);
+		// find() returns it with the parent's materialised calculation merged in.
+		$resolved = $this->caseSchema();
+		$resolved->setId(3);
+		$resolved->setSlug('subcase');
+		$resolved->setAllOf(['2']);
+		$this->schemaById['3'] = $resolved;
+
+		$register = new Register();
+		$register->setId(7);
+		$register->setSlug('zaken');
+		$register->setSchemas([1, 3]);
+		$this->registers = $this->createMock(RegisterMapperInterface::class);
+		$this->registers->method('find')->willReturn($register);
+
+		$finds = [];
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturnCallback(function (string|int $id) use (&$finds): Schema {
+			$finds[] = (string) $id;
+			return $this->schemaById[(string) $id];
+		});
+		$schemas->method('findMultipleOptimized')->willReturn([1 => $this->schemaById['1'], 3 => $row]);
+		$this->schemas = $schemas;
+
+		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('sub-1')]);
+		$this->objects->expects($this->once())->method('saveObject');
+
+		$this->assertSame(1, $this->refresher()->refresh($this->caseType(['startableFlows' => [1]]), null));
+		$this->assertContains('3', $finds);
+	}
+
 	public function testAFailedReferrerLookupIsLoggedAndSavesNothing(): void {
 		$this->rows->method('findAllInRegisterSchemaTable')->willThrowException(new RuntimeException('table missing'));
 		$this->objects->expects($this->never())->method('saveObject');
