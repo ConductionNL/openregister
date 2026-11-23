@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\BusinessTime;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
@@ -142,7 +144,7 @@ class ScheduledRemindersTest extends TestCase {
 		$object->setObject(['requestedOn' => '2027-03-01', 'status' => $status]);
 
 		$reminders = new ScheduledReminders(
-			sources: new ScheduledObjectSources($this->createMock(SchemaCatalogInterface::class), new ScheduledFilterEvaluator(logger: $this->logger), calculator: new SlaCalculator()),
+			sources: new ScheduledObjectSources($this->createMock(SchemaCatalogInterface::class), new ScheduledFilterEvaluator(logger: $this->logger), businessTime: new BusinessTime(calendars: $this->createMock(WorkingCalendarService::class), calculator: new SlaCalculator())),
 			delivery: new ScheduledNotificationDelivery($this->dispatcher, $this->dedupe, $this->createMock(IAppConfig::class), $this->logger)
 		);
 		$reminders->onMatch(fire: $fire, object: $object);

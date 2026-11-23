@@ -23,12 +23,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\BusinessCalendarInterface;
 
 /**
  * Declares only what callers outside the component use of WorkingCalendar; the rest
  * of the class stays its own.
  */
-interface WorkingCalendarInterface {
+interface WorkingCalendarInterface extends BusinessCalendarInterface {
 
 	/**
 	 * The calendar's name.

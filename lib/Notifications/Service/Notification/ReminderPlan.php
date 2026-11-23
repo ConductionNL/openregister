@@ -24,9 +24,9 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Exception;
 use OCA\OpenRegister\Notifications\Db\ReminderProgress;
-use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
+use OCA\OpenRegister\Kernel\Contracts\BusinessCalendarInterface;
+use OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TimerUnits;
 
 /**
  * A reminder's schedule, from the `reminder` block {@see NotificationReminderValidator} accepted.
@@ -57,11 +57,11 @@ final class ReminderPlan {
 	 * Constructor.
 	 *
 	 * @param array<string, mixed>   $reminder   The validated `reminder` block.
-	 * @param SlaCalculatorInterface $calculator The business-time calculator.
+	 * @param BusinessTimeInterface  $time     The business-time calculator.
 	 */
 	public function __construct(
 		private readonly array $reminder,
-		private readonly SlaCalculatorInterface $calculator,
+		private readonly BusinessTimeInterface $time,
 	) {
 	}//end __construct()
 
@@ -102,7 +102,7 @@ final class ReminderPlan {
 	public function needsCalendar(): bool {
 		$units = [($this->reminder['offset']['unit'] ?? null), ($this->reminder['repeat']['interval']['unit'] ?? null)];
 
-		return in_array(SlaCalculatorInterface::UNIT_BUSINESS_DAYS, $units, true);
+		return in_array(TimerUnits::UNIT_BUSINESS_DAYS, $units, true);
 	}//end needsCalendar()
 
 	/**
@@ -139,7 +139,7 @@ final class ReminderPlan {
 	 *
 	 * @param DateTimeImmutable    $anchor   The anchor date.
 	 * @param integer              $sequence 0 for the first reminder, 1 for the first repeat, and so on.
-	 * @param WorkingCalendarInterface|null $calendar The calendar business units are counted on.
+	 * @param BusinessCalendarInterface|null $calendar The calendar business units are counted on.
 	 *
 	 * @return DateTimeImmutable The moment.
 	 *
@@ -147,7 +147,7 @@ final class ReminderPlan {
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
 	 */
-	public function moment(DateTimeImmutable $anchor, int $sequence, ?WorkingCalendarInterface $calendar): DateTimeImmutable {
+	public function moment(DateTimeImmutable $anchor, int $sequence, ?BusinessCalendarInterface $calendar): DateTimeImmutable {
 		$moment = $this->add(start: $anchor, amount: (array)($this->reminder['offset'] ?? []), calendar: $calendar);
 		for ($repeat = 0; $repeat < $sequence; $repeat++) {
 			$moment = $this->add(start: $moment, amount: (array)($this->reminder['repeat']['interval'] ?? []), calendar: $calendar);
@@ -162,7 +162,7 @@ final class ReminderPlan {
 	 * @param mixed                 $anchorValue The object's anchor property value.
 	 * @param ReminderProgress|null $stored      The progress on the rule's dedupe row, if any.
 	 * @param DateTimeImmutable     $now         The sweep's moment.
-	 * @param WorkingCalendarInterface|null  $calendar    The calendar business units are counted on.
+	 * @param BusinessCalendarInterface|null  $calendar    The calendar business units are counted on.
 	 *
 	 * @return ReminderDecision The decision.
 	 *
@@ -170,7 +170,7 @@ final class ReminderPlan {
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
 	 */
-	public function decide(mixed $anchorValue, ?ReminderProgress $stored, DateTimeImmutable $now, ?WorkingCalendarInterface $calendar): ReminderDecision {
+	public function decide(mixed $anchorValue, ?ReminderProgress $stored, DateTimeImmutable $now, ?BusinessCalendarInterface $calendar): ReminderDecision {
 		$anchor = self::date(value: $anchorValue, calendar: $calendar);
 		if ($anchor === null) {
 			return new ReminderDecision(kind: ReminderDecision::NO_ANCHOR, progress: $stored);
@@ -206,19 +206,19 @@ final class ReminderPlan {
 	 *
 	 * @param DateTimeImmutable    $start    The start.
 	 * @param array<string, mixed> $amount   The amount.
-	 * @param WorkingCalendarInterface|null $calendar The calendar.
+	 * @param BusinessCalendarInterface|null $calendar The calendar.
 	 *
 	 * @return DateTimeImmutable The result.
 	 */
-	private function add(DateTimeImmutable $start, array $amount, ?WorkingCalendarInterface $calendar): DateTimeImmutable {
+	private function add(DateTimeImmutable $start, array $amount, ?BusinessCalendarInterface $calendar): DateTimeImmutable {
 		$value = (float)($amount['value'] ?? 0);
 		if ($value === 0.0) {
 			return $start;
 		}
 
-		$unit = (string)($amount['unit'] ?? SlaCalculatorInterface::UNIT_CALENDAR_DAYS);
+		$unit = (string)($amount['unit'] ?? TimerUnits::UNIT_CALENDAR_DAYS);
 
-		return $this->calculator->add(addition: new SlaAddition(start: $start, value: $value, unit: $unit, calendar: $calendar));
+		return $this->time->add(start: $start, value: $value, unit: $unit, calendar: $calendar);
 	}//end add()
 
 	/**
@@ -228,11 +228,11 @@ final class ReminderPlan {
 	 * without a calendar.
 	 *
 	 * @param mixed                $value    The value.
-	 * @param WorkingCalendarInterface|null $calendar The calendar.
+	 * @param BusinessCalendarInterface|null $calendar The calendar.
 	 *
 	 * @return DateTimeImmutable|null The date.
 	 */
-	private static function date(mixed $value, ?WorkingCalendarInterface $calendar): ?DateTimeImmutable {
+	private static function date(mixed $value, ?BusinessCalendarInterface $calendar): ?DateTimeImmutable {
 		if (is_string($value) === false || trim($value) === '') {
 			return null;
 		}
