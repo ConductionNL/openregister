@@ -554,7 +554,6 @@
   "lib/Kernel/Contracts/Core/FileSettingsReaderInterface.php",
   "lib/Kernel/Contracts/Core/FileSizeTotalsInterface.php",
   "lib/Kernel/Contracts/Core/FileTagCatalogueInterface.php",
-  "lib/Kernel/Contracts/Core/FilterPlaceholdersInterface.php",
   "lib/Kernel/Contracts/Core/FollowTableInterface.php",
   "lib/Kernel/Contracts/Core/HeldChangeCodes.php",
   "lib/Kernel/Contracts/Core/JobRunRecordingInterface.php",
@@ -1848,14 +1847,14 @@
  "exposed_loc": {
   "Compliance": 14300,
   "Configuration": 870,
-  "Core": 34983,
+  "Core": 34993,
   "Files": 1275,
   "Integrations": 17657,
   "Kernel": 6064,
   "Notifications": 1760,
   "Platform": 0,
   "Processes": 27011,
-  "Search": 1349
+  "Search": 1333
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2188,5 +2187,5 @@
  ],
  "kernel_loc": 7668,
  "total_loc": 462668,
- "violation_degree": 0.0051
+ "violation_degree": 0.0057
 }

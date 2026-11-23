@@ -1779,8 +1779,8 @@ Search/Service/Reporting/HtmlReportWriter.php,154,Search,Search,Search/Service/R
 Search/Service/Reporting/PdfReportWriter.php,21,Search,Search,Search/Service/Reporting/PdfReportWriter.php,0,,Search
 Search/Service/Reporting/ReportRenderService.php,153,Search,Search,Search/Service/Reporting/ReportRenderService.php,0,,Search
 Search/Service/Reporting/SpreadsheetReportWriter.php,189,Search,Search,Search/Service/Reporting/SpreadsheetReportWriter.php,0,,Search
-Search/Service/Search/PlaceholderResolver.php,84,Search,Search,Search/Service/Search/PlaceholderResolver.php,0,301,Search
-Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service/Search/PropertySearchProfile.php,1,273,Search
+Search/Service/Search/PlaceholderResolver.php,84,Search,Search,Search/Service/Search/PlaceholderResolver.php,0,301,Core
+Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service/Search/PropertySearchProfile.php,1,273,Core
 Search/Service/Search/SearchIndexMaintenance.php,344,Search,Search,Search/Service/Search/SearchIndexMaintenance.php,0,,Search
 Search/Service/Search/SearchIndexRowCounts.php,23,Search,Search,Search/Service/Search/SearchIndexRowCounts.php,0,,Search
 Search/Service/SizeTally.php,16,Search,Search,Search/Service/SizeTally.php,0,,Search
@@ -4643,3 +4643,5 @@ Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
 Files/Service/File/ManagedFiles.php,,Files,,,,,Files
 Files/Service/FileSettingRules.php,,Files,,,,,Files
+Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
+Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core

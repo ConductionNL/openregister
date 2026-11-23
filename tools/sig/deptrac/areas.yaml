@@ -700,6 +700,14 @@ deptrac:
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
+          value: 'lib/Search/Service/Search/PlaceholderResolver[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PlaceholderResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PlaceholderResolvers[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PropertySearchProfile[.]php$'
+        - type: directory
           value: 'lib/Service/(AcceptLanguageHeader|AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthFailureRun|AuthenticationTokenFetcherInterface|AuthorizationChange|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CoreServiceBindings|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|HoldOrder|InboundAuthRateLimitInterface|LanguageGapScan|LanguageService|LanguageServiceInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|ObjectTranslationRequest|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RecordUpdate|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterSearch|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SearchMeasurement|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SourceLanguageLookup|SystemOperationContext|TableDeletionOptions|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TmloServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
         - type: directory
           value: 'lib/Service/Aggregation/[^/]*$'
@@ -4822,7 +4830,17 @@ deptrac:
         - type: directory
           value: 'lib/Search/Service/Reporting/[^/]*$'
         - type: directory
-          value: 'lib/Search/Service/Search/[^/]*$'
+          value: 'lib/Search/Service/Search/SearchIndexMaintenance[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexMaintenanceInterface[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexPass[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexRowCounts[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexSnapshotRestore[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexStores[.]php$'
         - type: directory
           value: 'lib/Search/Service/Vectorization/[^/]*$'
         - type: directory
