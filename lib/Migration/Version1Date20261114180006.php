@@ -34,7 +34,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/large-file-handling/tasks.md#task-2-1
  */
-class Version1Date20261114180000 extends TargetedMigrationStep {
+class Version1Date20261114180006 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
