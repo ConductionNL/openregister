@@ -29,13 +29,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use Generator;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\WholeTableRows;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Object folder and file property rewrite for one register.
@@ -50,21 +52,24 @@ class DocumentStoreObjects {
 	public const ACTION = 'document-store-move';
 
 	/**
+	 * How many rows one read of a schema's table returns.
+	 */
+	private const CHUNK_SIZE = 500;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The register's schemas.
-	 * @param WholeTableRows        $rows         Every row of a schema's table, in system context.
-	 * @param MagicMapperInterface  $objects      Stores the rewritten object.
-	 * @param AuditTrailMapper      $auditTrails  Records the rewrite.
+	 * @param MagicMapperInterface       $objects     Reads every row of a schema's table and stores the rewritten object.
+	 * @param AuditTrailMapperInterface  $auditTrails Records the rewrite.
 	 * @param DocumentReferenceMap  $map          The shapes a file property takes.
 	 *
 	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly WholeTableRows $rows,
 		private readonly MagicMapperInterface $objects,
-		private readonly AuditTrailMapper $auditTrails,
+		private readonly AuditTrailMapperInterface $auditTrails,
 		private readonly DocumentReferenceMap $map,
 	) {
 	}//end __construct()
@@ -85,7 +90,7 @@ class DocumentStoreObjects {
 		foreach ($register->getSchemas() as $schemaId) {
 			$schema = $this->schemaMapper->find(id: $schemaId, _extend: [], _rbac: false, _multitenancy: false);
 			$properties = self::fileProperties(schema: $schema);
-			foreach ($this->rows->all(register: $register, schema: $schema) as $object) {
+			foreach ($this->rows(register: $register, schema: $schema) as $object) {
 				if ($this->rewriteOne(
 					object: $object,
 					context: [$register, $schema, $properties],
@@ -99,6 +104,28 @@ class DocumentStoreObjects {
 
 		return $changed;
 	}//end rewrite()
+
+	/**
+	 * Every row of a schema's table in a register, deleted ones included, in system context.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return Generator<int, ObjectEntity>
+	 */
+	private function rows(Register $register, Schema $schema): Generator {
+		$filters = ['_includeDeleted' => true, '_rbac' => false, '_multitenancy' => false];
+		$offset = 0;
+		do {
+			$objects = $this->objects->findAllInRegisterSchemaTable(
+				table: new RegisterSchema(register: $register, schema: $schema),
+				listing: new ListQuery(limit: self::CHUNK_SIZE, offset: $offset, filters: $filters)
+			);
+			$full = (count($objects) === self::CHUNK_SIZE);
+			yield from $objects;
+			$offset += self::CHUNK_SIZE;
+		} while ($full === true);
+	}//end rows()
 
 	/**
 	 * Rewrite one object, store it and record it, when it holds a moved id.

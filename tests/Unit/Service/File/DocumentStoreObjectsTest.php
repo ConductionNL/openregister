@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -27,8 +27,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\File\DocumentReferenceMap;
 use OCA\OpenRegister\Service\File\DocumentStoreObjects;
-use OCA\OpenRegister\Service\WholeTableRows;
-use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +36,6 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(DocumentStoreObjects::class)]
 #[UsesClass(DocumentReferenceMap::class)]
-#[UsesClass(WholeTableRows::class)]
 #[UsesClass(RegisterSchema::class)]
 #[UsesClass(ListQuery::class)]
 #[UsesClass(ObjectEntity::class)]
@@ -85,7 +82,7 @@ class DocumentStoreObjectsTest extends TestCase {
 			$stored[] = [$entity->getUuid(), $old->getFolder(), $old->getObject()];
 			return $entity;
 		});
-		$audits = $this->createMock(AuditTrailMapper::class);
+		$audits = $this->createMock(AuditTrailMapperInterface::class);
 		$entries = [];
 		$audits->method('createAuditTrail')->willReturnCallback(function ($old, $new, $action, $context) use (&$entries): AuditTrail {
 			$entries[] = [$new->getUuid(), $action, $context];
@@ -94,7 +91,6 @@ class DocumentStoreObjectsTest extends TestCase {
 
 		$objects = new DocumentStoreObjects(
 			schemaMapper: $schemas,
-			rows: new WholeTableRows(mapper: $mapper, db: $this->createMock(IDBConnection::class)),
 			objects: $mapper,
 			auditTrails: $audits,
 			map: new DocumentReferenceMap(),
@@ -123,4 +119,46 @@ class DocumentStoreObjectsTest extends TestCase {
 			$entries
 		);
 	}//end testEachChangedObjectGetsOneAuditEntry()
+
+	public function testEveryRowIsReadPageByPageIncludingDeletedOnes(): void {
+		$register = new Register();
+		$register->setId(5);
+		$register->setSchemas([8]);
+		$schema = new Schema();
+		$schema->setId(8);
+		$schema->setProperties(['besluit' => ['type' => 'file']]);
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturn($schema);
+
+		$fullPage = [];
+		for ($i = 0; $i < 500; $i++) {
+			$fullPage[] = self::object(uuid: 'p'.$i, folder: '1', data: ['besluit' => null]);
+		}
+		$last = self::object(uuid: 'last', folder: '11', data: ['besluit' => null]);
+		$reads = [];
+		$mapper = $this->createMock(MagicMapperInterface::class);
+		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (RegisterSchema $table, ListQuery $listing) use (&$reads, $fullPage, $last, $register, $schema): array {
+				$this->assertSame($register, $table->register);
+				$this->assertSame($schema, $table->schema);
+				$reads[] = [$listing->limit, $listing->offset, $listing->filters];
+				return $listing->offset === 0 ? $fullPage : [$last];
+			}
+		);
+		$mapper->expects($this->once())->method('update')->willReturnArgument(0);
+		$audits = $this->createMock(AuditTrailMapperInterface::class);
+		$audits->expects($this->once())->method('createAuditTrail')->willReturn(new AuditTrail());
+
+		$objects = new DocumentStoreObjects(
+			schemaMapper: $schemas,
+			objects: $mapper,
+			auditTrails: $audits,
+			map: new DocumentReferenceMap(),
+		);
+
+		$this->assertSame(1, $objects->rewrite(register: $register, moved: [11 => 911]));
+		$filters = ['_includeDeleted' => true, '_rbac' => false, '_multitenancy' => false];
+		$this->assertSame([[500, 0, $filters], [500, 500, $filters]], $reads, 'A full page asks for the next one; a short page ends the read.');
+		$this->assertSame('911', $last->getFolder());
+	}//end testEveryRowIsReadPageByPageIncludingDeletedOnes()
 }//end class

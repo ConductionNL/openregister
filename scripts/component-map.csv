@@ -4375,8 +4375,8 @@ Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,
 Db/DocumentMove.php,156,Db,,,,,Core
 Db/DocumentMoveMapper.php,119,Db,,,,,Core
 Migration/Version1Date20261114100018.php,88,Migration,,,,,Platform
-Service/File/DocumentStoreMoveGuard.php,132,Service,Service,Service/File/DocumentStoreMoveGuard.php,0,,Core
-Service/File/DocumentStoreMoving.php,54,Service,Service,Service/File/DocumentStoreMoving.php,0,,Core
+Service/File/DocumentStoreMoveGuard.php,132,Service,Service,Service/File/DocumentStoreMoveGuard.php,0,,Kernel
+Service/File/DocumentStoreMoving.php,54,Service,Service,Service/File/DocumentStoreMoving.php,0,,Kernel
 Service/File/DocumentStoreMove.php,1005,Service,Service,Service/File/DocumentStoreMove.php,0,,Core
 Service/File/DocumentCopyRun.php,114,Service,Service,Service/File/DocumentCopyRun.php,0,,Core
 Service/File/DocumentMoveOutcome.php,143,Service,Service,Service/File/DocumentMoveOutcome.php,0,,Core
@@ -4385,7 +4385,6 @@ Service/File/DocumentStoreMovePlatform.php,57,Service,Service,Service/File/Docum
 Service/File/DocumentStoreObjects.php,193,Service,Service,Service/File/DocumentStoreObjects.php,0,,Core
 Service/File/DocumentVersions.php,162,Service,Service,Service/File/DocumentVersions.php,0,,Core
 Command/DocumentStoreMoveCommand.php,231,Command,Service,Service/Command/DocumentStoreMoveCommand.php,0,,Core
-Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Core
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
 Db/SchemaMapper/LifecycleAnnotationCheck.php,47,Db,,,0,,Processes
