@@ -627,3 +627,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a PR test errors 'Unknown named parameter $source' at new ResolvedConsumer(source:, uuid:, name:, userId:, authorizationType:, configuration:, record:).
 - Cause: main e0d1d3b4 builds ResolvedConsumer from ConsumerIdentity(source, uuid, name) + ConsumerAuthorization(userId, authorizationType, configuration), record stays.
 - Fix: wrap the arguments in those two value objects, import them and add #[UsesClass] for both (#10514). grep -rn -A1 'new ResolvedConsumer(' lib tests | grep source: finds the rest.
+
+## Class "OCA\OpenRegister\Mcp\Service\ChatMessageRequest" not found in a PR test (or-fix-3)
+- Symptom: Error: Class "OCA\OpenRegister\Mcp\Service\ChatMessageRequest" not found (tests calling ResponseGenerationHandler/ChatService).
+- Cause: main moved the value object to lib/Kernel/Contracts/Value/ChatMessageRequest.php (same constructor).
+- Fix: change the test's use line and @uses to OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest (see #10493).
