@@ -653,7 +653,6 @@ class ExportServicePdfTest extends TestCase {
 			->willReturn(\OCA\OpenRegister\Service\Export\Odt\OdtLogo::fromBytes(bytes: $png));
 		$service = new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
