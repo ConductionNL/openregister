@@ -315,6 +315,12 @@ export default {
 		 */
 		show: {
 			immediate: true,
+			/**
+			 * On open: the template values, the relation choices and the owner's catalogue.
+			 *
+			 * @param {boolean} open Whether the dialog is open.
+			 * @spec openspec/specs/integration-email/spec.md
+			 */
 			handler(open) {
 				if (open) {
 					this.form = { ...this.initialData }
