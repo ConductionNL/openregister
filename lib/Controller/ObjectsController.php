@@ -105,10 +105,8 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
@@ -130,7 +128,6 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -139,7 +136,6 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -679,22 +675,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return array_merge($paginated, $links->around(page: (int)$paginated['page'], pages: (int)$paginated['pages']));
 	}//end paginate()
-
-	/**
-	 * The listing configuration of this request.
-	 *
-	 * @return array The configuration, see ObjectRequestParams::listing().
-	 *
-	 * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
-	 */
-	private function getConfig(): array {
-		$params = $this->request->getParams();
-
-		unset($params['id']);
-		unset($params['_route']);
-
-		return (new ObjectRequestParams())->listing(params: $params);
-	}//end getConfig()
 
 	/**
 	 * Perform cross-table search across multiple register+schema combinations.
@@ -5130,186 +5110,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	}//end used()
 
 	/**
-	 * Retrieves logs for an object
-	 *
-	 * This method returns a JSON response containing the logs for a specific object.
-	 *
-	 * @param string $id The ID of the object to retrieve logs for
-	 * @param string $register The register slug or identifier
-	 * @param string $schema The schema slug or identifier
-	 * @param ObjectOperationsInterface $objectService The object service
-	 *
-	 * @return JSONResponse JSON response with object audit logs
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
-	 *
-	 * @psalm-return JSONResponse<200|404,
-	 *     array{results?: array<int, mixed>, total?: int<0, max>,
-	 *     page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>,
-	 *     offset?: int<0, max>, next?: string, prev?: string,
-	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
-	 *     array<never, never>>
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
-		// Whoever may read the object reads its history, redacted like the
-		// audit-trails route: a non-admin is answered by ObjectHistoryForReaders
-		// (404 when the object GET would be, the doelbinding guard, and no
-		// `session`, `request`, `ipAddress` or property the caller may not see).
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->logsForReader(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		}
-
-		// Set the register and schema context first.
-		$objectService->setRegister(register: $register);
-		$objectService->setSchema(schema: $schema);
-
-		// Fetch the object by ID/UUID only (no register/schema filter yet).
-		$object = $this->historyObject(id: $id, objectService: $objectService);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		if (self::livesAt(object: $object, route: self::resolvedRoute(route: [$register, $schema], objectService: $objectService)) === false) {
-			$msg = 'Object does not belong to specified register/schema';
-			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
-		}
-
-		return $this->logsPage(id: $id, objectService: $objectService);
-	}//end logs()
-
-	/**
-	 * The object whose history an administrator asks for.
-	 *
-	 * @param string                    $id            The object ID or UUID.
-	 * @param ObjectOperationsInterface $objectService The object service.
-	 *
-	 * @return ObjectEntity|JSONResponse The object, or the answer when it cannot be read.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function historyObject(string $id, ObjectOperationsInterface $objectService): ObjectEntity|JSONResponse {
-		try {
-			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $e) {
-			return $this->historyLookupFailureResponse(failure: $e);
-		}
-
-		return ($object ?? new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404));
-	}//end historyObject()
-
-	/**
-	 * Whether an object's stored register and schema are the given ones, ignoring case.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param array        $route  The register and schema to compare with.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private static function livesAt(ObjectEntity $object, array $route): bool {
-		return strtolower((string)$object->getRegister()) === strtolower($route[0])
-			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
-	}//end livesAt()
-
-	/**
-	 * The ids a route's register and schema resolved to; a part that did not resolve stays as named.
-	 *
-	 * @param array                     $route         The register and schema on the route.
-	 * @param ObjectOperationsInterface $objectService The object service, with the route set.
-	 *
-	 * @return array The register and schema.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private static function resolvedRoute(array $route, ObjectOperationsInterface $objectService): array {
-		return [
-			(string)($objectService->getCurrentRegisterEntity()?->getId() ?? $route[0]),
-			(string)($objectService->getCurrentSchemaEntity()?->getId() ?? $route[1]),
-		];
-	}//end resolvedRoute()
-
-	/**
-	 * One page of an object's audit log, masked for explicit-reveal values.
-	 *
-	 * @param string                    $id            The object ID or UUID.
-	 * @param ObjectOperationsInterface $objectService The object service.
-	 *
-	 * @return JSONResponse The page.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function logsPage(string $id, ObjectOperationsInterface $objectService): JSONResponse {
-		// Get config and fetch logs.
-		$config = $this->getConfig();
-		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
-
-		// An explicit-reveal value reads masked for an administrator too.
-		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class);
-		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface) {
-			$logs = $trailMasker->mask(entries: $logs);
-		}
-
-		// Return paginated results.
-		return new JSONResponse(
-			data: $this->paginate(
-				results: $logs,
-				window: new ResultWindow(total: count($logs), limit: $config['limit'], offset: $config['offset'], page: $config['page'])
-			)
-		);
-	}//end logsPage()
-
-	/**
-	 * One object's history for a non-admin, when they may read the object.
-	 *
-	 * @param ObjectRef $ref The register, the schema and the object ID or UUID, as the route names them.
-	 *
-	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
-	 *                      or the doelbinding refusal.
-	 *
-	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
-	 */
-	private function logsForReader(ObjectRef $ref): JSONResponse {
-		$config = $this->getConfig();
-		$search = null;
-		if ($config['_search'] !== null) {
-			$search = (string)$config['_search'];
-		}
-
-		try {
-			$page = $this->container->get(ReadableObjectHistoryInterface::class)->page(
-				ref: $ref,
-				params: [
-					'limit' => $config['limit'],
-					'offset' => $config['offset'],
-					'page' => $config['page'],
-					'filters' => $config['filters'],
-					'sort' => $config['sort'],
-					'search' => $search,
-				]
-			);
-		} catch (ReadPurposeRefusalInterface $refusal) {
-			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
-		} catch (MultipleObjectsReturnedException $e) {
-			// The 409 an administrator gets on this route (#4037), not a 500.
-			return $this->ambiguousIdentifierResponse(id: $ref->id);
-		}
-
-		if ($page === null) {
-			// The answer the object GET gives a caller who may not read the object.
-			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
-		}
-
-		return new JSONResponse(data: $page);
-	}//end logsForReader()
-
-	/**
 	 * Lock an object
 	 *
 	 * @param string $register The register slug or identifier
@@ -6363,127 +6163,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	}//end migrationRefusal()
 
 	/**
-	 * Download all files of an object as a ZIP archive
-	 *
-	 * This method creates a ZIP file containing all files associated with a specific object
-	 * and returns it as a downloadable file. The ZIP file includes all files stored in the
-	 * object's folder with their original names.
-	 *
-	 * @param string $id The identifier of the object to download files for
-	 * @param string $register The register (identifier or slug) to search within
-	 * @param string $schema The schema (identifier or slug) to search within
-	 * @param ObjectOperationsInterface $objectService The object service for handling object operations
-	 *
-	 * @return DataDownloadResponse|JSONResponse Download response or error.
-	 *
-	 * @throws ContainerExceptionInterface If there's an issue with dependency injection.
-	 * @throws NotFoundExceptionInterface If the file archive dependency is not found.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function downloadFiles(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse|DataDownloadResponse {
-		try {
-			// Set the context for the object service.
-			$objectService->setRegister(register: $register);
-			$objectService->setSchema(schema: $schema);
-
-			// Get the object to ensure it exists and we have access.
-			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-
-			// File storage builds the archive.
-			$archive = $this->container->get(ObjectFilesArchiveInterface::class);
-
-			// Optional: get custom filename from query parameters.
-			$customFilename = $this->request->getParam(key: 'filename');
-
-			// Create the ZIP archive.
-			$zipInfo = $archive->createZip(object: $object, zipName: $customFilename);
-
-			$zipContent = self::takeZipContent(path: $zipInfo['path']);
-
-			$this->auditBulkDownload(object: $object, zipInfo: $zipInfo);
-
-			// Return the ZIP file as a download response.
-			return new DataDownloadResponse(
-				$zipContent,
-				$zipInfo['filename'],
-				$zipInfo['mimeType']
-			);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end downloadFiles()
-
-	/**
-	 * Read a temporary ZIP file and remove it.
-	 *
-	 * @param string $path The file path.
-	 *
-	 * @return string The content.
-	 *
-	 * @throws RuntimeException When the file cannot be read.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private static function takeZipContent(string $path): string {
-		$zipContent = file_get_contents($path);
-		if (file_exists($path) === true) {
-			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
-			unlink($path);
-		}
-
-		if ($zipContent === false) {
-			throw new RuntimeException('Failed to read ZIP file content');
-		}
-
-		return $zipContent;
-	}//end takeZipContent()
-
-	/**
-	 * Audit a bulk download as ONE entry tied to the parent object.
-	 *
-	 * Best-effort: an audit-trail failure must not break the download.
-	 *
-	 * @param ObjectEntity $object  The object whose files were downloaded.
-	 * @param array        $zipInfo The ZIP file's name and size.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
-		try {
-			$this->container->get(ObjectFilesArchiveInterface::class)->recordDownload(object: $object, zipInfo: $zipInfo);
-		} catch (\Throwable $auditError) {
-			// The audit trail must never break the download response.
-			$this->logger->warning(
-				message: '[ObjectsController] Bulk download audit entry not written',
-				context: [
-					'zipName' => $zipInfo['filename'],
-					'exception' => $auditError->getMessage(),
-				]
-			);
-		}
-	}//end auditBulkDownload()
-
-	/**
 	 * Start batch vectorization of objects
 	 *
 	 * @return JSONResponse JSON response with batch vectorization results
@@ -6689,29 +6368,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	}//end vectorizationFailureResponse()
 
 	/**
-	 * Answer an object history lookup that failed with a 404, logging anything but a plain miss.
-	 *
-	 * @param \Exception $failure The failure.
-	 *
-	 * @return JSONResponse The 404 answer.
-	 *
-	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function historyLookupFailureResponse(\Exception $failure): JSONResponse {
-		$this->rethrowExternalSourceFailure(failure: $failure);
-		if ($failure instanceof DoesNotExistException === false) {
-			$this->logger->error(
-				message: '[ObjectsController] Object history lookup failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
-			);
-		}
-
-		return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
-	}//end historyLookupFailureResponse()
-
-	/**
 	 * Let an external source's failure leave the route: ObjectSourceErrorMiddleware answers it with its own status.
 	 *
 	 * @param \Throwable $failure The failure a route caught.
@@ -6868,8 +6524,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
-			properties: $patch->schema->getProperties(),
-			suppliedKeys: $patch->suppliedKeys
+			properties: array_diff_key($patch->schema->getProperties(), array_flip($patch->suppliedKeys))
 		);
 	}//end restoreStringTypedValues()
 
