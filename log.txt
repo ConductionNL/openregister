@@ -3845,3 +3845,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T19:33:11Z integrator-20261123T185213-ed14d34e RED tree 0227507a19 prs 8 front=ok: Tests: 63576, Assertions: 223466, Errors: 11, Failures: 1, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Listener\MailAppScriptListenerGoldenTest::testEligibleMailPage;OCA\OpenRegister\Tests\Unit\Listener\PushClientScriptListenerTest::testASignedInPageQueuesThePushClientOnce
 2026-11-23T19:34:58Z session-20261123T193457-d34af3f0 or-fix-1 start
 2026-11-23T19:36:52Z session-20261123T193652-9b001845 or-fix-6 start
+2026-11-23T19:43:06Z integrator-20261123T185213-ed14d34e GREEN tree c37be6a34f on dev 66648adda0 prs 1 front=ok: Tests: 63568, Assertions: 223427, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
