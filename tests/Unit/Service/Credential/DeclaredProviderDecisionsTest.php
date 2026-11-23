@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Controller\CredentialProviderApprovalController;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -75,7 +76,7 @@ class DeclaredProviderDecisionsTest extends TestCase {
 		$this->validator = new DeclarationValidator();
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, array $filters): array {
+			function (RegisterSchemaSlugs $target, array $filters): array {
 				$rows = [];
 				foreach ($this->records as $record) {
 					if ($record['providerIdentifier'] === $filters['providerIdentifier']) {
