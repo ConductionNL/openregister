@@ -62,7 +62,6 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\NotificationsServiceRegistrar;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
-use OCA\OpenRegister\Service\ProcessesServiceRegistrar;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
@@ -199,7 +198,6 @@ class Application extends App implements IBootstrap {
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
-		ProcessesServiceRegistrar::register(context: $context);
 		PlatformServiceRegistrar::register(context: $context);
 		NotificationsServiceRegistrar::register(context: $context);
 		ComplianceServiceRegistrar::register(context: $context);
