@@ -1058,7 +1058,7 @@ Exception/FlowSignalRefused.php,26,Exception,Exception,Exception/FlowSignalRefus
 Exception/FlowTimerStateException.php,6,Exception,Exception,Exception/FlowTimerStateException.php,0,,Processes
 Exception/FlowTimerValidationException.php,6,Exception,Exception,Exception/FlowTimerValidationException.php,0,,Processes
 Exception/FolderAccessDeniedException.php,15,Exception,Exception,Exception/FolderAccessDeniedException.php,5,,Kernel
-Exception/FormSubmitRefusedException.php,29,Exception,Exception,Exception/FormSubmitRefusedException.php,0,,Processes
+Exception/FormSubmitRefusedException.php,29,Exception,Exception,Exception/FormSubmitRefusedException.php,0,,Kernel
 Exception/HandoffException.php,15,Exception,Exception,Exception/HandoffException.php,18,,Kernel
 Exception/HookStoppedException.php,19,Exception,Exception,Exception/HookStoppedException.php,26,,Kernel
 Exception/InvalidAuthorizationRuleException.php,7,Exception,Exception,Exception/InvalidAuthorizationRuleException.php,0,,Core
@@ -4190,9 +4190,9 @@ Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
 Formats/WebsiteFormat.php,96,Formats,Formats,Formats/WebsiteFormat.php,0,,Kernel
 Formats/NlPhoneFormat.php,68,Formats,Formats,Formats/NlPhoneFormat.php,0,,Kernel
-Service/Form/JourneyDefinition.php,279,Service,Work,Work/Service/Form/JourneyDefinition.php,0,,Processes
+Service/Form/JourneyDefinition.php,279,Service,Work,Work/Service/Form/JourneyDefinition.php,0,,Kernel
 Service/Form/JourneyRunService.php,299,Service,Work,Work/Service/Form/JourneyRunService.php,0,,Processes
-Service/Form/LocalConditionEvaluator.php,350,Service,Work,Work/Service/Form/LocalConditionEvaluator.php,0,,Processes
+Service/Form/LocalConditionEvaluator.php,350,Service,Work,Work/Service/Form/LocalConditionEvaluator.php,0,,Kernel
 Service/Form/JourneyAuthoringValidator.php,275,Service,Work,Work/Service/Form/JourneyAuthoringValidator.php,0,,Processes
 Listener/JourneyValidationListener.php,166,Listener,Work,Work/Listener/JourneyValidationListener.php,0,,Processes
 Repair/ImportFormsRegister.php,82,Repair,Platform,Platform/Repair/ImportFormsRegister.php,0,,Platform
@@ -4645,7 +4645,7 @@ Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Service/Sharing/LinkJourneyGuard.php,,Service,,,,,Core
 Migration/Version1Date20261114200000.php,,Migration,,,,,Platform
-Service/Form/LinkUpdateRun.php,,Service,,,,,Processes
+Service/Form/LinkUpdateRun.php,,Service,,,,,Core
 Controller/AccessLinkJourneyController.php,,Controller,,,,,Core
 Controller/Support/LinkJourneyGate.php,,Controller,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes

@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\LinkAct;
@@ -67,7 +66,7 @@ class LinkJourneyGate {
 		$this->rejections = new ObjectShareLinkThrottle(
 			throttler: $platform->throttler,
 			logger: $platform->logger,
-			action: ThrottledSurfacesInterface::ACCESS_LINK,
+			action: AccessLinkServiceInterface::THROTTLE_ACTION,
 			label: 'LinkJourneyGate'
 		);
 	}//end __construct()

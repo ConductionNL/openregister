@@ -398,7 +398,7 @@ class JourneyRunServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testResumeReadsTheAnswersBackThroughTheMapping(): void {
-		$owner = JourneyRunService::tokenOwner(token: 'tok')->value();
+		$owner = JourneyRunService::tokenOwner(token: 'tok');
 		$this->submits->expects($this->once())->method('findDraft')->willReturnCallback(
 			function (array $destination, FormSubmitter $submitter) use ($owner): array {
 				$this->assertSame(self::ORGANISATION_WRITE, $destination);
@@ -463,13 +463,13 @@ class JourneyRunServiceTest extends TestCase {
 	 */
 	public function testTheTokenOwnerIsAHashOfTheToken(): void {
 		$token = str_repeat('a', 43);
-		$owner = JourneyRunService::tokenOwner(token: $token)->value();
+		$owner = JourneyRunService::tokenOwner(token: $token);
 
 		$this->assertStringStartsWith('journey-run:', $owner);
 		$this->assertStringNotContainsString($token, $owner);
 		$this->assertLessThanOrEqual(64, strlen($owner));
-		$this->assertSame($owner, JourneyRunService::tokenOwner(token: $token)->value());
-		$this->assertNotSame($owner, JourneyRunService::tokenOwner(token: str_repeat('b', 43))->value());
+		$this->assertSame($owner, JourneyRunService::tokenOwner(token: $token));
+		$this->assertNotSame($owner, JourneyRunService::tokenOwner(token: str_repeat('b', 43)));
 	}//end testTheTokenOwnerIsAHashOfTheToken()
 
 	/**
@@ -491,7 +491,7 @@ class JourneyRunServiceTest extends TestCase {
 		$first  = $service->save(journeyId: 'journey-1', stepId: 'about', answers: ['kind' => 'company'], submitter: new FormSubmitter());
 		$second = $service->save(journeyId: 'journey-1', stepId: 'about', answers: ['kind' => 'company'], submitter: new FormSubmitter(draftId: 'run-3'), token: $first['token']);
 
-		$this->assertSame(JourneyRunService::tokenOwner(token: $first['token'])->value(), $seen);
+		$this->assertSame(JourneyRunService::tokenOwner(token: $first['token']), $seen);
 		$this->assertSame(['id' => 'run-3', 'status' => 'draft'], $second);
 	}//end testAnAnonymousSaveIsOwnedByItsTokensHash()
 }//end class

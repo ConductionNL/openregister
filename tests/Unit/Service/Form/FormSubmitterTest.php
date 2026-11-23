@@ -42,4 +42,31 @@ class FormSubmitterTest extends TestCase {
 		$this->assertSame('d-1', $submitter->draftId);
 		$this->assertSame($owner, $submitter->owner);
 	}//end testItKeepsWhatItIsGiven()
+
+	public function testRescopedKeepsTheSubjectAndOwnerWithoutAReference(): void {
+		$user      = $this->createMock(IUser::class);
+		$owner     = DraftOwner::portalSubject(subjectRef: 'bsn-1');
+		$submitter = (new FormSubmitter(subject: $user, scope: 'form-1', draftId: 'd-1', owner: $owner))->rescoped(scope: 'journey-1', draftId: 'd-2');
+
+		$this->assertSame($user, $submitter->subject);
+		$this->assertSame('journey-1', $submitter->scope);
+		$this->assertSame('d-2', $submitter->draftId);
+		$this->assertSame($owner, $submitter->owner);
+	}//end testRescopedKeepsTheSubjectAndOwnerWithoutAReference()
+
+	public function testRescopedDropsTheOwnerWhenAskedAndNoReferenceIsGiven(): void {
+		$owner     = DraftOwner::portalSubject(subjectRef: 'bsn-1');
+		$submitter = (new FormSubmitter(owner: $owner))->rescoped(scope: 'journey-1', draftId: null, ownerScope: 'journey-run', keepOwner: false);
+
+		$this->assertNull($submitter->owner);
+	}//end testRescopedDropsTheOwnerWhenAskedAndNoReferenceIsGiven()
+
+	public function testRescopedAssertsTheScopedOwnerOfAReference(): void {
+		$kept      = DraftOwner::portalSubject(subjectRef: 'bsn-1');
+		$submitter = (new FormSubmitter(owner: $kept))->rescoped(scope: 'journey-1', draftId: null, ownerScope: 'journey-run', ownerReference: 'abc', keepOwner: false);
+
+		$this->assertSame(DraftOwner::scoped(scope: 'journey-run', reference: 'abc')->value(), $submitter->owner?->value());
+		$this->assertSame(FormSubmitter::scopedOwnerValue(scope: 'journey-run', reference: 'abc'), $submitter->owner?->value());
+		$this->assertNotSame($kept->value(), $submitter->owner?->value());
+	}//end testRescopedAssertsTheScopedOwnerOfAReference()
 }//end class

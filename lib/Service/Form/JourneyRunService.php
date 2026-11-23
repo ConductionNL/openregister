@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Service\Form;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCP\IL10N;
 use Throwable;
 
@@ -226,7 +225,7 @@ class JourneyRunService {
 				$minted = $token;
 			}
 
-			$owner = self::tokenOwner(token: $token);
+			$owner = self::tokenReference(token: $token);
 		}
 
 		$draft = $this->submits->saveDraft(
@@ -277,14 +276,20 @@ class JourneyRunService {
 		}
 
 		$destination = $this->firstWrite(journey: $journey);
-		$owner       = $this->resumeOwner(token: $token);
+		$owner       = $this->resumeReference(token: $token);
 		if ($destination === null || ($owner === null && $submitter->subject === null)) {
 			throw $this->noSuchRun();
 		}
 
 		$draft = $this->ownDraft(
 			destination: $destination,
-			submitter: new FormSubmitter(subject: $submitter->subject, scope: $journeyId, draftId: $runId, owner: $owner)
+			submitter: $submitter->rescoped(
+				scope: $journeyId,
+				draftId: $runId,
+				ownerScope: self::TOKEN_SCOPE,
+				ownerReference: $owner,
+				keepOwner: false
+			)
 		);
 		$answers = self::answersFrom(write: $destination, data: $draft['data']);
 		$step    = $this->reachedStep(journey: $journey, answers: $answers);
@@ -304,15 +309,24 @@ class JourneyRunService {
 	 *
 	 * @param string $token The resume token.
 	 *
-	 * @return DraftOwner The owner.
+	 * @return string The stored owner value.
 	 *
 	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-run-must-be-resumable-without-becoming-an-oracle
 	 */
-	public static function tokenOwner(string $token): DraftOwner {
-		$hash = rtrim(strtr(base64_encode(hash('sha256', $token, true)), '+/', '-_'), '=');
-
-		return DraftOwner::scoped(scope: self::TOKEN_SCOPE, reference: $hash);
+	public static function tokenOwner(string $token): string {
+		return FormSubmitter::scopedOwnerValue(scope: self::TOKEN_SCOPE, reference: self::tokenReference(token: $token));
 	}//end tokenOwner()
+
+	/**
+	 * The owner reference a resume token stands for: the base64url sha256 of the token.
+	 *
+	 * @param string $token The resume token.
+	 *
+	 * @return string The reference.
+	 */
+	private static function tokenReference(string $token): string {
+		return rtrim(strtr(base64_encode(hash('sha256', $token, true)), '+/', '-_'), '=');
+	}//end tokenReference()
 
 	/**
 	 * The answers a draft records: its properties mapped back to the fields that wrote them.
@@ -423,16 +437,16 @@ class JourneyRunService {
 	 *
 	 * @param string|null $token The presented token.
 	 *
-	 * @return DraftOwner|null The token owner, or null to take the signed-in subject.
+	 * @return string|null The token's owner reference, or null to take the signed-in subject.
 	 */
-	private function resumeOwner(?string $token): ?DraftOwner {
+	private function resumeReference(?string $token): ?string {
 		$token = $this->presentedToken(token: $token);
 		if ($token === null) {
 			return null;
 		}
 
-		return self::tokenOwner(token: $token);
-	}//end resumeOwner()
+		return self::tokenReference(token: $token);
+	}//end resumeReference()
 
 	/**
 	 * A presented token, trimmed; null when none was sent.
@@ -525,18 +539,18 @@ class JourneyRunService {
 	/**
 	 * The submitter with the journey as the scope its key and upload tokens belong to.
 	 *
-	 * @param string          $journeyId The journey object's uuid.
-	 * @param FormSubmitter   $submitter The caller's submitter.
-	 * @param DraftOwner|null $owner     An owner to assert in place of the submitter's, for an anonymous draft.
+	 * @param string        $journeyId The journey object's uuid.
+	 * @param FormSubmitter $submitter The caller's submitter.
+	 * @param string|null   $owner     A token owner reference to assert in place of the submitter's owner, for an anonymous draft.
 	 *
 	 * @return FormSubmitter The scoped submitter.
 	 */
-	private function scoped(string $journeyId, FormSubmitter $submitter, ?DraftOwner $owner=null): FormSubmitter {
-		return new FormSubmitter(
-			subject: $submitter->subject,
+	private function scoped(string $journeyId, FormSubmitter $submitter, ?string $owner=null): FormSubmitter {
+		return $submitter->rescoped(
 			scope: $journeyId,
 			draftId: $submitter->draftId,
-			owner: ($owner ?? $submitter->owner)
+			ownerScope: self::TOKEN_SCOPE,
+			ownerReference: $owner
 		);
 	}//end scoped()
 

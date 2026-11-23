@@ -29,6 +29,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Form\JourneyAuthoringValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Throwable;
 
@@ -43,7 +44,6 @@ use Throwable;
  * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-journey-must-declare-steps-branching-writes-and-access
  */
 class JourneyValidationListener implements IEventListener {
-	use ValidatesPreWriteObject;
 
 	/**
 	 * The register journeys live in.
@@ -79,6 +79,43 @@ class JourneyValidationListener implements IEventListener {
 		private readonly JourneyAuthoringValidator $validator,
 	) {
 	}//end __construct()
+
+	/**
+	 * Validate the object of a create, or the new object of an update; ignore any other event.
+	 *
+	 * @param Event $event The inbound event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function handle(Event $event): void {
+		if ($event instanceof ObjectCreatingEvent) {
+			$this->validate(event: $event, object: $event->getObject());
+			return;
+		}
+
+		if ($event instanceof ObjectUpdatingEvent) {
+			$this->validate(event: $event, object: $event->getNewObject());
+		}
+
+	}//end handle()
+
+	/**
+	 * The object's data, or the empty list when it holds none.
+	 *
+	 * @param ObjectEntity $object The object being written.
+	 *
+	 * @return array<string, mixed> The data.
+	 */
+	private function writtenData(ObjectEntity $object): array {
+		$data = $object->getObject();
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end writtenData()
 
 	/**
 	 * Judge a journey before it is written; leave every other object alone.

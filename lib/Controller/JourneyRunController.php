@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\Form\FormSubmitter;
 use OCA\OpenRegister\Service\Form\JourneyRunService;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -53,6 +52,14 @@ use Throwable;
  * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-anonymous-submission-must-be-throttled-and-must-stamp-no-ownership
  */
 class JourneyRunController extends Controller {
+
+	/**
+	 * The throttler action of every journey-run route: ThrottledSurfacesInterface::JOURNEY_RUN, restated
+	 * here so this controller does not reach into the hardening component (a test pins them equal).
+	 *
+	 * @var string
+	 */
+	public const THROTTLE_ACTION = 'openregister_journey_run';
 
 	/**
 	 * Wire the controller.
@@ -88,7 +95,7 @@ class JourneyRunController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::JOURNEY_RUN)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function start(string $journeyId): JSONResponse {
 		return $this->answered(
 			call: fn (): array => $this->runs->start(journeyId: $journeyId, submitter: $this->submitter()),
@@ -111,7 +118,7 @@ class JourneyRunController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::JOURNEY_RUN)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function answer(string $journeyId): JSONResponse {
 		$key = trim($this->request->getHeader('Idempotency-Key'));
 		if ($key === '') {
@@ -149,7 +156,7 @@ class JourneyRunController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 120, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::JOURNEY_RUN)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function save(string $journeyId): JSONResponse {
 		return $this->answered(
 			call: fn (): array => $this->runs->save(
@@ -179,7 +186,7 @@ class JourneyRunController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::JOURNEY_RUN)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function resume(string $journeyId): JSONResponse {
 		$runId = $this->request->getParam('run', '');
 		if (is_string($runId) === false || trim($runId) === '') {
@@ -240,7 +247,7 @@ class JourneyRunController extends Controller {
 	 */
 	private function registerAttempt(): void {
 		try {
-			$this->throttler->registerAttempt(ThrottledSurfacesInterface::JOURNEY_RUN, $this->request->getRemoteAddress());
+			$this->throttler->registerAttempt(self::THROTTLE_ACTION, $this->request->getRemoteAddress());
 		} catch (Throwable $throttlerFailure) {
 			$this->logger->warning(
 				message: '[JourneyRunController] registerAttempt failed',

@@ -221,6 +221,7 @@ class JourneyRunControllerTest extends TestCase {
 		}
 
 		$this->assertContains(ThrottledSurfacesInterface::JOURNEY_RUN, ThrottledSurfacesInterface::ALL);
+		$this->assertSame(ThrottledSurfacesInterface::JOURNEY_RUN, JourneyRunController::THROTTLE_ACTION);
 	}//end testEachRouteDeclaresItsPosture()
 
 	/**
@@ -335,7 +336,7 @@ class JourneyRunControllerTest extends TestCase {
 		$this->assertSame(200, $first->getStatus());
 		$token = $first->getData()['token'];
 		$this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]{43}$/', $token);
-		$this->assertSame(JourneyRunService::tokenOwner(token: $token)->value(), $owners[0]);
+		$this->assertSame(JourneyRunService::tokenOwner(token: $token), $owners[0]);
 		$this->assertStringNotContainsString($token, (string)$owners[0]);
 
 		$this->headers = ['X-Journey-Run-Token' => $token];
@@ -372,7 +373,7 @@ class JourneyRunControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAnonymousFilerResumesWithTheToken(): void {
-		$owner = JourneyRunService::tokenOwner(token: 'the-token')->value();
+		$owner = JourneyRunService::tokenOwner(token: 'the-token');
 		$this->submits->method('findDraft')->willReturnCallback(
 			fn (array $destination, FormSubmitter $submitter): ?array => match ($submitter->owner?->value()) {
 				$owner => ['id' => 'draft-1', 'status' => 'draft', 'data' => ['name' => 'Ada', '_owner' => $owner], 'updatedAt' => '2026-11-14T10:00:00+00:00'],

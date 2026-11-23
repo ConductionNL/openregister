@@ -29,11 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LinkJourneyGate;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Form\LinkUpdateRun;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\LinkAct;
 use OCP\AppFramework\Controller;
@@ -68,7 +67,7 @@ class AccessLinkJourneyController extends Controller {
 		private readonly LinkUpdateRun $runs,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -85,7 +84,7 @@ class AccessLinkJourneyController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::ACCESS_LINK)]
+	#[BruteForceProtection(action: AccessLinkServiceInterface::THROTTLE_ACTION)]
 	public function show(string $anchor): JSONResponse {
 		$act = $this->gate->admit(anchor: $anchor, request: $this->request);
 		if ($act instanceof LinkAct === false) {
@@ -123,7 +122,7 @@ class AccessLinkJourneyController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfacesInterface::ACCESS_LINK)]
+	#[BruteForceProtection(action: AccessLinkServiceInterface::THROTTLE_ACTION)]
 	public function submit(string $anchor): JSONResponse {
 		$act = $this->gate->admit(anchor: $anchor, request: $this->request);
 		if ($act instanceof LinkAct === false) {
