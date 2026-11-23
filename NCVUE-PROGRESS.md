@@ -18,3 +18,4 @@
 2026-11-23T08:20:35Z ncvue-0 #2016 merged (dupes vs main dropped), #2034 merged (+ fixed data-bulk-edit dupe), #2214 merged (green), #1728 closed (sections layout already on main); lane share done, main 3ed9d1cc
 2026-11-23T08:31:20Z ncvue-1 #2131 merged (noClose/cancelIcon, docs moved to CnFormDialog.md; main 3395e1ec)
 2026-11-23T08:30:56Z ncvue-2 #2216 merged (postcss-import 17, main 1e5bbaed)
+2026-11-23T08:38:22Z ncvue-1 #2209 merged (@toast-ui/editor 3.2.3; main f893615e)
