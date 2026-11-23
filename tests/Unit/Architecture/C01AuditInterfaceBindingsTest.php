@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -74,7 +75,7 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 		AuditTrailPageService::class => [AuditTrailPageServiceInterface::class, ContractBindings::class],
 		ContentReportMapper::class => [ContentReportMapperInterface::class, ComplianceMapperRegistrar::class],
 		ContentReportService::class => [ContentReportServiceInterface::class, ContractBindings::class],
-		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
+		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, CoreServiceBindings::class],
 		ObjectHistoryForReaders::class => [ObjectHistoryForReadersInterface::class, ContractBindings::class],
 		ReadableAuditTrailLister::class => [ReadableAuditTrailListerInterface::class, ContractBindings::class],
 	];
