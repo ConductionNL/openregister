@@ -623,3 +623,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Inherited red on main 6e870ca5: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce (or-fix-8)
 - Symptom: ConfigurationMapperRegistrar binds an interface bound elsewhere: TranslationMapperInterface, TranslationSourceLanguageBackfillInterface.
 - Cause: red on origin/main itself (checked on a detached main checkout), not on PR branches. Do not fix in a PR; treat as inherited like the 4 Files->Core edges.
+## ResolvedConsumer: Unknown named parameter $source after a main merge (or-fix-4)
+- Symptom: a PR test errors 'Unknown named parameter $source' at new ResolvedConsumer(source:, uuid:, name:, userId:, authorizationType:, configuration:, record:).
+- Cause: main e0d1d3b4 builds ResolvedConsumer from ConsumerIdentity(source, uuid, name) + ConsumerAuthorization(userId, authorizationType, configuration), record stays.
+- Fix: wrap the arguments in those two value objects, import them and add #[UsesClass] for both (#10514). grep -rn -A1 'new ResolvedConsumer(' lib tests | grep source: finds the rest.
