@@ -34,6 +34,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Audit\ContentReportFiling;
 
 final class ContentReportServiceTest extends TestCase {
 	/** @var ContentReport[] */
@@ -102,7 +103,7 @@ final class ContentReportServiceTest extends TestCase {
 
 	public function testTheCopyIsTakenWhenTheReportIsFiled(): void {
 		$object = $this->object('de oorspronkelijke tekst');
-		$report = $this->service()->file($object, 'beledigend', 'melder');
+		$report = $this->service()->file(filing: new ContentReportFiling(object: $object, reason: 'beledigend', reporter: 'melder'));
 
 		// The content changes after filing. The copy must not follow it: it is
 		// evidence of what was reported, not a live view.
@@ -115,7 +116,7 @@ final class ContentReportServiceTest extends TestCase {
 	}//end testTheCopyIsTakenWhenTheReportIsFiled()
 
 	public function testTheCopyCarriesItsOwnRetention(): void {
-		$report = $this->service($this->config('', 30))->file($this->object('x'), 'r', 'melder');
+		$report = $this->service($this->config('', 30))->file(filing: new ContentReportFiling(object: $this->object('x'), reason: 'r', reporter: 'melder'));
 
 		self::assertSame('content-report:30d', $report->getRetentionPeriod());
 		$expected = (new DateTime())->modify('+30 days');
@@ -131,7 +132,7 @@ final class ContentReportServiceTest extends TestCase {
 
 	public function testAReviewerCanReadTheCopy(): void {
 		$service = $this->service(null, ['reviewer' => ['content-reviewers']]);
-		$report = $service->file($this->object('bewijs'), 'r', 'melder');
+		$report = $service->file(filing: new ContentReportFiling(object: $this->object('bewijs'), reason: 'r', reporter: 'melder'));
 
 		self::assertSame('bewijs', $service->readCopy($report, $this->user('reviewer'))['object']['bericht']);
 	}//end testAReviewerCanReadTheCopy()
@@ -140,7 +141,7 @@ final class ContentReportServiceTest extends TestCase {
 		// Includes the reporter and an administrator: neither is a reviewer by
 		// virtue of that alone.
 		$service = $this->service(null, ['melder' => ['users'], 'beheerder' => ['admin']]);
-		$report = $service->file($this->object('bewijs'), 'r', 'melder');
+		$report = $service->file(filing: new ContentReportFiling(object: $this->object('bewijs'), reason: 'r', reporter: 'melder'));
 
 		self::assertNull($service->readCopy($report, $this->user('melder')));
 		self::assertNull($service->readCopy($report, $this->user('beheerder')));
@@ -148,7 +149,7 @@ final class ContentReportServiceTest extends TestCase {
 	}//end testTheCopyIsNotGenerallyReadable()
 
 	public function testWideningTheConfiguredGroupDoesNotWidenACopyAlreadyTaken(): void {
-		$report = $this->service($this->config('moderatie'))->file($this->object('x'), 'r', 'melder');
+		$report = $this->service($this->config('moderatie'))->file(filing: new ContentReportFiling(object: $this->object('x'), reason: 'r', reporter: 'melder'));
 		self::assertSame('moderatie', $report->getReviewerGroup());
 
 		$later = $this->service($this->config('everyone'), ['iedereen' => ['everyone']]);
@@ -175,7 +176,7 @@ final class ContentReportServiceTest extends TestCase {
 
 	public function testARemovalIsNotedAndNamesTheCopy(): void {
 		$service = $this->service(null, ['reviewer' => ['content-reviewers']]);
-		$report = $service->file($this->object('bewijs'), 'r', 'melder');
+		$report = $service->file(filing: new ContentReportFiling(object: $this->object('bewijs'), reason: 'r', reporter: 'melder'));
 
 		$named = $service->noteRemoval('object-uuid', 'audit-uuid');
 
@@ -189,7 +190,7 @@ final class ContentReportServiceTest extends TestCase {
 
 	public function testASecondRemovalDoesNotMoveTheFirstInstant(): void {
 		$service = $this->service();
-		$report = $service->file($this->object('x'), 'r', 'melder');
+		$report = $service->file(filing: new ContentReportFiling(object: $this->object('x'), reason: 'r', reporter: 'melder'));
 
 		$service->noteRemoval('object-uuid', 'first');
 		$first = $report->getRemovedAt();
@@ -206,14 +207,14 @@ final class ContentReportServiceTest extends TestCase {
 	public function testTheSerializedReportDoesNotCarryTheCopy(): void {
 		// The access control is that the copy has its own endpoint. A copy in
 		// jsonSerialize() would leak through every list of reports.
-		$report = $this->service()->file($this->object('geheim bewijs'), 'r', 'melder');
+		$report = $this->service()->file(filing: new ContentReportFiling(object: $this->object('geheim bewijs'), reason: 'r', reporter: 'melder'));
 
 		self::assertArrayNotHasKey('copy', $report->jsonSerialize());
 		self::assertStringNotContainsString('geheim bewijs', (string)json_encode($report->jsonSerialize()));
 	}//end testTheSerializedReportDoesNotCarryTheCopy()
 
 	public function testAnEditedCopyNoLongerMatchesItsChecksum(): void {
-		$report = $this->service()->file($this->object('x'), 'r', 'melder');
+		$report = $this->service()->file(filing: new ContentReportFiling(object: $this->object('x'), reason: 'r', reporter: 'melder'));
 		self::assertTrue($report->copyIsIntact());
 
 		$report->setCopy(['object' => ['bericht' => 'achteraf aangepast']]);

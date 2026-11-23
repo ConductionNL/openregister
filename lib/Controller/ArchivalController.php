@@ -65,6 +65,9 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Archival\ReviewerAssignment;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
+use DateTimeImmutable;
 
 /**
  * Controller for archival destruction workflows.
@@ -822,8 +825,7 @@ class ArchivalController extends Controller {
 		try {
 			$listData = $this->reviews->assignReviewer(
 				listData: $target->listData,
-				entryUuid: $entryId,
-				reviewer: $reviewer
+				assignment: new ReviewerAssignment(entryUuid: $entryId, reviewer: $reviewer, assignedAt: new DateTimeImmutable())
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(
@@ -1151,8 +1153,7 @@ class ArchivalController extends Controller {
 				$pending,
 				$this->reviews->pendingEntries(
 					listData: ($list->getObject() ?? []),
-					listUuid: (string)$list->getUuid(),
-					reviewer: $userId
+					query: new PendingReviewQuery(listUuid: (string)$list->getUuid(), reviewer: $userId, waitingSince: null)
 				)
 			);
 		}

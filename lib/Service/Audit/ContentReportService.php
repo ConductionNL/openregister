@@ -115,9 +115,7 @@ class ContentReportService implements ContentReportServiceInterface {
 	/**
 	 * File a report, taking the copy now.
 	 *
-	 * @param ObjectEntity $object   The content being reported.
-	 * @param string       $reason   Why, in the reporter's words.
-	 * @param string|null  $reporter The uid of whoever filed it.
+	 * @param ContentReportFiling $filing The object reported, why in the reporter's words, and the reporter's uid.
 	 *
 	 * @return ContentReport The persisted report, with the copy already taken.
 	 *
@@ -126,8 +124,8 @@ class ContentReportService implements ContentReportServiceInterface {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function file(ObjectEntity $object, string $reason, ?string $reporter): ContentReport {
-		return $this->fileReport(filing: new ContentReportFiling(object: $object, reason: $reason, reporter: $reporter));
+	public function file(ContentReportFiling $filing): ContentReport {
+		return $this->fileReport(filing: $filing);
 	}//end file()
 
 	/**
