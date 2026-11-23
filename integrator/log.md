@@ -14,3 +14,4 @@
 2026-11-23T19:33:22Z RED prs=9532,9555,9565,9594,9709,9760,9781,9816 main=66648adda0 integrator-cloud (MailAppScriptListenerGoldenTest, PushClientScriptListenerTest; retrying each alone)
 2026-11-23T19:43:40Z GREEN prs=9532 main=b0d1d382a9 integrator-cloud
 2026-11-23T19:53:29Z GREEN prs=9555 main=d28a757bfe integrator-cloud
+2026-11-23T20:03:05Z GREEN prs=9565 main=5fdce3598e integrator-cloud
