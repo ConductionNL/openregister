@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Object\ObjectUpdateRights;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -56,6 +57,8 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Object\ObjectUpdateRights
  *
  * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
  */
@@ -133,7 +136,7 @@ class TagObjectNodeTest extends TestCase {
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('imagePath')->willReturnCallback(static fn (string $app, string $image): string => "/{$app}/img/{$image}");
 
-		return new TagObjectNode($this->objects, $this->tags, $this->schemas, $this->permissions, $this->users, new FlowNodePresentation($l10n, $urls));
+		return new TagObjectNode($this->objects, $this->tags, new ObjectUpdateRights(objects: $this->objects, schemas: $this->schemas, permissions: $this->permissions), $this->users, new FlowNodePresentation($l10n, $urls));
 	}//end node()
 
 	/**

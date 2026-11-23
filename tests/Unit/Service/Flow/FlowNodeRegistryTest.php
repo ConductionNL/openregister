@@ -268,8 +268,7 @@ class FlowNodeRegistryTest extends TestCase {
 		$node = new TagObjectNode(
 			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
 			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\PermissionCheckInterface::class),
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface::class),
 			$this->createMock(\OCP\IUserManager::class),
 			new FlowNodePresentation($l10n, $urls)
 		);

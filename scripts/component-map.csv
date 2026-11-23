@@ -2795,6 +2795,7 @@ Service/Object/ObjectFindRequest.php,13,Service,Service,Service/Object/ObjectFin
 Service/Object/ObjectFindScope.php,11,Service,Service,Service/Object/ObjectFindScope.php,0,,Core
 Service/Object/ObjectMove.php,22,Service,Service,Service/Object/ObjectMove.php,0,,Core
 Service/Object/ObjectReadAccess.php,73,Service,Service,Service/Object/ObjectReadAccess.php,0,,Core
+Service/Object/ObjectUpdateRights.php,,Service,,,,,Core
 Service/Object/ObjectSlugBackfillLedger.php,86,Service,Service,Service/Object/ObjectSlugBackfillLedger.php,0,,Core
 Service/Object/ObjectSlugBackfillService.php,136,Service,Service,Service/Object/ObjectSlugBackfillService.php,0,,Core
 Service/Object/ObjectSlugBackfillWriter.php,100,Service,Service,Service/Object/ObjectSlugBackfillWriter.php,0,,Core

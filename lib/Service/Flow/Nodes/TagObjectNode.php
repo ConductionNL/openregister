@@ -40,9 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
@@ -51,8 +50,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
-use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -65,8 +62,7 @@ use UnexpectedValueException;
 /**
  * Puts a tag on, or takes it off, the object of each item.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() is the stateless renderer every node uses;
- *   WriteCause::asLookup() marks a lookup.
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() is the stateless renderer every node uses.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
@@ -106,16 +102,14 @@ class TagObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @param ObjectOperationsInterface $objects     Loads each target as the run identity, RBAC-enforcing.
 	 * @param TaggingHandlerInterface   $tags        Reads, assigns and removes object tags.
-	 * @param SchemaMapperInterface     $schemas     Resolves a target's schema for the update check.
-	 * @param PermissionCheckInterface  $permissions Answers whether the run identity may update a target.
+	 * @param ObjectUpdateRightsInterface $rights    Answers whether the run identity may update a target.
 	 * @param IUserManager              $userManager Resolves the run's acting identity.
 	 * @param FlowNodePresentation      $presentation Translations and the palette icon.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
 		private readonly TaggingHandlerInterface $tags,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly PermissionCheckInterface $permissions,
+		private readonly ObjectUpdateRightsInterface $rights,
 		private readonly IUserManager $userManager,
 		FlowNodePresentation $presentation,
 	) {
@@ -422,9 +416,8 @@ class TagObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 */
 	private function requireUpdate(string $uuid, IUser $actor): void {
 		try {
-			// A lookup for the step, not a person opening the object: no read is recorded.
-			$object   = WriteCause::asLookup(fn () => $this->objects->find(id: $uuid));
-			$mayWrite = ($object instanceof ObjectEntity) && $this->mayUpdate(object: $object, actor: $actor);
+			// Core loads the object as a lookup for the step, not a person opening it.
+			$mayWrite = $this->rights->mayUpdateObject(uuid: $uuid, userId: $actor->getUID());
 		} catch (Throwable $e) {
 			$mayWrite = false;
 		}
@@ -435,26 +428,6 @@ class TagObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			);
 		}
 	}//end requireUpdate()
-
-	/**
-	 * Whether the run identity holds `update` on the object.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param IUser        $actor  The run identity.
-	 *
-	 * @return bool True when it may update the object.
-	 */
-	private function mayUpdate(ObjectEntity $object, IUser $actor): bool {
-		$schema = $this->schemas->find((string)$object->getSchema());
-
-		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $actor->getUID(),
-			objectOwner: $object->getOwner(),
-			object: $object
-		);
-	}//end mayUpdate()
 
 	/**
 	 * What kind of step this is. Calls the register to tag.
