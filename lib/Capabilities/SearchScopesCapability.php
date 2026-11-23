@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Search\SearchScopeCatalog;
-use OCA\OpenRegister\Search\SearchScopes;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\Capabilities\ICapability;
 use OCP\Capabilities\IInitialStateExcludedCapability;
@@ -61,6 +60,14 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * @var int
 	 */
 	public const CONTRACT_VERSION = 1;
+
+	/**
+	 * The files-only scope; the same value as Search\SearchScopes::FILES (restated:
+	 * Capabilities is Platform and may not name the Search component, ADR-013).
+	 *
+	 * @var string
+	 */
+	private const FILES_SCOPE = 'files';
 
 	/**
 	 * The unified search provider the scopes are for.
@@ -162,7 +169,7 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 
 		// `files` keeps only file hits, so it is offered once there is something readable to keep them from.
 		if ($offered !== []) {
-			$offered[] = ['id' => SearchScopes::FILES, 'type' => SearchScopes::FILES, 'value' => SearchScopes::FILES, 'label' => SearchScopes::FILES];
+			$offered[] = ['id' => self::FILES_SCOPE, 'type' => self::FILES_SCOPE, 'value' => self::FILES_SCOPE, 'label' => self::FILES_SCOPE];
 		}
 
 		return $offered;

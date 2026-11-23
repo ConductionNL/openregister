@@ -26,11 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -71,15 +71,15 @@ final class FileHitSearch {
 	/**
 	 * Constructor.
 	 *
-	 * @param ChunkMapperInterface $chunks  The file-chunk table.
-	 * @param FileMapperInterface  $files   The file cache: a file's name and owning object.
-	 * @param MagicMapperInterface $objectMapper The objects, read with RBAC and tenancy applied.
-	 * @param LoggerInterface      $logger  Where an unresolvable hit is noted.
+	 * @param ChunkMapperInterface      $chunks  The file-chunk table.
+	 * @param FileOwnerLookupInterface  $files   The file cache: a file's name and owning object.
+	 * @param ObjectOperationsInterface $objects The objects, read with RBAC and tenancy applied (no audit row).
+	 * @param LoggerInterface           $logger  Where an unresolvable hit is noted.
 	 */
 	public function __construct(
 		private readonly ChunkMapperInterface $chunks,
-		private readonly FileMapperInterface $files,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly FileOwnerLookupInterface $files,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -148,7 +148,7 @@ final class FileHitSearch {
 				return null;
 			}
 
-			$object = $this->objectMapper->find(identifier: $uuid, _rbac: true, _multitenancy: true);
+			$object = $this->objects->findSilent(id: $uuid, _rbac: true, _multitenancy: true);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'[FileHitSearch] A matching file chunk was left out: its object could not be read: {error}',

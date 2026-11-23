@@ -43,6 +43,9 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Files\FilesRegistrar
@@ -60,7 +63,7 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(32, $expected);
+        $this->assertCount(33, $expected);
         $this->assertSame(ObjectFileAccess::class, FilesRegistrar::BINDINGS[ObjectFileRightsInterface::class]);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
@@ -87,6 +90,8 @@ class FilesRegistrarTest extends TestCase
         $this->assertSame(FileOwnershipHandler::class, FilesRegistrar::BINDINGS[FileAccountInterface::class]);
         $this->assertSame(ObjectFilesArchive::class, FilesRegistrar::BINDINGS[ObjectFilesArchiveInterface::class]);
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
+        $this->assertSame(FileMapper::class, FilesRegistrar::BINDINGS[FileOwnerLookupInterface::class]);
+        $this->assertTrue(is_subclass_of(FileMapperInterface::class, FileOwnerLookupInterface::class));
         $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));
         $this->assertTrue(is_subclass_of(PreviewSize::class, PreviewDimensionsInterface::class));

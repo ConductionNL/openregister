@@ -4381,6 +4381,7 @@ Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Search/FileHitSearch.php,,Search,,,,,Search
+Kernel/Contracts/FileOwnerLookupInterface.php,,Kernel,,,,,Kernel
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -144,12 +144,16 @@ final class ContentSearchFileHitsTest extends TestCase {
 				return $chunks;
 			}
 		);
-		$files = $this->createMock(FileMapperInterface::class);
+		$files = $this->createMock(FileOwnerLookupInterface::class);
 		$files->method('findOwningObjectUuid')->willReturnCallback(static fn (int $fileId): ?string => ($owners[$fileId] ?? null));
 		$files->method('getFile')->willReturnCallback(static fn (int $fileId): array => ['fileid' => $fileId, 'name' => 'aanslag-'.$fileId.'.txt']);
-		$objects = $this->createMock(MagicMapperInterface::class);
-		$objects->method('find')->willReturnCallback(
-			static function (string|int $identifier) use ($readable): ObjectEntity {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('findSilent')->willReturnCallback(
+			static function (string $identifier, $options = null, bool $_rbac = true, bool $_multitenancy = true) use ($readable): ObjectEntity {
+				if ($_rbac !== true || $_multitenancy !== true) {
+					throw new RuntimeException('the file arm must read with RBAC and multitenancy');
+				}
+
 				if (isset($readable[$identifier]) === false) {
 					throw new RuntimeException('not readable');
 				}
