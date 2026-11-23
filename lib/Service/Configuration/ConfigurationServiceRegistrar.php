@@ -71,7 +71,6 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
-use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
@@ -105,7 +104,7 @@ final class ConfigurationServiceRegistrar {
 			'RegisterFolderProvisioner',
 		],
 		'setNoteService' => [\OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class, 'NoteService'],
-		'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
+		'setTaskService' => [\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface::class, 'TaskService'],
 		'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
 		'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
 		'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
