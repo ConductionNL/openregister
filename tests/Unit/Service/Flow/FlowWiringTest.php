@@ -12,6 +12,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
+use OCA\OpenRegister\Service\Flow\CodeRunnerClient;
+use OCA\OpenRegister\Service\Flow\CodeRunnerClientInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
@@ -305,6 +309,18 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
 
 	/**
+	 * The code step and its runner client are bound by the flow component itself, not by ContractBindings.
+	 *
+	 * @return void
+	 */
+	public function testTheCodeStepAndItsRunnerAreBoundByTheFlowComponent(): void {
+		self::assertSame(expected: CodeNode::class, actual: (FlowWiring::BINDINGS[CodeNodeInterface::class] ?? null));
+		self::assertSame(expected: CodeRunnerClient::class, actual: (FlowWiring::BINDINGS[CodeRunnerClientInterface::class] ?? null));
+		self::assertTrue(condition: is_a(CodeNode::class, CodeNodeInterface::class, true));
+		self::assertTrue(condition: is_a(CodeRunnerClient::class, CodeRunnerClientInterface::class, true));
+	}//end testTheCodeStepAndItsRunnerAreBoundByTheFlowComponent()
+
+	/**
 	 * The render's expression port is answered by the calculation evaluator, through its own interface.
 	 *
 	 * @return void
@@ -413,6 +429,8 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				CodeNodeInterface::class                   => CodeNode::class,
+				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,

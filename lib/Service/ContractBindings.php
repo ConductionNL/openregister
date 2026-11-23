@@ -177,8 +177,6 @@ use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
-use OCA\OpenRegister\Service\Flow\CodeRunnerClient;
-use OCA\OpenRegister\Service\Flow\CodeRunnerClientInterface;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -215,8 +213,6 @@ use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
-use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
-use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
@@ -659,8 +655,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface::class => FileService::class,
 		FileServiceInterface::class => FileService::class,
 		FileWriterInterface::class => FileService::class,
-		CodeNodeInterface::class => CodeNode::class,
-		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		FilterNodeInterface::class => FilterNode::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowLocatorInterface::class => FlowLocator::class,
