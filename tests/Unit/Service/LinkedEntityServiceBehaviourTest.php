@@ -343,7 +343,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		];
 		foreach ($cases as [$data, $expected]) {
 			$object->setObject($data);
-			$this->assertSame($expected, $recordNumber->invoke($service, $object));
+			$this->assertSame(expected: $expected, actual: $recordNumber->invoke($service, $object));
 		}
 	}//end testTheRecordNumberIsTheFirstPlainIdentifyingField()
 
@@ -360,13 +360,13 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setObject(['summary' => 'From the data']);
 
-		$this->assertSame('From the data', $objectDescription->invoke($service, $schema, $object));
+		$this->assertSame(expected: 'From the data', actual: $objectDescription->invoke($service, $schema, $object));
 		$object->setDescription('Its own');
-		$this->assertSame('Its own', $objectDescription->invoke($service, $schema, $object));
+		$this->assertSame(expected: 'Its own', actual: $objectDescription->invoke($service, $schema, $object));
 		$object->setDescription(null);
 		$object->setObject(['summary' => '']);
-		$this->assertNull($objectDescription->invoke($service, $schema, $object));
-		$this->assertNull($objectDescription->invoke($service, new Schema(), $object));
+		$this->assertNull(actual: $objectDescription->invoke($service, $schema, $object));
+		$this->assertNull(actual: $objectDescription->invoke($service, new Schema(), $object));
 	}//end testTheDescriptionFallsBackToTheSchemaDescriptionField()
 
 	/**

@@ -489,9 +489,16 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		}
 
 		$field = ($schema->getConfiguration()['objectDescriptionField'] ?? null);
-		$value = (is_string($field) === true ? ($object->getObject()[$field] ?? null) : null);
+		if (is_string($field) === false) {
+			return null;
+		}
 
-		return (is_string($value) === true && $value !== '') ? $value : null;
+		$value = ($object->getObject()[$field] ?? null);
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		return $value;
 	}//end objectDescription()
 
 	/**
