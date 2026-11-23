@@ -559,11 +559,22 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @return ICache|null
 	 */
 	private function searchCache(): ?ICache {
-		if ($this->cacheFactory === null || $this->cacheFactory->isAvailable() === false) {
+		// Nextcloud's container hands an optional constructor parameter its
+		// default (null) instead of autowiring it, so resolve the factory here.
+		$factory = $this->cacheFactory;
+		if ($factory === null) {
+			try {
+				$factory = $this->container->get(ICacheFactory::class);
+			} catch (Throwable) {
+				return null;
+			}
+		}
+
+		if ($factory instanceof ICacheFactory === false || $factory->isAvailable() === false) {
 			return null;
 		}
 
-		return $this->cacheFactory->createDistributed('openregister-xwiki-search');
+		return $factory->createDistributed('openregister-xwiki-search');
 	}//end searchCache()
 
 	/**

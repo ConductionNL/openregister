@@ -152,4 +152,32 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 		$this->assertTrue($this->service->getAvailablePages('street')['unavailable']);
 		$this->assertSame([], $this->store);
 	}//end testUnavailablePagesAreNotCached()
+
+	public function testWithoutAnInjectedFactoryTheCacheComesFromTheContainer(): void {
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(fn (string $key) => ($this->store[$key] ?? null));
+		$cache->method('set')->willReturnCallback(
+			function (string $key, mixed $value, int $ttl): bool {
+				$this->store[$key] = $value;
+				return true;
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturn($cache);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(fn (string $class) => ($class === ICacheFactory::class ? $factory : $this->provider));
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->willReturnCallback(static fn (string $id): bool => $id === 'openconnector');
+		$service = new XwikiLinkService(
+			$this->createMock(XwikiLinkMapper::class),
+			$container,
+			new LinkServiceRuntime($appManager, $this->userSession, $this->createMock(LoggerInterface::class))
+		);
+		$this->signIn('pieter');
+		$this->provider->expects($this->once())->method('list')->willReturn([]);
+
+		$service->getAvailablePages(null);
+		$service->getAvailablePages(null);
+	}//end testWithoutAnInjectedFactoryTheCacheComesFromTheContainer()
 }//end class
