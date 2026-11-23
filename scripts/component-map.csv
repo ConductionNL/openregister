@@ -4636,4 +4636,9 @@ Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Service/Schemas/SchemaRefInRegister.php,133,Service,Service,Service/Schemas/SchemaRefInRegister.php,0,,Core
 Service/Schemas/RowSchemaRefsInRegister.php,116,Service,Service,Service/Schemas/RowSchemaRefsInRegister.php,0,,Core
+Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
+Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
