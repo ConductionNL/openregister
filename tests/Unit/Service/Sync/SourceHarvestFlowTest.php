@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\StoredFlowWriter;
 use OCA\OpenRegister\Service\Sync\SourceHarvestFlow;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -38,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\SourceHarvestFlow
+ * @covers \OCA\OpenRegister\Service\Flow\StoredFlowWriter
  * @uses   \OCA\OpenRegister\Db\Flow
  * @uses   \OCA\OpenRegister\Db\Source
  * @uses   \OCA\OpenRegister\Service\Flow\FlowPublishOptions
@@ -63,7 +65,9 @@ class SourceHarvestFlowTest extends TestCase {
 		$this->versions  = $this->createMock(FlowVersionServiceInterface::class);
 		$this->flows     = $this->createMock(FlowServiceInterface::class);
 		$this->validator = $this->createMock(FlowTriggerValidatorInterface::class);
-		$this->writer    = new SourceHarvestFlow(mapper: $this->mapper, versions: $this->versions, flows: $this->flows, validator: $this->validator);
+		$this->writer    = new SourceHarvestFlow(
+			store: new StoredFlowWriter(mapper: $this->mapper, versions: $this->versions, flows: $this->flows, validator: $this->validator)
+		);
 	}
 
 	private function source(?string $schedule='15 * * * *', ?string $runAs='harvester'): Source {

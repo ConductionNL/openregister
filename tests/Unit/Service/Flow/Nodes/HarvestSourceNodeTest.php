@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
+use OCA\OpenRegister\Service\Sync\SourceHarvester;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\Lock\ILockingProvider;
@@ -49,6 +50,8 @@ use UnexpectedValueException;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowNodeCall
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStop
  * @uses   \OCA\OpenRegister\Service\Sync\HarvestRun
+ * @covers \OCA\OpenRegister\Service\Sync\SourceHarvester
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\SourceHarvestRefused
  */
 class HarvestSourceNodeTest extends TestCase {
 
@@ -79,13 +82,15 @@ class HarvestSourceNodeTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$this->node = new HarvestSourceNode(
-			sources: $this->sources,
-			fetchers: $this->fetchers,
-			pipeline: $this->pipeline,
-			locks: $this->locks,
+			harvester: new SourceHarvester(
+				sources: $this->sources,
+				fetchers: $this->fetchers,
+				pipeline: $this->pipeline,
+				locks: $this->locks,
+				logger: $this->logger
+			),
 			l10n: $l10n,
-			urls: $this->createMock(IURLGenerator::class),
-			logger: $this->logger
+			urls: $this->createMock(IURLGenerator::class)
 		);
 	}
 
@@ -117,7 +122,7 @@ class HarvestSourceNodeTest extends TestCase {
 	public function testItIsTheHarvestSourceType(): void {
 		$this->assertSame('openregister.harvest-source', $this->node->getId());
 		$this->assertSame(['sourceId'], $this->node->configKeys());
-		$this->assertSame('openregister/harvest/abc', HarvestSourceNode::lockKey('abc'));
+		$this->assertSame('openregister/harvest/abc', SourceHarvester::lockKey('abc'));
 	}
 
 	public function testAConfigWithoutASourceIsRefused(): void {

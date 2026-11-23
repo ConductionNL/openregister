@@ -101,6 +101,7 @@ class IntegrationRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+				['event' => 'OCA\OpenRegister\Service\Sync\RegisterSourceFetchersEvent', 'listener' => 'OCA\OpenRegister\Listener\SourceFetcherRegistrationListener'],
 			],
 			actual: $context->listeners
 		);

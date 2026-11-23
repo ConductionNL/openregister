@@ -23,7 +23,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\SyncRecordsController;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
@@ -54,7 +53,6 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\SyncRecordsController
- * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses   \OCA\OpenRegister\Service\Sync\SyncRecordResolver
  * @uses   \OCA\OpenRegister\Service\Sync\ResolutionRefused
  * @uses   \OCA\OpenRegister\Service\Sync\HarvestImportServices
@@ -140,7 +138,9 @@ class SyncRecordsControllerTest extends TestCase {
 				permissions: $this->permissions,
 				schemas: $schemas
 			),
-			session: new ControllerSession(userSession: $userSession, groupManager: $groups, logger: new NullLogger())
+			userSession: $userSession,
+			groupManager: $groups,
+			logger: new NullLogger()
 		);
 	}
 

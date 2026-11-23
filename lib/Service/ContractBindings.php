@@ -853,7 +853,6 @@ final class ContractBindings {
 		FormDependentsCheckInterface::class => FormDependentsCheck::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode::class,
-		\OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode::class,
 		// The area maps below are spread one per entry, never two in a row: PHPStan
 		// skips the item after a spread in an array this size, so two adjacent
 		// spreads end the analysis with an internal error.

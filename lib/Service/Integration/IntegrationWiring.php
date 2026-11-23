@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInte
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Listener\SourceFetcherRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -71,6 +72,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Service\Sync\RegisterSourceFetchersEvent;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -124,6 +126,7 @@ final class IntegrationWiring {
 		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
+		\OCA\OpenRegister\Kernel\Contracts\SourceHarvesterInterface::class => \OCA\OpenRegister\Service\Sync\SourceHarvester::class,
 	];
 
 	/**
@@ -219,6 +222,9 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// Harvest protocols. OpenRegister registers its own fetchers through the
+		// same event an app uses to add one (app-harvest-fetchers-and-flow-node).
+		$context->registerEventListener(RegisterSourceFetchersEvent::class, SourceFetcherRegistrationListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}

@@ -28,17 +28,16 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 256;
+	private const LISTENER_COUNT = 255;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
 	 * Last changed when Search started contributing the widget declaration check: one
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
-	 * listeners; every other registration is unchanged and in the same order. Then
-	 * SourceFetcherRegistrationListener was added for RegisterSourceFetchersEvent (one more).
+	 * listeners; every other registration is unchanged and in the same order.
 	 */
-	private const SEQUENCE_SHA256 = '34e3354c6c5267c02ec3e288f0566ba918e6777690c5465ba07d8fcd2a6ce829';
+	private const SEQUENCE_SHA256 = '4c997433b745e7a5be813e2df9bbcfb3731c8eb1369992d1f671bc8682924f5d';
 
 	/**
 	 * The registration calls, in call order, with every argument.

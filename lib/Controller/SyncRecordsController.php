@@ -26,11 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Sync\ResolutionRefused;
 use OCA\OpenRegister\Service\Sync\SyncRecordResolver;
 use OCP\AppFramework\Controller;
@@ -38,7 +37,10 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -60,16 +62,20 @@ class SyncRecordsController extends Controller {
 	 * @param SourceMapperInterface<Source>     $sources  The sources, scoped to the caller's organisation.
 	 * @param SyncRecordMapperInterface $records  The sync records.
 	 * @param SyncRecordResolver        $resolver The queue and the resolutions.
-	 * @param ControllerSession         $session  The caller and the admin check.
+	 * @param IUserSession              $userSession  The caller.
+	 * @param IGroupManager             $groupManager The admin check.
+	 * @param LoggerInterface           $logger       Logs a failed resolution.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly SourceMapperInterface $sources,
 		private readonly SyncRecordMapperInterface $records,
 		private readonly SyncRecordResolver $resolver,
-		private readonly ControllerSession $session,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -99,7 +105,7 @@ class SyncRecordsController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: ['results' => $this->resolver->queue(source: $source, status: $status, isAdmin: $this->session->isAdmin())]
+			data: ['results' => $this->resolver->queue(source: $source, status: $status, isAdmin: $this->isAdmin())]
 		);
 	}//end index()
 
@@ -188,13 +194,13 @@ class SyncRecordsController extends Controller {
 				source: $source,
 				record: $record,
 				request: $request,
-				userId: (string)$this->session->userSession->getUser()?->getUID(),
+				userId: (string)$this->userSession->getUser()?->getUID(),
 				bulk: $bulk
 			);
 		} catch (ResolutionRefused $refused) {
 			return ['status' => $refused->status, 'error' => $refused->getMessage()];
 		} catch (Throwable $e) {
-			$this->session->logger->warning(
+			$this->logger->warning(
 				message: '[SyncRecordsController] Resolving record '.$recordId.' failed: '.$e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -212,7 +218,7 @@ class SyncRecordsController extends Controller {
 	 * @return Source|JSONResponse
 	 */
 	private function source(int $id): Source|JSONResponse {
-		if ($this->session->userSession->getUser() === null) {
+		if ($this->userSession->getUser() === null) {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
@@ -222,4 +228,18 @@ class SyncRecordsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		}
 	}//end source()
+
+	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * @return bool
+	 */
+	private function isAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isAdmin()
 }//end class

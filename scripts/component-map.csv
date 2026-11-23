@@ -3786,7 +3786,7 @@ Db/SearchTrailMapperInterface.php,,Db,,,,,Compliance
 Db/SearchTrailOutcome.php,,Db,,,,,Compliance
 Db/SequenceMapperInterface.php,,Db,,,,,Processes
 Db/SoftDeletion.php,,Db,,,,,Kernel
-Db/SourceMapperInterface.php,,Db,,,,,Core
+Db/SourceMapperInterface.php,,Db,,,,,Kernel
 Db/StateChangePeriod.php,,Db,,,,,Core
 Db/StateHistory/TrackedProperty.php,,Db,,,,,Core
 Db/StateHistoryMapperInterface.php,,Db,,,,,Core
@@ -4664,3 +4664,8 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/SourceHarvesterInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/SourceHarvestRefused.php,,Kernel,,,,,Kernel
+Kernel/Contracts/StoredFlowWriterInterface.php,,Kernel,,,,,Kernel
+Service/Sync/SourceHarvester.php,,Service,,,,,Integrations
+Service/Flow/StoredFlowWriter.php,,Service,,,,,Processes

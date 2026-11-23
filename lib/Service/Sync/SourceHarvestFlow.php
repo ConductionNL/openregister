@@ -26,17 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sync;
 
-use DateTime;
-use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapperInterface;
-use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\Flow\FlowPublishOptions;
-use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
-use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Kernel\Contracts\SourceHarvesterInterface;
+use OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface;
 
 /**
  * The flow of a scheduled source: schedule and manual triggers into the harvest node, into end.
@@ -58,16 +50,10 @@ class SourceHarvestFlow {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapperInterface           $mapper    The flow table.
-	 * @param FlowVersionServiceInterface   $versions  Publishes a flow's head.
-	 * @param FlowServiceInterface          $flows     Deletes a flow with its runs and versions.
-	 * @param FlowTriggerValidatorInterface $validator Validates the schedule trigger (cron and runAs).
+	 * @param StoredFlowWriterInterface $store Writes, republishes and removes the flow (Processes).
 	 */
 	public function __construct(
-		private readonly FlowMapperInterface $mapper,
-		private readonly FlowVersionServiceInterface $versions,
-		private readonly FlowServiceInterface $flows,
-		private readonly FlowTriggerValidatorInterface $validator,
+		private readonly StoredFlowWriterInterface $store,
 	) {
 	}//end __construct()
 
@@ -97,28 +83,12 @@ class SourceHarvestFlow {
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function sync(Source $source, string $owner): ?string {
-		$stored = $this->stored(source: $source);
 		if (self::wanted(source: $source) === false) {
-			if ($stored !== null) {
-				$this->flows->deleteStored(flow: $stored);
-			}
-
+			$this->store->remove(uuid: (string)$source->getUuid());
 			return null;
 		}
 
-		if ($stored === null) {
-			return $this->create(source: $source, owner: $owner);
-		}
-
-		if ($this->graphMatches(source: $source, flow: $stored) === true) {
-			$this->apply(source: $source, flow: $stored, owner: (string)($stored->getOwner() ?? $owner));
-			$this->mapper->update($stored);
-			return (string)$stored->getUuid();
-		}
-
-		$this->republish(source: $source, flow: $stored, owner: (string)($stored->getOwner() ?? $owner));
-
-		return (string)$stored->getUuid();
+		return $this->store->put(uuid: (string)$source->getUuid(), definition: self::definition(source: $source), owner: $owner);
 	}//end sync()
 
 	/**
@@ -131,10 +101,7 @@ class SourceHarvestFlow {
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function remove(Source $source): void {
-		$stored = $this->stored(source: $source);
-		if ($stored !== null) {
-			$this->flows->deleteStored(flow: $stored);
-		}
+		$this->store->remove(uuid: (string)$source->getUuid());
 	}//end remove()
 
 	/**
@@ -154,7 +121,7 @@ class SourceHarvestFlow {
 				'config' => ['cron' => trim((string)$source->getSchedule()), 'runAs' => trim((string)$source->getRunAs())],
 			],
 			['id' => 'manual', 'type' => 'openregister.trigger-manual', 'config' => []],
-			['id' => 'harvest', 'type' => HarvestSourceNode::TYPE, 'config' => ['sourceId' => (string)$source->getUuid()]],
+			['id' => 'harvest', 'type' => SourceHarvesterInterface::NODE_TYPE, 'config' => ['sourceId' => (string)$source->getUuid()]],
 			['id' => 'end', 'type' => 'openregister.end', 'config' => []],
 		];
 	}//end nodes()
@@ -175,104 +142,28 @@ class SourceHarvestFlow {
 	}//end edges()
 
 	/**
-	 * The source's stored flow, or null.
+	 * The flow definition of a scheduled source.
 	 *
 	 * @param Source $source The source.
 	 *
-	 * @return Flow|null
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
-	private function stored(Source $source): ?Flow {
-		$uuid = (string)$source->getUuid();
-		if ($uuid === '') {
-			return null;
-		}
-
-		try {
-			return $this->mapper->findByUuid(uuid: $uuid);
-		} catch (DoesNotExistException) {
-			return null;
-		}
-	}//end stored()
-
-	/**
-	 * Whether the stored flow already runs this graph.
-	 *
-	 * @param Source $source The source.
-	 * @param Flow   $flow   The stored flow.
-	 *
-	 * @return bool
-	 */
-	private function graphMatches(Source $source, Flow $flow): bool {
-		return $flow->getNodes() === self::nodes(source: $source)
-			&& $flow->getEdges() === self::edges()
-			&& $flow->getCron() === trim((string)$source->getSchedule());
-	}//end graphMatches()
-
-	/**
-	 * Copy the source onto a flow.
-	 *
-	 * @param Source $source The source.
-	 * @param Flow   $flow   The flow.
-	 * @param string $owner  The flow's owner.
-	 *
-	 * @return void
-	 */
-	private function apply(Source $source, Flow $flow, string $owner): void {
+	public static function definition(Source $source): array {
 		$application = trim((string)$source->getApplication());
 		if ($application === '') {
 			$application = self::DEFAULT_APP;
 		}
 
-		$flow->setName('Harvest: '.(string)($source->getTitle() ?? $source->getUuid()));
-		$flow->setApp($application);
-		$flow->setTrigger(Flow::TRIGGER_SCHEDULE);
-		$flow->setCron(trim((string)$source->getSchedule()));
-		$flow->setNodes(self::nodes(source: $source));
-		$flow->setEdges(self::edges());
-		$flow->setEnabled($source->getSyncEnabled() !== false);
-		$flow->setOwner($owner);
-		$flow->setOrganisation($source->getOrganisation());
-		$flow->setUpdated(new DateTime());
-	}//end apply()
-
-	/**
-	 * Insert the source's flow and publish its first version.
-	 *
-	 * @param Source $source The source.
-	 * @param string $owner  The flow's owner.
-	 *
-	 * @return string The flow's uuid.
-	 */
-	private function create(Source $source, string $owner): string {
-		$flow = new Flow();
-		$flow->setUuid((string)$source->getUuid());
-		$flow->setCreated(new DateTime());
-		$this->apply(source: $source, flow: $flow, owner: $owner);
-		$this->validator->validate(flow: $flow);
-
-		$stored = $this->mapper->insert($flow);
-		$this->versions->publish(flow: $stored, options: new FlowPublishOptions(publishedBy: $owner));
-
-		return (string)$flow->getUuid();
-	}//end create()
-
-	/**
-	 * Write a changed graph as the flow's next published version.
-	 *
-	 * @param Source $source The source.
-	 * @param Flow   $flow   The stored flow.
-	 * @param string $owner  The flow's owner.
-	 *
-	 * @return void
-	 */
-	private function republish(Source $source, Flow $flow, string $owner): void {
-		if ($flow->getLifecycleStatus() === FlowVersion::STATUS_PUBLISHED) {
-			$this->versions->createDraft(flow: $flow);
-		}
-
-		$this->apply(source: $source, flow: $flow, owner: $owner);
-		$this->validator->validate(flow: $flow);
-		$this->mapper->update($flow);
-		$this->versions->publish(flow: $flow, options: new FlowPublishOptions(publishedBy: $owner));
-	}//end republish()
+		return [
+			'name' => 'Harvest: '.(string)($source->getTitle() ?? $source->getUuid()),
+			'app' => $application,
+			'cron' => trim((string)$source->getSchedule()),
+			'nodes' => self::nodes(source: $source),
+			'edges' => self::edges(),
+			'enabled' => $source->getSyncEnabled() !== false,
+			'organisation' => $source->getOrganisation(),
+		];
+	}//end definition()
 }//end class
