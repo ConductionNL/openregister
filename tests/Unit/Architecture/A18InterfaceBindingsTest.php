@@ -83,13 +83,8 @@ final class A18InterfaceBindingsTest extends TestCase {
 		PartyService::class => [
 			'Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php',
 			'Service/ExampleSet/ExampleSetAppointments.php',
-			'Service/ExampleSet/ExampleSetAuditEntries.php',
 			'Service/ExampleSet/ExampleSetCasePlans.php',
-			'Service/ExampleSet/ExampleSetDeckCards.php',
-			'Service/ExampleSet/ExampleSetEmailLinks.php',
-			'Service/ExampleSet/ExampleSetGrants.php',
 			'Service/ExampleSet/ExampleSetParties.php',
-			'Service/ExampleSet/ExampleSetTalkConversations.php',
 			'Service/ProcessesServiceBindings.php',
 		],
 	];
