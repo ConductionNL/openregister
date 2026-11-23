@@ -48,7 +48,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUser;
 use OCP\IUserManager;
 use RuntimeException;
@@ -267,8 +266,6 @@ class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNode
 	 * @throws RuntimeException When the object cannot be read or the entry does not exist.
 	 *
 	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-rule-parity/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function trailFor(IUser $owner, string $object, ?string $entry): array {
 		$filters = [];
@@ -280,10 +277,8 @@ class AuditTrailNode extends ObjectNodeBase implements IFlowNode, AuditTrailNode
 			$logs = $this->objects->runAs(
 				$owner,
 				function () use ($object, $filters): array {
-					$found = WriteCause::asLookup(fn () => $this->objects->find(id: $object));
-					if ($found === null) {
-						throw new RuntimeException('not found');
-					}
+					// A lookup, not a person opening the record: read without an audit row.
+					$found = $this->objects->findSilent(id: $object);
 
 					return $this->objects->getLogs(uuid: (string)$found->getUuid(), filters: $filters);
 				}

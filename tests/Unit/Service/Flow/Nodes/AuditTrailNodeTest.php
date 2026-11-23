@@ -33,7 +33,6 @@ use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
-use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -154,7 +153,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testTheTrailLandsOnTheItemReadAsTheActingIdentity(): void {
-		$this->objects->expects($this->once())->method('find')->with(self::UUID)->willReturn($this->entity());
+		$this->objects->expects($this->once())->method('findSilent')->with(self::UUID)->willReturn($this->entity());
 		$this->objects->expects($this->once())->method('getLogs')->with(self::UUID, [])
 			->willReturn([$this->log(['uuid' => 'e1', 'action' => 'create']), $this->log(['uuid' => 'e2', 'action' => 'update'])]);
 
@@ -170,20 +169,12 @@ class AuditTrailNodeTest extends TestCase {
 		$this->assertSame(['alice'], $this->actedAs);
 	}
 
-	public function testTheObjectReadIsALookupNotAPersonOpeningIt(): void {
-		WriteCause::reset();
-		$causes = [];
-		$this->objects->method('find')->willReturnCallback(
-			function () use (&$causes): ObjectEntity {
-				$causes[] = WriteCause::current()['cause'];
-				return $this->entity();
-			}
-		);
+	public function testTheObjectReadIsALookupThatWritesNoAuditRow(): void {
+		$this->objects->expects($this->never())->method('find');
+		$this->objects->expects($this->once())->method('findSilent')->with(self::UUID)->willReturn($this->entity());
 		$this->objects->method('getLogs')->willReturn([]);
 
 		$this->node->execute($this->call(['object' => '{{id}}']));
-
-		$this->assertSame([WriteCause::LOOKUP], $causes);
 	}
 
 	public function testTheFormOffersExactlyTheConfigKeysWithTheObjectRequired(): void {
@@ -196,7 +187,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testOneEntryIsReturnedUnderTheNamedOutput(): void {
-		$this->objects->method('find')->willReturn($this->entity());
+		$this->objects->method('findSilent')->willReturn($this->entity());
 		$this->objects->expects($this->once())->method('getLogs')->with(self::UUID, ['uuid' => 'e2'])
 			->willReturn([$this->log(['uuid' => 'e2', 'action' => 'update'])]);
 
@@ -207,7 +198,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testAMissingEntryFailsTheStepInsteadOfCompletingEmpty(): void {
-		$this->objects->method('find')->willReturn($this->entity());
+		$this->objects->method('findSilent')->willReturn($this->entity());
 		$this->objects->method('getLogs')->willReturn([]);
 
 		$this->expectException(RuntimeException::class);
@@ -216,7 +207,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testAnObjectTheIdentityCannotReadFailsAndItsTrailIsNeverRead(): void {
-		$this->objects->method('find')->willThrowException(new DoesNotExistException('Object not found'));
+		$this->objects->method('findSilent')->willThrowException(new DoesNotExistException('Object not found'));
 		$this->objects->expects($this->never())->method('getLogs');
 
 		$this->expectException(RuntimeException::class);
@@ -224,16 +215,8 @@ class AuditTrailNodeTest extends TestCase {
 		$this->node->execute($this->call(['object' => '{{id}}']));
 	}
 
-	public function testAFindReturningNullFailsAndTheTrailIsNeverRead(): void {
-		$this->objects->method('find')->willReturn(null);
-		$this->objects->expects($this->never())->method('getLogs');
-
-		$this->expectException(RuntimeException::class);
-		$this->node->execute($this->call(['object' => '{{id}}']));
-	}
-
 	public function testAnObjectTemplateThatRendersEmptyFailsBeforeAnyRead(): void {
-		$this->objects->expects($this->never())->method('find');
+		$this->objects->expects($this->never())->method('findSilent');
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage("The audit-trail step's object could not be rendered from this item.");
@@ -241,7 +224,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testARunWithoutAnActingIdentityIsRefused(): void {
-		$this->objects->expects($this->never())->method('find');
+		$this->objects->expects($this->never())->method('findSilent');
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('no acting identity');
@@ -249,7 +232,7 @@ class AuditTrailNodeTest extends TestCase {
 	}
 
 	public function testADisabledOrUnknownIdentityIsRefused(): void {
-		$this->objects->expects($this->never())->method('find');
+		$this->objects->expects($this->never())->method('findSilent');
 
 		foreach (['gone', 'nobody'] as $uid) {
 			try {
