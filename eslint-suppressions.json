@@ -774,7 +774,7 @@
   },
   "src/store/modules/avg.js": {
     "no-console": {
-      "count": 22
+      "count": 1
     }
   },
   "src/store/modules/configuration.js": {
