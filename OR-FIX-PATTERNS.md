@@ -434,3 +434,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after moving a migration step to a new version, phpunit dies 'Cannot declare class <OldName>, because the name is already in use in <NewName>.php'; check-migration-version-bump counts one migration too many.
 - Cause: git mv stages the old content; a later git checkout -- <new file> (e.g. undoing a break-the-subject check) restores the staged pre-sed body with the old class name.
 - Fix: re-run the sed on the new file and git add it; undo a break check with the reverse sed, not checkout. Also inherited on main 223a653f2: AppHost/BootstrapTest::testSettingsPlaneRegistrationIsLazy (process-isolated, OCP prepend lost), FileVersioningHandlerGoldenTest (7 errors). #10518 moved to Version1Date20261114100018 (83d66ed4); #10499 now the only holder of ...100000.
+
+## package-lock.json changed without sbom.cdx.json (or-fix-12)
+- Symptom: none in the unit suite; integrate.sh auto-parks the PR 'precheck-park: sbom: package-lock.json changed without sbom.cdx.json' (dependabot npm bumps, build PRs adding an npm package such as leaflet-draw).
+- Cause: the integrator's sbom gate requires every lockfile change against main to come with a matching sbom.cdx.json.
+- Fix: after merging main run `bash ~/q/bin/regen-sbom.sh <checkout>` (then --check prints 'current'), commit sbom.cdx.json alone. Scan your share with `git diff --name-only origin/main...pr<N> -- package-lock.json composer.lock sbom.cdx.json`. (#10632 937960a2, #10552 29bba216)
