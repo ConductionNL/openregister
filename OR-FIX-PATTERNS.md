@@ -649,3 +649,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Inherited red on main 6e870ca5: ComponentDependencyRulesTest 4 Files -> Core edges (or-fix-1)
 - Symptom: every merged PR lists DecisionMetadataEdit/EntityMentionDecisionsInterface -> Db/EntityRelation and Files ManagedFiles -> Service/File/DocumentStore, ManagedFileOwnerLookup (Files -> Core).
 - Cause: red on plain main 6e870ca5 (from 9272bccc6 Files-owned ports); not the PR's. Compare the edge list to these four before fixing anything.
+## searchObjectsBySlug: Unknown named parameter $registerSlug (or-fix-4)
+- Symptom: a PR's lib call $objects->searchObjectsBySlug(registerSlug:, schemaSlug:, ...) fails at runtime (repair step logs 'Unknown named parameter $registerSlug'); phpstan on the file may stay quiet; tests mocking ->with('reg','schema',...) then fail on the expected output.
+- Cause: main's Kernel ObjectOperationsInterface::searchObjectsBySlug takes RegisterSchemaSlugs $target (lib/Contract/RegisterSchemaSlugs: register, schema).
+- Fix: target: new RegisterSchemaSlugs(register: X, schema: Y); tests ->with(new RegisterSchemaSlugs(...), ...) + #[UsesClass] (#10154). Look for it with grep -rn 'registerSlug:' lib on the merge.
