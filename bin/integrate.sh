@@ -486,15 +486,14 @@ phase_verdict() {
 	say "RED tree $T10 prs $N front=$front: $line"; sed 's/^/FAIL /' "$RUN/failures.txt"; exit 6
 }
 
-# PR state goes through GraphQL: its budget is separate from the REST quota every lane shares.
-gql_pr() { gh api graphql -f query="query{repository(owner:\"${R%/*}\",name:\"${R#*/}\"){pullRequest(number:$1){$2}}}" -q ".data.repository.pullRequest.$3" 2>/dev/null; }
-merged_now() { gql_pr "$1" merged merged; }
-# Prints the numbers among "$@" that GitHub does not yet mark merged, in one query.
+merged_now() { gh api "repos/$R/pulls/$1" --jq .merged 2>/dev/null; }
+# Prints the numbers among "$@" that GitHub does not yet mark merged (REST: cloud sandboxes refuse GraphQL).
 unmerged_of() {
-	local q="" n
-	for n in "$@"; do q+="p$n:pullRequest(number:$n){number merged} "; done
-	gh api graphql -f query="query{repository(owner:\"${R%/*}\",name:\"${R#*/}\"){$q}}" \
-		-q '.data.repository[]|select(.merged!=true)|.number' 2>/dev/null || printf '%s\n' "$@"
+	local n m
+	for n in "$@"; do
+		m=$(gh api "repos/$R/pulls/$n" --jq .merged 2>/dev/null)
+		[ "$m" = true ] || echo "$n"
+	done
 }
 
 # Lands the whole tested tree with one fast-forward push of T onto main. T is the chain of
@@ -555,7 +554,7 @@ phase_merge() {
 			python3 -c "import time;time.sleep(20)"
 		done
 		[ "$m" = true ] || { say "MERGE-FAILED #$n: ${msg:0:160}"; st_log "MERGE-FAILED #$n: ${msg:0:160}"; exit 6; }
-		mc=$(gql_pr "$n" 'mergeCommit{oid}' mergeCommit.oid)
+		mc=$(gh api "repos/$R/pulls/$n" --jq .merge_commit_sha 2>/dev/null)
 		git -C "$C" fetch -q origin main
 		p1=$(git -C "$C" rev-parse "$mc^1" 2>/dev/null); p2=$(git -C "$C" rev-parse "$mc^2" 2>/dev/null)
 		if [ "$p1" != "$expected" ] || [ "$p2" != "$head" ] || [ "$(git -C "$C" rev-parse "$mc^{tree}")" != "$tree" ]; then
