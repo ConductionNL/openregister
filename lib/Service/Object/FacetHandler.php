@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
 use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
@@ -92,7 +94,7 @@ class FacetHandler {
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
-	 * @param FacetWeekNumbering|null $weekNumbering Which calendar's first week the week buckets follow; null keeps ISO weeks.
+	 * @param FacetWeekNumberingInterface|null $weekNumbering Which calendar's first week the week buckets follow; null keeps ISO weeks.
 	 *
 	 * @return void
 	 *
@@ -107,7 +109,7 @@ class FacetHandler {
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
-		private readonly ?FacetWeekNumbering $weekNumbering = null,
+		private readonly ?FacetWeekNumberingInterface $weekNumbering = null,
 	) {
 		$this->unifiedObjectMapper = $lookups->unifiedObjectMapper;
 		$this->schemaMapper        = $lookups->schemaMapper;
@@ -283,13 +285,13 @@ class FacetHandler {
 	 *
 	 * @param array                $facetQuery      Query for facet calculation (without pagination).
 	 * @param array                $facetableConfig Facetable field configuration from schema discovery.
-	 * @param FacetWeekLabels|null $weeks           Relabels week buckets; null keeps ISO weeks.
+	 * @param FacetWeekRelabelInterface|null $weeks Relabels week buckets; null keeps ISO weeks.
 	 *
 	 * @return array Facets with performance metadata.
 	 *
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
-	private function calculateFacets(array $facetQuery, array $facetableConfig, ?FacetWeekLabels $weeks): array {
+	private function calculateFacets(array $facetQuery, array $facetableConfig, ?FacetWeekRelabelInterface $weeks): array {
 		return (new FacetCalculation(mapper: $this->unifiedObjectMapper, logger: $this->logger, weeks: $weeks))
 			->calculate(facetQuery: $facetQuery, facetableConfig: $facetableConfig);
 	}//end calculateFacets()

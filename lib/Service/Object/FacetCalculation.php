@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,7 +43,7 @@ final class FacetCalculation {
 	 *
 	 * @param MagicObjectSearchInterface $mapper The object mapper.
 	 * @param LoggerInterface      $logger The logger.
-	 * @param FacetWeekLabels|null $weeks  Relabels week buckets by a declared first week; null keeps ISO weeks.
+	 * @param FacetWeekRelabelInterface|null $weeks  Relabels week buckets by a declared first week; null keeps ISO weeks.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
@@ -50,7 +51,7 @@ final class FacetCalculation {
 	public function __construct(
 		private readonly MagicObjectSearchInterface $mapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?FacetWeekLabels $weeks = null,
+		private readonly ?FacetWeekRelabelInterface $weeks = null,
 	) {
 	}//end __construct()
 

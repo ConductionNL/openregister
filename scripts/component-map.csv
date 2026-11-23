@@ -1263,6 +1263,8 @@ Kernel/Contracts/ContactMatcherInterface.php,11,Kernel,Kernel,Kernel/Contracts/C
 Kernel/Contracts/EmbeddingGeneratorInterface.php,6,Kernel,Kernel,Kernel/Contracts/EmbeddingGeneratorInterface.php,0,,Kernel
 Kernel/Contracts/ExampleSetInstallerInterface.php,8,Kernel,Kernel,Kernel/Contracts/ExampleSetInstallerInterface.php,0,,Kernel
 Kernel/Contracts/FlowTimerControlInterface.php,21,Kernel,Kernel,Kernel/Contracts/FlowTimerControlInterface.php,0,,Kernel
+Kernel/Contracts/FacetWeekNumberingInterface.php,9,Kernel,Kernel,Kernel/Contracts/FacetWeekNumberingInterface.php,0,,Kernel
+Kernel/Contracts/FacetWeekRelabelInterface.php,10,Kernel,Kernel,Kernel/Contracts/FacetWeekRelabelInterface.php,0,,Kernel
 Kernel/Contracts/FlowTimerInterface.php,10,Kernel,Kernel,Kernel/Contracts/FlowTimerInterface.php,0,,Kernel
 Kernel/Contracts/GitHubClientInterface.php,41,Kernel,Kernel,Kernel/Contracts/GitHubClientInterface.php,0,,Kernel
 Kernel/Contracts/McpCatalogueInterface.php,8,Kernel,Kernel,Kernel/Contracts/McpCatalogueInterface.php,0,,Kernel
@@ -2767,8 +2769,8 @@ Service/Object/FacetHandler.php,105,Service,Service,Service/Object/FacetHandler.
 Service/Object/FacetListing.php,160,Service,Service,Service/Object/FacetListing.php,0,,Core
 Service/Object/FacetResponseCache.php,132,Service,Service,Service/Object/FacetResponseCache.php,0,,Core
 Service/Object/FacetRun.php,13,Service,Service,Service/Object/FacetRun.php,0,,Core
-Service/Object/FacetWeekLabels.php,56,Service,Service,Service/Object/FacetWeekLabels.php,0,,Core
-Service/Object/FacetWeekNumbering.php,49,Service,Service,Service/Object/FacetWeekNumbering.php,0,,Core
+Service/Object/FacetWeekLabels.php,56,Service,Service,Service/Object/FacetWeekLabels.php,0,,Processes
+Service/Object/FacetWeekNumbering.php,49,Service,Service,Service/Object/FacetWeekNumbering.php,0,,Processes
 Service/Object/FacetableFieldDiscovery.php,120,Service,Service,Service/Object/FacetableFieldDiscovery.php,0,,Core
 Service/Object/FileWriteGuard.php,22,Service,Service,Service/Object/FileWriteGuard.php,0,465,Core
 Service/Object/GetObject.php,183,Service,Service,Service/Object/GetObject.php,0,,Core

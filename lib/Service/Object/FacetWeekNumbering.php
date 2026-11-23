@@ -26,7 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarWeekNumbering;
 use OCA\OpenRegister\Service\Flow\Timer\RecordTypeCalendars;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -42,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
  */
-class FacetWeekNumbering {
+class FacetWeekNumbering implements FacetWeekNumberingInterface {
 
 	/**
 	 * Constructor.
@@ -65,11 +67,11 @@ class FacetWeekNumbering {
 	 *
 	 * @param array<int, mixed> $schemas The schemas the facet query reads.
 	 *
-	 * @return FacetWeekLabels|null
+	 * @return FacetWeekRelabelInterface|null
 	 *
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
-	public function labelsFor(array $schemas): ?FacetWeekLabels {
+	public function labelsFor(array $schemas): ?FacetWeekRelabelInterface {
 		$slug = self::sharedCalendar(schemas: $schemas);
 		try {
 			$calendar = $this->calendars->resolve(calendarSlug: $slug, organisation: null);
@@ -98,7 +100,7 @@ class FacetWeekNumbering {
 	private static function sharedCalendar(array $schemas): ?string {
 		$shared = null;
 		foreach ($schemas as $schema) {
-			if ($schema instanceof Schema === false) {
+			if ($schema instanceof SchemaInterface === false) {
 				return null;
 			}
 

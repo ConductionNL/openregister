@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
+use OCA\OpenRegister\Service\Object\FacetWeekNumbering;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
@@ -337,6 +339,16 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
 
 	/**
+	 * Core's facet week relabelling is answered by the Processes calendar numbering.
+	 *
+	 * @return void
+	 */
+	public function testTheFacetWeekNumberingPortIsAnsweredByTheWorkingCalendars(): void {
+		self::assertSame(expected: FacetWeekNumbering::class, actual: ($this->aliases[FacetWeekNumberingInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FacetWeekNumbering::class, FacetWeekNumberingInterface::class, true));
+	}//end testTheFacetWeekNumberingPortIsAnsweredByTheWorkingCalendars()
+
+	/**
 	 * The three Core render ports are answered by the Processes services that keep the state.
 	 *
 	 * @return void
@@ -415,6 +427,7 @@ final class FlowWiringTest extends TestCase {
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
+				FacetWeekNumberingInterface::class         => FacetWeekNumbering::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,
 				WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,

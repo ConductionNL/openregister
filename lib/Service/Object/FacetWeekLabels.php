@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 
 /**
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
  *
  * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
  */
-final class FacetWeekLabels {
+final class FacetWeekLabels implements FacetWeekRelabelInterface {
 
 	/**
 	 * Constructor.
