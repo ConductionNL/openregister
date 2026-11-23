@@ -26,12 +26,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageStoreInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageSweep;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
+use OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -40,6 +42,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ClaimAttempt
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\OutboundMessage
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery
  */
 class ScheduledMessageSweepTest extends TestCase {
 
@@ -115,13 +118,13 @@ class ScheduledMessageSweepTest extends TestCase {
 	}//end store()
 
 	/**
-	 * A dispatcher answering as given, recording each call.
+	 * The delivery over a dispatcher answering as given, recording each call.
 	 *
 	 * @param array<string, mixed>|RuntimeException $answer What it answers or throws.
 	 *
-	 * @return MessageDispatcherInterface
+	 * @return ScheduledMessageDeliveryInterface
 	 */
-	private function dispatcher(array|RuntimeException $answer): MessageDispatcherInterface {
+	private function dispatcher(array|RuntimeException $answer): ScheduledMessageDeliveryInterface {
 		$dispatcher = $this->createMock(MessageDispatcherInterface::class);
 		$dispatcher->method('dispatch')->willReturnCallback(function (string $source, OutboundMessage $message) use ($answer): array {
 			$this->dispatched[] = ['source' => $source, 'path' => $message->path, 'body' => $message->body];
@@ -132,7 +135,7 @@ class ScheduledMessageSweepTest extends TestCase {
 			return $answer;
 		});
 
-		return $dispatcher;
+		return new ScheduledMessageDelivery(dispatcher: $dispatcher);
 	}//end dispatcher()
 
 	private function attempt(string $worker = 'w1'): ClaimAttempt {

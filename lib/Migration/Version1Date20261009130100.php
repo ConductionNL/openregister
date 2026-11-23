@@ -29,14 +29,13 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops the favourites table.
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
  */
-class Version1Date20261009130100 extends SimpleMigrationStep {
+class Version1Date20261009130100 extends TargetedMigrationStep {
 
 	/**
 	 * Drop `openregister_favourites` when it is there.
@@ -51,7 +50,7 @@ class Version1Date20261009130100 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(Version1Date20261009130000::FAVOURITES_TABLE) === false) {
 			return $schema;
@@ -61,5 +60,5 @@ class Version1Date20261009130100 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

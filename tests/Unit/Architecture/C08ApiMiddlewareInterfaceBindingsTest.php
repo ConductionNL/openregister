@@ -30,7 +30,8 @@ use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
@@ -58,12 +59,12 @@ final class C08ApiMiddlewareInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ApiCallRecorder::class => [ApiCallRecorderInterface::class, ContractBindings::class],
-		ApiVersionNegotiator::class => [ApiVersionNegotiatorInterface::class, ContractBindings::class],
-		CallerPolicy::class => [CallerPolicyInterface::class, ContractBindings::class],
-		CallerRateLimiter::class => [CallerRateLimiterInterface::class, ContractBindings::class],
-		OasRequestValidator::class => [OasRequestValidatorInterface::class, ContractBindings::class],
-		ProblemDetailsBuilder::class => [ProblemDetailsBuilderInterface::class, ContractBindings::class],
+		ApiCallRecorder::class => [ApiCallRecorderInterface::class, PlatformServiceRegistrar::class],
+		ApiVersionNegotiator::class => [ApiVersionNegotiatorInterface::class, CoreServiceBindings::class],
+		CallerPolicy::class => [CallerPolicyInterface::class, PlatformServiceRegistrar::class],
+		CallerRateLimiter::class => [CallerRateLimiterInterface::class, PlatformServiceRegistrar::class],
+		OasRequestValidator::class => [OasRequestValidatorInterface::class, CoreServiceBindings::class],
+		ProblemDetailsBuilder::class => [ProblemDetailsBuilderInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
