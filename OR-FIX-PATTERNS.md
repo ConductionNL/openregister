@@ -670,3 +670,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/<Area>/X.php -> lib/Service/<OtherArea>/Y.php (<Area> -> Core)' beyond main's own edges.
 - Cause: the PR's code names another component's class; main only allows edges into the Kernel component, which is lib/Kernel/Contracts/*.php at the TOP level (Kernel/Contracts/Core/ etc. count as that area).
 - Fix: add a narrow interface in lib/Kernel/Contracts/ (csv row 'Kernel/Contracts/X.php,,Kernel,Kernel,,,,Kernel'), let the provider implement/extend it, bind it in its bindings, inject via setter/registrar. git add new files before testing: component-deps.py reads tracked files only, else testPhpReaderAgreesWithTheScript fails. (#10427)
+
+## l10n:selfcheck 'serializer round-trip byte-exact' FAIL after a PR adds keys (or-fix-3)
+- Symptom: npm run l10n:selfcheck -- <loc> adds 'FAIL serializer round-trip byte-exact' vs main; often with one new 'identical, no recorded reason' in parity.
+- Cause: the PR appended keys to l10n/<loc>.js by hand, not in serializeJs key order.
+- Fix: node -e: c=loadJsTranslations(f); write serializeJs({app:c.app,translations:c.translations,pluralForm:c.pluralForm}) (scripts/l10n/lib.js) for each touched bundle; diff is order only. A genuine cognate goes in scripts/l10n/locales/<loc>.json "cognates" (see #11023).
