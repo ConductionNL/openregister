@@ -485,3 +485,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Kernel/Contracts/Configuration/PlatformFacingContractsTest::testExactlyTheOperationsControllersCarryTheMarker, actual list has one more Operations*Controller.
 - Cause: main pins every lib/Controller class implementing Kernel\Contracts\Configuration\MaintenanceReachableInterface; a PR adding an operations controller (meant to stay reachable in maintenance mode, also listed in F09 and MaintenanceModeMiddlewareTest) is not in it.
 - Fix: when the PR lists the controller in F09ControllerBoundaryTest/MaintenanceModeMiddlewareTest too, add it to the expected list (sorted) and the docblock count (#10493 07823483). Otherwise it is a product question: comment, do not add.
+## Migration name clash scan, 23 Nov (or-fix-18)
+- Open PRs adding the same lib/Migration class: #10513/#10568 (Version1Date20261114170000), #10154/#10526 (...20261114180000); #10247/#10398 resolved by moving #10398 to ...20261121180018 (562ec796). #10398 and #10518 both bump info.xml to 2.2.0-dev.4: whichever lands second needs dev.5.
+- Trap: check-migration-version-bump.php counts committed AND working-tree additions, so after an uncommitted git mv it reports one migration too many; commit before rechecking.
