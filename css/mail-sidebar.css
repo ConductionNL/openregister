@@ -115,9 +115,10 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	inset-inline-end: calc(var(--or-mail-panel-width, 400px) + 16px);
 }
 
+/* Important: the theme's button background outranks this rule otherwise. */
 #openregister-mail-sidebar .or-mail-connections-button[aria-pressed='true'] {
 	border-color: var(--color-primary-element-light-text, var(--color-primary-element));
-	background: var(--color-primary-element-light);
+	background: var(--color-primary-element-light) !important;
 	color: var(--color-primary-element-light-text, var(--color-primary-element));
 }
 
