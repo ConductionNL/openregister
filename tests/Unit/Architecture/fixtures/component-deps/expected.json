@@ -1,0 +1,24 @@
+{
+ "edges": [
+  "lib/Alpha/Policy.php -> lib/Kernel/Contracts/Clock.php",
+  "lib/Alpha/Service.php -> lib/Alpha/Policy.php",
+  "lib/Alpha/Service.php -> lib/Kernel/Contracts/Clock.php",
+  "lib/Kernel/Contracts/Clock.php -> lib/Alpha/Policy.php"
+ ],
+ "forbidden_edges": [
+  "lib/Alpha/Service.php -> lib/Alpha/Policy.php",
+  "lib/Kernel/Contracts/Clock.php -> lib/Alpha/Policy.php"
+ ],
+ "exposed": [
+  "lib/Alpha/Policy.php",
+  "lib/Kernel/Contracts/Clock.php"
+ ],
+ "exposed_loc": 14,
+ "lines": {
+  "Alpha -> Beta": 1,
+  "Alpha -> Kernel": 1,
+  "Beta -> Kernel": 1,
+  "Kernel -> Beta": 1
+ },
+ "violation_degree": 0.5
+}
