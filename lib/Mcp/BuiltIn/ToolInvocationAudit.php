@@ -48,9 +48,20 @@ final class ToolInvocationAudit {
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
-		private readonly string $source,
+		private readonly string $source='ToolInvocationAudit',
 	) {
 	}//end __construct()
+
+	/**
+	 * The same audit writer, naming another class in its failure log.
+	 *
+	 * @param string $source Short class name used in the log message.
+	 *
+	 * @return self The writer for that source.
+	 */
+	public function withSource(string $source): self {
+		return new self(auditTrailMapper: $this->auditTrailMapper, logger: $this->logger, source: $source);
+	}//end withSource()
 
 	/**
 	 * Run the invocation and audit its outcome.

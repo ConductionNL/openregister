@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -28,6 +29,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedObject
  * @uses \OCA\OpenRegister\Db\AuditTrail\ToolInvocation
  * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationDigest
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationAudit
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolAuditTarget
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\AuditedInvocation
+ * @uses \OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationOutcome
  */
 class ToolInvocationRecorderTest extends TestCase
 {
@@ -49,7 +54,7 @@ class ToolInvocationRecorderTest extends TestCase
             )
         )->willReturn(new AuditTrail());
 
-        (new ToolInvocationRecorder($mapper, $this->createMock(LoggerInterface::class)))->record(
+        (self::recorder($mapper, $this->createMock(LoggerInterface::class)))->record(
             'shillinq.vat_return.submit',
             ['returnId' => 'ret-7', 'administrationId' => 'adm-1'],
             ['id' => 'ret-7', 'statusCode' => 'submitted']
@@ -72,7 +77,7 @@ class ToolInvocationRecorderTest extends TestCase
             }
         );
 
-        (new ToolInvocationRecorder($mapper, $this->createMock(LoggerInterface::class)))->record(
+        (self::recorder($mapper, $this->createMock(LoggerInterface::class)))->record(
             'shillinq.dunning.pause',
             ['details' => 'customer says the amount is wrong'],
             ['isError' => true, 'error' => 'not_found', 'message' => 'Administration not found']
@@ -100,6 +105,19 @@ class ToolInvocationRecorderTest extends TestCase
             ['toolId' => 'shillinq.invoice.issue', 'error' => 'db down']
         );
 
-        (new ToolInvocationRecorder($mapper, $logger))->record('shillinq.invoice.issue', [], ['invoice' => []]);
+        (self::recorder($mapper, $logger))->record('shillinq.invoice.issue', [], ['invoice' => []]);
     }//end testAFailedWriteIsLoggedNotThrown()
+
+    /**
+     * The recorder over the built-in providers' audit writer.
+     *
+     * @param AuditTrailMapperInterface $mapper The audit-trail mapper double.
+     * @param LoggerInterface           $logger The logger double.
+     *
+     * @return ToolInvocationRecorder
+     */
+    private static function recorder(AuditTrailMapperInterface $mapper, LoggerInterface $logger): ToolInvocationRecorder
+    {
+        return new ToolInvocationRecorder(new ToolInvocationAudit($mapper, $logger));
+    }//end recorder()
 }//end class

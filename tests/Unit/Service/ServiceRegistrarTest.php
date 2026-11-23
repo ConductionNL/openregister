@@ -37,7 +37,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\RegisterSlugResolver',
 				'OCA\OpenRegister\Contract\RegisterSlugResolverInterface',
 				'OCA\OpenRegister\Contract\ObjectFileReaderInterface',
-				'OCA\OpenRegister\Contract\ToolInvocationRecorderInterface',
 				'OCA\OpenRegister\Service\SchemaImport\SchemaImportService',
 				'OCA\OpenRegister\Service\OrganisationService',
 				'OCA\OpenRegister\Service\UserService',

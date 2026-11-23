@@ -136,4 +136,36 @@ class ToolInvocationAuditCharacterisationTest extends TestCase
 
         $this->assertSame(['ok' => true], $result);
     }//end testFailedWriteIsLoggedAndResultStillReturned()
+
+    /**
+     * withSource() keeps the writer and names the given class in a failed write's log;
+     * the original keeps its own name.
+     *
+     * @return void
+     */
+    public function testWithSourceNamesTheGivenClassInTheLog(): void
+    {
+        $mapper = $this->createMock(AuditTrailMapperInterface::class);
+        $mapper->expects($this->exactly(2))->method('recordToolInvocation')->willThrowException(new RuntimeException('db down'));
+        $messages = [];
+        $logger   = $this->createMock(LoggerInterface::class);
+        $logger->method('error')->willReturnCallback(
+            static function (string $message) use (&$messages): void {
+                $messages[] = $message;
+            }
+        );
+
+        $audit = new ToolInvocationAudit($mapper, $logger);
+        $call  = new AuditedInvocation([], static fn (): array => ['ok' => true], static fn (array $r): array => ['isError' => false]);
+        $audit->withSource('ToolInvocationRecorder')->run(new ToolAuditTarget('app.tool'), $call);
+        $audit->run(new ToolAuditTarget('app.tool'), $call);
+
+        $this->assertSame(
+            [
+                '[ToolInvocationRecorder] Failed to write invocation audit record',
+                '[ToolInvocationAudit] Failed to write invocation audit record',
+            ],
+            $messages
+        );
+    }//end testWithSourceNamesTheGivenClassInTheLog()
 }//end class

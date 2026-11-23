@@ -23,11 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
-use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
-use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Writes an app provider's tool invocation as the same hash-chained record
@@ -39,15 +34,19 @@ use Throwable;
 final class ToolInvocationRecorder implements ToolInvocationRecorderInterface {
 
 	/**
+	 * The built-in providers' audit writer, logging failures under this class.
+	 *
+	 * @var ToolInvocationAudit
+	 */
+	private readonly ToolInvocationAudit $audit;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable hash-chained audit-trail writer.
-	 * @param LoggerInterface           $logger           Logger for a failed audit write.
+	 * @param ToolInvocationAudit $audit The hash-chained invocation audit writer the built-in providers use.
 	 */
-	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(ToolInvocationAudit $audit) {
+		$this->audit = $audit->withSource(source: 'ToolInvocationRecorder');
 	}//end __construct()
 
 	/**
@@ -62,18 +61,17 @@ final class ToolInvocationRecorder implements ToolInvocationRecorderInterface {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function record(string $toolId, array $arguments, array $result): void {
-		try {
-			$this->auditTrailMapper->recordToolInvocation(
-				invocation: new ToolInvocation(
-					toolId: $toolId,
-					paramsDigest: ToolInvocationDigest::paramsDigest(arguments: $arguments),
-					resultSummary: self::summary(result: $result),
-					about: new AuditedObject(objectUuid: ToolInvocationDigest::resultId(result: $result))
-				)
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('[ToolInvocationRecorder] Failed to write invocation audit record', ['toolId' => $toolId, 'error' => $e->getMessage()]);
-		}
+		// The tool already answered: the call hands its result back, and the
+		// writer records the digest, the summary and the result's id, logging
+		// (never throwing) a failed write.
+		$this->audit->run(
+			target: new ToolAuditTarget(toolId: $toolId),
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: static fn (): array => $result,
+				summarise: static fn (array $answer): array => self::summary(result: $answer)
+			)
+		);
 	}//end record()
 
 	/**
