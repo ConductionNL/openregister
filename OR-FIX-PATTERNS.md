@@ -481,3 +481,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a dependabot PR bumping a devDependency (e.g. #10627 @stoplight/spectral-cli) changes package-lock.json without sbom.cdx.json; the sbom gate's name check would park it.
 - Cause: regen-sbom.sh omits dev deps, so after merging main it prints 'unchanged' / --check 'current': there is no real sbom change to commit.
 - Fix: do not fabricate an sbom edit and do not push a bare main merge; leave the PR as is and note it. Precedent: integrator landed dev-only bumps with 'SBOM current' (#7741, #10944).
+## PlatformFacingContractsTest: a PR's new controller carries the maintenance marker (or-fix-13)
+- Symptom: tests/Unit/Kernel/Contracts/Configuration/PlatformFacingContractsTest::testExactlyTheOperationsControllersCarryTheMarker, actual list has one more Operations*Controller.
+- Cause: main pins every lib/Controller class implementing Kernel\Contracts\Configuration\MaintenanceReachableInterface; a PR adding an operations controller (meant to stay reachable in maintenance mode, also listed in F09 and MaintenanceModeMiddlewareTest) is not in it.
+- Fix: when the PR lists the controller in F09ControllerBoundaryTest/MaintenanceModeMiddlewareTest too, add it to the expected list (sorted) and the docblock count (#10493 07823483). Otherwise it is a product question: comment, do not add.
