@@ -71,7 +71,6 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
-use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
@@ -105,7 +104,7 @@ final class ConfigurationServiceRegistrar {
 			'RegisterFolderProvisioner',
 		],
 		'setNoteService' => [\OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class, 'NoteService'],
-		'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
+		'setTaskService' => [\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface::class, 'TaskService'],
 		'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
 		'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
 		'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
@@ -554,7 +553,6 @@ final class ConfigurationServiceRegistrar {
 			logger: $container->get('Psr\Log\LoggerInterface'),
 			db: $container->get('OCP\IDBConnection'),
 			container: $container,
-			appName: 'openregister',
 			validOpsHandler: $container->get(ValidationOperationsHandler::class),
 			searchBackendHandler: $container->get(SearchBackendHandler::class),
 			llmSettingsHandler: $container->get(LlmSettingsHandler::class),
@@ -681,8 +679,7 @@ final class ConfigurationServiceRegistrar {
 	private static function buildConfigurationValueStore(ContainerInterface $container): ConfigurationValueStore {
 		return new ConfigurationValueStore(
 			values: $container->get(ConfigurationValueMapper::class),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationValueStore()
 
@@ -702,8 +699,7 @@ final class ConfigurationServiceRegistrar {
 			store: $container->get(ConfigurationValueStore::class),
 			registry: $container->get(ConfigurationKeyRegistry::class),
 			session: $container->get('OCP\IUserSession'),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationDraftService()
 
