@@ -57,6 +57,8 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -85,6 +87,11 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 
 	private const STALE_AFTER = 86400;
 	// 24 hours in seconds.
+
+	/**
+	 * Seconds a browse result is served from the cache.
+	 */
+	private const BROWSE_CACHE_TTL = 60;
 
 	/**
 	 * Constructor.
@@ -464,6 +471,63 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 *         with the rows on success, else the degradation cause and no rows.
 	 */
 	private function browse(array $filters, string $caller): array {
+		$cache = $this->browseCache();
+		$cacheKey = $this->browseCacheKey(filters: $filters);
+		$cached = $cache?->get($cacheKey);
+		if (is_array($cached) === true) {
+			return ['cause' => null, 'results' => $cached];
+		}
+
+		$outcome = $this->browseRemote(filters: $filters, caller: $caller);
+		if ($outcome['cause'] === null) {
+			$cache?->set($cacheKey, $outcome['results'], self::BROWSE_CACHE_TTL);
+		}
+
+		return $outcome;
+	}//end browse()
+
+	/**
+	 * The cache for browse results, or null when none is available.
+	 *
+	 * A dashboard widget and a picker list the same remote pages on every page
+	 * load; each list is an outbound call (~250 ms) plus its call log. A short
+	 * TTL keeps an edit in xWiki visible within a minute.
+	 *
+	 * @return ICache|null The cache.
+	 */
+	private function browseCache(): ?ICache {
+		try {
+			return $this->container->get(ICacheFactory::class)->createDistributed('openregister_xwiki_browse');
+		} catch (Throwable) {
+			return null;
+		}
+	}//end browseCache()
+
+	/**
+	 * The cache key of one user's browse with these filters.
+	 *
+	 * Per user, so a source that answers per caller never shows one user's list to another.
+	 *
+	 * @param array<string,mixed> $filters Provider list filters.
+	 *
+	 * @return string The key.
+	 */
+	private function browseCacheKey(array $filters): string {
+		$user = $this->runtime->userSession()->getUser()?->getUID();
+
+		return hash('sha256', ($user ?? '') . '|' . json_encode($filters));
+	}//end browseCacheKey()
+
+	/**
+	 * Run the provider's browse/list path with an empty OR context and normalise the rows.
+	 *
+	 * @param array<string,mixed> $filters Provider list filters.
+	 * @param string              $caller  Public method name, for the failure log line.
+	 *
+	 * @return array{cause: string|null, results: array<int,array<string,mixed>>} A null cause
+	 *         with the rows on success, else the degradation cause and no rows.
+	 */
+	private function browseRemote(array $filters, string $caller): array {
 		$provider = $this->availableProvider();
 		if ($provider === null) {
 			return ['cause' => ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, 'results' => []];
@@ -481,7 +545,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		}
 
 		return ['cause' => null, 'results' => $this->normaliseRows(rows: $rows)];
-	}//end browse()
+	}//end browseRemote()
 
 	/**
 	 * Normalise the array rows of a provider list, skipping anything else.

@@ -329,6 +329,53 @@ class XwikiLinkServiceTest extends TestCase {
 		$this->assertSame('Handbook', $result['results'][0]['title']);
 	}//end testGetAvailablePagesNormalisesBrowseRows()
 
+	public function testAvailablePagesAreServedFromTheCacheForAMinuteAndFailuresAreNot(): void {
+		$this->connectorAvailable(true);
+		$this->setupUser('alice');
+		$store = [];
+		$cache = $this->createMock(\OCP\ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$store) {
+			return $store[$key] ?? null;
+		});
+		$cache->method('set')->willReturnCallback(function (string $key, $value, int $ttl) use (&$store): bool {
+			$this->assertSame(60, $ttl);
+			$store[$key] = $value;
+			return true;
+		});
+		$factory = $this->createMock(\OCP\ICacheFactory::class);
+		$factory->method('createDistributed')->willReturn($cache);
+		$this->container->method('get')->willReturnCallback(
+			fn (string $class) => match ($class) {
+				XwikiProvider::class => $this->provider,
+				\OCP\ICacheFactory::class => $factory,
+			}
+		);
+
+		$calls = 0;
+		$this->provider->method('list')->willReturnCallback(
+			function (ObjectRef $ref, array $filters) use (&$calls): array {
+				$calls++;
+				if (($filters['_search'] ?? '') === 'down') {
+					throw new ProviderUnavailableException('down', ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
+				}
+
+				return [['reference' => 'A.B', 'title' => 'B']];
+			}
+		);
+
+		$first = $this->service->getAvailablePages('hand');
+		$second = $this->service->getAvailablePages('hand');
+		$this->assertSame($first, $second);
+		$this->assertSame(1, $calls);
+
+		$this->service->getAvailablePages('other');
+		$this->assertSame(2, $calls);
+
+		$this->assertTrue($this->service->getAvailablePages('down')['unavailable']);
+		$this->assertTrue($this->service->getAvailablePages('down')['unavailable']);
+		$this->assertSame(4, $calls);
+	}//end testAvailablePagesAreServedFromTheCacheForAMinuteAndFailuresAreNot()
+
 	public function testSearchPagesReturnsUnconfiguredWhenConnectorAbsent(): void {
 		$this->connectorAvailable(false);
 
