@@ -48,6 +48,46 @@ class Version1Date20261121190000Test extends TestCase {
 		$this->migrate(schema: $this->schema(hasTable: true, table: $table));
 	}
 
+	public function testTheTier1UniqueIndexIsDroppedSoASecondSentMailFits(): void {
+		$table = $this->createTableMock();
+		$table->method('hasColumn')->with('direction')->willReturn(true);
+		$table->method('hasIndex')->willReturnMap([
+			['email_links_unique_idx', true],
+			['idx_email_object_message', true],
+		]);
+		$table->expects($this->once())->method('dropIndex')->with('email_links_unique_idx');
+		$table->expects($this->never())->method('addUniqueIndex');
+
+		$this->migrate(schema: $this->schema(hasTable: true, table: $table));
+	}
+
+	public function testTheUidBearingUniqueIndexIsAddedWhenMissing(): void {
+		$table = $this->createTableMock();
+		$table->method('hasColumn')->with('direction')->willReturn(true);
+		$table->method('hasIndex')->willReturnMap([
+			['email_links_unique_idx', true],
+			['idx_email_object_message', false],
+		]);
+		$table->expects($this->once())->method('dropIndex')->with('email_links_unique_idx');
+		$table->expects($this->once())->method('addUniqueIndex')
+			->with(['object_uuid', 'mail_account_id', 'mail_message_id', 'mail_message_uid'], 'idx_email_object_message');
+
+		$this->migrate(schema: $this->schema(hasTable: true, table: $table));
+	}
+
+	public function testATier2TableKeepsItsIndexes(): void {
+		$table = $this->createTableMock();
+		$table->method('hasColumn')->with('direction')->willReturn(true);
+		$table->method('hasIndex')->willReturnMap([
+			['email_links_unique_idx', false],
+			['idx_email_object_message', true],
+		]);
+		$table->expects($this->never())->method('dropIndex');
+		$table->expects($this->never())->method('addUniqueIndex');
+
+		$this->migrate(schema: $this->schema(hasTable: true, table: $table));
+	}
+
 	public function testAnInstallWithoutTheTableIsLeftAlone(): void {
 		$schema = $this->schema(hasTable: false, table: $this->createTableMock());
 
