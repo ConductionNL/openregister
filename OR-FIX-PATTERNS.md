@@ -457,3 +457,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: MagicMapperSearchObjectsPaginatedTest (4 data sets, 'findMultiple [["u1"],false,null]' vs '...,null,null]') and RelationHandlerLookupsGoldenTest red on a PR that adds an optional trailing param to findMultiple/findMultipleAcrossAllMagicTables.
 - Cause: those tests record func_get_args of mapper doubles; a forwarding call that now passes the new param (null) adds an element.
 - Fix: sed the 'findMultiple [...]' strings in tests/Unit/Db/MagicMapper/fixtures/search-objects-paginated.php; OR_GOLDEN_RECORD=1 phpunit RelationHandlerLookupsGoldenTest; the diff must be only the added nulls (#11003 962507b4).
+
+## Perf PR swaps per-id SchemaMapper::find() for findMultipleOptimized() (or-fix-15)
+- Symptom: reviewer BLOCK 'findMultipleOptimized returns rows unresolved (no allOf merge)'; unit tests green because mocks return finished schemas.
+- Cause: find() runs SchemaComposition::resolve (allOf merge, oneOf/anyOf checks, throws on a broken parent); the batch query returns stored rows, so an allOf child has only its delta properties/config.
+- Fix: keep the batch for plain schemas; send rows with non-empty getAllOf/getOneOf/getAnyOf (and non-numeric ids) back through find() in a try/catch, in the original order; add a test where the batch returns a delta-only allOf row and find() the resolved one (#11015 02fa7bee).
