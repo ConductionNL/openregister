@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use OCA\OpenRegister\Db\ConfigurationValue;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 
 /**
@@ -55,16 +56,21 @@ use OCP\IAppConfig;
 class ConfigurationValueStore {
 
 	/**
+	 * The app the instance keys live under.
+	 *
+	 * @var string
+	 */
+	private string $appName = AppIdentity::APP_ID;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationValueMapper $values    The layered value rows.
 	 * @param IAppConfig               $appConfig Nextcloud's app configuration.
-	 * @param string                   $appName   The app the instance keys live under.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueMapper $values,
 		private readonly IAppConfig $appConfig,
-		private readonly string $appName = 'openregister'
 	) {
 
 	}//end __construct()

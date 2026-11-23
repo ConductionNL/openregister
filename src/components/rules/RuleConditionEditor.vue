@@ -109,6 +109,7 @@
 import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton } from '@nextcloud/vue'
+import { invalidJsonText } from './ruleJson.js'
 
 /**
  * What a rule is, and a place to draft a change to its condition.
@@ -121,6 +122,10 @@ import { NcButton } from '@nextcloud/vue'
  * evaluator's own dispatch table. A list typed here would drift, and an author
  * would be told an operator is unavailable on the day it shipped.
  */
+
+/** What parsedDraft hands back for a draft that is not JSON. */
+const UNPARSABLE = Symbol('unparsable')
+
 export default {
 	name: 'RuleConditionEditor',
 
@@ -284,32 +289,48 @@ export default {
 		validate() {
 			this.parseError = ''
 			this.unknownOperator = ''
+			this.$emit('update:draft', this.checkedDraft())
+		},
 
+		/**
+		 * The draft to hand on: the parsed tree when it is filled in, parses,
+		 * names only known operators and differs from the declared condition;
+		 * null otherwise.
+		 *
+		 * @return {object|Array|string|number|boolean|null} The draft, or null.
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		checkedDraft() {
 			if (this.draftText.trim() === '') {
-				this.$emit('update:draft', null)
-				return
+				return null
 			}
-
-			let parsed
-			try {
-				parsed = JSON.parse(this.draftText)
-			} catch (failure) {
-				this.parseError = t(
-					'openregister',
-					'That is not valid JSON: {reason}',
-					{ reason: failure.message },
-				)
-				this.$emit('update:draft', null)
-				return
+			const parsed = this.parsedDraft()
+			if (parsed === UNPARSABLE) {
+				return null
 			}
-
 			this.unknownOperator = this.firstUnknownOperator(parsed)
 			if (this.unknownOperator !== '') {
-				this.$emit('update:draft', null)
-				return
+				return null
 			}
+			return this.dirty ? parsed : null
+		},
 
-			this.$emit('update:draft', this.dirty ? parsed : null)
+		/**
+		 * The draft text as JSON; on a parse failure the reason is shown and
+		 * UNPARSABLE comes back.
+		 *
+		 * @return {object|Array|string|number|boolean|null|symbol} The parsed draft.
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		parsedDraft() {
+			try {
+				return JSON.parse(this.draftText)
+			} catch (failure) {
+				this.parseError = invalidJsonText(failure)
+				return UNPARSABLE
+			}
 		},
 
 		/**
@@ -329,32 +350,55 @@ export default {
 			if (node === null || typeof node !== 'object') {
 				return ''
 			}
-
 			if (Array.isArray(node)) {
-				for (const item of node) {
-					const found = this.firstUnknownOperator(item)
-					if (found !== '') {
-						return found
-					}
-				}
-				return ''
+				return this.firstUnknownInList(node)
 			}
+			return this.firstUnknownInNode(node)
+		},
 
+		/**
+		 * The first unknown operator in any item of a list.
+		 *
+		 * @param {Array} items The items to walk.
+		 *
+		 * @return {string} The operator, or an empty string when all are known.
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		firstUnknownInList(items) {
+			for (const item of items) {
+				const found = this.firstUnknownOperator(item)
+				if (found !== '') {
+					return found
+				}
+			}
+			return ''
+		},
+
+		/**
+		 * The first unknown operator under a single-key JSON-AST node. A node
+		 * with other than one key, a JSONLogic node and a literal are not
+		 * walked.
+		 *
+		 * @param {object} node The node to walk.
+		 *
+		 * @return {string} The operator, or an empty string when all are known.
+		 *
+		 * @spec openspec/specs/flow-engine/spec.md
+		 */
+		firstUnknownInNode(node) {
 			const keys = Object.keys(node)
 			if (keys.length !== 1) {
 				return ''
 			}
-
 			const op = keys[0]
 			if (!this.isAstSpelling(op)) {
 				// A JSONLogic node. Its own dialect validates it.
 				return ''
 			}
-
 			if (op === 'lit') {
 				return ''
 			}
-
 			return this.firstUnknownOperator(node[op])
 		},
 
