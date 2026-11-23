@@ -31,6 +31,8 @@ use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Exception\TokenRateLimitExceededException;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
+use OCA\OpenRegister\Service\Consumer\ConsumerAuthorization;
+use OCA\OpenRegister\Service\Consumer\ConsumerIdentity;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantRateLimiter;
@@ -55,6 +57,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(TokenGrantTerms::class)]
 #[UsesClass(TokenGrantSource::class)]
 #[UsesClass(ResolvedConsumer::class)]
+#[UsesClass(ConsumerIdentity::class)]
+#[UsesClass(ConsumerAuthorization::class)]
 #[UsesClass(UserDirectory::class)]
 final class TokenGrantRateLimiterTest extends TestCase {
 	/**
@@ -147,12 +151,12 @@ final class TokenGrantRateLimiterTest extends TestCase {
 
 	private function consumers(array $grant): ConsumerSource {
 		$consumer = new ResolvedConsumer(
-			source: 'openregister',
-			uuid: 'c0ffee00-0000-4000-8000-000000000001',
-			name: 'leverancier',
-			userId: 'leverancier',
-			authorizationType: 'apiKey',
-			configuration: ['apiKey' => 'key', 'grant' => $grant],
+			identity: new ConsumerIdentity(source: 'openregister', uuid: 'c0ffee00-0000-4000-8000-000000000001', name: 'leverancier'),
+			authorization: new ConsumerAuthorization(
+				userId: 'leverancier',
+				authorizationType: 'apiKey',
+				configuration: ['apiKey' => 'key', 'grant' => $grant]
+			),
 			record: null
 		);
 
