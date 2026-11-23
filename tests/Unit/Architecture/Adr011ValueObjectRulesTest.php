@@ -46,6 +46,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Contract/ObjectSelection.php',
+		'Contract/RegisterSchemaSlugs.php',
+		'Contract/SearchOptions.php',
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
@@ -228,7 +231,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	}//end testTheChecksAcceptAWellFormedClass()
 
 	/**
-	 * The offenders of one source check across the five classes.
+	 * The offenders of one source check across the listed classes.
 	 *
 	 * @param string $check The name of the check method.
 	 *
