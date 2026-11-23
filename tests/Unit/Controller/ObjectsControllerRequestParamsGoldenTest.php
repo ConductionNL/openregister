@@ -150,9 +150,10 @@ class ObjectsControllerRequestParamsGoldenTest extends TestCase {
 
 	#[DataProvider('configCases')]
 	public function testConfigMatchesTheRecording(array $params): void {
-		$request = $this->createMock(IRequest::class);
-		$request->method('getParams')->willReturn($params);
-		$this->compare(key: 'config ' . $this->dataName(), actual: $this->privateCall(request: $request, method: 'getConfig', args: []));
+		// The listing configuration ObjectsController::getConfig() built before the object history
+		// route moved to AuditTrailController: the request params without the route keys.
+		unset($params['id'], $params['_route']);
+		$this->compare(key: 'config ' . $this->dataName(), actual: (new ObjectRequestParams())->listing(params: $params));
 	}
 
 	#[DataProvider('extendCases')]
