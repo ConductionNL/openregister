@@ -3796,3 +3796,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T16:24:58Z integrator-20261123T155733-7ac3bd34 MERGE-FAILED #7667: {"sha":"ec3f0f77d4b0dfb7ae33d8d223b9ee4b77e3b08c","merged":true,"message":"Pull Request successfully merged"}
 2026-11-23T16:27:03Z session-20261123T162703-ac63e629 cloud-or-reviewer-4: 0 reviewable; all 28 open non-draft main PRs with N%8==4 have an APPROVE verdict at their current head, no REVERIFY left unreviewed
 2026-11-23T16:35:21Z session-20261123T163521-f755f3c4 or-fix-9 start
+2026-11-23T16:37:13Z integrator-20261123T155733-7ac3bd34 GREEN tree c0c9bade80 on dev ec3f0f77d4 prs 8 front=skip: Tests: 63557, Assertions: 222768, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
