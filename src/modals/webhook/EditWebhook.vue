@@ -16,12 +16,7 @@
 		<div class="tabContainer">
 			<AppTabs v-model="activeTab" contentClass="mt-3" justified>
 				<!-- Settings Tab -->
-				<AppTab active>
-					<template #title>
-						<Cog :size="16" />
-						<span>{{ t('openregister', 'Settings') }}</span>
-					</template>
-
+				<SettingsTab>
 					<div class="form-editor">
 						<NcTextField
 							:label="t('openregister', 'Name') + ' *'"
@@ -75,7 +70,7 @@
 							{{ t('openregister', 'Enabled') }}
 						</FormCheckboxField>
 					</div>
-				</AppTab>
+				</SettingsTab>
 
 				<!-- Events Tab -->
 				<AppTab>
@@ -404,7 +399,6 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
@@ -415,6 +409,7 @@ import FormSelectField from '../../components/shared/FormSelectField.vue'
 import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import SettingsTab from '../../components/tabs/SettingsTab.vue'
 import {
 	defaultMethodOption,
 	storedSelections,
@@ -446,9 +441,9 @@ export default {
 		FormSelectField,
 		SelectOption,
 		AppTab,
+		SettingsTab,
 		CloseCancelButton,
 		ContentSave,
-		Cog,
 		Database,
 		Tune,
 		Webhook,

@@ -31,7 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 
 /**
  * Which creates the policy allows and which it refuses, and when it audits.
