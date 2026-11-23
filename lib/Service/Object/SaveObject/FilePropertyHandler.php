@@ -241,10 +241,10 @@ class FilePropertyHandler {
 				return false;
 			}//end if
 
-			// Base64 encoded string (simple heuristic). base64_decode(..., true)
-			// returns false for ordinary non-base64 content, and
-			// base64_encode(false) is a TypeError in PHP 8+ — check the decode
-			// result before re-encoding it.
+			// Base64 encoded string (simple heuristic). A strict base64_decode()
+			// returns false for ordinary non-base64 content; checking that first
+			// keeps the round-trip from comparing against base64_encode(false),
+			// which would be a TypeError if this file adopted strict_types.
 			$decodedValue = base64_decode($value, true);
 			if ($decodedValue !== false && base64_encode($decodedValue) === $value && strlen($value) > 100) {
 				return true;
