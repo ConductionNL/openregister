@@ -4359,7 +4359,7 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
-Migration/Version1Date20261114100000.php,,Migration,,,,,Platform
+Migration/Version1Date20261114100009.php,,Migration,,,,,Platform
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core

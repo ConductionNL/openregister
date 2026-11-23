@@ -40,7 +40,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1.3
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114100009 extends TargetedMigrationStep {
 
 	/**
 	 * The added columns and their type and length.
