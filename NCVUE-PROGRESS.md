@@ -90,3 +90,4 @@
 2026-11-23T15:30:19Z ncvue-3 start (#2277)
 2026-11-23T15:30:05Z ncvue-2 start
 2026-11-23T15:32:01Z ncvue-2 no open PRs in ConductionNL/nextcloud-vue (0 open; #2276 no longer open); lane share empty
+2026-11-23T15:32:29Z ncvue-3 #2277 already merged (163772dd) before this lane reached it; lane share empty (0 open PRs), main 5e82dd11
