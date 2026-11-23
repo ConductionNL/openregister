@@ -49,11 +49,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	border-bottom: 1px solid var(--color-border);
 }
 
-.or-mail-panel__caption {
-	margin: 0;
-	font-size: 12px;
-	font-weight: 600;
-	line-height: 16px;
+.or-mail-sidebar h2.or-mail-panel__caption {
+	margin: 0 !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	line-height: 16px !important;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	color: var(--color-text-maxcontrast);
@@ -69,20 +69,20 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	padding: 16px;
 }
 
-.or-mail-panel__subject {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 700;
-	line-height: 22px;
+.or-mail-sidebar h3.or-mail-panel__subject {
+	margin: 0 !important;
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 22px !important;
 }
 
 /* A caption over a group of rows, as "In <project>" on the board. */
-.or-mail-panel__section-title {
-	margin: 0 0 8px;
+.or-mail-sidebar h4.or-mail-panel__section-title {
+	margin: 0 0 8px !important;
 	padding: 0 10px;
-	font-size: 12px;
-	font-weight: 600;
-	line-height: 21px;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	line-height: 21px !important;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	color: var(--color-text-maxcontrast);
@@ -157,18 +157,21 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	flex-shrink: 0;
 }
 
-.or-mail-object-card__title {
+#openregister-mail-sidebar a.or-mail-object-card__title {
 	display: block;
 	padding-inline-end: 8px;
 	font-size: 16px;
 	font-weight: 700;
 	line-height: 22px;
-	color: var(--color-main-text);
-	text-decoration: none;
+	/* A theme that colours every link through these variables keeps this name in the text colour. */
+	--nldesign-color-on-surface: var(--color-main-text);
+	--nldesign-component-link-color: var(--color-main-text);
+	color: var(--color-main-text) !important;
+	text-decoration: none !important;
 }
 
-.or-mail-object-card__title:hover {
-	text-decoration: underline;
+#openregister-mail-sidebar a.or-mail-object-card__title:hover {
+	text-decoration: underline !important;
 }
 
 .or-mail-object-card__title:focus-visible {
@@ -267,7 +270,7 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 }
 
 /* "+ New ... from this mail" is a quiet row, not a filled button. */
-.or-mail-sidebar button.or-action-create {
+#openregister-mail-sidebar button.or-action-create {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -285,11 +288,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	cursor: pointer;
 }
 
-.or-mail-sidebar button.or-action-create:hover:not(:disabled) {
+#openregister-mail-sidebar button.or-action-create:hover:not(:disabled) {
 	background-color: var(--color-background-hover);
 }
 
-.or-mail-sidebar button.or-action-create:disabled {
+#openregister-mail-sidebar button.or-action-create:disabled {
 	opacity: 0.6;
 	cursor: default;
 }
@@ -300,8 +303,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	padding-top: 8px;
 }
 
-.or-mail-sidebar button.or-mail-panel__found-toggle {
+#openregister-mail-sidebar button.or-mail-panel__found-toggle {
 	display: flex;
+	box-sizing: border-box;
+	min-width: 0;
+	font-weight: 400;
 	align-items: center;
 	gap: 8px;
 	width: 100%;
@@ -317,8 +323,12 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	cursor: pointer;
 }
 
-.or-mail-sidebar button.or-mail-panel__found-toggle:hover {
+#openregister-mail-sidebar button.or-mail-panel__found-toggle:hover {
 	background-color: var(--color-background-hover);
+}
+
+.or-mail-panel__found-toggle > .material-design-icon {
+	flex: none;
 }
 
 .or-mail-panel__found-icon {
@@ -326,6 +336,7 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 }
 
 .or-mail-panel__found-label {
+	flex: none;
 	font-weight: 600;
 }
 
