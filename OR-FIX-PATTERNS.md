@@ -539,3 +539,27 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: Architecture ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/ContractBindings.php -> lib/Service/<Area>/X.php (Configuration -> <Component>)'.
 - Cause: main gates ADR-013 Rule 1 as a ratchet; ContractBindings is Configuration, so a PR adding an Interface => Class pair for another component's class adds a new edge (old pairs are baselined).
 - Fix: move the pair (and its use lines) to that component's own bindings list, e.g. Service/Flow/FlowWiring::BINDINGS for Flow nodes (as LockObjectNodeInterface); add it to FlowWiringTest's pinned BINDINGS array in the same order and a test asserting it. Never add to the baseline. (#10182 0259bb89)
+## ADR-013 dependency gate landed on main 23 Nov 17:38 (#8084, 190e6313): approved PRs now red (or-fix-14)
+- Symptom: after merging main, ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists the PR's edges, and/or testNoNewFileNamesTheBootstrapNamespace lists PR files importing AppInfo\Application; green at the PR head because the test was not on main yet.
+- Cause: #8084 put the ratchet gate and a shrunk baseline on main; every open PR adding a cross-component edge now fails, including PRs already APPROVEd (lane 14: 5 of 9 merged trees).
+- Fix: recipes in the or-fix-10/or-fix-11 entries above (restate a foreign constant as a private const, remap the PR's new files, Kernel/Contracts root port); Application::APP_ID -> Kernel\Contracts\AppIdentity::APP_ID. Run Architecture on EVERY merged tree, even approved clean ones (#10214 a8320c8b).
+## Trap: refs/pull/<N>/head lags the PR branch (or-fix-6)
+- Symptom: a red the PR already fixed (e.g. #11006 ControllerServicesWiringTest) reappears on the merge; HEAD^1 is an older sha than the PR's listed head.
+- Cause: GitHub's pull/<N>/head ref was not updated after the last push (seen 23 Nov on #11006: pull ref edcb5f89, branch b4268150).
+- Fix: compare git ls-remote origin refs/pull/<N>/head with refs/heads/<branch>; always fetch +refs/heads/<branch> as the lane says.
+## Integrations Support class typed on a Core read gate after main's edge baseline (or-fix-6)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline 'lib/Controller/Support/<X>.php -> lib/Service/Object/ObjectReadAccessInterface.php (Integrations -> Core)'.
+- Fix: type it on Kernel\Contracts\ObjectReadCheckInterface::isReadable(ObjectRef): bool (added by #11006 4b537d27; ObjectReadAccess implements it, bound in CoreServiceBindings). Until #11006 lands, add the same port (root Kernel/Contracts, csv row ',,Kernel,,,,,Kernel') and a bool wrapper over readable().
+## Constructor bundle relocates a grandfathered cross-component edge (or-fix-1)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/<Area>/<NewBundle>.php -> lib/<OtherArea>/...Interface.php' on a gi3/ctor-bundle PR; main's baseline has the same edge from the class the bundle feeds.
+- Cause: the baseline is per file pair; moving a foreign-typed collaborator into a new bundle file is a new edge even though the dependency is unchanged.
+- Fix: keep that collaborator a direct constructor param of the original class (named, after the bundle), drop it from the bundle, move the tests' 'x:' arg out of the bundle call (line-based script); never add to the baseline (#9801 fe7aaf5f).
+## ComponentDependencyRulesTest is new on main (23 Nov): APPROVED PRs go red on merge (or-fix-13)
+- Symptom: a PR APPROVE'd before ~23 Nov 11:00 merges clean but testNoComponentEdgeBeyondTheBaseline lists its edges; the verdict at head looks green. python3 scripts/component-deps.py | sed -n '/not in tests/,$p' finds them in 5 s, so sweep every approved PR in your share with it.
+- Fixes used: Controller Application::APP_ID -> Kernel\Contracts\AppIdentity; Listener const -> its Kernel/Contracts/Core source (HeldChangeCodes); Files->Core service -> root Kernel port with primitive/array returns + Contract\ObjectEntityInterface, implemented by the Core service, bound in CoreServiceBindings (#10533 4cd72cf3 DraftPreviewInterface); Processes job JobRuntime -> ITimeFactory+LoggerInterface; Processes node bindings ContractBindings -> FlowWiring::BINDINGS + FlowWiringTest alias list (#10513 b6f7d6c0).
+## A PR's shared Core helper becomes ten cross-component edges after main's area remap (or-fix-18)
+- Symptom: ComponentDependencyRulesTest lists many '<area file> -> lib/Service/.../<Helper>.php (<Area> -> Core)' edges, all to one new PR helper.
+- Fix: when the helper depends only on Kernel-mapped classes (Db/Register, Db/Schema, Db/*MapperInterface are Kernel in the csv), set its csv component to Kernel and regenerate the yaml; no move needed (#10538 SchemaRefInRegister).
+## New feature files mapped to one area but straddling Core after main's remap (or-fix-12)
+- Symptom: ComponentDependencyRulesTest lists a PR's new store/helper -> Db/MagicMapperInterface or Service/FileService (Compliance -> Core/Files) and SaveObject -> <PR helper> (Core -> Compliance).
+- Fix: remap by dependencies, not by feature: a static reader over entities only (Schema/ObjectEntity/Register are Kernel) and an interface naming only entities -> Kernel; the persistence adapter -> Core, bound in CoreServiceBindings; type its collaborators on Core interfaces (ObjectFilesInterface for FileService, AuditTrailMapperInterface for AuditTrailMapper). csv last column + component-patterns.py. See #10232 1047370c.
