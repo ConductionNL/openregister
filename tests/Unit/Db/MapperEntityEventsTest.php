@@ -255,7 +255,8 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testTaskMapperAnnouncesATerminalTaskOnly(): void {
-		$mapper = new TaskMapper($this->connection(), $this->entityEvents());
+		// TaskMapper dispatches its own task event (Processes), not through the Core publisher.
+		$mapper = new TaskMapper($this->connection(), $this->dispatcher());
 
 		$mapper->insert($this->given(new Task(), ['uuid' => 't-0', 'state' => Task::STATE_COMPLETED]));
 		$mapper->update($this->given(new Task(), ['id' => 15, 'uuid' => 't-1', 'state' => Task::STATE_COMPLETED]));

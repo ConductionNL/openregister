@@ -1,11 +1,6 @@
 [
     [
         "debug",
-        "[FileService] FileService constructor started.",
-        []
-    ],
-    [
-        "debug",
         "[FileService] About to call folderManagementHandler->setFileService.",
         []
     ],
@@ -102,11 +97,6 @@
     [
         "debug",
         "[FileService] Called fileBatchHandler->setFileService.",
-        []
-    ],
-    [
-        "debug",
-        "[FileService] FileService constructor completed.",
         []
     ]
 ]
