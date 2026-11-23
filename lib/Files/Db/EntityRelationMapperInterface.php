@@ -22,50 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
-use OCA\OpenRegister\Db\DecisionMetadataEdit;
-use OCA\OpenRegister\Exception\CustomValidationException;
-use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Kernel\Contracts\Files\EntityMentionDecisionsInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\EntityRelation;
 
 /**
  * Every public method of EntityRelationMapper. Callers depend on this interface, not on the class.
  */
-interface EntityRelationMapperInterface {
-
-	/**
-	 * Find a single entity relation by its primary id.
-	 *
-	 * QBMapper exposes `find()` via a `@method` docblock only; concrete
-	 * mappers add it themselves when needed. This implementation wraps the
-	 * inherited protected `findEntity()` so HTTP/DI callers get a typed
-	 * 404 path (`DoesNotExistException`) for unknown ids.
-	 *
-	 * @param int $id The relation row id.
-	 *
-	 * @return EntityRelation The matching row.
-	 *
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When $id does not resolve.
-	 */
-	public function find(int $id): EntityRelation;
-
-	/**
-	 * Find entity relations by file ID.
-	 *
-	 * @param int $fileId The file ID.
-	 *
-	 * @return EntityRelation[] Array of entity relations.
-	 */
-	public function findByFileId(int $fileId): array;
-
-	/**
-	 * Find entity relations by entity ID.
-	 *
-	 * @param int $entityId The entity ID.
-	 *
-	 * @return EntityRelation[] Array of entity relations.
-	 */
-	public function findByEntityId(int $entityId): array;
+interface EntityRelationMapperInterface extends EntityMentionDecisionsInterface {
 
 	/**
 	 * Find entity relations with entity details by file ID.
@@ -271,67 +235,6 @@ interface EntityRelationMapperInterface {
 	 * @return array<int, string> Distinct entity values for skipped relations.
 	 */
 	public function findSkippedEntityValuesForFile(int $fileId): array;
-
-	/**
-	 * Update operator-decision metadata on an EntityRelation row.
-	 *
-	 * Single audited write path for the two decision-only fields:
-	 *   - `bases` (?array) — UUIDs of legal grondslagen
-	 *   - `skipAnonymization` (bool) — opt-out from the next anonymise pass
-	 *
-	 * Strict whitelist: any other key in `$fields` causes a
-	 * `CustomValidationException`. Shape validation: `bases` MUST be
-	 * null or array<string>; `skipAnonymization` MUST be a bool.
-	 *
-	 * Diff-aware: if every supplied value matches the current row state,
-	 * the method returns the unchanged row and writes NO audit entry
-	 * (semantic no-op). Empty `$fields` is also a no-op.
-	 *
-	 * Otherwise the row is updated and exactly one audit-trail entry is
-	 * emitted via the OpenRegister immutable audit subsystem (ADR-022),
-	 * capturing the acting user UID (per ADR-005, the UID — NOT the
-	 * display name in the structured changed-fields payload), the
-	 * timestamp, the subject (table + row id), and only the fields that
-	 * actually changed.
-	 *
-	 * @param DecisionMetadataEdit $edit The pre-loaded relation row (callers handle find/404), the
-	 *                                   whitelist keys with new values and the optional explicit acting
-	 *                                   user; without one it falls back to the session user, and without
-	 *                                   a session user the audit entry records the actor as 'system'.
-	 *
-	 * @return EntityRelation The (possibly unchanged) row.
-	 *
-	 * @throws CustomValidationException When a whitelist or shape violation
-	 *                                   is detected.
-	 */
-	public function updateDecisionMetadata(DecisionMetadataEdit $edit): EntityRelation;
-
-	/**
-	 * Link a relation to its current decision object.
-	 *
-	 * The decision itself (who, when, verdict, note) is its own object in
-	 * `openregister_decisions` (decision 197); the relation only points at it.
-	 * The audit trail of the verdict stays with `updateDecisionMetadata()`.
-	 *
-	 * With `$guarded`, the link is a compare-and-swap: it is written only while
-	 * the stored link is still `$expectedUuid` (null: none), so two reviewers
-	 * taking a first decision at once cannot both link theirs.
-	 *
-	 * @param EntityRelation $relation     The relation.
-	 * @param string         $decisionUuid The decision's uuid.
-	 * @param string|null    $expectedUuid The link the caller read before deciding; only read when guarded.
-	 * @param bool           $guarded      Whether to write only while the stored link is still `$expectedUuid`.
-	 *
-	 * @return EntityRelation The stored relation.
-	 *
-	 * @throws DecisionConflictException When guarded and the stored link changed in the meantime.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every unguarded caller unchanged; the guard is one
-	 * extra statement, not a second behaviour.
-	 */
-	public function linkDecision(EntityRelation $relation, string $decisionUuid, ?string $expectedUuid = null, bool $guarded = false): EntityRelation;
 
 	/**
 	 * Insert through the mapper (QBMapper).

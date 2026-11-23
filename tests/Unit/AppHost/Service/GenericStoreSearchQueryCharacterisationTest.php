@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -91,7 +92,8 @@ final class GenericStoreSearchQueryCharacterisationTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class)
 		);
 
-		$result = $service->search(new StoreDescriptor(appId: 'openbuild', schema: 'application-template', defaultRegister: 'openbuild'), $query, $kind);
+		$listing = new StoreListing(appId: 'openbuild', schema: 'application-template', defaultRegister: 'openbuild');
+		$result = $service->search(new StoreDescriptor(listing: $listing), $query, $kind);
 
 		$this->assertSame('ok', $result['outcome']);
 		$this->assertSame($expected, $sent);
