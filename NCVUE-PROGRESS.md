@@ -51,3 +51,4 @@
 2026-11-23T11:31:02Z ncvue-4 start
 2026-11-23T11:30:53Z ncvue-2 start
 2026-11-23T11:30:04Z ncvue-3 start
+2026-11-23T11:51:47Z ncvue-4 #2266 merged (CnWalkthrough modal observer only while active; main merged in twice, lint/jest 21908/build/dist/docs green, 88541a17); lane share done, main 88541a17
