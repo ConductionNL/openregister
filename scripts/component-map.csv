@@ -3098,7 +3098,7 @@ Service/RegisterDescriptorService.php,263,Service,Configuration,Configuration/Se
 Service/RegisterMappingFunctionsEvent.php,19,Service,Service,Service/RegisterMappingFunctionsEvent.php,4,,Core
 Service/RegisterResolverService.php,245,Service,Service,Service/RegisterResolverService.php,259,83,Core
 Service/RegisterSchemaLinkageRepairService.php,132,Service,Service,Service/RegisterSchemaLinkageRepairService.php,0,,Core
-Service/RegisterScopedSchemaResolver.php,71,Service,Access,Access/Service/RegisterScopedSchemaResolver.php,1,330,Core
+Service/RegisterScopedSchemaResolver.php,71,Service,Access,Access/Service/RegisterScopedSchemaResolver.php,1,330,Kernel
 Service/RegisterService.php,325,Service,Service,Service/RegisterService.php,50,68,Core
 Service/RegisterSlugResolver.php,123,Service,Access,Access/Service/RegisterSlugResolver.php,10,,Core
 Service/Registers/RegisterCacheHandler.php,26,Service,Service,Service/Registers/RegisterCacheHandler.php,0,,Core
@@ -4081,8 +4081,8 @@ Service/RegisterImporters.php,,Service,,,,,Configuration
 Service/RegisterResolverServiceInterface.php,,Service,,,,,Core
 Service/RegisterSchemaLinkageRepairServiceInterface.php,,Service,,,,,Core
 Service/RegisterSchemaMappers.php,,Service,,,,,Core
-Service/RegisterScopedSchemaResolverInterface.php,,Service,,,,,Core
-Service/RegisterScopedSchemaResolvers.php,,Service,,,,,Core
+Service/RegisterScopedSchemaResolverInterface.php,,Service,,,,,Kernel
+Service/RegisterScopedSchemaResolvers.php,,Service,,,,,Kernel
 Service/RegisterServiceHelpers.php,,Service,,,,,Core
 Service/RegisterServiceInterface.php,,Service,,,,,Core
 Service/RegisterServiceStorage.php,,Service,,,,,Core
