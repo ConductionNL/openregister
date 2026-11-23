@@ -466,3 +466,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Kernel/EntityInterfacesTest::testEveryExplicitPublicMethodIsOnTheInterface with data set "Schema" (or Register, ...), actual [ '<method>' ].
 - Cause: main requires every explicit, non-static public method of a Db entity on its Kernel/Contracts/<Entity>Interface; a PR adds e.g. Schema::getPreviewUrl() to the entity only. Clean auto-merge.
 - Fix: declare the method with the same signature on lib/Kernel/Contracts/<Entity>Interface.php (no other implementors besides the entity; check with grep 'implements.*<Entity>Interface'); a test reading it through the interface. Not ENTITY_ONLY unless it is a mapper-only helper (#10533 06f240b0).
+
+## A manifest.d page edit fails main's page spec (or-fix-3)
+- Symptom: PHP suites green, but jest src/tests/<page>.spec.js red on the merge (e.g. archival-overview-page: 'reads every list ... from the overview endpoint' or 'translates every label ... in both catalogues', nl[s] undefined). --findRelatedTests on a .json finds nothing.
+- Cause: main added specs that pin a manifest page's widget ids/endpoints and require every label in l10n/nl.json (backend) as well as nl.js; a PR adding a widget never sees them.
+- Fix: grep -rl 'manifest.d/<file>' src tests; run those specs; admit the PR's widget in the spec's list/endpoint check and add its labels to nl.json + en.json beside the page's others (values from nl.js). Compare test:l10n:parity with main (#10483 694c3ecc).
