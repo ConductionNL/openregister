@@ -492,3 +492,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/<A>.php -> lib/<B>.php (Integrations -> Core)' for a file the PR added, after merging main (clean or csv-only conflict).
 - Cause: main remapped files to components (e.g. AuthenticationService is now Integrations); a PR helper both components use (constants list, small value) sits in one of them, so the other gains a forbidden edge.
 - Fix: move a pure constant/value holder into lib/Kernel/Contracts (namespace, imports, csv row 'Kernel/Contracts/X.php,,Kernel,,,,,Kernel', python3 scripts/component-patterns.py); never add the edge to the baseline. Behavioural code instead gets a Kernel interface. (#9131 8058b9a3)
+## Runtime npm dep added, SBOM still current (or-fix-15)
+- Symptom: a build PR adds a runtime dependency to package.json/package-lock.json (e.g. #10395 @nextcloud/files) without sbom.cdx.json; the sbom name gate may park it.
+- Cause: the package was already in the lock transitively (via @nextcloud/vue), so the omit-dev SBOM component set does not change.
+- Fix: merge main, bash ~/q/bin/regen-sbom.sh <checkout>: 'unchanged' means nothing to commit; do not push a bare main merge. Note it on a park instead.
