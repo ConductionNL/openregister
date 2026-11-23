@@ -448,7 +448,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * A reverse-lookup result row for a linked object, with the owning app's detail
 	 * route when one is registered in the deep-link registry (null falls the frontend
-	 * back to OpenRegister's own page).
+	 * back to OpenRegister's own page), its record number and its description.
 	 *
 	 * @param Schema       $schema The object's schema
 	 * @param ObjectEntity $object The linked object
@@ -463,6 +463,8 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'entityType' => 'object',
 			'uuid' => $object->getUuid(),
 			'name' => $object->getName(),
+			'identifier' => $this->recordNumber(object: $object),
+			'description' => $object->getDescription(),
 			'schema' => $schema->getTitle(),
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
@@ -470,6 +472,26 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'url' => $this->deepLink(object: $object, schemaId: $schemaId),
 		];
 	}//end objectResult()
+
+	/**
+	 * The object's record number: its `identifier`, `number` or `reference` field,
+	 * the first that holds a plain value, or null.
+	 *
+	 * @param ObjectEntity $object The linked object
+	 *
+	 * @return string|null The record number
+	 */
+	private function recordNumber(ObjectEntity $object): ?string {
+		$data = $object->getObject();
+		foreach (['identifier', 'number', 'reference'] as $field) {
+			$value = ($data[$field] ?? null);
+			if ((is_string($value) === true || is_int($value) === true) && (string)$value !== '') {
+				return (string)$value;
+			}
+		}
+
+		return null;
+	}//end recordNumber()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.

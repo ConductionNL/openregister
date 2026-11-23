@@ -20,14 +20,25 @@
 				<label class="or-action-label" :for="'or-action-search-' + schema.id">
 					{{ schema.title }}
 				</label>
-				<div v-if="isBusy(schema)" class="or-action-connecting">
+				<div
+					v-if="pickedObject(schema)"
+					class="or-action-picked"
+					role="status"
+					:aria-label="t('openregister', 'Connecting…')">
+					<ObjectRow
+						:kind="schema.title"
+						:identifier="objectIdentifier(pickedObject(schema))"
+						:name="String(objectName(pickedObject(schema)))"
+						:subline="objectSubline(pickedObject(schema))"
+						wrap />
+					<NcLoadingIcon :size="20" class="or-action-picked__spinner" />
+				</div>
+				<div v-else-if="isBusy(schema)" class="or-action-connecting">
 					<NcLoadingIcon :size="20" />
 					<span>{{
-						creating[schema.id]
-							? t('openregister', 'Creating {name}…', {
-									name: sentenceName(schema.title),
-								})
-							: t('openregister', 'Connecting…')
+						t('openregister', 'Creating {name}…', {
+							name: sentenceName(schema.title),
+						})
 					}}</span>
 				</div>
 				<template v-else>
@@ -59,11 +70,23 @@
 								@click="linkObject(schema, obj)"
 								@keydown.enter="linkObject(schema, obj)"
 								@keydown.space.prevent="linkObject(schema, obj)">
-								<span class="or-action-result-name">{{
-									objectName(obj)
-								}}</span>
+								<ObjectRow
+									:kind="schema.title"
+									:identifier="objectIdentifier(obj)"
+									:name="String(objectName(obj))"
+									:subline="objectSubline(obj)" />
 							</li>
 						</ul>
+						<p
+							v-else-if="noMatch(schema)"
+							class="or-action-nomatch">
+							{{
+								t('openregister', 'No {name} matches “{term}”.', {
+									name: sentenceName(schema.title),
+									term: searchTerms[schema.id],
+								})
+							}}
+						</p>
 						<div v-if="searching[schema.id]" class="or-action-searching">
 							{{ t('openregister', 'Searching...') }}
 						</div>
@@ -107,6 +130,8 @@ import { NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
+import ObjectRow from './ObjectRow.vue'
+import { objectIdentifier, objectSubline } from '../objectRow.js'
 import { sentenceName } from '../sentenceName.js'
 
 /**
@@ -142,6 +167,7 @@ export default {
 		NcLoadingIcon,
 		CreateConnectedObjectDialog,
 		Magnify,
+		ObjectRow,
 		Plus,
 	},
 
@@ -158,6 +184,8 @@ export default {
 			registerCache: {},
 			creating: {},
 			linking: {},
+			// The words of the last finished search per schema, for "no match".
+			searchedTerms: {},
 			envelopeCache: {},
 			// Create-object dialog state.
 			createDialog: { show: false, schema: null, data: {} },
@@ -172,6 +200,37 @@ export default {
 	methods: {
 		t,
 		sentenceName,
+		objectIdentifier,
+		objectSubline,
+
+		/**
+		 * The object being connected in this block, shown as the picked row
+		 * while the connection is made; null when none.
+		 *
+		 * @param {object} schema The block's schema.
+		 * @return {object|null}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		pickedObject(schema) {
+			const linking = this.linking[schema.id]
+			return linking && typeof linking === 'object' ? linking : null
+		},
+
+		/**
+		 * Whether a finished search for the typed words found nothing.
+		 *
+		 * @param {object} schema The block's schema.
+		 * @return {boolean}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		noMatch(schema) {
+			const term = this.searchTerms[schema.id] || ''
+			return term !== ''
+				&& this.searchedTerms[schema.id] === term
+				&& !this.searching[schema.id]
+				&& (this.searchResults[schema.id] || []).length === 0
+		},
+
 		/**
 		 * A schema block is busy while it is creating a new record or
 		 * connecting an existing one — used to swap the search UI for a
@@ -347,6 +406,7 @@ export default {
 			this.visibleResults[schema.id] = true
 			try {
 				await this.fetchResults(register, schema, { _search: term })
+				this.searchedTerms[schema.id] = term
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
@@ -543,7 +603,8 @@ export default {
 			if (!objectUuid || !this.accountId || !this.messageId) return
 
 			const mailRef = `${this.accountId}/${this.messageId}`
-			this.linking[schema.id] = true
+			// The picked object itself, so the block shows it while connecting.
+			this.linking[schema.id] = obj
 			try {
 				const url = generateUrl(
 					'/apps/openregister/api/objects/{uuid}/_linked/mail',

@@ -166,6 +166,16 @@ describe('ObjectsTab attachment upload', () => {
 		expect(() => tab().onAttachmentDragOver({})).not.toThrow()
 	})
 
+	it('marks the card being dragged over as the drop target, until the pointer leaves it', () => {
+		const ctx = tab()
+		ctx.onAttachmentDragOver({ dataTransfer: {} }, { uuid: 'u1' })
+		expect(ctx.dropTarget).toBe('u1')
+		ctx.onAttachmentDragLeave({ uuid: 'u2' })
+		expect(ctx.dropTarget).toBe('u1')
+		ctx.onAttachmentDragLeave({ uuid: 'u1' })
+		expect(ctx.dropTarget).toBeNull()
+	})
+
 	it('downloads the attachment and posts it to the object as a file', async () => {
 		const blob = new Blob(['%PDF'], { type: 'application/pdf' })
 		globalThis.fetch = jest.fn(() => Promise.resolve({ ok: true, blob: () => Promise.resolve(blob) }))

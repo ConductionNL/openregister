@@ -189,6 +189,8 @@ describe('ObjectsTab golden', () => {
 					{
 						uuid: 'u-2',
 						name: 'Lead 2',
+						identifier: 'L-2',
+						description: 'Met at the trade fair',
 						schema: 'Leads',
 						url: '/apps/pipelinq/leads/u-2',
 					},

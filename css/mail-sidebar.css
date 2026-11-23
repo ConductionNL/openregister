@@ -142,12 +142,25 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	gap: 8px;
 }
 
+.or-mail-object-card__kind {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.or-mail-object-card__id {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--color-primary-element);
+}
+
 .or-mail-object-card__schema {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
 	font-size: 12px;
-	font-weight: 600;
+	font-weight: 700;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	color: var(--color-primary-element-light-text, var(--color-primary-element));
@@ -180,10 +193,108 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	border-radius: 2px;
 }
 
-.or-mail-object-card__drop {
+.or-mail-object-card__drop,
+.or-mail-object-card__sub {
 	margin: 4px 0 0;
+	overflow: hidden;
 	font-size: 12px;
+	line-height: 18px;
 	color: var(--color-text-maxcontrast);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* While an attachment is dragged over a card, the card says it takes the drop. */
+.or-mail-object-card--drop-target {
+	border-color: var(--color-primary-element);
+	background: var(--color-primary-element-light);
+}
+
+.or-mail-object-card--drop-target .or-mail-object-card__drop {
+	color: var(--color-primary-element-light-text, var(--color-primary-element));
+	font-weight: 600;
+}
+
+/* One object as the picker boards draw it: kind, #number and name on one
+ * line, a muted line under it (WpPickerStates). */
+.or-object-row {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.or-object-row__head {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.or-object-row__kind {
+	flex: none;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--color-primary-element-light-text, var(--color-primary-element));
+}
+
+.or-object-row__id {
+	flex: none;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--color-primary-element);
+}
+
+.or-object-row__name {
+	min-width: 0;
+	overflow: hidden;
+	font-size: 14px;
+	color: var(--color-main-text);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.or-object-row__sub {
+	overflow: hidden;
+	font-size: 12px;
+	line-height: 18px;
+	color: var(--color-text-maxcontrast);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.or-object-row--wrap .or-object-row__name {
+	font-size: 15px;
+	font-weight: 600;
+	white-space: normal;
+}
+
+/* The picked object while it is being connected (WpPickerStates, state 7). */
+.or-action-picked {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 12px 12px 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-element, 8px);
+}
+
+.or-action-picked .or-object-row {
+	flex: 1 1 auto;
+}
+
+.or-action-picked__spinner {
+	flex: none;
+}
+
+.or-action-nomatch {
+	margin: 8px 0 0;
+	padding: 0 10px;
+	font-size: 14px;
+	line-height: 21px;
+	color: var(--color-main-text);
 }
 
 /* One block per kind of item: a label, a search field and a "+ New" row. */
@@ -243,10 +354,15 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 }
 
 .or-action-result {
-	padding: 8px 10px;
+	padding: 6px 10px;
 	border-radius: var(--border-radius-element, 8px);
 	cursor: pointer;
 	font-size: 14px;
+}
+
+/* The first match leads, tinted as the board tints the best match. */
+.or-action-result:first-child {
+	background: var(--color-primary-element-light);
 }
 
 .or-action-result:hover,

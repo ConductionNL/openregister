@@ -180,7 +180,7 @@ describe('ActionsTab search', () => {
 		const wrapper = await mountTab()
 		expect(wrapper.find('.or-action-results').exists()).toBe(false)
 		await wrapper.find('.or-action-input').trigger('focus')
-		const items = wrapper.findAll('.or-action-result-name')
+		const items = wrapper.findAll('.or-object-row__name')
 		expect(items.map((i) => i.text())).toContain('Acme')
 	})
 
@@ -284,9 +284,13 @@ describe('ActionsTab connect', () => {
 		axios.post.mockImplementation(
 			() => new Promise((resolve) => (release = resolve)),
 		)
-		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2' })
+		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2', title: 'Lead two', identifier: 'L-2', description: 'From the fair' })
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.or-action-connecting').text()).toBe('Connecting…')
+		const picked = wrapper.find('.or-action-picked')
+		expect(picked.attributes('aria-label')).toBe('Connecting…')
+		expect(picked.find('.or-object-row__id').text()).toBe('#L-2')
+		expect(picked.find('.or-object-row__name').text()).toBe('Lead two')
+		expect(picked.find('.or-object-row__sub').text()).toBe('From the fair')
 		expect(wrapper.find('.or-action-block--busy').exists()).toBe(true)
 		release({})
 		await pending
@@ -438,5 +442,22 @@ describe('ActionsTab create from email', () => {
 		wrapper.vm.createSaving = false
 		dialog.vm.$emit('cancel')
 		expect(wrapper.vm.createDialog).toEqual({ show: false, schema: null, data: {} })
+	})
+})
+
+describe('ActionsTab no match', () => {
+	it('says so once a search for the typed words finished empty', async () => {
+		const wrapper = await mountTab()
+		wrapper.vm.searchTerms[5] = 'nothing like this'
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+		wrapper.vm.searchedTerms[5] = 'nothing like this'
+		wrapper.vm.searchResults[5] = []
+		wrapper.vm.searching[5] = false
+		expect(wrapper.vm.noMatch(LEADS)).toBe(true)
+		wrapper.vm.searching[5] = true
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+		wrapper.vm.searching[5] = false
+		wrapper.vm.searchTerms[5] = ''
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
 	})
 })

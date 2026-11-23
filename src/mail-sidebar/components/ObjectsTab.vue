@@ -15,15 +15,14 @@
 				v-for="obj in objects"
 				:key="obj.uuid"
 				class="or-mail-object-card"
-				@dragover.prevent="onAttachmentDragOver"
+				:class="{ 'or-mail-object-card--drop-target': dropTarget === obj.uuid }"
+				@dragover.prevent="onAttachmentDragOver($event, obj)"
+				@dragleave="onAttachmentDragLeave(obj)"
 				@drop.prevent="onAttachmentDrop($event, obj)">
 				<div class="or-mail-object-card__header">
-					<span class="or-mail-object-card__schema">
-						<component
-							:is="schemaIconComponent(obj.schemaIcon)"
-							:size="16"
-							class="or-mail-object-card__icon" />
-						{{ obj.schema }}
+					<span class="or-mail-object-card__kind">
+						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
+						<span v-if="objectIdentifier(obj)" class="or-mail-object-card__id">#{{ objectIdentifier(obj) }}</span>
 					</span>
 					<NcButton
 						variant="tertiary"
@@ -45,8 +44,11 @@
 					:title="t('openregister', 'Open connected item')">
 					{{ displayName(obj) }}
 				</a>
-				<p class="or-mail-object-card__drop">
+				<p v-if="dropTarget === obj.uuid" class="or-mail-object-card__drop">
 					{{ t('openregister', 'Drop an attachment here to add it') }}
+				</p>
+				<p v-else-if="objectSubline(obj)" class="or-mail-object-card__sub">
+					{{ objectSubline(obj) }}
 				</p>
 			</div>
 		</div>
@@ -78,7 +80,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
-import { schemaIconComponent } from '../icons.js'
+import { objectIdentifier, objectSubline } from '../objectRow.js'
 
 /**
  * The toast for an attachment added to an object.
@@ -125,12 +127,15 @@ export default {
 			// Connection pending removal (null = dialog closed) + in-flight flag.
 			removeTarget: null,
 			removing: false,
+			// The card an attachment is being dragged over, which says it takes the drop.
+			dropTarget: null,
 		}
 	},
 
 	methods: {
 		t,
-		schemaIconComponent,
+		objectIdentifier,
+		objectSubline,
 		/**
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
@@ -253,12 +258,30 @@ export default {
 		},
 
 		/**
-		 * @param {DragEvent} event
+		 * A drag over a card: it takes a copy, and the card says it is the drop target.
+		 *
+		 * @param {DragEvent} event The drag event.
+		 * @param {object} [obj] The card's object.
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		onAttachmentDragOver(event) {
+		onAttachmentDragOver(event, obj) {
 			if (event.dataTransfer) {
 				event.dataTransfer.dropEffect = 'copy'
+			}
+			if (obj) {
+				this.dropTarget = obj.uuid
+			}
+		},
+
+		/**
+		 * The pointer left a card while dragging: it is no longer the drop target.
+		 *
+		 * @param {object} obj The card's object.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		onAttachmentDragLeave(obj) {
+			if (this.dropTarget === obj.uuid) {
+				this.dropTarget = null
 			}
 		},
 
@@ -268,6 +291,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
+			this.dropTarget = null
 			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
 			if (!raw) {
 				return

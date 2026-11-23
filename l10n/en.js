@@ -3914,7 +3914,8 @@ OC.L10N.register(
     "New {name} from this mail" : "New {name} from this mail",
     "Fields marked * are required. The new {name} is connected to this mail." : "Fields marked * are required. The new {name} is connected to this mail.",
     "(optional)" : "(optional)",
-    "Create and connect" : "Create and connect"
+    "Create and connect" : "Create and connect",
+    "No {name} matches “{term}”." : "No {name} matches “{term}”."
 },
 "nplurals=2; plural=(n != 1);"
 );
