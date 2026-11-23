@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
@@ -515,24 +516,24 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	/**
 	 * Destruction entries created since a moment, oldest first, one page.
 	 *
-	 * @param AuditTrail\DestructionQuery $query The moment, register, schema, actor and page.
+	 * @param DestructionQuery $query The moment, register, schema, actor and page.
 	 *
 	 * @return array<int, AuditTrail> The matching destruction entries, oldest first.
 	 *
 	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
-	public function findDestructions(AuditTrail\DestructionQuery $query): array;
+	public function findDestructions(DestructionQuery $query): array;
 
 	/**
 	 * How many destruction entries a query matches, ignoring its page.
 	 *
-	 * @param AuditTrail\DestructionQuery $query The moment, register, schema and actor.
+	 * @param DestructionQuery $query The moment, register, schema and actor.
 	 *
 	 * @return int The number of matching destruction entries.
 	 *
 	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
-	public function countDestructions(AuditTrail\DestructionQuery $query): int;
+	public function countDestructions(DestructionQuery $query): int;
 
 	/**
 	 * When the oldest destruction entry still held was written, or null when none is held.

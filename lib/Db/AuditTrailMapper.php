@@ -59,8 +59,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
-use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
-use OCA\OpenRegister\Service\Deletion\DestructionActionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
@@ -2623,7 +2622,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('MIN(created)'))
 			->from($this->getTableName())
-			->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionActionInterface::DESTRUCTION_ACTION)));
+			->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)));
 
 		$result = $qb->executeQuery();
 		$oldest = $result->fetchOne();
@@ -2656,7 +2655,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	private function whereDestruction(IQueryBuilder $qb, DestructionQuery $query): void {
 		$since = DateTime::createFromImmutable($query->since)->setTimezone(new DateTimeZone('UTC'));
 
-		$qb->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionActionInterface::DESTRUCTION_ACTION)))
+		$qb->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)))
 			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 
 		if ($query->registerId !== null) {

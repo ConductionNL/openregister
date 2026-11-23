@@ -23,12 +23,12 @@ namespace OCA\OpenRegister\Controller\Support;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
+use OCP\AppFramework\Db\Entity;
 
 /**
  * One tombstone per destruction entry in the audit trail, after the bin rows.
@@ -114,9 +114,10 @@ final class DestroyedTombstones {
 				records: $this->auditTrailMapper->findDestructions(query: $query->page(limit: $take, offset: $start))
 			);
 			// The authorizer answers in the Core audit-record port; the destruction
-			// rows it was handed are AuditTrail entities, and only those carry a tombstone.
-			$entries = array_filter($records, static fn (AuditRecordInterface $record): bool => $record instanceof AuditTrail);
-			$results = array_map(static fn (AuditTrail $record): array => self::tombstone(record: $record), $entries);
+			// rows it was handed are audit trail entities (their column accessors are
+			// the port's tags), and only those carry a tombstone.
+			$entries = array_filter($records, static fn (AuditRecordInterface $record): bool => $record instanceof Entity);
+			$results = array_map(static fn (AuditRecordInterface $record): array => self::tombstone(record: $record), $entries);
 		}
 
 		$oldest = $this->auditTrailMapper->oldestDestruction();
@@ -131,13 +132,13 @@ final class DestroyedTombstones {
 	/**
 	 * The tombstone of one destruction entry: identity and moment, no object data.
 	 *
-	 * @param AuditTrail $record The destruction entry.
+	 * @param AuditRecordInterface $record The destruction entry.
 	 *
 	 * @return array{id: string|null, register: int|null, schema: int|null, destroyedAt: string|null, tombstone: true}
 	 *
 	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
-	public static function tombstone(AuditTrail $record): array {
+	public static function tombstone(AuditRecordInterface $record): array {
 		$created     = $record->getCreated();
 		$destroyedAt = null;
 		if ($created instanceof DateTimeInterface) {

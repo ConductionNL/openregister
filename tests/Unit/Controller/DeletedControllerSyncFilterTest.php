@@ -19,7 +19,7 @@ use OCA\OpenRegister\Controller\Support\DeletedAccess;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\DeletedStore;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;

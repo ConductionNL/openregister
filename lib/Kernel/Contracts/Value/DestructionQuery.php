@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Database
- * @package  OCA\OpenRegister\Db\AuditTrail
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Db\AuditTrail;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 use DateTimeImmutable;
 
@@ -34,6 +34,16 @@ use DateTimeImmutable;
  * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
  */
 final class DestructionQuery {
+
+	/**
+	 * The audit action that records a destruction: the rows this query reads.
+	 *
+	 * Core's DestructionActionInterface names the same value from here, so the
+	 * audit trail mapper reads it without naming a Core class.
+	 *
+	 * @var string
+	 */
+	public const DESTRUCTION_ACTION = 'object.destroyed';
 
 	/**
 	 * Constructor.

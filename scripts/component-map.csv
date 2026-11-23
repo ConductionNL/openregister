@@ -4361,7 +4361,7 @@ Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
-Db/AuditTrail/DestructionQuery.php,25,Db,,,,,Compliance
+Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core

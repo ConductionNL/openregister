@@ -2000,7 +2000,6 @@ components:
       - ".*/lib/Db/AuditTrail/AuditTrailMapperServices[.]php"
       - ".*/lib/Db/AuditTrail/AuditTrailSealedForm[.]php"
       - ".*/lib/Db/AuditTrail/AuditTrailStatistics[.]php"
-      - ".*/lib/Db/AuditTrail/DestructionQuery[.]php"
       - ".*/lib/Db/AuditTrail/ExportOutcome[.]php"
       - ".*/lib/Db/AuditTrail/PartyQueryRefusal[.]php"
       - ".*/lib/Db/AuditTrail/PurposeRefusal[.]php"

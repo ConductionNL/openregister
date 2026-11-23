@@ -26,7 +26,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
-use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -38,7 +38,7 @@ use Psr\Log\NullLogger;
  * Only destruction entries, at or after the moment, within register, schema and actor, oldest first.
  *
  * @coversDefaultClass \OCA\OpenRegister\Db\AuditTrailMapper
- * @uses \OCA\OpenRegister\Db\AuditTrail\DestructionQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery
  */
 class AuditTrailMapperDestructionsTest extends TestCase {
 

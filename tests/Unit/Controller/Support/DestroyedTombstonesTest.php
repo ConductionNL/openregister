@@ -16,7 +16,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Controller\Support\DestroyedTombstones;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrail\DestructionQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Controller\Support\DestroyedTombstones
  * @uses \OCA\OpenRegister\Db\AuditTrail
- * @uses \OCA\OpenRegister\Db\AuditTrail\DestructionQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery
  * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedFilter
  */
 class DestroyedTombstonesTest extends TestCase {
