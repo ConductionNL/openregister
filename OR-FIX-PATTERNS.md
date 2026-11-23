@@ -477,3 +477,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: process-isolated tests (SftpTransportGoldenTest, TablesTableReader*Test, ClassAliasMap*Test, FlowEngineRegistrationListenerTest) error 'Class "OCP\EventDispatcher\Event" not found' under -d auto_prepend_file.
 - Cause: child processes do not get -d flags, but they do read ini files.
 - Fix: mkdir ~/w/ini; echo auto_prepend_file=<your OCP autoloader> > ~/w/ini/ocp.ini; run phpunit with PHP_INI_SCAN_DIR=":$HOME/w/ini" (keeps the system ini dir); those tests then run for real (green on #10509, #9029, #10549 merged with main 223a653f2).
+## Dev-only npm/composer bump: SBOM already current, nothing to commit (or-fix-7)
+- Symptom: a dependabot PR bumping a devDependency (e.g. #10627 @stoplight/spectral-cli) changes package-lock.json without sbom.cdx.json; the sbom gate's name check would park it.
+- Cause: regen-sbom.sh omits dev deps, so after merging main it prints 'unchanged' / --check 'current': there is no real sbom change to commit.
+- Fix: do not fabricate an sbom edit and do not push a bare main merge; leave the PR as is and note it. Precedent: integrator landed dev-only bumps with 'SBOM current' (#7741, #10944).
