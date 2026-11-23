@@ -19,12 +19,15 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Bag;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Bag\BagAddressLookup;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(BagAddressLookup::class)]
+#[UsesClass(RegisterSchemaSlugs::class)]
 final class BagAddressLookupTest extends TestCase {
 
 	/**
@@ -49,8 +52,8 @@ final class BagAddressLookupTest extends TestCase {
 	private function lookup(array $rows): BagAddressLookup {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) use ($rows): array {
-				$this->searches[] = ['register' => $registerSlug, 'schema' => $schemaSlug, 'filters' => $filters, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
+			function (RegisterSchemaSlugs $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) use ($rows): array {
+				$this->searches[] = ['register' => $target->register, 'schema' => $target->schema, 'filters' => $filters, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 				return $rows;
 			}
 		);

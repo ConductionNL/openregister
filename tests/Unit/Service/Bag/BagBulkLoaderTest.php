@@ -20,13 +20,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Bag;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Service\Bag\BagAddressLookup;
 use OCA\OpenRegister\Service\Bag\BagBulkLoader;
 use OCA\OpenRegister\Service\Bag\BagExtractReader;
 use OCA\OpenRegister\Service\Bag\BagExtractSource;
-use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -35,9 +36,12 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(BagBulkLoader::class)]
 #[UsesClass(BagAddressLookup::class)]
 #[UsesClass(BagExtractReader::class)]
+#[UsesClass(RegisterSchemaSlugs::class)]
 #[UsesClass(BulkSaveOptions::class)]
 #[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults::class)]
 #[UsesClass(AuditTrail::class)]
+#[UsesClass(AuditEntryWriter::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry::class)]
 final class BagBulkLoaderTest extends TestCase {
 
 	private const SAMPLE = __DIR__ . '/../../../fixtures/bag/nummeraanduiding-sample-10000.csv';
@@ -73,8 +77,8 @@ final class BagBulkLoaderTest extends TestCase {
 	private function loader(?BagExtractSource $source = null): BagBulkLoader {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schemaSlug, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
-				$this->assertSame(['bag', 'nummeraanduiding', false, false], [$registerSlug, $schemaSlug, $_rbac, $_multitenancy]);
+			function (RegisterSchemaSlugs $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
+				$this->assertSame(['bag', 'nummeraanduiding', false, false], [$target->register, $target->schema, $_rbac, $_multitenancy]);
 				$this->assertSame(count($filters['identificatie']), $filters['_limit']);
 				$rows = [];
 				foreach ($filters['identificatie'] as $id) {
@@ -94,13 +98,17 @@ final class BagBulkLoaderTest extends TestCase {
 				return ['statistics' => $this->statistics];
 			}
 		);
-		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('insert')->willReturnCallback(
-			function (Entity $entity): Entity {
-				$this->audited[] = $entity;
-				return $entity;
+		$mapper = $this->createMock(AuditTrailMapperInterface::class);
+		$mapper->method('insertAuditTrails')->willReturnCallback(
+			function (array $entries): array {
+				foreach ($entries as $entry) {
+					$this->audited[] = $entry;
+				}
+
+				return $entries;
 			}
 		);
+		$audit = new AuditEntryWriter(mapper: $mapper);
 
 		return new BagBulkLoader(
 			$objects,

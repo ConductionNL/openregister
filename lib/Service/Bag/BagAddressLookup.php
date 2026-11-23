@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Bag;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -90,8 +91,7 @@ final class BagAddressLookup {
 		$addition = self::normaliseAddition(addition: $addition);
 
 		$rows = $this->objects->searchObjectsBySlug(
-			registerSlug: self::REGISTER,
-			schemaSlug: self::SCHEMA,
+			target: new RegisterSchemaSlugs(register: self::REGISTER, schema: self::SCHEMA),
 			filters: ['postcode' => $postcode, 'huisnummer' => $number, '_limit' => self::LIMIT],
 			_rbac: false,
 			_multitenancy: false

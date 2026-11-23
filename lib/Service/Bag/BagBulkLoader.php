@@ -19,11 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bag;
 
-use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use Psr\Log\LoggerInterface;
@@ -89,7 +88,7 @@ class BagBulkLoader {
 	 * @param ObjectOperationsInterface $objects The bag register.
 	 * @param BagExtractReader          $reader  Reads an extract file.
 	 * @param BagExtractSource          $source  Turns a source into a local file.
-	 * @param AuditTrailMapperInterface $audit   Records the load.
+	 * @param SystemAuditLineInterface  $audit   Records the load.
 	 * @param LoggerInterface           $logger  Records rows that could not be saved.
 	 *
 	 * @spec openspec/changes/bag-address-lookup-by-postcode/specs/bag-address-lookup/spec.md#requirement-the-bag-register-holds-the-national-address-set-req-bag-001
@@ -98,7 +97,7 @@ class BagBulkLoader {
 		private readonly ObjectOperationsInterface $objects,
 		private readonly BagExtractReader $reader,
 		private readonly BagExtractSource $source,
-		private readonly AuditTrailMapperInterface $audit,
+		private readonly SystemAuditLineInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -276,8 +275,7 @@ class BagBulkLoader {
 	 */
 	private function existing(array $identificaties): array {
 		$rows = $this->objects->searchObjectsBySlug(
-			registerSlug: BagAddressLookup::REGISTER,
-			schemaSlug: BagAddressLookup::SCHEMA,
+			target: new RegisterSchemaSlugs(register: BagAddressLookup::REGISTER, schema: BagAddressLookup::SCHEMA),
 			filters: ['identificatie' => $identificaties, '_limit' => count($identificaties)],
 			_rbac: false,
 			_multitenancy: false
@@ -350,17 +348,13 @@ class BagBulkLoader {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard symfony/uid factory.
 	 */
 	private function recordLoad(array $counts, string $label): void {
-		$entry = new AuditTrail();
-		$entry->setUuid(Uuid::v4()->toRfc4122());
-		$entry->setAction(self::AUDIT_ACTION);
-		$entry->setUser('system');
-		$entry->setUserName('BAG load');
-		$entry->setCreated(new DateTime());
-		$entry->setChanged($counts + ['source' => self::sourceLabel(source: $label)]);
-		$this->audit->insert(entity: $entry);
+		$this->audit->recordSystemLine(
+			action: self::AUDIT_ACTION,
+			userName: 'BAG load',
+			changed: $counts + ['source' => self::sourceLabel(source: $label)]
+		);
 	}//end recordLoad()
 
 	/**

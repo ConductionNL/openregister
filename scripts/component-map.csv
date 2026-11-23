@@ -4518,6 +4518,7 @@ Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppEventWebhookListenerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdminSettingDelegation.php,,Kernel,,,,,Kernel
+Kernel/Contracts/SystemAuditLineInterface.php,,Kernel,,,,,Kernel
 Controller/Support/SearchTrailControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/XwikiLinksControllerServices.php,,Controller,,,,,Integrations
 Service/Configuration/AppSettingsAccess.php,,Service,,,,,Core

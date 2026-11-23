@@ -34,6 +34,7 @@ use RuntimeException;
 
 #[CoversClass(BagAddressController::class)]
 #[UsesClass(BagAddressLookup::class)]
+#[UsesClass(\OCA\OpenRegister\Contract\RegisterSchemaSlugs::class)]
 final class BagAddressControllerTest extends TestCase {
 
 	private function controller(array $params, array|\Throwable $rows, ?LoggerInterface $logger = null): BagAddressController {
