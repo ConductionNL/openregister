@@ -29,7 +29,7 @@ use Exception;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
 use OCA\OpenRegister\Service\Resilience\BreakerThresholds;
 use OCA\OpenRegister\Service\Resilience\CircuitBreaker;
@@ -47,7 +47,7 @@ require_once __DIR__ . '/../Resilience/FakeMemcache.php';
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler
  * @uses   \OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding
  * @uses   \OCA\OpenRegister\Mcp\Service\Chat\ResponseRun
- * @uses   \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerRegistry
  * @uses   \OCA\OpenRegister\Service\Resilience\BreakerThresholds
  * @uses   \OCA\OpenRegister\Service\Resilience\CircuitBreaker
