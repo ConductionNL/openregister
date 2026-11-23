@@ -147,7 +147,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Three
+A trigger is the node where a run begins. A flow may carry several. Five
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -155,6 +155,8 @@ trigger types ship:
 | `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
+| `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
+| `openregister.trigger-webhook` | When another system calls | `runAs`, `token`, `rotateSecret` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -221,6 +223,18 @@ schedule itself is picked up today.
 `next`, is a hint shown after the run (an `openregister.end` node can override
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
+
+**`openregister.trigger-calendar`** starts a run when a date on a record comes
+due: the record's `dateProperty` (format `date` or `date-time`) plus an ISO 8601
+`offset` such as `-P30D`, optionally counted in a `workingCalendar`'s working
+time. A record starts at most one run per date value; moments already past when
+the trigger is switched on are skipped. Runs act as `runAs`.
+
+**`openregister.trigger-webhook`** starts a run when another system posts a
+signed JSON body to the flow's own address. Saving the flow issues the `token`
+in that address and a signing secret, both shown once; `rotateSecret` replaces
+the secret on the next save. Runs act as `runAs`. Addresses, signing and answers:
+[Starting a flow from a date or from another system](../Features/flow-triggers.md).
 
 ### The event catalogue
 
