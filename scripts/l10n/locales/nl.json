@@ -44,6 +44,7 @@
 		"Label": "Established loan, standard in Dutch UI language.",
 		"Labels": "Same loan; the Dutch plural is also 'labels'.",
 		"Links": "Established loan; the Dutch plural is also 'links'.",
+		"link": "Established loan, as for 'Links': Dutch UI calls a found web address a link.",
 		"Maximum": "Latin loan, identical in Dutch.",
 		"Metadata": "Same spelling and meaning in Dutch.",
 		"Minimum": "Latin loan, identical in Dutch.",
