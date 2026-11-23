@@ -35,11 +35,13 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\DraftVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -47,7 +49,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/content-versioning/spec.md#requirement-objects-must-support-a-draftpublished-lifecycle
  */
-class DraftService {
+class DraftService implements DraftPreviewInterface {
 
 	/**
 	 * The key reserved for the published version.
@@ -335,6 +337,47 @@ class DraftService {
 
 		return $this->drafts->findByUuid(uuid: $uuid);
 	}//end heldByLink()
+
+	/**
+	 * The draft a preview link holds, as the link needs to mark it.
+	 *
+	 * @param string $draftUuid The draft's own uuid.
+	 *
+	 * @return array{objectUuid: string, key: string, name: string}|null The draft, or null when it is gone.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function previewedDraft(string $draftUuid): ?array {
+		$draft = $this->heldByLink(uuid: $draftUuid);
+		if ($draft === null) {
+			return null;
+		}
+
+		return [
+			'objectUuid' => (string) $draft->getObjectUuid(),
+			'key'        => (string) $draft->getDraftKey(),
+			'name'       => (string) $draft->getName(),
+		];
+	}//end previewedDraft()
+
+	/**
+	 * A copy of the live object carrying the draft's merged data; never saved.
+	 *
+	 * @param ObjectEntityInterface $object    The live object.
+	 * @param string                $draftUuid The draft's own uuid.
+	 *
+	 * @return ObjectEntityInterface|null The copy, or null when the draft is gone or the object is not a stored one.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function previewCopy(ObjectEntityInterface $object, string $draftUuid): ?ObjectEntityInterface {
+		$draft = $this->heldByLink(uuid: $draftUuid);
+		if ($draft === null || $object instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $this->mergedCopy(object: $object, draft: $draft);
+	}//end previewCopy()
 
 	/**
 	 * Whether the caller may see and change a draft: its creator, or a caller with `update` on the object.

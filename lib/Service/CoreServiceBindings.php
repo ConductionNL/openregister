@@ -359,6 +359,7 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		\OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface::class => \OCA\OpenRegister\Service\Object\DraftService::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,

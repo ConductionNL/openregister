@@ -246,14 +246,15 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
 	 */
 	private function draftSubject(AccessLinkInterface $link): ?ObjectEntity {
-		$draft = $this->sources->drafts?->heldByLink(uuid: (string)$link->getSubjectId());
+		$draftUuid = (string)$link->getSubjectId();
+		$draft     = $this->sources->drafts?->previewedDraft(draftUuid: $draftUuid);
 		if ($draft === null) {
 			return null;
 		}
 
 		try {
 			$object = $this->sources->objects->find(
-				id: (string)$draft->getObjectUuid(),
+				id: $draft['objectUuid'],
 				options: new ObjectFindOptions(render: false, audit: false),
 				_rbac: false,
 				_multitenancy: false
@@ -267,7 +268,12 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			return null;
 		}
 
-		return $this->sources->drafts?->mergedCopy(object: $object, draft: $draft);
+		$copy = $this->sources->drafts?->previewCopy(object: $object, draftUuid: $draftUuid);
+		if ($copy instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $copy;
 	}//end draftSubject()
 
 	/**
@@ -278,12 +284,12 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @return array{key: string, name: string}|null The version, or null when the draft is gone.
 	 */
 	private function draftVersionOf(AccessLinkInterface $link): ?array {
-		$draft = $this->sources->drafts?->heldByLink(uuid: (string)$link->getSubjectId());
+		$draft = $this->sources->drafts?->previewedDraft(draftUuid: (string)$link->getSubjectId());
 		if ($draft === null) {
 			return null;
 		}
 
-		return ['key' => (string)$draft->getDraftKey(), 'name' => (string)$draft->getName()];
+		return ['key' => $draft['key'], 'name' => $draft['name']];
 	}//end draftVersionOf()
 
 	/**

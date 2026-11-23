@@ -301,4 +301,34 @@ final class DraftServiceTest extends TestCase {
 
 		$this->assertSame([$piet], $this->service->visibleAmong(drafts: [$kees, $piet], object: null, schema: $this->schema, caller: 'piet'));
 	}
+
+	public function testThePreviewPortDescribesTheDraftALinkHolds(): void {
+		$draft = $this->draft('review', 'kees');
+		$draft->setName('Review copy');
+		$this->drafts->method('findByUuid')->with('draft-uuid')->willReturn($draft);
+
+		$this->assertSame(
+			['objectUuid' => '9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'key' => 'review', 'name' => 'Review copy'],
+			$this->service->previewedDraft(draftUuid: 'draft-uuid')
+		);
+	}
+
+	public function testThePreviewPortAnswersNothingForAGoneOrBlankDraft(): void {
+		$this->drafts->method('findByUuid')->willReturn(null);
+
+		$this->assertNull($this->service->previewedDraft(draftUuid: 'gone'));
+		$this->assertNull($this->service->previewedDraft(draftUuid: '  '));
+		$this->assertNull($this->service->previewCopy(object: $this->object, draftUuid: 'gone'));
+	}
+
+	public function testThePreviewCopyCarriesTheDraftAndLeavesTheLiveObjectAlone(): void {
+		$this->drafts->method('findByUuid')->with('draft-uuid')->willReturn($this->draft('review', 'kees'));
+
+		$copy = $this->service->previewCopy(object: $this->object, draftUuid: 'draft-uuid');
+
+		$this->assertInstanceOf(ObjectEntity::class, $copy);
+		$this->assertNotSame($this->object, $copy);
+		$this->assertSame('in_behandeling', $copy->getObject()['status']);
+		$this->assertSame('nieuw', $this->object->getObject()['status']);
+	}
 }

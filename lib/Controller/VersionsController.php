@@ -31,7 +31,6 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -44,9 +43,9 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
@@ -339,7 +338,7 @@ class VersionsController extends Controller {
 	 */
 	private static function stopped(HookStoppedException $exception): JSONResponse {
 		$errors = $exception->getErrors();
-		if (($errors['code'] ?? null) === ChangeGateListener::CODE_PENDING) {
+		if (($errors['code'] ?? null) === HeldChangeCodes::PENDING) {
 			return new JSONResponse(
 				['message' => $exception->getMessage(), 'pendingChange' => (string)($errors['pendingChange'] ?? '')],
 				Http::STATUS_ACCEPTED

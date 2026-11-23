@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCP\IUserManager;
 
@@ -41,7 +41,7 @@ final class AccessLinkReaderSources {
 	 * @param AccessLinkSubjectInterface $subjects     Reads which object a subject names.
 	 * @param FileRestrictionStore|null  $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
 	 * @param IUserManager|null          $users        Resolves the account that minted a view link; without it a view link serves nothing.
-	 * @param DraftService|null          $drafts       Resolves the draft a preview link opens; without it a preview link serves nothing.
+	 * @param DraftPreviewInterface|null $drafts       Resolves the draft a preview link opens; without it a preview link serves nothing.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
@@ -50,7 +50,7 @@ final class AccessLinkReaderSources {
 		public readonly AccessLinkSubjectInterface $subjects,
 		public readonly ?FileRestrictionStore $restrictions = null,
 		public readonly ?IUserManager $users = null,
-		public readonly ?DraftService $drafts = null,
+		public readonly ?DraftPreviewInterface $drafts = null,
 	) {
 	}//end __construct()
 }//end class
