@@ -1,5 +1,5 @@
 # BUILDER-LANE.md: the brief for every cloud app BUILDER routine.
-CI (Ruben, 23 Nov 2026): our work runs WITHOUT GitHub CI. Every commit message you push gets `[skip ci]` in its subject or body, and every merge you make gets a subject ending in `[skip ci]` (`gh pr merge --subject "Merge pull request #<n> [skip ci]"`, or `-f commit_title=...` with the API). Local green is the gate; full CI runs nightly only. Never cancel or re-run workflows yourself.
+CI (Ruben, 23 Nov 2026): feature branches run WITHOUT GitHub CI. Every commit you push to a PR or feature branch gets `[skip ci]` in its message. Merges into development, main or beta do NOT get `[skip ci]`: the Release workflow runs on those pushes and must not be skipped. Local green is the gate. Never cancel or re-run workflows yourself.
 # APP is the app named in your routine prompt (repo ConductionNL/APP); substitute it everywhere below.
 
 MERGE FIRST, BUILD SECOND (Ruben, 21 Nov 2026): building while this app still has open PRs causes conflicts. So every run, before any building:

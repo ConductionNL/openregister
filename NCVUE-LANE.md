@@ -1,5 +1,5 @@
 # NCVUE-LANE.md: the brief for the cloud nextcloud-vue lanes
-CI (Ruben, 23 Nov 2026): our work runs WITHOUT GitHub CI. Every commit message you push gets `[skip ci]` in its subject or body, and every merge you make gets a subject ending in `[skip ci]` (`gh pr merge --subject "Merge pull request #<n> [skip ci]"`, or `-f commit_title=...` with the API). Local green is the gate; full CI runs nightly only. Never cancel or re-run workflows yourself.
+CI (Ruben, 23 Nov 2026): feature branches run WITHOUT GitHub CI. Every commit you push to a PR or feature branch gets `[skip ci]` in its message. Merges into development, main or beta do NOT get `[skip ci]`: the Release workflow runs on those pushes and must not be skipped. Local green is the gate. Never cancel or re-run workflows yourself.
 # K is your lane number from the routine prompt (0 to 5); you own the open PRs of ConductionNL/nextcloud-vue whose number N satisfies N % 6 == K, WHATEVER their base branch.
 
 Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. Ruben decided on 23 Nov 2026 that the nextcloud-vue backlog is cleared FIRST, because every fleet app builds on this library; the cloud app builders are paused until it is done. Decide everything yourself; never ask.
