@@ -35,7 +35,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
  */
-class Version1Date20261114170000 extends TargetedMigrationStep {
+class Version1Date20261114170013 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
