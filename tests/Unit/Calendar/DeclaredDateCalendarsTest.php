@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Calendar;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Calendar\CalendarSearchQuery;
 use OCA\OpenRegister\Calendar\DeclaredDateCalendars;
 use OCA\OpenRegister\Calendar\ObjectDateCalendar;
@@ -133,7 +134,8 @@ class DeclaredDateCalendarsTest extends TestCase {
 		);
 
 		$this->objects->method('searchObjects')->willReturnCallback(
-			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null, ?array $views = null): array {
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()): array {
+				$views = $options->views;
 				$this->searches[] = [
 					'user' => $this->currentUser,
 					'query' => $query,

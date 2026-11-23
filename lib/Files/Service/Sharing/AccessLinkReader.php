@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
@@ -253,8 +254,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 					query: ['_limit' => self::MAX_VIEW_OBJECTS],
 					_rbac: true,
 					_multitenancy: true,
-					views: [$viewId],
-					_viewScopeRequired: true
+					options: new SearchOptions(views: [$viewId], viewScopeRequired: true)
 				)
 			);
 		} catch (Throwable $missing) {

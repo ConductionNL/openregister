@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Service\Object;
 use ArrayObject;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
@@ -407,15 +409,14 @@ class QueryHandler implements QueryHandlerInterface {
 			query: $query,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			ids: $options->selection->ids,
-			uses: $options->selection->uses
+			selection: $options->selection
 		);
 		// Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
 		$result['@self']['source'] = $result['@self']['source'] ?? 'database';
 		$result['@self']['query'] = $query;
 		$result['@self']['rbac'] = $_rbac;
 		$result['@self']['multi'] = $_multitenancy;
-		$result['@self']['deleted'] = false;
+		$result['@self']['deleted'] = $options->deleted;
 
 		return $result;
 	}//end searchObjectsPaginated()
@@ -426,14 +427,10 @@ class QueryHandler implements QueryHandlerInterface {
 	 * @param array $query The search query.
 	 * @param bool $_rbac Whether to apply RBAC checks.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param bool $deleted Whether to include deleted objects.
-	 * @param array|null $ids Optional array of IDs to filter by.
-	 * @param string|null $uses Optional uses parameter.
+	 * @param ObjectSelection $selection The object ids and the uses filter the search is restricted to.
 	 *
 	 * @psalm-param   array<string, mixed> $query
-	 * @psalm-param   array<int, string>|null $ids
 	 * @phpstan-param array<string, mixed> $query
-	 * @phpstan-param array<int, string>|null $ids
 	 *
 	 * @return array Paginated search results.
 	 *
@@ -446,9 +443,7 @@ class QueryHandler implements QueryHandlerInterface {
 		array $query = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
-		bool $deleted = false,
-		?array $ids = null,
-		?string $uses = null,
+		ObjectSelection $selection = new ObjectSelection(),
 	): array {
 		$startTime = microtime(true);
 
@@ -464,7 +459,7 @@ class QueryHandler implements QueryHandlerInterface {
 		$expansion        = $this->expandSearchTerm(query: $query);
 		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
-		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses] + $window;
+		$run->scope      = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $selection->ids, 'uses' => $selection->uses] + $window;
 		$run->countQuery = $queries['count'];
 		$this->narrowByHistory(run: $run, predicate: $historyPredicate);
 
@@ -472,8 +467,9 @@ class QueryHandler implements QueryHandlerInterface {
 		$searchResult = $this->widenWithContentMatches(run: $run, searchResult: $searchResult);
 		$results      = $this->renderListRows(run: $run, searchResult: $searchResult);
 
-		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
-		$paginatedResults['@self'] += $reports->searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
+		$paginatedResults = $paging->response(searchResult: (['results' => $results] + $searchResult), window: $window);
+		$paginatedResults['@self'] += $reports->historyReport(historyPredicate: $historyPredicate);
+		$paginatedResults['@self'] += $reports->searchReports(query: $query, expansion: $expansion);
 		$paginatedResults['@self'] += $reports->requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
 		$paginatedResults['@self'] += $reports->ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
 		$paginatedResults           = $this->withFacets(run: $run, response: $paginatedResults);
