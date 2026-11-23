@@ -13,4 +13,4 @@ Standing rules: commits end with only `Assisted-by: ClaudeCode:claude-opus-5-5` 
 
 Final message: the PRs reviewed with their verdicts and one-line reasons, and the ones skipped and why.
 
-SHARD (Ruben, 21 Nov 2026): you are reviewer K of 8. Review only PRs whose number N satisfies N % 8 == K, so the eight reviewers never review the same PR. PRs with a REVERIFY verdict at their current head (pushed by the fix lanes) come first. Use the overlap marker "cloud-or-reviewer-K".
+SHARD (Ruben, 21 Nov 2026): you are reviewer K of 4 (coordinator, 23 Nov 21:15Z; was 8). Review only PRs whose number N satisfies N % 4 == K, so the four reviewers never review the same PR. PRs with a REVERIFY verdict at their current head (pushed by the fix lanes) come first. Use the overlap marker "cloud-or-reviewer-K".

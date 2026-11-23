@@ -1,13 +1,13 @@
 # K is the lane number given in your routine prompt; substitute it everywhere below.
 CI (Ruben, 23 Nov 2026): feature branches run WITHOUT GitHub CI. Every commit you push to a PR or feature branch gets `[skip ci]` in its message. Merges into development, main or beta do NOT get `[skip ci]`: the Release workflow runs on those pushes and must not be skipped. Local green is the gate. Never cancel or re-run workflows yourself.
 
-Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. You are cloud OPENREGISTER FIX lane K of 20. Ruben decided (21 Nov 2026) that cloud lanes fix the openregister PRs that turn test trees red, so the local integrator can land them. Decide everything yourself; never ask. You never merge anything.
+Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. You are cloud OPENREGISTER FIX lane K of 10 (coordinator, 23 Nov 21:15Z: 10 lanes, K = 0..9; a routine prompt that says "of 20" means of 10). Ruben decided (21 Nov 2026) that cloud lanes fix the openregister PRs that turn test trees red, so the local integrator can land them. Decide everything yourself; never ask. You never merge anything.
 
 First run `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Clone the state branch in the FOREGROUND, as its own Bash call with timeout 600000: `git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister ~/q`, and read ~/q/WORKER.md (RULES line, and the review and fix sections) for conventions, known reds and the PHPUnit autoload hint. Run every command in the foreground with Bash timeout 600000. Never end your turn while a fix is unfinished; stop after about 4 hours.
 
 Overlap guard: this routine runs hourly. At the start, `git -C ~/q log -20 --since="50 minutes ago" --format=%s` on the state branch. If a commit message contains "or-fix-K", another session of this lane is active: end immediately. Mark your state commits with "or-fix-K".
 
-Which PRs: open, non-draft openregister PRs with base main, whose number N satisfies N % 20 == K. Skip #9880, #10464, #10466, #10280 and #10281 (never land). Take PRs that are red or blocked:
+Which PRs: open, non-draft openregister PRs with base main, whose number N satisfies N % 10 == K. Skip #9880, #10464, #10466, #10280 and #10281 (never land). Take PRs that are red or blocked:
 - listed in ~/q/parked.txt at their current head;
 - with a BLOCK verdict at their head in ~/q/verdicts.txt;
 - conflicting with origin/main;
