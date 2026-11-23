@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkNamesInterface;
 use OCP\Comments\ICommentsManager;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -69,13 +68,13 @@ class NoteTriggerContext {
 	 * @param LoggerInterface       $logger   Records a note that could not be read.
 	 * @param ICommentsManager|null $comments Where the note is stored.
 	 * @param IUserManager|null     $users    The display name of a user author.
-	 * @param AccessLinkMapperInterface|null $links    The label of a link author.
+	 * @param AccessLinkNamesInterface|null $links    The label of a link author.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly ?ICommentsManager $comments = null,
 		private readonly ?IUserManager $users = null,
-		private readonly ?AccessLinkMapperInterface $links = null,
+		private readonly ?AccessLinkNamesInterface $links = null,
 	) {
 	}//end __construct()
 
@@ -152,23 +151,23 @@ class NoteTriggerContext {
 			return $id;
 		}
 
-		if ($type === self::LINK_ACTOR && str_starts_with($id, AccessLink::PRINCIPAL_PREFIX) === true) {
-			return ($this->linkName(uuid: substr($id, strlen(AccessLink::PRINCIPAL_PREFIX))) ?? $id);
+		if ($type === self::LINK_ACTOR) {
+			return ($this->linkName(principal: $id) ?? $id);
 		}
 
 		return $id;
 	}//end author()
 
 	/**
-	 * The label of the link with this uuid, or null when it cannot be found.
+	 * The label of the link a principal id names, or null when it cannot be found.
 	 *
-	 * @param string $uuid The link uuid.
+	 * @param string $principal The link principal id (`link:<uuid>`).
 	 *
 	 * @return string|null
 	 */
-	private function linkName(string $uuid): ?string {
+	private function linkName(string $principal): ?string {
 		try {
-			return $this->links?->findByUuid(uuid: $uuid)?->principalName();
+			return $this->links?->linkName(principal: $principal);
 		} catch (Throwable $e) {
 			$this->logger->info(sprintf('[NoteTriggerContext] link author not found: %s', $e->getMessage()));
 			return null;

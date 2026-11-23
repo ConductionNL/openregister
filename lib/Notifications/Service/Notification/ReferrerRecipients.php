@@ -23,10 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use Closure;
-use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ReferringObjectsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -72,14 +72,14 @@ class ReferrerRecipients {
 	 *
 	 * @param RegisterMapperInterface      $registers Resolves the named register.
 	 * @param SchemaMapperInterface        $schemas   Resolves the named schema and the triggering object's schema.
-	 * @param MagicRelationReaderInterface $relations Reads the referring objects.
+	 * @param ReferringObjectsInterface    $relations Reads the referring objects.
 	 * @param ReadableRecipients           $readable  The read check on the triggering object.
 	 * @param LoggerInterface              $logger    Records a lookup that failed.
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicRelationReaderInterface $relations,
+		private readonly ReferringObjectsInterface $relations,
 		private readonly ReadableRecipients $readable,
 		private readonly LoggerInterface $logger,
 	) {
@@ -194,7 +194,7 @@ class ReferrerRecipients {
 		$byUuid = [];
 		foreach ($uuids as $uuid) {
 			try {
-				$rows = $this->relations->findByRelationBatchInSchema(
+				$rows = $this->relations->referringTo(
 					uuids: [$uuid],
 					schemaId: $location['schema'],
 					registerId: $location['register'],
@@ -206,7 +206,7 @@ class ReferrerRecipients {
 			}
 
 			foreach ($rows as $row) {
-				if (self::pointsAt(row: $row, property: $location['property'], uuid: $uuid) === true) {
+				if (($row instanceof ObjectEntity) === true && self::pointsAt(row: $row, property: $location['property'], uuid: $uuid) === true) {
 					$byUuid[(string)$row->getUuid()] = $row;
 				}
 			}

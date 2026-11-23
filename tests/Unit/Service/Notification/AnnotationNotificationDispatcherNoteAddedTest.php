@@ -46,6 +46,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadRights;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -88,6 +89,7 @@ use Psr\Log\NullLogger;
 #[UsesClass(RuleReachRecorder::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(ObjectReadRights::class)]
 class AnnotationNotificationDispatcherNoteAddedTest extends TestCase {
 
 	/**
@@ -152,7 +154,7 @@ class AnnotationNotificationDispatcherNoteAddedTest extends TestCase {
 			$permissions->method('hasPermission')->willReturnCallback(
 				static fn (Schema $schema, string $action, ?string $userId = null): bool => $action === 'read' && ($readers[$userId] ?? false) === true
 			);
-			$readable = new ReadableRecipients(logger: new NullLogger(), permissions: $permissions);
+			$readable = new ReadableRecipients(logger: new NullLogger(), permissions: new ObjectReadRights($permissions));
 		}
 
 		return new AnnotationNotificationDispatcher(

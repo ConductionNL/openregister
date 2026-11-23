@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NoteTriggerContext;
+use OCA\OpenRegister\Service\Sharing\AccessLinkNames;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException;
@@ -30,6 +31,7 @@ use Psr\Log\NullLogger;
 
 #[CoversClass(NoteTriggerContext::class)]
 #[UsesClass(AccessLink::class)]
+#[UsesClass(AccessLinkNames::class)]
 class NoteTriggerContextTest extends TestCase {
 
 	private function comments(string $message): ICommentsManager {
@@ -58,7 +60,7 @@ class NoteTriggerContextTest extends TestCase {
 		$link->setLabel('Supplier portal');
 		$links = $this->createMock(AccessLinkMapperInterface::class);
 		$links->expects($this->once())->method('findByUuid')->with('abc-123')->willReturn($link);
-		$context = new NoteTriggerContext(logger: new NullLogger(), comments: $this->comments('ok'), links: $links);
+		$context = new NoteTriggerContext(logger: new NullLogger(), comments: $this->comments('ok'), links: new AccessLinkNames($links));
 
 		$enriched = $context->enrich(['noteId' => '7', 'actorType' => 'openregister_links', 'actorId' => 'link:abc-123']);
 
@@ -70,7 +72,7 @@ class NoteTriggerContextTest extends TestCase {
 		$links->method('findByUuid')->willReturn(null);
 		$users = $this->createMock(IUserManager::class);
 		$users->method('getDisplayName')->willReturn(null);
-		$context = new NoteTriggerContext(logger: new NullLogger(), users: $users, links: $links);
+		$context = new NoteTriggerContext(logger: new NullLogger(), users: $users, links: new AccessLinkNames($links));
 
 		$this->assertSame('link:gone', $context->enrich(['actorType' => 'openregister_links', 'actorId' => 'link:gone'])['note.author']);
 		$this->assertSame('ghost', $context->enrich(['actorType' => 'users', 'actorId' => 'ghost'])['note.author']);

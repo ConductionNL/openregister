@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadRightsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,11 +44,11 @@ class ReadableRecipients {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface                 $logger      Records a check that could not be made.
-	 * @param PermissionHandlerInterface|null $permissions The read check; without it nobody passes.
+	 * @param ObjectReadRightsInterface|null $permissions The read check; without it nobody passes.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ?PermissionHandlerInterface $permissions = null,
+		private readonly ?ObjectReadRightsInterface $permissions = null,
 	) {
 	}//end __construct()
 
@@ -94,14 +94,7 @@ class ReadableRecipients {
 	 */
 	private function mayRead(string $uid, ObjectEntity $object, Schema $schema): bool {
 		try {
-			return $this->permissions?->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: $uid,
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
-			) === true;
+			return $this->permissions?->mayRead(userId: $uid, object: $object, schema: $schema) === true;
 		} catch (Throwable $e) {
 			$this->logger->warning(sprintf('[ReadableRecipients] read check failed: %s', $e->getMessage()));
 			return false;

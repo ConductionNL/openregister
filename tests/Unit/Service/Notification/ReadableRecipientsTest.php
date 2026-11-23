@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Service\Notification\ReadableRecipients;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadRights;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +30,7 @@ use RuntimeException;
 #[CoversClass(ReadableRecipients::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(ObjectReadRights::class)]
 class ReadableRecipientsTest extends TestCase {
 
 	private function object(): ObjectEntity {
@@ -58,7 +60,8 @@ class ReadableRecipientsTest extends TestCase {
 			}
 		);
 
-		$kept = (new ReadableRecipients(logger: new NullLogger(), permissions: $permissions))->filter(['a', 'lost', 'b'], $object, $schema);
+		$readable = new ReadableRecipients(logger: new NullLogger(), permissions: new ObjectReadRights($permissions));
+		$kept     = $readable->filter(['a', 'lost', 'b'], $object, $schema);
 
 		$this->assertSame(['a', 'b'], $kept);
 		$this->assertSame(['read', 'lost', 'owner', true, 'o-1'], $asked[1]);
@@ -77,7 +80,8 @@ class ReadableRecipientsTest extends TestCase {
 			}
 		);
 
-		$kept = (new ReadableRecipients(logger: new NullLogger(), permissions: $permissions))->filter(['boom', 'ok'], $this->object(), new Schema());
+		$readable = new ReadableRecipients(logger: new NullLogger(), permissions: new ObjectReadRights($permissions));
+		$kept     = $readable->filter(['boom', 'ok'], $this->object(), new Schema());
 
 		$this->assertSame(['ok'], $kept);
 	}

@@ -29,6 +29,8 @@ use OCA\OpenRegister\Notifications\Service\Notification\ReadableRecipients;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\ReferrerRecipients;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\ReferringObjects;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -45,6 +47,8 @@ use RuntimeException;
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(Register::class)]
+#[UsesClass(ObjectReadRights::class)]
+#[UsesClass(ReferringObjects::class)]
 class NotificationRecipientResolverReferrersTest extends TestCase {
 
 	/**
@@ -113,8 +117,8 @@ class NotificationRecipientResolverReferrersTest extends TestCase {
 		$referrers = new ReferrerRecipients(
 			registers: $registers,
 			schemas: $schemas,
-			relations: $relations,
-			readable: new ReadableRecipients(logger: new NullLogger(), permissions: $permissions),
+			relations: new ReferringObjects($relations),
+			readable: new ReadableRecipients(logger: new NullLogger(), permissions: new ObjectReadRights($permissions)),
 			logger: new NullLogger()
 		);
 		$container = $this->createMock(IServerContainer::class);

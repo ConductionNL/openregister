@@ -53,6 +53,9 @@ use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkNamesInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ReferringObjectsInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
@@ -104,6 +107,9 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
+use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\ReferringObjects;
+use OCA\OpenRegister\Service\Sharing\AccessLinkNames;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -373,6 +379,9 @@ final class CoreServiceBindings {
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DbalConnectionFactoryInterface::class => DbalConnectionFactory::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
+		AccessLinkNamesInterface::class => AccessLinkNames::class,
+		ObjectReadRightsInterface::class => ObjectReadRights::class,
+		ReferringObjectsInterface::class => ReferringObjects::class,
 		ListenerDeferralInterface::class => ListenerDeferralService::class,
 		DelegationConsentServiceInterface::class => DelegationConsentService::class,
 		DelegationNotifierInterface::class => DelegationNotifier::class,
