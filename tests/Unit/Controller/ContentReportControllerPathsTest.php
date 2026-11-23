@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SoftDeletion;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Audit\ContentReportFiling;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -43,6 +44,7 @@ use RuntimeException;
 #[CoversClass(ContentReportController::class)]
 #[UsesClass(ContentReportControllerServices::class)]
 #[UsesClass(ContentReport::class)]
+#[UsesClass(ContentReportFiling::class)]
 #[UsesClass(ListQuery::class)]
 #[UsesClass(LockTerms::class)]
 #[UsesClass(SoftDeletion::class)]
@@ -158,7 +160,13 @@ final class ContentReportControllerPathsTest extends TestCase {
 		$this->objects->method('find')->willReturn($object);
 		$this->service->expects($this->once())
 			->method('file')
-			->with($object, 'beledigend', 'collega')
+			->with(
+				$this->callback(
+					static fn (ContentReportFiling $filing): bool => $filing->object === $object
+						&& $filing->reason === 'beledigend'
+						&& $filing->reporter === 'collega'
+				)
+			)
 			->willThrowException(new RuntimeException('Report store unavailable'));
 
 		$response = $this->controller('collega', ['object' => 'obj-1', 'reason' => ' beledigend '])->create();
