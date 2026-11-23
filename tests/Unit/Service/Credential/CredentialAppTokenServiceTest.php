@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialAppTokenService
+ * @uses \OCA\OpenRegister\Service\Credential\BrokerTokenBinding
  */
 class CredentialAppTokenServiceTest extends TestCase {
 	/** @var array<string, mixed> In-memory vault keyed by identifier. */

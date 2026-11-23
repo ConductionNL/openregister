@@ -94,26 +94,34 @@ final class SearchDictionary {
 	public static function fromDeclarations(array $concepts, array $stopwords): self {
 		$groups = [];
 		foreach ($concepts as $concept) {
-			if (is_array($concept) === false) {
-				continue;
+			$terms = self::groupOf(concept: $concept);
+			if (count($terms) >= 2) {
+				$groups[] = $terms;
 			}
-
-			$terms = self::normaliseTerms(
-				raw: array_merge(
-					[($concept['prefLabel'] ?? null)],
-					(array)($concept['altLabel'] ?? [])
-				)
-			);
-
-			if (count($terms) < 2) {
-				continue;
-			}
-
-			$groups[] = $terms;
 		}
 
 		return new self(groups: $groups, stopwords: self::normaliseTerms(raw: $stopwords));
 	}//end fromDeclarations()
+
+	/**
+	 * A concept's preferred and alternative labels as normalised terms; none for a concept that is not an object.
+	 *
+	 * @param mixed $concept One synonym concept.
+	 *
+	 * @return array<int, string> The terms.
+	 */
+	private static function groupOf(mixed $concept): array {
+		if (is_array($concept) === false) {
+			return [];
+		}
+
+		return self::normaliseTerms(
+			raw: array_merge(
+				[($concept['prefLabel'] ?? null)],
+				(array)($concept['altLabel'] ?? [])
+			)
+		);
+	}//end groupOf()
 
 	/**
 	 * Whether this dictionary can change any query at all.
@@ -136,15 +144,14 @@ final class SearchDictionary {
 	 * with the whole register — which an empty term does — is the loudest
 	 * possible response to the quietest possible input.
 	 *
-	 * @param string $term         The raw term, already known to carry no operators.
-	 * @param int    $perGroupCap  Most synonyms added per word.
-	 * @param int    $perQueryCap  Most synonyms added across the whole term.
+	 * @param string      $term The raw term, already known to carry no operators.
+	 * @param SynonymCaps $caps Most synonyms added per word and across the whole term.
 	 *
 	 * @return DictionaryExpansion What the term became, and why.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function expand(string $term, int $perGroupCap, int $perQueryCap): DictionaryExpansion {
+	public function expand(string $term, SynonymCaps $caps): DictionaryExpansion {
 		$words = preg_split('/\s+/u', trim($term), -1, PREG_SPLIT_NO_EMPTY);
 		if ($words === false || $words === []) {
 			return DictionaryExpansion::unchanged(term: $term);
@@ -157,7 +164,7 @@ final class SearchDictionary {
 			return DictionaryExpansion::stopwordsWouldEmptyIt(term: $term, removed: $removed);
 		}
 
-		[$pieces, $added] = $this->expandWords(words: $kept, perGroupCap: $perGroupCap, perQueryCap: $perQueryCap);
+		[$pieces, $added] = $this->expandWords(words: $kept, caps: $caps);
 
 		return DictionaryExpansion::expanded(
 			term: implode(' ', $pieces),
@@ -192,18 +199,17 @@ final class SearchDictionary {
 	/**
 	 * Write each kept word with its capped synonyms in the search grammar.
 	 *
-	 * @param string[] $words       The kept words.
-	 * @param int      $perGroupCap Most synonyms added per word.
-	 * @param int      $perQueryCap Most synonyms added across the whole term.
+	 * @param string[]   $words The kept words.
+	 * @param SynonymCaps $caps  Most synonyms added per word and across the whole term.
 	 *
 	 * @return array{0: list<string>, 1: list<string>} The pieces of the term and the synonyms added.
 	 */
-	private function expandWords(array $words, int $perGroupCap, int $perQueryCap): array {
+	private function expandWords(array $words, SynonymCaps $caps): array {
 		$added = [];
-		$budget = max(0, $perQueryCap);
+		$budget = max(0, $caps->perQuery);
 		$pieces = [];
 		foreach ($words as $word) {
-			$synonyms = array_slice($this->synonymsFor(word: $word), 0, max(0, $perGroupCap));
+			$synonyms = array_slice($this->synonymsFor(word: $word), 0, max(0, $caps->perGroup));
 			$synonyms = array_slice($synonyms, 0, $budget);
 			$budget -= count($synonyms);
 
@@ -250,26 +256,25 @@ final class SearchDictionary {
 				continue;
 			}
 
-			$synonyms = $this->withGroup(synonyms: $synonyms, group: $group, needle: $needle);
+			$synonyms = $this->withGroup(synonyms: $synonyms, others: array_diff($group, [$needle]));
 		}
 
 		return $synonyms;
 	}//end synonymsFor()
 
 	/**
-	 * Append a group's terms not yet collected, leaving out the word itself.
+	 * Append a group's other terms not yet collected.
 	 *
 	 * @param string[] $synonyms The synonyms collected so far.
-	 * @param string[] $group    The group the word belongs to.
-	 * @param string   $needle   The lowercased word.
+	 * @param string[] $others   The group's terms without the word itself.
 	 *
 	 * @return string[] The synonyms with the group's new terms appended.
 	 *
 	 * @psalm-return list<string>
 	 */
-	private function withGroup(array $synonyms, array $group, string $needle): array {
-		foreach ($group as $term) {
-			if ($term !== $needle && in_array($term, $synonyms, true) === false) {
+	private function withGroup(array $synonyms, array $others): array {
+		foreach ($others as $term) {
+			if (in_array($term, $synonyms, true) === false) {
 				$synonyms[] = $term;
 			}
 		}

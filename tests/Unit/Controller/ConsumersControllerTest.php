@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ConsumersController;
+use OCA\OpenRegister\Controller\Support\ConsumersControllerServices;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -30,11 +33,17 @@ class ConsumersControllerTest extends TestCase {
 			return $text;
 		});
 
+		$catalogue = $this->createMock(PermissionCatalogueInterface::class);
+		$catalogue->method('verbs')->willReturn(['read', 'update']);
+
 		$this->controller = new ConsumersController(
-			'openregister',
 			$this->request,
-			$this->consumerMapper,
-			$l10n
+			new ConsumersControllerServices(
+				$this->consumerMapper,
+				$l10n,
+				new TokenGrantValidator($catalogue),
+				$catalogue
+			)
 		);
 	}
 
@@ -139,5 +148,42 @@ class ConsumersControllerTest extends TestCase {
 		$result = $this->controller->patch(1);
 
 		$this->assertEquals(200, $result->getStatus());
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function refusedGrants(): array {
+		return [
+			'not an object'  => ['read'],
+			'no verbs'       => [['verbs' => [], 'expiresAt' => '2999-01-01T00:00:00+00:00']],
+			'unknown verb'   => [['verbs' => ['fly'], 'expiresAt' => '2999-01-01T00:00:00+00:00']],
+			'no end date'    => [['verbs' => ['read']]],
+			'lapsed'         => [['verbs' => ['read'], 'expiresAt' => '2000-01-01T00:00:00+00:00']],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('refusedGrants')]
+	public function testCreateRefusesAGrantThatCannotBeIssued(mixed $grant): void {
+		$this->request->method('getParams')->willReturn(['name' => 'c', 'configuration' => ['grant' => $grant]]);
+		$this->consumerMapper->expects($this->never())->method('createFromArray');
+
+		$this->assertSame(400, $this->controller->create()->getStatus());
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('refusedGrants')]
+	public function testUpdateRefusesAGrantThatCannotBeIssued(mixed $grant): void {
+		$this->request->method('getParams')->willReturn(['configuration' => ['grant' => $grant]]);
+		$this->consumerMapper->expects($this->never())->method('updateFromArray');
+
+		$this->assertSame(400, $this->controller->update(1)->getStatus());
+	}
+
+	public function testCreateSavesAGrantThatCanBeIssued(): void {
+		$grant = ['verbs' => ['read'], 'expiresAt' => '2999-01-01T00:00:00+00:00'];
+		$this->request->method('getParams')->willReturn(['name' => 'c', 'configuration' => ['grant' => $grant]]);
+		$this->consumerMapper->expects($this->once())->method('createFromArray')->willReturn(new Consumer());
+
+		$this->assertSame(201, $this->controller->create()->getStatus());
 	}
 }

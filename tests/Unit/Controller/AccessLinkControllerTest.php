@@ -33,18 +33,20 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\AccessLinkController;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkFile;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AccessLinkControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -78,9 +80,6 @@ class AccessLinkControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->links = $this->createMock(AccessLinkService::class);
-		$this->links->method('terms')->willReturnCallback(
-			static fn (array $capabilities, ?string $expiresAt, ?string $password, ?string $label): AccessLinkTerms => new AccessLinkTerms($capabilities, $expiresAt, $password, $label)
-		);
 		$this->reader = $this->createMock(AccessLinkReader::class);
 		$this->mintGuard = $this->createMock(AccessLinkMintGuard::class);
 		$this->acts = $this->createMock(AccessLinkActs::class);
@@ -248,7 +247,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['message'] = 'Advies: akkoord.';
 		$this->acts->expects($this->once())
 			->method('comment')
-			->with($this->anything(), $this->anything(), 'Advies: akkoord.')
+			->with($this->anything(), 'Advies: akkoord.')
 			->willReturn(['id' => 4, 'message' => 'Advies: akkoord.']);
 		$this->links->expects($this->once())
 			->method('recordUse')
@@ -318,7 +317,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['encoding'] = 'base64';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'scan.png', "\x89PNG\r\n")
+			->with($this->anything(), new LinkFile(fileName: 'scan.png', content: "\x89PNG\r\n"))
 			->willReturn(['id' => 1]);
 
 		$this->assertSame(Http::STATUS_CREATED, $this->controller->upload(anchor: 'a')->getStatus());
@@ -344,7 +343,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['content'] = 'akkoord';
 		$this->acts->expects($this->once())
 			->method('upload')
-			->with($this->anything(), $this->anything(), 'advies.txt', 'akkoord')
+			->with($this->anything(), new LinkFile(fileName: 'advies.txt', content: 'akkoord'))
 			->willReturn(['id' => 2]);
 		$this->links->expects($this->once())
 			->method('recordUse')
@@ -391,7 +390,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', 'object', 'object-uuid', $this->equalTo(new AccessLinkTerms(['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null)))
+			->with($this->equalTo(new LinkMintRequest('owner', 'object', 'object-uuid', new AccessLinkTerms(['read', 'comment'], '2026-12-31T00:00:00+00:00', null, null))))
 			->willReturn(['anchor' => 'AnchorValueThatIsOpaque', 'url' => 'https://nc.example.org/x']);
 
 		$response = $this->controller->mint();
@@ -406,7 +405,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->params['expiresAt'] = '2026-12-31T00:00:00+00:00';
 		$this->links->expects($this->once())
 			->method('mint')
-			->with('owner', '', '', $this->equalTo(new AccessLinkTerms(['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null)))
+			->with($this->equalTo(new LinkMintRequest('owner', '', '', new AccessLinkTerms(['read', ' upload'], '2026-12-31T00:00:00+00:00', null, null))))
 			->willReturn([]);
 
 		$this->controller->mint();
@@ -462,7 +461,7 @@ class AccessLinkControllerTest extends TestCase {
 
 	public function testSwitchingOffALinkSomebodyElseMintedAnswers404(): void {
 		$this->signIn(uid: 'somebody-else');
-		$this->links->method('setDisabled')->willReturn(null);
+		$this->links->method('enable')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->update(id: 1)->getStatus());
 	}
@@ -471,8 +470,8 @@ class AccessLinkControllerTest extends TestCase {
 		$this->signIn();
 		$this->params['disabled'] = true;
 		$this->links->expects($this->once())
-			->method('setDisabled')
-			->with(1, 'owner', true)
+			->method('disable')
+			->with(1, 'owner')
 			->willReturn(['id' => 1, 'disabled' => true]);
 
 		$response = $this->controller->update(id: 1);
@@ -499,5 +498,94 @@ class AccessLinkControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->revoke(id: 1)->getStatus());
+	}
+	// ---- characterisation: exact upload/comment refusals and the throttle log. ----
+
+	private function uploadable(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,comment,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn($this->object());
+	}
+
+	public function testUploadRefusalsAnswerTheirExactBodies(): void {
+		$this->uploadable();
+		$this->acts->expects($this->never())->method('upload');
+		$this->links->expects($this->never())->method('recordUse');
+
+		$this->params = ['name' => 'a.txt', 'content' => ['not', 'text']];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'An upload needs a name and content.']], [$response->getStatus(), $response->getData()]);
+
+		$this->params = ['name' => '   ', 'content' => 'x'];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'An upload needs a name and content.']], [$response->getStatus(), $response->getData()]);
+
+		$this->params = ['name' => 'a.txt', 'content' => '%%%', 'encoding' => 'base64'];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The upload content is not valid base64.']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailedUploadIsLoggedAndRefusedWithoutRecordingUse(): void {
+		$this->uploadable();
+		$this->params = ['name' => ' a.txt ', 'content' => 'x'];
+		$this->acts->method('upload')->willThrowException(new \RuntimeException('disk full'));
+		$this->links->expects($this->never())->method('recordUse');
+		$this->logger->expects($this->once())->method('warning')->with('[AccessLinkController] A link upload failed: disk full');
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The file could not be stored.']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAStoredUploadAnswersTheStoredFileAndRecordsTheTrimmedName(): void {
+		$this->uploadable();
+		$this->params = ['name' => ' a.txt ', 'content' => 'x', 'encoding' => 'plain'];
+		$this->acts->expects($this->once())->method('upload')
+			->with($this->anything(), new LinkFile(fileName: 'a.txt', content: 'x'))
+			->willReturn(['id' => 9]);
+		$this->links->expects($this->once())->method('recordUse')->with(
+			$this->anything(),
+			$this->callback(static fn (AccessLinkUse $use): bool => $use->context === ['fileName' => 'a.txt'])
+		);
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_CREATED, ['id' => 9]], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAnUploadForAGoneSubjectIsCountedAndAnswers404(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn(null);
+		$this->throttler->expects($this->once())->method('registerAttempt')
+			->with(AccessLinkController::THROTTLE_ACTION, '198.51.100.7');
+		$this->acts->expects($this->never())->method('upload');
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailingThrottlerIsLoggedAndTheRefusalStands(): void {
+		$this->links->method('resolve')->willReturn(null);
+		$this->throttler->method('registerAttempt')->willThrowException(new \RuntimeException('cache down'));
+		$this->logger->expects($this->once())->method('warning')
+			->with('AccessLinkController: registerAttempt failed: cache down');
+
+		$response = $this->controller->open(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailedCommentIsLoggedAndRefused(): void {
+		$this->uploadable();
+		$this->params = ['message' => 'hi'];
+		$this->acts->method('comment')->willThrowException(new \RuntimeException('locked'));
+		$this->links->expects($this->never())->method('recordUse');
+		$this->logger->expects($this->once())->method('warning')->with('[AccessLinkController] A link comment failed: locked');
+
+		$response = $this->controller->comment(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The comment could not be saved.']], [$response->getStatus(), $response->getData()]);
 	}
 }

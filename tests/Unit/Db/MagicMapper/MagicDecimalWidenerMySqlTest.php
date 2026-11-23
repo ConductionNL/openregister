@@ -68,12 +68,22 @@ class MagicDecimalWidenerMySqlTest extends TestCase {
 		return new MagicDecimalWidener(new MagicDdlRunner($db, $this->createMock(LoggerInterface::class)), new MagicNumberColumnSizes($db, 'oc_'));
 	}//end widener()
 
+	/**
+	 * A column whose property is no number is left alone.
+	 *
+	 * @return void
+	 */
 	public function testANonDecimalColumnIsNeverWidened(): void {
 		$drift = new MagicColumnDrift(['amount' => ['type' => 'decimal', 'precision' => 10, 'scale' => 2]], ['amount' => ['type' => 'string']]);
 
 		$this->assertSame([], $this->widener()->widenings($drift));
 	}//end testANonDecimalColumnIsNeverWidened()
 
+	/**
+	 * On MySQL the widening restates NOT NULL and a numeric default.
+	 *
+	 * @return void
+	 */
 	public function testOnMySqlTheWideningRestatesNotNullAndANumericDefault(): void {
 		$current = [
 			'amount' => ['type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => '0.00'],
@@ -94,4 +104,36 @@ class MagicDecimalWidenerMySqlTest extends TestCase {
 			$this->statements
 		);
 	}//end testOnMySqlTheWideningRestatesNotNullAndANumericDefault()
+	/**
+	 * An integer column becomes bigint when its property now maps to bigint, and only then.
+	 *
+	 * @return void
+	 */
+	public function testAnIntegerColumnBecomesBigintWhenItsPropertyNeedsOne(): void {
+		$current = [
+			'started_at_us' => ['type' => 'integer', 'nullable' => true],
+			'duration_ms' => ['type' => 'integer'],
+			'counted' => ['type' => 'bigint'],
+		];
+		$required = [
+			'started_at_us' => ['name' => 'started_at_us', 'type' => 'bigint'],
+			'duration_ms' => ['name' => 'duration_ms', 'type' => 'integer'],
+			'counted' => ['name' => 'counted', 'type' => 'bigint'],
+		];
+		$sync = new TableStructureSync('openregister_table_1_2', 'oc_openregister_table_1_2', new MagicColumnDrift($current, $required), true);
+
+		$this->assertSame(['started_at_us'], $this->widener()->widen($sync));
+		$this->assertSame(['ALTER TABLE "oc_openregister_table_1_2" ALTER COLUMN "started_at_us" TYPE BIGINT'], $this->statements);
+	}//end testAnIntegerColumnBecomesBigintWhenItsPropertyNeedsOne()
+
+	/**
+	 * A bigint column is never narrowed.
+	 *
+	 * @return void
+	 */
+	public function testABigintColumnIsNeverNarrowed(): void {
+		$drift = new MagicColumnDrift(['n' => ['type' => 'bigint']], ['n' => ['name' => 'n', 'type' => 'integer']]);
+
+		$this->assertSame([], $this->widener()->widenings($drift));
+	}//end testABigintColumnIsNeverNarrowed()
 }//end class

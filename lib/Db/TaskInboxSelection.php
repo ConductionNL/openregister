@@ -30,52 +30,19 @@ namespace OCA\OpenRegister\Db;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 final class TaskInboxSelection {
-
-	/**
-	 * The field filters.
-	 *
-	 * @var TaskInboxFilter
-	 */
-	public readonly TaskInboxFilter $filter;
-
-	/**
-	 * The overdue cutoff and due window.
-	 *
-	 * @var TaskInboxDueWindow
-	 */
-	public readonly TaskInboxDueWindow $window;
-
-	/**
-	 * The object or run anchor.
-	 *
-	 * @var TaskInboxAnchor
-	 */
-	public readonly TaskInboxAnchor $anchor;
-
-	/**
-	 * The sort.
-	 *
-	 * @var TaskInboxOrder
-	 */
-	public readonly TaskInboxOrder $order;
-
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskInboxFilter|null    $filter The field filters; none when null.
-	 * @param TaskInboxDueWindow|null $window The overdue cutoff and due window; none when null.
-	 * @param TaskInboxAnchor|null    $anchor The object or run anchor; none when null.
-	 * @param TaskInboxOrder|null     $order  The sort; due date ascending when null.
+	 * @param TaskInboxFilter    $filter The field filters; none by default.
+	 * @param TaskInboxDueWindow $window The overdue cutoff and due window; none by default.
+	 * @param TaskInboxAnchor    $anchor The object or run anchor; none by default.
+	 * @param TaskInboxOrder     $order  The sort; due date ascending by default.
 	 */
 	public function __construct(
-		?TaskInboxFilter $filter = null,
-		?TaskInboxDueWindow $window = null,
-		?TaskInboxAnchor $anchor = null,
-		?TaskInboxOrder $order = null,
+		public readonly TaskInboxFilter $filter = new TaskInboxFilter(),
+		public readonly TaskInboxDueWindow $window = new TaskInboxDueWindow(),
+		public readonly TaskInboxAnchor $anchor = new TaskInboxAnchor(),
+		public readonly TaskInboxOrder $order = new TaskInboxOrder(),
 	) {
-		$this->filter = ($filter ?? new TaskInboxFilter());
-		$this->window = ($window ?? new TaskInboxDueWindow());
-		$this->anchor = ($anchor ?? new TaskInboxAnchor());
-		$this->order = ($order ?? new TaskInboxOrder());
 	}//end __construct()
 }//end class

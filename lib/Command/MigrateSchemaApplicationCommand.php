@@ -91,6 +91,31 @@ class MigrateSchemaApplicationCommand extends Command {
 			return 1;
 		}
 
+		if ($this->reportOwned(input: $input, output: $output) === 0) {
+			return $this->reportNothingOwned(input: $input, output: $output);
+		}
+
+		if ((bool)$input->getOption('dry-run') === true) {
+			return $this->dryRun(input: $input, output: $output);
+		}
+
+		return $this->migrate(input: $input, output: $output);
+
+	}//end execute()
+
+
+	/**
+	 * Print how many schemas and registers the current application id owns.
+	 *
+	 * @param InputInterface  $input  The console input naming the current application id.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return int The schemas and registers owned, together.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function reportOwned(InputInterface $input, OutputInterface $output): int {
+		$from      = (string)$input->getArgument('from');
 		$schemas   = $this->migrator->countFor(table: 'openregister_schemas', application: $from);
 		$registers = $this->migrator->countFor(table: 'openregister_registers', application: $from);
 
@@ -98,42 +123,64 @@ class MigrateSchemaApplicationCommand extends Command {
 			sprintf('Application "%s" currently owns %d schema(s) and %d register(s).', $from, $schemas, $registers)
 		);
 
-		if (($schemas + $registers) === 0) {
-			// Nothing under the old id is the expected state on a re-run, and
-			// also the state when the rename was never applied here at all.
-			// Those are different answers to the same number, so say which.
-			$already = $this->migrator->countFor(table: 'openregister_schemas', application: $to);
-			$output->writeln(
-				sprintf('<info>Nothing owned by "%s". "%s" owns %d schema(s).</info>', $from, $to, $already)
-			);
-			return 0;
-		}
+		return ($schemas + $registers);
 
-		if ((bool)$input->getOption('dry-run') === true) {
-			return $this->dryRun(output: $output, from: $from, to: $to);
-		}
+	}//end reportOwned()
 
-		$result = $this->migrator->migrate(from: $from, to: $to);
+
+	/**
+	 * Say how many schemas the new id owns when the old id owns nothing.
+	 *
+	 * Nothing under the old id is the expected state on a re-run, and
+	 * also the state when the rename was never applied here at all.
+	 * Those are different answers to the same number, so say which.
+	 *
+	 * @param InputInterface  $input  The console input naming the current and the new application id.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return int Always 0.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function reportNothingOwned(InputInterface $input, OutputInterface $output): int {
+		$from    = (string)$input->getArgument('from');
+		$to      = (string)$input->getArgument('to');
+		$already = $this->migrator->countFor(table: 'openregister_schemas', application: $to);
+		$output->writeln(
+			sprintf('<info>Nothing owned by "%s". "%s" owns %d schema(s).</info>', $from, $to, $already)
+		);
+		return 0;
+
+	}//end reportNothingOwned()
+
+
+	/**
+	 * Move the schemas and registers, or print the refusal and its colliding slugs.
+	 *
+	 * @param InputInterface  $input  The console input naming the current and the new application id.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return int 0 when moved, 1 when refused.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function migrate(InputInterface $input, OutputInterface $output): int {
+		$rename = ApplicationIdRename::fromInput(input: $input);
+		$result = $this->migrator->migrate(from: $rename->from, to: $rename->to);
 
 		if ($result['ok'] === false) {
-			$this->reportRefusal(output: $output, collisions: $result['collisions'], wouldRefuse: false);
+			$output->writeln(self::refusalLines(lead: 'Refusing:', collisions: $result['collisions']));
 			return 1;
 		}
 
 		$output->writeln(
-			sprintf(
-				'<info>Moved %d schema(s) and %d register(s) from "%s" to "%s".</info>',
-				$result['schemas'],
-				$result['registers'],
-				$from,
-				$to
-			)
+			'<info>Moved ' . $rename->describeMove(schemas: $result['schemas'], registers: $result['registers']) . '.</info>'
 		);
 		$output->writeln('Objects are unaffected: they reference their schema by id, which does not change here.');
 
 		return 0;
 
-	}//end execute()
+	}//end migrate()
 
 
 	/**
@@ -146,30 +193,27 @@ class MigrateSchemaApplicationCommand extends Command {
 	 * The counts it reports are read from the migrator here, so the dry run
 	 * reports exactly what it checked.
 	 *
+	 * @param InputInterface  $input  The console input naming the current and the new application id.
 	 * @param OutputInterface $output The console output.
-	 * @param string          $from   The current application id.
-	 * @param string          $to     The new application id.
 	 *
 	 * @return int 0 when the real run would proceed, 1 when it would refuse.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function dryRun(OutputInterface $output, string $from, string $to): int {
-		$collisions = $this->migrator->collidingSlugs(from: $from, to: $to);
+	private function dryRun(InputInterface $input, OutputInterface $output): int {
+		$rename = ApplicationIdRename::fromInput(input: $input);
+
+		$collisions = $this->migrator->collidingSlugs(from: $rename->from, to: $rename->to);
 		if (empty($collisions) === false) {
-			$this->reportRefusal(output: $output, collisions: $collisions, wouldRefuse: true);
+			$output->writeln(self::refusalLines(lead: 'Would refuse:', collisions: $collisions));
 			return 1;
 		}
 
-		$output->writeln(
-			sprintf(
-				'<comment>Dry run: would move %d schema(s) and %d register(s) from "%s" to "%s".</comment>',
-				$this->migrator->countFor(table: 'openregister_schemas', application: $from),
-				$this->migrator->countFor(table: 'openregister_registers', application: $from),
-				$from,
-				$to
-			)
+		$move = $rename->describeMove(
+			schemas: $this->migrator->countFor(table: 'openregister_schemas', application: $rename->from),
+			registers: $this->migrator->countFor(table: 'openregister_registers', application: $rename->from)
 		);
+		$output->writeln('<comment>Dry run: would move ' . $move . '.</comment>');
 
 		return 0;
 
@@ -177,32 +221,26 @@ class MigrateSchemaApplicationCommand extends Command {
 
 
 	/**
-	 * Print the refusal and the slugs that caused it.
+	 * The refusal and the slugs that caused it.
 	 *
-	 * @param OutputInterface $output      The console output.
-	 * @param string[]        $collisions  The colliding slugs.
-	 * @param bool            $wouldRefuse True when reporting a dry run.
+	 * @param string   $lead       `Refusing:`, or `Would refuse:` on a dry run.
+	 * @param string[] $collisions The colliding slugs.
 	 *
-	 * @return void
+	 * @return array<int, string> The lines to print.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function reportRefusal(OutputInterface $output, array $collisions, bool $wouldRefuse): void {
-		$lead = 'Refusing:';
-		if ($wouldRefuse === true) {
-			$lead = 'Would refuse:';
-		}
-
-		$output->writeln('<error>' . $lead . ' these slugs already exist under the target application id.</error>');
+	private static function refusalLines(string $lead, array $collisions): array {
+		$lines = ['<error>' . $lead . ' these slugs already exist under the target application id.</error>'];
 		foreach ($collisions as $slug) {
-			$output->writeln('  - ' . $slug);
+			$lines[] = '  - ' . $slug;
 		}
 
-		$output->writeln(
-			'An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).'
-		);
+		$lines[] = 'An import has already forked these schemas. Resolve the duplicates first (see openregister:schemas:dedup).';
 
-	}//end reportRefusal()
+		return $lines;
+
+	}//end refusalLines()
 
 
 }//end class

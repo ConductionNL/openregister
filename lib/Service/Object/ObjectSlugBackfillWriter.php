@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -164,8 +165,7 @@ class ObjectSlugBackfillWriter {
 	 */
 	private function chunkHolders(ObjectSlugChangeSet $chunk): array {
 		return $this->magicMapper->findSlugState(
-			register: $chunk->register,
-			schema: $chunk->schema,
+			table: new RegisterSchema(register: $chunk->register, schema: $chunk->schema),
 			slugs: array_values(array_filter(array_column($chunk->changes, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
 			uuids: []
 		)['holders'] ?? [];
@@ -203,8 +203,7 @@ class ObjectSlugBackfillWriter {
 	 */
 	private function writeStep(array $step, ObjectSlugChangeSet $chunk): ?string {
 		$updated = $this->magicMapper->updateSlugColumn(
-			register: $chunk->register,
-			schema: $chunk->schema,
+			table: new RegisterSchema(register: $chunk->register, schema: $chunk->schema),
 			uuid: $step['uuid'],
 			slug: (string)$step['new']
 		);

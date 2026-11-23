@@ -17,11 +17,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -31,6 +33,12 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalFrame
  * @covers \OCA\OpenRegister\Service\Object\DraftRemovalRecord
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftRemovalFrameTest extends TestCase {
 
@@ -48,12 +56,12 @@ class DraftRemovalFrameTest extends TestCase {
 	 */
 	private function record(): DraftRemovalRecord {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('createAuditTrailEntry')->willReturnCallback(
+		$trail->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->actors[] = $actorId;
 				return new AuditTrail();
 			}
-		);
+		));
 
 		return new DraftRemovalRecord($trail, new NullLogger());
 
@@ -70,9 +78,9 @@ class DraftRemovalFrameTest extends TestCase {
 
 		$result = (new DraftRemovalFrame())->asJob(
 			'draft-expiry',
-			static fn (): string => $record->write($draft, null, null) === true ? 'written' : 'not written'
+			static fn (): string => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)) === true ? 'written' : 'not written'
 		);
-		$record->write($draft, null, null);
+		$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 
 		$this->assertSame('written', $result);
 		$this->assertSame([DraftRemovalRecord::JOB_ACTOR_PREFIX . 'draft-expiry', null], $this->actors);
@@ -92,8 +100,8 @@ class DraftRemovalFrameTest extends TestCase {
 		$frame->asJob(
 			'outer',
 			static function () use ($frame, $record, $draft): void {
-				$frame->asJob('inner', static fn (): bool => $record->write($draft, null, null));
-				$record->write($draft, null, null);
+				$frame->asJob('inner', static fn (): bool => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 			}
 		);
 
@@ -121,7 +129,7 @@ class DraftRemovalFrameTest extends TestCase {
 			$this->assertSame('boom', $e->getMessage());
 		}
 
-		$record->write(new ObjectEntity(), null, null);
+		$record->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 		$this->assertSame([null], $this->actors);
 
 	}//end testAThrowingOperationStillEndsTheFrame()

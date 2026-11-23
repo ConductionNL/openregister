@@ -29,7 +29,14 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -37,11 +44,13 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\Authentication\TwoFactorAuth\IRegistry;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * UserController handles user-related API endpoints
@@ -113,6 +122,12 @@ class UserController extends Controller {
 	private readonly IL10N $l10n;
 
 	/**
+	 * Which second factors each user has enabled
+	 * @var IRegistry
+	 */
+	private readonly IRegistry $twoFactor;
+
+	/**
 	 * Builds the security-headed responses
 	 *
 	 * @var UserResponses
@@ -124,22 +139,21 @@ class UserController extends Controller {
 	 *
 	 * Initializes controller with required dependencies.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param UserControllerServices $services The user controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		UserControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userService = $services->domain->userService;
 		$this->securityService = $services->domain->securityService;
 		$this->userManager = $services->domain->userManager;
 		$this->userSession = $services->domain->userSession;
+		$this->twoFactor = $services->domain->twoFactor;
 		$this->logger = $services->platform->logger;
 		$this->l10n = $services->platform->l10n;
 		$this->responses = new UserResponses(securityService: $this->securityService);
@@ -175,8 +189,6 @@ class UserController extends Controller {
 	 * Updates the profile information of the currently authenticated user.
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated user profile
 	 *
@@ -238,6 +250,8 @@ class UserController extends Controller {
 	 * @return JSONResponse A JSON response containing login result and user information
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-002
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-004
 	 */
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
@@ -315,8 +329,43 @@ class UserController extends Controller {
 			return $refusal;
 		}
 
+		// A password alone never signs in a user who has a second factor:
+		// this route cannot run the factor's challenge, so it creates no
+		// session and says the factor is required (REQ-PPC-004).
+		if ($this->hasSecondFactor(user: $user) === true) {
+			return $this->responses->secured(
+				data: ['error' => 'second_factor_required', 'message' => 'A second factor is required; sign in through Nextcloud.', 'session_created' => false],
+				statusCode: 401
+			);
+		}
+
 		return $this->startSession(user: $user, attempt: $attempt);
 	}//end checkCredentials()
+
+	/**
+	 * Whether the user has any second factor enabled. When the states cannot
+	 * be read the answer is yes: a password alone must not get past a factor
+	 * because the registry failed.
+	 *
+	 * @param IUser $user The user whose password checked out.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-004
+	 */
+	private function hasSecondFactor(IUser $user): bool {
+		try {
+			$states = $this->twoFactor->getProviderStates($user);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[UserController] Second-factor states unreadable; refusing the password-only login',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error_message' => $e->getMessage()]
+			);
+			return true;
+		}
+
+		return in_array(true, $states, true);
+	}//end hasSecondFactor()
 
 	/**
 	 * Record the successful login (clears rate limits) and create the login session.
@@ -380,7 +429,9 @@ class UserController extends Controller {
 			return null;
 		}
 
-		$this->securityService->recordFailedLoginAttempt(username: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason);
+		$this->securityService->recordFailedLoginAttempt(
+			attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason)
+		);
 		return $this->responses->error(message: $message, statusCode: 401);
 	}//end refusedLogin()
 
@@ -437,8 +488,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -485,7 +534,8 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Both currentPassword and newPassword are required', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->changePassword($user, $currentPassword, $newPassword));
+		$change = new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword);
+		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: $change));
 	}//end changePasswordFor()
 
 	/**
@@ -504,9 +554,7 @@ class UserController extends Controller {
 		if ($this->responses->runtimeStatus(exception: $exception) === 403) {
 			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
 			$this->securityService->recordFailedLoginAttempt(
-				username: $user->getUID(),
-				ipAddress: $clientIp,
-				reason: 'password_change_incorrect'
+				attempt: new FailedAttempt(subject: $user->getUID(), ipAddress: $clientIp, reason: 'password_change_incorrect')
 			);
 		}
 
@@ -517,8 +565,6 @@ class UserController extends Controller {
 	 * Upload a new avatar for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -547,15 +593,14 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'No image data provided', statusCode: 400);
 		}
 
-		return $this->responses->secured(data: $this->userService->uploadAvatar($user, $data, $mimeType, $size));
+		$upload = new AvatarUpload(data: $data, mimeType: $mimeType, size: $size);
+		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: $upload));
 	}//end uploadAvatarFor()
 
 	/**
 	 * Delete the current user's avatar
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -582,11 +627,7 @@ class UserController extends Controller {
 	public function exportData(): JSONResponse|DataDownloadResponse {
 		return $this->forCurrentUser(
 			action: fn (IUser $user): DataDownloadResponse => $this->exportFor(user: $user),
-			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(
-				exception: $e,
-				message: 'Failed to export data',
-				payloadStatus: 429
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->exportFailure(exception: $e)
 		);
 	}//end exportData()
 
@@ -634,8 +675,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated preferences
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -681,11 +720,7 @@ class UserController extends Controller {
 	public function getActivity(): JSONResponse {
 		return $this->forCurrentUser(
 			action: fn (IUser $user): JSONResponse => $this->activityFor(user: $user),
-			onFailure: fn (Exception $e): JSONResponse => $this->unexpected(
-				exception: $e,
-				message: 'Failed to get activity history',
-				logged: 'Failed to get activity'
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->activityFailure(exception: $e)
 		);
 	}//end getActivity()
 
@@ -704,7 +739,10 @@ class UserController extends Controller {
 		$to     = $this->request->getParam('_to');
 
 		return $this->responses->secured(
-			data: $this->userService->getUserActivity($user, $limit, $offset, $type, $from, $to)
+			data: $this->userService->activity(
+				user: $user,
+				query: new ActivityQuery(limit: $limit, offset: $offset, type: $type, period: new ActivityPeriod(from: $from, to: $to))
+			)
 		);
 	}//end activityFor()
 
@@ -730,8 +768,6 @@ class UserController extends Controller {
 	 * Create a new API token for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with the created token
 	 *
@@ -759,7 +795,7 @@ class UserController extends Controller {
 			return $this->responses->error(message: 'Token name is required', statusCode: 400);
 		}
 
-		$token = $this->userService->createApiToken($user, $name, $expiresIn);
+		$token = $this->userService->issueApiToken(user: $user, request: new ApiTokenRequest(name: $name, expiresIn: $expiresIn));
 		return $this->responses->secured(data: $token, statusCode: 201);
 	}//end createTokenFor()
 
@@ -771,7 +807,6 @@ class UserController extends Controller {
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
@@ -787,8 +822,6 @@ class UserController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with result
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
@@ -801,11 +834,7 @@ class UserController extends Controller {
 					$this->securityService->sanitizeInput(input: $this->request->getParams()['reason'] ?? '')
 				)
 			),
-			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(
-				exception: $e,
-				message: 'Failed to request deactivation',
-				payloadStatus: 409
-			)
+			onFailure: fn (Exception $e): JSONResponse => $this->deactivationRequestFailure(exception: $e)
 		);
 	}//end requestDeactivation()
 
@@ -836,8 +865,6 @@ class UserController extends Controller {
 	 * Cancel a pending deactivation request for the current user
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with result
 	 *
@@ -902,31 +929,71 @@ class UserController extends Controller {
 	/**
 	 * The response for a failure: a RuntimeException under its code's status, anything else a logged 500.
 	 *
-	 * @param Exception $exception     The failure.
-	 * @param string    $message       The 500 response and log message.
-	 * @param int|null  $payloadStatus The status whose exception message is a JSON payload.
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The 500 response and log message.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function runtimeFailure(Exception $exception, string $message, ?int $payloadStatus=null): JSONResponse {
+	private function runtimeFailure(Exception $exception, string $message): JSONResponse {
 		if ($exception instanceof RuntimeException) {
-			return $this->responses->runtimeError(exception: $exception, payloadStatus: $payloadStatus);
+			return $this->responses->runtimeError(exception: $exception);
 		}
 
 		return $this->unexpected(exception: $exception, message: $message);
 	}//end runtimeFailure()
 
 	/**
-	 * Log an unexpected failure and hide it behind a 500.
+	 * The response for a failed export: a throttle (429) carries a JSON payload in its message.
 	 *
-	 * @param Exception   $exception The failure.
-	 * @param string      $message   The response message.
-	 * @param string|null $logged    The logged message, when it differs from the response message.
+	 * @param Exception $exception The failure.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function unexpected(Exception $exception, string $message, ?string $logged=null): JSONResponse {
-		$this->logError(message: $logged ?? $message, exception: $exception);
+	private function exportFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 429);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to export data');
+	}//end exportFailure()
+
+	/**
+	 * The response for a failed deactivation request: a duplicate (409) carries a JSON payload in its message.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function deactivationRequestFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 409);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to request deactivation');
+	}//end deactivationRequestFailure()
+
+	/**
+	 * The response for a failed activity read; the log names the read, the response the history.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function activityFailure(Exception $exception): JSONResponse {
+		$this->logError(message: 'Failed to get activity', exception: $exception);
+		return $this->responses->error(message: 'Failed to get activity history', statusCode: 500);
+	}//end activityFailure()
+
+	/**
+	 * Log an unexpected failure and hide it behind a 500.
+	 *
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The response and log message.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function unexpected(Exception $exception, string $message): JSONResponse {
+		$this->logError(message: $message, exception: $exception);
 		return $this->responses->error(message: $message, statusCode: 500);
 	}//end unexpected()
 

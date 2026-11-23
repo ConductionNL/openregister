@@ -69,17 +69,27 @@ class ExampleSetCollectivesStore {
 	private const USER_MEMBER = 1;
 
 	/**
+	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Tells whether the app is installed.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container  Hands out the Collectives and Circles services.
-	 * @param IAppManager        $appManager Tells whether Collectives is installed.
-	 *
-	 * @return void
+	 * @param ExampleSetAppReach $reach Hands out the Collectives and Circles services, tells whether Collectives is installed.
 	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IAppManager $appManager,
-	) {
+	public function __construct(ExampleSetAppReach $reach) {
+		$this->container  = $reach->container;
+		$this->appManager = $reach->apps;
 	}//end __construct()
 
 	/**
@@ -94,29 +104,16 @@ class ExampleSetCollectivesStore {
 	}//end available()
 
 	/**
-	 * The collective of this name the owner is in, or a new one with the given groups in its team.
-	 *
-	 * @param string             $owner  The account that owns a new collective.
-	 * @param string             $name   The collective's name.
-	 * @param array<int, string> $groups Nextcloud groups added to the collective's team.
-	 *
-	 * @return array{id: int, created: bool}
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
-	 */
-	public function collective(string $owner, string $name, array $groups): array {
-		return $this->collectiveOf(team: new CollectiveTeam(owner: $owner, groups: $groups), name: $name);
-	}//end collective()
-
-	/**
 	 * The collective of this name the team's owner is in, or a new one, with the team's groups added.
 	 *
 	 * @param CollectiveTeam $team The owner and the groups added to the collective's team.
 	 * @param string         $name The collective's name.
 	 *
 	 * @return array{id: int, created: bool}
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	private function collectiveOf(CollectiveTeam $team, string $name): array {
+	public function collectiveOf(CollectiveTeam $team, string $name): array {
 		$service = $this->container->get(self::COLLECTIVES);
 		try {
 			$found = $service->findCollectiveByName($team->owner, $name);
@@ -134,62 +131,74 @@ class ExampleSetCollectivesStore {
 	/**
 	 * The top-level page of this title in the collective, or a new one with the content.
 	 *
-	 * @param int    $collective The collective id.
-	 * @param string $owner      The account that writes the page.
-	 * @param string $title      The page title.
-	 * @param string $content    The page's Markdown.
+	 * @param CollectiveSeat     $seat The collective id and the account that writes the page.
+	 * @param CollectivePageText $text The page title and its Markdown.
 	 *
 	 * @return array{id: int, created: bool}
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	public function page(int $collective, string $owner, string $title, string $content): array {
-		$pages = $this->container->get(self::PAGES);
-		foreach ($pages->findAll($collective, $owner) as $page) {
-			if ($page->getTitle() === $title) {
-				return ['id' => (int) $page->getId(), 'created' => false];
-			}
+	public function page(CollectiveSeat $seat, CollectivePageText $text): array {
+		$found = $this->titledPage(seat: $seat, title: $text->title);
+		if ($found !== null) {
+			return ['id' => $found, 'created' => false];
 		}
 
-		$page = $pages->createBase($collective, 0, $title, null, $owner, null, $content);
+		$page = $this->container->get(self::PAGES)->createBase($seat->collective, 0, $text->title, null, $seat->owner, null, $text->content);
 
 		return ['id' => (int) $page->getId(), 'created' => true];
 	}//end page()
 
 	/**
-	 * Whether the page is still in the collective.
+	 * The id of the collective's page of this title, as the account reads the collective, or null.
 	 *
-	 * @param int    $collective The collective id.
-	 * @param int    $page       The page id.
-	 * @param string $owner      The account that reads it.
+	 * @param CollectiveSeat $seat  The collective id and the account that reads it.
+	 * @param string         $title The page title.
+	 *
+	 * @return int|null
+	 */
+	private function titledPage(CollectiveSeat $seat, string $title): ?int {
+		foreach ($this->container->get(self::PAGES)->findAll($seat->collective, $seat->owner) as $page) {
+			if ($page->getTitle() === $title) {
+				return (int) $page->getId();
+			}
+		}
+
+		return null;
+	}//end titledPage()
+
+	/**
+	 * Whether the page is still in the collective, as the account reads it.
+	 *
+	 * @param CollectiveSeat $seat The collective id and the account that reads it.
+	 * @param int            $page The page id.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	public function pageExists(int $collective, int $page, string $owner): bool {
+	public function pageFound(CollectiveSeat $seat, int $page): bool {
 		try {
-			$this->container->get(self::PAGES)->find($collective, $page, $owner);
+			$this->container->get(self::PAGES)->find($seat->collective, $page, $seat->owner);
 		} catch (Throwable) {
 			return false;
 		}
 
 		return true;
-	}//end pageExists()
+	}//end pageFound()
 
 	/**
 	 * Delete a page the set wrote, without passing through the trash.
 	 *
-	 * @param int    $collective The collective id.
-	 * @param int    $page       The page id.
-	 * @param string $owner      The account that deletes it.
+	 * @param CollectiveSeat $seat The collective id and the account that deletes the page.
+	 * @param int            $page The page id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-write-collectives-pages
 	 */
-	public function deletePage(int $collective, int $page, string $owner): void {
-		$this->container->get(self::PAGES)->trash($collective, $page, $owner, true);
+	public function deletePage(CollectiveSeat $seat, int $page): void {
+		$this->container->get(self::PAGES)->trash($seat->collective, $page, $seat->owner, true);
 	}//end deletePage()
 
 	/**

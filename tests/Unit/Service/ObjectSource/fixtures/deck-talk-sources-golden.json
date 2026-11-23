@@ -132,6 +132,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -189,6 +194,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -219,6 +229,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -261,6 +276,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -303,6 +323,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -333,6 +358,11 @@
             [
                 "stacks",
                 3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
             ]
         ]
     },
@@ -422,6 +452,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -484,6 +519,11 @@
                 "log",
                 "warning",
                 "[ObjectSource:talk-source] could not resolve OCA\\Talk\\Service\\ParticipantService: no ps"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -515,6 +555,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -532,6 +577,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -561,6 +611,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -590,6 +645,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     },
@@ -607,6 +667,11 @@
             [
                 "container",
                 "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
             ]
         ]
     }

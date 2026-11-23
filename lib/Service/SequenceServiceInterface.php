@@ -36,9 +36,7 @@ interface SequenceServiceInterface {
 	 * The returned value is never handed out twice for the same
 	 * (register, schema, scope) triple. Numbering starts at 1.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator (e.g. "2026", "2026-06" or "" for global).
+	 * @param SequenceScope $sequence The register, schema and scope key (e.g. "2026", "2026-06" or "" for global).
 	 *
 	 * @return int The reserved running number (>= 1).
 	 *
@@ -46,7 +44,7 @@ interface SequenceServiceInterface {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	public function reserveNext(int $registerId, int $schemaId, string $scopeKey): int;
+	public function reserveNext(SequenceScope $sequence): int;
 
 	/**
 	 * Push a counter past a number that is already printed on a record.
@@ -59,10 +57,8 @@ interface SequenceServiceInterface {
 	 * Never moves a counter DOWN. `raiseTo()` carries the `<` clause that keeps
 	 * that true even when an import of old numbers runs beside live creates.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
-	 * @param int $reserved The number already issued elsewhere.
+	 * @param SequenceScope $sequence The register, schema and scope key.
+	 * @param int           $reserved The number already issued elsewhere.
 	 *
 	 * @return void
 	 *
@@ -70,5 +66,5 @@ interface SequenceServiceInterface {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	public function advanceTo(int $registerId, int $schemaId, string $scopeKey, int $reserved): void;
+	public function advanceTo(SequenceScope $sequence, int $reserved): void;
 }//end interface

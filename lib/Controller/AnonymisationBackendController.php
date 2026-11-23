@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCP\AppFramework\Controller;
@@ -60,16 +61,14 @@ class AnonymisationBackendController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param AnonymisationBackendControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		AnonymisationBackendControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
 		$this->service = $services->service;
@@ -105,8 +104,6 @@ class AnonymisationBackendController extends Controller {
 	 * SecurityMiddleware reject non-admins before the method runs; the
 	 * `requireAdmin()` body check remains as defense-in-depth (returns a
 	 * JSON 403 rather than the framework's default response).
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The serialised ProbeResult, 400 for an invalid method, or 403 for non-admins.
 	 *

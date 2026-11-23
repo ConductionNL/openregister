@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionEntry;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -66,7 +67,7 @@ class ObjectActionElevationRefusalCasesTest extends TestCase {
 	 */
 	#[DataProvider('cases')]
 	public function testEachElevationDrawsExactlyItsRefusals(array $definition, ?array $authorization, array $expected): void {
-		$this->assertSame($expected, ObjectActionElevation::refusals(key: 'act', definition: $definition, authorization: $authorization));
+		$this->assertSame($expected, ObjectActionElevation::refusals(action: new ObjectActionEntry(key: 'act', definition: $definition), authorization: $authorization));
 	}//end testEachElevationDrawsExactlyItsRefusals()
 
 	/**

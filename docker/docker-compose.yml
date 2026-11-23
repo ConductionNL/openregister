@@ -1,0 +1,93 @@
+# Evaluation stack for openregister: Nextcloud with openregister and OpenRegister,
+# PostgreSQL and Redis.
+#
+#   docker compose -f docker/docker-compose.yml up -d --build
+#
+# Then open http://localhost:8080/apps/openregister/ and sign in as admin. The
+# first start installs Nextcloud and enables the apps, which takes a minute or
+# two; `docker compose -f docker/docker-compose.yml logs -f nextcloud` shows progress.
+# Remove the stack and its data with `docker compose -f docker/docker-compose.yml down -v`.
+#
+# Without --build, Compose uses the published ghcr.io/conductionnl/openregister
+# image. This is for trying the app out; production installs come from the
+# Nextcloud App Store.
+#
+# Settings, all optional (environment or a .env file next to this file):
+#   APP_PORT                  host port, default 8080, bound to 127.0.0.1 only
+#   APP_IMAGE_TAG             image tag, default latest
+#   NEXTCLOUD_ADMIN_USER      first admin account, default admin
+#   NEXTCLOUD_ADMIN_PASSWORD  its password, default admin; set your own
+#   POSTGRES_PASSWORD         database password, default nextcloud
+#   OPENREGISTER_VERSION      OpenRegister release baked in by --build,
+#                             default the newest
+#
+# Rendered from ConductionNL/.github templates/app-deploy.
+#
+# SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+# SPDX-License-Identifier: EUPL-1.2
+
+name: openregister-eval
+
+services:
+  nextcloud:
+    image: ghcr.io/conductionnl/openregister:${APP_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      args:
+        OPENREGISTER_VERSION: ${OPENREGISTER_VERSION:-}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nextcloud}
+      REDIS_HOST: redis
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-admin}
+      # Nextcloud refuses a Host header it does not trust, and the port is part
+      # of the host.
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost localhost:${APP_PORT:-8080} 127.0.0.1 127.0.0.1:${APP_PORT:-8080}"
+      OVERWRITECLIURL: "http://localhost:${APP_PORT:-8080}"
+    volumes:
+      - nextcloud:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/status.php | grep -q '\"installed\":true'"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5m
+      retries: 10
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nextcloud}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  nextcloud:
+  db:

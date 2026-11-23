@@ -2,6 +2,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -14,6 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * Unit tests for RegisterMapper
@@ -47,25 +49,21 @@ class RegisterMapperTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->mapper = new RegisterMapper(
-			$this->db,
-			$this->schemaMapper,
-			$this->eventDispatcher,
-			$this->container,
-			$this->organisationMapper,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger
+			db: $this->db,
+			tenancy: new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
+			appConfig: $this->appConfig,
+			services: new RegisterMapperServices(
+				schemaMapper: $this->schemaMapper,
+				container: $this->container,
+				eventDispatcher: $this->eventDispatcher,
+				logger: $this->logger
+			)
 		);
 	}
 
 	// -------------------------------------------------------------------------
 	// Construction
 	// -------------------------------------------------------------------------
-
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(RegisterMapper::class, $this->mapper);
-	}
 
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_registers', $this->mapper->getTableName());

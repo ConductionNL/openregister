@@ -29,6 +29,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException
  * @covers \OCA\OpenRegister\Service\Resolver\Exception\RegisterNotFoundException
  * @covers \OCA\OpenRegister\Service\Resolver\Exception\SchemaNotFoundException
+ * @uses \OCA\OpenRegister\Service\Resolver\Exception\ResolverConfigException
+ * @uses \OCA\OpenRegister\Service\Resolver\Exception\ResolverConfigKey
+ * @uses \OCA\OpenRegister\Service\Resolver\Exception\UnresolvedValueException
  */
 final class ResolverExceptionsGoldenTest extends TestCase {
 

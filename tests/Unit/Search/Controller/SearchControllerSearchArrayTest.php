@@ -50,7 +50,7 @@ class SearchControllerSearchArrayTest extends TestCase {
 			}
 		);
 
-		(new SearchController('openregister', $request, $objects))->search();
+		(new SearchController($request, $objects))->search();
 
 		return $captured;
 	}

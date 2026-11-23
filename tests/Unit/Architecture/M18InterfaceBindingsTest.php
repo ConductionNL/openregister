@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\TaskBlockerMapper;
 use OCA\OpenRegister\Db\TaskBlockerMapperInterface;
 use PHPUnit\Framework\TestCase;
@@ -36,7 +36,7 @@ final class M18InterfaceBindingsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheTaskBlockerInterfaceIsBound(): void {
-		$this->assertSame(TaskBlockerMapper::class, DbRegistrar::BINDINGS[TaskBlockerMapperInterface::class] ?? null);
+		$this->assertSame(expected: TaskBlockerMapper::class, actual: ProcessesMapperRegistrar::BINDINGS[TaskBlockerMapperInterface::class] ?? null);
 	}//end testTheTaskBlockerInterfaceIsBound()
 
 	/**

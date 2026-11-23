@@ -23,9 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * The mappers and repositories of the entity relations API.
@@ -37,17 +35,13 @@ final class EntityRelationsMappers {
 	 * Bundle the services.
 	 *
 	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
-	 * @param MagicMapperInterface $magicMapper          ObjectEntity loader (for object-bound authz).
-	 * @param SchemaMapperInterface         $schemaMapper         Schema loader (for hasPermission inputs).
-	 * @param RegisterMapperInterface       $registerMapper       Register loader (for object lookup disambiguation).
+	 * @param SchemaCatalogInterface        $catalog              Register, schema and object loaders (object lookup and hasPermission inputs).
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
-		public readonly MagicMapperInterface $magicMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()
 }//end class

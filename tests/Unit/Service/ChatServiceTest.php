@@ -15,12 +15,15 @@ use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 class ChatServiceTest extends TestCase {
 
@@ -95,7 +98,20 @@ class ChatServiceTest extends TestCase {
 				$this->historyHandler,
 			),
 			$this->logger,
+			$this->allRights(),
 		);
+	}
+
+	/**
+	 * A reader of special rights that lets everybody use everything; ChatSpecialRightsTest covers refusals.
+	 *
+	 * @return OrganisationSpecialRights
+	 */
+	private function allRights(): OrganisationSpecialRights {
+		$rights = $this->createMock(OrganisationSpecialRights::class);
+		$rights->method('mayUse')->willReturn(true);
+
+		return $rights;
 	}
 
 	// --- processMessage ---
@@ -300,7 +316,7 @@ class ChatServiceTest extends TestCase {
 		$this->conversationHandler
 			->expects($this->once())
 			->method('ensureUniqueTitle')
-			->with('Title', 'user1', 5)
+			->with(new TitleClaim(baseTitle: 'Title', userId: 'user1', agentId: 5))
 			->willReturn('Title (2)');
 
 		$result = $this->service->ensureUniqueTitle('Title', 'user1', 5);
@@ -368,9 +384,7 @@ class ChatServiceTest extends TestCase {
 			->method('generateResponse')
 			->willReturnCallback(function (
 				ChatMessageRequest $request,
-				array $context,
-				array $messageHistory,
-				$agent,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
 				$capturedChannel = $request->channel;
 				return 'AI says hello';
@@ -413,9 +427,7 @@ class ChatServiceTest extends TestCase {
 			->method('generateResponse')
 			->willReturnCallback(function (
 				ChatMessageRequest $request,
-				array $context,
-				array $messageHistory,
-				$agent,
+				ReplyGrounding $grounding,
 			) use (&$capturedChannel): string {
 				$capturedChannel = $request->channel;
 				return 'response';

@@ -10,7 +10,8 @@
  * entry is built from the object's identifiers alone, and no property value
  * is read.
  *
- * It is written through AuditTrailMapper::createAuditTrailEntry(), the entry
+ * It is written through ObjectAuditRecorderInterface, the Core port behind the audit
+ * trail's recordObjectEvent(), the entry
  * point every recorded moment that is not a plain change uses, so it is
  * hash-chained and shows where other audit rows show.
  *
@@ -35,10 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -77,11 +77,11 @@ class DraftRemovalRecord {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrail Writes the hash-chained entry.
+	 * @param ObjectAuditRecorderInterface $auditTrail Writes the hash-chained entry.
 	 * @param LoggerInterface  $logger     Keeps the facts when the entry cannot be written.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapperInterface $auditTrail,
+		private readonly ObjectAuditRecorderInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -117,16 +117,15 @@ class DraftRemovalRecord {
 	 * delete. A failure to write does not bring the draft back, so it is
 	 * logged as an error with the same facts and never thrown.
 	 *
-	 * @param ObjectEntity  $draft    The removed draft, as read before the delete.
-	 * @param Register|null $register Its register, for the slug.
-	 * @param Schema|null   $schema   Its schema, for the slug.
+	 * @param RemovedDraft $removed The removed draft, with its register and schema.
 	 *
 	 * @return bool True when the entry was written.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
 	 */
-	public function write(ObjectEntity $draft, ?Register $register, ?Schema $schema): bool {
-		$facts = $this->facts(draft: $draft, register: $register, schema: $schema);
+	public function write(RemovedDraft $removed): bool {
+		$draft = $removed->draft;
+		$facts = $this->facts(removed: $removed);
 
 		$actorId = null;
 		$actorName = null;
@@ -136,12 +135,8 @@ class DraftRemovalRecord {
 		}
 
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $draft,
-				action: self::ACTION,
-				context: $facts,
-				actorId: $actorId,
-				actorName: $actorName
+			$this->auditTrail->writeObjectEvent(
+				entry: new ObjectAuditEntry(object: $draft, action: self::ACTION, context: $facts, actorId: $actorId, actorName: $actorName)
 			);
 
 			return true;
@@ -162,20 +157,18 @@ class DraftRemovalRecord {
 	 * no later change to this class can leak them by accident: there is no
 	 * call to getObject() or jsonSerialize() to widen.
 	 *
-	 * @param ObjectEntity  $draft    The removed draft.
-	 * @param Register|null $register Its register.
-	 * @param Schema|null   $schema   Its schema.
+	 * @param RemovedDraft $removed The removed draft, with its register and schema.
 	 *
 	 * @return array<string, bool|string|null> The context of the entry.
 	 */
-	private function facts(ObjectEntity $draft, ?Register $register, ?Schema $schema): array {
+	private function facts(RemovedDraft $removed): array {
 		return [
 			'status' => ObjectEntity::STATUS_DRAFT,
 			'permanent' => true,
 			'job' => self::$actingJob,
-			'register' => $register?->getSlug(),
-			'schema' => $schema?->getSlug(),
-			'owner' => $draft->getOwner(),
+			'register' => $removed->register?->getSlug(),
+			'schema' => $removed->schema?->getSlug(),
+			'owner' => $removed->draft->getOwner(),
 		];
 	}//end facts()
 }//end class

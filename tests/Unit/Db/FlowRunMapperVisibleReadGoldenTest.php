@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunQueueExpiry;
 use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -40,6 +41,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
+ * @uses \OCA\OpenRegister\Db\FlowActivityWindow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunQueueExpiry
+ * @uses \OCA\OpenRegister\Db\FlowRunSubjectScope
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Service\Registers\EntityEventPublisher
  */
 final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -137,7 +144,7 @@ final class FlowRunMapperVisibleReadGoldenTest extends TestCase {
 
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
-		$mapper = new FlowRunMapper($db, $this->createMock(IEventDispatcher::class));
+		$mapper = new FlowRunMapper($db, new EntityEventPublisher(dispatcher: $this->createMock(IEventDispatcher::class)));
 
 		$outcome = [];
 		try {

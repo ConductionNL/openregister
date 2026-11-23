@@ -28,6 +28,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\SipMetsDocument
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\SipContents
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
  */
 class SipMetsDocumentTest extends TestCase {
 
@@ -35,7 +38,7 @@ class SipMetsDocumentTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('u');
 		$contents = new SipContents();
-		$contents->addMetadataDocument(uuid: 'u', path: 'objects/u/mdto.xml', content: '<m/>');
+		$contents->listAsMetadata(uuid: 'u', row: $contents->addDocument(path: 'objects/u/mdto.xml', content: '<m/>'));
 
 		$mets = new SipMetsDocument(transferId: 't1');
 		$mets->addObject(

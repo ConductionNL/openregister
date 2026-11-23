@@ -25,12 +25,19 @@ namespace OCA\OpenRegister\Files\Service;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteEdit;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Exception\NoteLockedException;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentsNotFoundException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -45,28 +52,6 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  * @package  OCA\OpenRegister\Service
  */
 class NoteService implements NoteServiceInterface {
-
-	/**
-	 * Comments manager for note operations.
-	 *
-	 * @var ICommentsManager
-	 */
-	private readonly ICommentsManager $commentsManager;
-
-	/**
-	 * User session for getting current user.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * User manager for resolving display names.
-	 *
-	 * @var IUserManager
-	 */
-	private readonly IUserManager $userManager;
-
 
 	/**
 	 * The objectType used for OpenRegister comments.
@@ -97,7 +82,14 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @var string
 	 */
-	public const LOCKED_VERB = 'note-locked';
+	public const LOCKED_VERB = NoteLockService::LOCKED_VERB;
+
+	/**
+	 * The lock rules of a note, built from this service's own collaborators.
+	 *
+	 * @var NoteLockService
+	 */
+	private readonly NoteLockService $lockService;
 
 	/**
 	 * How many notes are read per page when every note on an object is walked.
@@ -111,70 +103,64 @@ class NoteService implements NoteServiceInterface {
 	private const SWEEP_PAGE = 100;
 
 	/**
-	 * Normalises the internal/public flag.
-	 *
-	 * @var TimelineVisibilityServiceInterface
-	 */
-	private readonly TimelineVisibilityServiceInterface $visibility;
-
-	/**
-	 * Keeps and reads what a note said before.
-	 *
-	 * @var NoteVersionService
-	 */
-	private readonly NoteVersionService $versions;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ICommentsManager                   $commentsManager Comments manager for CRUD operations
 	 * @param NoteAccounts                       $accounts        User session and user manager
 	 * @param TimelineVisibilityServiceInterface $visibility      Normalises the internal/public flag
 	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
+	 * @param NoteLockService|null               $lock            The lock rules of a note; built from these collaborators when omitted
+	 * @param IEventDispatcher|null              $events          Announces a saved note (ObjectNoteAddedEvent); none is announced without it
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ICommentsManager $commentsManager,
-		NoteAccounts $accounts,
-		TimelineVisibilityServiceInterface $visibility,
-		NoteVersionService $versions,
+		private readonly ICommentsManager $commentsManager,
+		private readonly NoteAccounts $accounts,
+		private readonly TimelineVisibilityServiceInterface $visibility,
+		private readonly NoteVersionService $versions,
+		private readonly ?NoteLockService $lock = null,
+		private readonly ?IEventDispatcher $events = null,
 	) {
-		$this->commentsManager = $commentsManager;
-		$this->userSession = $accounts->userSession;
-		$this->userManager = $accounts->userManager;
-		$this->visibility = $visibility;
-		$this->versions = $versions;
+		$this->lockService = ($lock ?? new NoteLockService(commentsManager: $commentsManager, accounts: $accounts));
 	}//end __construct()
 
 	/**
-	 * Get notes for a specific OpenRegister object.
+	 * Get the first page of notes on an OpenRegister object, whatever their visibility.
+	 *
+	 * A page or a visibility filter goes through {@see listNotes()}.
 	 *
 	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param int $limit Maximum number of notes to return (default 50)
-	 * @param int $offset Number of notes to skip (default 0)
-	 * @param string|null $visibility Keep only notes carrying this flag; null returns every note
 	 *
 	 * @return array Array of note arrays in JSON-friendly format
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function getNotesForObject(
-		string $objectUuid,
-		int $limit = 50,
-		int $offset = 0,
-		?string $visibility = null,
-	): array {
+	public function getNotesForObject(string $objectUuid): array {
+		return $this->listNotes(query: new ObjectNotesQuery(objectUuid: $objectUuid, page: new ListQuery(limit: 50, offset: 0)));
+	}//end getNotesForObject()
+
+	/**
+	 * One page of the notes on an object, with their edit summaries, filtered by visibility.
+	 *
+	 * @param ObjectNotesQuery $query The object, the page and the visibility filter.
+	 *
+	 * @return array<int, array<string, mixed>> The notes.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function listNotes(ObjectNotesQuery $query): array {
 		$comments = $this->commentsManager->getForObject(
 			self::OBJECT_TYPE,
-			$objectUuid,
-			$limit,
-			$offset
+			$query->objectUuid,
+			$query->page->limit,
+			($query->page->offset ?? 0)
 		);
 
 		$notes = [];
+		$pageIds = $this->replies()->idsOf(comments: $comments);
 		foreach ($comments as $comment) {
-			$notes[] = $this->commentToArray(comment: $comment);
+			$notes[] = $this->commentToArray(comment: $comment, knownIds: $pageIds);
 		}
 
 		// One query for the whole page rather than one per note: the edit
@@ -182,8 +168,8 @@ class NoteService implements NoteServiceInterface {
 		// round trips to draw.
 		$notes = $this->withEditSummaries(notes: $notes);
 
-		return $this->visibility->filterRows(rows: $notes, filter: $visibility);
-	}//end getNotesForObject()
+		return $this->visibility->filterRows(rows: $notes, filter: $query->visibility);
+	}//end listNotes()
 
 	/**
 	 * Read one note by its id.
@@ -240,19 +226,18 @@ class NoteService implements NoteServiceInterface {
 	 * Record on the object that one of its notes was rewritten.
 	 *
 	 * The object is the caller's, which is why this is not folded into
-	 * {@see updateNote()}: the controller holds the object, this service holds
+	 * {@see editNote()}: the controller holds the object, this service holds
 	 * the history, and the audit entry needs both.
 	 *
 	 * @param ObjectEntityInterface $object The object the note hangs on
-	 * @param int $noteId The note that was rewritten
-	 * @param int $versions The number of versions the note now has
+	 * @param array<string, mixed>  $note   The rewritten note as editNote() returned it (its id and versionCount)
 	 *
 	 * @return bool True when an audit entry was written
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool {
-		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), noteId: $noteId, versions: $versions);
+	public function auditEdit(ObjectEntityInterface $object, array $note): bool {
+		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), note: $note);
 	}//end auditEdit()
 
 	/**
@@ -282,11 +267,10 @@ class NoteService implements NoteServiceInterface {
 	}//end withEditSummaries()
 
 	/**
-	 * Create a new note on an OpenRegister object.
+	 * Create a new note on an OpenRegister object as the session user.
 	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 * @param NoteDraft $draft The object, the message and the visibility (`internal` or `public`;
+	 *                         anything else, including null, stays internal)
 	 *
 	 * @return array The created note in JSON-friendly format
 	 *
@@ -294,73 +278,87 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	public function createNote(string $objectUuid, string $message, ?string $visibility = null): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		return $this->createNoteAs(
-			objectUuid: $objectUuid,
-			message: $message,
-			actorType: 'users',
-			actorId: $user->getUID(),
-			visibility: $visibility
-		);
+	public function createNote(NoteDraft $draft): array {
+		return $this->postNote(draft: $draft, author: $this->sessionAuthor());
 	}//end createNote()
 
 	/**
-	 * Create a note attributed to a principal that is not a session user.
+	 * Write a note on an object under the given author.
 	 *
 	 * An access link is not an account, and the whole value of the audit trail
 	 * is that a comment left through a link says so. Nextcloud's comments carry
-	 * an actor TYPE beside the actor id for exactly this reason, so the note is
-	 * written as the link rather than as whoever minted it.
+	 * an actor TYPE beside the actor id for exactly this reason, so a note left
+	 * through a link is written as the link rather than as whoever minted it.
+	 * The author is decided by the caller and is visible at that call site.
 	 *
-	 * The actor is an argument rather than something this method reaches for:
-	 * the identity that will sit on the note is decided by the caller and is
-	 * visible at that call site.
+	 * @param NoteDraft  $draft  The object, the text and the requested visibility.
+	 * @param NoteAuthor $author The actor the note is filed under, e.g. type `users` or `openregister_links`.
 	 *
-	 * @param string $objectUuid The UUID of the OpenRegister object
-	 * @param string $message The note message content
-	 * @param string $actorType The comment actor type, e.g. `users` or `openregister_links`
-	 * @param string $actorId The actor id within that type
-	 * @param string|null $visibility `internal` or `public`; anything else, including null, stays internal
+	 * @throws Exception If the author is blank.
 	 *
-	 * @return array The created note in JSON-friendly format
-	 *
-	 * @throws Exception When the actor is not named.
+	 * @return array<string, mixed> The created note.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/design.md
 	 */
-	public function createNoteAs(
-		string $objectUuid,
-		string $message,
-		string $actorType,
-		string $actorId,
-		?string $visibility = null,
-	): array {
-		if (trim($actorType) === '' || trim($actorId) === '') {
+	public function postNote(NoteDraft $draft, NoteAuthor $author): array {
+		if (trim($author->type) === '' || trim($author->id) === '') {
 			throw new Exception('A note needs an actor');
 		}
 
-		$comment = $this->commentsManager->create(
-			trim($actorType),
-			trim($actorId),
-			self::OBJECT_TYPE,
-			$objectUuid
-		);
+		$comment = $this->commentsManager->create(trim($author->type), trim($author->id), self::OBJECT_TYPE, $draft->objectUuid);
 
-		$comment->setMessage($message);
+		$visibility = $draft->visibility;
+		if ($draft->parentId !== null) {
+			$visibility = $this->replies()->attach(reply: $comment, draft: $draft);
+		}
+
+		$comment->setMessage($draft->message);
 		$comment->setVerb('comment');
 		$this->applyVisibility(comment: $comment, visibility: $visibility);
 		$this->commentsManager->save($comment);
 
+		// After the save, so a listener never sees a note that is not stored.
+		$this->events?->dispatchTyped(
+			new ObjectNoteAddedEvent(
+				objectUuid: $draft->objectUuid,
+				noteId: (string) $comment->getId(),
+				actorType: trim($author->type),
+				actorId: trim($author->id),
+				visibility: $this->readVisibility(comment: $comment)
+			)
+		);
+
 		return $this->commentToArray(comment: $comment);
-	}//end createNoteAs()
+	}//end postNote()
 
 	/**
-	 * Update an existing note's message.
+	 * Where a note sits in a conversation, and the checks a reply passes.
+	 *
+	 * @return NoteReplies
+	 */
+	private function replies(): NoteReplies {
+		return new NoteReplies(commentsManager: $this->commentsManager, visibility: $this->visibility);
+	}//end replies()
+
+	/**
+	 * The session user as a note author.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return NoteAuthor The author.
+	 */
+	private function sessionAuthor(): NoteAuthor {
+		$user = $this->accounts->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		return new NoteAuthor(type: 'users', id: $user->getUID());
+	}//end sessionAuthor()
+
+	/**
+	 * Edit a note's text and/or visibility.
 	 *
 	 * Rewriting the message is the author's own right, or the right of
 	 * somebody who manages the object: a note is a signed statement, so
@@ -370,56 +368,43 @@ class NoteService implements NoteServiceInterface {
 	 * why a visibility-only write does not ask who wrote the note.
 	 *
 	 * The text the note is losing is kept as a version BEFORE the comment is
-	 * saved: after the save it no longer exists anywhere.
+	 * saved: after the save it no longer exists anywhere. A locked note
+	 * refuses every edit.
 	 *
-	 * @param int $noteId The ID of the note to update
-	 * @param string|null $message The new message content, or null to leave it alone
-	 * @param string|null $visibility The new flag, or null to leave it alone
-	 * @param bool $mayManage Whether the caller holds `manage` on the object the note hangs on
+	 * @param int      $noteId The note to edit.
+	 * @param NoteEdit $edit   The new text, the new visibility and the manage right.
 	 *
-	 * @return array The updated note in JSON-friendly format
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteLockedException If the note is locked.
+	 * @throws NoteEditForbiddenException If the editor may not rewrite the text.
 	 *
-	 * @throws NoteLockedException If the note is locked
-	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager
-	 * @throws Exception If the note is not found or nobody is logged in
+	 * @return array<string, mixed> The updated note.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $mayManage is a permission verdict the caller resolved, not a mode switch.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function updateNote(
-		int $noteId,
-		?string $message = null,
-		?string $visibility = null,
-		bool $mayManage = false,
-	): array {
-		$user = $this->userSession->getUser();
+	public function editNote(int $noteId, NoteEdit $edit): array {
+		$user = $this->accounts->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		try {
-			$comment = $this->commentsManager->get((string)$noteId);
-		} catch (CommentsNotFoundException $e) {
-			throw new Exception('Note not found');
-		}
-
-		if ($comment->getVerb() === self::LOCKED_VERB) {
+		$comment = $this->loadComment(noteId: $noteId);
+		if ($this->lockService->isLocked(comment: $comment) === true) {
 			throw new NoteLockedException(noteId: $noteId);
 		}
 
-		if ($message !== null) {
-			if ($comment->getActorId() !== $user->getUID() && $mayManage === false) {
+		if ($edit->message !== null) {
+			if ($comment->getActorId() !== $user->getUID() && $edit->mayManage === false) {
 				throw new NoteEditForbiddenException();
 			}
 
-			$this->versions->record(noteId: $noteId, previous: $comment, editedBy: $user->getUID());
+			$this->versions->record(previous: $comment, editedBy: $user->getUID());
 
-			$comment->setMessage($message);
+			$comment->setMessage($edit->message);
 		}
 
-		if ($visibility !== null) {
-			$this->applyVisibility(comment: $comment, visibility: $visibility);
+		if ($edit->visibility !== null) {
+			$this->applyVisibility(comment: $comment, visibility: $edit->visibility);
 		}
 
 		$this->commentsManager->save($comment);
@@ -427,7 +412,45 @@ class NoteService implements NoteServiceInterface {
 		$notes = $this->withEditSummaries(notes: [$this->commentToArray(comment: $comment)]);
 
 		return $notes[0];
-	}//end updateNote()
+	}//end editNote()
+
+	/**
+	 * Lock a note: from now on nobody can edit or delete it. There is no unlock.
+	 *
+	 * Only the note's author, or someone who manages the object, may lock it.
+	 * Who locked it and when go in the comment's metadata, and the verb
+	 * becomes {@see self::LOCKED_VERB}, which {@see editNote()} and
+	 * {@see deleteNote()} refuse. Locking a locked note changes nothing.
+	 *
+	 * @param int  $noteId    The note to lock.
+	 * @param bool $mayManage Whether the caller manages the object the note hangs on.
+	 *
+	 * @throws Exception If no user is logged in or the note does not exist.
+	 * @throws NoteEditForbiddenException If the caller is neither the author nor a manager of the object.
+	 *
+	 * @return array<string, mixed> The locked note.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function lockNote(int $noteId, bool $mayManage): array {
+		$comment = $this->lockService->apply(noteId: $noteId, mayManage: $mayManage);
+
+		return $this->withEditSummaries(notes: [$this->commentToArray(comment: $comment)])[0];
+	}//end lockNote()
+
+	/**
+	 * Write the note-locked entry on the object's audit trail.
+	 *
+	 * @param ObjectEntityInterface $object The object the note hangs on
+	 * @param array<string, mixed>  $note   The locked note as lockNote() returned it
+	 *
+	 * @return bool True when an audit entry was written
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
+	 */
+	public function auditLock(ObjectEntityInterface $object, array $note): bool {
+		return $this->versions->auditLock(object: StoredEntity::object(object: $object), note: $note);
+	}//end auditLock()
 
 	/**
 	 * Write the flag onto a comment, leaving the rest of its metadata alone.
@@ -498,20 +521,39 @@ class NoteService implements NoteServiceInterface {
 	 * @return void
 	 *
 	 * @throws Exception If the note is not found
+	 * @throws NoteLockedException If the note is locked.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-9
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-a-note-can-be-locked-and-a-locked-note-is-immutable
 	 */
 	public function deleteNote(int $noteId): void {
-		try {
-			$this->commentsManager->get((string)$noteId);
-			$this->commentsManager->delete((string)$noteId);
-		} catch (CommentsNotFoundException $e) {
-			throw new Exception('Note not found');
+		// A locked note is the record of what was said; it is not removed.
+		if ($this->lockService->isLocked(comment: $this->loadComment(noteId: $noteId)) === true) {
+			throw new NoteLockedException(noteId: $noteId);
 		}
+
+		$this->commentsManager->delete((string)$noteId);
 
 		// The note is gone, so its history has nothing left to belong to.
 		$this->versions->forget(noteIds: [$noteId]);
 	}//end deleteNote()
+
+	/**
+	 * A note by id, or a 404 when there is none.
+	 *
+	 * @param int $noteId The note id.
+	 *
+	 * @return IComment The comment that is the note.
+	 *
+	 * @throws Exception With code 404 when the note does not exist.
+	 */
+	private function loadComment(int $noteId): IComment {
+		try {
+			return $this->commentsManager->get((string)$noteId);
+		} catch (CommentsNotFoundException $e) {
+			throw new Exception('Note not found', 404);
+		}
+	}//end loadComment()
 
 	/**
 	 * Count the notes on an object.
@@ -591,25 +633,26 @@ class NoteService implements NoteServiceInterface {
 	}//end noteIdsForObject()
 
 	/**
-	 * Map an IComment to a JSON-friendly array.
+	 * Convert an IComment to a JSON-friendly array.
 	 *
-	 * @param IComment $comment The comment to convert
+	 * @param IComment          $comment  The comment to convert
+	 * @param array<int, mixed> $knownIds Ids of notes known to exist (the page being read), sparing a lookup per reply
 	 *
 	 * @return array The note in JSON-friendly format
 	 */
-	private function commentToArray(IComment $comment): array {
+	private function commentToArray(IComment $comment, array $knownIds=[]): array {
 		$actorId = $comment->getActorId();
 		$actorDisplayName = $actorId;
 
 		// Resolve the display name from the user manager.
-		$actorUser = $this->userManager->get($actorId);
+		$actorUser = $this->accounts->userManager->get($actorId);
 		if ($actorUser !== null) {
 			$actorDisplayName = $actorUser->getDisplayName();
 		}
 
 		// Check if the current user is the author.
 		$isCurrentUser = false;
-		$currentUser = $this->userSession->getUser();
+		$currentUser = $this->accounts->userSession->getUser();
 		if ($currentUser !== null) {
 			$isCurrentUser = $currentUser->getUID() === $actorId;
 		}
@@ -623,7 +666,10 @@ class NoteService implements NoteServiceInterface {
 			'createdAt' => $comment->getCreationDateTime()->format('c'),
 			'isCurrentUser' => $isCurrentUser,
 			'visibility' => $this->readVisibility(comment: $comment),
-			'locked' => ($comment->getVerb() === self::LOCKED_VERB),
+			'locked' => $this->lockService->isLocked(comment: $comment),
+			'lockedBy' => $this->lockService->lockedBy(comment: $comment)['by'],
+			'lockedByDisplayName' => $this->displayNameOf(userId: $this->lockService->lockedBy(comment: $comment)['by']),
+			'lockedAt' => $this->lockService->lockedBy(comment: $comment)['at'],
 			// The defaults of a note nobody has edited. Every read that can
 			// afford the query replaces them through
 			// {@see withEditSummaries()}; a note that has just been created
@@ -632,6 +678,29 @@ class NoteService implements NoteServiceInterface {
 			'editedBy' => null,
 			'editedByDisplayName' => null,
 			'versionCount' => 0,
-		];
+		] + $this->replies()->fields(comment: $comment, knownIds: $knownIds);
 	}//end commentToArray()
+
+	/**
+	 * A user's display name, their id when the account is gone, or null for no user.
+	 *
+	 * @param string|null $userId The user id.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	private function displayNameOf(?string $userId): ?string {
+		if ($userId === null || $userId === '') {
+			return null;
+		}
+
+		$user = $this->accounts->userManager->get($userId);
+		if ($user === null) {
+			return $userId;
+		}
+
+		return $user->getDisplayName();
+	}//end displayNameOf()
+
 }//end class

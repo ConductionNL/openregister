@@ -4,8 +4,12 @@ namespace Unit\Tool;
 
 use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -16,18 +20,17 @@ use Psr\Log\LoggerInterface;
 class ApplicationToolTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
-	private ApplicationMapper&MockObject $applicationMapper;
+	private ApplicationMapperInterface&MockObject $applicationMapper;
 	private ApplicationTool $tool;
 
 	protected function setUp(): void {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->applicationMapper = $this->createMock(ApplicationMapper::class);
+		$this->applicationMapper = $this->createMock(ApplicationMapperInterface::class);
 
 		$this->tool = new ApplicationTool(
-			$this->applicationMapper,
-			$this->userSession,
-			$this->logger
+			new ToolCallTrail($this->userSession, $this->logger),
+			$this->applicationMapper
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -87,7 +90,7 @@ class ApplicationToolTest extends TestCase {
 	// ------------------------------------------------------------------
 
 	public function testExecuteFunctionCallsCorrectMethod(): void {
-		$this->applicationMapper->method('findAll')->willReturn([]);
+		$this->applicationMapper->method('findAllBy')->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
 		$result = $this->tool->executeFunction('list_applications', []);
@@ -105,7 +108,7 @@ class ApplicationToolTest extends TestCase {
 
 	public function testListApplicationsSuccess(): void {
 		$app = $this->createApplicationEntity('uuid-1', 'MyApp', 'Desc');
-		$this->applicationMapper->method('findAll')->willReturn([$app]);
+		$this->applicationMapper->method('findAllBy')->willReturn([$app]);
 		$this->applicationMapper->method('countAll')->willReturn(1);
 
 		$result = $this->tool->listApplications();
@@ -118,8 +121,8 @@ class ApplicationToolTest extends TestCase {
 
 	public function testListApplicationsWithPagination(): void {
 		$this->applicationMapper->expects($this->once())
-			->method('findAll')
-			->with(10, 5)
+			->method('findAllBy')
+			->with(new ListQuery(limit: 10, offset: 5))
 			->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
@@ -130,7 +133,7 @@ class ApplicationToolTest extends TestCase {
 	}
 
 	public function testListApplicationsEmpty(): void {
-		$this->applicationMapper->method('findAll')->willReturn([]);
+		$this->applicationMapper->method('findAllBy')->willReturn([]);
 		$this->applicationMapper->method('countAll')->willReturn(0);
 
 		$result = $this->tool->listApplications();
@@ -139,7 +142,7 @@ class ApplicationToolTest extends TestCase {
 	}
 
 	public function testListApplicationsException(): void {
-		$this->applicationMapper->method('findAll')
+		$this->applicationMapper->method('findAllBy')
 			->willThrowException(new \Exception('DB error'));
 
 		$result = $this->tool->listApplications();
@@ -186,10 +189,11 @@ class ApplicationToolTest extends TestCase {
 		$app = $this->createApplicationEntity('new-uuid', 'NewApp', 'Desc');
 
 		$this->applicationMapper->expects($this->once())
-			->method('insert')
+			->method('createFromArray')
+			->with(['name' => 'NewApp', 'description' => 'Desc'])
 			->willReturn($app);
 
-		$result = $this->tool->createApplication('NewApp', 'Desc', 'example.com');
+		$result = $this->tool->createApplication(new CreateApplicationCommand('NewApp', 'Desc', 'example.com'));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('NewApp', $result['message']);
 		$this->assertStringContainsString('new-uuid', $result['message']);
@@ -197,25 +201,31 @@ class ApplicationToolTest extends TestCase {
 
 	public function testCreateApplicationMinimalParams(): void {
 		$app = $this->createApplicationEntity('uuid', 'SimpleApp');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->expects($this->once())
+			->method('createFromArray')
+			->with(['name' => 'SimpleApp'])
+			->willReturn($app);
 
-		$result = $this->tool->createApplication('SimpleApp');
+		$result = $this->tool->createApplication(new CreateApplicationCommand('SimpleApp'));
 		$this->assertTrue($result['success']);
 	}
 
 	public function testCreateApplicationWithEmptyDescription(): void {
 		$app = $this->createApplicationEntity('uuid', 'App');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->expects($this->once())
+			->method('createFromArray')
+			->with(['name' => 'App'])
+			->willReturn($app);
 
-		$result = $this->tool->createApplication('App', '');
+		$result = $this->tool->createApplication(new CreateApplicationCommand('App', ''));
 		$this->assertTrue($result['success']);
 	}
 
 	public function testCreateApplicationException(): void {
-		$this->applicationMapper->method('insert')
+		$this->applicationMapper->method('createFromArray')
 			->willThrowException(new \Exception('Duplicate name'));
 
-		$result = $this->tool->createApplication('Dup');
+		$result = $this->tool->createApplication(new CreateApplicationCommand('Dup'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('Duplicate name', $result['error']);
 	}
@@ -232,7 +242,7 @@ class ApplicationToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateApplication('uuid-1', 'New', 'New desc');
+		$result = $this->tool->updateApplication(new UpdateApplicationCommand('uuid-1', 'New', 'New desc'));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('updated', $result['message']);
 	}
@@ -245,7 +255,7 @@ class ApplicationToolTest extends TestCase {
 			return $entity;
 		});
 
-		$result = $this->tool->updateApplication('uuid-1');
+		$result = $this->tool->updateApplication(new UpdateApplicationCommand('uuid-1'));
 		$this->assertTrue($result['success']);
 	}
 
@@ -253,7 +263,7 @@ class ApplicationToolTest extends TestCase {
 		$this->applicationMapper->method('findByUuid')
 			->willThrowException(new DoesNotExistException('not found'));
 
-		$result = $this->tool->updateApplication('bad-uuid', 'x');
+		$result = $this->tool->updateApplication(new UpdateApplicationCommand('bad-uuid', 'x'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('not found', $result['error']);
 	}
@@ -262,7 +272,7 @@ class ApplicationToolTest extends TestCase {
 		$this->applicationMapper->method('findByUuid')
 			->willThrowException(new \Exception('DB error'));
 
-		$result = $this->tool->updateApplication('uuid');
+		$result = $this->tool->updateApplication(new UpdateApplicationCommand('uuid'));
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('DB error', $result['error']);
 	}
@@ -314,7 +324,7 @@ class ApplicationToolTest extends TestCase {
 
 	public function testExecuteFunctionCreateApplication(): void {
 		$app = $this->createApplicationEntity('uuid', 'NewApp');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->method('createFromArray')->willReturn($app);
 
 		$result = $this->tool->executeFunction('create_application', ['NewApp']);
 		$this->assertTrue($result['success']);

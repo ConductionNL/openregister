@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\PollLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
@@ -36,7 +37,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -61,7 +61,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
 
-		return new PollsProvider(new LeafProviderPlatform($db, $apps, $this->createMock(IL10N::class)), $mapper, $this->createMock(IUserSession::class));
+		return new PollsProvider(new LeafProviderPlatform($db, $apps, $this->createMock(IL10N::class)), $mapper);
 	}//end provider()
 
 	private function queryBuilder(): IQueryBuilder {
@@ -122,7 +122,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 		$failure = new RuntimeException('no polls tables');
 		$this->answers = ['polls_polls' => $failure, 'polls_options' => $failure, 'polls_votes:voters' => $failure];
 
-		$rows = $this->provider(self::link())->list('r', 's', 'obj-1');
+		$rows = $this->provider(self::link())->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(
 			[
@@ -152,7 +152,7 @@ class PollsProviderDegradeBehaviourTest extends TestCase {
 			'polls_votes:voters' => [['user_id' => 'a'], ['user_id' => 'b']],
 		];
 
-		$row = $this->provider(self::link())->list('r', 's', 'obj-1')[0];
+		$row = $this->provider(self::link())->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'))[0];
 
 		$this->assertSame([['id' => 1, 'text' => 'Yes please', 'votes' => 0]], $row['options']);
 		$this->assertSame(2, $row['voterCount']);

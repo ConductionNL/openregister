@@ -5,7 +5,7 @@
  *
  * One-call registration for an AppHost-adopting leaf app. From the leaf's
  * `Application::register(IRegistrationContext $context)`, a single
- * `\OCA\OpenRegister\AppHost\Bootstrap::register($context, self::APP_ID)`
+ * `\OCA\OpenRegister\AppHost\Bootstrap::register($context, new LeafAdoption(appId: self::APP_ID))`
  * wires every standard plumbing class: the generic controllers, the settings
  * + action-auth services, the install repair steps, the admin settings panel,
  * the deep-link listener, optional dashboard widgets and MCP provider, and the
@@ -123,6 +123,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use InvalidArgumentException;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -135,9 +136,13 @@ class Bootstrap {
 	/**
 	 * Register all standard AppHost plumbing for a leaf app.
 	 *
-	 * @param IRegistrationContext $context The leaf app's registration context.
-	 * @param string $appId The leaf app id (e.g. 'petstore').
-	 * @param array<string, mixed> $options Optional overrides:
+	 * Takes a LeafAdoption (as `$adoption`, or positionally in place of `$appId`) or the app id
+	 * and options array of the published contract; a LeafAdoption wins.
+	 *
+	 * @param IRegistrationContext     $context  The leaf app's registration context.
+	 * @param string|LeafAdoption|null $appId    The leaf app id, or the adoption.
+	 * @param array<string, mixed>     $options  The overrides listed under `$adoption`.
+	 * @param LeafAdoption|null        $adoption The leaf app id (e.g. 'petstore') and its optional overrides:
 	 *                                      - 'namespace' (string): the leaf app's `OCA\X` base namespace
 	 *                                      (e.g. `OCA\PetStore`). STRONGLY RECOMMENDED — the fleet's
 	 *                                      namespaces are not derivable from the app id (petstore →
@@ -162,54 +167,67 @@ class Bootstrap {
 	 *
 	 * @return void
 	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
+	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
 	 */
-	public static function register(IRegistrationContext $context, string $appId, array $options = []): void {
-		$studly = self::studly(appId: $appId);
-		$base = rtrim(string: (string)($options['namespace'] ?? ('OCA\\' . $studly)), characters: '\\');
-		$controllerNs = (string)($options['controllerNamespace'] ?? ($base . '\\Controller'));
-		$repairNs = (string)($options['repairNamespace'] ?? ($base . '\\Repair'));
-		$settingsNs = (string)($options['settingsNamespace'] ?? ($base . '\\Settings'));
-		$sectionsNs = (string)($options['sectionsNamespace'] ?? ($base . '\\Sections'));
-		$listenerNs = (string)($options['listenerNamespace'] ?? ($base . '\\Listener'));
-		$serviceNs = (string)($options['serviceNamespace'] ?? ($base . '\\Service'));
+	public static function register(
+		IRegistrationContext $context,
+		string|LeafAdoption|null $appId = null,
+		array $options = [],
+		?LeafAdoption $adoption = null,
+	): void {
+		$adoption = self::adoptionOf(appId: $appId, options: $options, adoption: $adoption);
+		self::registerPlanes(leaf: new LeafRegistration(context: $context, appId: $adoption->appId), adoption: $adoption);
+		self::registerExtras(context: $context, adoption: $adoption);
+	}//end register()
 
-		$section = [
-			'id' => (string)($options['sectionId'] ?? $appId),
-			'name' => (string)($options['sectionName'] ?? $studly),
-			'icon' => (string)($options['sectionIcon'] ?? 'app-dark.svg'),
-			'priority' => (int)($options['sectionPriority'] ?? 75),
-			'adminPriority' => (int)($options['adminPriority'] ?? 10),
-		];
-		$registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
-		$registerObserv = ($options['observability'] ?? true) !== false;
-
-		$leaf = new LeafRegistration(context: $context, appId: $appId);
+	/**
+	 * Wire the controllers, services, repair steps, admin panel and deep links one leaf asked for.
+	 *
+	 * @param LeafRegistration $leaf     The leaf's registration.
+	 * @param LeafAdoption     $adoption The leaf's app id and overrides.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+	 */
+	private static function registerPlanes(LeafRegistration $leaf, LeafAdoption $adoption): void {
+		$controllerNs = $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller');
 		$leaf->registerControllers(controllerNs: $controllerNs);
-		if ($registerObserv === true) {
+		if ($adoption->enabled(flag: 'observability') === true) {
 			$leaf->registerObservabilityControllers(controllerNs: $controllerNs);
 		}
 
-		$leaf->registerServices(serviceNs: $serviceNs);
-		$leaf->registerRepairSteps(repairNs: $repairNs);
-		$leaf->registerAdminForm(settingsNs: $settingsNs, section: $section);
-		$leaf->registerSettingsSection(sectionsNs: $sectionsNs, section: $section);
-
-		if ($registerDeepLinks === true) {
-			$leaf->registerDeepLinkListener(listenerNs: $listenerNs);
+		$leaf->registerServices(serviceNs: $adoption->namespace(option: 'serviceNamespace', suffix: 'Service'));
+		$leaf->registerRepairSteps(repairNs: $adoption->namespace(option: 'repairNamespace', suffix: 'Repair'));
+		$leaf->registerAdminForm(settingsNs: $adoption->namespace(option: 'settingsNamespace', suffix: 'Settings'), section: $adoption->section());
+		$leaf->registerSettingsSection(sectionsNs: $adoption->namespace(option: 'sectionsNamespace', suffix: 'Sections'), section: $adoption->section());
+		if ($adoption->enabled(flag: 'deepLinks') === true) {
+			$leaf->registerDeepLinkListener(listenerNs: $adoption->namespace(option: 'listenerNamespace', suffix: 'Listener'));
 		}
+	}//end registerPlanes()
 
-		foreach ((array)($options['dashboardWidgets'] ?? []) as $widgetClass) {
+	/**
+	 * Register the dashboard widgets and the MCP provider alias one leaf named.
+	 *
+	 * @param IRegistrationContext $context  Leaf registration context.
+	 * @param LeafAdoption         $adoption The leaf's app id and overrides.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+	 */
+	private static function registerExtras(IRegistrationContext $context, LeafAdoption $adoption): void {
+		foreach ($adoption->dashboardWidgets() as $widgetClass) {
 			$context->registerDashboardWidget((string)$widgetClass);
 		}
 
-		if (isset($options['mcpProvider']) === true) {
-			$context->registerServiceAlias(
-				'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::' . $appId,
-				(string)$options['mcpProvider']
-			);
+		$mcpProvider = $adoption->mcpProvider();
+		if ($mcpProvider !== null) {
+			$context->registerServiceAlias('OCA\\OpenRegister\\Mcp\\IMcpToolProvider::' . $adoption->appId, $mcpProvider);
 		}
-	}//end register()
+	}//end registerExtras()
 
 	/**
 	 * Bind the store controller for one leaf app.
@@ -228,37 +246,60 @@ class Bootstrap {
 	 * that reason. It stays a no-op when the leaf ships its own
 	 * `Controller\StoreController`, so calling it is always safe.
 	 *
-	 * @param IRegistrationContext $context      Leaf registration context.
-	 * @param string               $appId        Leaf app id.
-	 * @param string               $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`).
+	 * The controller namespace is the adoption's `controllerNamespace`
+	 * override, else its `namespace` plus `\Controller`.
+	 *
+	 * Takes a LeafAdoption (as `$adoption`, or positionally in place of `$appId`) or the app id and
+	 * controller namespace of the published contract; a LeafAdoption wins.
+	 *
+	 * @param IRegistrationContext     $context      Leaf registration context.
+	 * @param string|LeafAdoption|null $appId        Leaf app id, or the adoption.
+	 * @param string|null              $controllerNs Leaf controller namespace (e.g. `OCA\Decidiq\Controller`);
+	 *                                               derived from the app id when null.
+	 * @param LeafAdoption|null        $adoption     Leaf app id and namespace (e.g. `['namespace' => 'OCA\Decidiq']`).
 	 *
 	 * @return void
 	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
+	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
 	 */
-	public static function aliasStoreController(IRegistrationContext $context, string $appId, string $controllerNs): void {
-		(new LeafRegistration(context: $context, appId: $appId))->aliasStoreController(controllerNs: $controllerNs);
+	public static function aliasStoreController(
+		IRegistrationContext $context,
+		string|LeafAdoption|null $appId = null,
+		?string $controllerNs = null,
+		?LeafAdoption $adoption = null,
+	): void {
+		$adoption = self::adoptionOf(appId: $appId, options: [], adoption: $adoption);
+		(new LeafRegistration(context: $context, appId: $adoption->appId))->aliasStoreController(
+			controllerNs: ($controllerNs ?? $adoption->namespace(option: 'controllerNamespace', suffix: 'Controller'))
+		);
 	}//end aliasStoreController()
 
 	/**
-	 * Convert a dash/underscore app id into a StudlyCase namespace segment
-	 * (e.g. `pet_store` / `pet-store` → `PetStore`).
+	 * The adoption a call names, built from the app id and options when it names none.
 	 *
-	 * @param string $appId The app id.
+	 * @param string|LeafAdoption|null $appId    The app id, or the adoption.
+	 * @param array<string, mixed>     $options  The overrides.
+	 * @param LeafAdoption|null        $adoption The adoption.
 	 *
-	 * @return string StudlyCase form.
+	 * @return LeafAdoption The adoption.
+	 *
+	 * @throws \InvalidArgumentException When neither an app id nor an adoption is given.
 	 */
-	private static function studly(string $appId): string {
-		$parts = preg_split(pattern: '/[_\-]+/', subject: $appId);
-		if ($parts === false || count($parts) === 0) {
-			$parts = [$appId];
+	private static function adoptionOf(string|LeafAdoption|null $appId, array $options, ?LeafAdoption $adoption): LeafAdoption {
+		if ($appId instanceof LeafAdoption) {
+			return ($adoption ?? $appId);
 		}
 
-		$studly = '';
-		foreach ($parts as $part) {
-			$studly .= ucfirst($part);
-		}//end foreach
+		if ($adoption !== null) {
+			return $adoption;
+		}
 
-		return $studly;
-	}//end studly()
+		if ($appId === null) {
+			throw new InvalidArgumentException('Bootstrap needs an app id or a LeafAdoption.');
+		}
+
+		return new LeafAdoption(appId: $appId, options: $options);
+	}//end adoptionOf()
 }//end class

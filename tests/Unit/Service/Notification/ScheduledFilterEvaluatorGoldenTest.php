@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 
@@ -35,6 +36,12 @@ use Psr\Log\AbstractLogger;
  * moment, never from today. Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterClause
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterDates
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterPosition
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterTarget
  */
 final class ScheduledFilterEvaluatorGoldenTest extends TestCase {
 
@@ -147,7 +154,7 @@ final class ScheduledFilterEvaluatorGoldenTest extends TestCase {
 		$actual = [];
 		foreach (self::objects() as $index => $object) {
 			$logger->records = [];
-			$actual[] = [$index, $evaluator->matches($object, self::filters()[$name], $now), $logger->records];
+			$actual[] = [$index, $evaluator->matchesTarget(filter: self::filters()[$name], target: new ScheduledFilterTarget(objectData: $object, now: $now)), $logger->records];
 		}
 
 		if (getenv('OR_GOLDEN_WRITE') === '1') {

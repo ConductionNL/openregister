@@ -44,7 +44,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 
 declare(strict_types=1);
@@ -52,9 +52,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
@@ -62,7 +62,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+ * @spec openspec/specs/objects-crud/spec.md
  */
 class ConflictReport implements ConflictReportInterface {
 
@@ -90,24 +90,36 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * The conflicting properties, with the three readings each.
 	 *
-	 * @param ObjectEntity           $stored     The object as it is now.
-	 * @param Schema                 $schema     Its schema, for the field filter.
-	 * @param array<string, mixed>   $sent       What the caller is trying to write.
-	 * @param array<int, AuditTrail> $intervening The changes since the caller read, newest first.
+	 * @param RefusedWrite           $write       The stored object, its schema and what the caller sent.
+	 * @param array<int, AuditRecordInterface> $intervening The changes since the caller read, newest first.
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
-	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
-		$current = $stored->getMatchEnvelope();
-		$conflicts = $this->conflictsOf(
-			schema: $schema,
-			current: $current,
-			sent: $sent,
+	public function build(RefusedWrite $write, array $intervening): array {
+		$run = new ConflictRun(
+			schema: $write->schema,
+			current: $write->stored->getMatchEnvelope(),
+			sent: $write->sent,
 			changedByOthers: $this->changedByOthers(intervening: $intervening)
 		);
-		$cause = $this->causeOf(entry: ($intervening[0] ?? null));
+
+		return $this->body(run: $run, cause: $this->causeOf(entry: ($intervening[0] ?? null)));
+	}//end build()
+
+	/**
+	 * The 409 body of one refused write.
+	 *
+	 * @param ConflictRun                                           $run   The refused write and what others changed.
+	 * @param array{changedBy: string|null, changedAt: string|null} $cause Who made the first intervening write, and when.
+	 *
+	 * @return array<string, mixed> The 409 body.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	private function body(ConflictRun $run, array $cause): array {
+		$conflicts = $this->conflictsOf(run: $run);
 
 		return [
 			'error' => self::ERROR,
@@ -117,23 +129,22 @@ class ConflictReport implements ConflictReportInterface {
 			'changedBy' => $cause['changedBy'],
 			'changedAt' => $cause['changedAt'],
 		];
-	}//end build()
+	}//end body()
 
 	/**
 	 * The properties the caller changed that somebody else changed too, with their readings.
 	 *
-	 * @param Schema $schema          The schema.
-	 * @param array  $current         The stored object's match envelope.
-	 * @param array  $sent            What the caller sent.
-	 * @param array  $changedByOthers The value each intervening write found, per property.
+	 * @param ConflictRun $run The schema, the stored object, what the caller sent, and what others changed.
 	 *
 	 * @return array<string, array> The conflicts
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	private function conflictsOf(Schema $schema, array $current, array $sent, array $changedByOthers): array {
-		$conflicts = [];
-		foreach ($sent as $property => $sentValue) {
+	private function conflictsOf(ConflictRun $run): array {
+		$current         = $run->current;
+		$changedByOthers = $run->changedByOthers;
+		$conflicts       = [];
+		foreach ($run->sent as $property => $sentValue) {
 			$property = (string)$property;
 
 		// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
@@ -145,12 +156,7 @@ class ConflictReport implements ConflictReportInterface {
 				continue;
 			}
 
-			$conflicts[$property] = $this->readingsFor(
-				schema: $schema,
-				current: $current,
-				property: $property,
-				readings: self::readings(sent: $sentValue, read: $changedByOthers[$property], stored: ($current[$property] ?? null))
-			);
+			$conflicts[$property] = $this->readingsFor(run: $run, property: $property);
 		}
 
 		return $conflicts;
@@ -163,7 +169,7 @@ class ConflictReport implements ConflictReportInterface {
 	 *
 	 * @return string The message
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private static function messageFor(array $conflicts): string {
 		if ($conflicts === []) {
@@ -181,13 +187,13 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * Who made the first intervening write, and when; both null without one.
 	 *
-	 * @param AuditTrail|null $entry The first intervening write.
+	 * @param AuditRecordInterface|null $entry The first intervening write.
 	 *
 	 * @return array{changedBy: string|null, changedAt: string|null} The cause
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	private function causeOf(?AuditTrail $entry): array {
+	private function causeOf(?AuditRecordInterface $entry): array {
 		if ($entry === null) {
 			return ['changedBy' => null, 'changedAt' => null];
 		}
@@ -201,38 +207,42 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * The three readings of one property, filtered by what the caller may read.
 	 *
-	 * @param Schema               $schema   The schema.
-	 * @param array<string, mixed> $current  The stored object.
-	 * @param string               $property The property.
-	 * @param array<string, mixed> $readings The three readings, as {@see self::readings()} shapes them.
+	 * @param ConflictRun $run      The schema, the stored object, what was sent and what others changed.
+	 * @param string      $property The property.
 	 *
 	 * @return array<string, mixed> The readings, or the withheld marker.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-the-conflict-body-discloses-no-more-than-a-read-would-req-cso-002
 	 */
-	private function readingsFor(Schema $schema, array $current, string $property, array $readings): array {
-		if ($this->properties->canReadProperty(schema: $schema, property: $property, object: $current) === false) {
+	private function readingsFor(ConflictRun $run, string $property): array {
+		if ($this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->current)) === false) {
 			// Named, valueless. The caller learns their write collided and
 			// learns nothing they could not have read.
 			return ['status' => self::WITHHELD];
 		}
 
-		return $readings;
+		return self::readings(run: $run, property: $property);
 	}//end readingsFor()
 
 	/**
 	 * The three readings of one conflicting property: sent, read and stored.
 	 *
-	 * @param mixed $sent   What the caller sent.
-	 * @param mixed $read   What was there when they read it.
-	 * @param mixed $stored What is stored now.
+	 * What the caller sent, what was there when they read it, and what is stored now.
+	 *
+	 * @param ConflictRun $run      The refused write and what others changed.
+	 * @param string      $property The conflicting property.
 	 *
 	 * @return array<string, mixed> The readings.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
-	private static function readings(mixed $sent, mixed $read, mixed $stored): array {
-		return ['status' => 'conflict', 'sent' => $sent, 'read' => $read, 'stored' => $stored];
+	private static function readings(ConflictRun $run, string $property): array {
+		return [
+			'status' => 'conflict',
+			'sent' => $run->sent[$property],
+			'read' => $run->changedByOthers[$property],
+			'stored' => ($run->current[$property] ?? null),
+		];
 	}//end readings()
 
 	/**
@@ -242,11 +252,11 @@ class ConflictReport implements ConflictReportInterface {
 	 * assignment wins and the value kept is the `old` of the EARLIEST change:
 	 * that is the one the caller was looking at.
 	 *
-	 * @param array<int, AuditTrail> $intervening The changes since the read.
+	 * @param array<int, AuditRecordInterface> $intervening The changes since the read.
 	 *
 	 * @return array<string, mixed> Property to the value the caller read.
 	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
 	private function changedByOthers(array $intervening): array {
 		$was = [];
@@ -274,11 +284,11 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * Who made a change, by display name where there is one.
 	 *
-	 * @param AuditTrail $entry The entry.
+	 * @param AuditRecordInterface $entry The entry.
 	 *
 	 * @return string The actor.
 	 */
-	private function actorOf(AuditTrail $entry): string {
+	private function actorOf(AuditRecordInterface $entry): string {
 		$name = trim((string)$entry->getUserName());
 		if ($name !== '') {
 			return $name;

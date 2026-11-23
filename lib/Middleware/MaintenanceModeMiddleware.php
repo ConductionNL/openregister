@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Controller\Support\MaintenanceReachableControllersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -40,7 +40,8 @@ use Throwable;
  * who cannot reach the console cannot leave the mode, and then the only way
  * out is a database edit. So the allowance is not "administrators may read" —
  * an administrator browsing objects during maintenance is exactly what the
- * mode is for — it is "the console is always reachable", named by class.
+ * mode is for — it is "the console is always reachable": the controllers that
+ * administer the mode carry MaintenanceReachableInterface.
  *
  * The refusal carries the administered message, so a user who runs into a
  * closed instance is told why rather than shown a bare 503.
@@ -48,13 +49,6 @@ use Throwable;
  * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 class MaintenanceModeMiddleware extends Middleware {
-
-	/**
-	 * The controllers that stay reachable while the mode holds.
-	 *
-	 * @var array<int, string>
-	 */
-	private const ALWAYS_REACHABLE = MaintenanceReachableControllersInterface::ALWAYS_REACHABLE;
 
 	/**
 	 * Constructor.
@@ -117,6 +111,22 @@ class MaintenanceModeMiddleware extends Middleware {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function afterException(Controller|string $controller, string $methodName, \Exception $exception): JSONResponse {
+		return $this->refusalResponse(exception: $exception);
+
+	}//end afterException()
+
+	/**
+	 * The 503 of a MaintenanceModeHeldException; anything else is re-thrown.
+	 *
+	 * @param \Exception $exception The thrown exception.
+	 *
+	 * @return JSONResponse The 503 carrying the message.
+	 *
+	 * @throws \Exception The passed-in exception when it is not this middleware's refusal.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 */
+	private function refusalResponse(\Exception $exception): JSONResponse {
 		if (($exception instanceof MaintenanceModeHeldException) === false) {
 			throw $exception;
 		}
@@ -129,10 +139,10 @@ class MaintenanceModeMiddleware extends Middleware {
 			Http::STATUS_SERVICE_UNAVAILABLE
 		);
 
-	}//end afterException()
+	}//end refusalResponse()
 
 	/**
-	 * Is this controller one the mode never closes.
+	 * Is this controller one the mode never closes: it carries the marker.
 	 *
 	 * @param Controller|string $controller The controller.
 	 *
@@ -144,7 +154,7 @@ class MaintenanceModeMiddleware extends Middleware {
 			$class = $controller::class;
 		}
 
-		return in_array($class, self::ALWAYS_REACHABLE, true);
+		return is_subclass_of($class, MaintenanceReachableInterface::class);
 
 	}//end reachableAnyway()
 }//end class

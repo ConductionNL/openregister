@@ -49,12 +49,13 @@ interface UniqueConstraintEvaluatorInterface {
 	 * The message naming a breach.
 	 *
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint    The constraint.
-	 * @param array<string,mixed>                                          $object        The submitted object data.
-	 * @param string|null                                                  $conflictingId The uuid of an object already holding the combination.
+	 * @param UniqueConflict $conflict The submitted object data and who holds the combination already.
 	 *
 	 * @return string The message.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	public function describeBreach(array $constraint, array $object, ?string $conflictingId): string;
+	public function describeBreach(array $constraint, UniqueConflict $conflict): string;
 
 	/**
 	 * The constraints a schema declares.
@@ -65,4 +66,38 @@ interface UniqueConstraintEvaluatorInterface {
 	 * @return array<int,array{name:string,properties:array<int,string>,action:string}> The constraints.
 	 */
 	public function constraints(?array $configuration, bool $includeLegacy = false): array;
+
+	/**
+	 * The schema's identity: the declared `refuse` constraint that says `identity: true`.
+	 *
+	 * @param array<string,mixed>|null $configuration The schema's configuration block.
+	 *
+	 * @return array{name:string,properties:array<int,string>,action:string}|null The identity, or null when none is declared.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function identity(?array $configuration): ?array;
+
+	/**
+	 * Why a schema's identity declaration must be refused at save, if it must.
+	 *
+	 * @param array<string,mixed>|null $configuration The schema's configuration block.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusals, empty when the declaration is sound.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function identityRefusals(?array $configuration): array;
+
+	/**
+	 * The key of an object under an identity: its values joined in declared order.
+	 *
+	 * @param array{name:string,properties:array<int,string>,action:string} $identity The identity constraint.
+	 * @param array<string,mixed> $object The object data.
+	 *
+	 * @return string|null The key, or null when one of the values is absent, empty or not scalar.
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/specs/objects-crud/spec.md
+	 */
+	public function keyOf(array $identity, array $object): ?string;
 }//end interface

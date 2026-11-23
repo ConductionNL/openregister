@@ -66,15 +66,14 @@ interface MetadataConditionFindingsInterface {
 	 * a save can remove a bad rule or edit around one; only adding or changing one
 	 * is refused.
 	 *
-	 * @param array|null $authorization The block.
-	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
+	 * @param AuthorizationEdit $edit    The block and, when saving over one, the block as stored.
+	 * @param string            $context What the block belongs to, for the message.
 	 *
 	 * @return array<int, string> The findings; empty when every condition can match.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function findings(?array $authorization, string $context, ?array $stored = null): array;
+	public function findings(AuthorizationEdit $edit, string $context): array;
 
 	/**
 	 * The findings of a schema's own block and of every property's rules.

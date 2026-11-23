@@ -57,29 +57,31 @@ final class PresentationAnnotations {
 
 		$declared = [];
 		foreach ($lenses as $name => $spec) {
-			$declared = $this->withLens(declared: $declared, name: (string)$name, spec: $spec);
+			$entry = $this->lensEntry(name: (string)$name, spec: $spec);
+			if ($entry !== null) {
+				$declared[(string)$name] = $entry;
+			}
 		}
 
 		return $declared;
 	}//end lenses()
 
 	/**
-	 * The lenses so far with one declared lens added, unless it is nameless or half a lens.
+	 * One declared lens, or null when it is nameless or half a lens.
 	 *
-	 * @param array  $declared The lenses so far.
-	 * @param string $name     The property name the lens renders as.
-	 * @param mixed  $spec     The declared lens.
+	 * @param string $name The property name the lens renders as.
+	 * @param mixed  $spec The declared lens.
 	 *
-	 * @return array
+	 * @return array|null
 	 */
-	private function withLens(array $declared, string $name, mixed $spec): array {
+	private function lensEntry(string $name, mixed $spec): ?array {
 		$entry = $this->normaliseLens(spec: $spec);
-		if ($name !== '' && $entry !== null) {
-			$declared[$name] = $entry;
+		if ($name === '') {
+			return null;
 		}
 
-		return $declared;
-	}//end withLens()
+		return $entry;
+	}//end lensEntry()
 
 	/**
 	 * Get the list-surface declaration from the schema configuration.

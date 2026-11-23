@@ -99,7 +99,6 @@ class ImportSkosCsvCommand extends Command {
 	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$file = (string)$input->getArgument('file');
 		$schemeUri = (string)($input->getOption('scheme-uri') ?? '');
 
 		if ($schemeUri === '') {
@@ -107,13 +106,23 @@ class ImportSkosCsvCommand extends Command {
 			return Command::INVALID;
 		}
 
-		$meta = ['uri' => $schemeUri];
-		foreach (['scheme-title' => 'title', 'register' => 'register', 'schema' => 'schema'] as $option => $key) {
-			$value = (string)($input->getOption($option) ?? '');
-			if ($value !== '') {
-				$meta[$key] = $value;
-			}
-		}
+		return $this->importValueList(input: $input, output: $output);
+
+	}//end execute()
+
+	/**
+	 * Import the CSV value list and report the outcome.
+	 *
+	 * @param InputInterface  $input  The file argument and the scheme options.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return int SUCCESS, INVALID for an operator mistake, FAILURE for any other failure.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
+	 */
+	private function importValueList(InputInterface $input, OutputInterface $output): int {
+		$file = (string)$input->getArgument('file');
+		$meta = self::schemeMeta(input: $input);
 
 		try {
 			$result = $this->vocabulary->importCsvValueList(csvPath: $file, schemeMeta: $meta);
@@ -128,16 +137,53 @@ class ImportSkosCsvCommand extends Command {
 			return Command::FAILURE;
 		}//end try
 
-		$output->writeln(sprintf(
+		$output->writeln(self::summary(result: $result, schemeUri: $meta['uri']));
+
+		return Command::SUCCESS;
+
+	}//end importValueList()
+
+	/**
+	 * The scheme metadata: the URI, and each of title, register and schema that was given.
+	 *
+	 * @param InputInterface $input The console input.
+	 *
+	 * @return array<string, string> The scheme metadata.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
+	 */
+	private static function schemeMeta(InputInterface $input): array {
+		$meta = ['uri' => (string)($input->getOption('scheme-uri') ?? '')];
+		foreach (['scheme-title' => 'title', 'register' => 'register', 'schema' => 'schema'] as $option => $key) {
+			$value = (string)($input->getOption($option) ?? '');
+			if ($value !== '') {
+				$meta[$key] = $value;
+			}
+		}
+
+		return $meta;
+
+	}//end schemeMeta()
+
+	/**
+	 * The closing line: the scheme and its created, updated, unchanged and deprecated counts.
+	 *
+	 * @param array<string, mixed> $result    The importer's result.
+	 * @param string               $schemeUri The scheme URI, named when the result names no scheme.
+	 *
+	 * @return string The line to print.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
+	 */
+	private static function summary(array $result, string $schemeUri): string {
+		return sprintf(
 			'<info>Imported scheme %s — created %d, updated %d, unchanged %d, deprecated %d.</info>',
 			(string)($result['scheme'] ?? $schemeUri),
 			(int)($result['created'] ?? 0),
 			(int)($result['updated'] ?? 0),
 			(int)($result['unchanged'] ?? 0),
 			(int)($result['deprecated'] ?? 0)
-		));
+		);
 
-		return Command::SUCCESS;
-
-	}//end execute()
+	}//end summary()
 }//end class

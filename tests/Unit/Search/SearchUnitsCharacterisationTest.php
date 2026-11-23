@@ -16,16 +16,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Service\Search\HistoryNarrowing;
 use OCA\OpenRegister\Service\Search\HistoryPredicate;
 use OCA\OpenRegister\Service\Search\SearchDictionary;
-use OCA\OpenRegister\Service\Search\SearchDictionaryMappers;
 use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -115,7 +116,7 @@ class SearchUnitsCharacterisationTest extends TestCase {
 	 */
 	#[DataProvider('expansionCases')]
 	public function testExpansionMatchesRecording(string $term, int $perGroup, int $perQuery, array $expected): void {
-		$expansion = $this->dictionary()->expand($term, $perGroup, $perQuery);
+		$expansion = $this->dictionary()->expand($term, new SynonymCaps($perGroup, $perQuery));
 
 		$this->assertSame($expected, $expansion->jsonSerialize());
 	}//end testExpansionMatchesRecording()
@@ -353,8 +354,7 @@ class SearchUnitsCharacterisationTest extends TestCase {
 		);
 
 		return new SearchDictionaryProvider(
-			$objects,
-			new SearchDictionaryMappers(registers: $registers, schemas: $schemas),
+			new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects),
 			$this->createMock(IAppConfig::class),
 			$this->createMock(LoggerInterface::class)
 		);
@@ -404,7 +404,7 @@ class SearchUnitsCharacterisationTest extends TestCase {
 			['S' => [['prefLabel' => ['nl' => 'auto'], 'altLabel' => ['nl' => ['wagen']]]]]
 		);
 
-		$this->assertSame($searched, $provider->forLanguage('nl')->expand('auto', 5, 20)->term());
+		$this->assertSame($searched, $provider->forLanguage('nl')->expand('auto', new SynonymCaps(5, 20))->term());
 	}//end testSchemeUuidRowShapes()
 
 	/**
@@ -428,7 +428,7 @@ class SearchUnitsCharacterisationTest extends TestCase {
 
 		$this->assertSame(
 			'(auto OR wagen OR kar) (fiets OR rijwiel) boot x huis',
-			$provider->forLanguage('nl')->expand('auto fiets boot x huis', 5, 20)->term()
+			$provider->forLanguage('nl')->expand('auto fiets boot x huis', new SynonymCaps(5, 20))->term()
 		);
 	}//end testDeclarationLabelsPerLanguage()
 }//end class

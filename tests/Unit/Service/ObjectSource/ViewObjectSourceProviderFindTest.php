@@ -20,11 +20,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -56,7 +59,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		$registers->method('find')->with(3)->willReturn(new Register());
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->with(9)->willReturn(new Schema());
-		$reader = $this->createMock(MagicTableRowReaderInterface::class);
+		$reader = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
 			static function (array $query) use ($rows, &$queries): array {
 				$queries[] = $query;
@@ -66,8 +69,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		);
 
 		return new ViewObjectSourceProvider(
-			mappers: new ViewSourceMappers(viewMapper: $views, registerMapper: $registers, schemaMapper: $schemas),
-			magicMapper: $reader,
+			mappers: new ViewSourceMappers(viewMapper: $views, catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $reader)),
 			logger: new NullLogger()
 		);
 	}//end provider()
@@ -84,7 +86,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		$queries = [];
 		$provider = $this->provider(rows: [$row], queries: $queries);
 
-		$found = $provider->find(register: new Register(), schema: new Schema(), id: 'o-1', config: ['view' => 'v-1']);
+		$found = $provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v-1']), id: 'o-1');
 
 		$this->assertSame($row, $found);
 		$this->assertSame(['o-1'], $queries[0]['_ids']);
@@ -102,7 +104,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 	public function testFindAnswersNullWhenTheViewDoesNotHoldIt(): void {
 		$queries = [];
 
-		$this->assertNull($this->provider(rows: [], queries: $queries)->find(register: new Register(), schema: new Schema(), id: 'o-2', config: ['view' => 'v-1']));
+		$this->assertNull($this->provider(rows: [], queries: $queries)->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema()), ['view' => 'v-1']), id: 'o-2'));
 		$this->assertSame(['o-2'], $queries[0]['_ids']);
 	}//end testFindAnswersNullWhenTheViewDoesNotHoldIt()
 }//end class

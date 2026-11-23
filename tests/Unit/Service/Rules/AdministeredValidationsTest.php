@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Rules\AdministeredValidations;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
+use OCA\OpenRegister\Service\Rules\ValidationInput;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use PHPUnit\Framework\TestCase;
@@ -91,10 +92,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheHandlerReadsTheSentenceSomebodyWrote(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(),
-			document: ['bedrag' => 75000, 'mandaat' => '']
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'nl'));
 
 		$this->assertCount(1, $outcome['refusals']);
 		$this->assertSame(
@@ -115,10 +113,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnObjectTheCheckDoesNotObjectToPasses(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(),
-			document: ['bedrag' => 75000, 'mandaat' => 'B-2026-014']
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => 'B-2026-014'], library: [], language: 'nl'));
 
 		$this->assertSame([], $outcome['refusals'], 'the control: a mandate is present, so nothing is refused');
 		$this->assertSame([], $outcome['warnings']);
@@ -130,10 +125,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWarningDoesNotBlockTheWork(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(severity: AdministeredValidations::WARN),
-			document: ['bedrag' => 75000, 'mandaat' => '']
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(severity: AdministeredValidations::WARN), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'nl'));
 
 		$this->assertSame([], $outcome['refusals'], 'a warning must not refuse');
 		$this->assertCount(1, $outcome['warnings']);
@@ -146,12 +138,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheMessageIsTranslatableContent(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(),
-			document: ['bedrag' => 75000, 'mandaat' => ''],
-			library: [],
-			language: 'en'
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'en'));
 
 		$this->assertSame('Above 50,000 euro a mandate is required', $outcome['refusals'][0]['message']);
 	}//end testTheMessageIsTranslatableContent()
@@ -162,12 +149,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testARegionalTagFallsBackToItsBaseLanguage(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(),
-			document: ['bedrag' => 75000, 'mandaat' => ''],
-			library: [],
-			language: 'en_GB'
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'en_GB'));
 
 		$this->assertSame(
 			'Above 50,000 euro a mandate is required',
@@ -182,12 +164,7 @@ class AdministeredValidationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUndeclaredLanguageFallsBack(): void {
-		$outcome = $this->validations->evaluate(
-			annotation: $this->mandaatVereist(),
-			document: ['bedrag' => 75000, 'mandaat' => ''],
-			library: [],
-			language: 'fr'
-		);
+		$outcome = $this->validations->evaluate(annotation: $this->mandaatVereist(), input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'fr'));
 
 		$this->assertSame(
 			'Boven 50.000 euro is een mandaat verplicht',
@@ -236,10 +213,7 @@ class AdministeredValidationsTest extends TestCase {
 			$this->validations->refusalFor(annotation: $annotation),
 			'refusing the simple case would make the simple case the awkward one'
 		);
-		$outcome = $this->validations->evaluate(
-			annotation: $annotation,
-			document: ['bedrag' => 75000, 'mandaat' => '']
-		);
+		$outcome = $this->validations->evaluate(annotation: $annotation, input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'nl'));
 		$this->assertSame('Mandaat verplicht', $outcome['refusals'][0]['message']);
 	}//end testABareStringMessageIsAccepted()
 
@@ -324,11 +298,7 @@ class AdministeredValidationsTest extends TestCase {
 			]
 		);
 
-		$outcome = $this->validations->evaluate(
-			annotation: $annotation,
-			document: ['bedrag' => 75000, 'mandaat' => ''],
-			library: $library
-		);
+		$outcome = $this->validations->evaluate(annotation: $annotation, input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: $library, language: 'nl'));
 
 		$this->assertCount(1, $outcome['refusals']);
 	}//end testAValidationMayUseANamedCondition()
@@ -352,11 +322,7 @@ class AdministeredValidationsTest extends TestCase {
 			],
 		];
 
-		$outcome = $this->validations->evaluate(
-			annotation: $annotation,
-			document: ['bedrag' => 75000, 'mandaat' => ''],
-			library: []
-		);
+		$outcome = $this->validations->evaluate(annotation: $annotation, input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => ''], library: [], language: 'nl'));
 
 		$this->assertCount(1, $outcome['refusals'], 'a check nobody could ask is not a check that passed');
 		$this->assertTrue($outcome['refusals'][0]['unevaluable']);
@@ -380,10 +346,7 @@ class AdministeredValidationsTest extends TestCase {
 			'message' => 'Een omschrijving is verplicht',
 		];
 
-		$outcome = $this->validations->evaluate(
-			annotation: $annotation,
-			document: ['bedrag' => 75000, 'mandaat' => '', 'omschrijving' => '']
-		);
+		$outcome = $this->validations->evaluate(annotation: $annotation, input: new ValidationInput(document: ['bedrag' => 75000, 'mandaat' => '', 'omschrijving' => ''], library: [], language: 'nl'));
 
 		$this->assertCount(2, $outcome['refusals']);
 	}//end testSeveralValidationsAreAllReported()

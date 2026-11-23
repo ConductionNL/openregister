@@ -28,6 +28,7 @@ use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationResolver;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +38,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Delegation\DelegationResolver
  * @uses   \OCA\OpenRegister\Service\Delegation\DelegationVerdict
  * @uses   \OCA\OpenRegister\Db\DelegationGrant
+ * @uses \OCA\OpenRegister\Service\Delegation\DelegationRequest
  */
 class DelegationResolverScopeTest extends TestCase {
 
@@ -76,7 +78,7 @@ class DelegationResolverScopeTest extends TestCase {
 		$grants = $this->createMock(DelegationGrantMapperInterface::class);
 		$grants->method('findFor')->with('anna', 'acme')->willReturn($candidates);
 		return (new DelegationResolver(grants: $grants, logger: $this->createMock(LoggerInterface::class)))
-			->resolve(principal: 'anna', actingAs: 'acme', now: self::now(), scope: $scope);
+			->resolve(new DelegationRequest(principal: 'anna', actingAs: 'acme', scope: $scope, now: self::now()));
 	}//end verdict()
 
 	/**

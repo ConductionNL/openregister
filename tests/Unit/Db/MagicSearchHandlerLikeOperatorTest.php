@@ -40,6 +40,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Locks `like` on the QueryBuilder path and the raw-SQL UNION path, for object
@@ -161,7 +164,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 	 */
 	private function applyObject(array $filters, string $platformClass = PostgreSQL120Platform::class): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler($platformClass), $this->queryBuilder(), $filters, $this->schema());
+		$method->invoke($this->handler($platformClass), new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $this->schema())), $filters);
 
 		return $this->captured;
 	}//end applyObject()
@@ -178,7 +181,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$isPostgres = ($platformClass === PostgreSQL120Platform::class);
 
-		return $method->invoke($this->handler($platformClass), $query, $this->schema(), $this->connection(), $isPostgres);
+		return $method->invoke($this->handler($platformClass), new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $this->schema()), connection: $this->connection(), isPostgres: $isPostgres));
 	}//end unionObject()
 
 	/**
@@ -313,7 +316,7 @@ class MagicSearchHandlerLikeOperatorTest extends TestCase {
 	 */
 	public function testMetadataFilterOnRawSqlPath(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
-		$conditions = $method->invoke($this->handler(), ['@self' => ['name' => ['like' => 'demo']]], $this->connection(), true);
+		$conditions = $method->invoke($this->handler(), new ConditionSqlRun(query: ['@self' => ['name' => ['like' => 'demo']]], table: new MagicReadTable(schema: new Schema()), connection: $this->connection(), isPostgres: true));
 
 		$this->assertCount(1, $conditions);
 		$this->assertStringContainsString("ILIKE '%demo%'", $conditions[0]);

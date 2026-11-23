@@ -31,7 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCP\AppFramework\Http\JSONResponse;
@@ -44,15 +45,15 @@ class ObjectRelationsPurposeScopeBehaviourTest extends TestCase {
 	/** @var ObjectReadAccessInterface&MockObject The read-access helper. */
 	private ObjectReadAccessInterface $access;
 
-	/** @var PurposeGuardInterface&MockObject The purpose guard. */
-	private PurposeGuardInterface $guard;
+	/** @var ReadPurposeGuardInterface&MockObject The purpose admission port. */
+	private ReadPurposeGuardInterface $guard;
 
 	/** @var RegisterMapperInterface&MockObject The register lookup. */
 	private RegisterMapperInterface $registers;
 
 	protected function setUp(): void {
 		$this->access = $this->createMock(ObjectReadAccessInterface::class);
-		$this->guard = $this->createMock(PurposeGuardInterface::class);
+		$this->guard = $this->createMock(ReadPurposeGuardInterface::class);
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 	}
 
@@ -117,6 +118,26 @@ class ObjectRelationsPurposeScopeBehaviourTest extends TestCase {
 		$this->assertNotNull($response);
 		$this->assertSame(403, $response->getStatus());
 		$this->assertSame('PURPOSE_REFUSED', $response->getData()['error']);
+	}
+
+	public function testAnyRefusalOfThePortAnswersWithItsOwnStatusAndBody(): void {
+		$this->access->method('schemaOf')->willReturn(self::schema(2));
+		$this->registers->method('find')->willReturn(self::register(5));
+		$refusal = new class('refused') extends \Exception implements ReadPurposeRefusalInterface {
+			public function getStatusCode(): int {
+				return 451;
+			}
+
+			public function toResponseBody(): array {
+				return ['error' => 'OTHER_REFUSAL'];
+			}
+		};
+		$this->guard->method('enforce')->willThrowException($refusal);
+
+		$response = $this->scope()->refusalFor($this->object('5'));
+		$this->assertNotNull($response);
+		$this->assertSame(451, $response->getStatus());
+		$this->assertSame(['error' => 'OTHER_REFUSAL'], $response->getData());
 	}
 
 	public function testAnAdmittedRootIsNotRefused(): void {

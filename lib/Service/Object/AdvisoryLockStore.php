@@ -35,9 +35,13 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Exception\LockedException;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Contract\LockRequest as PublishedLockRequest;
 
 /**
  * The appConfig-backed advisory lock store.
@@ -64,11 +68,15 @@ class AdvisoryLockStore {
 	 * @param IAppConfig $appConfig Where advisory locks are stored.
 	 * @param IUserSession $userSession Names the holder, for display only.
 	 * @param LoggerInterface $logger Reporting.
+	 * @param IDBConnection|null $db Makes taking a lock atomic: one insert-if-absent or
+	 *                               conditional UPDATE of the stored row. Without it the
+	 *                               lock is read and written through the app config.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?IDBConnection $db = null,
 	) {
 
 	}//end __construct()
@@ -81,6 +89,7 @@ class AdvisoryLockStore {
 	 * @return string The namespaced app-config key.
 	 */
 	private function key(string $identifier): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return self::PREFIX . md5($identifier);
 	}//end key()
 
@@ -91,9 +100,7 @@ class AdvisoryLockStore {
 	 * A still-valid lock raises LockedException; an expired one is silently
 	 * overwritten.
 	 *
-	 * @param string $identifier The arbitrary advisory-lock identifier.
-	 * @param string|null $process Optional process tag (who holds the lock).
-	 * @param int|null $duration Lock duration in seconds.
+	 * @param PublishedLockRequest $request The identifier, the process tag and the duration in seconds.
 	 *
 	 * @return array{uuid: string, locked: array<string, mixed>} Advisory lock result.
 	 *
@@ -101,42 +108,225 @@ class AdvisoryLockStore {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function acquire(string $identifier, ?string $process = null, ?int $duration = null): array {
-		$duration = ($duration ?? self::DEFAULT_DURATION);
-		$key = $this->key(identifier: $identifier);
+	public function acquire(PublishedLockRequest $request): array {
 		$now = new DateTime();
+		$lock = $this->payload(request: $request, now: $now, ownerId: $this->userSession->getUser()?->getUID());
 
-		$this->assertNotHeld(key: $key, identifier: $identifier, now: $now);
+		if ($this->db === null) {
+			$this->assertNotHeld(identifier: $request->identifier, now: $now);
+			$this->appConfig->setValueString('openregister', $this->key(identifier: $request->identifier), json_encode($lock));
+		} else {
+			// Atomic: decide on the row as stored, then write only while it is unchanged.
+			$stored = $this->storedRaw(key: $this->key(identifier: $request->identifier));
+			if ($this->isLive(lock: self::decoded(raw: $stored), now: $now) === true
+				|| $this->swap(key: $this->key(identifier: $request->identifier), previous: $stored, next: json_encode($lock)) === false
+			) {
+				throw new LockedException(message: "Advisory lock '{$request->identifier}' is already held");
+			}
+		}
 
-		$expiration = (clone $now)->modify("+{$duration} seconds");
-		$lock = [
-			'user' => $this->userSession->getUser()?->getUID(),
-			'process' => $process,
-			'created' => $now->format(DateTime::ATOM),
-			'duration' => $duration,
-			'expiration' => $expiration->format(DateTime::ATOM),
-			'advisory' => true,
-		];
+		$this->logAcquired(request: $request);
 
-		$this->appConfig->setValueString('openregister', $key, json_encode($lock));
+		return ['uuid' => $request->identifier, 'locked' => $lock];
+	}//end acquire()
 
+	/**
+	 * Claim an advisory lock for an explicit owner, atomically, without a session.
+	 *
+	 * For background jobs and workers. The claim succeeds when no lock is
+	 * stored, the stored one has expired, or the same owner holds it; of two
+	 * racing claimers only one gets true.
+	 *
+	 * @param LockRequest $request The identifier, the process tag and the duration in seconds.
+	 * @param string      $ownerId The owner the lock is taken for.
+	 *
+	 * @return bool True when this caller now holds the lock.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	public function claim(LockRequest $request, string $ownerId): bool {
+		if (trim($ownerId) === '') {
+			return false;
+		}
+
+		$now = new DateTime();
+		$key = $this->key(identifier: $request->identifier);
+		$stored = $this->configRaw(key: $key);
+		if ($this->db !== null) {
+			$stored = $this->storedRaw(key: $key);
+		}
+		$existing = self::decoded(raw: $stored);
+		if ($this->isLive(lock: $existing, now: $now) === true && ($existing['user'] ?? null) !== $ownerId) {
+			return false;
+		}
+
+		$lock = $this->payload(request: $request, now: $now, ownerId: $ownerId);
+		if ($this->db === null) {
+			$this->appConfig->setValueString('openregister', $key, json_encode($lock));
+		} elseif ($this->swap(key: $key, previous: $stored, next: json_encode($lock)) === false) {
+			return false;
+		}
+
+		$this->logAcquired(request: $request);
+
+		return true;
+	}//end claim()
+
+	/**
+	 * The stored lock row's value read fresh from the table, or null when there is none.
+	 *
+	 * @param string $key The app-config key.
+	 *
+	 * @return string|null The stored value.
+	 */
+	private function storedRaw(string $key): ?string {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('configvalue')
+			->from('appconfig')
+			->where($qb->expr()->eq('appid', $qb->createNamedParameter('openregister', IQueryBuilder::PARAM_STR)))
+			->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter($key, IQueryBuilder::PARAM_STR)));
+		$result = $qb->executeQuery();
+		$raw = $result->fetchOne();
+		$result->closeCursor();
+
+		if (is_string($raw) === false) {
+			return null;
+		}
+
+		return $raw;
+	}//end storedRaw()
+
+	/**
+	 * The stored lock through the app config, or null when there is none.
+	 *
+	 * @param string $key The app-config key.
+	 *
+	 * @return string|null The stored value.
+	 */
+	private function configRaw(string $key): ?string {
+		$raw = $this->appConfig->getValueString('openregister', $key, '');
+
+		if ($raw === '') {
+			return null;
+		}
+
+		return $raw;
+	}//end configRaw()
+
+	/**
+	 * Store the new lock only while the row still holds the previous value.
+	 *
+	 * @param string      $key      The app-config key.
+	 * @param string|null $previous The value read; null when no row existed.
+	 * @param string      $next     The lock to store.
+	 *
+	 * @return bool True when exactly this write took the lock.
+	 */
+	private function swap(string $key, ?string $previous, string $next): bool {
+		if ($previous === null) {
+			$changed = $this->db->insertIfNotExist(
+				'*PREFIX*appconfig',
+				['appid' => 'openregister', 'configkey' => $key, 'configvalue' => $next],
+				['appid', 'configkey']
+			);
+		} else {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update('appconfig')
+				->set('configvalue', $qb->createNamedParameter($next, IQueryBuilder::PARAM_STR))
+				->where($qb->expr()->eq('appid', $qb->createNamedParameter('openregister', IQueryBuilder::PARAM_STR)))
+				->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter($key, IQueryBuilder::PARAM_STR)))
+				->andWhere($qb->expr()->eq('configvalue', $qb->createNamedParameter($previous, IQueryBuilder::PARAM_STR)));
+			$changed = $qb->executeStatement();
+		}
+
+		if ($changed !== 1) {
+			return false;
+		}
+
+		// The row was written past the app config: let it read the table again.
+		$this->appConfig->clearCache();
+
+		return true;
+	}//end swap()
+
+	/**
+	 * A stored lock value decoded, or null when there is none or it is unreadable.
+	 *
+	 * @param string|null $raw The stored value.
+	 *
+	 * @return array<string, mixed>|null The lock.
+	 */
+	private static function decoded(?string $raw): ?array {
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		$lock = json_decode($raw, true);
+
+		if (is_array($lock) === false) {
+			return null;
+		}
+
+		return $lock;
+	}//end decoded()
+
+	/**
+	 * Whether a stored lock still holds: it has an expiration that is still ahead.
+	 *
+	 * @param array<string, mixed>|null $lock The lock.
+	 * @param DateTime                  $now  The moment of the attempt.
+	 *
+	 * @return bool
+	 */
+	private function isLive(?array $lock, DateTime $now): bool {
+		return is_array($lock) === true && isset($lock['expiration']) === true && new DateTime($lock['expiration']) > $now;
+	}//end isLive()
+
+	/**
+	 * Log an acquired advisory lock.
+	 *
+	 * @param PublishedLockRequest $request The lock request.
+	 *
+	 * @return void
+	 */
+	private function logAcquired(PublishedLockRequest $request): void {
 		$this->logger->info(
 			message: '[AdvisoryLockStore] Advisory (pre-creation) lock acquired',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'identifier' => $identifier,
-				'process' => $process,
+				'identifier' => $request->identifier,
+				'process' => $request->process,
 			]
 		);
+	}//end logAcquired()
 
-		return ['uuid' => $identifier, 'locked' => $lock];
-	}//end acquire()
+	/**
+	 * The stored payload of an advisory lock taken now, for the default duration when none was asked.
+	 *
+	 * @param PublishedLockRequest $request The process tag and the duration in seconds.
+	 * @param DateTime             $now     The moment the lock is taken.
+	 * @param string|null          $ownerId The holder.
+	 *
+	 * @return array<string, mixed> The lock payload.
+	 */
+	private function payload(PublishedLockRequest $request, DateTime $now, ?string $ownerId): array {
+		$duration = ($request->duration ?? self::DEFAULT_DURATION);
+		$expiration = (clone $now)->modify("+{$duration} seconds");
+
+		return [
+			'user' => $ownerId,
+			'process' => $request->process,
+			'created' => $now->format(DateTime::ATOM),
+			'duration' => $duration,
+			'expiration' => $expiration->format(DateTime::ATOM),
+			'advisory' => true,
+		];
+	}//end payload()
 
 	/**
 	 * Refuse while a stored advisory lock has not expired; an unreadable one does not hold.
 	 *
-	 * @param string   $key        The app-config key of the lock.
 	 * @param string   $identifier The locked identifier.
 	 * @param DateTime $now        The moment of the attempt.
 	 *
@@ -146,8 +336,8 @@ class AdvisoryLockStore {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function assertNotHeld(string $key, string $identifier, DateTime $now): void {
-		$existingRaw = $this->appConfig->getValueString('openregister', $key, '');
+	private function assertNotHeld(string $identifier, DateTime $now): void {
+		$existingRaw = $this->appConfig->getValueString('openregister', $this->key(identifier: $identifier), '');
 		if ($existingRaw === '') {
 			return;
 		}

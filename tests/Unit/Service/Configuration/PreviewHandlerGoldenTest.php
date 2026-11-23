@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
-use OCA\OpenRegister\Service\Configuration\PreviewMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;
@@ -47,6 +47,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets
  * @uses \OCA\OpenRegister\Service\Configuration\PreviewHandler
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ProposedDefinition
  */
 class PreviewHandlerGoldenTest extends TestCase {
 
@@ -229,10 +233,10 @@ class PreviewHandlerGoldenTest extends TestCase {
 		);
 
 		$handler = new PreviewHandler(
-			mappers: new PreviewMappers(
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
-				objectMapper: $objectMapper
+			catalog: new SchemaCatalog(
+				registers: $registerMapper,
+				schemas: $schemaMapper,
+				tables: $objectMapper
 			),
 			fetchHandler: $fetchHandler
 		);

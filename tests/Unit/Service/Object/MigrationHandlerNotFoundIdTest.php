@@ -9,6 +9,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -33,6 +35,18 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
  * @uses   \OCA\OpenRegister\Service\Object\MoveObject
  * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectMigration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\Object\MigrationMapping
+ * @uses \OCA\OpenRegister\Service\Object\MigrationStorage
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class MigrationHandlerNotFoundIdTest extends TestCase {
 
@@ -126,10 +140,12 @@ class MigrationHandlerNotFoundIdTest extends TestCase {
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $dataManip);
 
 		return $handler->migrateObjects(
-			source: ['1', '2'],
-			target: ['target', 'target'],
-			objectIds: $objectIds,
-			mapping: ['title' => 'title']
+			migration: new ObjectMigration(
+				source: new RegisterSchemaRef(register: '1', schema: '2'),
+				target: new RegisterSchemaRef(register: 'target', schema: 'target'),
+				objectIds: $objectIds,
+				mapping: ['title' => 'title']
+			)
 		);
 	}//end migrate()
 }//end class

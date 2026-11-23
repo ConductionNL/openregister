@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
@@ -25,6 +26,13 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\EveryItemField
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
  */
 final class AwaitSignalAnswerCharacterisationTest extends TestCase {
 
@@ -64,7 +72,7 @@ final class AwaitSignalAnswerCharacterisationTest extends TestCase {
 		}
 
 		try {
-			return $this->node->execute($items, $config, [FlowRunService::SIGNAL_CONTEXT_KEY => $signal]);
+			return $this->node->execute(new FlowNodeCall(items: $items, config: $config, context: [FlowRunService::SIGNAL_CONTEXT_KEY => $signal]));
 		} catch (FlowStop $stop) {
 			$this->assertTrue($stop->isError());
 

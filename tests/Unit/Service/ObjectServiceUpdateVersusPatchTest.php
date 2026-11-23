@@ -73,6 +73,9 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Contract\ObjectPatch as PublishedObjectPatch;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The replace/merge distinction, and the contract that publishes both.
@@ -123,7 +126,7 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -162,7 +165,7 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 
@@ -255,7 +258,7 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 	 */
 	public function testPatchObjectPreservesTheFieldsThePayloadDidNotSend(): void {
 		$saved = $this->payloadReachingTheSave(
-			fn () => $this->service->patchObject(objectId: 'u-1', data: self::PARTIAL)
+			fn () => $this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: self::PARTIAL))
 		);
 
 		$this->assertSame('withdrawn', $saved['status'], 'the field that WAS sent is applied');
@@ -267,6 +270,28 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 		$this->assertSame('2026-04-01', $saved['publishedAt']);
 
 	}//end testPatchObjectPreservesTheFieldsThePayloadDidNotSend()
+
+	/**
+	 * A patch built under the published name merges exactly like the old name.
+	 *
+	 * A consuming app moving to `Contract\ObjectPatch` passes the parent class;
+	 * every parameter between `patchObject()` and the save must accept it.
+	 *
+	 * @return void
+	 */
+	public function testAPatchBuiltUnderThePublishedNameMergesTheSame(): void {
+		$old = $this->payloadReachingTheSave(
+			fn () => $this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: self::PARTIAL))
+		);
+		$published = $this->payloadReachingTheSave(
+			fn () => $this->service->patchObject(patch: new PublishedObjectPatch(objectId: 'u-1', data: self::PARTIAL))
+		);
+
+		$this->assertSame($old, $published);
+		$this->assertSame('withdrawn', $published['status']);
+		$this->assertSame(self::STORED['title'], $published['title']);
+
+	}//end testAPatchBuiltUnderThePublishedNameMergesTheSame()
 
 	/**
 	 * The two methods disagree on the SAME payload, and that is the point.
@@ -281,7 +306,7 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 			fn () => $this->service->updateObject(objectId: 'u-1', data: self::PARTIAL)
 		);
 		$merged = $this->payloadReachingTheSave(
-			fn () => $this->service->patchObject(objectId: 'u-1', data: self::PARTIAL)
+			fn () => $this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: self::PARTIAL))
 		);
 
 		$this->assertNotEquals(
@@ -351,7 +376,7 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 			$published->getParameters()
 		);
 		$this->assertSame(
-			['objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser'],
+			['patch', '_rbac', '_multitenancy'],
 			$names,
 			'the contract names the same parameters the implementation does'
 		);
@@ -371,11 +396,8 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'register'      => null,
-				'schema'        => null,
 				'_rbac'         => true,
 				'_multitenancy' => true,
-				'currentUser'   => null,
 			],
 			$defaults,
 			'RBAC and multitenancy default to ON — a contract that defaulted them off '
@@ -383,8 +405,18 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 		);
 
 		$this->assertSame(
+			PublishedObjectPatch::class,
+			(string) $published->getParameters()[0]->getType(),
+			'the contract takes the patch as one published ObjectPatch'
+		);
+		$this->assertSame(
+			PublishedObjectPatch::class,
+			(string) $implementation->getParameters()[0]->getType(),
+			'the implementation takes the published ObjectPatch too, so a patch built under that name is accepted'
+		);
+		$this->assertSame(
 			'?OCP\IUser',
-			(string) $published->getParameters()[6]->getType(),
+			(string) (new \ReflectionMethod(ObjectPatch::class, '__construct'))->getParameters()[3]->getType(),
 			'a sessionless caller can be attributed through the contract'
 		);
 

@@ -47,11 +47,7 @@ class MdtoMappingResolverTest extends TestCase {
 			->onlyMethods(['find'])
 			->getMock();
 
-		$this->resolver = new MdtoMappingResolver(
-			$this->schemaMapper,
-			new MdtoElementCatalogue(),
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->resolver = new MdtoMappingResolver(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $this->createMock(LoggerInterface::class)), new MdtoElementCatalogue());
 	}
 
 	/**
@@ -197,5 +193,21 @@ class MdtoMappingResolverTest extends TestCase {
 				object: $this->object(['zaaknummer' => 'Z-1', 'titel' => 'A', 'resultaat' => []])
 			)
 		);
+	}
+
+	/**
+	 * A catalogue that cannot say which elements are mandatory is logged and reports nothing unfilled.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableCatalogueIsLoggedAndReportsNothing(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')->with('[MdtoMappingResolver] schema gone');
+		$catalogue = $this->createMock(MdtoElementCatalogue::class);
+		$catalogue->method('mandatory')->willThrowException(new \RuntimeException('schema gone'));
+		$resolver = new MdtoMappingResolver(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->schemaMapper, $logger), $catalogue);
+		$this->withSchemaConfiguration(['x-openregister-mdto-mapping' => $this->mapping()]);
+
+		$this->assertSame([], $resolver->unfilledMandatoryElements($this->object(['zaaknummer' => 'Z-1'])));
 	}
 }

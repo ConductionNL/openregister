@@ -31,8 +31,9 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Throwable;
 
 /**
@@ -75,14 +76,12 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects The object layer a party record lives in.
-	 * @param SchemaMapperInterface $schemas The schemas, for the party declaration.
-	 * @param RegisterMapperInterface|null $registers The registers carrying a party schema, so a lookup reads only
-	 *                                       the party tables; absent, every lookup searches the instance
+	 * @param SchemaCatalogInterface    $catalog The schemas, for the party declaration, and the registers
+	 *                                           carrying a party schema, so a lookup reads only the party tables.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly ?RegisterMapperInterface $registers = null,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()
 
@@ -121,7 +120,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 */
 	private function findOnInstance(string $partyUuid): ?ObjectEntity {
 		try {
-			return $this->objects->find(id: $partyUuid, _render: false, _audit: false);
+			return $this->objects->find(id: $partyUuid, options: new ObjectFindOptions(render: false, audit: false));
 		} catch (Throwable) {
 			return null;
 		}
@@ -139,10 +138,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		try {
 			return $this->objects->find(
 				id: $partyUuid,
-				register: $table['register'],
-				schema: $table['schema'],
-				_render: false,
-				_audit: false
+				options: new ObjectFindOptions(register: $table['register'], schema: $table['schema'], render: false, audit: false)
 			);
 		} catch (Throwable) {
 			return null;
@@ -161,14 +157,9 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 			return $this->partyTables;
 		}
 
-		$tables = [];
-		if ($this->registers !== null) {
-			$tables = $this->readPartyTables(registers: $this->registers);
-		}
+		$this->partyTables = $this->readPartyTables(registers: $this->catalog->registers());
 
-		$this->partyTables = $tables;
-
-		return $tables;
+		return $this->partyTables;
 	}//end partyTables()
 
 	/**
@@ -214,7 +205,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 		}
 
 		try {
-			return $this->objects->find(id: $uuid, _render: false, _audit: false, _rbac: false, _multitenancy: false);
+			return $this->objects->find(id: $uuid, options: new ObjectFindOptions(render: false, audit: false), _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return null;
 		}
@@ -241,7 +232,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 
 		$definition = null;
 		try {
-			$definition = PartyDefinition::fromSchema(schema: $this->schemas->find($schemaId));
+			$definition = PartyDefinition::fromSchema(schema: $this->catalog->schemas()->find($schemaId));
 		} catch (Throwable) {
 			$definition = null;
 		}
@@ -260,7 +251,7 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	 */
 	public function partySchemas(): array {
 		$found = [];
-		foreach ($this->schemas->findAll() as $schema) {
+		foreach ($this->catalog->schemas()->findAll() as $schema) {
 			$definition = PartyDefinition::fromSchema(schema: $schema);
 			if ($definition !== null) {
 				$found[] = ['schema' => $schema, 'definition' => $definition];
@@ -299,19 +290,19 @@ class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueI
 	/**
 	 * The addresses of one kind, in declaration order.
 	 *
-	 * @param ObjectEntity $party The party.
-	 * @param string $kind The address kind, `correspondence` / `case` / `location`.
-	 * @param PartyDefinition|null $definition The declaration, resolved when null.
+	 * @param ObjectEntity          $party     The party.
+	 * @param PartyAddressSelection $selection The address kind (`correspondence` / `case` / `location`) and the declaration,
+	 *                                         resolved when null.
 	 *
 	 * @return array<int, array{kind: string, type: string, value: string, label: string|null}> The addresses.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
-	public function addressesOfKind(ObjectEntity $party, string $kind, ?PartyDefinition $definition = null): array {
+	public function addressesOfKind(ObjectEntity $party, PartyAddressSelection $selection): array {
 		return array_values(
 			array_filter(
-				$this->addresses(party: $party, definition: $definition),
-				static fn (array $address): bool => $address['kind'] === $kind
+				$this->addresses(party: $party, definition: $selection->definition),
+				static fn (array $address): bool => $address['kind'] === $selection->kind
 			)
 		);
 	}//end addressesOfKind()

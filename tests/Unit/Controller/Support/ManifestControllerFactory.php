@@ -18,7 +18,6 @@ final class ManifestControllerFactory {
 	/**
 	 * The constructor arguments of ManifestController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ManifestServiceInterface $manifestService Constructor argument.
 	 * @param IAppManager $appManager Constructor argument.
@@ -27,14 +26,12 @@ final class ManifestControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ManifestServiceInterface $manifestService,
 		\OCP\App\IAppManager $appManager,
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ManifestControllerServices(
 				manifestService: $manifestService,

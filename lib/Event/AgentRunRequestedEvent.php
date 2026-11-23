@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\EventDispatcher\Event;
 use Symfony\Component\Uid\Uuid;
 
@@ -54,36 +55,93 @@ class AgentRunRequestedEvent extends Event {
 	private string $correlationId;
 
 	/**
+	 * The triggering object.
+	 *
+	 * @var ObjectRef
+	 */
+	private readonly ObjectRef $subject;
+
+	/**
+	 * The agent, skill, rendered prompt and result field.
+	 *
+	 * @var AgentRunInstruction
+	 */
+	private readonly AgentRunInstruction $instruction;
+
+	/**
+	 * The approval gate, dispatch mode and owning flow.
+	 *
+	 * @var AgentRunDispatch
+	 */
+	private readonly AgentRunDispatch $dispatch;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $subjectUuid UUID of the triggering object.
-	 * @param string $subjectRegister Register slug/id of the triggering object.
-	 * @param string $subjectSchema Schema slug/id of the triggering object.
-	 * @param string $agent The configured agent reference (UUID in v1).
-	 * @param string|null $skill Optional configured skill reference (slug).
-	 * @param string $prompt The fully-rendered prompt (placeholders already
-	 *                       resolved by FlowActionService's template engine).
-	 * @param string $resultField The object field the run's output is written to.
-	 * @param bool $requiresApproval Whether the run must pass a human-approval gate
-	 *                               before executing.
-	 * @param string $mode Dispatch mode — `"async"` only in v1.
-	 * @param string $flowName The owning flow's name (diagnostics/audit).
+	 * Takes main's ObjectRef, AgentRunInstruction and AgentRunDispatch, or the release's ten separate
+	 * values, by name or by position (strings in the first three slots); value objects win.
+	 *
+	 * @param ObjectRef|string|null           $subject          Register, schema and UUID of the triggering object; a string here is the
+	 *                                                          release's positional `$subjectUuid`.
+	 * @param AgentRunInstruction|string|null $instruction      The agent, skill, rendered prompt and result field; a string here is the
+	 *                                                          release's positional `$subjectRegister`.
+	 * @param AgentRunDispatch|string|null    $dispatch         The approval gate, dispatch mode and owning flow; a string here is the
+	 *                                                          release's positional `$subjectSchema`.
+	 * @param string|null                     $agent            The agent to run.
+	 * @param string|null                     $skill            The skill it runs with.
+	 * @param string|null                     $prompt           The rendered prompt.
+	 * @param string|null                     $resultField      The field the result is written to.
+	 * @param bool                            $requiresApproval Whether the run waits for an approval.
+	 * @param string|null                     $mode             The dispatch mode.
+	 * @param string|null                     $flowName         The owning flow.
+	 * @param string|null                     $subjectUuid      The triggering object's UUID.
+	 * @param string|null                     $subjectRegister  The triggering object's register.
+	 * @param string|null                     $subjectSchema    The triggering object's schema.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Main's value objects plus the release's separate values.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    The release's approval flag.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function __construct(
-		private readonly string $subjectUuid,
-		private readonly string $subjectRegister,
-		private readonly string $subjectSchema,
-		private readonly string $agent,
-		private readonly ?string $skill,
-		private readonly string $prompt,
-		private readonly string $resultField,
-		private readonly bool $requiresApproval,
-		private readonly string $mode,
-		private readonly string $flowName,
+		ObjectRef|string|null $subject = null,
+		AgentRunInstruction|string|null $instruction = null,
+		AgentRunDispatch|string|null $dispatch = null,
+		?string $agent = null,
+		?string $skill = null,
+		?string $prompt = null,
+		?string $resultField = null,
+		bool $requiresApproval = false,
+		?string $mode = null,
+		?string $flowName = null,
+		?string $subjectUuid = null,
+		?string $subjectRegister = null,
+		?string $subjectSchema = null,
 	) {
 		parent::__construct();
+		if (is_string($subject) === true) {
+			$subjectUuid ??= $subject;
+			$subject       = null;
+		}
+
+		if (is_string($instruction) === true) {
+			$subjectRegister ??= $instruction;
+			$instruction       = null;
+		}
+
+		if (is_string($dispatch) === true) {
+			$subjectSchema ??= $dispatch;
+			$dispatch        = null;
+		}
+
+		$this->subject     = ($subject ?? new ObjectRef(register: (string) $subjectRegister, schema: (string) $subjectSchema, id: (string) $subjectUuid));
+		$this->instruction = ($instruction ?? new AgentRunInstruction(
+			agent: (string) $agent,
+			skill: $skill,
+			prompt: (string) $prompt,
+			resultField: (string) $resultField
+		));
+		$this->dispatch    = ($dispatch ?? new AgentRunDispatch(requiresApproval: $requiresApproval, mode: (string) $mode, flowName: (string) $flowName));
 		$this->correlationId = Uuid::v4()->toRfc4122();
 	}//end __construct()
 
@@ -95,7 +153,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectUuid(): string {
-		return $this->subjectUuid;
+		return $this->subject->id;
 	}//end getSubjectUuid()
 
 	/**
@@ -106,7 +164,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectRegister(): string {
-		return $this->subjectRegister;
+		return (string)$this->subject->register;
 	}//end getSubjectRegister()
 
 	/**
@@ -117,7 +175,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectSchema(): string {
-		return $this->subjectSchema;
+		return (string)$this->subject->schema;
 	}//end getSubjectSchema()
 
 	/**
@@ -128,7 +186,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getAgent(): string {
-		return $this->agent;
+		return $this->instruction->agent;
 	}//end getAgent()
 
 	/**
@@ -139,7 +197,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSkill(): ?string {
-		return $this->skill;
+		return $this->instruction->skill;
 	}//end getSkill()
 
 	/**
@@ -150,7 +208,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getPrompt(): string {
-		return $this->prompt;
+		return $this->instruction->prompt;
 	}//end getPrompt()
 
 	/**
@@ -161,7 +219,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getResultField(): string {
-		return $this->resultField;
+		return $this->instruction->resultField;
 	}//end getResultField()
 
 	/**
@@ -172,7 +230,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function isRequiresApproval(): bool {
-		return $this->requiresApproval;
+		return $this->dispatch->requiresApproval;
 	}//end isRequiresApproval()
 
 	/**
@@ -183,7 +241,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getMode(): string {
-		return $this->mode;
+		return $this->dispatch->mode;
 	}//end getMode()
 
 	/**
@@ -194,7 +252,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getFlowName(): string {
-		return $this->flowName;
+		return $this->dispatch->flowName;
 	}//end getFlowName()
 
 	/**
@@ -221,16 +279,16 @@ class AgentRunRequestedEvent extends Event {
 	 */
 	public function getPayload(): array {
 		return [
-			'subjectUuid' => $this->subjectUuid,
-			'subjectRegister' => $this->subjectRegister,
-			'subjectSchema' => $this->subjectSchema,
-			'agent' => $this->agent,
-			'skill' => $this->skill,
-			'prompt' => $this->prompt,
-			'resultField' => $this->resultField,
-			'requiresApproval' => $this->requiresApproval,
-			'mode' => $this->mode,
-			'flowName' => $this->flowName,
+			'subjectUuid' => $this->subject->id,
+			'subjectRegister' => (string)$this->subject->register,
+			'subjectSchema' => (string)$this->subject->schema,
+			'agent' => $this->instruction->agent,
+			'skill' => $this->instruction->skill,
+			'prompt' => $this->instruction->prompt,
+			'resultField' => $this->instruction->resultField,
+			'requiresApproval' => $this->dispatch->requiresApproval,
+			'mode' => $this->dispatch->mode,
+			'flowName' => $this->dispatch->flowName,
 			'correlationId' => $this->correlationId,
 		];
 	}//end getPayload()

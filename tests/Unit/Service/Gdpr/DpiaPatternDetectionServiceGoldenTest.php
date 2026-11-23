@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Gdpr;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Gdpr\DpiaDetectionRequest;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use PHPUnit\Framework\TestCase;
 
@@ -59,7 +60,7 @@ class DpiaPatternDetectionServiceGoldenTest extends TestCase {
 	 */
 	public function testDetect(): void {
 		$now = new DateTimeImmutable('2026-06-01T00:00:00+00:00');
-		$groups = (new DpiaPatternDetectionService())->detect($this->cases(), ['threshold' => 2, 'windowDays' => 30], $now);
+		$groups = (new DpiaPatternDetectionService())->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 2, 'windowDays' => 30], now: $now));
 
 		$this->assertSame(
 			[
@@ -80,23 +81,23 @@ class DpiaPatternDetectionServiceGoldenTest extends TestCase {
 		$service = new DpiaPatternDetectionService();
 		$now = new DateTimeImmutable('2026-06-01T00:00:00+00:00');
 
-		$byType = $service->detect($this->cases(), ['threshold' => '3', 'windowDays' => '30', 'groupBy' => ['type']], $now);
+		$byType = $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => '3', 'windowDays' => '30', 'groupBy' => ['type']], now: $now));
 		$this->assertSame([['key' => 'type=access', 'count' => 3, 'caseUuids' => ['a1', 'a2'], 'unflaggedUuids' => ['a1']]], $byType);
 
 		$this->assertSame(
-			$service->detect($this->cases(), ['threshold' => 2, 'windowDays' => 30], $now),
-			$service->detect($this->cases(), ['threshold' => 2, 'windowDays' => 30, 'groupBy' => []], $now)
+			$service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 2, 'windowDays' => 30], now: $now)),
+			$service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => []], now: $now))
 		);
 		$this->assertSame(
-			$service->detect($this->cases(), ['threshold' => 2, 'windowDays' => 30], $now),
-			$service->detect($this->cases(), ['threshold' => 2, 'windowDays' => 30, 'groupBy' => 'type'], $now)
+			$service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 2, 'windowDays' => 30], now: $now)),
+			$service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 2, 'windowDays' => 30, 'groupBy' => 'type'], now: $now))
 		);
-		$this->assertSame([], $service->detect($this->cases(), ['threshold' => 4, 'windowDays' => 30], $now));
-		$this->assertSame([], $service->detect($this->cases(), [], $now));
-		$this->assertSame([], $service->detect($this->cases(), ['threshold' => 0, 'windowDays' => 30], $now));
-		$this->assertSame([], $service->detect($this->cases(), ['threshold' => 1, 'windowDays' => 0], $now));
-		$this->assertCount(3, $service->detect($this->cases(), ['threshold' => 1, 'windowDays' => 30], $now));
-		$this->assertSame([], $service->detect([], ['threshold' => 1, 'windowDays' => 30], $now));
+		$this->assertSame([], $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 4, 'windowDays' => 30], now: $now)));
+		$this->assertSame([], $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: [], now: $now)));
+		$this->assertSame([], $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 0, 'windowDays' => 30], now: $now)));
+		$this->assertSame([], $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 1, 'windowDays' => 0], now: $now)));
+		$this->assertCount(3, $service->detect(request: new DpiaDetectionRequest(cases: $this->cases(), config: ['threshold' => 1, 'windowDays' => 30], now: $now)));
+		$this->assertSame([], $service->detect(request: new DpiaDetectionRequest(cases: [], config: ['threshold' => 1, 'windowDays' => 30], now: $now)));
 
 		$this->assertSame('type=a b|x=', $service->groupKey(case: ['type' => " A \n B "], groupBy: ['type', 'x']));
 		$this->assertSame('', $service->normalise(value: null));

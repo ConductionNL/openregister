@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Schemas;
 
+use OCA\OpenRegister\Service\Schemas\UniqueConflict;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -63,11 +64,11 @@ class UniqueConstraintEvaluatorGoldenTest extends TestCase {
 			'filters zero and false' => ['filtersFor', [$pair, ['a' => 0, 'b' => false]]],
 			'filters array value' => ['filtersFor', [$pair, ['a' => [1], 'b' => ['k' => 'v']]]],
 			'filters no properties' => ['filtersFor', [['name' => 'n', 'properties' => [], 'action' => 'refuse'], ['a' => 1]]],
-			'describe with id' => ['describeBreach', [$pair, ['a' => 1, 'b' => 'x'], 'uuid-1']],
-			'describe null id' => ['describeBreach', [$pair, ['a' => true, 'b' => false], null]],
-			'describe empty id' => ['describeBreach', [$pair, ['a' => 1.5], '']],
-			'describe structures' => ['describeBreach', [$pair, ['a' => ['x' => 1], 'b' => [1, 2]], 'u']],
-			'describe single' => ['describeBreach', [['name' => 'n', 'properties' => ['code'], 'action' => 'report'], ['code' => 'ABC'], 'z']],
+			'describe with id' => ['describeBreach', [$pair, new UniqueConflict(['a' => 1, 'b' => 'x'], 'uuid-1')]],
+			'describe null id' => ['describeBreach', [$pair, new UniqueConflict(['a' => true, 'b' => false], null)]],
+			'describe empty id' => ['describeBreach', [$pair, new UniqueConflict(['a' => 1.5], '')]],
+			'describe structures' => ['describeBreach', [$pair, new UniqueConflict(['a' => ['x' => 1], 'b' => [1, 2]], 'u')]],
+			'describe single' => ['describeBreach', [['name' => 'n', 'properties' => ['code'], 'action' => 'report'], new UniqueConflict(['code' => 'ABC'], 'z')]],
 		];
 	}//end cases()
 

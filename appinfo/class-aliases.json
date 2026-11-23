@@ -391,6 +391,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\NotificationRecipientAnswerController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationRecipientAnswerController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController": {
 			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController",
 			"eager": false,
@@ -1083,6 +1088,11 @@
 		},
 		"OCA\\OpenRegister\\Controller\\FilesController": {
 			"class": "OCA\\OpenRegister\\Files\\Controller\\FilesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ObjectFilesArchiveController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\ObjectFilesArchiveController",
 			"eager": false,
 			"service": true
 		},

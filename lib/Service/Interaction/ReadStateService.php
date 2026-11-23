@@ -42,9 +42,11 @@ namespace OCA\OpenRegister\Service\Interaction;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\UnreadCountsInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -57,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * and one is the memo reset the write path needs. Splitting them would put the single
  * permission rule in more than one class, which is the drift this class prevents.
  */
-class ReadStateService implements ReadStateServiceInterface {
+class ReadStateService implements ReadStateServiceInterface, ObjectUnreadMarkerInterface {
 
 	/**
 	 * The uuids the current user has already seen, loaded once per request.
@@ -74,13 +76,13 @@ class ReadStateService implements ReadStateServiceInterface {
 	 *
 	 * @param ObjectReadStateMapperInterface $mapper The read-state rows.
 	 * @param IUserSession $userSession Resolves the calling user.
-	 * @param UnreadCountCalculator $counter Counts what is unread on the tabs.
+	 * @param UnreadCountsInterface $counter Counts what is unread on the tabs.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly ObjectReadStateMapperInterface $mapper,
 		private readonly IUserSession $userSession,
-		private readonly UnreadCountCalculator $counter,
+		private readonly UnreadCountsInterface $counter,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -103,10 +105,8 @@ class ReadStateService implements ReadStateServiceInterface {
 	 * Idempotent, and writes nothing on the object itself: no audit entry, no
 	 * version.
 	 *
-	 * @param ObjectEntity $object The object, already resolved through RBAC.
-	 * @param string|null $register The register as the caller addressed it.
-	 * @param string|null $schema The schema as the caller addressed it.
-	 * @param string|null $subResource A sub-resource that was opened, when one was.
+	 * @param AddressedObject $target      The object, already resolved through RBAC, and how the caller addressed it.
+	 * @param string|null     $subResource A sub-resource that was opened, when one was.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
@@ -114,21 +114,14 @@ class ReadStateService implements ReadStateServiceInterface {
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
-	public function markRead(
-		ObjectEntity $object,
-		?string $register = null,
-		?string $schema = null,
-		?string $subResource = null
-	): ObjectReadState {
-		$uid = $this->requireCaller();
-		$uuid = $this->requireUuid(object: $object);
+	public function markRead(AddressedObject $target, ?string $subResource = null): ObjectReadState {
 		$now = new DateTime();
 
 		$sighting = new ObjectReadState();
-		$sighting->setUserId($uid);
-		$sighting->setObjectUuid($uuid);
-		$sighting->setRegister($register);
-		$sighting->setSchema($schema);
+		$sighting->setUserId($this->requireCaller());
+		$sighting->setObjectUuid($this->requireUuid(object: $target->object));
+		$sighting->setRegister($target->register);
+		$sighting->setSchema($target->schema);
 		$sighting->setLastSeenAt($now);
 		if ($subResource !== null && $subResource !== '') {
 			$sighting->setSubSeen([$subResource => $now->format(DateTimeInterface::ATOM)]);
@@ -137,7 +130,6 @@ class ReadStateService implements ReadStateServiceInterface {
 		$this->forgetMemo();
 
 		return $this->mapper->markSeen(sighting: $sighting);
-
 	}//end markRead()
 
 	/**
@@ -182,15 +174,30 @@ class ReadStateService implements ReadStateServiceInterface {
 	 */
 	public function readStateFor(ObjectEntity $object, ?string $userId = null): ?ObjectReadState {
 		$uid = $this->requireCaller();
+		$this->refuseAnotherUser(userId: $userId, uid: $uid);
+
+		return $this->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $object));
+
+	}//end readStateFor()
+
+	/**
+	 * Refuse a question about somebody other than the caller.
+	 *
+	 * @param string|null $userId The user asked about, or null (or '') for the caller.
+	 * @param string      $uid    The caller's uid.
+	 *
+	 * @throws NotAuthorizedException When another user is named.
+	 *
+	 * @return void
+	 */
+	private function refuseAnotherUser(?string $userId, string $uid): void {
 		if ($userId !== null && $userId !== '' && $userId !== $uid) {
 			throw new NotAuthorizedException(
 				message: 'A read state is private to the user it belongs to'
 			);
 		}
 
-		return $this->mapper->findOne(userId: $uid, objectUuid: $this->requireUuid(object: $object));
-
-	}//end readStateFor()
+	}//end refuseAnotherUser()
 
 	/**
 	 * Whether an object is unread for the calling user.

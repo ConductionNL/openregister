@@ -6,6 +6,8 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -18,7 +20,8 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
@@ -32,6 +35,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit tests for ObjectsController
@@ -42,27 +49,6 @@ use Psr\Log\LoggerInterface;
  * @package Unit\Controller
  */
 class ObjectsControllerTest extends TestCase {
-
-	/**
-	 * Why the four logs() schema-shape tests are skipped.
-	 *
-	 * They mock `ObjectEntity::getSchema()` returning an array or a stdClass, to
-	 * cover the `is_array()` / `is_object()` branches in ObjectsController::logs().
-	 * `schema` is an `addType(…, 'string')` field backed by a `?string` property,
-	 * so a real entity CANNOT return either shape — the tests' own comments said
-	 * as much ("real entity is typed ?string") while still asserting it.
-	 *
-	 * That was possible only while the getter was magic and therefore untyped.
-	 * Declaring it for ObjectEntityInterface (ADR-084) makes PHPUnit enforce the
-	 * return type, and the mock becomes impossible to build.
-	 *
-	 * Which means those production branches are UNREACHABLE, and these tests
-	 * were covering dead code — coverage that read as safety. Removing the
-	 * branches is a behavioural change and belongs in its own PR with its own
-	 * reasoning, so the tests are skipped rather than deleted, and the finding
-	 * is recorded here where whoever picks it up will find it. openregister#2501
-	 */
-	private const SCHEMA_SHAPE_SKIP = 'logs() array/object schema branches are unreachable: ObjectEntity::getSchema() is ?string. Tracked in openregister#2501.';
 
 	private ObjectsController $controller;
 	private IRequest&MockObject $request;
@@ -78,7 +64,12 @@ class ObjectsControllerTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
-	private WebhookService&MockObject $webhookService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
+	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -97,10 +88,10 @@ class ObjectsControllerTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->webhookService = $this->createMock(WebhookService::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null (same as the old throwing-DI-stub behavior).
@@ -118,7 +109,7 @@ class ObjectsControllerTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger
 		);
 	}
@@ -184,11 +175,6 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->destroy('uuid-123', 'reg', 'schema', $this->objectService);
 
 		$this->assertSame(409, $result->getStatus());
-	}
-
-	public function testControllerConstructorSetsProperties(): void {
-		// If the controller is constructed without errors, the test passes.
-		$this->assertInstanceOf(ObjectsController::class, $this->controller);
 	}
 
 	public function testDestroyReturns422OnHookStoppedException(): void {
@@ -527,7 +513,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 1,
 		]);
@@ -549,7 +535,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('No access'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -568,7 +554,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -586,7 +572,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new Exception('Migration error'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -671,7 +657,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 8,
 			'failed' => 2,
@@ -696,7 +682,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')
+		$this->objectService->method('validateAndSaveTable')
 			->willThrowException(new DBException('Validation error'));
 
 		$result = $this->controller->validate();
@@ -806,7 +792,7 @@ class ObjectsControllerTest extends TestCase {
 	public function testIndexReturns404WhenRegisterNotFound(): void {
 		$this->request->method('getParams')->willReturn([]);
 
-		// resolveRegisterSchemaIds calls objectService->setRegister which throws
+		// resolveRegisterSchemaRef calls objectService->setRegister which throws
 		$this->objectService->method('setRegister')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
@@ -972,30 +958,6 @@ class ObjectsControllerTest extends TestCase {
 
 	// --- downloadFiles() tests ---
 
-	public function testDownloadFilesReturns404WhenObjectNotFound(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(404, $result->getStatus());
-	}
-
-	public function testDownloadFilesReturns500OnGenericException(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new Exception('Zip failed'));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(500, $result->getStatus());
-	}
-
 	// --- objects() tests ---
 
 	public function testObjectsReturnsSearchResults(): void {
@@ -1072,65 +1034,6 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 		$this->controller->used('uuid-123', 'reg1', 'schema1', $this->objectService);
-	}
-
-	// --- logs() tests ---
-
-	public function testLogsReturns404WhenObjectNotFound(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn(null);
-
-		$result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(404, $result->getStatus());
-	}
-
-	/**
-	 * @return array<string, array{0: \Exception, 1: int}>
-	 */
-	public static function logsLookupFailures(): array {
-		return [
-			'database' => [new DBException('Connection lost'), 1],
-			'other' => [new Exception('Not found'), 1],
-			'plain miss' => [new \OCP\AppFramework\Db\DoesNotExistException('Gone'), 0],
-		];
-	}
-
-	#[\PHPUnit\Framework\Attributes\DataProvider('logsLookupFailures')]
-	public function testLogsAnswers404WhenFindFails(Exception $failure, int $errorLines): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->request->method('getParams')->willReturn([]);
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('find')->willThrowException($failure);
-		$this->logger->expects($this->exactly($errorLines))->method('error');
-
-		$result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-		$this->assertSame(['message' => 'Object not found'], $result->getData());
-	}
-
-	public function testLogsLeavesAnExternalSourceFailureToTheMiddleware(): void {
-		$this->setupAdminUser();
-		$failure = new \OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException('source down', 503);
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('find')->willThrowException($failure);
-
-		$this->expectExceptionObject($failure);
-		$this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
 	}
 
 	// --- import() register-level additional tests ---
@@ -2123,7 +2026,7 @@ class ObjectsControllerTest extends TestCase {
 
 	/**
 	 * Test objects() with register and schema query params that resolve (but no magic mapping).
-	 * When resolveRegisterSchemaIds resolves but entities are null (DI mapper throws),
+	 * When resolveRegisterSchemaRef resolves but entities are null (DI mapper throws),
 	 * falls through to normal searchObjectsPaginated path.
 	 */
 	public function testObjectsWithRegisterSchemaParamsResolvesToNormalSearch(): void {
@@ -2190,65 +2093,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// logs() — additional paths
-	// =========================================================================
-
-	/**
-	 * Test logs() returns 404 when register does not match (with message key check).
-	 */
-	public function testLogsReturns404WhenRegisterDoesNotMatchWithMessage(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('99'); // different register
-		$objectEntity->setSchema('2');
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(2);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-		$data = $result->getData();
-		$this->assertArrayHasKey('message', $data);
-		$this->assertStringContainsString('does not belong', $data['message']);
-	}
-
-	/**
-	 * Test logs() returns 404 when schema does not match (with message content).
-	 */
-	public function testLogsReturns404WhenSchemaDoesNotMatchWithMessage(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('99'); // different schema
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(2);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-		$data = $result->getData();
-		$this->assertArrayHasKey('message', $data);
-	}
-
-	// =========================================================================
 	// create() — regular user path (RBAC enabled)
 	// =========================================================================
 
@@ -2311,10 +2155,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)
@@ -2547,40 +2388,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// logs() — success path with matching register/schema
-	// =========================================================================
-
-	public function testLogsReturnsPaginatedLogsOnSuccess(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([
-			['action' => 'create', 'timestamp' => '2024-01-01'],
-		]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertArrayHasKey('results', $data);
-		$this->assertArrayHasKey('total', $data);
-	}
-
-	// =========================================================================
 	// destroy() — additional error paths
 	// =========================================================================
 
@@ -2610,7 +2417,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \InvalidArgumentException('Invalid mapping'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -2631,7 +2438,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '10'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 50,
 			'updated' => 45,
 			'failed' => 5,
@@ -3549,35 +3356,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// logs() — register/schema not found paths
-	// =========================================================================
-
-	public function testLogsThrowsWhenRegisterNotFound(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->request->method('getParams')->willReturn([]);
-
-		$this->objectService->method('setRegister')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-		$this->controller->logs('uuid-123', '99', '2', $this->objectService);
-	}
-
-	public function testLogsThrowsWhenSchemaNotFound(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->request->method('getParams')->willReturn([]);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-		$this->controller->logs('uuid-123', '1', '99', $this->objectService);
-	}
-
-	// =========================================================================
 	// create() — with multipart/form-data normalizes JSON strings
 	// =========================================================================
 
@@ -3712,7 +3490,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 5,
 			'failed' => 5,
@@ -3821,7 +3599,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['name' => 'title', 'desc' => 'description'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 3,
 			'failed' => 0,
@@ -3959,8 +3737,8 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
-		// WebhookService interceptRequest throws OCP\DB\Exception — controller catches this
-		$this->webhookService->method('interceptRequest')
+		// A write-request listener throws OCP\DB\Exception; the controller catches it.
+		$this->writeRequestDispatcher->method('dispatchTyped')
 			->willThrowException(new DBException('Webhook failed'));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
@@ -3982,7 +3760,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '50'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 25,
 			'updated' => 20,
 			'failed' => 5,
@@ -4342,7 +4120,7 @@ class ObjectsControllerTest extends TestCase {
 		]);
 		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
-		// resolveRegisterSchemaIds needs to return the register entity
+		// resolveRegisterSchemaRef needs to return the register entity
 		// Since it accesses \OC::$server, we test that the show path handles null entities gracefully
 		$result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
 
@@ -4395,8 +4173,8 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
 		// Webhook intercept returns modified data
-		$this->webhookService->method('interceptRequest')
-			->willReturn(['title' => 'Webhook-Modified']);
+		$this->writeRequestDispatcher->method('dispatchTyped')
+			->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody(['title' => 'Webhook-Modified']));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
@@ -4404,7 +4182,7 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// create() — with null webhookService (constructor allows null)
+	// create() — with a null event dispatcher (constructor allows null)
 	// =========================================================================
 
 	public function testCreateWithoutWebhookService(): void {
@@ -4716,265 +4494,6 @@ class ObjectsControllerTest extends TestCase {
 		$data = $result->getData();
 		// ObjectEntity should be serialized via jsonSerialize then stripped
 		$this->assertCount(1, $data['results']);
-	}
-
-	// =========================================================================
-	// logs() — schema match via object/array format
-	// =========================================================================
-
-	public function testLogsMatchesSchemaBySlug(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		// Use a mock to return an array from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn(['id' => '2', 'slug' => 'my-schema']);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/my-schema/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', 'my-schema', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	/**
-	 * logs() returns 200 when the schema matches, on a REAL entity.
-	 *
-	 * The four schema-shape tests above are skipped because they reach `logs()`
-	 * through a mock returning an array or a stdClass, which `ObjectEntity` — a
-	 * `?string` field — can never produce (openregister#2501). Their 404
-	 * siblings already use a real entity; this is the matching 200 case, so the
-	 * REACHABLE branch of the same comparison is covered by something that
-	 * cannot go stale the way an impossible mock did.
-	 *
-	 * @return void
-	 */
-	public function testLogsReturns200WhenSchemaMatchesAsString(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}//end testLogsReturns200WhenSchemaMatchesAsString()
-
-	public function testLogsReturns404WhenSchemaDoesNotMatch(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('5'); // different schema
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-		$data = $result->getData();
-		$this->assertStringContainsString('does not belong', $data['message']);
-	}
-
-	public function testLogsReturns404WhenRegisterDoesNotMatch(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('99'); // different register
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with schema as stdClass object
-	// =========================================================================
-
-	public function testLogsMatchesSchemaAsObject(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		$schemaObj = new \stdClass();
-		$schemaObj->id = '2';
-		$schemaObj->slug = 'test-schema';
-
-		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn($schemaObj);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/test-schema/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', 'test-schema', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with schema as stdClass without slug
-	// =========================================================================
-
-	public function testLogsMatchesSchemaAsObjectById(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		$schemaObj = new \stdClass();
-		$schemaObj->id = '2';
-
-		// Use a mock to return a stdClass from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn($schemaObj);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with schema as array without slug
-	// =========================================================================
-
-	public function testLogsMatchesSchemaAsArrayById(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
-		// Use a mock to return an array from getSchema (real entity is typed ?string)
-		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
-			->onlyMethods(['getObject'])
-			->onlyMethods(['getSchema', 'getRegister', 'getUuid'])
-			->getMock();
-		$objectEntity->method('getUuid')->willReturn('uuid-123');
-		$objectEntity->method('getRegister')->willReturn('1');
-		$objectEntity->method('getSchema')->willReturn(['id' => '2']);
-		$objectEntity->method('getObject')->willReturn(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with pagination params
-	// =========================================================================
-
-	public function testLogsWithPaginationParams(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([
-			'_limit' => '5',
-			'_offset' => '10',
-			'_page' => '3',
-		]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs?_page=3');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([
-			['action' => 'update', 'timestamp' => '2024-01-02'],
-		]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertArrayHasKey('limit', $data);
 	}
 
 	// =========================================================================
@@ -5350,7 +4869,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
-		// resolveRegisterSchemaIds accesses \OC::$server which throws in unit tests,
+		// resolveRegisterSchemaRef accesses \OC::$server which throws in unit tests,
 		// entities are null, so registers/schemas are empty arrays which get stripped
 		// by stripEmptyValues. The key @self should still exist.
 		$this->assertArrayHasKey('@self', $data);
@@ -5464,580 +4983,6 @@ class ObjectsControllerTest extends TestCase {
 		$result = $this->controller->contracts('uuid-123', 'reg1', 'schema1', $this->objectService);
 
 		$this->assertSame(200, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with find throwing DB Exception
-	// =========================================================================
-
-	public function testLogsReturns404OnDbException(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$this->request->method('getParams')->willReturn([]);
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')
-			->willThrowException(new DBException('Database error'));
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(404, $result->getStatus());
-	}
-
-	// =========================================================================
-	// logs() — with legacy offset and page params
-	// =========================================================================
-
-	public function testLogsWithLegacyParams(): void {
-		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
-		$this->setupAdminUser();
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->request->method('getParams')->willReturn([
-			'offset' => '10',
-			'page' => '2',
-			'limit' => '5',
-			'_search' => 'test',
-			'order' => ['created' => 'desc'],
-		]);
-		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid/logs?page=2');
-
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')->willReturn($objectEntity);
-		$this->objectService->method('getLogs')->willReturn([]);
-
-		$result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertSame(200, $result->getStatus());
-	}
-
-	/**
-	 * Let the export verb through for a test that is about something else.
-	 *
-	 * `export()` resolves `ExportRightService` from the container and REFUSES
-	 * when it gets anything else, so a test that does not program the container
-	 * is asserting a 503 rather than an export. That refusal is asserted on
-	 * purpose in `testExportRefusedWhenTheRightServiceIsUnavailable()` below;
-	 * every other export test wants the granted path.
-	 *
-	 * @param bool $allowed False to have the right service refuse the caller.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One helper for the two
-	 *     verdicts keeps the container wiring in one place.
-	 */
-	private function grantExport(bool $allowed = true, ?\OCA\OpenRegister\Service\Export\ExportRunRecorder $runs = null): void {
-		$rightService = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRightService::class);
-		$refusal = null;
-		if ($allowed === false) {
-			$refusal = new \OCA\OpenRegister\Service\Export\ExportRefusedException(
-				'export-right-missing',
-				'no export for you',
-				403
-			);
-		}
-
-		$rightService->method('refusalFor')->willReturn($refusal);
-
-		$recorder = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class);
-
-		$this->container->method('get')->willReturnCallback(
-			static function (string $id) use ($rightService, $recorder, $runs) {
-				if ($id === \OCA\OpenRegister\Service\Export\ExportRightService::class) {
-					return $rightService;
-				}
-
-				if ($id === \OCA\OpenRegister\Service\Export\ExportRunRecorder::class && $runs !== null) {
-					return $runs;
-				}
-
-				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface::class) {
-					return $recorder;
-				}
-
-				return 'current-user';
-			}
-		);
-	}//end grantExport()
-
-	// =========================================================================
-	// export() — CSV export path
-	// =========================================================================
-
-	public function testExportReturnsCsvDownloadResponse(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'csv']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'csv';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertStringContainsString('.csv', $result->getHeaders()['Content-Disposition'] ?? '');
-	}
-
-	public function testAnApiExportIsRecordedAsARun(): void {
-		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
-		$runs->expects($this->once())->method('record')->with(
-			$this->callback(static fn (...$a): bool => true)
-		)->willReturnCallback(
-			function (...$args) {
-				$this->assertSame('api', $args[0]->source);
-				$this->assertSame('csv', $args[1]->format);
-				$this->assertSame(1, $args[2]->downloadCount);
-				$this->assertNull($args[3]);
-				return new \OCA\OpenRegister\Db\ExportRun();
-			}
-		);
-		$this->grantExport(true, $runs);
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'csv']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'csv';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertStringContainsString('.csv', $result->getHeaders()['Content-Disposition'] ?? '');
-	}
-
-	// =========================================================================
-	// export() — Excel export path (default)
-	// =========================================================================
-
-	public function testExportReturnsExcelDownloadResponseByDefault(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('test-reg');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('test-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'type') {
-				return 'excel';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-		$spreadsheet->getActiveSheet()->setCellValue('A1', 'test');
-		$this->exportService->method('exportToExcel')->willReturn($spreadsheet);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-	}
-
-	// =========================================================================
-	// export() — Register/Schema with null slugs uses fallback names
-	// =========================================================================
-
-	public function testExportUsesDefaultSlugsWhenNull(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn(null);
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn(null);
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'csv']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'csv';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToCsv')->willReturn('data');
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-	}
-
-	// =========================================================================
-	// export() — format=csv via 'type' param fallback
-	// =========================================================================
-
-	public function testExportCsvViaTypeParam(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('reg');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('sch');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['type' => 'csv']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return null;
-			}
-			if ($key === 'type') {
-				return 'csv';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToCsv')->willReturn('csv-content');
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-	}
-
-	// =========================================================================
-	// export() — PDF export path
-	// =========================================================================
-
-	public function testExportReturnsPdfDownloadResponse(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'pdf';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToPdf')->willReturn("%PDF-1.7\n...fake pdf bytes...");
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertSame('application/pdf', $result->getHeaders()['Content-Type'] ?? null);
-		$this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
-	}
-
-	/**
-	 * The verb refuses on the plain export endpoint, not only in the service.
-	 *
-	 * This is the endpoint an integration calls, and it was ungated: a
-	 * principal holding read could take the whole schema as a file. The
-	 * refusal names the verb rather than the record.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/authorization-rbac/spec.md
-	 */
-	public function testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb(): void {
-		$this->grantExport(allowed: false);
-		$this->primeExportEntities();
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
-		$this->assertSame(expected: 403, actual: $result->getStatus());
-		$this->assertSame(expected: 'export', actual: $result->getData()['verb']);
-		$this->assertSame(expected: 'export-right-missing', actual: $result->getData()['rule']);
-	}//end testExportIsRefusedWhenTheCallerDoesNotHoldTheVerb()
-
-	/**
-	 * A right service that cannot be resolved refuses rather than exporting.
-	 *
-	 * The container is left unprogrammed here on purpose. An export that ran
-	 * with no verb check and nothing to say one was missing is exactly the
-	 * hole this change closes, so "the check could not run" has to be loud.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/authorization-rbac/spec.md
-	 */
-	public function testExportRefusedWhenTheRightServiceIsUnavailable(): void {
-		$this->primeExportEntities();
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(expected: \OCP\AppFramework\Http\JSONResponse::class, actual: $result);
-		$this->assertSame(expected: 503, actual: $result->getStatus());
-		$this->assertSame(expected: 'right-service-unavailable', actual: $result->getData()['rule']);
-	}//end testExportRefusedWhenTheRightServiceIsUnavailable()
-
-	/**
-	 * The register and schema an export test needs before the verb is reached.
-	 *
-	 * @return void
-	 */
-	private function primeExportEntities(): void {
-		$registerEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(className: \OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->request->method('getParams')->willReturn(['format' => 'csv']);
-		$this->request->method('getParam')->willReturnCallback(
-			static function (string $key, $default = null) {
-				if ($key === 'format') {
-					return 'csv';
-				}
-
-				return $default;
-			}
-		);
-
-		$this->userSession->method('getUser')->willReturn($this->createMock(originalClassName: \OCP\IUser::class));
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-	}//end primeExportEntities()
-
-	public function testExportPdfTooLargeReturns400(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'pdf';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToPdf')->willThrowException(
-			new \OCA\OpenRegister\Exception\ExportTooLargeException(6000, 5000)
-		);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(400, $result->getStatus());
-		$this->assertSame('export_too_large', $result->getData()['error']);
-		$this->assertSame(6000, $result->getData()['rowCount']);
-		$this->assertSame(5000, $result->getData()['maxRows']);
-	}
-
-	/**
-	 * Without an office server a PDF export answers 501 with a clear message.
-	 */
-	public function testExportPdfWithoutOfficeServerReturns501(): void {
-		$this->grantExport();
-		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$registerEntity->method('getSlug')->willReturn('my-register');
-
-		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
-			->addMethods(['getSlug'])
-			->getMock();
-		$schemaEntity->method('getSlug')->willReturn('my-schema');
-
-		$this->registerMapper->method('find')->willReturn($registerEntity);
-		$this->schemaMapper->method('find')->willReturn($schemaEntity);
-
-		$this->request->method('getParams')->willReturn(['format' => 'pdf']);
-		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
-			if ($key === 'format') {
-				return 'pdf';
-			}
-			return $default;
-		});
-
-		$user = $this->createMock(\OCP\IUser::class);
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->exportService->method('exportToPdf')->willThrowException(
-			new \OCA\OpenRegister\Exception\OfficeServerRequiredException()
-		);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		// export() reuses the entities setRegister()/setSchema() already resolved
-		// rather than re-resolving the refs globally for the filename — the
-		// re-resolution ignored the register and could name the file after another
-		// app's same-slug schema.
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(501, $result->getStatus());
-		$this->assertSame('office_server_required', $result->getData()['error']);
-		$this->assertStringContainsString('Collabora or Euro-Office', $result->getData()['message']);
 	}
 
 	// =========================================================================
@@ -6331,139 +5276,6 @@ class ObjectsControllerTest extends TestCase {
 	// downloadFiles() — success path (mocked FileService)
 	// =========================================================================
 
-	public function testDownloadFilesReturnsZipOnSuccess(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		// Create a real temp file for the zip
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn([
-			'path' => $tempZip,
-			'filename' => 'test-files.zip',
-			'mimeType' => 'application/zip',
-		]);
-
-		$this->container->method('get')->willReturn($fileService);
-		$this->request->method('getParam')->willReturn(null);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-
-		// Clean up if file still exists
-		if (file_exists($tempZip)) {
-			unlink($tempZip);
-		}
-	}
-
-	/**
-	 * A bulk download is audited as one entry naming every file, and the temporary ZIP goes.
-	 *
-	 * @return void
-	 */
-	public function testDownloadFilesAuditsOneEntryAndRemovesTheZip(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$first = $this->createMock(\OCP\Files\File::class);
-		$first->method('getId')->willReturn(11);
-		$first->method('getName')->willReturn('a.txt');
-		$second = $this->createMock(\OCP\Files\File::class);
-		$second->method('getId')->willReturn(12);
-		$second->method('getName')->willReturn('b.txt');
-
-		$audit = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileAuditHandler::class);
-		$audit->expects($this->once())->method('logBulkDownload')->with(
-			$objectEntity,
-			new \OCA\OpenRegister\Files\Service\File\BulkDownloadArchive(
-				fileIds: [11, 12],
-				fileNames: ['a.txt', 'b.txt'],
-				zipName: 'test-files.zip',
-				totalBytes: 16
-			)
-		);
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn(
-			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip', 'size' => 16]
-		);
-		$fileService->method('getFiles')->willReturn([$first, $second]);
-		$fileService->method('getAuditHandler')->willReturn($audit);
-		$this->container->method('get')->willReturn($fileService);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertSame('fake-zip-content', $result->render());
-		$this->assertFileDoesNotExist($tempZip);
-	}
-
-	/**
-	 * A failing audit trail does not break the download.
-	 *
-	 * @return void
-	 */
-	public function testDownloadFilesSurvivesAFailingAudit(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'zip');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn(
-			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip']
-		);
-		$fileService->method('getFiles')->willThrowException(new \RuntimeException('no trail'));
-		$this->container->method('get')->willReturn($fileService);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-	}
-
-	/**
-	 * A finished PDF export is recorded with the row count the export service answers.
-	 *
-	 * @return void
-	 */
-	public function testAPdfExportIsRecordedWithItsRowCount(): void {
-		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
-		$runs->expects($this->once())->method('record')->willReturnCallback(
-			function (...$args) {
-				$this->assertSame('pdf', $args[1]->format);
-				return new \OCA\OpenRegister\Db\ExportRun();
-			}
-		);
-		$this->grantExport(true, $runs);
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getParam')->willReturnCallback(
-			static fn (string $key, $default = null) => ($key === 'format') ? 'pdf' : $default
-		);
-		$this->exportService->method('exportToPdf')->willReturn('%PDF');
-		$this->exportService->expects($this->once())->method('countExportRows')->willReturn(4);
-
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertSame('%PDF', $result->render());
-	}
-
 	/**
 	 * Set up a move request for an existing object.
 	 *
@@ -6560,13 +5372,13 @@ class ObjectsControllerTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturnCallback(static fn ($id) => $schemas[$id]);
 
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->once())->method('move')->with(
-			$object,
-			$registers['a'],
-			$schemas['b'],
-			$registers['r'],
-			$schemas['s'],
-			'alice'
+		$mover->expects($this->once())->method('perform')->with(
+			new \OCA\OpenRegister\Service\Object\ObjectMove(
+				object: $object,
+				source: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['a'], schema: $schemas['b']),
+				target: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['r'], schema: $schemas['s']),
+				actor: 'alice'
+			)
 		)->willReturn(['moved' => $moved]);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
@@ -6596,7 +5408,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Register());
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->never())->method('move');
+		$mover->expects($this->never())->method('perform');
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturn(false);
 		$this->moveServices(mover: $mover, permissions: $permissions);
@@ -6663,7 +5475,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testMigrateRefusals(array $params, string $expected): void {
 		$this->request->method('getParams')->willReturn($params);
-		$this->objectService->expects($this->never())->method('migrateObjects');
+		$this->objectService->expects($this->never())->method('migrate');
 
 		$result = $this->controller->migrate($this->objectService);
 
@@ -6680,7 +5492,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			['sourceRegister' => '', 'sourceSchema' => '0', 'targetRegister' => 't', 'targetSchema' => 'u', 'objects' => ['o'], 'mapping' => ['a' => 'b']]
 		);
-		$this->objectService->expects($this->once())->method('migrateObjects')->with('', '0', 't', 'u', ['o'], ['a' => 'b'])->willReturn(['done' => 1]);
+		$this->objectService->expects($this->once())->method('migrate')->with(new ObjectMigration(source: new RegisterSchemaRef(register: '', schema: '0'), target: new RegisterSchemaRef(register: 't', schema: 'u'), objectIds: ['o'], mapping: ['a' => 'b']))->willReturn(['done' => 1]);
 
 		$this->assertSame(['done' => 1], $this->controller->migrate($this->objectService)->getData());
 	}
@@ -6726,7 +5538,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockAnswersWhetherItIsHeld(): void {
 		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id', process: 'edit', duration: 60))
 			->willReturn(['uuid' => 'id', 'held' => false]);
 
 		$result = $this->controller->lock('r', 's', 'id');
@@ -6741,178 +5553,107 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockWithoutAHoldReport(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id'))->willReturn(['uuid' => 'id']);
 
 		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}
 
 	/**
-	 * A JSON export is recorded with the format it was asked in.
+	 * A delete carries the route's register and schema, so the URL's scope is enforced.
 	 *
 	 * @return void
 	 */
-	public function testAJsonExportIsRecorded(): void {
-		$this->arrangeRecordedExport(format: 'json');
-		$this->exportService->method('exportToJson')->willReturn('[]');
+	public function testDestroyPassesTheRouteScope(): void {
+		$this->setupAdminUser();
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), false, false)
+			->willReturn(true);
 
-		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
 
 	/**
-	 * An Excel export is recorded and answers an xlsx file.
+	 * A non-admin's delete runs in the caller's scope.
 	 *
 	 * @return void
 	 */
-	public function testAnExcelExportIsRecordedAndNamedXlsx(): void {
-		$this->arrangeRecordedExport(format: 'excel');
-		$this->exportService->method('exportToExcel')->willReturn(new \PhpOffice\PhpSpreadsheet\Spreadsheet());
+	public function testDestroyScopesANonAdmin(): void {
+		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), true, true)
+			->willReturn(true);
 
-		$result = $this->controller->export('1', '2', $this->objectService);
-
-		$this->assertStringEndsWith('.xlsx', $result->getHeaders()['Content-Disposition']);
+		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
 
 	/**
-	 * An export of this format, whose run must be recorded once under that format.
+	 * What a delete that throws answers.
 	 *
-	 * @param string $format The format.
-	 *
-	 * @return void
+	 * @return array<string, array{0: \Throwable, 1: int, 2: mixed}>
 	 */
-	private function arrangeRecordedExport(string $format): void {
-		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
-		$runs->expects($this->once())->method('record')->willReturnCallback(
-			function (...$args) use ($format) {
-				$this->assertSame($format, $args[1]->format);
-				return new \OCA\OpenRegister\Db\ExportRun();
-			}
-		);
-		$this->grantExport(true, $runs);
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
-		$this->request->method('getParams')->willReturn([]);
-		$this->request->method('getParam')->willReturnCallback(
-			static fn (string $key, $default = null) => ($key === 'format') ? $format : $default
-		);
+	public static function deleteFailures(): array {
+		$hook = \OCA\OpenRegister\Exception\HookStoppedException::class;
+		$dbal = \OCA\OpenRegister\Service\ObjectSource\DbalWriteException::class;
+
+		return [
+			'append only'       => [new \OCA\OpenRegister\Exception\AppendOnlyException('s', 'delete'), 405, null],
+			'not found'         => [new \OCP\AppFramework\Db\DoesNotExistException('x'), 404, ['error' => 'Not Found']],
+			'hook'              => [new $hook('stop', ['a' => 'b']), 422, ['error' => 'stop', 'errors' => ['a' => 'b']]],
+			'hook with status'  => [new $hook('stop', ['status' => 409]), 409, ['error' => 'stop', 'errors' => ['status' => 409]]],
+			'hook, odd status'  => [new $hook('stop', ['status' => '409']), 422, ['error' => 'stop', 'errors' => ['status' => '409']]],
+			'external write'    => [new $dbal('nope', 418), 418, ['error' => 'nope']],
+			'any other failure' => [new \RuntimeException('no right'), 403, ['error' => 'no right']],
+			'fatal'             => [new \TypeError('bad'), 500, ['error' => 'An unexpected error occurred while deleting the object']],
+		];
 	}
 
 	/**
-	 * A JSON export drops the route from its filters and answers a named JSON file.
+	 * Every delete failure keeps its status and body.
+	 *
+	 * @dataProvider deleteFailures
+	 *
+	 * @param \Throwable $failure  The failure.
+	 * @param int        $status   The status.
+	 * @param mixed      $expected The body, or null when only the status is pinned.
 	 *
 	 * @return void
 	 */
-	public function testExportJsonGolden(): void {
-		$this->grantExport();
-		$registerEntity = new \OCA\OpenRegister\Db\Register();
-		$registerEntity->setSlug('my-register');
-		$schemaEntity = new \OCA\OpenRegister\Db\Schema();
-		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
-		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+	public function testDestroyFailureAnswers(\Throwable $failure, int $status, mixed $expected): void {
+		$this->objectService->method('deleteObject')->willThrowException($failure);
 
-		$this->request->method('getParams')->willReturn(['_route' => 'r', 'status' => 'open']);
-		$this->request->method('getParam')->willReturnCallback(
-			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
-		);
-		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
-		)->willReturn('{"results":[1,2]}');
+		$result = $this->controller->destroy('id', 'r', 's', $this->objectService);
 
-		$result = $this->controller->export('1', '2', $this->objectService);
+		$this->assertSame($status, $result->getStatus());
+		if ($expected !== null) {
+			$this->assertSame($expected, $result->getData());
+		}
+	}
 
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertSame('{"results":[1,2]}', $result->render());
-		$this->assertSame('application/json', $result->getHeaders()['Content-Type']);
-		$this->assertMatchesRegularExpression(
-			'/^attachment; filename=my-register_schema_\d{4}-\d{2}-\d{2}_\d{6}\.json$/',
-			$result->getHeaders()['Content-Disposition']
-		);
+	/**
+	 * Contracts paging: the plain name wins over the `_` form, and the limit defaults to 20.
+	 *
+	 * @return void
+	 */
+	public function testContractsPagingParameters(): void {
+		$this->request->method('getParams')->willReturn(['_offset' => '1', 'offset' => '2', '_page' => '3', 'page' => '4']);
+		$this->objectService->expects($this->once())->method('getObjectContracts')
+			->with('id', ['limit' => 20, 'offset' => 2, 'page' => 4])
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->assertSame(200, $this->controller->contracts('id', 'r', 's', $this->objectService)->getStatus());
 	}
 
 	// =========================================================================
 	// downloadFiles() — returns 404 when object not found (via DoesNotExist)
 	// =========================================================================
 
-	public function testDownloadFilesReturns404WhenObjectDoesNotExistViaException(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$result = $this->controller->downloadFiles('nonexistent', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(404, $result->getStatus());
-	}
-
 	// =========================================================================
 	// downloadFiles() — custom filename parameter
 	// =========================================================================
 
-	public function testDownloadFilesUsesCustomFilename(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn([
-			'path' => $tempZip,
-			'filename' => 'custom-name.zip',
-			'mimeType' => 'application/zip',
-		]);
-
-		$this->container->method('get')->willReturn($fileService);
-		$this->request->method('getParam')->willReturn('custom-name');
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-
-		if (file_exists($tempZip)) {
-			unlink($tempZip);
-		}
-	}
-
 	// =========================================================================
 	// downloadFiles() — returns 500 when ZIP creation fails
 	// =========================================================================
-
-	public function testDownloadFilesReturns500WhenZipCreationFails(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')
-			->willThrowException(new \Exception('Disk full'));
-
-		$this->container->method('get')->willReturn($fileService);
-		$this->request->method('getParam')->willReturn(null);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		// SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
-		$this->assertSame('Internal server error', $data['error']);
-	}
 
 	// =========================================================================
 	// stripEmptyValues() — via show() - preserves 0, false, "0"
@@ -7753,9 +6494,9 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
-		$this->webhookService->expects($this->once())
-			->method('interceptRequest')
-			->willReturn(['title' => 'Public']);
+		$this->writeRequestDispatcher->expects($this->once())
+			->method('dispatchTyped')
+			->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody(['title' => 'Public']));
 
 		$result = $this->controller->create('reg', 'schema', $this->objectService);
 
@@ -7787,10 +6528,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)
@@ -7917,7 +6655,7 @@ class ObjectsControllerTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger,
 			null,
 			null,

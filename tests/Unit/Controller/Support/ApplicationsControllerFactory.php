@@ -18,7 +18,6 @@ final class ApplicationsControllerFactory {
 	/**
 	 * The constructor arguments of ApplicationsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ApplicationServiceInterface $applicationService Constructor argument.
 	 * @param ApplicationMapperInterface $applicationMapper Constructor argument.
@@ -27,14 +26,12 @@ final class ApplicationsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ApplicationServiceInterface $applicationService,
 		\OCA\OpenRegister\Db\ApplicationMapperInterface $applicationMapper,
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ApplicationsControllerServices(
 				applicationService: $applicationService,

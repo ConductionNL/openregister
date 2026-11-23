@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
@@ -47,6 +48,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Flow\FlowLocator
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
+ * @uses \OCA\OpenRegister\Db\Flow\TriggerLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
  */
 class FlowLocatorTriggerCutoverTest extends TestCase {
 
@@ -119,7 +123,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnpublishedFlowIsFilteredFromTheColumnFallback(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('never-published'), $this->flow('published-1')]);
 
@@ -146,7 +150,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['published-1'],
-			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 			'an enabled-but-unpublished flow must not be offered to the queue; its published sibling must be'
 		);
 	}//end testAnUnpublishedFlowIsFilteredFromTheColumnFallback()
@@ -159,7 +163,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableVersionTableFailsOpen(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
@@ -174,7 +178,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['legacy-1'],
-			$locator->flowsForTrigger('object.created', 'dossiq', 'case'),
+			$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 			'an unreadable version table must not silence the engine'
 		);
 	}//end testAnUnreadableVersionTableFailsOpen()
@@ -188,13 +192,13 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnconvertedFlowStillFiresThroughItsColumns(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
 		$this->assertSame(
 			['legacy-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'an unconverted flow stopped firing — the column fallback did not apply'
 		);
 
@@ -206,14 +210,14 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConvertedFlowFiresFromTheIndex(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['converted-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['converted-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willReturn($this->flow('converted-1'));
 
 		$this->assertSame(
 			['converted-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding')
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding'))
 		);
 
 	}//end testAConvertedFlowFiresFromTheIndex()
@@ -230,7 +234,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 */
 	public function testAConvertedFlowDoesNotFireFromItsStaleColumns(): void {
 		// The index knows this flow, but NOT for this event.
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
 
 		// Its old column still matches.
@@ -238,7 +242,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'a converted flow fired from a trigger column its nodes no longer declare'
 		);
 
@@ -250,14 +254,14 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlowMatchedByBothSourcesIsReturnedOnce(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['both-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['both-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('both-1')]);
 		$this->mapper->method('findByUuid')->willReturn($this->flow('both-1'));
 
 		$this->assertSame(
 			['both-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'one flow was started twice by a single event'
 		);
 
@@ -273,7 +277,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow(): void {
-		$this->triggerMapper->method('flowUuidsFor')
+		$this->triggerMapper->method('flowUuidsSubscribedTo')
 			->willThrowException(new RuntimeException('no such table'));
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
@@ -281,7 +285,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 
 		$this->assertSame(
 			['legacy-1'],
-			$this->locator->flowsForTrigger('object.created', 'hydra', 'finding'),
+			$this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')),
 			'an unreadable index silenced the engine instead of falling back'
 		);
 
@@ -294,14 +298,14 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStaleIndexRowIsReported(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ghost-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['ghost-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ghost-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willThrowException(new RuntimeException('gone'));
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
+		$this->assertSame([], $this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')));
 
 	}//end testAStaleIndexRowIsReported()
 
@@ -315,14 +319,14 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 		$ownerless->setUuid('ownerless-1');
 		$ownerless->setEnabled(true);
 
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ownerless-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['ownerless-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ownerless-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willReturn($ownerless);
 
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
-		$this->assertSame([], $this->locator->flowsForTrigger('object.created', 'hydra', 'finding'));
+		$this->assertSame([], $this->locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'hydra', schema: 'finding')));
 
 	}//end testAnOwnerlessFlowFromTheIndexIsRefusedNotDispatched()
 

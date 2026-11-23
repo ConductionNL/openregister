@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\AppFramework\Http\JSONResponse;
 
 /**
@@ -58,22 +59,16 @@ class PreviewHandler {
 		'registers' => [],
 		'schemas' => [],
 		'objects' => [],
-		'endpoints' => [],
-		'sources' => [],
-		'mappings' => [],
-		'jobs' => [],
-		'synchronizations' => [],
-		'rules' => [],
-	];
+	] + ConfigurationComponentSections::CONNECTOR_SECTIONS;
 
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param PreviewMappers $mappers      The register, schema and object mappers.
-	 * @param FetchHandler   $fetchHandler The fetch handler for remote data fetching.
+	 * @param SchemaCatalogInterface $catalog      The register, schema and object mappers.
+	 * @param FetchHandler           $fetchHandler The fetch handler for remote data fetching.
 	 */
 	public function __construct(
-		private readonly PreviewMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly FetchHandler $fetchHandler,
 	) {
 	}//end __construct()
@@ -116,11 +111,7 @@ class PreviewHandler {
 		$preview['registers'] = $this->definitionRows(remoteData: $remoteData, kind: 'registers');
 		$preview['schemas'] = $this->definitionRows(remoteData: $remoteData, kind: 'schemas');
 
-		// An empty object list still reads the local registers and schemas.
-		$remoteObjects = ($remoteData['components']['objects'] ?? null);
-		if (is_array($remoteObjects) === true) {
-			$preview['objects'] = $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
-		}
+		$preview['objects'] = $this->objectRows(remoteData: $remoteData, preview: $preview);
 
 		$remoteVersion = ($remoteData['version'] ?? $remoteData['info']['version'] ?? null);
 		$preview['metadata'] = self::previewMetadata(configuration: $configuration, remoteVersion: $remoteVersion);
@@ -128,6 +119,23 @@ class PreviewHandler {
 
 		return $preview;
 	}//end previewConfigurationChanges()
+
+	/**
+	 * The object rows of the preview; an empty object list still reads the local registers and schemas.
+	 *
+	 * @param array<string, mixed> $remoteData The fetched remote configuration.
+	 * @param array<string, mixed> $preview    The preview so far, with its register and schema rows.
+	 *
+	 * @return array<int, array<string, mixed>> The object rows, or the preview's empty default without a remote object list.
+	 */
+	private function objectRows(array $remoteData, array $preview): array {
+		$remoteObjects = ($remoteData['components']['objects'] ?? null);
+		if (is_array($remoteObjects) === false) {
+			return $preview['objects'];
+		}
+
+		return $this->previewObjects(remoteObjects: $remoteObjects, preview: $preview);
+	}//end objectRows()
 
 	/**
 	 * The metadata block of a preview: which configuration, which versions and when; the caller adds the change count.
@@ -203,11 +211,11 @@ class PreviewHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 	 */
 	private function previewObjects(array $remoteObjects, array $preview): array {
-		$registersBySlug = self::bySlug(entities: $this->mappers->registerMapper->findAll());
-		$schemasBySlug = self::bySlug(entities: $this->mappers->schemaMapper->findAll());
+		$registersBySlug = self::bySlug(entities: $this->catalog->registers()->findAll());
+		$schemasBySlug = self::bySlug(entities: $this->catalog->schemas()->findAll());
 
 		$compare = fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed);
-		$objectPreview = new ObjectChangePreview(objectMapper: $this->mappers->objectMapper, compare: $compare);
+		$objectPreview = new ObjectChangePreview(objectMapper: $this->catalog->tables(), compare: $compare);
 		$planned = ['registers' => $objectPreview->createdSlugs(rows: $preview['registers'])];
 		$planned['schemas'] = $objectPreview->createdSlugs(rows: $preview['schemas']);
 		$targets = new ObjectPreviewTargets(registersBySlug: $registersBySlug, schemasBySlug: $schemasBySlug, planned: $planned);
@@ -264,7 +272,7 @@ class PreviewHandler {
 
 		$existingRegister = null;
 		try {
-			$existingRegister = $this->mappers->registerMapper->find($slug);
+			$existingRegister = $this->catalog->registers()->find($slug);
 		} catch (Exception $e) {
 			// Register doesn't exist.
 		}
@@ -301,7 +309,7 @@ class PreviewHandler {
 
 		$existingSchema = null;
 		try {
-			$existingSchema = $this->mappers->schemaMapper->find($slug);
+			$existingSchema = $this->catalog->schemas()->find($slug);
 		} catch (Exception $e) {
 			// Schema doesn't exist.
 		}

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportAssemblerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -46,7 +47,7 @@ class SubjectExportJobBehaviourTest extends TestCase {
 	}
 
 	private function runJob(mixed $argument): void {
-		$job    = new SubjectExportJob($this->createMock(ITimeFactory::class), $this->exports, $this->logger);
+		$job    = new SubjectExportJob(new JobRuntime($this->createMock(ITimeFactory::class), $this->logger), $this->exports);
 		$method = new ReflectionMethod(SubjectExportJob::class, 'run');
 		$method->invoke($job, $argument);
 	}

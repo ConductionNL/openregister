@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+ * @spec openspec/specs/flow-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -31,10 +31,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
+use OCA\OpenRegister\Service\Flow\FieldAssignment;
 use OCA\OpenRegister\Service\Flow\FlowFieldPath;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -43,7 +48,9 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree,
+	IFlowNodeConfigForm
+{
 
 	/**
 	 * The config keys of which at least one must be non-empty.
@@ -97,11 +104,38 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
 		return ['set', 'compute', 'rename', 'remove', 'keepOnlySet'];
 	}//end configKeys()
+
+	/**
+	 * The one scalar key of an edit-fields step.
+	 *
+	 * `set`, `compute`, `rename` and `remove` are keyed by the author's own
+	 * field paths, a shape the field vocabulary cannot describe: they stay in
+	 * the JSON pane, and the help says so.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/changes/flow-node-config-forms/tasks.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	public function configForm(): array {
+		return [
+			[
+				'key' => 'keepOnlySet',
+				'label' => $this->l10n->t('Keep only the fields this step sets'),
+				'type' => 'boolean',
+				'help' => $this->l10n->t(
+					'Start each item empty, so it leaves with only the fields under "set" and "compute". The fields themselves are edited '
+						. 'in the JSON pane: "set" takes values with {{path}} placeholders filled in from the item, "compute" takes flow expressions '
+						. '(JSONLogic), "rename" maps old names to new, and "remove" lists the fields to drop.'
+				),
+			],
+		];
+	}//end configForm()
 
 	/**
 	 * Reject a configuration that would do nothing.
@@ -138,7 +172,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When nothing is configured.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertSomethingConfigured(array $config): void {
 		foreach (self::RESHAPING_KEYS as $key) {
@@ -167,7 +201,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When an expression is not valid.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertExpressionsAreValid(array $compute): void {
 		foreach ($compute as $field => $logic) {
@@ -189,26 +223,38 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 * Provenance: each output item carries its own input's index, one in and
 	 * one out, so the chain back to the input that caused it stays intact.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The output items, one per input item.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$plan = new SetFieldsPlan(config: $config, context: $context, itemCount: count($items));
 
+		return $this->reshapeEach(plan: $plan, items: $items);
+	}//end execute()
+
+	/**
+	 * Apply the plan to every item, one in and one out.
+	 *
+	 * @param SetFieldsPlan $plan  The step's plan for this run.
+	 * @param array         $items The input items.
+	 *
+	 * @return array The output items, one per input item.
+	 */
+	private function reshapeEach(SetFieldsPlan $plan, array $items): array {
 		$out = [];
 		foreach ($items as $index => $item) {
 			$out[] = FlowItems::item(
 				json: $this->reshape(json: (array)($item[FlowItems::JSON] ?? []), plan: $plan->forItem(itemIndex: (int)$index)),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: $index
+				options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index)
 			);
 		}
 
 		return $out;
-	}//end execute()
+	}//end reshapeEach()
 
 	/**
 	 * Apply the plan to one item's record.
@@ -225,7 +271,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When a path segment cannot be rendered.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function reshape(array $json, SetFieldsPlan $plan): array {
 		foreach ($plan->remove as $field) {
@@ -254,7 +300,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @return array The record with the keys renamed.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function applyRename(array $json, array $rename): array {
 		foreach ($rename as $from => $to) {
@@ -279,7 +325,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When a path is empty or blank.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertPathsAreNamed(array $bag, string $key): void {
 		foreach (array_keys($bag) as $field) {
@@ -323,14 +369,16 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When a path segment cannot be rendered.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function applySet(array &$json, array $set): void {
 		foreach ($set as $field => $value) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowValueTemplate::render(value: $value, json: $json)
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowValueTemplate::render(value: $value, json: $json)
+				)
 			);
 		}
 
@@ -359,14 +407,16 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When a path segment cannot be rendered.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function applyCompute(array &$json, SetFieldsPlan $plan): void {
 		foreach ($plan->compute as $field => $logic) {
 			FlowFieldPath::assign(
 				json: $json,
-				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				write: new FieldAssignment(
+					path: $this->renderPath(path: (string)$field, json: $json),
+					value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
+				)
 			);
 		}
 
@@ -380,14 +430,16 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @return array The expression data.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function expressionData(array $json, SetFieldsPlan $plan): array {
-		return FlowExpression::dataFor(
+		return FlowExpression::documentFor(
 			item: [FlowItems::JSON => $json],
-			itemIndex: $plan->itemIndex(),
-			itemCount: $plan->itemCount,
-			context: $plan->context
+			options: new FlowExpressionDataOptions(
+				itemIndex: $plan->itemIndex(),
+				itemCount: $plan->itemCount,
+				context: $plan->context
+			)
 		);
 
 	}//end expressionData()
@@ -416,7 +468,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When a segment renders empty or introduces a dot.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function renderPath(string $path, array $json): string {
 		if (str_contains($path, '{{') === false) {
@@ -441,7 +493,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When the segment renders empty or introduces a dot.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function renderSegment(string $segment, array $json): string {
 		if (str_contains($segment, '{{') === false) {
@@ -473,7 +525,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When the value is null or not scalar.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertNamesAField(string $segment, mixed $value): void {
 		if ($value === null) {
@@ -509,7 +561,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When the name is empty or contains a dot.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertOneField(string $segment, string $name): void {
 		if ($name === '') {
@@ -530,7 +582,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @throws UnexpectedValueException When the name contains a dot.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function assertNoNesting(string $segment, string $name): void {
 		if (str_contains($name, '.') === true) {
@@ -552,7 +604,7 @@ class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInt
 	 *
 	 * @return UnexpectedValueException The refusal.
 	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 * @spec openspec/specs/flow-nodes/spec.md
 	 */
 	private function emptySegment(string $segment): UnexpectedValueException {
 		return new UnexpectedValueException(

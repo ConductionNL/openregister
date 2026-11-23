@@ -48,6 +48,8 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunSubjects
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectCandidates
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectClaim
  */
 final class FlowRunSubjectRecorderTest extends TestCase {
 

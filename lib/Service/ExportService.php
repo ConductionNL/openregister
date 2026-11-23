@@ -28,13 +28,16 @@
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
-use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
-use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Export\ExportRequest;
+use OCA\OpenRegister\Service\Export\ExportTable;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
+use OCA\OpenRegister\Service\Export\RowsTable;
+use OCA\OpenRegister\Service\Export\XmlObjectWriter;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
@@ -44,13 +47,19 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Service\Export\DocumentStyleReader;
+use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -84,6 +93,13 @@ class ExportService implements ObjectExporterInterface {
 	 * @var string[]
 	 */
 	private const NON_FILTER_EXPORT_PARAMS = ['register', 'schema', 'format', 'type', 'multi'];
+
+	/**
+	 * The first spreadsheet row below the header row.
+	 *
+	 * @var int
+	 */
+	private const FIRST_DATA_ROW = 2;
 
 	/**
 	 * Register mapper instance
@@ -145,6 +161,8 @@ class ExportService implements ObjectExporterInterface {
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per export, that it revealed audited values.
+	 * @param DocumentStyleReader|null $documentStyle Reads the organisation's house style for PDF output, when thematiq offers one.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
@@ -156,6 +174,8 @@ class ExportService implements ObjectExporterInterface {
 		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
+		private readonly ?ProcessRevealAuditInterface $processAudit = null,
+		private readonly ?DocumentStyleReader $documentStyle = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->groupManager = $groupManager;
@@ -190,70 +210,48 @@ class ExportService implements ObjectExporterInterface {
 	/**
 	 * Export data to Excel format
 	 *
-	 * @param RegisterInterface|null $register Optional register to export
-	 * @param SchemaInterface|null $schema Optional schema to export
-	 * @param array $filters Optional filters to apply
-	 * @param IUser|null $currentUser Current user for permission checks
+	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
 	 *
 	 * @return Spreadsheet
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
 	 *
 	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function exportToExcel(ObjectExportRequest $request): Spreadsheet {
+		return $this->spreadsheetFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToExcel()
+
+	/**
+	 * Export one request to a spreadsheet: one sheet, or one sheet per schema of the register when no schema is given.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return Spreadsheet
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function exportToExcel(
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		array $filters = [],
-		?IUser $currentUser = null,
-	): Spreadsheet {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
-
-		// Create new spreadsheet.
+	public function spreadsheetFor(ExportRequest $request): Spreadsheet {
 		$spreadsheet = new Spreadsheet();
-
-		// Remove default sheet.
 		$spreadsheet->removeSheetByIndex(0);
 
-		if ($register !== null && $schema === null) {
-			// Export all schemas in register.
-			$schemas = $this->getSchemasForRegister(register: $register);
-			foreach ($schemas as $schema) {
-				$this->populateSheet(
-					spreadsheet: $spreadsheet,
-					register: $register,
-					schema: $schema,
-					filters: $filters,
-					currentUser: $currentUser
-				);
+		if ($request->register !== null && $request->schema === null) {
+			foreach ($this->getSchemasForRegister(register: $request->register) as $schema) {
+				$this->populateSheet(spreadsheet: $spreadsheet, request: $this->schemaRequest(request: $request, schema: $schema));
 			}
 
 			return $spreadsheet;
 		}
 
-		// Export single schema.
-		$this->populateSheet(
-			spreadsheet: $spreadsheet,
-			register: $register,
-			schema: $schema,
-			filters: $filters,
-			currentUser: $currentUser
-		);
+		$this->populateSheet(spreadsheet: $spreadsheet, request: $request);
 
 		return $spreadsheet;
-	}//end exportToExcel()
+	}//end spreadsheetFor()
 
 	/**
 	 * Export data to CSV format
 	 *
-	 * @param RegisterInterface|null $register Optional register to export
-	 * @param SchemaInterface|null $schema Optional schema to export
-	 * @param array $filters Optional filters to apply
-	 * @param IUser|null $currentUser Current user for permission checks
+	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
 	 *
 	 * @return string CSV content
 	 *
@@ -261,31 +259,78 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function exportToCsv(
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		array $filters = [],
-		?IUser $currentUser = null,
-	): string {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+	public function exportToCsv(ObjectExportRequest $request): string {
+		return $this->csvFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToCsv()
 
-		if ($register !== null && $schema === null) {
+	/**
+	 * Export one request to CSV; CSV holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return string CSV content
+	 *
+	 * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function csvFor(ExportRequest $request): string {
+		if ($request->register !== null && $request->schema === null) {
 			throw new InvalidArgumentException('Cannot export multiple schemas to CSV format.');
 		}
 
-		$spreadsheet = $this->exportToExcel(
-			register: $register,
-			schema: $schema,
-			filters: $filters,
-			currentUser: $currentUser
-		);
-		$writer = new Csv($spreadsheet);
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
 
 		ob_start();
 		$writer->save('php://output');
 		return ob_get_clean();
-	}//end exportToCsv()
+	}//end csvFor()
+
+	/**
+	 * Export objects of a single schema to a TSV document.
+	 *
+	 * The same spreadsheet the CSV exporter builds, written with a tab
+	 * delimiter. A value holding a tab, a line break or a double quote is
+	 * quoted so any spreadsheet reads it back; the document carries a UTF-8
+	 * byte order mark, like the CSV.
+	 *
+	 * @param ObjectExportRequest $request The register context and the schema whose objects are exported (required).
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function exportToTsv(ObjectExportRequest $request): string {
+		return $this->tsvFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToTsv()
+
+	/**
+	 * Export one request to TSV; TSV holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return string TSV content
+	 *
+	 * @throws InvalidArgumentException If trying to export multiple schemas to TSV
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function tsvFor(ExportRequest $request): string {
+		if ($request->register !== null && $request->schema === null) {
+			throw new InvalidArgumentException('Cannot export multiple schemas to TSV format.');
+		}
+
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->spreadsheetFor(request: $request)));
+		$writer->setDelimiter("\t");
+		$writer->setEnclosure('"');
+		$writer->setUseBOM(true);
+
+		ob_start();
+		$writer->save('php://output');
+		return ob_get_clean();
+	}//end tsvFor()
 
 	/**
 	 * Export objects of a single schema to a JSON document
@@ -296,9 +341,8 @@ class ExportService implements ObjectExporterInterface {
 	 * metadata block. The result is a JSON array re-importable via
 	 * `ImportService::importFromJson()`, which upserts by `@self.id`.
 	 *
-	 * @param RegisterInterface|null $register Register context (required)
-	 * @param SchemaInterface|null $schema Schema whose objects are exported (required)
-	 * @param array $filters Optional `@self.*` metadata filters
+	 * @param ObjectExportRequest $request The register context, the schema whose objects are exported (required) and the `@self.*` metadata filters;
+	 *                                     the user is not used.
 	 *
 	 * @return string Pretty-printed JSON array of objects
 	 *
@@ -306,27 +350,104 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
 	 */
-	public function exportToJson(
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		array $filters = [],
-	): string {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+	public function exportToJson(ObjectExportRequest $request): string {
+		return $this->jsonFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToJson()
 
-		if ($schema === null) {
+	/**
+	 * Export one request's objects to a JSON array; JSON holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export.
+	 *
+	 * @return string Pretty-printed JSON array of objects
+	 *
+	 * @throws InvalidArgumentException When no schema is given (JSON export is single-schema, like CSV)
+	 *
+	 * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
+	 */
+	public function jsonFor(ExportRequest $request): string {
+		if ($request->schema === null) {
 			throw new InvalidArgumentException('JSON export requires a specific schema.');
 		}
 
-		$objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
-
-		$rows = array_map(
-			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
-			$objects
-		);
+		$rows = $this->documentRows(request: $request);
 
 		return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-	}//end exportToJson()
+	}//end jsonFor()
+
+	/**
+	 * Export objects of a single schema to an XML document.
+	 *
+	 * The same objects the JSON export holds, written by {@see XmlObjectWriter}:
+	 * a root `<objects>`, one `<object id="...">` per record, each property a child
+	 * element, lists as repeated children, nested objects as nested elements and
+	 * null as `xsi:nil="true"`.
+	 *
+	 * @param ObjectExportRequest $request The register context, the schema whose objects are exported (required) and the filters.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function exportToXml(ObjectExportRequest $request): string {
+		return $this->xmlFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToXml()
+
+	/**
+	 * Export one request's objects to an XML document; XML holds one schema only.
+	 *
+	 * @param ExportRequest $request What to export.
+	 *
+	 * @return string The XML document, UTF-8.
+	 *
+	 * @throws InvalidArgumentException When no schema is given (XML export is single-schema, like JSON)
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 */
+	public function xmlFor(ExportRequest $request): string {
+		if ($request->schema === null) {
+			throw new InvalidArgumentException('XML export requires a specific schema.');
+		}
+
+		$rows = $this->documentRows(request: $request);
+
+		return (new XmlObjectWriter())->write(rows: $rows);
+	}//end xmlFor()
+
+	/**
+	 * The objects of a JSON or XML export as documents.
+	 *
+	 * For the public principal the `@self` administration block is left out
+	 * (design D-3), and any envelope nested in a property loses the fields
+	 * that name people, as the anonymous list endpoint answers them.
+	 *
+	 * @param ExportRequest $request The export.
+	 *
+	 * @return array<int, array<string, mixed>> The documents.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	private function documentRows(ExportRequest $request): array {
+		$rows = array_map(
+			static fn (ObjectEntity $object): array => $object->jsonSerialize(),
+			$this->fetchObjectsForExport(request: $request)
+		);
+		if ($request->isForThePublic() === false) {
+			return $rows;
+		}
+
+		$envelope = new AnonymousEnvelope();
+
+		return array_map(
+			static function (array $row) use ($envelope): array {
+				unset($row['@self']);
+				return (array)$envelope->redact(data: $row);
+			},
+			$rows
+		);
+	}//end documentRows()
 
 	/**
 	 * Export data to PDF format
@@ -340,10 +461,7 @@ class ExportService implements ObjectExporterInterface {
 	 * per schema is rendered (the PDF analogue of `exportToExcel()`'s
 	 * one-sheet-per-schema behaviour).
 	 *
-	 * @param RegisterInterface|null $register Optional register to export
-	 * @param SchemaInterface|null $schema Optional schema to export
-	 * @param array $filters Optional filters to apply
-	 * @param IUser|null $currentUser Current user for permission checks
+	 * @param ObjectExportRequest $request The register, schema, filters and user (permission checks) of the export.
 	 *
 	 * @return string Raw PDF bytes
 	 *
@@ -354,62 +472,53 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function exportToPdf(
-		?RegisterInterface $register = null,
-		?SchemaInterface $schema = null,
-		array $filters = [],
-		?IUser $currentUser = null,
-	): string {
-		if ($this->isPdfAvailable() === false) {
-			throw new OfficeServerRequiredException();
-		}
+	public function exportToPdf(ObjectExportRequest $request): string {
+		$this->assertPdfAvailable();
 
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+		return $this->pdfFor(request: ExportRequest::fromContract(request: $request));
+	}//end exportToPdf()
+
+	/**
+	 * Export one request to PDF: one table section, or one per schema of the register when no schema is given.
+	 *
+	 * @param ExportRequest $request What to export and for whom.
+	 *
+	 * @return string Raw PDF bytes
+	 *
+	 * @throws ExportTooLargeException When the object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	public function pdfFor(ExportRequest $request): string {
+		$this->assertPdfAvailable();
 
 		// Capture register context so getHeaders/getObjectValue can emit
 		// per-language columns for translatable properties, same as the
 		// Excel/CSV pipeline.
-		$this->contextRegister = $register;
+		$this->contextRegister = $request->register;
 
-		if ($register !== null && $schema === null) {
-			// Register-level export without a schema: one section per schema,
-			// mirroring exportToExcel()'s one-sheet-per-schema behaviour.
-			$sections = $this->buildPdfSectionsForRegister(
-				register: $register,
-				filters: $filters,
-				currentUser: $currentUser
-			);
-
-			return $this->renderPdfDocument(sections: $sections);
+		$uid = $request->currentUser?->getUID();
+		if ($request->register !== null && $request->schema === null) {
+			return $this->renderPdfDocument(sections: $this->buildPdfSectionsForRegister(request: $request), uid: $uid);
 		}
 
-		$objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
-
+		$objects = $this->fetchObjectsForExport(request: $request);
 		$this->guardPdfRowCap(rowCount: count($objects));
 
-		$section = $this->buildPdfSection(
-			register: $register,
-			schema: $schema,
-			objects: $objects,
-			currentUser: $currentUser
-		);
-
-		return $this->renderPdfDocument(sections: [$section]);
-	}//end exportToPdf()
+		return $this->renderPdfDocument(sections: [$this->buildPdfSection(request: $request, objects: $objects)], uid: $uid);
+	}//end pdfFor()
 
 	/**
-	 * Render rows the caller already fetched as a PDF table
+	 * Render a table of rows the caller already read as a PDF
 	 *
 	 * For a caller whose read is not a Nextcloud user's search, such as a
-	 * portal resident's scoped collection (portaliq#765): exportToPdf() fetches
+	 * portal resident's scoped collection (portaliq#765): pdfFor() fetches
 	 * its own objects with the Nextcloud user's RBAC and only `@self.` filters,
 	 * so it cannot render that read. This renders what it is given, through the
 	 * same office conversion and under the same row cap, and reads nothing itself.
 	 *
-	 * @param string                           $title   The heading above the table.
-	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
-	 * @param array<int, array<string, mixed>> $rows    The rows, each keyed by column key.
+	 * @param RowsTable $table The title, columns and rows.
 	 *
 	 * @return string The PDF bytes.
 	 *
@@ -418,14 +527,14 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
-	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
-		if ($this->isPdfAvailable() === false) {
-			throw new OfficeServerRequiredException();
-		}
-		$this->guardPdfRowCap(rowCount: count($rows));
+	public function renderTableToPdf(RowsTable $table): string {
+		$this->assertPdfAvailable();
 
-		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(title: $title, columns: $columns, rows: $rows)]);
-	}//end renderRowsToPdf()
+		$this->guardPdfRowCap(rowCount: count($table->rows));
+
+		// No Nextcloud user asked for this table: the instance default house style applies.
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: null);
+	}//end renderTableToPdf()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no
@@ -433,35 +542,28 @@ class ExportService implements ObjectExporterInterface {
 	 * one-sheet-per-schema behaviour. The row-count cap is enforced on the
 	 * combined total across all schemas before any section HTML is built.
 	 *
-	 * @param Register $register The register whose schemas are exported.
-	 * @param array $filters Optional filters to apply to each schema's fetch.
-	 * @param IUser|null $currentUser Current user for permission checks.
+	 * @param ExportRequest $request The register-level export; its schema is null.
 	 *
 	 * @return string[] One HTML section fragment per schema.
 	 *
 	 * @throws ExportTooLargeException When the combined object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
 	 */
-	private function buildPdfSectionsForRegister(Register $register, array $filters, ?IUser $currentUser): array {
-		$schemas = $this->getSchemasForRegister(register: $register);
+	private function buildPdfSectionsForRegister(ExportRequest $request): array {
 		$sectionInput = [];
 		$totalRows = 0;
 
-		foreach ($schemas as $schemaItem) {
-			$objects = $this->fetchObjectsForExport(register: $register, schema: $schemaItem, filters: $filters);
+		foreach ($this->getSchemasForRegister(register: $request->register) as $schemaItem) {
+			$schemaRequest = $this->schemaRequest(request: $request, schema: $schemaItem);
+			$objects = $this->fetchObjectsForExport(request: $schemaRequest);
 			$totalRows += count($objects);
-			$sectionInput[] = ['schema' => $schemaItem, 'objects' => $objects];
+			$sectionInput[] = ['request' => $schemaRequest, 'objects' => $objects];
 		}
 
 		$this->guardPdfRowCap(rowCount: $totalRows);
 
 		$sections = [];
 		foreach ($sectionInput as $input) {
-			$sections[] = $this->buildPdfSection(
-				register: $register,
-				schema: $input['schema'],
-				objects: $input['objects'],
-				currentUser: $currentUser
-			);
+			$sections[] = $this->buildPdfSection(request: $input['request'], objects: $input['objects']);
 		}
 
 		return $sections;
@@ -487,81 +589,152 @@ class ExportService implements ObjectExporterInterface {
 	}//end guardPdfRowCap()
 
 	/**
+	 * The properties a PDF report breaks the objects down by, in order of preference.
+	 */
+	private const PDF_BREAKDOWN_PROPERTIES = ['status', 'state', 'lifecycle', 'statusCode'];
+
+	/**
+	 * The summary block of a PDF report: the applied filters, and the objects
+	 * broken down by their status with counts and percentages
+	 * (rapportage-bi-export, "Export to PDF as a formatted report").
+	 *
+	 * The breakdown uses the first of PDF_BREAKDOWN_PROPERTIES that is an
+	 * exported column, so a property the caller may not read, or a masked one,
+	 * is never summarised.
+	 *
+	 * @param ExportRequest $request What is exported.
+	 * @param ExportTable   $table   The exported columns and objects.
+	 *
+	 * @return string The HTML fragment, empty when there is nothing to summarise.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-export-in-csv-excel-pdf-and-ods-formats
+	 */
+	private function pdfSummary(ExportRequest $request, ExportTable $table): string {
+		$html = '';
+		$filters = [];
+		foreach ($request->filters as $key => $value) {
+			if (is_scalar($value) === true && str_starts_with((string)$key, '_') === false) {
+				$filters[] = $key . ' = ' . (string)$value;
+			}
+		}
+
+		if ($filters !== []) {
+			$html .= '<p class="meta">Filters: ' . htmlspecialchars(implode('; ', $filters), ENT_QUOTES, 'UTF-8') . '</p>';
+		}
+
+		$property = $this->pdfBreakdownProperty(headers: $table->headers);
+		if ($property === null || $table->objects === []) {
+			return $html;
+		}
+
+		$counts = [];
+		foreach ($table->objects as $object) {
+			$value = ($object->getObject()[$property] ?? null);
+			$label = '(none)';
+			if (is_scalar($value) === true && (string)$value !== '') {
+				$label = (string)$value;
+			}
+
+			$counts[$label] = (($counts[$label] ?? 0) + 1);
+		}
+
+		arsort($counts);
+		$total = count($table->objects);
+		$html .= '<table class="summary"><thead><tr><th>' . htmlspecialchars($property, ENT_QUOTES, 'UTF-8')
+			. '</th><th>Count</th><th>%</th></tr></thead><tbody>';
+		foreach ($counts as $label => $count) {
+			$html .= '<tr><td>' . htmlspecialchars((string)$label, ENT_QUOTES, 'UTF-8') . '</td><td>' . $count . '</td><td>'
+				. number_format((($count * 100) / $total), 1, '.', '') . '%</td></tr>';
+		}
+
+		return $html . '<tr><td>Total</td><td>' . $total . '</td><td>100.0%</td></tr></tbody></table>';
+	}//end pdfSummary()
+
+	/**
+	 * The property a PDF report breaks the objects down by: the first breakdown
+	 * property that is an exported, unmasked column.
+	 *
+	 * @param array<int|string, int|string> $headers The exported columns.
+	 *
+	 * @return string|null The property, or null when none is exported.
+	 */
+	private function pdfBreakdownProperty(array $headers): ?string {
+		foreach (self::PDF_BREAKDOWN_PROPERTIES as $property) {
+			if (in_array($property, $headers, true) === true && isset($this->maskedColumns[$property]) === false) {
+				return $property;
+			}
+		}
+
+		return null;
+	}//end pdfBreakdownProperty()
+
+	/**
 	 * Build the escaped HTML for a single schema's export section.
 	 *
-	 * @param Register|null $register Optional register context (used for the title only).
-	 * @param Schema|null $schema Optional schema context.
+	 * @param ExportRequest  $request The export; its register and schema title the section, its user drives header visibility.
 	 * @param ObjectEntity[] $objects The already-fetched, already-capped object set for this section.
-	 * @param IUser|null $currentUser Current user for permission checks (drives header visibility).
 	 *
 	 * @return string Escaped HTML for the section (title, meta line, table).
 	 */
-	private function buildPdfSection(
-		?Register $register,
-		?Schema $schema,
-		array $objects,
-		?IUser $currentUser,
-	): string {
-		$headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
-		$nameColumns = $this->identifyNameCompanionColumns(headers: $headers);
-		$uuidToNameMap = $this->resolveUuidNameMap(objects: $objects, nameColumns: $nameColumns);
-
-		$titleParts = [];
-		if ($register !== null) {
-			$titleParts[] = $register->getTitle() ?? $register->getSlug() ?? 'Register';
-		}
-
-		if ($schema !== null) {
-			$titleParts[] = $schema->getTitle() ?? $schema->getSlug() ?? 'Schema';
-		}
-
-		$title = implode(' — ', $titleParts);
-		if ($title === '') {
-			$title = 'Export';
-		}
+	private function buildPdfSection(ExportRequest $request, array $objects): string {
+		$table = $this->exportTable(
+			headers: $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser),
+			objects: $objects
+		);
 
 		$timestamp = (new DateTime())->format('Y-m-d H:i:s');
-		$count = count($objects);
 
 		$html = '<div class="pdf-section">';
-		$html .= '<h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>';
+		$html .= '<h1>' . htmlspecialchars($this->pdfSectionTitle(request: $request), ENT_QUOTES, 'UTF-8') . '</h1>';
 		$html .= '<p class="meta">'
 			. 'Exported: ' . htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8')
-			. ' &middot; Objects: ' . $count
+			. ' &middot; Objects: ' . count($objects)
 			. '</p>';
+		$html .= $this->pdfSummary(request: $request, table: $table);
 		$html .= '<table><thead><tr>';
 
-		foreach ($headers as $header) {
+		foreach ($table->headers as $header) {
 			$html .= '<th>' . htmlspecialchars((string)$header, ENT_QUOTES, 'UTF-8') . '</th>';
 		}
 
 		$html .= '</tr></thead><tbody>';
 
-		foreach ($objects as $object) {
-			$objectData = $object->getObject();
+		foreach ($table->objects as $object) {
 			$html .= '<tr>';
-
-			foreach ($headers as $col => $header) {
-				$value = $this->getObjectValue(object: $object, header: $header);
-
-				if (isset($nameColumns[$col]) === true) {
-					// This is a companion name column — resolve UUIDs to names,
-					// same as writeObjectRows() does for the Excel/CSV pipeline.
-					$sourceProperty = $nameColumns[$col];
-					$rawValue = $objectData[$sourceProperty] ?? null;
-					$value = $this->resolveUuidsToNames(value: $rawValue, uuidToNameMap: $uuidToNameMap);
-				}
-
+			foreach ($this->rowValues(table: $table, object: $object) as $value) {
 				$html .= '<td>' . htmlspecialchars($this->truncatePdfCellValue(value: $value), ENT_QUOTES, 'UTF-8') . '</td>';
 			}
 
 			$html .= '</tr>';
-		}//end foreach
+		}
 
-		$html .= '</tbody></table></div>';
-
-		return $html;
+		return $html . '</tbody></table></div>';
 	}//end buildPdfSection()
+
+	/**
+	 * The heading of a PDF section: the register and schema titles, or "Export".
+	 *
+	 * @param ExportRequest $request The export the section shows.
+	 *
+	 * @return string The unescaped title.
+	 */
+	private function pdfSectionTitle(ExportRequest $request): string {
+		$titleParts = [];
+		if ($request->register !== null) {
+			$titleParts[] = $request->register->getTitle() ?? $request->register->getSlug() ?? 'Register';
+		}
+
+		if ($request->schema !== null) {
+			$titleParts[] = $request->schema->getTitle() ?? $request->schema->getSlug() ?? 'Schema';
+		}
+
+		$title = implode(' — ', $titleParts);
+		if ($title === '') {
+			return 'Export';
+		}
+
+		return $title;
+	}//end pdfSectionTitle()
 
 	/**
 	 * Truncate a cell value for PDF display so a single long value cannot
@@ -585,6 +758,31 @@ class ExportService implements ObjectExporterInterface {
 	}//end truncatePdfCellValue()
 
 	/**
+	 * The same export narrowed to one schema of its register.
+	 *
+	 * @param ExportRequest $request The register-level export.
+	 * @param Schema        $schema  One schema of that register.
+	 *
+	 * @return ExportRequest
+	 */
+	private function schemaRequest(ExportRequest $request, Schema $schema): ExportRequest {
+		return new ExportRequest(register: $request->register, schema: $schema, filters: $request->filters, currentUser: $request->currentUser);
+	}//end schemaRequest()
+
+	/**
+	 * Refuse PDF output when no office server converts to PDF.
+	 *
+	 * @return void
+	 *
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 */
+	private function assertPdfAvailable(): void {
+		if ($this->isPdfAvailable() === false) {
+			throw new OfficeServerRequiredException();
+		}
+	}//end assertPdfAvailable()
+
+	/**
 	 * Whether PDF output is possible: an office server converts ODT to PDF.
 	 *
 	 * @return bool
@@ -601,18 +799,29 @@ class ExportService implements ObjectExporterInterface {
 	 * The sections are written as one ODT, each section on a new page, and the
 	 * office server converts it to PDF.
 	 *
-	 * @param string[] $sections Escaped HTML fragments, one per schema section.
+	 * The requesting user's house style, when thematiq offers one, colours the
+	 * table header and adds the footer lines; without one the layout is the
+	 * plain one, and a profile that cannot be read never fails the export.
+	 *
+	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
+	 * @param string|null $uid      The requesting user, or null for the instance default house style.
 	 *
 	 * @return string Raw PDF bytes.
 	 *
 	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
 	 */
-	private function renderPdfDocument(array $sections): string {
+	private function renderPdfDocument(array $sections, ?string $uid): string {
 		if ($this->officeConverter === null) {
 			throw new OfficeServerRequiredException();
 		}
 
-		$odt = (new OdtWriter())->fromHtml(html: implode('', $sections), landscape: true);
+		$odt = (new OdtWriter())->fromHtml(
+			html: implode('', $sections),
+			landscape: true,
+			houseStyle: OdtHouseStyle::fromProfile(profile: $this->documentStyle?->forUser(uid: $uid))
+		);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);
 	}//end renderPdfDocument()
@@ -624,41 +833,46 @@ class ExportService implements ObjectExporterInterface {
 	 * schema's properties (the same headers `exportToExcel` would emit), with no
 	 * data rows. The returned spreadsheet can be written to either XLSX or CSV.
 	 *
-	 * @param RegisterInterface|null $register Optional register context (used for translation column expansion)
-	 * @param SchemaInterface $schema Schema whose property keys become the header row
-	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
+	 * @param ObjectExportRequest $request The register context (translation columns), the schema whose property keys become the header row
+	 *                                     (required), and the user (admin metadata columns).
 	 *
 	 * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
 	 *
-	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 * @throws \InvalidArgumentException When the request names no schema, or the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (builds a header-only
 	 *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
 	 */
-	public function buildTemplateSpreadsheet(
-		?RegisterInterface $register,
-		SchemaInterface $schema,
-		?IUser $currentUser = null,
-	): Spreadsheet {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+	public function buildTemplateSpreadsheet(ObjectExportRequest $request): Spreadsheet {
+		return $this->templateSpreadsheetFor(request: $this->templateRequest(request: $request));
+	}//end buildTemplateSpreadsheet()
 
+	/**
+	 * Build an empty import template spreadsheet for the request's schema
+	 *
+	 * @param ExportRequest $request The register context, the schema whose property keys become the header row, and the user.
+	 *
+	 * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (builds a header-only
+	 *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
+	 */
+	public function templateSpreadsheetFor(ExportRequest $request): Spreadsheet {
 		// Capture register context so getHeaders can emit per-language
 		// `field_lang` columns for translatable properties.
-		$this->contextRegister = $register;
+		$this->contextRegister = $request->register;
 
 		$spreadsheet = new Spreadsheet();
 		$spreadsheet->removeSheetByIndex(0);
 		$sheet = $spreadsheet->createSheet();
-		$sheet->setTitle($schema->getSlug() ?? 'data');
+		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
 
-		$headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
-		foreach ($headers as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . '1', value: $header);
+		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
 		return $spreadsheet;
-	}//end buildTemplateSpreadsheet()
+	}//end templateSpreadsheetFor()
 
 	/**
 	 * Render an empty CSV import template for a schema
@@ -667,37 +881,55 @@ class ExportService implements ObjectExporterInterface {
 	 * derived from the schema's properties. Mirrors the BOM convention used
 	 * by the export pipeline so Excel opens the file with the correct encoding.
 	 *
-	 * @param RegisterInterface|null $register Optional register context
-	 * @param SchemaInterface $schema Schema whose property keys become the header row
-	 * @param IUser|null $currentUser Current user (drives admin metadata column inclusion)
+	 * @param ObjectExportRequest $request The register context, the schema whose property keys become the header row (required), and the user (admin
+	 *                                     metadata columns).
 	 *
 	 * @return string CSV content with a UTF-8 BOM prefix and a single header row
 	 *
-	 * @throws \InvalidArgumentException When the register or schema is not a stored row.
+	 * @throws \InvalidArgumentException When the request names no schema, or the register or schema is not a stored row.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (renders the per-schema
 	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
 	 */
-	public function buildTemplateCsv(
-		?RegisterInterface $register,
-		SchemaInterface $schema,
-		?IUser $currentUser = null,
-	): string {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
+	public function buildTemplateCsv(ObjectExportRequest $request): string {
+		return $this->templateCsvFor(request: $this->templateRequest(request: $request));
+	}//end buildTemplateCsv()
 
-		$spreadsheet = $this->buildTemplateSpreadsheet(
-			register: $register,
-			schema: $schema,
-			currentUser: $currentUser
-		);
-		$writer = new Csv($spreadsheet);
+	/**
+	 * Render an empty CSV import template for the request's schema
+	 *
+	 * @param ExportRequest $request The register context, the schema whose property keys become the header row, and the user.
+	 *
+	 * @return string CSV content with a UTF-8 BOM prefix and a single header row
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#import-templates-must-be-downloadable-per-schema (renders the per-schema
+	 *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
+	 */
+	public function templateCsvFor(ExportRequest $request): string {
+		$writer = new Csv(SpreadsheetCell::forCsv(spreadsheet: $this->templateSpreadsheetFor(request: $request)));
 		$writer->setUseBOM(true);
 
 		ob_start();
 		$writer->save('php://output');
 		return ob_get_clean();
-	}//end buildTemplateCsv()
+	}//end templateCsvFor()
+
+	/**
+	 * The export request of an import template, which needs a schema.
+	 *
+	 * @param ObjectExportRequest $request The register context, schema and user of the template.
+	 *
+	 * @return ExportRequest The request over the stored register and schema rows.
+	 *
+	 * @throws InvalidArgumentException When the request names no schema, or a register or schema is not a stored row.
+	 */
+	private function templateRequest(ObjectExportRequest $request): ExportRequest {
+		if ($request->schema === null) {
+			throw new InvalidArgumentException('An import template needs a schema.');
+		}
+
+		return ExportRequest::fromContract(request: $request);
+	}//end templateRequest()
 
 	/**
 	 * Populate a worksheet with data
@@ -707,62 +939,33 @@ class ExportService implements ObjectExporterInterface {
 	 * 2. One bulk CacheHandler::getMultipleObjectNames() call
 	 * 3. Second pass: populate the sheet with data and resolved names
 	 *
-	 * @param Spreadsheet $spreadsheet The spreadsheet to populate
-	 * @param Register|null $register Optional register to export
-	 * @param Schema|null $schema Optional schema to export
-	 * @param array $filters Optional filters to apply
-	 * @param IUser|null $currentUser Current user for permission checks
+	 * @param Spreadsheet   $spreadsheet The spreadsheet to populate
+	 * @param ExportRequest $request     The register, schema, filters and user of this sheet
 	 *
 	 * @return void
 	 */
-	private function populateSheet(
-		Spreadsheet $spreadsheet,
-		?Register $register = null,
-		?Schema $schema = null,
-		array $filters = [],
-		?IUser $currentUser = null,
-	): void {
+	private function populateSheet(Spreadsheet $spreadsheet, ExportRequest $request): void {
 		// Capture register context so getHeaders / getObjectValue can
 		// emit / read per-language `field_lang` columns for translatable
 		// properties (register-i18n Phase 3 wire-in).
-		$this->contextRegister = $register;
+		$this->contextRegister = $request->register;
 		$sheet = $spreadsheet->createSheet();
 
 		$sheetTitle = 'data';
-		if ($schema !== null) {
-			$sheetTitle = $schema->getSlug();
+		if ($request->schema !== null) {
+			$sheetTitle = $request->schema->getSlug();
 		}
 
 		$sheet->setTitle($sheetTitle);
 
-		$headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
-		$row = 1;
-
-		// Set headers.
+		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {
-			$sheet->setCellValue(coordinate: $col . $row, value: $header);
+			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
 		}
 
-		$row++;
+		$objects = $this->fetchObjectsForExport(request: $request);
 
-		// Query all matching objects.
-		$objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
-
-		// Identify which headers are name-companion columns (prefixed with _).
-		$nameColumns = $this->identifyNameCompanionColumns(headers: $headers);
-
-		// Bulk resolve UUIDs to names if there are relation columns.
-		$uuidToNameMap = $this->resolveUuidNameMap(objects: $objects, nameColumns: $nameColumns);
-
-		// Populate the sheet with data and resolved names.
-		$this->writeObjectRows(
-			sheet: $sheet,
-			objects: $objects,
-			headers: $headers,
-			nameColumns: $nameColumns,
-			uuidToNameMap: $uuidToNameMap,
-			startRow: $row
-		);
+		$this->writeObjectRows(sheet: $sheet, table: $this->exportTable(headers: $headers, objects: $objects));
 	}//end populateSheet()
 
 	/**
@@ -773,9 +976,7 @@ class ExportService implements ObjectExporterInterface {
 	 * have to name a guess. Every other format counts off its own
 	 * bytes, which is one query cheaper and cannot drift from the file.
 	 *
-	 * @param RegisterInterface|null $register Optional register to export.
-	 * @param SchemaInterface|null   $schema   Optional schema to export.
-	 * @param array         $filters  Optional filters to apply.
+	 * @param ObjectExportRequest $request The register, schema and filters to count; the user is not used.
 	 *
 	 * @return int The object count this export would write.
 	 *
@@ -783,11 +984,8 @@ class ExportService implements ObjectExporterInterface {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function countExportRows(?RegisterInterface $register = null, ?SchemaInterface $schema = null, array $filters = []): int {
-		$register = StoredEntity::register(register: $register);
-		$schema   = StoredEntity::schema(schema: $schema);
-
-		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
+	public function countExportRows(ObjectExportRequest $request): int {
+		return count($this->fetchObjectsForExport(request: ExportRequest::fromContract(request: $request)));
 	}//end countExportRows()
 
 	/**
@@ -797,16 +995,14 @@ class ExportService implements ObjectExporterInterface {
 	 * entities rather than a written file. Selection stays here: one place
 	 * decides what an export sees, and RBAC and multi-tenancy are applied in it.
 	 *
-	 * @param Register|null $register Optional register to export.
-	 * @param Schema|null   $schema   Optional schema to export.
-	 * @param array         $filters  Optional filters to apply.
+	 * @param ExportRequest $request The register, schema and filters to select by.
 	 *
 	 * @return ObjectEntity[] The objects this export would write.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
-		return $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+	public function fetchExportObjects(ExportRequest $request): array {
+		return $this->fetchObjectsForExport(request: $request);
 	}//end fetchExportObjects()
 
 	/**
@@ -815,13 +1011,75 @@ class ExportService implements ObjectExporterInterface {
 	 * Builds the query with RBAC, multi-tenancy and metadata filters, then returns
 	 * the full result set (high limit, no pagination).
 	 *
-	 * @param Register|null $register Optional register to filter by.
-	 * @param Schema|null $schema Optional schema to filter by.
-	 * @param array $filters Additional filters from the request.
+	 * @param ExportRequest $request The register, schema and request filters to select by.
 	 *
 	 * @return ObjectEntity[] Array of matching object entities.
 	 */
-	private function fetchObjectsForExport(?Register $register, ?Schema $schema, array $filters): array {
+	private function fetchObjectsForExport(ExportRequest $request): array {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		$page      = $request->page();
+		if ($page !== null) {
+			// A bounded export (design D-4) reads one page of the same selection.
+			$query['_limit']  = $page->size;
+			$query['_offset'] = (($page->number - 1) * $page->size);
+		}
+
+		$search = fn (): array => $this->objectService->searchObjects(
+			query: $query,
+			_rbac: true,
+			// Apply RBAC filtering.
+			_multitenancy: $selection['multitenancy'],
+			// Apply multi-tenancy filtering (respects explicit _multi parameter).
+			ids: $selection['ids'],
+			uses: null
+		);
+
+		if ($this->processAudit === null) {
+			return $search();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'export', runId: Uuid::v4()->toRfc4122()), operation: $search);
+	}//end fetchObjectsForExport()
+
+	/**
+	 * How many objects the export's selection holds over all its pages.
+	 *
+	 * The same selection {@see fetchObjectsForExport()} reads, under the same
+	 * RBAC and multi-tenancy, counted rather than read, so a paged export can
+	 * say how many rows and pages there are without loading them.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return int The number of matching objects.
+	 *
+	 * @spec openspec/changes/export-open-formats-and-public-download/specs/data-import-export/spec.md
+	 */
+	public function countExportTotal(ExportRequest $request): int {
+		$selection = $this->exportSelection(request: $request);
+		$query     = $selection['query'];
+		unset($query['_limit'], $query['_offset']);
+
+		return $this->objectService->countSearchObjects(
+			query: $query,
+			_rbac: true,
+			_multitenancy: $selection['multitenancy'],
+			ids: $selection['ids'],
+			uses: null
+		);
+	}//end countExportTotal()
+
+	/**
+	 * The search an export runs: the query, the multi-tenancy flag and the selected ids.
+	 *
+	 * @param ExportRequest $request The register, schema, filters and user of the export.
+	 *
+	 * @return array{query: array<string, mixed>, multitenancy: bool, ids: array<int, string>|null}
+	 */
+	private function exportSelection(ExportRequest $request): array {
+		$register = $request->register;
+		$schema   = $request->schema;
+		$filters  = $request->filters;
 		// Build filters for MagicMapper->findAll() method.
 		$objectFilters = [];
 
@@ -833,44 +1091,18 @@ class ExportService implements ObjectExporterInterface {
 			$objectFilters['schema'] = $schema->getId();
 		}
 
-		// Apply additional filters. A property filter narrows the export as it
-		// narrows the list it came from; it used to be skipped, so a filtered
-		// list exported every row the caller could read (openregister#4088).
-		// The route's own parameters and `_`-prefixed controls are not filters.
-		$propertyFilters = [];
-		foreach ($filters as $key => $value) {
-			$key = (string) $key;
-			if (str_starts_with($key, '@self.') === false) {
-				if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
-					&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
-				) {
-					$propertyFilters[$key] = $value;
-				}
+		[$metaFilters, $propertyFilters] = self::splitFilters(filters: $filters);
+		// A metadata filter is applied after the register and schema, as it always was.
+		$objectFilters = array_replace($objectFilters, $metaFilters);
 
-				continue;
-			}
+		// `_multi` may narrow an export to the organisation for anyone, but only
+		// an administrator may lift the organisation boundary with it.
+		$isAdmin = $this->isUserAdmin(user: $request->currentUser);
+		$multitenancy = (self::requestedMultitenancy(filters: $filters) === true || $isAdmin === false);
+		$multiExplicitlySet = (isset($filters['_multi']) || isset($filters['multi']))
+			&& ($isAdmin === true || self::requestedMultitenancy(filters: $filters) === true);
 
-			// Metadata filter - remove @self. prefix.
-			$metaField = substr($key, 6);
-			$objectFilters[$metaField] = $value;
-		}
-
-		// Check if multitenancy was explicitly requested via _multi parameter.
-		$multiExplicitlySet = isset($filters['_multi']) || isset($filters['multi']);
-		$multitenancy = true;
-		if (isset($filters['_multi']) === true) {
-			$multitenancy = filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
-		} elseif (isset($filters['multi']) === true) {
-			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
-		}
-
-		// `_ids` (a list or a comma-separated string) narrows the export to the
-		// selected objects; RBAC and multitenancy still apply to each.
-		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
-		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
-		if ($selectedIds === []) {
-			$selectedIds = null;
-		}
+		$selectedIds = self::selectedIds(filters: $filters);
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// An export needs every row, so it asks for no limit: a number would be
@@ -883,17 +1115,79 @@ class ExportService implements ObjectExporterInterface {
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;
 
-		return $this->objectService->searchObjects(
-			query: $query,
-			_rbac: true,
-			// Apply RBAC filtering.
-			_multitenancy: $multitenancy,
-			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selectedIds,
-			uses: null
-		);
-	}//end fetchObjectsForExport()
+		return ['query' => $query, 'multitenancy' => $multitenancy, 'ids' => $selectedIds];
+	}//end exportSelection()
 
+	/**
+	 * The ids an export is narrowed to, or null for no narrowing.
+	 *
+	 * `_ids` (a list or a comma-separated string) narrows the export to the
+	 * selected objects; RBAC and multitenancy still apply to each.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array<int, string>|null The ids, or null.
+	 */
+	private static function selectedIds(array $filters): ?array {
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			return null;
+		}
+
+		return $selectedIds;
+	}//end selectedIds()
+
+	/**
+	 * The request filters split into `@self` metadata filters and property filters.
+	 *
+	 * A property filter narrows the export as it narrows the list it came from;
+	 * it used to be skipped, so a filtered list exported every row the caller
+	 * could read (openregister#4088). The route's own parameters and
+	 * `_`-prefixed controls are not filters.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The metadata filters (without `@self.`), and the property filters.
+	 */
+	private static function splitFilters(array $filters): array {
+		$metaFilters     = [];
+		$propertyFilters = [];
+		foreach ($filters as $key => $value) {
+			$key = (string) $key;
+			if (str_starts_with($key, '@self.') === true) {
+				$metaFilters[substr($key, 6)] = $value;
+				continue;
+			}
+
+			if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
+				&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
+			) {
+				$propertyFilters[$key] = $value;
+			}
+		}
+
+		return [$metaFilters, $propertyFilters];
+	}//end splitFilters()
+
+	/**
+	 * The multitenancy an export's filters ask for: `_multi`, else `multi`, else on.
+	 *
+	 * @param array<string, mixed> $filters The export filters.
+	 *
+	 * @return bool
+	 */
+	private static function requestedMultitenancy(array $filters): bool {
+		if (isset($filters['_multi']) === true) {
+			return filter_var($filters['_multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		if (isset($filters['multi']) === true) {
+			return filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
+		}
+
+		return true;
+	}//end requestedMultitenancy()
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).
@@ -970,42 +1264,59 @@ class ExportService implements ObjectExporterInterface {
 	}//end resolveUuidNameMap()
 
 	/**
-	 * Write object data rows to the spreadsheet.
+	 * The table of one section: its objects, columns and resolved relation names.
+	 *
+	 * @param array          $headers Header map keyed by column letter.
+	 * @param ObjectEntity[] $objects The objects of the section.
+	 *
+	 * @return ExportTable
+	 */
+	private function exportTable(array $headers, array $objects): ExportTable {
+		$nameColumns = $this->identifyNameCompanionColumns(headers: $headers);
+
+		return new ExportTable(
+			objects: $objects,
+			headers: $headers,
+			nameColumns: $nameColumns,
+			uuidToNameMap: $this->resolveUuidNameMap(objects: $objects, nameColumns: $nameColumns)
+		);
+	}//end exportTable()
+
+	/**
+	 * The cell values of one object's row keyed by column letter; companion name columns carry resolved names.
+	 *
+	 * @param ExportTable  $table  The section table.
+	 * @param ObjectEntity $object The object of this row.
+	 *
+	 * @return array<string, string|null>
+	 */
+	private function rowValues(ExportTable $table, ObjectEntity $object): array {
+		$objectData = $object->getObject();
+		$values = [];
+		foreach ($table->headers as $col => $header) {
+			$values[$col] = $this->getObjectValue(object: $object, header: $header);
+			if (isset($table->nameColumns[$col]) === true) {
+				$rawValue = $objectData[$table->nameColumns[$col]] ?? null;
+				$values[$col] = $this->resolveUuidsToNames(value: $rawValue, uuidToNameMap: $table->uuidToNameMap);
+			}
+		}
+
+		return $values;
+	}//end rowValues()
+
+	/**
+	 * Write object data rows to the spreadsheet, starting below the header row.
 	 *
 	 * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet The worksheet to populate.
-	 * @param ObjectEntity[] $objects The objects to write.
-	 * @param array $headers Header map keyed by column letter.
-	 * @param array $nameColumns Map of companion name columns.
-	 * @param array $uuidToNameMap Map of UUID to human-readable name.
-	 * @param int $startRow The first data row number.
+	 * @param ExportTable $table The section table.
 	 *
 	 * @return void
 	 */
-	private function writeObjectRows(
-		$sheet,
-		array $objects,
-		array $headers,
-		array $nameColumns,
-		array $uuidToNameMap,
-		int $startRow,
-	): void {
-		$row = $startRow;
-
-		foreach ($objects as $object) {
-			$objectData = $object->getObject();
-
-			foreach ($headers as $col => $header) {
-				$value = $this->getObjectValue(object: $object, header: $header);
-				$sheet->setCellValue(coordinate: $col . $row, value: $value);
-				if (isset($nameColumns[$col]) === true) {
-					// This is a companion name column — resolve UUIDs to names.
-					$sourceProperty = $nameColumns[$col];
-					$value = $objectData[$sourceProperty] ?? null;
-					$sheet->setCellValue(
-						coordinate: $col . $row,
-						value: $this->resolveUuidsToNames(value: $value, uuidToNameMap: $uuidToNameMap)
-					);
-				}
+	private function writeObjectRows($sheet, ExportTable $table): void {
+		$row = self::FIRST_DATA_ROW;
+		foreach ($table->objects as $object) {
+			foreach ($this->rowValues(table: $table, object: $object) as $col => $value) {
+				SpreadsheetCell::set(sheet: $sheet, coordinate: $col . $row, value: $value);
 			}
 
 			$row++;
@@ -1073,11 +1384,7 @@ class ExportService implements ObjectExporterInterface {
 				// Skip properties restricted by authorization rules the current user doesn't satisfy.
 				// Uses PropertyRbacHandler (the single source of truth for property-level RBAC).
 				// Empty object array causes conditional match rules to fail-closed (safe default for headers).
-				if ($this->propertyRbacHandler->canReadProperty(
-					schema: $schema,
-					property: $fieldName,
-					object: []
-				) === false
+				if ($this->propertyRbacHandler->canReadProperty(property: new SchemaProperty(schema: $schema, name: $fieldName), request: new PropertyAccessRequest(object: [])) === false
 				) {
 					continue;
 				}
@@ -1274,6 +1581,10 @@ class ExportService implements ObjectExporterInterface {
 			return null;
 		}
 
+		if (is_bool($value) === true) {
+			return var_export($value, true);
+		}
+
 		if (is_scalar($value) === true) {
 			return (string)$value;
 		}
@@ -1399,18 +1710,7 @@ class ExportService implements ObjectExporterInterface {
 			// Try to decode as JSON array first.
 			$decoded = json_decode($value, true);
 			if (is_array($decoded) === true) {
-				$names = array_map(
-					function ($item) use ($uuidToNameMap) {
-						if (is_string($item) === true) {
-							return $uuidToNameMap[$item] ?? $item;
-						}
-
-						return $this->convertValueToString(value: $item);
-					},
-					$decoded
-				);
-
-				return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+				return $this->namesOfList(items: $decoded, uuidToNameMap: $uuidToNameMap);
 			}
 
 			// Single UUID string → single name.
@@ -1418,22 +1718,37 @@ class ExportService implements ObjectExporterInterface {
 		}//end if
 
 		if (is_array($value) === true) {
-			$names = array_map(
-				function ($item) use ($uuidToNameMap) {
-					if (is_string($item) === true) {
-						return $uuidToNameMap[$item] ?? $item;
-					}
-
-					return $this->convertValueToString(value: $item);
-				},
-				$value
-			);
-
-			return json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			return $this->namesOfList(items: $value, uuidToNameMap: $uuidToNameMap);
 		}
 
 		return $this->convertValueToString(value: $value);
 	}//end resolveUuidsToNames()
+
+	/**
+	 * A list of UUIDs as a JSON array of names; empty strings are dropped.
+	 *
+	 * @param array $items         The UUIDs and other values.
+	 * @param array $uuidToNameMap Map of UUID to name.
+	 *
+	 * @return string The JSON array of names.
+	 */
+	private function namesOfList(array $items, array $uuidToNameMap): string {
+		$names = [];
+		foreach ($items as $item) {
+			if ($item === '') {
+				continue;
+			}
+
+			if (is_string($item) === true) {
+				$names[] = ($uuidToNameMap[$item] ?? $item);
+				continue;
+			}
+
+			$names[] = $this->convertValueToString(value: $item);
+		}
+
+		return (string)json_encode($names, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	}//end namesOfList()
 
 	/**
 	 * Get all schemas for a register

@@ -22,9 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * Where a bulk save reads its registers and schemas and writes its rows.
@@ -35,17 +33,13 @@ final class BulkSaveStores {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param MagicMapperInterface    $objectEntityMapper Mapper for object entity database operations
-	 * @param SchemaMapperInterface   $schemaMapper       Mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper     Mapper for register operations
-	 * @param SaveObjectInterface     $saveHandler        Handler for individual object operations
+	 * @param SchemaCatalogInterface $catalog     The register, schema and object table stores
+	 * @param SaveObjectInterface    $saveHandler Handler for individual object operations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly MagicMapperInterface $objectEntityMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly RegisterMapperInterface $registerMapper,
+		public readonly SchemaCatalogInterface $catalog,
 		public readonly SaveObjectInterface $saveHandler,
 	) {
 	}//end __construct()

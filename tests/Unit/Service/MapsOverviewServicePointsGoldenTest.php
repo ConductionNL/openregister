@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\MapMarkerSource;
@@ -30,11 +31,19 @@ use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\MapOverview;
 
 /**
- * Allowed and refused outcomes of queryPoints / registerOverview.
+ * Allowed and refused outcomes of queryPoints / declareOverview.
  *
  * @covers \OCA\OpenRegister\Search\Service\MapsOverviewService
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder
+ * @uses \OCA\OpenRegister\Search\Service\MapMarkerSource
+ * @uses \OCA\OpenRegister\Search\Service\MapsOverviewSources
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Search\Service\MapOverview
  */
 final class MapsOverviewServicePointsGoldenTest extends TestCase {
 
@@ -76,8 +85,7 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 
 		return new MapsOverviewService(
 			new MapsOverviewSources($objects, new GeoFeatureCollectionBuilder(), new IntegrationRegistry($this->createMock(LoggerInterface::class))),
-			$session,
-			$groups
+			new CallerContext($session, $groups)
 		);
 	}//end service()
 
@@ -162,10 +170,10 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource('', 's')),
 			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource('r', '')),
 			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource(0, 0)),
-			fn (MapsOverviewService $s) => $s->registerOverview('  ', new MapMarkerSource('r', 's')),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource('', 's')),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource('r', '')),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource(0, 0))['id'],
+			fn (MapsOverviewService $s) => $s->declareOverview(new MapOverview('  ', new MapMarkerSource('r', 's'))),
+			fn (MapsOverviewService $s) => $s->declareOverview(new MapOverview('k', new MapMarkerSource('', 's'))),
+			fn (MapsOverviewService $s) => $s->declareOverview(new MapOverview('k', new MapMarkerSource('r', ''))),
+			fn (MapsOverviewService $s) => $s->declareOverview(new MapOverview('k', new MapMarkerSource(0, 0)))['id'],
 		];
 		foreach ($calls as $call) {
 			try {

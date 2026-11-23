@@ -145,6 +145,17 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 		$this->groupManager = $tenancy->groupManager;
 
 		// Initialize distributed cache for invalidation on write operations.
+		$this->initialiseCache(cacheFactory: $cacheFactory);
+	}//end __construct()
+
+	/**
+	 * Build the distributed cache the write paths invalidate; without one, log and go on uncached.
+	 *
+	 * @param ICacheFactory $cacheFactory The cache factory.
+	 *
+	 * @return void
+	 */
+	private function initialiseCache(ICacheFactory $cacheFactory): void {
 		try {
 			$this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
 		} catch (\Exception $e) {
@@ -153,7 +164,7 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 				context: ['error' => $e->getMessage()]
 			);
 		}
-	}//end __construct()
+	}//end initialiseCache()
 
 	/**
 	 * Find all mappings
@@ -374,15 +385,7 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 
 		// Set version if not provided (auto-increment patch version).
 		if (isset($data['version']) === false || empty($data['version']) === true) {
-			$currentVersion = $mapping->getVersion();
-			$data['version'] = '0.0.1';
-			if (empty($currentVersion) === false) {
-				$version = explode('.', $currentVersion);
-				if (isset($version[2]) === true) {
-					$version[2] = (int)$version[2] + 1;
-					$data['version'] = implode('.', $version);
-				}
-			}
+			$data['version'] = $this->nextPatchVersion(currentVersion: $mapping->getVersion());
 		}
 
 		// Update timestamp.
@@ -402,6 +405,28 @@ class MappingMapper extends QBMapper implements MappingMapperInterface {
 
 		return $mapping;
 	}//end updateFromArray()
+
+	/**
+	 * The version after a patch bump: the third part plus one, or 0.0.1 when there is none.
+	 *
+	 * @param string|null $currentVersion The stored version.
+	 *
+	 * @return string The next version.
+	 */
+	private function nextPatchVersion(?string $currentVersion): string {
+		if (empty($currentVersion) === true) {
+			return '0.0.1';
+		}
+
+		$version = explode('.', $currentVersion);
+		if (isset($version[2]) === false) {
+			return '0.0.1';
+		}
+
+		$version[2] = (int)$version[2] + 1;
+
+		return implode('.', $version);
+	}//end nextPatchVersion()
 
 	/**
 	 * Delete a mapping

@@ -135,6 +135,11 @@ interface PermissionCatalogueInterface {
 		// a read asks for it (ExplicitReveal). A flag, like `audit` above;
 		// Schema::validateRevealValue() checks its value.
 		ExplicitReveal::KEY,
+		// `onUndecidable: closed|open` says what an access question that
+		// cannot be decided means (UndecidablePosture). A setting, not a verb:
+		// read as a verb the narrower and the catalogue would treat it as a
+		// grantable action. AuthorizationControlKeys checks its value.
+		UndecidablePosture::KEY,
 	];
 
 	/**
@@ -213,14 +218,12 @@ interface PermissionCatalogueInterface {
 	/**
 	 * Refuse a block or a role set naming a verb nobody declared.
 	 *
-	 * @param array|null $authorization   The block as written.
-	 * @param mixed      $roleDefinitions The register's role definitions, when there are any.
-	 * @param string     $subject         What this belongs to, for the message.
+	 * @param GrantDeclaration $declaration The block and role definitions as written, and what they belong to.
 	 *
 	 * @return void
 	 * @throws AuthorizationBlockException When a verb is not in the catalogue.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function assertGrantable(?array $authorization, mixed $roleDefinitions, string $subject): void;
+	public function assertGrantable(GrantDeclaration $declaration): void;
 }//end interface

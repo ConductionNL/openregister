@@ -76,15 +76,8 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function indexShared(array $registerSchemas): array {
-		$index = [];
-		foreach ($registerSchemas as $registerId => $schemaIds) {
-			foreach ($this->normaliseIds(candidates: $schemaIds) as $schemaId) {
-				$index[$schemaId][(int)$registerId] = true;
-			}
-		}
-
 		$shared = [];
-		foreach ($index as $schemaId => $registerIds) {
+		foreach ($this->referencingRegisters(registerSchemas: $registerSchemas) as $schemaId => $registerIds) {
 			if (count($registerIds) < 2) {
 				continue;
 			}
@@ -98,6 +91,24 @@ class SchemaAttribution {
 
 		return $shared;
 	}//end indexShared()
+
+	/**
+	 * Which registers reference each schema id, after normalising the ids.
+	 *
+	 * @param array<int, mixed> $registerSchemas registerId => stored schema id list.
+	 *
+	 * @return array<int, array<int, true>> schemaId => a set of the register ids referencing it.
+	 */
+	private function referencingRegisters(array $registerSchemas): array {
+		$index = [];
+		foreach ($registerSchemas as $registerId => $schemaIds) {
+			foreach ($this->normaliseIds(candidates: $schemaIds) as $schemaId) {
+				$index[$schemaId][(int)$registerId] = true;
+			}
+		}
+
+		return $index;
+	}//end referencingRegisters()
 
 	/**
 	 * Reduce a schema definition to the shape attribution compares on.
@@ -118,6 +129,20 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function signature(array $definition): array {
+		return [
+			'properties' => self::propertyNames(definition: $definition),
+			'required' => self::requiredFields(definition: $definition),
+		];
+	}//end signature()
+
+	/**
+	 * The definition's property names, lower-cased, unique and sorted.
+	 *
+	 * @param array<string, mixed> $definition A schema definition or a serialised entity.
+	 *
+	 * @return string[] The names.
+	 */
+	private static function propertyNames(array $definition): array {
 		$properties = ($definition['properties'] ?? []);
 		$names      = [];
 		if (is_array($properties) === true) {
@@ -126,9 +151,17 @@ class SchemaAttribution {
 			}
 		}
 
-		$names = array_values(array_unique($names));
-		sort($names);
+		return self::sortedUnique(values: $names);
+	}//end propertyNames()
 
+	/**
+	 * The definition's scalar required fields, lower-cased, unique and sorted.
+	 *
+	 * @param array<string, mixed> $definition A schema definition or a serialised entity.
+	 *
+	 * @return string[] The fields.
+	 */
+	private static function requiredFields(array $definition): array {
 		$required = ($definition['required'] ?? []);
 		$fields   = [];
 		if (is_array($required) === true) {
@@ -139,11 +172,22 @@ class SchemaAttribution {
 			}
 		}
 
-		$fields = array_values(array_unique($fields));
-		sort($fields);
+		return self::sortedUnique(values: $fields);
+	}//end requiredFields()
 
-		return ['properties' => $names, 'required' => $fields];
-	}//end signature()
+	/**
+	 * The values without duplicates, sorted.
+	 *
+	 * @param string[] $values The values.
+	 *
+	 * @return string[] The unique values in order.
+	 */
+	private static function sortedUnique(array $values): array {
+		$unique = array_values(array_unique($values));
+		sort($unique);
+
+		return $unique;
+	}//end sortedUnique()
 
 	/**
 	 * Decide which referencing register owns the current entity content.
@@ -158,21 +202,7 @@ class SchemaAttribution {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function classify(array $candidates, array $entity): array {
-		$target  = $this->signature(definition: $entity);
-		$matches = [];
-
-		foreach ($candidates as $registerId => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if ($this->signature(definition: $definition) === $target) {
-				$matches[] = (int)$registerId;
-			}
-		}
-
-		sort($matches);
-
+		$matches = $this->matchingRegisters(candidates: $candidates, target: $this->signature(definition: $entity));
 		if (count($matches) === 1) {
 			return ['status' => self::STATUS_ONE_MATCH, 'owner' => $matches[0], 'matches' => $matches];
 		}
@@ -183,6 +213,27 @@ class SchemaAttribution {
 
 		return ['status' => self::STATUS_MULTI_MATCH, 'owner' => null, 'matches' => $matches];
 	}//end classify()
+
+	/**
+	 * The registers whose definition has the target signature, sorted by id.
+	 *
+	 * @param array<int|string, mixed>                         $candidates Register id => that register's definition.
+	 * @param array{properties: string[], required: string[]} $target The signature to match.
+	 *
+	 * @return array<int, int> The matching register ids, ascending.
+	 */
+	private function matchingRegisters(array $candidates, array $target): array {
+		$matches = [];
+		foreach ($candidates as $registerId => $definition) {
+			if (is_array($definition) === true && $this->signature(definition: $definition) === $target) {
+				$matches[] = (int)$registerId;
+			}
+		}
+
+		sort($matches);
+
+		return $matches;
+	}//end matchingRegisters()
 
 	/**
 	 * Parse the repeatable `--keep` option.
@@ -233,17 +284,16 @@ class SchemaAttribution {
 	 * relink every referencing register onto a fresh entity for no reason, which
 	 * is a bigger change than the one the operator asked for.
 	 *
-	 * @param array<string, mixed> $verdict  The attribution verdict.
-	 * @param int               $schemaId    The shared schema id.
-	 * @param int[]             $registerIds The referencing registers.
-	 * @param array<string, mixed> $keep     The parsed overrides.
+	 * @param array<string, mixed> $verdict    The attribution verdict.
+	 * @param OwnerCandidates      $candidates The shared schema id, the referencing registers and the parsed overrides.
 	 *
 	 * @return array{owner: int|null, source: string} The resolved owner and where it came from.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function resolveOwner(array $verdict, int $schemaId, array $registerIds, array $keep): array {
-		$pinned = ($keep['perSchema'][$schemaId] ?? null);
+	public function resolveOwner(array $verdict, OwnerCandidates $candidates): array {
+		$registerIds = $candidates->registerIds;
+		$pinned      = ($candidates->keep['perSchema'][$candidates->schemaId] ?? null);
 		if ($pinned !== null && in_array($pinned, $registerIds, true) === true) {
 			return ['owner' => $pinned, 'source' => 'keep'];
 		}
@@ -252,7 +302,7 @@ class SchemaAttribution {
 			return ['owner' => $verdict['owner'], 'source' => 'configuration'];
 		}
 
-		$fallback = ($keep['global'] ?? null);
+		$fallback = ($candidates->keep['global'] ?? null);
 		if ($fallback !== null && in_array($fallback, $registerIds, true) === true) {
 			return ['owner' => $fallback, 'source' => 'keep-global'];
 		}
@@ -269,18 +319,17 @@ class SchemaAttribution {
 	 * loss rather than cleanup.
 	 *
 	 * @param array<int, mixed> $schemas The stored schemas list.
-	 * @param int               $oldId   The id to replace.
-	 * @param int               $newId   The id to put in its place.
+	 * @param SchemaIdSwap      $swap    The id to replace and the id to put in its place.
 	 *
 	 * @return array<int, mixed> The rewritten list.
 	 *
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
-	public function replaceSchemaId(array $schemas, int $oldId, int $newId): array {
+	public function replaceSchemaId(array $schemas, SchemaIdSwap $swap): array {
 		$result = [];
 		foreach ($schemas as $entry) {
-			if (is_numeric($entry) === true && (int)$entry === $oldId) {
-				$result[] = $newId;
+			if (is_numeric($entry) === true && (int)$entry === $swap->oldId) {
+				$result[] = $swap->newId;
 				continue;
 			}
 

@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -87,20 +86,32 @@ abstract class AbstractRetentionJob extends TimedJob {
 	protected const LOG_FAILED = '';
 
 	/**
+	 * AppConfig, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger, taken from the ConfiguredJobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory    $time      Time factory required by parent.
-	 * @param IAppConfig      $appConfig App-config reader.
-	 * @param LoggerInterface $logger    Logger.
+	 * @param ConfiguredJobRuntime $runtime The job runtime: scheduler clock and run log.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		ConfiguredJobRuntime $runtime,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		$this->appConfig = $runtime->appConfig;
+		parent::__construct(time: $runtime->time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 	}//end __construct()
 

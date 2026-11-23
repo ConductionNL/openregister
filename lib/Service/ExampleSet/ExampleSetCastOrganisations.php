@@ -57,19 +57,33 @@ final class ExampleSetCastOrganisations {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
 	public function entities(array $declared, string $file, array $people=[]): array {
-		$accounts      = $this->accountsByKey(people: $people);
+		return $this->organisations(run: new CastOrganisationsRun(file: $file, accounts: $this->accountsByKey(people: $people)), declared: $declared);
+	}//end entities()
+
+	/**
+	 * Each declared organisation as the plan holds it.
+	 *
+	 * @param CastOrganisationsRun $run      The cast file and each cast person's account, by key.
+	 * @param array<int, mixed>    $declared The declared organisations.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws ExampleSetException When an organisation lacks a key, name or slug, or one of its quotas or members is
+	 *                             refused.
+	 */
+	private function organisations(CastOrganisationsRun $run, array $declared): array {
 		$organisations = [];
 		foreach ($declared as $index => $organisation) {
 			$organisation = (array) $organisation;
 			if ($this->keyOf(entry: $organisation) === '' || (string) ($organisation['name'] ?? '') === '' || (string) ($organisation['slug'] ?? '') === '') {
-				throw new ExampleSetException($file.': OpenRegister organisation '.$index.' needs a key, a name and a slug.');
+				throw new ExampleSetException($run->file.': OpenRegister organisation '.$index.' needs a key, a name and a slug.');
 			}
 
-			$organisations[] = $this->organisationEntity(organisation: $organisation, file: $file, accounts: $accounts);
+			$organisations[] = $this->organisationEntity(run: $run, organisation: $organisation);
 		}
 
 		return $organisations;
-	}//end entities()
+	}//end organisations()
 
 	/**
 	 * Each cast person's account, by key.
@@ -91,9 +105,8 @@ final class ExampleSetCastOrganisations {
 	/**
 	 * One declared organisation, with a key, a name and a slug, as the plan holds it.
 	 *
-	 * @param array<string, mixed>  $organisation The declared organisation.
-	 * @param string                $file         The cast file, for messages.
-	 * @param array<string, string> $accounts     Each cast person's account, by key.
+	 * @param CastOrganisationsRun $run          The cast file and each cast person's account, by key.
+	 * @param array<string, mixed> $organisation The declared organisation.
 	 *
 	 * @return array{
 	 *     key: string, name: string, slug: string, description: string, type: string, contactEmail: string,
@@ -102,17 +115,16 @@ final class ExampleSetCastOrganisations {
 	 *
 	 * @throws ExampleSetException When a quota is not a whole number or a member is not a cast person with an account.
 	 */
-	private function organisationEntity(array $organisation, string $file, array $accounts): array {
-		$slug = (string) $organisation['slug'];
+	private function organisationEntity(CastOrganisationsRun $run, array $organisation): array {
 		return [
 			'key'          => $this->keyOf(entry: $organisation),
 			'name'         => (string) $organisation['name'],
-			'slug'         => $slug,
+			'slug'         => (string) $organisation['slug'],
 			'description'  => (string) ($organisation['description'] ?? ''),
 			'type'         => (string) ($organisation['type'] ?? ''),
 			'contactEmail' => (string) ($organisation['contactEmail'] ?? ''),
-			'quota'        => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: $slug),
-			'members'      => $this->organisationMembers(declared: ($organisation['members'] ?? []), accounts: $accounts, file: $file, slug: $slug),
+			'quota'        => $this->organisationQuota(run: $run, organisation: $organisation),
+			'members'      => $this->organisationMembers(run: $run, organisation: $organisation),
 		];
 	}//end organisationEntity()
 
@@ -121,21 +133,20 @@ final class ExampleSetCastOrganisations {
 	 * users and objects, each a whole number, and objectsSchema, the slug of the
 	 * schema the object quota counts.
 	 *
-	 * @param mixed  $declared The declared quota.
-	 * @param string $file     The cast file, for messages.
-	 * @param string $slug     The organisation's slug, for messages.
+	 * @param CastOrganisationsRun $run          The cast file, for messages.
+	 * @param array<string, mixed> $organisation The declared organisation: its `quota`, and its slug for messages.
 	 *
 	 * @return array<string, int|string>
 	 *
 	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
 	 */
-	private function organisationQuota(mixed $declared, string $file, string $slug): array {
+	private function organisationQuota(CastOrganisationsRun $run, array $organisation): array {
 		$quota = [];
-		foreach ((array) $declared as $key => $value) {
+		foreach ((array) ($organisation['quota'] ?? []) as $key => $value) {
 			if ($this->isQuota(key: $key, value: $value) === false) {
 				throw new ExampleSetException(
-					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
-					.' with a whole number, or objectsSchema with a schema slug.'
+					$run->file.': OpenRegister organisation "'.(string) $organisation['slug'].'": quota "'.$key
+					.'" must be storage, requests, bandwidth, users or objects with a whole number, or objectsSchema with a schema slug.'
 				);
 			}
 
@@ -177,23 +188,26 @@ final class ExampleSetCastOrganisations {
 	/**
 	 * The accounts of an organisation's declared members, which are cast people's keys.
 	 *
-	 * @param mixed                 $declared The declared member keys.
-	 * @param array<string, string> $accounts Each cast person's account, by key.
-	 * @param string                $file     The cast file, for messages.
-	 * @param string                $slug     The organisation's slug, for messages.
+	 * @param CastOrganisationsRun $run          The cast file, for messages, and each cast person's account, by key.
+	 * @param array<string, mixed> $organisation The declared organisation: its `members` (cast people's keys), and its
+	 *                                           slug for messages.
 	 *
 	 * @return array<int, string>
 	 *
 	 * @throws ExampleSetException When a member is not a cast person with an account.
 	 */
-	private function organisationMembers(mixed $declared, array $accounts, string $file, string $slug): array {
+	private function organisationMembers(CastOrganisationsRun $run, array $organisation): array {
 		$members = [];
-		foreach ((array) $declared as $key) {
-			if (($accounts[(string) $key] ?? '') === '') {
-				throw new ExampleSetException($file.': OpenRegister organisation "'.$slug.'": member "'.$key.'" is not a cast person with an account.');
+		foreach ((array) ($organisation['members'] ?? []) as $key) {
+			$account = ($run->accounts[(string) $key] ?? '');
+			if ($account === '') {
+				throw new ExampleSetException(
+					$run->file.': OpenRegister organisation "'.(string) $organisation['slug'].'": member "'.$key
+					.'" is not a cast person with an account.'
+				);
 			}
 
-			$members[] = $accounts[(string) $key];
+			$members[] = $account;
 		}
 
 		return $members;

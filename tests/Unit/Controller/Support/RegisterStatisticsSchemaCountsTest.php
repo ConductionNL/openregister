@@ -29,11 +29,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\MigrationPackDefinitionsInterface;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
@@ -75,19 +76,21 @@ class RegisterStatisticsSchemaCountsTest extends TestCase {
 		return new RegisterStatistics(
 			new RegistersControllerServices(
 				mappers: new RegisterMappers(
-					registerMapper: $this->createMock(RegisterMapper::class),
-					schemaMapper: $this->schemas,
+					catalog: new SchemaCatalog(
+						registers: $this->createMock(RegisterMapper::class),
+						schemas: $this->schemas,
+						tables: $this->createMock(MagicMapper::class),
+					),
 					auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-					objectEntityMapper: $this->createMock(MagicMapper::class),
 				),
 				registers: new RegisterServices(
 					registerService: $this->registerService,
 					registerCacheHandler: $this->createMock(RegisterCacheHandler::class),
 					registerSerializer: new RegisterSerializer($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)),
-					migrationPackService: $this->createMock(MigrationPackService::class),
+					migrationPacks: $this->createMock(MigrationPackDefinitionsInterface::class),
 				),
 				integrations: new RegisterIntegrations(
-					configurationService: $this->createMock(ConfigurationService::class),
+					bundles: $this->createMock(RegisterBundlesInterface::class),
 					githubService: $this->createMock(GitHubClientInterface::class),
 					oasService: $this->createMock(OasService::class),
 					container: $this->createMock(ContainerInterface::class),

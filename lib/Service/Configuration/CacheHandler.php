@@ -57,33 +57,6 @@ class CacheHandler {
 	private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
 	/**
-	 * Session interface for storing cached data
-	 *
-	 * Used to store and retrieve cached configurations from user session.
-	 *
-	 * @var ISession Session instance
-	 */
-	private readonly ISession $session;
-
-	/**
-	 * Configuration mapper for database queries
-	 *
-	 * Used to fetch configurations from database on cache miss.
-	 *
-	 * @var ConfigurationMapperInterface Configuration mapper instance
-	 */
-	private readonly ConfigurationMapperInterface $configurationMapper;
-
-	/**
-	 * Organisation service for getting active organisation
-	 *
-	 * Used to determine which organisation's configurations to cache.
-	 *
-	 * @var OrganisationServiceInterface Organisation service instance
-	 */
-	private readonly OrganisationServiceInterface $organisationService;
-
-	/**
 	 * CacheHandler constructor
 	 *
 	 * @param ISession $session Session for caching
@@ -91,13 +64,10 @@ class CacheHandler {
 	 * @param OrganisationServiceInterface $organisationService Organisation service
 	 */
 	public function __construct(
-		ISession $session,
-		ConfigurationMapperInterface $configurationMapper,
-		OrganisationServiceInterface $organisationService,
+		private readonly ISession $session,
+		private readonly ConfigurationMapperInterface $configurationMapper,
+		private readonly OrganisationServiceInterface $organisationService,
 	) {
-		$this->session = $session;
-		$this->configurationMapper = $configurationMapper;
-		$this->organisationService = $organisationService;
 	}//end __construct()
 
 	/**
@@ -126,15 +96,18 @@ class CacheHandler {
 
 		// Step 3: Check if configurations are cached in session.
 		$cachedData = $this->session->get($sessionKey);
-		if ($cachedData !== null) {
-			// Configurations are cached - unserialize and return.
+		if (is_string($cachedData) === true) {
 			// SEC-SVC-10: restrict unserialize to the expected entity/value
 			// classes so a tampered session blob cannot instantiate arbitrary
 			// objects (PHP object injection).
-			return unserialize(
+			// NOSEMGREP: php.lang.security.unserialize-use.unserialize-use -- Only Configuration and DateTime may load; only a Configuration list is used.
+			$cached = unserialize(
 				$cachedData,
 				['allowed_classes' => [Configuration::class, \DateTime::class]]
 			);
+			if ($this->isConfigurationList(value: $cached) === true) {
+				return $cached;
+			}
 		}
 
 		// Step 4: Not cached - fetch configurations from database.
@@ -146,4 +119,25 @@ class CacheHandler {
 		// Step 6: Return fetched configurations.
 		return $configurations;
 	}//end getConfigurationsForActiveOrganisation()
+
+	/**
+	 * Whether a value read back from the session is a list of configurations.
+	 *
+	 * @param mixed $value The unserialized value.
+	 *
+	 * @return bool True when it is an array holding only Configuration entities.
+	 */
+	private function isConfigurationList(mixed $value): bool {
+		if (is_array($value) === false) {
+			return false;
+		}
+
+		foreach ($value as $configuration) {
+			if ($configuration instanceof Configuration === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isConfigurationList()
 }//end class

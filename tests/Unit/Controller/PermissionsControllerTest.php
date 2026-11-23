@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\PermissionsController;
+use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\IAppConfig;
@@ -51,15 +52,20 @@ class PermissionsControllerTest extends TestCase {
 	 *
 	 * @return PermissionsController The controller under test.
 	 */
-	private function controllerFor(string $mode): PermissionsController {
+	private function controllerFor(string $mode, array $actions = []): PermissionsController {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($mode);
 
+		$catalogue = $this->createMock(originalClassName: \OCA\OpenRegister\Kernel\Contracts\Core\ActionRightsInterface::class);
+		$catalogue->method('actions')->willReturn($actions);
+
 		return new PermissionsController(
-			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
-			catalogue: new PermissionCatalogue(),
-			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
+			services: new PermissionsControllerServices(
+				catalogue: new PermissionCatalogue(),
+				enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger()),
+				actions: $catalogue
+			)
 		);
 	}//end controllerFor()
 
@@ -94,4 +100,25 @@ class PermissionsControllerTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 	}//end testTheCatalogueNeedsNoAdminGateToAnswer()
+
+	/**
+	 * The catalogue publishes the action rights alongside the object verbs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-powerful-steps-need-a-right/specs/flow-engine/spec.md#requirement-the-action-rights-are-administered-and-published
+	 */
+	public function testTheCatalogueListsTheActionRightsWithTheirNodeTypes(): void {
+		$action = [
+			'action' => 'flow.node.send-email',
+			'app' => 'openregister',
+			'description' => 'Put a step that sends e-mail in a flow.',
+			'nodeTypes' => ['openregister.send-email'],
+		];
+		$body = $this->controllerFor(mode: DenyEnforcementMode::MODE_STAGING, actions: [$action])->index();
+
+		$this->assertSame([$action], $body->getData()['actions']);
+		// Actions are a different kind of grant and stay out of `permissions`.
+		$this->assertNotContains('flow.node.send-email', array_column($body->getData()['permissions'], 'verb'));
+	}//end testTheCatalogueListsTheActionRightsWithTheirNodeTypes()
 }//end class

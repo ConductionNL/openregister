@@ -31,6 +31,7 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\QueryPage;
 
 /**
@@ -81,14 +82,13 @@ class AnonymisationLogMapper extends QBMapper {
 	 * Find log rows by Nextcloud file id.
 	 *
 	 * @param int $fileId The NC file id
-	 * @param int|null $limit Result limit
-	 * @param int|null $offset Result offset
+	 * @param ListQuery|null $query The page (limit and offset); null reads every row
 	 *
 	 * @return AnonymisationLog[]
 	 *
 	 * @psalm-return list<AnonymisationLog>
 	 */
-	public function findByFileId(int $fileId, ?int $limit = null, ?int $offset = null): array {
+	public function findByFileId(int $fileId, ?ListQuery $query = null): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -96,7 +96,7 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query?->limitOrNull(), offset: $query?->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByFileId()
@@ -105,14 +105,13 @@ class AnonymisationLogMapper extends QBMapper {
 	 * Find log rows by source object UUID.
 	 *
 	 * @param string $objectUuid Object UUID
-	 * @param int|null $limit Result limit
-	 * @param int|null $offset Result offset
+	 * @param ListQuery|null $query The page (limit and offset); null reads every row
 	 *
 	 * @return AnonymisationLog[]
 	 *
 	 * @psalm-return list<AnonymisationLog>
 	 */
-	public function findByObjectUuid(string $objectUuid, ?int $limit = null, ?int $offset = null): array {
+	public function findByObjectUuid(string $objectUuid, ?ListQuery $query = null): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -120,7 +119,7 @@ class AnonymisationLogMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->orderBy('created', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query?->limitOrNull(), offset: $query?->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()

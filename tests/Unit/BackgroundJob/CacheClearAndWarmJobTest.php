@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\RecordedJobRuntime;
 use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
@@ -48,8 +49,7 @@ class CacheClearAndWarmJobTest extends TestCase {
 		);
 
 		$job = new CacheClearAndWarmJob(
-			$this->createMock(ITimeFactory::class),
-			$this->createMock(JobRunRecorderInterface::class),
+			new RecordedJobRuntime($this->createMock(ITimeFactory::class), $this->createMock(JobRunRecorderInterface::class)),
 			$cache
 		);
 		(new ReflectionMethod(CacheClearAndWarmJob::class, 'runRecorded'))->invoke($job, null);

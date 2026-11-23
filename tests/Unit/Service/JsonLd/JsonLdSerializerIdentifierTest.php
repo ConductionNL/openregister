@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\JsonLd;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -28,6 +29,12 @@ use PHPUnit\Framework\TestCase;
  * Without a slug the register and schema are named by uuid, and without a uuid by id.
  *
  * @covers \OCA\OpenRegister\Service\JsonLd\JsonLdSerializer
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdContextService
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdRouteSlug
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdTarget
  */
 class JsonLdSerializerIdentifierTest extends TestCase {
 
@@ -47,10 +54,9 @@ class JsonLdSerializerIdentifierTest extends TestCase {
 				: 'https://nc.test/' . $route
 		);
 
-		$node = (new JsonLdSerializer(new JsonLdContextService($urls), $urls))->serialize(
-			['name' => 'x', '@self' => ['id' => 'obj-1']],
-			$schema,
-			$register
+		$node = (new JsonLdSerializer(new JsonLdContextService($urls), $urls))->serializeIn(
+			renderedObject: ['name' => 'x', '@self' => ['id' => 'obj-1']],
+			table: new RegisterSchema(register: $register, schema: $schema)
 		);
 
 		return $node['@id'];

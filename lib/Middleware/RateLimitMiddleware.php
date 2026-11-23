@@ -39,19 +39,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
-use OCP\AppFramework\Utility\IControllerMethodReflector;
-use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
-use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Middleware that rate-limits failed inbound-API authentication attempts.
@@ -67,41 +63,15 @@ use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
  */
 class RateLimitMiddleware extends Middleware {
 	/**
-	 * The user session
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Reflector for controller annotations
-	 *
-	 * @var IControllerMethodReflector
-	 */
-	private readonly IControllerMethodReflector $reflector;
-
-	/**
-	 * Logger for security events
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param IRequest $request The current request
-	 * @param RateLimitPlatform $platform Session, method reflector and logger.
+	 * @param InboundCall                   $call            The request, session, route annotations and logger.
 	 * @param InboundAuthRateLimitInterface $securityService The security service
 	 */
 	public function __construct(
-		private readonly IRequest $request,
-		RateLimitPlatform $platform,
+		private readonly InboundCall $call,
 		private readonly InboundAuthRateLimitInterface $securityService,
 	) {
-		$this->userSession = $platform->userSession;
-		$this->reflector = $platform->reflector;
-		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**
@@ -125,13 +95,13 @@ class RateLimitMiddleware extends Middleware {
 	 */
 	public function beforeController(Controller $controller, string $methodName): void {
 		try {
-			$this->refuseLockedOut(controller: $controller, methodName: $methodName);
+			$this->refuseLockedOut(method: new DispatchedMethod(controller: $controller, methodName: $methodName));
 		} catch (AuthRateLimitExceededException $e) {
 			// Intentional lockout — let it propagate to afterException().
 			throw $e;
 		} catch (Throwable $e) {
 			// FAIL-OPEN: never block a request because the limiter errored.
-			$this->logger->warning(
+			$this->call->logger->warning(
 				'[RateLimitMiddleware] Rate-limit precheck failed open: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -156,15 +126,7 @@ class RateLimitMiddleware extends Middleware {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
-		try {
-			$this->recordSuccess();
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				'[RateLimitMiddleware] recordSuccessfulAuth failed open: ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
+		$this->recordSuccessFailingOpen();
 		return $response;
 	}//end afterController()
 
@@ -196,6 +158,22 @@ class RateLimitMiddleware extends Middleware {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function afterException(Controller $controller, string $methodName, \Exception $exception): ?Response {
+		return $this->answerException(method: new DispatchedMethod(controller: $controller, methodName: $methodName), exception: $exception);
+	}//end afterException()
+
+	/**
+	 * Answer an enforced lockout with a 429; count any other auth failure and re-throw it.
+	 *
+	 * @param DispatchedMethod $method    The controller method that was dispatched
+	 * @param \Exception       $exception The thrown exception
+	 *
+	 * @return Response A 429 response for an enforced lockout
+	 *
+	 * @throws \Exception The original exception for all non-lockout cases
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function answerException(DispatchedMethod $method, \Exception $exception): Response {
 		// Enforced lockout: return a clean 429.
 		if ($exception instanceof AuthRateLimitExceededException) {
 			return $this->lockoutResponse(exception: $exception);
@@ -204,25 +182,24 @@ class RateLimitMiddleware extends Middleware {
 		// Otherwise: only count genuine auth failures on protected endpoints,
 		// then re-throw so Nextcloud handles the response unchanged.
 		try {
-			$this->countFailure(controller: $controller, methodName: $methodName, exception: $exception);
+			$this->countFailure(method: $method, exception: $exception);
 		} catch (Throwable $e) {
 			// FAIL-OPEN: recording must not interfere with the original error.
-			$this->logger->warning(
+			$this->call->logger->warning(
 				'[RateLimitMiddleware] recordFailedAuthAttempt failed open: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
 
 		throw $exception;
-	}//end afterException()
+	}//end answerException()
 
 	/**
 	 * Throw the lockout when the (identity + IP) pair of a protected endpoint is locked out.
 	 *
 	 * Public pages are out of scope.
 	 *
-	 * @param Controller $controller The controller being dispatched
-	 * @param string $methodName The method being dispatched
+	 * @param DispatchedMethod $method The controller method being dispatched
 	 *
 	 * @return void
 	 *
@@ -230,12 +207,12 @@ class RateLimitMiddleware extends Middleware {
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	private function refuseLockedOut(Controller $controller, string $methodName): void {
-		if ($this->isPublicPage(controller: $controller, methodName: $methodName) === true) {
+	private function refuseLockedOut(DispatchedMethod $method): void {
+		if ($this->isPublicPage(method: $method) === true) {
 			return;
 		}
 
-		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
 		$identity = $this->resolveIdentity();
 
 		$check = $this->securityService->checkAuthRateLimit(identity: $identity, ipAddress: $ipAddress);
@@ -248,6 +225,24 @@ class RateLimitMiddleware extends Middleware {
 	}//end refuseLockedOut()
 
 	/**
+	 * Clear the failure counters of the signed-in user; an error is logged, never raised.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
+	 */
+	private function recordSuccessFailingOpen(): void {
+		try {
+			$this->recordSuccess();
+		} catch (Throwable $e) {
+			$this->call->logger->debug(
+				'[RateLimitMiddleware] recordSuccessfulAuth failed open: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end recordSuccessFailingOpen()
+
+	/**
 	 * Clear the failure counters of the signed-in user, when there is one.
 	 *
 	 * @return void
@@ -255,12 +250,12 @@ class RateLimitMiddleware extends Middleware {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	private function recordSuccess(): void {
-		$user = $this->userSession->getUser();
+		$user = $this->call->userSession->getUser();
 		if ($user === null) {
 			return;
 		}
 
-		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
 		$this->securityService->recordSuccessfulAuth(identity: $user->getUID(), ipAddress: $ipAddress);
 	}//end recordSuccess()
 
@@ -288,46 +283,38 @@ class RateLimitMiddleware extends Middleware {
 	/**
 	 * Record a failed attempt when the exception is an auth failure on a protected endpoint.
 	 *
-	 * @param Controller $controller The controller that was dispatched
-	 * @param string $methodName The method that was dispatched
-	 * @param \Exception $exception The thrown exception
+	 * @param DispatchedMethod $method    The controller method that was dispatched
+	 * @param \Exception       $exception The thrown exception
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
-	private function countFailure(Controller $controller, string $methodName, \Exception $exception): void {
+	private function countFailure(DispatchedMethod $method, \Exception $exception): void {
 		if ($this->isAuthFailure(exception: $exception) === false
-			|| $this->isPublicPage(controller: $controller, methodName: $methodName) === true
+			|| $this->isPublicPage(method: $method) === true
 		) {
 			return;
 		}
 
-		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->request);
+		$ipAddress = $this->securityService->getTrustedClientIpAddress(request: $this->call->request);
 		$identity = $this->resolveIdentity();
 		$this->securityService->recordFailedAuthAttempt(
-			identity: $identity,
-			ipAddress: $ipAddress,
-			reason: 'inbound_auth_failed'
+			new FailedAttempt(subject: $identity, ipAddress: $ipAddress, reason: 'inbound_auth_failed')
 		);
 	}//end countFailure()
 
 	/**
 	 * Determine whether the dispatched method is a public page.
 	 *
-	 * @param Controller $controller The controller being dispatched
-	 * @param string $methodName The method being dispatched
+	 * @param DispatchedMethod $method The controller method being dispatched
 	 *
 	 * @return bool True when the endpoint is public (skip rate-limiting)
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() requires both
-	 * the controller instance and method name; PHPMD misclassifies $controller as unused because it is
-	 * consumed via the interface method, not directly in the body.
 	 */
-	private function isPublicPage(Controller $controller, string $methodName): bool {
+	private function isPublicPage(DispatchedMethod $method): bool {
 		try {
-			$this->reflector->reflect($controller, $methodName);
-			return $this->reflector->hasAnnotation('PublicPage');
+			$this->call->reflector->reflect($method->controller, $method->methodName);
+			return $this->call->reflector->hasAnnotation('PublicPage');
 		} catch (Throwable $e) {
 			// If reflection fails, treat as protected (safer: we may rate-limit,
 			// but we never accidentally exempt a protected endpoint).
@@ -378,7 +365,7 @@ class RateLimitMiddleware extends Middleware {
 	 */
 	private function resolveIdentity(): string {
 		try {
-			$user = $this->userSession->getUser();
+			$user = $this->call->userSession->getUser();
 			if ($user !== null) {
 				return $user->getUID();
 			}
@@ -398,7 +385,7 @@ class RateLimitMiddleware extends Middleware {
 	 * @return string The username, or '' when the header names none
 	 */
 	private function basicAuthUsername(): string {
-		$authHeader = $this->request->getHeader('Authorization');
+		$authHeader = $this->call->request->getHeader('Authorization');
 		if ($authHeader === '' || stripos($authHeader, 'Basic ') !== 0) {
 			return '';
 		}

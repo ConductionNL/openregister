@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -42,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Drives ObjectService::searchObjectsPaginated() through the real ReadHistoryService
@@ -104,8 +107,7 @@ class ProcessingLogListReadTest extends TestCase {
 		return new ProcessingLogService(
 			logMapper: $logMapper,
 			vrwMapper: $vrwMapper,
-			schemaMapper: $schemaMapper,
-			registerMapper: $registerMapper,
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)),
 			userSession: $session,
 			logger: new NullLogger()
 		);
@@ -135,7 +137,7 @@ class ProcessingLogListReadTest extends TestCase {
 		);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				ReadHistoryService::class => $history,
+				ProcessingReadsInterface::class => $history,
 				ProcessingLogService::class => $processingLog,
 			}
 		);

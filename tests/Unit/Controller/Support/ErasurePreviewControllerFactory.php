@@ -18,7 +18,6 @@ final class ErasurePreviewControllerFactory {
 	/**
 	 * The constructor arguments of ErasurePreviewController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ErasurePreviewService $previewService Constructor argument.
 	 * @param ErasurePreviewStore $store Constructor argument.
@@ -27,14 +26,12 @@ final class ErasurePreviewControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService $previewService,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore $store,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner $runner,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices(
 				previewService: $previewService,

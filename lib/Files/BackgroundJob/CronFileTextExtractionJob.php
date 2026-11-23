@@ -97,10 +97,11 @@ class CronFileTextExtractionJob extends TimedJob {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'scheduled_time' => date('Y-m-d H:i:s')]
 		);
 
+		$tick = new CronExtractionRun(logger: $logger, startTime: $startTime);
 		try {
-			$this->extractInCronMode(logger: $logger, startTime: $startTime);
+			$this->extractInCronMode(tick: $tick);
 		} catch (\Exception $e) {
-			$this->logFailure(logger: $logger, startTime: $startTime, exception: $e);
+			$this->logFailure(tick: $tick, exception: $e);
 			// Don't re-throw for recurring jobs - let them retry next time.
 		}
 	}//end run()
@@ -108,12 +109,13 @@ class CronFileTextExtractionJob extends TimedJob {
 	/**
 	 * Extract one batch of pending files when the extraction mode is cron.
 	 *
-	 * @param LoggerInterface $logger    The logger.
-	 * @param float           $startTime When the run started (microtime).
+	 * @param CronExtractionRun $tick The logger and the start time.
 	 *
 	 * @return void
 	 */
-	private function extractInCronMode(LoggerInterface $logger, float $startTime): void {
+	private function extractInCronMode(CronExtractionRun $tick): void {
+		$logger = $tick->logger;
+
 		/*
 		 * Get required services.
 		 *
@@ -148,7 +150,7 @@ class CronFileTextExtractionJob extends TimedJob {
 		// every run and the cron mode never reached a newer upload (WOO-576, the
 		// same head-of-queue effect the bulk endpoint had). extractPendingFiles()
 		// steps its window past the failures, so the cron mode inherits that.
-		$this->logOutcome(logger: $logger, stats: $textExtractor->extractPendingFiles(limit: $batchSize), startTime: $startTime);
+		$this->logOutcome(tick: $tick, stats: $textExtractor->extractPendingFiles(limit: $batchSize));
 	}//end extractInCronMode()
 
 	/**
@@ -176,13 +178,13 @@ class CronFileTextExtractionJob extends TimedJob {
 	/**
 	 * Log how the batch ended: nothing pending, stopped on the window limit, or completed.
 	 *
-	 * @param LoggerInterface $logger    The logger.
-	 * @param array           $stats     The extractPendingFiles() statistics.
-	 * @param float           $startTime When the run started (microtime).
+	 * @param CronExtractionRun $tick  The logger and the start time.
+	 * @param array             $stats The extractPendingFiles() statistics.
 	 *
 	 * @return void
 	 */
-	private function logOutcome(LoggerInterface $logger, array $stats, float $startTime): void {
+	private function logOutcome(CronExtractionRun $tick, array $stats): void {
+		$logger = $tick->logger;
 		if ($stats['total'] === 0) {
 			// phpcs:ignore Generic.Files.LineLength.MaxExceeded
 			$logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
@@ -194,14 +196,9 @@ class CronFileTextExtractionJob extends TimedJob {
 		// on an empty queue: the offset is not carried between ticks, so every
 		// following tick re-walks the same windows. Logged at warning level,
 		// because in the counters alone a truncated run reads as a finished one.
-		$truncated  = ($stats['truncated'] ?? false);
-		$logContext = [
-			'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $startTime, 2),
-			'files_processed' => $stats['processed'], 'files_failed' => $stats['failed'], 'truncated' => $truncated,
-			'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
-		];
+		$logContext = $this->completionContext(tick: $tick, stats: $stats);
 
-		if ($truncated === true) {
+		if ($logContext['truncated'] === true) {
 			// phpcs:ignore Generic.Files.LineLength.MaxExceeded
 			$logger->warning(message: '[CronFileTextExtractionJob] Cron File Text Extraction Job stopped on the window limit before filling its batch - the queue head is not extractable and every tick will re-walk it', context: $logContext);
 			return;
@@ -211,19 +208,34 @@ class CronFileTextExtractionJob extends TimedJob {
 	}//end logOutcome()
 
 	/**
+	 * The completion log context: the run's counters, whether the walk was truncated, and the next run.
+	 *
+	 * @param CronExtractionRun    $tick  The run (logger and start time).
+	 * @param array<string, mixed> $stats The run's stats.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private function completionContext(CronExtractionRun $tick, array $stats): array {
+		return [
+			'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $tick->startTime, 2),
+			'files_processed' => $stats['processed'], 'files_failed' => $stats['failed'], 'truncated' => ($stats['truncated'] ?? false),
+			'next_run' => date('Y-m-d H:i:s', time() + self::DEFAULT_INTERVAL),
+		];
+	}//end completionContext()
+
+	/**
 	 * Log a run that threw.
 	 *
-	 * @param LoggerInterface $logger    The logger.
-	 * @param float           $startTime When the run started (microtime).
-	 * @param \Exception      $exception What was thrown.
+	 * @param CronExtractionRun $tick      The logger and the start time.
+	 * @param \Exception        $exception What was thrown.
 	 *
 	 * @return void
 	 */
-	private function logFailure(LoggerInterface $logger, float $startTime, \Exception $exception): void {
-		$logger->error(
+	private function logFailure(CronExtractionRun $tick, \Exception $exception): void {
+		$tick->logger->error(
 			message: '[CronFileTextExtractionJob] 🚨 Cron File Text Extraction Job Exception',
 			context: [
-				'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $startTime, 2),
+				'file' => __FILE__, 'line' => __LINE__, 'job_id' => $this->getId(), 'execution_time_seconds' => round(microtime(true) - $tick->startTime, 2),
 				'exception' => $exception->getMessage(), 'exception_file' => $exception->getFile(), 'exception_line' => $exception->getLine(),
 				'trace' => $exception->getTraceAsString(),
 			]

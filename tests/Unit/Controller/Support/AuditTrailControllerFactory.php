@@ -18,7 +18,7 @@ final class AuditTrailControllerFactory {
 	/**
 	 * The constructor arguments of AuditTrailController.
 	 *
-	 * @param string $appName Constructor argument.
+	 * @param string $appName Unused; kept so existing calls still fit.
 	 * @param IRequest $request Constructor argument.
 	 * @param LogService $logService Constructor argument.
 	 * @param AuditTrailMapper $auditTrailMapper Constructor argument.
@@ -29,6 +29,7 @@ final class AuditTrailControllerFactory {
 	 * @param AuditTrailPageService $auditPage Constructor argument.
 	 * @param ObjectHistoryForReaders $historyForReaders Constructor argument.
 	 * @param ?ExplicitRevealTrailMasker $revealMasker Constructor argument.
+	 * @param ?LoggerInterface $logger Constructor argument; a NullLogger when absent.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -44,9 +45,9 @@ final class AuditTrailControllerFactory {
 		\OCA\OpenRegister\Service\Audit\AuditTrailPageService $auditPage,
 		\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders $historyForReaders,
 		?\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker $revealMasker = null,
+		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\AuditTrailControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\AuditTrailMappers(
@@ -57,6 +58,7 @@ final class AuditTrailControllerFactory {
 					auditHashService: $auditHashService,
 					readableLister: $readableLister,
 					auditPage: $auditPage,
+					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
 				readers: new \OCA\OpenRegister\Controller\Support\AuditTrailReaders(
 					historyForReaders: $historyForReaders,

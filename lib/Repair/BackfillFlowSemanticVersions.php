@@ -42,6 +42,8 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Repair\Support\EveryFlow;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -94,9 +96,11 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$flows = $this->everyFlow();
-			$versions = $this->container->get(FlowVersionMapperInterface::class);
-			$semver = $this->container->get(FlowSemanticVersionInterface::class);
+			$flows = (new EveryFlow(flows: $this->container->get(FlowMapperInterface::class)))->read();
+			$numbering = new FlowVersionNumbering(
+				versions: $this->container->get(FlowVersionMapperInterface::class),
+				semver: $this->container->get(FlowSemanticVersionInterface::class)
+			);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
 			// back-fill is not a failure.
@@ -109,11 +113,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 
 		foreach ($flows as $flow) {
 			try {
-				$stamped += $this->stampOneFlow(
-					flow: $flow,
-					versions: $versions,
-					semver: $semver
-				);
+				$stamped += $this->stampOneFlow(flow: $flow, numbering: $numbering);
 			} catch (Throwable $e) {
 				// One flow's history being unreadable must not stop the rest,
 				// and must not fail the upgrade.
@@ -137,57 +137,21 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	}//end run()
 
 	/**
-	 * Every flow, paged.
-	 *
-	 * 🔴 `findAllFlows()`, NOT `findAll()`, and it PAGES. The mapper's default
-	 * limit is 100, so a single call would silently stamp the first hundred
-	 * flows and leave the rest — a repair that reports success having done
-	 * most of the job is worse than one that fails.
-	 *
-	 * I wrote `findAll()` first. It does not exist, the call threw, the step
-	 * reported itself skipped, and the upgrade went green having stamped
-	 * nothing. Only counting the rows afterwards found it.
-	 *
-	 * @return array<int, \OCA\OpenRegister\Db\Flow> Every flow.
-	 *
-	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
-	 */
-	private function everyFlow(): array {
-		$mapper = $this->container->get(FlowMapperInterface::class);
-		$page = 500;
-		$offset = 0;
-		$all = [];
-
-		while (true) {
-			$batch = $mapper->findAllFlows(limit: $page, offset: $offset);
-			$all = array_merge($all, $batch);
-
-			if (count($batch) < $page) {
-				return $all;
-			}
-
-			$offset += $page;
-		}
-
-	}//end everyFlow()
-
-	/**
 	 * Number one flow's published versions in ordinal order.
 	 *
 	 * Only rows that HAVE no semantic version are touched: a derived version
 	 * is a stronger fact than anything this step can produce, and overwriting
 	 * one would replace evidence with a guess.
 	 *
-	 * @param Flow               $flow     The flow.
-	 * @param FlowVersionMapperInterface  $versions The version rows.
-	 * @param FlowSemanticVersionInterface $semver  The numbering.
+	 * @param Flow                 $flow      The flow.
+	 * @param FlowVersionNumbering $numbering The version rows and their numbering.
 	 *
 	 * @return int How many rows were stamped.
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
-	private function stampOneFlow(Flow $flow, FlowVersionMapperInterface $versions, FlowSemanticVersionInterface $semver): int {
-		$rows = $versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
+	private function stampOneFlow(Flow $flow, FlowVersionNumbering $numbering): int {
+		$rows = $numbering->versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
 
 		// Oldest first: the sequence is the flow's own history, and
 		// `findAllForFlow` answers newest first for the UI.
@@ -209,9 +173,9 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 				continue;
 			}
 
-			$row->setSemver($semver->backfilled(ordinalPosition: $position));
+			$row->setSemver($numbering->semver->backfilled(ordinalPosition: $position));
 			$row->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
-			$versions->update($row);
+			$numbering->versions->update($row);
 			$stamped++;
 		}
 
@@ -244,13 +208,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 			return;
 		}
 
-		$live = null;
-		foreach ($published as $row) {
-			if ($row->getStatus() === FlowVersion::STATUS_PUBLISHED) {
-				$live = $row;
-			}
-		}
-
+		$live = $this->liveVersionOf(published: $published);
 		if ($live === null || trim((string)$live->getSemver()) === '') {
 			return;
 		}
@@ -260,4 +218,22 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		$this->container->get(FlowMapperInterface::class)->update($flow);
 
 	}//end mirrorOntoFlow()
+
+	/**
+	 * The last version in the list that is still published, i.e. the live one.
+	 *
+	 * @param array<int, FlowVersion> $published The flow's versions, oldest first.
+	 *
+	 * @return FlowVersion|null The live version, or null when none is published.
+	 */
+	private function liveVersionOf(array $published): ?FlowVersion {
+		$live = null;
+		foreach ($published as $row) {
+			if ($row->getStatus() === FlowVersion::STATUS_PUBLISHED) {
+				$live = $row;
+			}
+		}
+
+		return $live;
+	}//end liveVersionOf()
 }//end class

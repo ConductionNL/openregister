@@ -116,10 +116,9 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	/**
 	 * Assert a caller may act on an item (enable, transition, attach under it).
 	 *
-	 * @param string $verb The verb attempted.
+	 * @param CasePlanAct   $act  The verb attempted and the acting identity.
 	 * @param CaseItem|null $item The item acted on, or null for the plan root.
-	 * @param CasePlanTree $tree The plan (for ancestors and root settings).
-	 * @param string|null $uid The acting identity.
+	 * @param CasePlanTree  $tree The plan (for ancestors and root settings).
 	 *
 	 * @return void
 	 *
@@ -127,22 +126,16 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function assertMayAct(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid): void {
-		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
-		if ($this->isAdministrator(uid: $identity) === true) {
-			return;
-		}
-
-		$this->assertHolds(verb: $verb, rules: $this->effectiveRules(item: $item, tree: $tree), uid: $identity);
+	public function assertMayAct(CasePlanAct $act, ?CaseItem $item, CasePlanTree $tree): void {
+		$this->assertGranted(act: $act, rules: $this->effectiveRules(item: $item, tree: $tree));
 	}//end assertMayAct()
 
 	/**
 	 * Assert a caller may administer a plan: create it, delete it, complete
 	 * the case. Judged against the ROOT rules alone.
 	 *
-	 * @param string $verb The verb attempted.
+	 * @param CasePlanAct          $act      The verb attempted and the acting identity.
 	 * @param array<string, mixed> $settings The plan settings (root rules under `authorization`).
-	 * @param string|null $uid The acting identity.
 	 *
 	 * @return void
 	 *
@@ -150,14 +143,31 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	public function assertMayAdminister(string $verb, array $settings, ?string $uid): void {
-		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
+	public function assertMayAdminister(CasePlanAct $act, array $settings): void {
+		$this->assertGranted(act: $act, rules: ($settings['authorization'] ?? null));
+	}//end assertMayAdminister()
+
+	/**
+	 * Require an identified caller, let an administrator pass, and otherwise
+	 * require the caller to hold one of the rules.
+	 *
+	 * @param CasePlanAct $act   The verb and the acting identity, possibly none.
+	 * @param mixed       $rules The rules that apply (computed without side effects).
+	 *
+	 * @return void
+	 *
+	 * @throws CaseAccessDeniedException When anonymous, or when no rule admits the caller.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function assertGranted(CasePlanAct $act, mixed $rules): void {
+		$identity = $this->assertIdentified(uid: $act->actor, verb: $act->verb);
 		if ($this->isAdministrator(uid: $identity) === true) {
 			return;
 		}
 
-		$this->assertHolds(verb: $verb, rules: ($settings['authorization'] ?? null), uid: $identity);
-	}//end assertMayAdminister()
+		$this->assertHolds(act: new CasePlanAct(verb: $act->verb, actor: $identity), rules: $rules);
+	}//end assertGranted()
 
 	/**
 	 * The rules that govern an item: its own, else its nearest ancestor's,
@@ -228,9 +238,8 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	/**
 	 * The caller must satisfy at least one rule; anything indeterminate denies.
 	 *
-	 * @param string $verb The verb, for the message.
-	 * @param mixed $rules The rule list.
-	 * @param string $uid The acting identity.
+	 * @param CasePlanAct $act   The verb (for the message) and the acting identity.
+	 * @param mixed       $rules The rule list.
 	 *
 	 * @return void
 	 *
@@ -238,15 +247,15 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function assertHolds(string $verb, mixed $rules, string $uid): void {
-		foreach ($this->declaredOrRefused(verb: $verb, rules: $rules) as $rule) {
-			if ($this->ruleAdmits(verb: $verb, rule: $rule, uid: $uid) === true) {
+	private function assertHolds(CasePlanAct $act, mixed $rules): void {
+		foreach ($this->declaredOrRefused(verb: $act->verb, rules: $rules) as $rule) {
+			if ($this->ruleAdmits(act: $act, rule: $rule) === true) {
 				return;
 			}
 		}
 
 		throw new CaseAccessDeniedException(
-			message: sprintf("Verb '%s' denied: the caller holds none of the item's authorizations.", $verb)
+			message: sprintf("Verb '%s' denied: the caller holds none of the item's authorizations.", $act->verb)
 		);
 	}//end assertHolds()
 
@@ -280,9 +289,8 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 * Whether one rule admits the caller. A role that does not resolve is
 	 * indeterminate and DENIES naming the role, never "no check applicable".
 	 *
-	 * @param string $verb The verb, for the message.
-	 * @param mixed $rule One rule.
-	 * @param string $uid The acting identity.
+	 * @param CasePlanAct $act  The verb (for the message) and the acting identity.
+	 * @param mixed       $rule One rule.
 	 *
 	 * @return boolean True only when the rule affirmatively admits.
 	 *
@@ -290,25 +298,37 @@ class CasePlanAuthorizationService implements CasePlanAuthorizationServiceInterf
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
-	private function ruleAdmits(string $verb, mixed $rule, string $uid): bool {
+	private function ruleAdmits(CasePlanAct $act, mixed $rule): bool {
 		if (is_string($rule) === false || trim($rule) === '') {
 			return false;
 		}
 
+		$uid  = (string)$act->actor;
 		$rule = trim($rule);
 		if (str_starts_with($rule, 'user:') === true) {
 			return substr($rule, 5) === $uid;
 		}
 
 		if (str_starts_with($rule, 'role:') === true) {
-			$role = substr($rule, 5);
-			$this->assertRoleResolvable(verb: $verb, role: $role);
-
-			return $this->groups->isInGroup(uid: $uid, groupId: $role);
+			return $this->roleAdmits(act: $act, role: substr($rule, 5));
 		}
 
 		return $this->groups->isInGroup(uid: $uid, groupId: $rule);
 	}//end ruleAdmits()
+
+	/**
+	 * Whether a `role:` rule admits the actor: the role must resolve, and the actor must hold it.
+	 *
+	 * @param CasePlanAct $act  The act and its actor.
+	 * @param string      $role The role (group id) the rule names.
+	 *
+	 * @return bool True when the actor holds the role.
+	 */
+	private function roleAdmits(CasePlanAct $act, string $role): bool {
+		$this->assertRoleResolvable(verb: $act->verb, role: $role);
+
+		return $this->groups->isInGroup(uid: (string)$act->actor, groupId: $role);
+	}//end roleAdmits()
 
 	/**
 	 * A role must resolve to the group of the same name.

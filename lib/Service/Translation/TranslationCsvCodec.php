@@ -112,7 +112,9 @@ class TranslationCsvCodec {
 				continue;
 			}
 
-			$out = $this->withTranslation(out: $out, slot: $match, value: $value);
+			if (is_string($value) === true && $value !== '') {
+				$out[$match[0]] = $this->withTranslation(current: ($out[$match[0]] ?? null), entry: [$match[1] => $value]);
+			}
 		}
 
 		return $out;
@@ -204,30 +206,23 @@ class TranslationCsvCodec {
 	}//end matchLanguageColumn()
 
 	/**
-	 * Write one language cell into the nested output.
+	 * Write one language cell into a property's language map.
 	 *
-	 * Empty and non-string cells write no slot, which lets the projection
-	 * treat them as "not translated". A non-array value already under the
-	 * property is replaced by a language map.
+	 * Empty and non-string cells write no slot (the caller skips them), which
+	 * lets the projection treat them as "not translated". A non-array value
+	 * already under the property is replaced by a language map.
 	 *
-	 * @param array<string, mixed>        $out   The output built so far.
-	 * @param array{0: string, 1: string} $slot  Property and language.
-	 * @param mixed                       $value The cell value.
+	 * @param mixed                $current The value under the property so far.
+	 * @param array<string, string> $entry  One language => translation pair.
 	 *
-	 * @return array<string, mixed> The output with the cell applied.
+	 * @return array<string, mixed> The language map with the cell applied.
 	 */
-	private function withTranslation(array $out, array $slot, mixed $value): array {
-		if (is_string($value) === false || $value === '') {
-			return $out;
+	private function withTranslation(mixed $current, array $entry): array {
+		if (is_array($current) === false) {
+			$current = [];
 		}
 
-		[$prop, $lang] = $slot;
-		if (is_array($out[$prop] ?? null) === false) {
-			$out[$prop] = [];
-		}
-
-		$out[$prop][$lang] = $value;
-		return $out;
+		return array_replace($current, $entry);
 	}//end withTranslation()
 
 	/**

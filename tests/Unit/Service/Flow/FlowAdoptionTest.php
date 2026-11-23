@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -69,6 +70,21 @@ use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocator
  * @uses \OCA\OpenRegister\Service\Flow\FlowCaller
+ * @uses \OCA\OpenRegister\Service\Flow\FlowDefinitionStore
+ * @uses \OCA\OpenRegister\Service\Flow\FlowDeletionSweep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunDispatch
+ * @uses \OCA\OpenRegister\Service\Flow\FlowServicePlatform
+ * @uses \OCA\OpenRegister\Db\Flow\TriggerLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class FlowAdoptionTest extends TestCase {
 
@@ -205,7 +221,7 @@ class FlowAdoptionTest extends TestCase {
 
 		foreach ([['flow' => $imported, 'expected' => []], ['flow' => $adopted, 'expected' => ['flow-imported']]] as $case) {
 			$triggerMapper = $this->createMock(FlowTriggerMapper::class);
-			$triggerMapper->method('flowUuidsFor')->willReturn(['flow-imported']);
+			$triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['flow-imported']);
 			$triggerMapper->method('representedFlowUuids')->willReturn(['flow-imported']);
 
 			$flowMapper = $this->createMock(FlowMapper::class);
@@ -225,7 +241,7 @@ class FlowAdoptionTest extends TestCase {
 
 			$this->assertSame(
 				$case['expected'],
-				$locator->flowsForTrigger(event: 'object.created', register: 'dossiq', schema: 'case'),
+				$locator->flowsForEvent(event: 'object.created', table: new RegisterSchemaRef(register: 'dossiq', schema: 'case')),
 				'the ownerless flow is refused at dispatch; the adopted and enabled one runs'
 			);
 		}

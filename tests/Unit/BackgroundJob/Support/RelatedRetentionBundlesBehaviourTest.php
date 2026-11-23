@@ -28,6 +28,7 @@ use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface;
@@ -40,7 +41,7 @@ class RelatedRetentionBundlesBehaviourTest extends TestCase {
 		$objects = $this->createMock(MagicMapperInterface::class);
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$registers = $this->createMock(RegisterMapperInterface::class);
-		$lookup = new RelatedRetentionLookup($objects, $schemas, $registers);
+		$lookup = new RelatedRetentionLookup(new SchemaCatalog($registers, $schemas, $objects));
 
 		$this->assertSame([$objects, $schemas, $registers], [$lookup->objectMapper, $lookup->schemaMapper, $lookup->registerMapper]);
 	}

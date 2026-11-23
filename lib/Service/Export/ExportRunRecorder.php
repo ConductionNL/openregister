@@ -44,9 +44,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use Psr\Log\LoggerInterface;
@@ -153,7 +156,132 @@ class ExportRunRecorder {
 	}//end record()
 
 	/**
+	 * Record one row appended to a file that grows, as ONE run per file.
+	 *
+	 * The whole-set extract writes one row per object into one file per
+	 * schema. Recording a run per row would list a single file thousands of
+	 * times; recording none would leave the biggest export of all
+	 * unaccounted for. So the run is keyed on the file id: the first row opens
+	 * it, every later row grows its count. A run whose file was swept no
+	 * longer carries the id, so a file written again opens a new run.
+	 *
+	 * @param ExportRunOrigin $origin           What produced it (for example `whole-set`), for whom, from which profile.
+	 * @param string          $format           csv, json and so on.
+	 * @param ExportRunFile   $file             The Nextcloud file it appends to; its fileId keys the run.
+	 * @param int|null        $retentionSeconds How long the file is kept, or null to keep it.
+	 *
+	 * @return ExportRun The run, opened or grown.
+	 *
+	 * @throws InvalidArgumentException When the file carries no id to key the run on.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function recordAppended(
+		ExportRunOrigin $origin,
+		string $format,
+		ExportRunFile $file,
+		?int $retentionSeconds,
+	): ExportRun {
+		if ($file->fileId === null) {
+			throw new InvalidArgumentException('An appended export run is keyed on its file id');
+		}
+
+		$run = $this->mapper->findOpenForFile(fileId: $file->fileId);
+		if ($run === null) {
+			return $this->record(
+				origin: $origin,
+				content: new ExportRunContent(format: $format, rowCount: 1),
+				file: $file,
+				retentionSeconds: $retentionSeconds
+			);
+		}
+
+		$run->setRowCount(($run->getRowCount() ?? 0) + 1);
+		$run->setUpdated($this->now());
+
+		return $this->mapper->update($run);
+	}//end recordAppended()
+
+	/**
+	 * Resolve a run to the file the register may hand back.
+	 *
+	 * The maker of a run gets its file, and so does a caller who sees every
+	 * run. Anybody else gets the same answer as for a uuid nobody has, so a
+	 * refusal never tells a stranger that the run exists. An expired run, or
+	 * one whose file was deleted in Files, answers gone: the row outlives the
+	 * file, and the list names it expired rather than offering a dead link.
+	 *
+	 * @param string $uuid         The run.
+	 * @param string $callerUid    Who asks.
+	 * @param bool   $seesEveryRun Whether the caller sees every run (from ExportRightService).
+	 *
+	 * @return array{status: int, error?: string, run?: ExportRun, file?: File} 200 with the run
+	 *     and its file, or 404/410 with an error.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller's scope, answered by
+	 *     ExportRightService, as in listFor().
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function openForDownload(string $uuid, string $callerUid, bool $seesEveryRun): array {
+		$missing = ['status' => 404, 'error' => 'No export with this id.'];
+		try {
+			$run = $this->mapper->findByUuid(uuid: $uuid);
+		} catch (Throwable $e) {
+			return $missing;
+		}
+
+		if ($seesEveryRun === false && $run->getActor() !== $callerUid) {
+			return $missing;
+		}
+
+		if ($run->getStatus() === ExportRun::STATUS_EXPIRED) {
+			return ['status' => 410, 'error' => 'This export has expired. Its file was removed; the record stays.'];
+		}
+
+		$fileId = $run->getFileId();
+		$actor = (string)$run->getActor();
+		if ($fileId === null || $actor === '') {
+			return ['status' => 410, 'error' => 'This export was handed over directly and left no file to download.'];
+		}
+
+		$file = $this->fileOf(actor: $actor, fileId: $fileId);
+		if ($file === null) {
+			return ['status' => 410, 'error' => 'The file of this export is no longer in its owner\'s files.'];
+		}
+
+		return ['status' => 200, 'run' => $run, 'file' => $file];
+	}//end openForDownload()
+
+	/**
+	 * The file a run produced, in its maker's files, if it is still there.
+	 *
+	 * @param string $actor  The run's maker.
+	 * @param int    $fileId The file id.
+	 *
+	 * @return File|null The file, or null when it is gone.
+	 */
+	private function fileOf(string $actor, int $fileId): ?File {
+		try {
+			$nodes = $this->rootFolder->getUserFolder($actor)->getById($fileId);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		foreach ($nodes as $node) {
+			if ($node instanceof File) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end fileOf()
+
+	/**
 	 * The runs one caller sees in the area.
+	 *
+	 * Kept for its caller in ExportRunsController; builds the viewer and the
+	 * page and delegates to listVisible().
 	 *
 	 * @param string|null $actor   The caller.
 	 * @param bool        $isAdmin Whether the caller is an instance administrator.
@@ -169,26 +297,37 @@ class ExportRunRecorder {
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	public function listFor(
-		?string $actor,
-		bool $isAdmin = false,
-		array $filters = [],
-		int $limit = 50,
-		int $offset = 0,
-	): array {
+	public function listFor(?string $actor, bool $isAdmin=false, array $filters=[], int $limit=50, int $offset=0): array {
+		$viewer = new ExportRunViewer(actor: $actor, seesEveryRun: $isAdmin);
+		return $this->listVisible(viewer: $viewer, query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end listFor()
+
+	/**
+	 * The runs one viewer sees in the area.
+	 *
+	 * @param ExportRunViewer $viewer Who is looking, and whether they see every run.
+	 * @param ListQuery       $query  Page and equality filters on register, schema, profile, source or status.
+	 *
+	 * @return array<int, array<string, mixed>> The runs, each saying whether it has expired.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	public function listVisible(ExportRunViewer $viewer, ListQuery $query): array {
+		$actor = $viewer->actor;
 		if ($actor === null || $actor === '') {
 			return [];
 		}
 
 		$scopedTo = $actor;
-		if ($isAdmin === true) {
+		if ($viewer->seesEveryRun === true) {
 			$scopedTo = null;
 		}
 
 		$now = $this->now();
 
 		$rows = [];
-		foreach ($this->mapper->findForActor(actor: $scopedTo, filters: $filters, limit: $limit, offset: $offset) as $run) {
+		$page = new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0), filters: $query->filters);
+		foreach ($this->mapper->listForActor(actor: $scopedTo, query: $page) as $run) {
 			$row = $run->jsonSerialize();
 			// An expired run is NAMED as expired rather than offered as a link
 			// to nothing. A missing file and a file nobody produced look the
@@ -199,7 +338,7 @@ class ExportRunRecorder {
 		}
 
 		return $rows;
-	}//end listFor()
+	}//end listVisible()
 
 	/**
 	 * Count one hand-over of a run's file by the register.
@@ -276,21 +415,14 @@ class ExportRunRecorder {
 	 * @return void
 	 */
 	private function deleteFileOf(ExportRun $run): void {
-		$fileId = $run->getFileId();
-		$actor = $run->getActor();
-		if ($fileId === null || $actor === null || $actor === '') {
+		$actor = $this->fileOwnerOf(run: $run);
+		if ($actor === null) {
 			return;
 		}
 
 		try {
 			$folder = $this->rootFolder->getUserFolder($actor);
-			$nodes = $folder->getById($fileId);
-
-			foreach ($nodes as $node) {
-				if (($node instanceof Node) === true) {
-					$node->delete();
-				}
-			}
+			$this->deleteNodes(nodes: $folder->getById((int)$run->getFileId()));
 		} catch (Throwable $e) {
 			// A file the owner already deleted is not an error. Saying so here
 			// is what lets the sweep still mark the row, rather than leaving it
@@ -301,6 +433,38 @@ class ExportRunRecorder {
 			);
 		}
 	}//end deleteFileOf()
+
+	/**
+	 * The owner of a run's file, when the run still names a file and an owner.
+	 *
+	 * @param ExportRun $run The run.
+	 *
+	 * @return string|null The owner's uid, or null when there is nothing to delete.
+	 */
+	private function fileOwnerOf(ExportRun $run): ?string {
+		$fileId = $run->getFileId();
+		$actor = $run->getActor();
+		if ($fileId === null || $actor === null || $actor === '') {
+			return null;
+		}
+
+		return $actor;
+	}//end fileOwnerOf()
+
+	/**
+	 * Delete every node a file id resolved to.
+	 *
+	 * @param array<int, mixed> $nodes The nodes.
+	 *
+	 * @return void
+	 */
+	private function deleteNodes(array $nodes): void {
+		foreach ($nodes as $node) {
+			if (($node instanceof Node) === true) {
+				$node->delete();
+			}
+		}
+	}//end deleteNodes()
 
 	/**
 	 * The current moment, from the injected clock.

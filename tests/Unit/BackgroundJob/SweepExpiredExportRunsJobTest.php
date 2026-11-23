@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\SweepExpiredExportRunsJob;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -70,9 +71,8 @@ class SweepExpiredExportRunsJobTest extends TestCase {
 		$this->runs   = $this->createMock(ExportRunRecorder::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->job    = new SweepExpiredExportRunsJob(
-			$this->createMock(ITimeFactory::class),
+			new JobRuntime($this->createMock(ITimeFactory::class), $this->logger),
 			$this->runs,
-			$this->logger,
 		);
 	}//end setUp()
 

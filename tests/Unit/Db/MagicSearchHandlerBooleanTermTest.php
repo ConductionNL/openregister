@@ -52,6 +52,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Locks the boolean grammar of `_search` on both search paths.
@@ -84,7 +87,8 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			searchProfile: new PropertySearchProfile()
 		);
 
 		$this->captured = [];
@@ -198,13 +202,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 	private function queryBuilderSql(string $search, ?array $properties = null): string {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyFullTextSearch');
 		$method->setAccessible(true);
-		$method->invoke(
-			$this->handler,
-			$this->makeQueryBuilder(),
-			$search,
-			$this->makeSchema(properties: $properties),
-			false
-		);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: ['_search' => $search], table: new MagicReadTable(schema: $this->makeSchema(properties: $properties))), false);
 
 		return implode(' ', $this->captured);
 	}//end queryBuilderSql()
@@ -346,7 +344,7 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $nested, $schema);
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $nested);
 
 		$this->assertContains(
 			'isNull(t.result_type)',

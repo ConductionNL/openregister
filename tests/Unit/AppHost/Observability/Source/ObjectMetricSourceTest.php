@@ -23,12 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Observability\Source;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\AppHost\SchemaScopeLookups;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -55,7 +57,10 @@ class ObjectMetricSourceTest extends TestCase {
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->schemas   = $this->createMock(SchemaMapperInterface::class);
 		$this->logger    = $this->createMock(LoggerInterface::class);
-		$this->source    = new ObjectMetricSource($this->objects, $this->registers, $this->schemas, $this->logger);
+		$catalog         = $this->createMock(SchemaCatalogInterface::class);
+		$catalog->method('registers')->willReturn($this->registers);
+		$catalog->method('schemas')->willReturn($this->schemas);
+		$this->source    = new ObjectMetricSource($this->objects, new SchemaScopeLookups($catalog, $this->logger));
 	}
 
 	private function schemaWithId(int $id): Schema {

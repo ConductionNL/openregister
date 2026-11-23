@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCP\DB\IPreparedStatement;
@@ -78,13 +79,6 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	 * @var string
 	 */
 	private const TABLE_MARKER = 'openregister_table_';
-
-	/**
-	 * Lists the shard tables; `information_schema` is honoured by PostgreSQL and MySQL.
-	 *
-	 * @var string
-	 */
-	private const SHARD_TABLES_QUERY = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern';
 
 	/**
 	 * Constructor.
@@ -219,21 +213,6 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 		$merged = $this->mergeIds(current: $current, additions: $this->normaliseIds(candidates: $schemaIds));
 		$register->setSchemas($merged);
 		$this->registerMapper->update($register);
-		$this->logRepair(registerId: $registerId, current: $current, merged: $merged);
-
-		return $merged;
-	}//end apply()
-
-	/**
-	 * Record a repaired register's before and after schema lists.
-	 *
-	 * @param int   $registerId The repaired register.
-	 * @param int[] $current    The ids before the repair.
-	 * @param int[] $merged     The ids after the repair.
-	 *
-	 * @return void
-	 */
-	private function logRepair(int $registerId, array $current, array $merged): void {
 		$this->logger->warning(
 			message: sprintf(
 				'[RegisterSchemaLinkageRepair] Register %d schemas list repaired: %s -> %s.',
@@ -243,7 +222,9 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId]
 		);
-	}//end logRepair()
+
+		return $merged;
+	}//end apply()
 
 	/**
 	 * Merge additional ids into the current ones, keeping every current id, sorted.
@@ -324,7 +305,10 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	 */
 	private function shardTableNames(): array {
 		try {
-			$stmt = $this->db->prepare(self::SHARD_TABLES_QUERY);
+			// `information_schema` is honoured by PostgreSQL and MySQL; it lists every database, so the scope.
+			$stmt = $this->db->prepare(
+				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition()
+			);
 			$stmt->bindValue('pattern', '%openregister\_table\_%');
 			$stmt->execute();
 		} catch (Throwable $e) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -39,12 +40,12 @@ class FileLockHandlerCachePersistenceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$h1 = new FileLockHandler($factory, $session, $groups, $logger);
+		$h1 = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 		$h1->lockFile(fileId: 42);
 
 		// Brand-new handler instance — the lock map on $h1 is unreachable;
 		// only the shared cache can prove cross-request survival.
-		$h2 = new FileLockHandler($factory, $session, $groups, $logger);
+		$h2 = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 
 		$this->assertTrue($h2->isLocked(fileId: 42));
 		$info = $h2->getLockInfo(fileId: 42);
@@ -66,7 +67,7 @@ class FileLockHandlerCachePersistenceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$handler = new FileLockHandler($factory, $session, $groups, $logger);
+		$handler = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 		$this->assertFalse($handler->isLocked(fileId: 42));
 		$this->assertNull($handler->getLockInfo(fileId: 42));
 	}
@@ -94,7 +95,7 @@ class FileLockHandlerCachePersistenceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$handler = new FileLockHandler($factory, $session, $groups, $logger);
+		$handler = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 		$this->assertNull($handler->getLockInfo(fileId: 42));
 	}
 
@@ -110,12 +111,12 @@ class FileLockHandlerCachePersistenceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$handler = new FileLockHandler($factory, $session, $groups, $logger);
+		$handler = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 		$handler->lockFile(fileId: 42);
 		$handler->unlockFile(fileId: 42);
 
 		// Same shared cache + a brand-new handler — must NOT see the lock.
-		$h2 = new FileLockHandler($factory, $session, $groups, $logger);
+		$h2 = new FileLockHandler($factory, new FileSession($session, $groups, $logger));
 		$this->assertFalse($h2->isLocked(fileId: 42));
 	}
 

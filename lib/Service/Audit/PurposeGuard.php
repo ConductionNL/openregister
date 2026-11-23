@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -90,6 +92,20 @@ class PurposeGuard implements PurposeGuardInterface {
 			return true;
 		}
 
+		$this->warnUnbound(register: $register, schema: $schema);
+
+		return false;
+	}//end isRequired()
+
+	/**
+	 * Warn that an annotated read runs unbound because the instance administers no purpose.
+	 *
+	 * @param Register|null $register The register read.
+	 * @param Schema|null   $schema   The schema read.
+	 *
+	 * @return void
+	 */
+	private function warnUnbound(?Register $register, ?Schema $schema): void {
 		$this->logger->warning(
 			message: '[Doelbinding] A schema asks for a declared purpose and the instance administers none, '
 				. 'so the read runs unbound. Administer a purpose to close this.',
@@ -98,9 +114,7 @@ class PurposeGuard implements PurposeGuardInterface {
 				'register' => $register?->getId(),
 			]
 		);
-
-		return false;
-	}//end isRequired()
+	}//end warnUnbound()
 
 	/**
 	 * Enforce doelbinding on a read, and remember the purpose it ran under.
@@ -127,7 +141,7 @@ class PurposeGuard implements PurposeGuardInterface {
 		try {
 			return $this->acceptDeclared();
 		} catch (PurposeRefusedException $refusal) {
-			$this->recordRefusal(refusal: $refusal, register: $register, schema: $schema);
+			$this->recordRefusal(refusal: $refusal, scope: new PurposeReadScope(register: $register, schema: $schema));
 			throw $refusal;
 		}
 	}//end enforce()
@@ -186,36 +200,41 @@ class PurposeGuard implements PurposeGuardInterface {
 	 * Fail-soft: a refusal that cannot be recorded is still a refusal. The
 	 * read does not become permitted because the bookkeeping failed.
 	 *
-	 * @param PurposeRefusedException $refusal  The refusal to record.
-	 * @param Register|null           $register The register being read.
-	 * @param Schema|null             $schema   The schema being read.
+	 * @param PurposeRefusedException $refusal The refusal to record.
+	 * @param PurposeReadScope        $scope   The register and schema being read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function recordRefusal(
-		PurposeRefusedException $refusal,
-		?Register $register,
-		?Schema $schema,
-	): void {
+	private function recordRefusal(PurposeRefusedException $refusal, PurposeReadScope $scope): void {
 		try {
-			$this->audit->createPurposeRefusalEntry(
-				rule: $refusal->getRule(),
-				purpose: $refusal->getPurpose(),
-				register: $register?->getId(),
-				schema: $schema?->getId()
+			$target = new AuditedObject(register: $scope->register?->getId(), schema: $scope->schema?->getId());
+			$this->audit->recordPurposeRefusal(
+				refusal: new PurposeRefusal(rule: $refusal->getRule(), purpose: $refusal->getPurpose(), target: $target)
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[Doelbinding] The refusal could not be recorded on the trail.',
-				context: [
-					'rule' => $refusal->getRule(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUnrecordedRefusal(refusal: $refusal, error: $e);
 		}
 	}//end recordRefusal()
+
+	/**
+	 * Log a refusal that could not be recorded on the trail.
+	 *
+	 * @param PurposeRefusedException $refusal The refusal.
+	 * @param Throwable               $error   Why recording it failed.
+	 *
+	 * @return void
+	 */
+	private function logUnrecordedRefusal(PurposeRefusedException $refusal, Throwable $error): void {
+		$this->logger->error(
+			message: '[Doelbinding] The refusal could not be recorded on the trail.',
+			context: [
+				'rule' => $refusal->getRule(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnrecordedRefusal()
 
 	/**
 	 * Whether the schema, or failing that its register, asks for doelbinding.
@@ -258,11 +277,17 @@ class PurposeGuard implements PurposeGuardInterface {
 			return false;
 		}
 
-		$value = ($configuration[self::ANNOTATION] ?? null);
-		if ($value === null) {
-			return false;
-		}
+		return $this->isTruthy(value: ($configuration[self::ANNOTATION] ?? null));
+	}//end readsTrue()
 
+	/**
+	 * Whether an annotation value reads as true: true, 1, or "true" / "1" / "yes" in any case.
+	 *
+	 * @param mixed $value The annotation value.
+	 *
+	 * @return bool True when it reads as true.
+	 */
+	private function isTruthy(mixed $value): bool {
 		if (is_bool($value) === true) {
 			return $value;
 		}
@@ -272,5 +297,5 @@ class PurposeGuard implements PurposeGuardInterface {
 		}
 
 		return $value === 1;
-	}//end readsTrue()
+	}//end isTruthy()
 }//end class

@@ -40,7 +40,7 @@ class AnyAppInstalledCheckTest extends TestCase {
 	 * @return CalDavVtodoObjectSourceProvider The provider.
 	 */
 	private function provider(IAppManager $apps): CalDavVtodoObjectSourceProvider {
-		return new CalDavVtodoObjectSourceProvider(taskService: $this->createMock(UserTaskListInterface::class), appManager: $apps, logger: new NullLogger());
+		return new CalDavVtodoObjectSourceProvider(taskService: $this->createMock(UserTaskListInterface::class), app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $apps, container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: new NullLogger()));
 	}//end provider()
 
 	/**

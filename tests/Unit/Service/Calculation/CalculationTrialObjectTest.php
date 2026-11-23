@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\TrialObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -52,8 +53,7 @@ class CalculationTrialObjectTest extends TestCase
 
         $result = (new CalculationTrialService(new CalculationAnnotationValidator(), $evaluator, $builder))->tryObject(
             ['type' => 'integer', 'expression' => ['frobnicate' => [['prop' => 'aantal']]]],
-            new ObjectEntity(),
-            $this->schemaWith(['aantal' => ['type' => 'integer']])
+            new TrialObject(new ObjectEntity(), $this->schemaWith(['aantal' => ['type' => 'integer']]))
         );
 
         $this->assertFalse($result['ok']);
@@ -74,8 +74,7 @@ class CalculationTrialObjectTest extends TestCase
 
         $result = (new CalculationTrialService(new CalculationAnnotationValidator(), $evaluator, $builder))->tryObject(
             ['type' => 'date', 'expression' => ['prop' => 'start']],
-            $object,
-            $schema
+            new TrialObject($object, $schema)
         );
 
         $this->assertSame(['ok' => true, 'value' => '2027-01-02T03:04:05+00:00', 'dependencies' => ['start']], $result);

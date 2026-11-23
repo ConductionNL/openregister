@@ -22,9 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectUpdaterInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -46,16 +49,16 @@ final class A05InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * The lib/ files that still name SaveObjectInterface: they use more than one role.
+	 * The lib/ files that still name SaveObjectInterface: they use more than one role, or carry it to ObjectService.
 	 *
 	 * @var list<string>
 	 */
 	private const WHOLE_INTERFACE_USERS = [
-		'Service/ContractBindings.php',
+		'Service/CoreServiceBindings.php',
 		'Service/Object/BulkSaveStores.php',
 		'Service/Object/CascadingHandler.php',
+		'Service/Object/Collaborators/ObjectSaveServices.php',
 		'Service/Object/SaveObject.php',
-		'Service/Object/SaveObjects.php',
 		'Service/ObjectService.php',
 	];
 
@@ -68,6 +71,8 @@ final class A05InterfaceBindingsTest extends TestCase {
 		return [
 			'writer'           => [SaveObjectWriterInterface::class],
 			'relation scanner' => [SaveObjectRelationScannerInterface::class],
+			'related update guard' => [SaveObjectRelatedUpdateGuardInterface::class],
+			'updater'          => [SaveObjectUpdaterInterface::class],
 		];
 	}//end roles()
 
@@ -86,7 +91,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 	}//end testTheWholeInterfaceExtendsTheRole()
 
 	/**
-	 * ContractBindings aliases the role to SaveObject and registers the alias.
+	 * The Core map aliases the role to SaveObject and ServiceRegistrar registers the alias.
 	 *
 	 * @param class-string $role The role interface.
 	 *
@@ -94,10 +99,10 @@ final class A05InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('roles')]
 	public function testTheRoleIsBoundToSaveObject(string $role): void {
-		$this->assertSame(SaveObject::class, ContractBindings::BINDINGS[$role] ?? null);
+		$this->assertSame(SaveObject::class, CoreServiceBindings::BINDINGS[$role] ?? null);
 
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ServiceRegistrar::register(context: $context);
 		$aliases = array_column($context->aliases, 'target', 'alias');
 		$this->assertSame(SaveObject::class, $aliases[$role] ?? null);
 	}//end testTheRoleIsBoundToSaveObject()
@@ -110,6 +115,8 @@ final class A05InterfaceBindingsTest extends TestCase {
 	public function testEachRoleDeclaresOneMethod(): void {
 		$this->assertSame(['saveObject'], get_class_methods(SaveObjectWriterInterface::class));
 		$this->assertSame(['scanForRelations'], get_class_methods(SaveObjectRelationScannerInterface::class));
+		$this->assertSame(['assertMayUpdateRelated'], get_class_methods(SaveObjectRelatedUpdateGuardInterface::class));
+		$this->assertSame(['updateObject'], get_class_methods(SaveObjectUpdaterInterface::class));
 	}//end testEachRoleDeclaresOneMethod()
 
 	/**

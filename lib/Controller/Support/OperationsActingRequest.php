@@ -42,7 +42,7 @@ final class OperationsActingRequest {
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly IUserSession $userSession,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 

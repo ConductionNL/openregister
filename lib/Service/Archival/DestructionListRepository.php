@@ -41,8 +41,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,12 +65,12 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	 * Constructor.
 	 *
 	 * @param ArchivalRegisterMappers         $mappers         Resolve the configured register and schema; lists are register objects.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Says which register and schema they live in.
+	 * @param ArchivalSettingsInterface       $settingsHandler Says which register and schema they live in.
 	 * @param LoggerInterface                 $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
 		private readonly ArchivalRegisterMappers $mappers,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly ArchivalSettingsInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -104,21 +107,33 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	 */
 	public function findLists(?array $statuses = null): array {
 		try {
-			$scope = $this->configuredScope();
-			if ($scope === null) {
-				return [];
-			}
-
-			return $this->mappers->objectMapper->findAll(
-				filters: $this->statusFilter(statuses: $statuses),
-				register: $scope['register'],
-				schema: $scope['schema']
-			);
+			return $this->listsInScope(statuses: $statuses);
 		} catch (Throwable $e) {
 			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());
 			return [];
 		}
 	}//end findLists()
+
+	/**
+	 * The destruction lists in the configured register and schema, optionally of some statuses.
+	 *
+	 * @param array<int, string>|null $statuses The statuses to keep, or null for all.
+	 *
+	 * @return array<int, ObjectEntity> The lists; none when no scope is configured.
+	 */
+	private function listsInScope(?array $statuses): array {
+		$scope = $this->configuredScope();
+		if ($scope === null) {
+			return [];
+		}
+
+		return $this->mappers->objectMapper->findAllListed(
+			request: new MagicListRequest(
+				table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']),
+				query: ListQuery::unbounded(filters: $this->statusFilter(statuses: $statuses))
+			)
+		);
+	}//end listsInScope()
 
 	/**
 	 * The register and schema destruction lists live in, or null when none are configured.

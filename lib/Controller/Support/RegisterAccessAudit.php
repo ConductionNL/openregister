@@ -23,7 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Logs what an update changed in a register's authorization and roles.
@@ -66,14 +67,14 @@ final class RegisterAccessAudit {
 	/**
 	 * Log the changes the update asked for.
 	 *
-	 * @param AuthorizationAuditService $service The audit service.
+	 * @param RegisterAccessChangeLogInterface $service The audit service.
 	 * @param Register                  $after   The register as saved.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
-	public function log(AuthorizationAuditService $service, Register $after): void {
+	public function log(RegisterAccessChangeLogInterface $service, Register $after): void {
 		$this->logAuthorization(service: $service, after: $after);
 		$this->logRoles(service: $service, after: $after);
 	}//end log()
@@ -81,42 +82,46 @@ final class RegisterAccessAudit {
 	/**
 	 * Log the authorization change, when the update asked for one.
 	 *
-	 * @param AuthorizationAuditService $service The audit service.
+	 * @param RegisterAccessChangeLogInterface $service The audit service.
 	 * @param Register                  $after   The register as saved.
 	 *
 	 * @return void
 	 */
-	private function logAuthorization(AuthorizationAuditService $service, Register $after): void {
+	private function logAuthorization(RegisterAccessChangeLogInterface $service, Register $after): void {
 		if (isset($this->update->data['authorization']) === false) {
 			return;
 		}
 
-		$service->logRegisterAuthorizationChange(
-			$this->update->id,
-			$after->getTitle() ?? '',
-			$this->authorization,
-			$after->getAuthorization()
+		$service->recordRegisterChange(
+			change: new AuthorizationChange(
+				entityId: $this->update->id,
+				entityTitle: $after->getTitle() ?? '',
+				before: $this->authorization,
+				after: $after->getAuthorization()
+			)
 		);
 	}//end logAuthorization()
 
 	/**
 	 * Log the role change, when the update asked for one.
 	 *
-	 * @param AuthorizationAuditService $service The audit service.
+	 * @param RegisterAccessChangeLogInterface $service The audit service.
 	 * @param Register                  $after   The register as saved.
 	 *
 	 * @return void
 	 */
-	private function logRoles(AuthorizationAuditService $service, Register $after): void {
+	private function logRoles(RegisterAccessChangeLogInterface $service, Register $after): void {
 		if (isset($this->update->data['configuration']['roles']) === false) {
 			return;
 		}
 
-		$service->logRoleDefinitionChange(
-			$this->update->id,
-			$after->getTitle() ?? '',
-			$this->roles,
-			($after->getConfiguration()['roles'] ?? null)
+		$service->recordRoleChange(
+			change: new AuthorizationChange(
+				entityId: $this->update->id,
+				entityTitle: $after->getTitle() ?? '',
+				before: $this->roles,
+				after: ($after->getConfiguration()['roles'] ?? null)
+			)
 		);
 	}//end logRoles()
 }//end class

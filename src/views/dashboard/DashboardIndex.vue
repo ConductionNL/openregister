@@ -437,7 +437,7 @@ export default {
 	/**
 	 * Lifecycle hook: preload dashboard and search-trail data on mount.
 	 *
-	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @spec openspec/specs/built-in-dashboards/spec.md
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
@@ -505,6 +505,7 @@ export default {
 		 *
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 */
 		async refetchLiveWidgets() {
 			try {
@@ -548,7 +549,7 @@ export default {
 		/**
 		 * Load search-trail statistics and popular terms from the store.
 		 *
-		 * @spec exclude UI plumbing — delegates to the search-trail store fetch
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
@@ -568,7 +569,7 @@ export default {
 		 * Restore the persisted KPI date range from localStorage (falls back
 		 * to "all time"). Validates the stored preset against the known set.
 		 *
-		 * @spec exclude UI plumbing — local range state restore
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {void}
 		 */
 		loadPersistedRange() {
@@ -583,7 +584,7 @@ export default {
 		 * Events): resolve its window, persist it, and refetch both metrics.
 		 *
 		 * @param {string} presetId The chosen preset id.
-		 * @spec exclude UI plumbing — range selection drives KPI refetch
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {void}
 		 */
 		pickRange(presetId) {
@@ -598,7 +599,7 @@ export default {
 		/**
 		 * Reload all dashboard and search-trail data.
 		 *
-		 * @spec exclude UI plumbing — refresh button delegates to store fetches
+		 * @spec openspec/specs/built-in-dashboards/spec.md
 		 * @return {Promise<void>}
 		 */
 		async refreshDashboard() {

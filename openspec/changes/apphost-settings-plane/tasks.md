@@ -14,10 +14,12 @@
 ## 3. Adoption proof
 - [ ] 3.1 Migrate OR's own SettingsController canonical surface onto the generic service (kitchen-sink extras stay in their own controllers)
 - [ ] 3.2 Adopt HandlesApiExceptionsTrait in OR controllers (wave 1: the 20 highest-traffic)
+  - Started: `MappingsController` (show, create, update, destroy) answers through `handleApiException()`; typed failures keep their status and message, anything else is a generic 500 with the detail in the server log.
+  - `RegistersController` (show, create, destroy, schemas, the import soft delete) answers its generic failures through `handleApiException()` too: the public `show` no longer returns the exception message, and a constraint failure on delete is a 409. Its 400 answers (export, import, template) are unchanged. The other 18 controllers of wave 1 remain.
 - [ ] 3.3 Reference consumer PR in one leaf app (petstore — scaffold origin) deleting its SettingsService/PreferencesController copies
 
 ## 4. Verification
 - [x] 4.1 PHPUnit for all four consumables incl. fail-mode paths — `tests/Unit/AppHost/{GenericSettingsServiceTest,GenericSettingsControllerBaseTest,GenericPreferencesControllerTest,RegisterConfigResolverTest}.php` + `tests/Unit/Controller/HandlesExceptionsTraitTest.php`; 165 tests green in nextcloud:34 container
 - [ ] 4.2 `composer check:strict` green
-- [ ] 4.3 Playwright: settings surface e2e on the reference consumer
+- [ ] 4.3 Playwright: settings surface e2e on the reference consumer (live pass, decision 139)
 - [ ] 4.4 Update ADR-066 status Proposed→Accepted + ADR-022 abstraction table row

@@ -40,9 +40,11 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
-use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
+use OCA\OpenRegister\Notifications\Service\ObjectPresenceTracker;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\IAppConfig;
@@ -79,7 +81,10 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$presence->method('depart')->willReturn(true);
 		$presence->method('present')->willReturn([]);
 		$container->method('get')->willReturnCallback(
-			fn (string $id) => ($id === PresenceServiceInterface::class) ? $presence : $this->createMock(MagicMapper::class)
+			fn (string $id) => match ($id) {
+				ObjectPresenceInterface::class => new ObjectPresenceTracker(presence: $presence),
+				default => $this->createMock(MagicMapper::class),
+			}
 		);
 
 		return ObjectsControllerFactory::create(
@@ -96,7 +101,7 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);
@@ -178,11 +183,9 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'canDelete' => ['canDelete'],
 			'lock' => ['lock'],
 			'unlock' => ['unlock'],
-			'logs' => ['logs'],
 			'contracts' => ['contracts'],
 			'uses' => ['uses'],
 			'used' => ['used'],
-			'downloadFiles' => ['downloadFiles'],
 			'referencedBy' => ['referencedBy'],
 			'geoFeatures' => ['geoFeatures'],
 			'move' => ['move'],
@@ -206,12 +209,10 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'canDelete' => $controller->canDelete('hello-world', 'zaken', 'persoon', $objectService),
 			'lock' => $controller->lock('zaken', 'persoon', 'hello-world'),
 			'unlock' => $controller->unlock('zaken', 'persoon', 'hello-world'),
-			'logs' => $controller->logs('hello-world', 'zaken', 'persoon', $objectService),
 			'contracts' => $controller->contracts('hello-world', 'zaken', 'persoon', $objectService),
 			'uses' => $controller->uses('hello-world', 'zaken', 'persoon', $objectService),
 			'used' => $controller->used('hello-world', 'zaken', 'persoon', $objectService),
 			// Review finding r2routes-f5: the routes that used to answer 500 or 404.
-			'downloadFiles' => $controller->downloadFiles('hello-world', 'zaken', 'persoon', $objectService),
 			'referencedBy' => $controller->referencedBy('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(ReferencedByService::class)),
 			'geoFeatures' => $controller->geoFeatures('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(InheritedGeoCollector::class)),
 			'move' => $controller->move('zaken', 'persoon', 'hello-world'),
@@ -242,7 +243,8 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$objectService->method('getSchema')->willReturn(4);
 		$calls = [];
 		$objectService->method('findSilent')->willReturnCallback(
-			function (string $id, ?array $extend, bool $files, $register, $schema, bool $rbac, bool $multi) use ($ambiguous, &$calls) {
+			function (...$args) use ($ambiguous, &$calls) {
+				[$id, $extend, $files, $register, $schema, $rbac, $multi] = FindCallShape::findSilent(args: $args);
 				$calls[] = [$rbac, $multi];
 				if ($rbac === false) {
 					throw $ambiguous;

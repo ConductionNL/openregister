@@ -25,8 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileListOptions;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -63,7 +64,7 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 	/** @var MagicObjectFinderInterface&MockObject */
 	private $objects;
 
-	/** @var FileMapperInterface&MockObject */
+	/** @var ObjectFileRecordsInterface&MockObject */
 	private $fileMapper;
 
 	/** @var FileService&MockObject */
@@ -75,7 +76,7 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$this->folders = $this->createMock(FolderManagementHandler::class);
 		$this->validation = $this->createMock(FileValidationHandler::class);
 		$this->objects = $this->createMock(MagicObjectFinderInterface::class);
-		$this->fileMapper = $this->createMock(FileMapperInterface::class);
+		$this->fileMapper = $this->createMock(ObjectFileRecordsInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
 		$this->fileService->method('extractFileNameFromPath')->willReturnCallback(
 			static fn (string $path): array => ['cleanPath' => trim($path, '/'), 'fileName' => basename($path)]
@@ -97,10 +98,10 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 			FileOwnershipHandler::class       => $this->createMock(FileOwnershipHandler::class),
 			MagicObjectFinderInterface::class => $this->objects,
 			LoggerInterface::class            => $this->createMock(LoggerInterface::class),
-			FileMapperInterface::class        => null,
+			ObjectFileRecordsInterface::class => null,
 		];
 		if ($withFileMapper === true) {
-			$byType[FileMapperInterface::class] = $this->fileMapper;
+			$byType[ObjectFileRecordsInterface::class] = $this->fileMapper;
 		}
 
 		$args = [];
@@ -279,10 +280,10 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 	public function testFilesAreReturnedUnfilteredWithoutACategoryOrMapper(): void {
 		$files = [$this->file(1), $this->file(2)];
 		$this->fileService->method('getFilesForEntity')->willReturn($files);
-		$this->fileMapper->expects($this->never())->method('findByFileIds');
+		$this->fileMapper->expects($this->never())->method('findCategoriesByFileIds');
 
-		$this->assertSame($files, $this->handler()->getFiles(new ObjectEntity(), true));
-		$this->assertSame($files, $this->handler(false)->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame($files, $this->handler()->getFiles(new ObjectEntity(), new FileListOptions(true)));
+		$this->assertSame($files, $this->handler(false)->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testFilesAreReturnedUnfilteredWithoutACategoryOrMapper()
 
 	public function testFilesAreFilteredByCategory(): void {
@@ -294,30 +295,19 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$zero = $this->file(0);
 		$this->fileService->method('getFilesForEntity')->willReturn([$one, $two, $broken, $three, $zero, 'not-a-node']);
 
-		$this->fileMapper->expects($this->once())->method('findByFileIds')->with([1, 2, 3])->willReturn(
-			[1 => $this->row('cat'), 2 => $this->row('other')]
+		$this->fileMapper->expects($this->once())->method('findCategoriesByFileIds')->with([1, 2, 3])->willReturn(
+			[1 => 'cat', 2 => 'other']
 		);
 
-		$this->assertSame([$one], $this->handler()->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame([$one], $this->handler()->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testFilesAreFilteredByCategory()
 
 	public function testCategoryFilterOfNoUsableIdsIsEmpty(): void {
 		$this->fileService->method('getFilesForEntity')->willReturnOnConsecutiveCalls([], [$this->file(0)]);
-		$this->fileMapper->expects($this->never())->method('findByFileIds');
+		$this->fileMapper->expects($this->never())->method('findCategoriesByFileIds');
 
 		$handler = $this->handler();
-		$this->assertSame([], $handler->getFiles(new ObjectEntity(), false, 'cat'));
-		$this->assertSame([], $handler->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame([], $handler->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
+		$this->assertSame([], $handler->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testCategoryFilterOfNoUsableIdsIsEmpty()
-
-	private function row(string $category): object {
-		return new class($category) {
-			public function __construct(private readonly string $category) {
-			}
-
-			public function getCategory(): string {
-				return $this->category;
-			}
-		};
-	}//end row()
 }//end class

@@ -75,7 +75,8 @@ final class TransferResultProcessor {
 
 		$transferList['status'] = $this->applyOutcomes(delivery: $delivery, merged: $merged);
 		if ($transferList['status'] === TransferListService::STATUS_FAILED) {
-			$this->auditLog->failed(transferList: $transferList, error: implode('; ', self::errorsOf(results: $delivery->results)), transport: '');
+			$failure = new TransferFailure(error: implode('; ', self::errorsOf(results: $delivery->results)), transport: '');
+			$this->auditLog->failed(transferList: $transferList, failure: $failure);
 		}
 
 		$transferList['transferResult'] = [
