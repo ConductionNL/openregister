@@ -3783,3 +3783,4 @@ or-fix-4 done: main still e158c36a; share 8084 8344 9404 9824 9844 9864 10244 10
 2026-11-23T15:33:44Z session-20261123T153344-3b9e339b or-fix-4: start
 2026-11-23T15:37:13Z or-fix-5 start
 2026-11-23T15:39:08Z session-20261123T153907-fa16bef7 or-fix-14: lane 14 (9594 10154 10214 10234 10314 10494 10514 10534 10554 10614 10634 11014) on main 223a653f: none parked/BLOCK at head, all merge clean; heads unchanged since the 14:20 run except 10494 (fixed 15:26, REVERIFY pending); jest related + initial-data golden green on merged 9594 10154 10514; nothing to fix
+2026-11-23T15:40:56Z or-fix-0 or-fix-0: share 9340 9760 9860 9940 10260 10300 10520 10540 10640 10980 all merge clean with main 223a653f; 9340/9760/9860/10300/10520 merged: phpstan clean, Architecture 2378 green, touched suites green (only inherited FlowEngineRegistrationListenerTest, AreaMapperRegistrarsTest); nothing to fix
