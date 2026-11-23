@@ -207,6 +207,10 @@ jobs:
       enable-frontend: true
       enable-eslint: true
       enable-phpunit: true
+      # PHPUnit on every database Nextcloud supports that we can run in CI,
+      # so a query that only works on PostgreSQL shows up before a customer
+      # on MySQL or SQLite finds it.
+      database-test-matrix: '["pgsql", "mysql", "sqlite"]'
       enable-newman: true
       # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
       # engine collection need on a fresh instance. A script for the same eval
