@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use OCA\OpenRegister\Migration\Version1Date20261121170000;
+use OCA\OpenRegister\Migration\Version1Date20261121170017;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Schema\IColumn;
@@ -21,11 +21,11 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Version1Date20261121170000: the audit trail's trigger_object column and its index.
+ * Version1Date20261121170017: the audit trail's trigger_object column and its index.
  *
- * @covers \OCA\OpenRegister\Migration\Version1Date20261121170000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261121170017
  */
-class Version1Date20261121170000Test extends TestCase {
+class Version1Date20261121170017Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	public function testTheColumnAndIndexAreAddedWhenAbsent(): void {
@@ -61,7 +61,7 @@ class Version1Date20261121170000Test extends TestCase {
 	}
 
 	private function change(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261121170000())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
+		return (new Version1Date20261121170017())->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []);
 	}
 
 	private function schema(bool $hasTable, object $table): ISchemaWrapper {

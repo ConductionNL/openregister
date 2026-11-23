@@ -40,7 +40,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
  */
-class Version1Date20261121170000 extends TargetedMigrationStep {
+class Version1Date20261121170017 extends TargetedMigrationStep {
 
 	/**
 	 * The audit trail table.
