@@ -26,3 +26,4 @@
 2026-11-23T22:01:46Z RED prs=9029 main=6e870ca5e2 integrator-cloud (solo=9029; ComponentDependencyRulesTest)
 2026-11-23T22:12:53Z RED prs=9841 main=6e870ca5e2 integrator-cloud (not the PR: main 6e870ca5 (#10999, merged outside this lane) fails ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline with 4 Files->Core edges; failed-solo rows for 9029 and 9841 at this main removed; integrator stopped until main is fixed)
 2026-11-23T22:43:21Z RED prs=9029,9798,9818,9841 main=6e870ca5e2 integrator-cloud
+2026-11-23T23:38:45Z GREEN prs=9029,9059,9818,9841 main=4401ff3862 integrator-cloud (first test NORESULT: deps race with prepare's background install; retried)
