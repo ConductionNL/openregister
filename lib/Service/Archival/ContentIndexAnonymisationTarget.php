@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 
 /**
  * Drops the content-search chunks of one record.
@@ -44,11 +44,11 @@ final class ContentIndexAnonymisationTarget implements AnonymisationTarget {
 	/**
 	 * Constructor.
 	 *
-	 * @param ChunkStoreInterface $chunks   The chunk store.
-	 * @param int                 $objectId The record's database id, which the chunks are keyed on.
+	 * @param ChunkMapperInterface $chunks   The chunk store.
+	 * @param int                  $objectId The record's database id, which the chunks are keyed on.
 	 */
 	public function __construct(
-		private readonly ChunkStoreInterface $chunks,
+		private readonly ChunkMapperInterface $chunks,
 		private readonly int $objectId,
 	) {
 	}//end __construct()

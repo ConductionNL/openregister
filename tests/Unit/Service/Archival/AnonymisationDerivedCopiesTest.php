@@ -30,8 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
-use OCA\OpenRegister\Db\StateHistoryMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface;
 use OCA\OpenRegister\Service\Archival\AnonymisationDerivedCopies;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
@@ -213,10 +213,10 @@ final class AnonymisationDerivedCopiesTest extends TestCase {
 	/**
 	 * The history projection, over $this->history.
 	 *
-	 * @return StateHistoryMapperInterface&MockObject The store.
+	 * @return ObjectPropertyHistoryInterface&MockObject The store.
 	 */
-	private function historyStore(): StateHistoryMapperInterface&MockObject {
-		$store = $this->createMock(StateHistoryMapperInterface::class);
+	private function historyStore(): ObjectPropertyHistoryInterface&MockObject {
+		$store = $this->createMock(ObjectPropertyHistoryInterface::class);
 		$matches = fn (string $uuid, array $properties): callable =>
 			fn (array $row): bool => $row['objectUuid'] === $uuid && in_array($row['property'], $properties, true);
 		$store->method('countForObjectProperties')->willReturnCallback(
@@ -236,10 +236,10 @@ final class AnonymisationDerivedCopiesTest extends TestCase {
 	/**
 	 * The content index, over $this->chunks.
 	 *
-	 * @return ChunkStoreInterface&MockObject The store.
+	 * @return ChunkMapperInterface&MockObject The store.
 	 */
-	private function chunkStore(): ChunkStoreInterface&MockObject {
-		$store = $this->createMock(ChunkStoreInterface::class);
+	private function chunkStore(): ChunkMapperInterface&MockObject {
+		$store = $this->createMock(ChunkMapperInterface::class);
 		$store->method('findBySource')->willReturnCallback(
 			function (string $type, int $id): array {
 				if ($this->chunksUnreachable === true) {

@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\StateHistoryMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface;
 use OCP\IDBConnection;
 
 /**
@@ -41,13 +41,13 @@ class AnonymisationDerivedCopies {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapperInterface $history The state-history projection.
-	 * @param ChunkStoreInterface         $chunks  The content search chunks.
+	 * @param ObjectPropertyHistoryInterface $history The state-history projection.
+	 * @param ChunkMapperInterface           $chunks  The content search chunks.
 	 * @param IDBConnection               $db      The database, for the vectors.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapperInterface $history,
-		private readonly ChunkStoreInterface $chunks,
+		private readonly ObjectPropertyHistoryInterface $history,
+		private readonly ChunkMapperInterface $chunks,
 		private readonly IDBConnection $db,
 	) {
 	}//end __construct()

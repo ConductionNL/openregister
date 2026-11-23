@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
+use OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -32,7 +33,7 @@ use OCP\AppFramework\Db\Entity;
  * Callers type against this interface and resolve it from the container; the
  * registrar binds it to StateHistoryMapper. Guarded by C04InterfaceBindingsTest.
  */
-interface StateHistoryMapperInterface {
+interface StateHistoryMapperInterface extends ObjectPropertyHistoryInterface {
 
 	/**
 	 * Close the interval an object is currently in, for one declared property.
@@ -107,33 +108,6 @@ interface StateHistoryMapperInterface {
 	 * @return int Rows removed.
 	 */
 	public function pruneClosedIntervalsBefore(string $objectUuid, DateTimeInterface $horizon): int;
-
-	/**
-	 * How many intervals of one object a set of properties holds.
-	 *
-	 * @param string   $objectUuid The object.
-	 * @param string[] $properties The properties.
-	 *
-	 * @return int The number of intervals.
-	 *
-	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
-	 */
-	public function countForObjectProperties(string $objectUuid, array $properties): int;
-
-	/**
-	 * Drop every interval of one object for a set of properties, open or closed.
-	 *
-	 * Used by an anonymisation: the intervals hold the former values of the
-	 * properties it changed, so they leave with the values.
-	 *
-	 * @param string   $objectUuid The object.
-	 * @param string[] $properties The properties.
-	 *
-	 * @return int Rows removed.
-	 *
-	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
-	 */
-	public function deleteForObjectProperties(string $objectUuid, array $properties): int;
 
 	/**
 	 * Insert one row.

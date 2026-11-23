@@ -31,6 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Service\Archival\RecordArchivalReading;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -53,6 +54,7 @@ final class ComplianceServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AuditResealInterface::class             => AuditHashService::class,
 		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
 		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
 		ObjectArchivalMetadataInterface::class  => TmloService::class,

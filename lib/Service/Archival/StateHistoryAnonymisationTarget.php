@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use OCA\OpenRegister\Db\StateHistoryMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface;
 
 /**
  * Removes the history of the changed properties of one record.
@@ -39,10 +39,10 @@ final class StateHistoryAnonymisationTarget implements AnonymisationTarget {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapperInterface $history The projection.
+	 * @param ObjectPropertyHistoryInterface $history The projection.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapperInterface $history,
+		private readonly ObjectPropertyHistoryInterface $history,
 	) {
 	}//end __construct()
 
