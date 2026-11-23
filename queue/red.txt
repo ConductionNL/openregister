@@ -315,3 +315,4 @@
 2026-11-22T04:23:57Z dev=e158c36ac5 prs=8456 Tests: 63472, Assertions: 222592, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-22T05:16:20Z dev=e158c36ac5 prs=8397 Tests: 63470, Assertions: 222593, Errors: 7, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-23T15:18:39Z dev=223a653f28 prs=7667,7828,7830,8084,8344,8456,8819,8951 Tests: 63555, Assertions: 222761, Errors: 9, Failures: 7, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
+2026-11-23T16:45:04Z dev=4588c723e4 prs=8996,8999,9011,9023,9029,9053,9066,9083 Tests: 63557, Assertions: 222785, Errors: 9, Failures: 3, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
