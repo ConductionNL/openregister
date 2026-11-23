@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalRepair;
 use OCP\Migration\IOutput;
@@ -44,6 +43,17 @@ use Throwable;
  * @spec openspec/changes/shared-credentials-and-flows/tasks.md
  */
 class RepairSharedPrincipalLists implements IRepairStep {
+
+	/**
+	 * The register brokered credentials live in (CredentialBrokerService::REGISTER), restated so
+	 * this Core step does not depend on the Integrations broker.
+	 */
+	private const REGISTER = 'credential-broker';
+
+	/**
+	 * The schema of a brokered credential (CredentialBrokerService::SCHEMA).
+	 */
+	private const SCHEMA = 'brokeredcredential';
 
 	/**
 	 * Constructor.
@@ -85,7 +95,7 @@ class RepairSharedPrincipalLists implements IRepairStep {
 				return;
 			}
 
-			$objects->setRegister(CredentialBrokerService::REGISTER)->setSchema(CredentialBrokerService::SCHEMA);
+			$objects->setRegister(self::REGISTER)->setSchema(self::SCHEMA);
 		} catch (Throwable $e) {
 			$output->info('Shared credential lists not checked: ' . $e->getMessage());
 			return;
@@ -101,7 +111,7 @@ class RepairSharedPrincipalLists implements IRepairStep {
 				$objects->saveObject(
 					object: $data,
 					options: new ObjectSaveOptions(
-						target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+						target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA),
 						uuid: (string)$object->getUuid()
 					),
 					_rbac: false,
