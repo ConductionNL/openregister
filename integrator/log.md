@@ -9,3 +9,4 @@
 2026-11-23T17:29:44Z RED prs=9029 main=ca0cfc43d7 integrator-cloud (solo=9029)
 2026-11-23T17:34:05Z RED prs=9053 main=ca0cfc43d7 integrator-cloud (solo=9053)
 2026-11-23T17:38:20Z RED prs=9066 main=ca0cfc43d7 integrator-cloud (solo=9066)
+2026-11-23T19:16:23Z GREEN prs=8397,9083,9092,9103,9163,9199,9219 main=ff0f786ea8 integrator-cloud (NORESULT once on deps: composer clone raced the tree build; retest green; #9131 tree conflict, deferred)
