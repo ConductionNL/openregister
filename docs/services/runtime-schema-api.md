@@ -77,7 +77,7 @@ against this branch confirms:
 1. `POST /api/configurations/import-from-app` of an `application`-type
    OAS produces a complete `(Configuration, Schemas, Register)` triple
    in one call — no manual `POST /api/registers` needed.
-2. `searchObjectsBySlug('openbuild', 'application', [])` returns the
+2. `searchObjectsBySlug(new RegisterSchemaRef(register: 'openbuild', schema: 'application'))` returns the
    seeded objects (pre-spec: zero results).
 3. Editing a schema via `PUT /api/schemas/{id}` then re-listing
    immediately surfaces the new state in the same PHP worker (cache

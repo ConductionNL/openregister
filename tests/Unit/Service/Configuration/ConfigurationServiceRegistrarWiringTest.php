@@ -155,7 +155,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\FileService',
 				'OCA\\OpenRegister\\Files\\Service\\File\\RegisterFolderProvisionerInterface',
 				'OCA\\OpenRegister\\Kernel\\Contracts\\NoteServiceInterface',
-				'OCA\\OpenRegister\\Service\\TaskService',
+				'OCA\\OpenRegister\\Kernel\\Contracts\\ObjectCalendarTasksInterface',
 				'OCP\\IUserSession',
 				'OCP\\IGroupManager',
 				'OCP\\IUserManager',
