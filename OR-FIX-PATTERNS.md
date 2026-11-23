@@ -684,3 +684,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a PR that merged main 6e870ca5 conflicts in lib/Files/FilesRegistrar.php BINDINGS/uses, FilesRegistrarTest assertCount, and csv rows Files/Service/File/ManagedFiles.php, Files/Service/FileSettingRules.php.
 - Cause: #11024 deleted ManagedFiles, FileSettingRules and Kernel/Contracts/Files/{CallerFileRights,EntityMentionDecisions,FileSettingRules,ManagedFiles,OfficeDocumentConversion,RegisterFolderProvisioning}Interface; main's FilesRegistrar has 32 bindings again; the 4 Files->Core edges are gone (Architecture green on main).
 - Fix: take main's side, re-add only the PR's own bindings/uses/csv rows, count = 32 + PR's own; drop the ManagedFiles/FileSettingRules csv rows; run component-patterns.py (#10525, #5968).
+
+## tools/sig/modularity-baseline.json conflict on a main merge (or-fix-0)
+- Symptom: merge conflict in tools/sig/modularity-baseline.json (exposed_loc, kernel_loc, total_loc, violation_degree hunks).
+- Cause: generated numbers; main records a new baseline on nearly every modularity merge.
+- Fix: git checkout --theirs the json, run python3 tools/sig/modularity_check.py --check on the merged tree (must pass), then --write-baseline and commit it with the merge (#11000 d86305b2).
