@@ -488,3 +488,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Migration name clash scan, 23 Nov (or-fix-18)
 - Open PRs adding the same lib/Migration class: #10513/#10568 (Version1Date20261114170000), #10154/#10526 (...20261114180000); #10247/#10398 resolved by moving #10398 to ...20261121180018 (562ec796). #10398 and #10518 both bump info.xml to 2.2.0-dev.4: whichever lands second needs dev.5.
 - Trap: check-migration-version-bump.php counts committed AND working-tree additions, so after an uncommitted git mv it reports one migration too many; commit before rechecking.
+## ComponentDependencyRulesTest: a shared helper in one component now crosses into another (or-fix-11)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/<A>.php -> lib/<B>.php (Integrations -> Core)' for a file the PR added, after merging main (clean or csv-only conflict).
+- Cause: main remapped files to components (e.g. AuthenticationService is now Integrations); a PR helper both components use (constants list, small value) sits in one of them, so the other gains a forbidden edge.
+- Fix: move a pure constant/value holder into lib/Kernel/Contracts (namespace, imports, csv row 'Kernel/Contracts/X.php,,Kernel,,,,,Kernel', python3 scripts/component-patterns.py); never add the edge to the baseline. Behavioural code instead gets a Kernel interface. (#9131 8058b9a3)
