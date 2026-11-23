@@ -88,6 +88,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
@@ -1392,9 +1393,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing['magicMapper'] = $magicMapper;
 
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $registerEntity,
-			schema: $schemaEntity
+			table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity),
+			query: $query
 		);
 		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
 		$page = $this->paginateMagicResults(listing: $listing);
@@ -1823,9 +1823,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function magicFacets(array $listing): array {
 		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-			query: $listing['query'],
-			register: $listing['resolved']['registerEntity'],
-			schema: $listing['resolved']['schemaEntity']
+			table: new RegisterSchema(register: $listing['resolved']['registerEntity'], schema: $listing['resolved']['schemaEntity']),
+			query: $listing['query']
 		);
 	}//end magicFacets()
 
@@ -1862,7 +1861,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				query: $query,
 				_rbac: $listing['rbac'],
 				_multitenancy: $listing['multi'],
-				deleted: $listing['deleted']
+				options: new SearchOptions(deleted: $listing['deleted'])
 			);
 		} catch (NotAuthorizedException $exception) {
 			// RBAC denied the schema-level list read. Mirror show(): 404, not
@@ -2209,8 +2208,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
 				_rbac: $scope->rbac,
-				_multitenancy: $scope->multi,
-				deleted: false
+				_multitenancy: $scope->multi
 			);
 		} catch (NotAuthorizedException $exception) {
 			// Schema-level read denied (object-source parity check):
@@ -2768,9 +2766,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			schema: $table->resolved['schema']
 		);
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $table->resolved['registerEntity'],
-			schema: $table->resolved['schemaEntity']
+			table: new RegisterSchema(register: $table->resolved['registerEntity'], schema: $table->resolved['schemaEntity']),
+			query: $query
 		);
 		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 

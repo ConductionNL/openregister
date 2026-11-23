@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -301,7 +302,7 @@ class AccessLinkReaderTest extends TestCase {
 		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), true, true, null, null, ['view-uuid'])
+			->with($this->anything(), true, true, $this->equalTo(new SearchOptions(views: ['view-uuid'], viewScopeRequired: true)))
 			->willReturn([$this->object(), $this->object()]);
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
 
