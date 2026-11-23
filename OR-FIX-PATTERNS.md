@@ -443,3 +443,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: composer install (plain or --prefer-source) ends 'Could not authenticate against github.com' at phpstan/phpstan; other packages log 403 on api.github.com zipballs and fall back to slow source clones; vendor/autoload.php never appears.
 - Cause: this environment refuses api.github.com/codeload downloads for repos not added to the session; phpstan/phpstan ships dist-only, so there is no source fallback.
 - Fix: install from a temp copy with phpstan dropped (python: pop phpstan/phpstan from composer.json require-dev and composer.lock packages-dev into composer.tmp.json/.lock; COMPOSER=composer.tmp.json COMPOSER_PROCESS_TIMEOUT=0 composer install --no-scripts), delete the tmp files, then git clone --depth 1 --branch <locked version> https://github.com/phpstan/phpstan vendor/phpstan/phpstan and ln -s ../phpstan/phpstan/phpstan vendor/bin/phpstan. phpstan analyse -c phpstan.neon then runs normally.
+
+## ClassAliasStubTest red after a main merge on #8106 (or-fix-6)
+- Symptom: tests/Unit/Architecture/ClassAliasStubTest::testStubMatchesTheAliasMap 'tests/stubs/ClassAliases.php does not match appinfo/class-aliases.json'.
+- Cause: #8106 ships a stub generated from appinfo/class-aliases.json; every main change to that json (e.g. new Notifications/Files controller aliases) makes it stale.
+- Fix: python3 scripts/class-alias-stubs.py, commit the stub; rerun Architecture (see #8106 1000ddfa).
