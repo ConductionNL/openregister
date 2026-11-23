@@ -23,11 +23,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
-use OCA\OpenRegister\Service\File\UrlFileFetcher;
-use OCA\OpenRegister\Service\File\UrlStreamOpener;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
+use OCA\OpenRegister\Service\SecurityService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -148,28 +148,45 @@ class FilePropertyHandler {
 	private readonly FilePropertyParts $parts;
 
 	/**
-	 * The fetch a URL file input goes through, shared with creating a file from a URL.
+	 * Stream options for the fallback fetch when no shared fetch is injected.
 	 *
-	 * @var UrlFileFetcher
+	 * SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
+	 * 302-redirect to an internal address, defeating the point-in-time guard.
+	 *
+	 * @var array<string, array<string, mixed>>
 	 */
-	private readonly UrlFileFetcher $urlFetcher;
+	private const HTTP_FETCH_OPTIONS = [
+		'http' => [
+			'timeout' => 30,
+			'user_agent' => 'OpenRegister/1.0',
+			'follow_location' => false,
+			'max_redirects' => 0,
+		],
+	];
+
+	/**
+	 * The fetch a URL file input goes through, shared with creating a file from a URL; null uses the guarded fallback.
+	 *
+	 * @var UrlFileFetchInterface|null
+	 */
+	private readonly ?UrlFileFetchInterface $urlFetcher;
 
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
-	 * @param LoggerInterface      $logger      Logger for logging operations
-	 * @param ObjectFilesInterface $fileService File service for file operations
-	 * @param UrlFileFetcher|null  $urlFetcher  The shared URL fetch; the default opens real streams.
+	 * @param LoggerInterface            $logger      Logger for logging operations
+	 * @param ObjectFilesInterface       $fileService File service for file operations
+	 * @param UrlFileFetchInterface|null $urlFetcher  The shared URL fetch (Files' UrlFileFetcher); null uses the guarded fallback.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
-		?UrlFileFetcher $urlFetcher = null,
+		?UrlFileFetchInterface $urlFetcher = null,
 	) {
 		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
-		$this->urlFetcher = ($urlFetcher ?? new UrlFileFetcher(opener: new UrlStreamOpener()));
+		$this->urlFetcher = $urlFetcher;
 	}//end __construct()
 
 	/**
@@ -722,6 +739,10 @@ class FilePropertyHandler {
 	 * @spec openspec/changes/files-create-from-url/specs/file-actions/spec.md
 	 */
 	private function fetchFileFromUrl(string $url): string {
+		if ($this->urlFetcher === null) {
+			return self::fetchWithoutSharedFetcher(url: $url);
+		}
+
 		try {
 			return $this->urlFetcher->fetch(url: $url, maxBytes: PHP_INT_MAX, strict: false);
 		} catch (UrlFetchRefused $refused) {
@@ -732,6 +753,31 @@ class FilePropertyHandler {
 			throw new Exception("Unable to fetch file from URL: $url");
 		}
 	}//end fetchFileFromUrl()
+
+	/**
+	 * The fetch used when no shared fetch was injected: the SEC-SVC-2 guard first, no redirects, 30 seconds.
+	 *
+	 * @param string $url The URL to fetch from.
+	 *
+	 * @return string The file content.
+	 *
+	 * @throws InvalidArgumentException If the guard refuses the address.
+	 * @throws Exception                If the URL cannot be fetched.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The address guard is SecurityService's static check, shared by every fetch.
+	 */
+	private static function fetchWithoutSharedFetcher(string $url): string {
+		SecurityService::assertSafeFetchUrl($url);
+
+		$content = file_get_contents($url, false, stream_context_create(self::HTTP_FETCH_OPTIONS));
+		if ($content === false) {
+			throw new Exception("Unable to fetch file from URL: $url");
+		}
+
+		return $content;
+	}//end fetchWithoutSharedFetcher()
 
 	/**
 	 * Parses file data from URL fetch results.

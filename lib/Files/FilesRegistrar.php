@@ -91,6 +91,8 @@ use OCA\OpenRegister\Kernel\Contracts\Files\FileSettingRulesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\ManagedFilesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\OfficeDocumentConversionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RegisterFolderProvisioningInterface;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -142,6 +144,7 @@ final class FilesRegistrar
         TaggingHandlerInterface::class             => TaggingHandler::class,
         TextExtractionServiceInterface::class      => TextExtractionService::class,
         UploadServiceInterface::class              => UploadService::class,
+        UrlFileFetchInterface::class               => UrlFileFetcher::class,
     ];
 
     /**

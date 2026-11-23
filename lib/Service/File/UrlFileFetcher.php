@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
 use OCA\OpenRegister\Service\SecurityService;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Service\SecurityService;
  *
  * @spec openspec/changes/files-create-from-url/specs
  */
-class UrlFileFetcher {
+class UrlFileFetcher implements UrlFileFetchInterface {
 
 	/**
 	 * The bytes read per chunk.

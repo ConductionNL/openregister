@@ -2651,6 +2651,19 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Without an injected shared fetch the handler still runs the SEC-SVC-2 guard first.
+	 *
+	 * @return void
+	 */
+	public function testWithoutASharedFetcherALoopbackAddressIsStillRefused(): void {
+		$handler = new FilePropertyHandler($this->logger, $this->fileService);
+		$method  = new ReflectionMethod($handler, 'fetchFileFromUrl');
+
+		$this->expectException(InvalidArgumentException::class);
+		$method->invoke($handler, 'http://127.0.0.1/a.pdf');
+	}
+
+	/**
 	 * A URL pointing at loopback is refused before any request is made.
 	 *
 	 * SEC-SVC-2 guards this path against read-SSRF, and it had no test at all:
