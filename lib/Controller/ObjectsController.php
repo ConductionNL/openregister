@@ -83,6 +83,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
@@ -1856,7 +1857,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				query: $query,
 				_rbac: $listing['rbac'],
 				_multitenancy: $listing['multi'],
-				deleted: $listing['deleted']
+				options: new SearchOptions(deleted: $listing['deleted'])
 			);
 		} catch (NotAuthorizedException $exception) {
 			// RBAC denied the schema-level list read. Mirror show(): 404, not
@@ -2161,8 +2162,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
 				_rbac: $scope->rbac,
-				_multitenancy: $scope->multi,
-				deleted: false
+				_multitenancy: $scope->multi
 			);
 		} catch (NotAuthorizedException $exception) {
 			// Schema-level read denied (object-source parity check):
