@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
+
 /**
  * The request's shared collector of save warnings.
  *

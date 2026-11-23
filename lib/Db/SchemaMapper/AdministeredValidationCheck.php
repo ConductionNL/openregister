@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
+use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rules\AdministeredValidations;
 
@@ -60,7 +61,8 @@ final class AdministeredValidationCheck {
 
 		$refusal = (new AdministeredValidations())->refusalFor(annotation: $annotation, declaredProperties: $declared);
 		if ($refusal !== null) {
-			(new AnnotationFaults(schema: $schema, key: AdministeredValidations::ANNOTATION))->refuseWith(messages: [$refusal]);
+			// Same message AnnotationFaults::refuseWith() builds; thrown here so this Processes check names no Core helper.
+			throw new Exception(AdministeredValidations::ANNOTATION . ': ' . $refusal);
 		}
 	}//end check()
 }//end class

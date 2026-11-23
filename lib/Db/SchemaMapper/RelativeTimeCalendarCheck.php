@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Closure;
+use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
 use OCA\OpenRegister\Service\Rules\NamedConditionScope;
@@ -81,8 +82,8 @@ final class RelativeTimeCalendarCheck {
 		foreach ($nodes as $where => $node) {
 			$refusal = $this->firstRefusal(time: $time, node: $node);
 			if ($refusal !== null) {
-				(new AnnotationFaults(schema: $schema, key: RelativeTimeCondition::KEY))
-					->refuseWith(messages: [sprintf('"%s": %s', $where, $refusal)]);
+				// Same message AnnotationFaults::refuseWith() builds; thrown here so this Processes check names no Core helper.
+				throw new Exception(RelativeTimeCondition::KEY . ': ' . sprintf('"%s": %s', $where, $refusal));
 			}
 		}
 	}//end check()

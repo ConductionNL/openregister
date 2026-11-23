@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use Psr\Log\LoggerInterface;
 use Throwable;

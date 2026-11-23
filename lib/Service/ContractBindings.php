@@ -453,7 +453,6 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskService::class,
 		\OCA\OpenRegister\Service\Portal\PortalTaskDeliveryRequestInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
-		\OCA\OpenRegister\Service\Rules\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,

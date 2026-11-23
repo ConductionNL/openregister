@@ -1659,7 +1659,6 @@ components:
       - ".*/lib/Service/Rules/RuleVocabulary[.]php"
       - ".*/lib/Service/Rules/RuleVocabularyTable[.]php"
       - ".*/lib/Service/Rules/SaveWarnings[.]php"
-      - ".*/lib/Service/Rules/SaveWarningsInterface[.]php"
       - ".*/lib/Service/Rules/TransitionDocument[.]php"
       - ".*/lib/Service/Rules/ValidatedWrite[.]php"
       - ".*/lib/Service/Rules/ValidationInput[.]php"

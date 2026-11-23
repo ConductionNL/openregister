@@ -4386,7 +4386,7 @@ Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
 Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Processes
 Middleware/SaveWarningsMiddleware.php,,Middleware,,,,,Platform
 Service/Rules/SaveWarnings.php,,Service,,,,,Processes
-Service/Rules/SaveWarningsInterface.php,,Service,,,,,Processes
+Kernel/Contracts/SaveWarningsInterface.php,,Kernel,,,,,Kernel
 Service/Rules/RelativeTimeSweep.php,,Service,,,,,Processes
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance

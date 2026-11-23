@@ -193,6 +193,7 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
 	];
 
 	/**

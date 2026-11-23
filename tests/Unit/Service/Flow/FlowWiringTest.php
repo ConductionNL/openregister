@@ -125,6 +125,9 @@ use Psr\Container\ContainerInterface;
 use ReflectionProperty;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
+use OCA\OpenRegister\Service\Rules\SaveWarnings;
+use OCA\OpenRegister\Service\ContractBindings;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -305,6 +308,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
 
 	/**
+	 * The request's save warnings are bound inside the Processes area, to the one collector.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveWarningsPortIsAnsweredByTheRequestCollector(): void {
+		self::assertSame(expected: SaveWarnings::class, actual: (FlowWiring::BINDINGS[SaveWarningsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(SaveWarnings::class, SaveWarningsInterface::class, true));
+		self::assertArrayNotHasKey(key: SaveWarningsInterface::class, array: ContractBindings::BINDINGS);
+	}//end testTheSaveWarningsPortIsAnsweredByTheRequestCollector()
+
+	/**
 	 * The render's expression port is answered by the calculation evaluator, through its own interface.
 	 *
 	 * @return void
@@ -435,6 +449,7 @@ final class FlowWiringTest extends TestCase {
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
+				SaveWarningsInterface::class               => SaveWarnings::class,
 			],
 			actual: $this->aliases
 		);
