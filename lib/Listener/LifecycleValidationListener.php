@@ -291,22 +291,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>|null
 	 */
 	private function conditionRefusal(LifecycleAttempt $attempt): ?array {
-		$edit    = $attempt->edit;
-		$schema  = $edit->declaration->schema;
-		$refusal = $this->checks->conditionEvaluator->refusalOf(
-			spec: $attempt->spec,
-			attempt: new TransitionAttempt(
-				write: new LifecycleWrite(
-					newData: $edit->getNewData(),
-					oldData: $edit->getOldData(),
-					schemaSlug: (string)$schema->getSlug(),
-					field: $edit->declaration->field()
-				),
-				move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState()),
-				// The schema's own library: the one its save checked every reference against.
-				conditions: NamedConditionScope::libraryFrom(configuration: $schema->getConfiguration())
-			)
-		);
+		$refusal = $this->checks->conditionEvaluator->refusalOf(spec: $attempt->spec, attempt: $this->transitionAttempt(attempt: $attempt));
 		$this->recordCondition(attempt: $attempt, refusal: $refusal);
 
 		return $refusal;
@@ -482,14 +467,30 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>
 	 */
 	private function conditionDocument(LifecycleAttempt $attempt): array {
-		$edit = $attempt->edit;
-
-		return $this->checks->conditionEvaluator->document(
-			newData: $edit->getNewData(),
-			oldData: $edit->getOldData(),
-			action: $attempt->action,
-			from: $edit->getFromState(),
-			to: $edit->getToState()
-		);
+		return $this->checks->conditionEvaluator->documentOf(attempt: $this->transitionAttempt(attempt: $attempt));
 	}//end conditionDocument()
+
+	/**
+	 * The write and the move of the matched transition, as the condition evaluator reads them.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return TransitionAttempt
+	 */
+	private function transitionAttempt(LifecycleAttempt $attempt): TransitionAttempt {
+		$edit   = $attempt->edit;
+		$schema = $edit->declaration->schema;
+
+		return new TransitionAttempt(
+			write: new LifecycleWrite(
+				newData: $edit->getNewData(),
+				oldData: $edit->getOldData(),
+				schemaSlug: (string)$schema->getSlug(),
+				field: $edit->declaration->field()
+			),
+			move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState()),
+			// The schema's own library: the one its save checked every reference against.
+			conditions: NamedConditionScope::libraryFrom(configuration: $schema->getConfiguration())
+		);
+	}//end transitionAttempt()
 }//end class
