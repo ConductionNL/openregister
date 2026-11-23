@@ -3826,3 +3826,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T17:36:34Z session-20261123T173634-a4dfde51 or-fix-12: session start
 2026-11-23T17:37:07Z session-20261123T173707-fb39c265 or-fix-2: session start
 2026-11-23T17:37:29Z session-20261123T173729-2077a5c3 or-fix-4 start
+2026-11-23T17:37:41Z or-fix-15 start: main ca0cfc43d (11 merges since ec3f0f77d); share 12 PRs all APPROVE at head, all merge clean; testing merged trees
