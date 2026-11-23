@@ -28,7 +28,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use PHPUnit\Framework\TestCase;

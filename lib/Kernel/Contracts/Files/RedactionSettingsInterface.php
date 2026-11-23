@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Files;
 
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 
 /**
  * Reads the settings that entity detection and redaction apply per document: the

@@ -35,7 +35,7 @@ use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Exception\TextDisclosureNotRecordedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\CapacitySuggester;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsDirectory;
 use OCA\OpenRegister\Service\Anonymisation\PersonRegisterMatcher;

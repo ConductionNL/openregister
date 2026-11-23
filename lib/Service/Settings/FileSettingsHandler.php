@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\Service\Anonymisation\PersonRegisterSource;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
@@ -33,6 +33,7 @@ use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
@@ -60,7 +61,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface, CapacityPolicyReaderInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.

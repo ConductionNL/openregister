@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IGroupManager;
 use Psr\Container\ContainerInterface;

@@ -33,8 +33,8 @@ use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCP\IUser;
 use Throwable;
 
@@ -69,13 +69,13 @@ class RelationDecisionService implements RelationDecisionServiceInterface {
 	 * @param RelationDecisionStores $stores    The relation store, the decision store and the transaction.
 	 * @param DecisionOwnership      $ownership The ownership rule.
 	 * @param ReviewPolicyResolver   $policies  The relation's policy.
-	 * @param FileSettingsHandler|null $fileSettings The organisation's capacity policy (REQ-DKP-002); the shipped default without it.
+	 * @param CapacityPolicyReaderInterface|null $fileSettings The organisation's capacity policy (REQ-DKP-002); the shipped default without it.
 	 */
 	public function __construct(
 		private readonly RelationDecisionStores $stores,
 		private readonly DecisionOwnership $ownership,
 		private readonly ReviewPolicyResolver $policies,
-		private readonly ?FileSettingsHandler $fileSettings=null,
+		private readonly ?CapacityPolicyReaderInterface $fileSettings=null,
 	) {
 	}//end __construct()
 

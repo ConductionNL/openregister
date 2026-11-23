@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Exception\CustomValidationException;

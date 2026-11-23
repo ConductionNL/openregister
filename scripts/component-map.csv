@@ -3474,10 +3474,9 @@ Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
-Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
-Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
-Service/Anonymisation/OfficialsDirectory.php,,Service,,,,,Compliance
-Service/Anonymisation/OfficialsSource.php,,Service,,,,,Compliance
+Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Files
+Service/Anonymisation/OfficialsDirectory.php,,Service,,,,,Files
+Service/Anonymisation/OfficialsSource.php,,Service,,,,,Kernel
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
@@ -4384,10 +4383,10 @@ Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 Exception/PersonRegisterPurposeMissingException.php,,Exception,,,,,Kernel
-Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Compliance
-Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Compliance
-Service/Anonymisation/PersonRegisterMatcher.php,,Service,,,,,Compliance
-Service/Anonymisation/PersonRegisterRun.php,,Service,,,,,Compliance
+Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Kernel
+Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Files
+Service/Anonymisation/PersonRegisterMatcher.php,,Service,,,,,Files
+Service/Anonymisation/PersonRegisterRun.php,,Service,,,,,Files
 Migration/Version1Date20261114230000.php,,Migration,,,,,Platform
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
@@ -4649,3 +4648,5 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/CapacityPolicyReaderInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/CapacityPolicy.php,,Kernel,,,,,Kernel
