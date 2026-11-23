@@ -675,3 +675,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: npm run l10n:selfcheck -- <loc> adds 'FAIL serializer round-trip byte-exact' vs main; often with one new 'identical, no recorded reason' in parity.
 - Cause: the PR appended keys to l10n/<loc>.js by hand, not in serializeJs key order.
 - Fix: node -e: c=loadJsTranslations(f); write serializeJs({app:c.app,translations:c.translations,pluralForm:c.pluralForm}) (scripts/l10n/lib.js) for each touched bundle; diff is order only. A genuine cognate goes in scripts/l10n/locales/<loc>.json "cognates" (see #11023).
+
+## csv union resurrects rows main's #10996 revert removed (or-fix-3)
+- Symptom: after merging main e353e627+ the csv keeps rows for Files/Service/File/ManagedFiles.php and Files/Service/FileSettingRules.php (no such file), or Db/DecisionMetadataEdit.php stays on Files; PRs that merged main 01cb1831 carry them.
+- Cause: main 5f24d440 reverted the Files-owned ports merge; the PR side of the csv conflict hunk still has the reverted rows.
+- Fix: after bin/component-map-merge.py, delete those two rows (main's Core row for DecisionMetadataEdit wins), regenerate the yaml; the csv diff vs main must show only the PR's own files.
