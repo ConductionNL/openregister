@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use DateTimeInterface;
 
 /**
  * The destruction-list entries still waiting on a reviewer, counted per reviewer.
@@ -33,16 +32,15 @@ interface DestructionReviewReminderInterface {
 	/**
 	 * The entries still waiting on somebody.
 	 *
-	 * @param array<string, mixed>   $listData     The destruction list's own data.
-	 * @param string                 $listUuid     The uuid of the list, carried onto each entry.
-	 * @param string|null            $reviewer     Only this reviewer's entries, or every assigned entry when null.
-	 * @param DateTimeInterface|null $waitingSince Only entries assigned at or before this moment.
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param PendingReviewQuery   $query    The list's uuid, carried onto each entry, the reviewer (every assigned entry when
+	 *                                       null) and how long an entry must have waited.
 	 *
 	 * @return array<int, array<string, mixed>> The pending entries, each naming its list.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array;
+	public function pendingEntries(array $listData, PendingReviewQuery $query): array;
 
 	/**
 	 * Pending entries counted per reviewer.
