@@ -404,3 +404,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: in a second worktree, PR tests fail with TypeErrors against the old signature, or A18InterfaceBindingsTest lists a class's own file as a caller.
 - Cause: a symlinked vendor/ makes composer's autoloader resolve lib/ from the symlink target checkout, not the worktree.
 - Fix: never symlink vendor; copy it with cp -al (hardlinks) into each worktree.
+## ControllerServicesWiringTest 'loses <X>::$field' for a new Controller\Support collaborator (or-fix-6)
+- Symptom: ControllerServicesWiringTest::testEveryBundledServiceReachesTheController '<Controller> loses OwnMailReverseLookup::$linkedEntityService'.
+- Cause: every class in a Controller\Support namespace counts as a bundle; reaches() read bundles with get_object_vars (public only), so a Support collaborator with private promoted fields hid its services.
+- Fix: main's test now (via #11006 b4268150) reads a bundle's initialised fields incl. private; until that lands, apply the same one-line change or make the fields public readonly. Also add the class's component-map row.
