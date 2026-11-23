@@ -4634,7 +4634,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
-Service/TwigSandboxFilters.php,,Service,,,,,Core
+Kernel/Contracts/TwigSandboxFilters.php,,Kernel,,,,,Kernel
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes

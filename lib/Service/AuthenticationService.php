@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service;
 
 use GuzzleHttp\Client;
+use OCA\OpenRegister\Kernel\Contracts\TwigSandboxFilters;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\KeyManagement\JWKFactory;

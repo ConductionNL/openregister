@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category  Service
- * @package   OCA\OpenRegister
+ * @package   OCA\OpenRegister\Kernel\Contracts
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * The value-shaping Twig filters that both the JWT payload sandbox

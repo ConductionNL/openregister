@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\Core\TwigFunctionsInstallerInterface;
-use OCA\OpenRegister\Service\TwigSandboxFilters;
+use OCA\OpenRegister\Kernel\Contracts\TwigSandboxFilters;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
