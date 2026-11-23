@@ -605,3 +605,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Constants other areas compare against: move them to a Kernel interface and let the area interface extend it (BackendMethodsInterface extends Kernel AnonymisationMethodsInterface): every Old::CONST keeps resolving.
 - A plain exception mapped to an area (Exception/AuthenticationException was Integrations) can be remapped to Kernel in the csv when it has no lib deps.
 - Helper: a 6-line python that imports scripts/component-deps.py (load_tool()[0], component_function, php_dependencies) prints every edge of the PR's added files with components; much faster than reading the 8-min Architecture run.
+## searchObjectsBySlug(registerSlug:, schemaSlug:) gone on main (or-fix-19)
+- Symptom: after merging main, 'Unknown named parameter $registerSlug' in a PR's tests, phpstan argument.unknown 'Missing parameter $target (Contract\RegisterSchemaSlugs)' on ObjectOperationsInterface::searchObjectsBySlug.
+- Cause: main 3e6d79b7 ('the search methods take published values') made the slugs one value object.
+- Fix: target: new RegisterSchemaSlugs(register: X, schema: Y) (use OCA\OpenRegister\Contract\RegisterSchemaSlugs); test callbacks take (RegisterSchemaSlugs $target, array $filters = [], ...) and read $target->register/->schema; add #[UsesClass(RegisterSchemaSlugs::class)]. Grep a PR diff for '^+.*registerSlug:' (#10139 3d6ddaf4).
+- Same PR: an Integrations service writing a system audit line (new AuditTrail() + AuditTrailMapperInterface::insert) -> root Kernel SystemAuditLineInterface::recordSystemLine(action, userName, changed), implemented by Service/Audit/AuditEntryWriter, bound in ComplianceServiceBindings (lands with #10139; copy it from there until then).
