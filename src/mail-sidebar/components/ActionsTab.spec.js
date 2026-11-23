@@ -512,7 +512,8 @@ describe('ActionsTab create through an app\'s own dialog', () => {
 		const context = open.mock.calls[0][0]
 		expect(context.initialData.title).toBe('Re: Offer')
 		expect(context.schema).toEqual(LEADS)
-		expect(context.mail).toEqual({ accountId: 1, messageId: 42 })
+		expect(context.mail).toEqual(expect.objectContaining({ accountId: 1, messageId: 42 }))
+		expect(context.mail.values).toEqual(expect.objectContaining({ subject: 'Offer', sender: 'a@b.nl', senderName: 'Anna', mailRef: '1/42' }))
 		expect(wrapper.findComponent({ name: 'CreateConnectedObjectDialog' }).props('show')).toBe(false)
 		expect(link).toHaveBeenCalledWith(LEADS, { id: 'new-1', title: 'From the app' })
 		expect(wrapper.vm.creating[LEADS.id]).toBe(false)
