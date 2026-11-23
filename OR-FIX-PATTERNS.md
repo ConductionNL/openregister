@@ -583,3 +583,5 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest lists '<PR file> -> lib/Service/File/FileTarget.php|FileUpload.php|Service/Object/FileWriteGuardInterface.php (Files -> Core)', or a PR's own value/exception crossing components.
 - Cause: main's FilesController etc. carry these edges in the baseline; any NEW file naming them is refused, though they depend only on Kernel (ObjectEntity, ObjectStateWriteException).
 - Fix: give the file a csv row with component Kernel (Kernel files may live outside lib/Kernel, cf. Db/ObjectEntity, Exception/*), check its own use lines are Kernel/OCP only, python3 scripts/component-patterns.py. Constants+reader a new file needs from a Configuration class: a root Kernel/Contracts port carrying the constants, implemented by that class (its constants then inherited). See #10526 3aacce0a, #10506 300667ab (TablePdfRendererInterface over ExportService).
+## Migration clash: #10526 moved off Version1Date20261114180000 (or-fix-6)
+- #10526 now adds Version1Date20261114180006 (37c23ac1f652be9dd08296d9e1857515cabd31ae); #10154 is the only holder of ...180000.
