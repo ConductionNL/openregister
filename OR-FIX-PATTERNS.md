@@ -595,3 +595,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## New flow node bound in ContractBindings / using WriteCause after main's area split (or-fix-18)
 - Symptom: ComponentDependencyRulesTest: 'lib/Service/ContractBindings.php -> lib/Service/Flow/Nodes/<X>Node.php (Configuration -> Processes)' and '<X>Node.php -> lib/Service/WriteCause.php (Processes -> Core)'.
 - Fix: move '<X>NodeInterface::class => <X>Node::class' into FlowWiring::BINDINGS (+ FlowWiringTest list) as LockObjectNode; replace WriteCause::asLookup(fn () => $objects->find(...)) with $objects->findSilent(id:) (audit-skipped read, RecentLens accepts it) and adapt the node test (#10358).
+## Trap: the overlap guard reads commit subjects, but st_append writes 'state: append <file>' (or-fix-3)
+- Symptom: two sessions of one lane run at once; a push is rejected non-fast-forward because the other session pushed the same fix minutes earlier (#10363 66a5487e, #10543 eff058c2 on 23 Nov).
+- Cause: the lane text greps `git log --format=%s` for 'or-fix-K', but verdict/pattern rows land under generic subjects, so the guard never fires.
+- Fix: check content instead: `git -C ~/q log --since='50 minutes ago' -p -- verdicts.txt OR-FIX-PATTERNS.md | grep -c 'or-fix-K'`; non-zero means another session of the lane is active: end.
