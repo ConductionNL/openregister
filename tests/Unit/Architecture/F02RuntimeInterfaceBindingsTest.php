@@ -33,6 +33,7 @@ use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
@@ -68,7 +69,7 @@ final class F02RuntimeInterfaceBindingsTest extends TestCase {
 		PlaceholderResolver::class => [PlaceholderResolverInterface::class, SearchRegistrar::class],
 		SourceFetcherRegistry::class => [SourceFetcherLookupInterface::class, ContractBindings::class],
 		TaskObjectAdapter::class => [ObjectEntity::class, null],
-		TrustTierResolver::class => [TrustTierResolverInterface::class, ContractBindings::class],
+		TrustTierResolver::class => [TrustTierResolverInterface::class, CoreServiceBindings::class],
 	];
 
 	/**
