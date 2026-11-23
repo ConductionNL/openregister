@@ -28,14 +28,11 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
 use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Node;
-use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -71,33 +68,6 @@ class RegisterService implements RegisterServiceInterface {
 	private const COUNT_FIELDS = ['total', 'deleted', 'invalid', 'locked', 'size'];
 
 	/**
-	 * Register mapper
-	 *
-	 * Handles database operations for register entities.
-	 *
-	 * @var RegisterMapperInterface Register mapper instance
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Schema mapper
-	 *
-	 * Handles database operations for schema entities.
-	 *
-	 * @var SchemaMapperInterface Schema mapper instance
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Database connection
-	 *
-	 * Direct database connection for custom queries.
-	 *
-	 * @var IDBConnection Database connection instance
-	 */
-	private readonly IDBConnection $db;
-
-	/**
 	 * Every magic table that exists, as a name => true lookup. Null until first read.
 	 *
 	 * Populated once per request by {@see magicTableExists()}. See that method for why
@@ -106,13 +76,6 @@ class RegisterService implements RegisterServiceInterface {
 	 * @var array<string, true>|null
 	 */
 	private ?array $magicTableNames = null;
-
-	/**
-	 * File service for file operations.
-	 *
-	 * @var EntityFolderInterface
-	 */
-	private readonly EntityFolderInterface $fileService;
 
 	/**
 	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
@@ -136,34 +99,13 @@ class RegisterService implements RegisterServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		RegisterServiceStorage $storage,
-		RegisterServiceHelpers $helpers,
+		private readonly RegisterServiceStorage $storage,
+		private readonly RegisterServiceHelpers $helpers,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->fileService = $helpers->fileService;
 		$this->registerSerializer = $helpers->registerSerializer;
-		$this->logConstruction(phase: 'started');
-		// Store dependencies for use in service methods.
-		$this->registerMapper = $storage->registerMapper;
-		$this->schemaMapper   = $storage->schemaMapper;
-		$this->db             = $storage->db;
-		$this->logConstruction(phase: 'completed');
 	}//end __construct()
-
-	/**
-	 * Trace a construction phase.
-	 *
-	 * @param string $phase `started` or `completed`.
-	 *
-	 * @return void
-	 */
-	private function logConstruction(string $phase): void {
-		$this->logger->debug(
-			message: '[RegisterService] RegisterService constructor ' . $phase . '.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-	}//end logConstruction()
 
 	/**
 	 * Find a register by ID with optional extensions
@@ -189,7 +131,7 @@ class RegisterService implements RegisterServiceInterface {
 		// `findSerialized()` to obtain an array payload with `_extend`
 		// post-processing applied.
 		unset($_extend);
-		return $this->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
+		return $this->storage->registerMapper->find(id: $id, _multitenancy: $_multitenancy);
 	}//end find()
 
 	/**
@@ -225,19 +167,38 @@ class RegisterService implements RegisterServiceInterface {
 		?array $_extend = [],
 		bool $_multitenancy = true,
 	): array {
-		// Find all registers with optional filtering, pagination, and extensions.
-		// NB: `_extend` is declared for signature compatibility only — the
-		// mapper layer ignores it; honored extensions live on findSerialized
-		// / findAllSerialized which delegate to RegisterSerializer.
-		return $this->registerMapper->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
-			searchConditions: $searchConditions,
-			searchParams: $searchParams,
+		$query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []));
+		$search = new RegisterSearch(
+			query: $query,
+			searchConditions: ($searchConditions ?? []),
+			searchParams: ($searchParams ?? []),
+			extend: ($_extend ?? [])
+		);
+		return $this->searchRegisters(search: $search, _multitenancy: $_multitenancy);
+	}//end findAll()
+
+	/**
+	 * Find the registers one search selects.
+	 *
+	 * `extend` is not applied here; {@see searchRegistersSerialized()} applies it.
+	 *
+	 * @param RegisterSearch $search        The page, filters and raw search conditions.
+	 * @param bool           $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return Register[] The registers.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function searchRegisters(RegisterSearch $search, bool $_multitenancy = true): array {
+		return $this->storage->registerMapper->findAll(
+			limit: $search->query->limitOrNull(),
+			offset: $search->query->offset,
+			filters: $search->query->filters,
+			searchConditions: $search->searchConditions,
+			searchParams: $search->searchParams,
 			_multitenancy: $_multitenancy
 		);
-	}//end findAll()
+	}//end searchRegisters()
 
 	/**
 	 * Find a register by ID and serialize it with `_extend` applied
@@ -343,21 +304,34 @@ class RegisterService implements RegisterServiceInterface {
 		array $_extend = [],
 		bool $_multitenancy = true,
 	): array {
-		$registers = $this->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
-			searchConditions: $searchConditions,
-			searchParams: $searchParams,
-			_extend: $_extend,
-			_multitenancy: $_multitenancy
-		);
+		$query = new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? []));
+		$search = new RegisterSearch(query: $query, searchConditions: ($searchConditions ?? []), searchParams: ($searchParams ?? []), extend: $_extend);
+		return $this->searchRegistersSerialized(search: $search, _multitenancy: $_multitenancy);
+	}//end findAllSerialized()
+
+	/**
+	 * Find the registers one search selects and serialize each with its extensions applied.
+	 *
+	 * When `schemas` and `@self.stats` are both requested, per-register stats are
+	 * pre-computed and handed to the serializer.
+	 *
+	 * @param RegisterSearch $search        The page, filters, raw search conditions and extensions.
+	 * @param bool           $_multitenancy Whether to apply multitenancy filtering.
+	 *
+	 * @return array<int,array> Array of serialized register payloads.
+	 *
+	 * @spec openspec/specs/register-service-extensions/spec.md
+	 */
+	public function searchRegistersSerialized(RegisterSearch $search, bool $_multitenancy = true): array {
+		$registers = $this->searchRegisters(search: $search, _multitenancy: $_multitenancy);
+
+		$stats = $this->statsByRegisterId(registers: $registers, _extend: $search->extend);
 
 		return $this->registerSerializer->serializePage(
 			registers: $registers,
-			extension: new RegisterListExtension(extend: $_extend, schemaStatsByRegisterId: $this->statsByRegisterId(registers: $registers, _extend: $_extend))
+			extension: new RegisterListExtension(extend: $search->extend, schemaStatsByRegisterId: $stats)
 		);
-	}//end findAllSerialized()
+	}//end searchRegistersSerialized()
 
 	/**
 	 * Per-register schema counts when `_extend` asks for them, else null.
@@ -398,7 +372,7 @@ class RegisterService implements RegisterServiceInterface {
 			try {
 				// Stays global: the id IS the register's own entry for the schema, so there is no id set to narrow a
 				// legacy slug entry against.
-				$schemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+				$schemas[] = $this->storage->schemaMapper->find(id: $schemaId, _multitenancy: false);
 			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 				// Orphan IDs cannot contribute to stats; skip silently.
 				// The RegisterSerializer logs the orphan when it hits the
@@ -425,13 +399,13 @@ class RegisterService implements RegisterServiceInterface {
 	 */
 	public function createFromArray(array $data): Register {
 		// Create the register first.
-		$register = $this->registerMapper->createFromArray(object: $data);
+		$register = $this->storage->registerMapper->createFromArray(object: $data);
 
 		// Set organisation from active organisation for multi-tenancy (if not already set).
 		if ($register->getOrganisation() === null || $register->getOrganisation() === '') {
 			$organisationUuid = $this->organisationService->getOrganisationForNewEntity();
 			$register->setOrganisation($organisationUuid);
-			$register = $this->registerMapper->update($register);
+			$register = $this->storage->registerMapper->update($register);
 		}
 
 		// Ensure folder exists for the new register.
@@ -483,7 +457,7 @@ class RegisterService implements RegisterServiceInterface {
 	 */
 	public function updateFromArray(int $id, array $data): Register {
 		// Update the register first.
-		$register = $this->registerMapper->updateFromArray(id: $id, object: $data);
+		$register = $this->storage->registerMapper->updateFromArray(id: $id, object: $data);
 
 		// Ensure folder exists for the updated register (handles legacy folder properties).
 		$this->ensureRegisterFolderExists(entity: $register);
@@ -510,10 +484,10 @@ class RegisterService implements RegisterServiceInterface {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function delete(Register $register): Register {
-		$deleted = $this->registerMapper->delete($register);
+		$deleted = $this->storage->registerMapper->delete($register);
 
 		try {
-			$this->fileService->deleteRegisterFolder(register: $register);
+			$this->helpers->fileService->deleteRegisterFolder(register: $register);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: "[RegisterService] Register {$register->getId()} was deleted but its folder was not removed: " . $e->getMessage(),
@@ -558,7 +532,7 @@ class RegisterService implements RegisterServiceInterface {
 	private function createRegisterFolder(Register $entity): void {
 		try {
 			// Create folder and get the folder node.
-			$this->recordFolder(entity: $entity, folderNode: $this->fileService->createEntityFolder($entity));
+			$this->recordFolder(entity: $entity, folderNode: $this->helpers->fileService->createEntityFolder($entity));
 		} catch (Exception $e) {
 			// Log the error but don't fail the register creation/update.
 			// The register can still function without a folder.
@@ -588,7 +562,7 @@ class RegisterService implements RegisterServiceInterface {
 
 		// Update the entity with the folder ID, then save it.
 		$entity->setFolder((string)$folderNode->getId());
-		$this->registerMapper->update($entity);
+		$this->storage->registerMapper->update($entity);
 		$this->logFolderCreated(entity: $entity, folderNode: $folderNode);
 	}//end recordFolder()
 
@@ -741,7 +715,7 @@ class RegisterService implements RegisterServiceInterface {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		$stmt = $this->db->prepare($sql);
+		$stmt = $this->storage->db->prepare($sql);
 		$stmt->execute();
 		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
 			$result[(int)$row['schema_id']] = $this->getZeroCountStats(row: $row);
@@ -777,7 +751,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * @return string The format, with one %s for the id.
 	 */
 	private function schemaIdSqlFormat(): string {
-		$platform = $this->db->getDatabasePlatform();
+		$platform = $this->storage->db->getDatabasePlatform();
 		if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
 			return '%s::text';
 		}
@@ -820,7 +794,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * @return string The SELECT returning schema_id, total, deleted, invalid, locked and size.
 	 */
 	private function schemaCountSql(string $schemaIdExpr, string $tableName): string {
-		$quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+		$quotedTableName = $this->storage->db->getQueryBuilder()->getTableName($tableName);
 		return "
                     SELECT
                         {$schemaIdExpr} as schema_id,
@@ -886,9 +860,9 @@ class RegisterService implements RegisterServiceInterface {
 		$this->magicTableNames = [];
 
 		$sql  = 'SELECT table_name FROM information_schema.tables';
-		$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition();
+		$sql .= ' WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->storage->db))->condition();
 
-		$stmt = $this->db->prepare($sql);
+		$stmt = $this->storage->db->prepare($sql);
 		$stmt->bindValue('pattern', '%openregister\_table\_%');
 		$stmt->execute();
 		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
@@ -940,7 +914,7 @@ class RegisterService implements RegisterServiceInterface {
 		);
 		$this->magicTableNames = null;
 
-		return $this->db->tableExists($tableName);
+		return $this->storage->db->tableExists($tableName);
 	}//end tableExistsAfterCatalogFailure()
 
 	/**

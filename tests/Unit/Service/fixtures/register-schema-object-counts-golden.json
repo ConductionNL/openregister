@@ -2,14 +2,6 @@
     "mysql mixed shapes": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
@@ -63,14 +55,6 @@
         ]
     ],
     "postgres": [
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
         [
             "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
@@ -127,27 +111,11 @@
     ],
     "no schemas": [
         [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
             "result",
             []
         ]
     ],
     "no tables at all": [
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
         [
             "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
@@ -194,14 +162,6 @@
     "only unusable shapes": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 3 schemas for register 1"
         ],
         [
@@ -222,14 +182,6 @@
         ]
     ],
     "catalog read fails": [
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
         [
             "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
@@ -343,14 +295,6 @@
     "count query fails": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
@@ -395,14 +339,6 @@
         ]
     ],
     "array id as string": [
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
         [
             "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 2 schemas for register 1"
