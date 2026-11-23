@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\RedactionReviewMark;
 use OCA\OpenRegister\Db\RedactionReviewMarkMapper;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Service\Anonymisation\RedactionRunFingerprint;
-use OCA\OpenRegister\Service\Audit\TokenResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,6 +47,13 @@ use Throwable;
  * fingerprint of the run they checked.
  */
 class RedactionReviewMarkController extends Controller {
+
+	/**
+	 * The session key Nextcloud keeps an app password under (as
+	 * Service\Audit\TokenResolver::SESSION_KEY), restated so this Files
+	 * controller does not reach into the Compliance area.
+	 */
+	private const APP_PASSWORD_SESSION_KEY = 'app_password';
 
 	/**
 	 * Constructor.
@@ -115,7 +121,7 @@ class RedactionReviewMarkController extends Controller {
 	 */
 	private function isTokenLogin(): bool {
 		try {
-			$password = $this->session->get(TokenResolver::SESSION_KEY);
+			$password = $this->session->get(self::APP_PASSWORD_SESSION_KEY);
 		} catch (Throwable $unreadable) {
 			return true;
 		}

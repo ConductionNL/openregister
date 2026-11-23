@@ -25,14 +25,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OriginalCustody;
 use OCA\OpenRegister\Db\OriginalCustodyMapper;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
-use OCA\OpenRegister\Service\Archival\AppraisalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\Files\File;
@@ -69,11 +68,18 @@ class OriginalRetentionJob extends TimedJob {
 	public const HELD_OBJECT_UNREADABLE = 'object-unreadable';
 
 	/**
+	 * The nominations that keep an object permanently; the same values as
+	 * Service\Archival\self::RETAIN_PERMANENTLY_ALIASES, restated
+	 * so this Files job does not reach into the Compliance area.
+	 */
+	private const RETAIN_PERMANENTLY_ALIASES = ['retain_permanently', 'bewaren', 'blijvend_bewaren'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory               $time       The clock.
 	 * @param OriginalCustodyMapper      $custody    The custody rows.
-	 * @param MagicObjectFinderInterface $objects    Reads the object of each original.
+	 * @param ObjectOperationsInterface  $objects    Reads the object of each original, without audit.
 	 * @param IRootFolder                $rootFolder Resolves the original.
 	 * @param DeleteFileHandler          $deleter    The file delete path.
 	 * @param FileAuditHandlerInterface  $audit      Writes the audit row.
@@ -82,7 +88,7 @@ class OriginalRetentionJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OriginalCustodyMapper $custody,
-		private readonly MagicObjectFinderInterface $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly IRootFolder $rootFolder,
 		private readonly DeleteFileHandler $deleter,
 		private readonly FileAuditHandlerInterface $audit,
@@ -178,7 +184,7 @@ class OriginalRetentionJob extends TimedJob {
 		}
 
 		try {
-			return $this->objects->find(identifier: $row->getObjectUuid(), _rbac: false, _multitenancy: false);
+			return $this->objects->findSilent(id: $row->getObjectUuid(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $unreadable) {
 			return null;
 		}
@@ -206,7 +212,7 @@ class OriginalRetentionJob extends TimedJob {
 		];
 		foreach ($nominations as $nomination) {
 			if (is_string($nomination) === true
-				&& in_array(strtolower($nomination), AppraisalInterface::RETAIN_PERMANENTLY_ALIASES, true) === true
+				&& in_array(strtolower($nomination), self::RETAIN_PERMANENTLY_ALIASES, true) === true
 			) {
 				return self::HELD_NOMINATION_KEEP;
 			}
@@ -253,7 +259,7 @@ class OriginalRetentionJob extends TimedJob {
 				data: [
 					'originalFileId' => $row->getOriginalFileId(),
 					'redactedCopyFileId' => $row->getCopyFileId(),
-					'rule' => 'anonymisation.' . FileSettingsHandler::ORIGINAL_RETENTION_KEY,
+					'rule' => 'anonymisation.' . RedactionSettingsInterface::ORIGINAL_RETENTION_KEY,
 					'retention' => $row->getRetention(),
 					'deleteAfter' => $row->getDeleteAfter()?->format(DATE_ATOM),
 				]

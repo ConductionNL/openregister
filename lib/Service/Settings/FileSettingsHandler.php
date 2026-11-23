@@ -102,17 +102,6 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	public const REQUIRE_REVIEW_KEY = 'requireReview';
 
 	/**
-	 * The anonymisation setting naming how long an unredacted original is kept
-	 * after its redacted copy is published: `keep` or an ISO 8601 duration.
-	 */
-	public const ORIGINAL_RETENTION_KEY = 'originalRetention';
-
-	/**
-	 * The retention that deletes nothing: the original is kept as the record.
-	 */
-	public const ORIGINAL_RETENTION_KEEP = 'keep';
-
-	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
 	 * The enabled file types are LLPhant-friendly: native PHP support plus common

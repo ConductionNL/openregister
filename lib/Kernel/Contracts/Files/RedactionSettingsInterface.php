@@ -38,6 +38,21 @@ interface RedactionSettingsInterface {
 	public const DEFAULT_CONFIDENCE_THRESHOLD = 0.5;
 
 	/**
+	 * The anonymisation setting naming how long an unredacted original is kept
+	 * after its redacted copy is published: `keep` or an ISO 8601 duration.
+	 *
+	 * @var string
+	 */
+	public const ORIGINAL_RETENTION_KEY = 'originalRetention';
+
+	/**
+	 * The retention that deletes nothing: the original is kept as the record.
+	 *
+	 * @var string
+	 */
+	public const ORIGINAL_RETENTION_KEEP = 'keep';
+
+	/**
 	 * The minimum confidence a detection needs, from the organisation's file settings.
 	 *
 	 * @return float A number between 0 and 1; the default when none is stored.
@@ -54,4 +69,23 @@ interface RedactionSettingsInterface {
 	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
 	 */
 	public function maskForms(): array;
+
+	/**
+	 * Whether anonymised output waits for a person's check of every detection.
+	 *
+	 * @return bool True when review is required.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function requireReview(): bool;
+
+	/**
+	 * How long an unredacted original is kept after its redacted copy is
+	 * published: `keep` (nothing is deleted) or an ISO 8601 duration.
+	 *
+	 * @return string The retention.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public function originalRetention(): string;
 }//end interface

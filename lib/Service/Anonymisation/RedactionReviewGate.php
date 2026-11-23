@@ -24,11 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
-use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\RedactionReviewMarkMapper;
 use OCA\OpenRegister\Exception\ReviewRequiredException;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 
 /**
  * Nothing is written until a person has checked it.
@@ -41,14 +40,20 @@ use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 class RedactionReviewGate {
 
 	/**
+	 * A detection no person has decided yet (Db\EntityRelation::DECISION_UNDECIDED),
+	 * restated so this Files gate does not name the Core entity.
+	 */
+	private const DECISION_UNDECIDED = 'undecided';
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FileSettingsHandler       $settings  Whether review is required.
+	 * @param RedactionSettingsInterface $settings  Whether review is required.
 	 * @param EntityRelationMapperInterface $relations The file's detections and their decisions.
 	 * @param RedactionReviewMarkMapper $marks     The file's review marks.
 	 */
 	public function __construct(
-		private readonly FileSettingsHandler $settings,
+		private readonly RedactionSettingsInterface $settings,
 		private readonly EntityRelationMapperInterface $relations,
 		private readonly RedactionReviewMarkMapper $marks,
 	) {
@@ -73,7 +78,7 @@ class RedactionReviewGate {
 		$detections = $this->relations->findDetectionsForReview(fileId: $fileId);
 		$undecided = 0;
 		foreach ($detections as $row) {
-			if ((string)($row['redaction_decision'] ?? EntityRelation::DECISION_UNDECIDED) === EntityRelation::DECISION_UNDECIDED) {
+			if ((string)($row['redaction_decision'] ?? self::DECISION_UNDECIDED) === self::DECISION_UNDECIDED) {
 				$undecided++;
 			}
 		}

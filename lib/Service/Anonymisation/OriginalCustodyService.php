@@ -24,11 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\OriginalCustody;
 use OCA\OpenRegister\Db\OriginalCustodyMapper;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -62,14 +62,14 @@ class OriginalCustodyService {
 	 * Constructor.
 	 *
 	 * @param OriginalCustodyMapper $custody    The custody rows.
-	 * @param FileSettingsHandler   $settings   Reads `anonymisation.originalRetention`.
+	 * @param RedactionSettingsInterface $settings   Reads `anonymisation.originalRetention`.
 	 * @param IRootFolder           $rootFolder Resolves the files a row names.
 	 * @param ITimeFactory          $time       The clock.
 	 * @param LoggerInterface       $logger     Logs a copy whose original cannot be found.
 	 */
 	public function __construct(
 		private readonly OriginalCustodyMapper $custody,
-		private readonly FileSettingsHandler $settings,
+		private readonly RedactionSettingsInterface $settings,
 		private readonly IRootFolder $rootFolder,
 		private readonly ITimeFactory $time,
 		private readonly LoggerInterface $logger,
@@ -91,7 +91,7 @@ class OriginalCustodyService {
 	 */
 	public function scheduleOnPublication(File $copy, string $objectUuid): ?OriginalCustody {
 		$retention = $this->settings->originalRetention();
-		if ($retention === FileSettingsHandler::ORIGINAL_RETENTION_KEEP || self::isCopy(name: (string) $copy->getName()) === false) {
+		if ($retention === RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP || self::isCopy(name: (string) $copy->getName()) === false) {
 			return null;
 		}
 

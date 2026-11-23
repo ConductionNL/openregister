@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\OriginalRetentionJob;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OriginalCustody;
 use OCA\OpenRegister\Db\OriginalCustodyMapper;
@@ -121,11 +121,11 @@ class OriginalRetentionJobTest extends TestCase {
 			return $entity;
 		});
 
-		$objects = $this->createMock(MagicObjectFinderInterface::class);
+		$objects = $this->createMock(ObjectOperationsInterface::class);
 		if ($object === null) {
-			$objects->method('find')->willThrowException(new DoesNotExistException('gone'));
+			$objects->method('findSilent')->willThrowException(new DoesNotExistException('gone'));
 		} else {
-			$objects->method('find')->with('obj-uuid')->willReturn($object);
+			$objects->method('findSilent')->with('obj-uuid')->willReturn($object);
 		}
 
 		$original = $this->createMock(File::class);

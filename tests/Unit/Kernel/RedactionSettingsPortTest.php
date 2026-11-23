@@ -67,6 +67,13 @@ final class RedactionSettingsPortTest extends TestCase {
 		$this->assertSame(0.5, FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD);
 	}
 
+	public function testTheOriginalRetentionKeysAreOnThePortAndReachTheHandler(): void {
+		$this->assertSame('originalRetention', RedactionSettingsInterface::ORIGINAL_RETENTION_KEY);
+		$this->assertSame('keep', RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP);
+		$this->assertSame(RedactionSettingsInterface::ORIGINAL_RETENTION_KEY, FileSettingsHandler::ORIGINAL_RETENTION_KEY);
+		$this->assertSame(RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP, FileSettingsHandler::ORIGINAL_RETENTION_KEEP);
+	}
+
 	public function testTheRedactionBagCarriesWhateverAnswersThePort(): void {
 		$settings = new class implements RedactionSettingsInterface {
 			public function confidenceThreshold(): float {
@@ -75,6 +82,14 @@ final class RedactionSettingsPortTest extends TestCase {
 
 			public function maskForms(): array {
 				return ['PERSON' => ['form' => 'initials']];
+			}
+
+			public function requireReview(): bool {
+				return false;
+			}
+
+			public function originalRetention(): string {
+				return RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP;
 			}
 		};
 
