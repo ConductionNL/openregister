@@ -333,6 +333,11 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Interface => service map of the Core area, registered by ServiceRegistrar.
@@ -548,5 +553,8 @@ final class CoreServiceBindings {
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		VocabularyDeclarationResolverInterface::class => VocabularyDeclarationResolver::class,
+		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
+		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 	];
 }//end class
