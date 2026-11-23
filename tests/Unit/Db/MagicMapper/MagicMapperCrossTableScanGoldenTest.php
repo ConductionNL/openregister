@@ -6,8 +6,8 @@
  *
  * Records the statements each cross-table scan prepares and binds, the query
  * it builds per matching table, the register and schema lookups, the log lines
- * and the objects it returns, per platform, deleted flag, register scope and
- * failing step. Re-record with UPDATE_GOLDEN=1.
+ * and the objects it returns, per platform, deleted flag, register and schema scope
+ * and failing step. Re-record with UPDATE_GOLDEN=1.
  *
  * The register and schema ids (91xx) are unique to this test, because both
  * methods keep a process-wide cache of the lookups.
@@ -105,6 +105,9 @@ class MagicMapperCrossTableScanGoldenTest extends TestCase {
 			$cases["{$platform} / multiple / no tables"] = [$platform, 'multiple', [['u-1'], false, null], 'no-tables'];
 			$cases["{$platform} / relation / no tables"] = [$platform, 'relation', ['t', false], 'no-tables'];
 			$cases["{$platform} / multiple / scope matches nothing"] = [$platform, 'multiple', [['u-1'], false, 4242], null];
+			$cases["{$platform} / multiple / schema scoped"] = [$platform, 'multiple', [['u-1', 'u-3'], false, null, [9201, 9202]], null];
+			$cases["{$platform} / multiple / register and schema scoped"] = [$platform, 'multiple', [['u-1', 'u-3'], false, 9101, [9201, 9202]], null];
+			$cases["{$platform} / multiple / schema scope matches nothing"] = [$platform, 'multiple', [['u-1'], false, null, [4242]], null];
 		}
 
 		$cases['multiple / empty'] = ['pg', 'multiple', [[], false, null], null];
@@ -127,7 +130,7 @@ class MagicMapperCrossTableScanGoldenTest extends TestCase {
 			];
 			$mapper = $this->makeMapper(platform: $platform, fail: $fail);
 			if ($method === 'multiple') {
-				$found = $mapper->findMultipleAcrossAllMagicTables($args[0], $args[1], $args[2]);
+				$found = $mapper->findMultipleAcrossAllMagicTables($args[0], $args[1], $args[2], ($args[3] ?? null));
 			} else {
 				$found = $mapper->findByRelationAcrossAllMagicTables($args[0], $args[1]);
 			}

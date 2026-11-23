@@ -48,6 +48,13 @@ final class MagicCrossTableScan {
 	public ?int $registerIdScope = null;
 
 	/**
+	 * Only scan these schemas' tables, in any register; null scans every schema.
+	 *
+	 * @var list<int>|null
+	 */
+	public ?array $schemaIdScope = null;
+
+	/**
 	 * The WHERE predicate each UNION arm applies, with positional placeholders.
 	 *
 	 * @var string
