@@ -156,6 +156,22 @@ function scan(root) {
  * Composable: observes the document for attachment elements and makes them
  * draggable until the parent component unmounts.
  */
+/**
+ * What a Mail attachment element offers, as the drag carries it: the message,
+ * the attachment and its download URL; null when it cannot be read.
+ *
+ * @param {Element} el The `.attachment` element.
+ * @return {object|null}
+ */
+export function attachmentPayloadOf(el) {
+	const props = readAttachmentProps(el)
+	const messageId = currentMessageId()
+	return props && messageId ? dragPayload(props, messageId) : null
+}
+
+/**
+ *
+ */
 export function useAttachmentDrag() {
 	let observer = null
 

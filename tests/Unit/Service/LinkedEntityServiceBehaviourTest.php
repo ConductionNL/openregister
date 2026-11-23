@@ -297,7 +297,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$object->setUuid('obj-1');
 		$object->setName('Ticket one');
 		$object->setDescription('Printer on floor two');
-		$object->setObject(['identifier' => '2026-0042', 'number' => 7]);
+		$object->setObject(['identifier' => '2026-0042', 'number' => 7, 'status' => 'c19074a7-0000-4000-a000-000000000001', 'statusLabel' => 'in progress', 'assignee' => 'pieter']);
 		$object->setRegister('2');
 		$this->magicMapper->expects($this->once())->method('findByLinkedEntity')
 			->with($this->identicalTo($declaring), '_notes', 'n-9')->willReturn([$object]);
@@ -317,7 +317,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['entityType' => 'object', 'uuid' => 'obj-1', 'name' => 'Ticket one', 'identifier' => '2026-0042', 'description' => 'Printer on floor two', 'schema' => 'Schema 4', 'schemaId' => 4, 'schemaIcon' => 'icon-4', 'register' => 2, 'url' => '/apps/x/obj-1'],
+				['entityType' => 'object', 'uuid' => 'obj-1', 'name' => 'Ticket one', 'identifier' => '2026-0042', 'description' => 'Printer on floor two', 'status' => 'in progress', 'assignee' => 'pieter', 'schema' => 'Schema 4', 'schemaId' => 4, 'schemaIcon' => 'icon-4', 'register' => 2, 'url' => '/apps/x/obj-1'],
 				['entityType' => 'register', 'uuid' => 'reg-1', 'name' => 'Register one'],
 				['entityType' => 'schema', 'uuid' => 'schema-4', 'name' => 'Schema 4'],
 				['entityType' => 'organisation', 'uuid' => 'org-1', 'name' => 'Org one'],

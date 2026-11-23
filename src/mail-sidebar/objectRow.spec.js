@@ -6,7 +6,7 @@
  *
  * @spec exclude Unit test of client-side row helpers.
  */
-import { objectIdentifier, objectSubline } from './objectRow.js'
+import { markParts, objectHandler, objectIdentifier, objectStatus, objectSubline } from './objectRow.js'
 
 describe('objectIdentifier', () => {
 	it.each([
@@ -28,5 +28,35 @@ describe('objectSubline', () => {
 		expect(objectSubline({ description: 'field' })).toBe('field')
 		expect(objectSubline({ description: 42 })).toBe('')
 		expect(objectSubline(null)).toBe('')
+	})
+})
+
+describe('objectStatus', () => {
+	it('names the status by its label, never by a reference id', () => {
+		expect(objectStatus({ statusLabel: 'in progress', status: 'x' })).toBe('in progress')
+		expect(objectStatus({ statusPublicLabel: 'Received' })).toBe('Received')
+		expect(objectStatus({ statusName: 'closed' })).toBe('closed')
+		expect(objectStatus({ status: 'open' })).toBe('open')
+		expect(objectStatus({ status: 'c19074a7-44e2-4aeb-88dc-ccd989e36cd7' })).toBe('')
+		expect(objectStatus(null)).toBe('')
+	})
+})
+
+describe('objectHandler', () => {
+	it('reads the assignee, then the handler', () => {
+		expect(objectHandler({ assignee: 'pieter', handler: 'anouk' })).toBe('pieter')
+		expect(objectHandler({ handler: 'anouk' })).toBe('anouk')
+		expect(objectHandler({ assignee: 3 })).toBe('')
+		expect(objectHandler(null)).toBe('')
+	})
+})
+
+describe('markParts', () => {
+	it('splits around the first match of the typed words, ignoring case', () => {
+		expect(markParts('Street lighting Lindelaan', 'lindelaan')).toEqual({ before: 'Street lighting ', match: 'Lindelaan', after: '' })
+		expect(markParts('Tree felling permit', ' tree ')).toEqual({ before: '', match: 'Tree', after: ' felling permit' })
+		expect(markParts('No match here', 'zebra')).toEqual({ before: 'No match here', match: '', after: '' })
+		expect(markParts('Anything', '')).toEqual({ before: 'Anything', match: '', after: '' })
+		expect(markParts(null, 'x')).toEqual({ before: '', match: '', after: '' })
 	})
 })

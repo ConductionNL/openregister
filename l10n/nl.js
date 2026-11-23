@@ -4029,7 +4029,21 @@ OC.L10N.register(
     "Fields marked * are required. The new {name} is connected to this mail." : "Velden met * zijn verplicht. De nieuwe {name} wordt aan deze e-mail gekoppeld.",
     "(optional)" : "(niet verplicht)",
     "Create and connect" : "Aanmaken en koppelen",
-    "No {name} matches “{term}”." : "Geen {name} gevonden voor “{term}”."
+    "No {name} matches “{term}”." : "Geen {name} gevonden voor “{term}”.",
+    "Not connected to anything yet." : "Nog nergens aan gekoppeld.",
+    "Connecting" : "Koppelen",
+    "Connected to {name} #{number}" : "Gekoppeld aan {name} #{number}",
+    "Undo" : "Ongedaan maken",
+    "Add to {name}" : "Toevoegen aan {name}",
+    "_%n connection_::_%n connections_" : ["%n koppeling", "%n koppelingen"],
+    "Search for {value}" : "{value} zoeken",
+    "sender" : "afzender",
+    "person" : "persoon",
+    "address" : "adres",
+    "email address" : "e-mailadres",
+    "phone number" : "telefoonnummer",
+    "link" : "link",
+    "other" : "overig"
 },
 "nplurals=2; plural=(n != 1);"
 );

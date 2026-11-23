@@ -465,6 +465,8 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'name' => $object->getName(),
 			'identifier' => $this->recordNumber(object: $object),
 			'description' => $this->objectDescription(schema: $schema, object: $object),
+			'status' => $this->firstPlainValue(object: $object, fields: ['statusLabel', 'statusPublicLabel', 'statusName']),
+			'assignee' => $this->firstPlainValue(object: $object, fields: ['assignee', 'handler']),
 			'schema' => $schema->getTitle(),
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
@@ -510,8 +512,20 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * @return string|null The record number
 	 */
 	private function recordNumber(ObjectEntity $object): ?string {
+		return $this->firstPlainValue(object: $object, fields: ['identifier', 'number', 'reference']);
+	}//end recordNumber()
+
+	/**
+	 * The first of these fields of the object that holds a plain value, or null.
+	 *
+	 * @param ObjectEntity  $object The linked object
+	 * @param array<string> $fields The fields, in order
+	 *
+	 * @return string|null The value
+	 */
+	private function firstPlainValue(ObjectEntity $object, array $fields): ?string {
 		$data = $object->getObject();
-		foreach (['identifier', 'number', 'reference'] as $field) {
+		foreach ($fields as $field) {
 			$value = ($data[$field] ?? null);
 			if ((is_string($value) === true || is_int($value) === true) && (string)$value !== '') {
 				return (string)$value;
@@ -519,7 +533,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 		}
 
 		return null;
-	}//end recordNumber()
+	}//end firstPlainValue()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.

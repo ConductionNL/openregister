@@ -128,7 +128,7 @@ describe('EntitiesTab golden', () => {
 		expect(wrapper.html()).toMatchSnapshot()
 	})
 
-	it('renders grouped entities and reloads when the message changes', async () => {
+	it('renders the found values and reloads when the message changes', async () => {
 		axios.get.mockResolvedValue({
 			data: {
 				data: {
@@ -154,7 +154,7 @@ describe('EntitiesTab golden', () => {
 })
 
 describe('ObjectsTab golden', () => {
-	it('renders nothing and counts zero without an account', async () => {
+	it('says it is not connected yet and counts zero without an account', async () => {
 		const wrapper = mount(ObjectsTab, { props: { messageId: 7 } })
 		await flushPromises()
 		expect(axios.get).not.toHaveBeenCalled()

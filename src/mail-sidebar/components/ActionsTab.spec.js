@@ -284,13 +284,15 @@ describe('ActionsTab connect', () => {
 		axios.post.mockImplementation(
 			() => new Promise((resolve) => (release = resolve)),
 		)
-		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2', title: 'Lead two', identifier: 'L-2', description: 'From the fair' })
+		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2', title: 'Lead two', identifier: 'L-2', statusLabel: 'new' })
 		await wrapper.vm.$nextTick()
 		const picked = wrapper.find('.or-action-picked')
 		expect(picked.attributes('aria-label')).toBe('Connecting…')
+		expect(picked.find('.or-action-result--picked').exists()).toBe(true)
 		expect(picked.find('.or-object-row__id').text()).toBe('#L-2')
 		expect(picked.find('.or-object-row__name').text()).toBe('Lead two')
-		expect(picked.find('.or-object-row__sub').text()).toBe('From the fair')
+		expect(picked.find('.or-object-status').text()).toBe('new')
+		expect(picked.find('.or-object-row__trailing').text()).toBe('Connecting')
 		expect(wrapper.find('.or-action-block--busy').exists()).toBe(true)
 		release({})
 		await pending
@@ -459,5 +461,37 @@ describe('ActionsTab no match', () => {
 		wrapper.vm.searching[5] = false
 		wrapper.vm.searchTerms[5] = ''
 		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+	})
+})
+
+describe('ActionsTab found values and names', () => {
+	it('searches the first kind for a value found in the mail', async () => {
+		const wrapper = await mountTab()
+		const first = wrapper.vm.schemas[0]
+		const search = jest.spyOn(wrapper.vm, 'searchObjects').mockImplementation(() => {})
+		wrapper.vm.searchFor('Lindelaan 14')
+		expect(wrapper.vm.searchTerms[first.id]).toBe('Lindelaan 14')
+		expect(wrapper.vm.visibleResults[first.id]).toBe(true)
+		expect(search).toHaveBeenCalledWith(first)
+	})
+
+	it('shows a handler once the name is read, and asks for each user once', async () => {
+		const wrapper = await mountTab()
+		expect(wrapper.vm.nameOf('')).toBe('')
+		wrapper.vm.names.pieter = 'Pieter Jansen'
+		expect(wrapper.vm.nameOf('pieter')).toBe('Pieter Jansen')
+		const before = axios.get.mock.calls.length
+		wrapper.vm.resolveNames([{ assignee: 'pieter' }, { assignee: 'pieter' }, {}])
+		expect(axios.get.mock.calls.length).toBe(before)
+	})
+
+	it('marks the typed words in a match', async () => {
+		const wrapper = await mountTab()
+		await wrapper.find('.or-action-input').trigger('focus')
+		wrapper.vm.searchTerms[5] = 'acm'
+		await wrapper.vm.$nextTick()
+		const mark = wrapper.find('.or-object-row__mark')
+		expect(mark.exists()).toBe(true)
+		expect(mark.text().toLowerCase()).toBe('acm')
 	})
 })

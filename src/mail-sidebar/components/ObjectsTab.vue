@@ -1,6 +1,5 @@
 <template>
 	<section
-		v-if="loading || objects.length > 0"
 		class="or-tab-objects"
 		:aria-label="t('openregister', 'Connected to')">
 		<h4 class="or-mail-panel__section-title">
@@ -10,6 +9,9 @@
 			<NcLoadingIcon :size="20" />
 			<span>{{ t('openregister', 'Loading connections...') }}</span>
 		</div>
+		<p v-else-if="objects.length === 0" class="or-mail-object-empty">
+			{{ t('openregister', 'Not connected to anything yet.') }}
+		</p>
 		<div v-else class="or-mail-object-list">
 			<div
 				v-for="obj in objects"
@@ -44,11 +46,16 @@
 					:title="t('openregister', 'Open connected item')">
 					{{ displayName(obj) }}
 				</a>
-				<p v-if="dropTarget === obj.uuid" class="or-mail-object-card__drop">
-					{{ t('openregister', 'Drop an attachment here to add it') }}
-				</p>
-				<p v-else-if="objectSubline(obj)" class="or-mail-object-card__sub">
+				<p v-if="objectSubline(obj)" class="or-mail-object-card__sub">
 					{{ objectSubline(obj) }}
+				</p>
+				<ObjectStatus
+					class="or-mail-object-card__status"
+					:status="objectStatus(obj)"
+					:handler="nameOf(objectHandler(obj))" />
+				<p v-if="dropTarget === obj.uuid" class="or-mail-object-card__drop">
+					<Paperclip :size="16" />
+					{{ t('openregister', 'Drop an attachment here to add it') }}
 				</p>
 			</div>
 		</div>
@@ -77,10 +84,13 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import Paperclip from 'vue-material-design-icons/Paperclip.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import ObjectStatus from './ObjectStatus.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
-import { objectIdentifier, objectSubline } from '../objectRow.js'
+import { displayNameOf } from '../displayNames.js'
+import { objectHandler, objectIdentifier, objectStatus, objectSubline } from '../objectRow.js'
 
 /**
  * The toast for an attachment added to an object.
@@ -114,6 +124,8 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		Close,
+		ObjectStatus,
+		Paperclip,
 		RemoveConnectionDialog,
 	},
 
@@ -129,6 +141,8 @@ export default {
 			removing: false,
 			// The card an attachment is being dragged over, which says it takes the drop.
 			dropTarget: null,
+			// Display names of handlers by user id, '' while being read.
+			names: {},
 		}
 	},
 
@@ -136,6 +150,53 @@ export default {
 		t,
 		objectIdentifier,
 		objectSubline,
+		objectStatus,
+		objectHandler,
+
+		/**
+		 * A handler's display name once read, else nothing yet.
+		 *
+		 * @param {string} uid The handler's user id.
+		 * @return {string}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		nameOf(uid) {
+			return uid ? (this.names[uid] || '') : ''
+		},
+
+		/**
+		 * Add a Mail attachment to a connected item, as a drop on its card does.
+		 * Without a uuid the first connected item takes it.
+		 *
+		 * @param {object} attachment The attachment, as the drag payload carries it.
+		 * @param {string} [uuid] The connected item.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async addAttachment(attachment, uuid) {
+			const obj = this.objects.find((candidate) => !uuid || candidate.uuid === uuid)
+			if (!obj) return
+			await this.uploadDroppedAttachment(JSON.stringify(attachment), obj)
+		},
+
+		/**
+		 * Remove a connection at once, for Undo right after it was made.
+		 *
+		 * @param {string} uuid The connected item.
+		 * @return {Promise<boolean>} Whether it was removed.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async unlinkNow(uuid) {
+			try {
+				const base = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', { uuid })
+				await axios.delete(`${base}/${this.accountId}/${this.messageId}`)
+				this.loadObjects()
+				return true
+			} catch {
+				showError(t('openregister', 'Failed to remove connection'))
+				return false
+			}
+		},
+
 		/**
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
@@ -188,6 +249,7 @@ export default {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
 				this.$emit('count', 0)
+				this.$emit('objects', [])
 				return
 			}
 
@@ -203,6 +265,23 @@ export default {
 			} finally {
 				this.loading = false
 				this.$emit('count', this.objects.length)
+				this.$emit('objects', this.objects)
+				this.resolveNames()
+			}
+		},
+
+		/**
+		 * Read the display names of the connected items' handlers.
+		 *
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		resolveNames() {
+			for (const uid of new Set(this.objects.map(objectHandler).filter(Boolean))) {
+				if (this.names[uid] !== undefined) continue
+				this.names[uid] = ''
+				displayNameOf(uid).then((name) => {
+					this.names[uid] = name
+				})
 			}
 		},
 
