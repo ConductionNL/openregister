@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
-use OCA\OpenRegister\Service\Anonymisation\BackendStatement;
+use OCA\OpenRegister\Kernel\Contracts\AnonymisationMethodsInterface;
+use OCA\OpenRegister\Kernel\Contracts\BackendStatement;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
@@ -401,8 +401,8 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		}
 
 		$stated = [];
-		foreach (BackendState::METHODS as $backend) {
-			if ($backend === BackendState::METHOD_REGEX || array_key_exists($backend, $statements) === false) {
+		foreach (AnonymisationMethodsInterface::METHODS as $backend) {
+			if ($backend === AnonymisationMethodsInterface::METHOD_REGEX || array_key_exists($backend, $statements) === false) {
 				continue;
 			}
 

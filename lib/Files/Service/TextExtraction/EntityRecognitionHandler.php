@@ -44,6 +44,7 @@ use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
 
 /**
  * Entity Recognition Handler.
@@ -65,7 +66,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
  */
-class EntityRecognitionHandler {
+class EntityRecognitionHandler implements TextEntityDetectorInterface {
 	/**
 	 * Entity type constants.
 	 */

@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
+use OCA\OpenRegister\Kernel\Contracts\DetectorRecordInterface;
+use OCA\OpenRegister\Service\Anonymisation\DetectorRecord;
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
@@ -55,6 +57,7 @@ final class ComplianceServiceBindings {
 	public const BINDINGS = [
 		AuthRateLimitCeilingInterface::class    => HardeningPolicy::class,
 		CascadeRetentionCheckInterface::class   => ArchivalRetentionGuard::class,
+		DetectorRecordInterface::class          => DetectorRecord::class,
 		ObjectArchivalMetadataInterface::class  => TmloService::class,
 		ReadPurposeGuardInterface::class        => PurposeGuard::class,
 		ReadableObjectHistoryInterface::class   => ObjectHistoryForReaders::class,

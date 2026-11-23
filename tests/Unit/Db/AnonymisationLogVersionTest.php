@@ -42,6 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendInfo;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\DetectorRecord;
 use OCA\OpenRegister\Service\Anonymisation\DetectorVersion;
 use OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
@@ -70,6 +71,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Anonymisation\PipelineSteps
  * @uses \OCA\OpenRegister\Service\Anonymisation\BackendInfo
  * @uses \OCA\OpenRegister\Service\Anonymisation\BackendState
+ * @uses \OCA\OpenRegister\Service\Anonymisation\DetectorRecord
  * @uses \OCA\OpenRegister\Service\Anonymisation\DetectorVersion
  * @uses \OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion
@@ -222,6 +224,8 @@ class AnonymisationLogVersionTest extends TestCase {
 			} else {
 				$detectors->expects($this->once())->method('getState')->willReturn($state);
 			}
+
+			$detectors = new DetectorRecord(backends: $detectors);
 		}
 
 		$sanitizer = $this->createMock(OfficeDocumentSanitizer::class);

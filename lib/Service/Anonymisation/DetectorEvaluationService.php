@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Anonymisation;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 
@@ -41,7 +41,7 @@ class DetectorEvaluationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param EntityRecognitionHandler     $recognition The detection the backends share.
+	 * @param TextEntityDetectorInterface  $recognition The detection the backends share.
 	 * @param AnonymisationBackendService  $backends    Names each backend's detector version record.
 	 * @param IAppConfig                   $appConfig   Where the evaluations are kept.
 	 * @param ITimeFactory                 $time        The moment of a run.
@@ -49,7 +49,7 @@ class DetectorEvaluationService {
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
 	 */
 	public function __construct(
-		private readonly EntityRecognitionHandler $recognition,
+		private readonly TextEntityDetectorInterface $recognition,
 		private readonly AnonymisationBackendService $backends,
 		private readonly IAppConfig $appConfig,
 		private readonly ITimeFactory $time,

@@ -47,7 +47,6 @@ use Throwable;
 use ZipArchive;
 use OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest;
-use OCA\OpenRegister\Service\Anonymisation\BackendInfo;
 
 /**
  * Handles document processing operations.
@@ -975,7 +974,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		try {
-			$state = $this->redaction->detectors->getState();
+			return $this->redaction->detectors->detectorRecord();
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'DocumentProcessingHandler: detector version record unavailable',
@@ -983,18 +982,6 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 			return null;
 		}
-
-		$info = ($state->backends[$state->effectiveMethod] ?? null);
-		if (($info instanceof BackendInfo) === false || $info->detector === null) {
-			return null;
-		}
-
-		$encoded = json_encode(array_merge(['backend' => $state->effectiveMethod], $info->detector->jsonSerialize()));
-		if (is_string($encoded) === false) {
-			return null;
-		}
-
-		return $encoded;
 	}//end detectorRecord()
 
 	/**

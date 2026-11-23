@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category  ValueObject
- * @package   OCA\OpenRegister\Service\Anonymisation
+ * @package   OCA\OpenRegister\Kernel\Contracts
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -19,7 +19,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Anonymisation;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use JsonSerializable;
 
@@ -111,11 +111,11 @@ final class BackendStatement implements JsonSerializable {
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
 	 */
 	public static function isProductDeclared(string $backend, string $openAnonymiserSource): bool {
-		if ($backend === BackendState::METHOD_REGEX) {
+		if ($backend === AnonymisationMethodsInterface::METHOD_REGEX) {
 			return true;
 		}
 
-		return ($backend === BackendState::METHOD_OPENANONYMISER && $openAnonymiserSource !== 'external');
+		return ($backend === AnonymisationMethodsInterface::METHOD_OPENANONYMISER && $openAnonymiserSource !== 'external');
 	}//end isProductDeclared()
 
 	/**

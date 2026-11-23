@@ -28,7 +28,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendStatement;
+use OCA\OpenRegister\Kernel\Contracts\BackendStatement;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder;
@@ -40,7 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\Anonymisation\BackendStatement
+ * @covers \OCA\OpenRegister\Kernel\Contracts\BackendStatement
  * @covers \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService
  * @covers \OCA\OpenRegister\Service\Anonymisation\BackendInfo
  * @covers \OCA\OpenRegister\Service\Settings\FileSettingsHandler
