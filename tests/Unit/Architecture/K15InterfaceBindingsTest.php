@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\CorrectionTargets;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
@@ -49,8 +49,8 @@ final class K15InterfaceBindingsTest extends TestCase {
 
 	#[DataProvider('bindings')]
 	public function testTheBindingIsPresent(string $contract, string $service): void {
-		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
-		$this->assertSame($service, ContractBindings::BINDINGS[$contract]);
+		$this->assertArrayHasKey($contract, CoreServiceBindings::BINDINGS);
+		$this->assertSame($service, CoreServiceBindings::BINDINGS[$contract]);
 	}//end testTheBindingIsPresent()
 
 	#[DataProvider('bindings')]

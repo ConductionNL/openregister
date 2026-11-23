@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
+use Psr\Log\LoggerInterface;
 
 /**
  * The domain services of the audit trail API.
@@ -40,6 +41,7 @@ final class AuditTrailLog {
 	 * @param AuditHashServiceInterface         $auditHashService The audit hash chain service
 	 * @param ReadableAuditTrailListerInterface $readableLister   Lists the trail within one caller's read scope.
 	 * @param AuditTrailPageServiceInterface    $auditPage        The audit page's keyset list and export.
+	 * @param LoggerInterface                   $logger           Logs an object history lookup that failed.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 */
@@ -48,6 +50,7 @@ final class AuditTrailLog {
 		public readonly AuditHashServiceInterface $auditHashService,
 		public readonly ReadableAuditTrailListerInterface $readableLister,
 		public readonly AuditTrailPageServiceInterface $auditPage,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class
