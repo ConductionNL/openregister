@@ -3823,3 +3823,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T17:29:40Z integrator-20261123T155733-7ac3bd34 RED tree ed68497ce8 prs 1 front=skip: Tests: 63557, Assertions: 222773, Errors: 9, Failures: 3, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
 2026-11-23T17:34:01Z integrator-20261123T155733-7ac3bd34 RED tree 5419ead7c6 prs 1 front=skip: Tests: 63557, Assertions: 222774, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
 2026-11-23T17:35:56Z or-fix-5 or-fix-5 start
+2026-11-23T17:36:34Z session-20261123T173634-a4dfde51 or-fix-12: session start
