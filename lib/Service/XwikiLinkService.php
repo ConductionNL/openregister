@@ -455,12 +455,24 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			$filters['_search'] = $search;
 		}
 
+		// The widget and the picker list the same pages on every page load; a
+		// failure is never cached, so a recovered source shows at once.
+		$cache    = $this->searchCache();
+		$cacheKey = hash('sha256', json_encode(['available', (string)($this->runtime->userSession()->getUser()?->getUID() ?? ''), $filters], JSON_THROW_ON_ERROR));
+		$cached   = $cache?->get($cacheKey);
+		if (is_array($cached) === true) {
+			return $cached;
+		}
+
 		$outcome = $this->browse(filters: $filters, caller: 'getAvailablePages');
 		if ($outcome['cause'] !== null) {
 			return $this->unavailableState(cause: $outcome['cause']);
 		}
 
-		return ['results' => $outcome['results'], 'total' => count($outcome['results'])];
+		$result = ['results' => $outcome['results'], 'total' => count($outcome['results'])];
+		$cache?->set($cacheKey, $result, self::SEARCH_CACHE_TTL);
+
+		return $result;
 	}//end getAvailablePages()
 
 	/**
@@ -547,11 +559,22 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * @return ICache|null
 	 */
 	private function searchCache(): ?ICache {
-		if ($this->cacheFactory === null || $this->cacheFactory->isAvailable() === false) {
+		// Nextcloud's container hands an optional constructor parameter its
+		// default (null) instead of autowiring it, so resolve the factory here.
+		$factory = $this->cacheFactory;
+		if ($factory === null) {
+			try {
+				$factory = $this->container->get(ICacheFactory::class);
+			} catch (Throwable) {
+				return null;
+			}
+		}
+
+		if ($factory instanceof ICacheFactory === false || $factory->isAvailable() === false) {
 			return null;
 		}
 
-		return $this->cacheFactory->createDistributed('openregister-xwiki-search');
+		return $factory->createDistributed('openregister-xwiki-search');
 	}//end searchCache()
 
 	/**

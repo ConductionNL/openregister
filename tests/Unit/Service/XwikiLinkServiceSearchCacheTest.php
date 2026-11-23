@@ -127,4 +127,57 @@ class XwikiLinkServiceSearchCacheTest extends TestCase {
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame([], $this->store);
 	}//end testADegradedAnswerIsNotCached()
+
+	public function testTheAvailablePagesAreAnsweredFromTheCacheAndASearchDoesNotShareTheirEntry(): void {
+		$this->signIn('pieter');
+		$this->provider->expects($this->exactly(2))
+			->method('list')
+			->willReturn([['reference' => 'Workplace.Laptop', 'title' => 'Laptop', 'space' => 'Workplace']]);
+
+		$first  = $this->service->getAvailablePages(null);
+		$second = $this->service->getAvailablePages(null);
+		$this->service->searchPages(new ListQuery(limit: 25, offset: 0, search: ''));
+
+		$this->assertSame($first, $second);
+		$this->assertSame(1, $second['total']);
+	}//end testTheAvailablePagesAreAnsweredFromTheCacheAndASearchDoesNotShareTheirEntry()
+
+	public function testUnavailablePagesAreNotCached(): void {
+		$this->signIn('pieter');
+		$this->provider->expects($this->exactly(2))
+			->method('list')
+			->willThrowException(new ProviderUnavailableException('down', ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN));
+
+		$this->service->getAvailablePages('street');
+		$this->assertTrue($this->service->getAvailablePages('street')['unavailable']);
+		$this->assertSame([], $this->store);
+	}//end testUnavailablePagesAreNotCached()
+
+	public function testWithoutAnInjectedFactoryTheCacheComesFromTheContainer(): void {
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(fn (string $key) => ($this->store[$key] ?? null));
+		$cache->method('set')->willReturnCallback(
+			function (string $key, mixed $value, int $ttl): bool {
+				$this->store[$key] = $value;
+				return true;
+			}
+		);
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturn($cache);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(fn (string $class) => ($class === ICacheFactory::class ? $factory : $this->provider));
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->willReturnCallback(static fn (string $id): bool => $id === 'openconnector');
+		$service = new XwikiLinkService(
+			$this->createMock(XwikiLinkMapper::class),
+			$container,
+			new LinkServiceRuntime($appManager, $this->userSession, $this->createMock(LoggerInterface::class))
+		);
+		$this->signIn('pieter');
+		$this->provider->expects($this->once())->method('list')->willReturn([]);
+
+		$service->getAvailablePages(null);
+		$service->getAvailablePages(null);
+	}//end testWithoutAnInjectedFactoryTheCacheComesFromTheContainer()
 }//end class
