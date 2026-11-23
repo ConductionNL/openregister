@@ -1228,7 +1228,7 @@ Files/Service/TextExtraction/DocumentStyleMap.php,129,Files,Files,Files/Service/
 Files/Service/TextExtraction/EmlAttachment.php,25,Files,Files,Files/Service/TextExtraction/EmlAttachment.php,1,,Files
 Files/Service/TextExtraction/EmlBody.php,17,Files,Files,Files/Service/TextExtraction/EmlBody.php,1,,Files
 Files/Service/TextExtraction/EmlParser.php,359,Files,Files,Files/Service/TextExtraction/EmlParser.php,0,,Files
-Files/Service/TextExtraction/ExtractionCeiling.php,,Files,,,,,Files
+Files/Service/TextExtraction/ExtractionCeiling.php,,Files,,,,,Kernel
 Files/Service/TextExtraction/EmlStructure.php,19,Files,Files,Files/Service/TextExtraction/EmlStructure.php,3,,Files
 Files/Service/TextExtraction/EntityRecognitionHandler.php,742,Files,Files,Files/Service/TextExtraction/EntityRecognitionHandler.php,0,,Files
 Files/Service/TextExtraction/ObjectHandler.php,172,Files,Files,Files/Service/TextExtraction/ObjectHandler.php,0,,Files
@@ -1283,6 +1283,7 @@ Kernel/Contracts/SchemaExplorationInterface.php,7,Kernel,Kernel,Kernel/Contracts
 Kernel/Contracts/SchemaInterface.php,75,Kernel,Kernel,Kernel/Contracts/SchemaInterface.php,1,,Kernel
 Kernel/Contracts/TaskInterface.php,23,Kernel,Kernel,Kernel/Contracts/TaskInterface.php,7,,Kernel
 Kernel/Contracts/TaskManagerInterface.php,20,Kernel,Kernel,Kernel/Contracts/TaskManagerInterface.php,0,,Kernel
+Kernel/Contracts/UploadSettingsReaderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/VocabularyImporterInterface.php,10,Kernel,Kernel,Kernel/Contracts/VocabularyImporterInterface.php,0,,Kernel
 Lifecycle/BuiltinLifecycleActionsInterface.php,10,Lifecycle,Lifecycle,Lifecycle/BuiltinLifecycleActionsInterface.php,0,,Processes
 Lifecycle/ContextLifecycleActionInterface.php,6,Lifecycle,Lifecycle,Lifecycle/ContextLifecycleActionInterface.php,0,,Processes
@@ -2276,6 +2277,8 @@ Service/File/FileLockHandler.php,162,Service,Service,Service/File/FileLockHandle
 Service/File/FilePreviewHandler.php,39,Service,Service,Service/File/FilePreviewHandler.php,0,386,Files
 Service/File/FilePropertyRules.php,44,Service,Service,Service/File/FilePropertyRules.php,0,407,Core
 Service/File/FilePublishingHandler.php,251,Service,Work,Work/Service/File/FilePublishingHandler.php,0,45,Files
+Service/File/FileTarget.php,,Service,,,,,Kernel
+Service/File/FileUpload.php,,Service,,,,,Kernel
 Service/File/FileValidationHandler.php,183,Service,Service,Service/File/FileValidationHandler.php,0,138,Files
 Service/File/FileVersioningHandler.php,139,Service,Service,Service/File/FileVersioningHandler.php,0,201,Files
 Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/FolderManagementHandler.php,0,31,Core
@@ -2752,6 +2755,7 @@ Service/Object/DraftListLens.php,59,Service,Service,Service/Object/DraftListLens
 Service/Object/DraftOwner.php,53,Service,Service,Service/Object/DraftOwner.php,2,388,Core
 Service/Object/DraftRemovalRecord.php,63,Service,Service,Service/Object/DraftRemovalRecord.php,0,,Core
 Service/Object/DraftStatusPolicy.php,126,Service,Service,Service/Object/DraftStatusPolicy.php,0,239,Core
+Service/Object/FileWriteGuardInterface.php,,Service,,,,,Kernel
 Service/Object/ServerFilledProperty.php,,Service,,,,,Core
 Service/Object/ExtendDotRun.php,13,Service,Service,Service/Object/ExtendDotRun.php,0,,Core
 Service/Object/FacetCacheVersion.php,128,Service,Service,Service/Object/FacetCacheVersion.php,0,,Core
@@ -4380,12 +4384,12 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
-Repair/MigrateTextExtractionCeiling.php,,Repair,,,,,Files
+Repair/MigrateTextExtractionCeiling.php,,Repair,,,,,Configuration
 Files/Service/TextExtraction/TextSearchedMarker.php,,Files,,,,,Files
 Db/UploadSession.php,,Db,,,,,Files
 Db/UploadSessionMapper.php,,Db,,,,,Files
 Migration/Version1Date20261114180000.php,,Migration,,,,,Platform
-Exception/UploadPartSizeOutOfRangeException.php,,Exception,,,,,Files
+Exception/UploadPartSizeOutOfRangeException.php,,Exception,,,,,Kernel
 Service/File/ChunkedUploadService.php,,Service,,,,,Files
 BackgroundJob/UploadSessionCleanupJob.php,,BackgroundJob,,,,,Files
 Controller/ChunkedUploadController.php,,Controller,,,,,Files

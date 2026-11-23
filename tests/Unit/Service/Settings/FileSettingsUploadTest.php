@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
 use OCA\OpenRegister\Exception\UploadPartSizeOutOfRangeException;
+use OCA\OpenRegister\Kernel\Contracts\UploadSettingsReaderInterface;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -66,6 +68,25 @@ class FileSettingsUploadTest extends TestCase {
 		$this->assertSame(['partSizeBytes' => 10485760, 'sessionTtl' => 'PT24H'], $this->handler()->uploadSettings());
 		$this->assertSame(['partSizeBytes' => 10485760, 'sessionTtl' => 'PT24H'], $this->handler()->getFileSettingsOnly()['upload']);
 	}//end testTheDefaultsAreStated()
+
+	/**
+	 * The Files component reads the upload settings through the Kernel port, which the
+	 * handler answers, with the port's bounds.
+	 *
+	 * @return void
+	 */
+	public function testTheUploadPortIsAnsweredByTheHandler(): void {
+		$this->assertSame(FileSettingsHandler::class, ContractBindings::BINDINGS[UploadSettingsReaderInterface::class]);
+
+		$this->stored = (string) json_encode(['upload' => ['partSizeBytes' => UploadSettingsReaderInterface::MAX_PART_SIZE + 1, 'sessionTtl' => 'PT1H']]);
+		$port = $this->handler();
+		$this->assertInstanceOf(UploadSettingsReaderInterface::class, $port);
+		$this->assertSame(
+			['partSizeBytes' => UploadSettingsReaderInterface::DEFAULT_PART_SIZE, 'sessionTtl' => 'PT1H'],
+			$port->uploadSettings(),
+			'A part size above the port\'s maximum reads as the default.'
+		);
+	}//end testTheUploadPortIsAnsweredByTheHandler()
 
 	/**
 	 * A part size within the bounds is stored and read back, with the lifetime.

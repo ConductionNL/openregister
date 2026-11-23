@@ -35,6 +35,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\UploadSettingsReaderInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -60,7 +61,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface, UploadSettingsReaderInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -116,34 +117,6 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 * @var string
 	 */
 	public const UPLOAD_KEY = 'upload';
-
-	/**
-	 * The default part size of an upload in parts: 10 MiB.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_PART_SIZE = 10485760;
-
-	/**
-	 * The smallest part size an organisation may set: 1 MiB.
-	 *
-	 * @var int
-	 */
-	public const MIN_PART_SIZE = 1048576;
-
-	/**
-	 * The largest part size an organisation may set: 100 MiB.
-	 *
-	 * @var int
-	 */
-	public const MAX_PART_SIZE = 104857600;
-
-	/**
-	 * How long an unfinished upload session lives after its last part, as an ISO 8601 duration.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_SESSION_TTL = 'PT24H';
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.

@@ -28,12 +28,12 @@ use DateInterval;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\UploadSettingsReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\UploadSession;
 use OCA\OpenRegister\Db\UploadSessionMapper;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Service\FileWriterInterface;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\File;
@@ -86,7 +86,7 @@ class ChunkedUploadService {
 	 *
 	 * @param UploadSessionMapper $sessions       The sessions table.
 	 * @param IAppDataFactory     $appDataFactory The app data store's factory.
-	 * @param FileSettingsHandler $settings       The part size and session lifetime.
+	 * @param UploadSettingsReaderInterface $settings The part size and session lifetime.
 	 * @param FileWriterInterface $files          Creates the assembled file on the object.
 	 * @param ITimeFactory        $clock          The time.
 	 * @param LoggerInterface     $logger         Logger.
@@ -94,7 +94,7 @@ class ChunkedUploadService {
 	public function __construct(
 		private readonly UploadSessionMapper $sessions,
 		private readonly IAppDataFactory $appDataFactory,
-		private readonly FileSettingsHandler $settings,
+		private readonly UploadSettingsReaderInterface $settings,
 		private readonly FileWriterInterface $files,
 		private readonly ITimeFactory $clock,
 		private readonly LoggerInterface $logger,

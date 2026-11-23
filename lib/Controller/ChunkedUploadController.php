@@ -32,7 +32,7 @@ use OCA\OpenRegister\Files\Controller\Support\ChunkedUploadControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\UploadSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -108,7 +108,7 @@ class ChunkedUploadController extends Controller {
 		try {
 			$object  = $this->ensureObjectAccess(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 			$session = $this->services->uploads->sessionFor(uploadId: $uploadId, userId: $this->userId(), object: $object);
-			$bytes   = $this->services->body->read(maxBytes: max(FileSettingsHandler::MAX_PART_SIZE, $session->getPartSize()));
+			$bytes   = $this->services->body->read(maxBytes: max(UploadSettingsReaderInterface::MAX_PART_SIZE, $session->getPartSize()));
 
 			return new JSONResponse(data: $this->services->uploads->storePart(session: $session, n: $n, bytes: $bytes));
 		} catch (Exception $e) {
