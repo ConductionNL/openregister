@@ -543,3 +543,10 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main, ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists the PR's edges, and/or testNoNewFileNamesTheBootstrapNamespace lists PR files importing AppInfo\Application; green at the PR head because the test was not on main yet.
 - Cause: #8084 put the ratchet gate and a shrunk baseline on main; every open PR adding a cross-component edge now fails, including PRs already APPROVEd (lane 14: 5 of 9 merged trees).
 - Fix: recipes in the or-fix-10/or-fix-11 entries above (restate a foreign constant as a private const, remap the PR's new files, Kernel/Contracts root port); Application::APP_ID -> Kernel\Contracts\AppIdentity::APP_ID. Run Architecture on EVERY merged tree, even approved clean ones (#10214 a8320c8b).
+## Trap: refs/pull/<N>/head lags the PR branch (or-fix-6)
+- Symptom: a red the PR already fixed (e.g. #11006 ControllerServicesWiringTest) reappears on the merge; HEAD^1 is an older sha than the PR's listed head.
+- Cause: GitHub's pull/<N>/head ref was not updated after the last push (seen 23 Nov on #11006: pull ref edcb5f89, branch b4268150).
+- Fix: compare git ls-remote origin refs/pull/<N>/head with refs/heads/<branch>; always fetch +refs/heads/<branch> as the lane says.
+## Integrations Support class typed on a Core read gate after main's edge baseline (or-fix-6)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline 'lib/Controller/Support/<X>.php -> lib/Service/Object/ObjectReadAccessInterface.php (Integrations -> Core)'.
+- Fix: type it on Kernel\Contracts\ObjectReadCheckInterface::isReadable(ObjectRef): bool (added by #11006 4b537d27; ObjectReadAccess implements it, bound in CoreServiceBindings). Until #11006 lands, add the same port (root Kernel/Contracts, csv row ',,Kernel,,,,,Kernel') and a bool wrapper over readable().
