@@ -3,6 +3,9 @@
 
 Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. Ruben decided on 23 Nov 2026 that the nextcloud-vue backlog is cleared FIRST, because every fleet app builds on this library; the cloud app builders are paused until it is done. Decide everything yourself; never ask.
 
+## Reassignments (coordinator, 23 Nov 08:45 CET; these override N % 6)
+- #1726 belongs to lane 0 (not lane 4). #1718 belongs to lane 5 (not lane 2).
+
 ## Setup
 - `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`
 - Blobless-clone ConductionNL/nextcloud-vue (base branch: **main**), `npm ci`.

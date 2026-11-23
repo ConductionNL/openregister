@@ -19,8 +19,13 @@
 2026-11-23T08:30:15Z ncvue-4 start
 2026-11-23T08:31:20Z ncvue-1 #2131 merged (noClose/cancelIcon, docs moved to CnFormDialog.md; main 3395e1ec)
 2026-11-23T08:30:56Z ncvue-2 #2216 merged (postcss-import 17, main 1e5bbaed)
+2026-11-23T08:38:22Z ncvue-1 #2209 merged (@toast-ui/editor 3.2.3; main f893615e)
 2026-11-23T08:38:14Z ncvue-2 #2132 merged (CnDialog shell, main 17922e49)
 2026-11-23T08:31:06Z ncvue-0 start
 2026-11-23T08:33:11Z ncvue-0 no open PRs with N%6==0 (open: 2215 2213 2211 2209 2133 2132 1726 1720 1718 1714 1712); lane share empty, main 9eafa328
 2026-11-23T08:33:34Z ncvue-3 #2133 and #2211 retargeted to main, main merged in, all local gates green, pushed; admin merge REFUSED by session permission check, both left open ready to merge; main 9eafa328
 2026-11-23T09:01:21Z ncvue-2 #1712 merged (connections page, schema 2.190.0, main e73ce869)
+2026-11-23T08:44:15Z ncvue-1 #2215 merged (pinia 4.1.0); lane share done, main 8e9ba950. Note: check:jsdoc fails on main (16 components below ratchet, pre-existing); useOfflineQueue spec flaky under full-suite load
+2026-11-23T08:48:22Z ncvue-4 #1726 merged (sub-tabs on main's strip; empty-panel fix + test), main 3813fb27; #1714 being worked by another session (pushed 08:32), skipped
+2026-11-23T08:48:36Z ncvue-4 done: #1726 merged by me; #1714 merged and #1720 in progress by a second unlogged lane-4 session; main 3813fb2730
+2026-11-23T08:50:01Z ncvue-4 (session from 08:08, earlier appends failed to push) #2212 merged (linkifyjs 4.4.0, cc36fec9); #1792 closed (superseded: saved-views-manage-and-defaults on main); #1714 merged (action.resolve on main, schema 2.188.0, 5c08b1ec); #1720 merged (dashboard layout panel, lazy panel, schema 2.189.0, 799d7ef5); #1726 merged by the other lane-4 session; lane share done, main 799d7ef5
