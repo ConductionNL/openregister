@@ -244,8 +244,11 @@ trait HandlesExceptionsTrait {
 	 * @return LoggerInterface|null The logger.
 	 */
 	private function exceptionLogger(): ?LoggerInterface {
-		if (property_exists($this, 'logger') === true && $this->logger instanceof LoggerInterface) {
-			return $this->logger;
+		// Read through get_object_vars(): a consumer without a (set) logger
+		// property simply has no 'logger' key.
+		$logger = (get_object_vars($this)['logger'] ?? null);
+		if ($logger instanceof LoggerInterface) {
+			return $logger;
 		}
 
 		return null;

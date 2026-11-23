@@ -156,6 +156,41 @@ class HandlesExceptionsTraitLoggingGoldenTest extends TestCase {
 		$this->assertSame(['message' => 'nope', 'error' => 'not-authorized'], $consumer->translate(new NotAuthorizedException('nope'))->getData());
 		$this->assertSame(['error' => 'Internal server error'], $consumer->legacy(new RuntimeException('boom'))->getData());
 	}//end testNoLoggerPropertyLogsNothingAndStillAnswers()
+
+	public function testAnUnsetReadonlyLoggerLogsNothingAndStillAnswers(): void {
+		// The controllers declare `protected readonly ?LoggerInterface $logger`; one that never set it has no logger.
+		$consumer = new class {
+			use HandlesExceptionsTrait;
+
+			protected readonly ?\Psr\Log\LoggerInterface $logger;
+
+			public function translate(Throwable $e): JSONResponse {
+				return $this->handleApiException(e: $e);
+			}//end translate()
+		};
+
+		$this->assertSame(403, $consumer->translate(new NotAuthorizedException('nope'))->getStatus());
+		$this->assertSame(500, $consumer->translate(new RuntimeException('boom'))->getStatus());
+	}//end testAnUnsetReadonlyLoggerLogsNothingAndStillAnswers()
+
+	public function testAProtectedLoggerIsUsed(): void {
+		$logger = $this->recorder();
+		$consumer = new class($logger) {
+			use HandlesExceptionsTrait;
+
+			public function __construct(protected readonly ?\Psr\Log\LoggerInterface $logger) {
+			}//end __construct()
+
+			public function translate(Throwable $e): JSONResponse {
+				return $this->handleApiException(e: $e);
+			}//end translate()
+		};
+
+		$consumer->translate(new RuntimeException('boom'));
+
+		$this->assertCount(1, $logger->records);
+		$this->assertSame('error', $logger->records[0][0]);
+	}//end testAProtectedLoggerIsUsed()
 }//end class
 
 /**
