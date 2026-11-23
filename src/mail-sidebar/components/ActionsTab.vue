@@ -146,6 +146,7 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 import ObjectRow from './ObjectRow.vue'
+import { createDialogFor } from '../createDialogs.js'
 import { displayNameOf } from '../displayNames.js'
 import { objectHandler, objectIdentifier, objectStatus } from '../objectRow.js'
 import { itemName } from '../sentenceName.js'
@@ -601,12 +602,45 @@ export default {
 					schema.configuration.mailObjectTemplate,
 					this.buildPlaceholders(envelope),
 				)
+				const offered = createDialogFor(this.registerCache[schema.id], schema)
+				if (offered) {
+					this.creating[schema.id] = false
+					await this.createWithOfferedDialog(offered, schema, data)
+					return
+				}
 				this.createDialog = { show: true, schema, data }
 			} catch (err) {
 				showError(t('openregister', 'Could not read this email'))
 				console.error('[ActionsTab] Open create failed:', err)
 			} finally {
 				this.creating[schema.id] = false
+			}
+		},
+
+		/**
+		 * Create through the dialog the schema's own app offers, then connect
+		 * the mail to what it created. A cancel connects nothing.
+		 *
+		 * @param {object} offered The app's entry, with `open`.
+		 * @param {object} schema The schema to create.
+		 * @param {object} data The mail template filled from the open mail.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async createWithOfferedDialog(offered, schema, data) {
+			let created
+			try {
+				created = await offered.open({
+					initialData: data,
+					register: this.registerCache[schema.id],
+					schema,
+					mail: { accountId: this.accountId, messageId: this.messageId },
+				})
+			} catch {
+				showError(t('openregister', 'Failed to create {name} from email', { name: itemName(schema) }))
+				return
+			}
+			if (created && (created.id || created.uuid)) {
+				await this.linkObject(schema, created)
 			}
 		},
 
