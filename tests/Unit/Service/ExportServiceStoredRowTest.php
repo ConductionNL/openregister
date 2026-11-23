@@ -23,7 +23,6 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -58,7 +57,6 @@ class ExportServiceStoredRowTest extends TestCase {
 	protected function setUp(): void {
 		$this->service = new ExportService(
 			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
-			_userManager: $this->createMock(originalClassName: IUserManager::class),
 			groupManager: $this->createMock(originalClassName: IGroupManager::class),
 			objectService: $this->createMock(originalClassName: ObjectService::class),
 			cacheHandler: $this->createMock(originalClassName: CacheHandler::class),
