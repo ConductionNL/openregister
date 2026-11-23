@@ -665,3 +665,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Platform UserMigration reaching other areas' entities (or-fix-4)
 - Symptom: testNoComponentEdgeBeyondTheBaseline lists lib/Service/UserMigration/PersonalState{Reader,Migrator}.php -> Db/CalendarFeedToken, Notifications/Db/TimelineEntry, Service/Interaction/ReadHistoryService (Platform -> Processes/Notifications).
 - Fix (#10524 c0a0420e): the reader returns plain arrays read from the rows instead of Entity::fromRow (datetime columns -> new DateTime), restate a foreign constant as a public const with a pin test, and type the read history on root Kernel/Contracts/RecentLensInterface (Kernel/Contracts/Core/ReadHistoryInterface extends it; FlowWiring::BINDINGS + FlowWiringTest list). Kernel/Contracts/Core/* counts as Core, so it does not help a Platform caller.
+
+## New Configuration -> Core component edge (or-fix-7)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/<Area>/X.php -> lib/Service/<OtherArea>/Y.php (<Area> -> Core)' beyond main's own edges.
+- Cause: the PR's code names another component's class; main only allows edges into the Kernel component, which is lib/Kernel/Contracts/*.php at the TOP level (Kernel/Contracts/Core/ etc. count as that area).
+- Fix: add a narrow interface in lib/Kernel/Contracts/ (csv row 'Kernel/Contracts/X.php,,Kernel,Kernel,,,,Kernel'), let the provider implement/extend it, bind it in its bindings, inject via setter/registrar. git add new files before testing: component-deps.py reads tracked files only, else testPhpReaderAgreesWithTheScript fails. (#10427)
