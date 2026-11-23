@@ -440,10 +440,11 @@ textarea.or-create-connected-dialog__input {
 	width: 100%;
 }
 
+/* Important: the theme's heading sizes outrank a scoped rule. */
 .or-create-connected-dialog :deep(.dialog__name) {
 	text-align: start;
-	font-size: 20px;
-	line-height: 26px;
+	font-size: 20px !important;
+	line-height: 26px !important;
 }
 
 .or-create-connected-dialog :deep(.dialog__actions) {
