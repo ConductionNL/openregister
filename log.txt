@@ -3904,3 +3904,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T23:37:55Z integrator-20261123T232305-69d0e3c5 PUSH-REFUSED Auto packing the repository in background for optimum performance.
 See "git help gc" for manual housekeeping.
 remote: error: GH013: Repository rule violations f; per-PR merges
+2026-11-23T23:38:36Z integrator-20261123T232305-69d0e3c5 MERGED-TREE 3440d7099c: 4 PRs, main now 4401ff3862 = tested tree
