@@ -136,6 +136,11 @@ export default {
 	watch: {
 		messageId: {
 			immediate: true,
+			/**
+			 * A new email: fold in what was found and read its subject.
+			 *
+			 * @spec openspec/specs/mail-sidebar/spec.md
+			 */
 			handler() {
 				this.foundOpen = false
 				this.loadSubject()
