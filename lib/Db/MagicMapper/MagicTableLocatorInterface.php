@@ -25,13 +25,14 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaPairsInterface;
 
 /**
  * Finds, names and ensures the magic table of a register and schema.
  *
  * One role of MagicMapperInterface: a caller that needs only this role types against it.
  */
-interface MagicTableLocatorInterface {
+interface MagicTableLocatorInterface extends RegisterSchemaPairsInterface {
 	/**
 	 * Get table name for a specific register+schema combination
 	 *

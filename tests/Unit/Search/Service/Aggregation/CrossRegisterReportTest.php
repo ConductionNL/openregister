@@ -26,11 +26,13 @@ namespace OCA\OpenRegister\Tests\Unit\Search\Service\Aggregation;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaPairsInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Service\Aggregation\CrossRegisterReport;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -38,6 +40,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\CrossRegisterReport
+ * @uses   \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
@@ -48,13 +51,13 @@ class CrossRegisterReportTest extends TestCase {
 
 	private AggregationRunnerInterface&MockObject $runner;
 
-	private MagicTableLocatorInterface&MockObject $locator;
+	private RegisterSchemaPairsInterface&MockObject $locator;
 
 	private RegisterMapperInterface&MockObject $registers;
 
 	protected function setUp(): void {
 		$this->runner = $this->createMock(AggregationRunnerInterface::class);
-		$this->locator = $this->createMock(MagicTableLocatorInterface::class);
+		$this->locator = $this->createMock(RegisterSchemaPairsInterface::class);
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->registers->method('getIdToSlugMap')->willReturn([1 => 'zaken', 2 => 'klanten', 3 => 'vertrouwelijk']);
 		$this->locator->method('getAllRegisterSchemaPairs')->willReturn(
@@ -68,7 +71,11 @@ class CrossRegisterReportTest extends TestCase {
 	}//end setUp()
 
 	private function report(): CrossRegisterReport {
-		return new CrossRegisterReport($this->runner, $this->locator, $this->registers);
+		return new CrossRegisterReport(
+			new AggregationControllerServices(runner: $this->runner, validator: $this->createMock(TimeseriesRequestValidator::class)),
+			$this->locator,
+			$this->registers
+		);
 	}//end report()
 
 	/**

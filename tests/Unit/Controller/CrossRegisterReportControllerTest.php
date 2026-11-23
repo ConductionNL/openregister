@@ -27,6 +27,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Search\Controller\CrossRegisterReportController;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Aggregation\CrossRegisterReport;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
@@ -38,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Search\Controller\CrossRegisterReportController
+ * @uses   \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
@@ -63,7 +65,11 @@ class CrossRegisterReportControllerTest extends TestCase {
 	}//end setUp()
 
 	private function controller(): CrossRegisterReportController {
-		return new CrossRegisterReportController($this->request, $this->report, $this->runner, $this->validator);
+		return new CrossRegisterReportController(
+			$this->request,
+			$this->report,
+			new AggregationControllerServices(runner: $this->runner, validator: $this->validator)
+		);
 	}//end controller()
 
 	/**

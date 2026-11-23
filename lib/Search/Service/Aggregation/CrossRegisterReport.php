@@ -32,10 +32,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaPairsInterface;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use RuntimeException;
 
 /**
@@ -45,13 +45,14 @@ class CrossRegisterReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param AggregationRunnerInterface $runner    Runs each pair's aggregation, RBAC and multi-tenancy included.
-	 * @param MagicTableLocatorInterface $locator   Lists the register/schema pairs that hold objects.
-	 * @param RegisterMapperInterface    $registers Names a register by its slug.
+	 * @param AggregationControllerServices $services  Its runner runs each pair's aggregation, RBAC and
+	 *                                                 multi-tenancy included.
+	 * @param RegisterSchemaPairsInterface  $locator   Lists the register/schema pairs that hold objects.
+	 * @param RegisterMapperInterface       $registers Names a register by its slug.
 	 */
 	public function __construct(
-		private readonly AggregationRunnerInterface $runner,
-		private readonly MagicTableLocatorInterface $locator,
+		private readonly AggregationControllerServices $services,
+		private readonly RegisterSchemaPairsInterface $locator,
 		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
@@ -199,7 +200,7 @@ class CrossRegisterReport {
 	 */
 	private function runPair(array $pair, callable $query): ?array {
 		try {
-			return $this->runner->runAdhocByRef(
+			return $this->services->runner->runAdhocByRef(
 				registerRef: (string)$pair['registerId'],
 				schemaRef: (string)$pair['schemaId'],
 				query: $query()

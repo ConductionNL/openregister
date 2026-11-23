@@ -35,13 +35,12 @@ namespace OCA\OpenRegister\Search\Controller;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Aggregation\CrossRegisterReport;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -61,18 +60,17 @@ class CrossRegisterReportController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                   $request   The current request.
-	 * @param CrossRegisterReport        $report    Runs and merges the per-pair aggregations.
-	 * @param AggregationRunnerInterface $runner    Resolves a pair's schema for the time-series validator.
-	 * @param TimeseriesRequestValidator $validator Validates the time-series query per schema.
+	 * @param IRequest                      $request  The current request.
+	 * @param CrossRegisterReport           $report   Runs and merges the per-pair aggregations.
+	 * @param AggregationControllerServices $services The aggregation runner (resolves a pair's schema) and the
+	 *                                                time-series validator, shared with AggregationController.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly CrossRegisterReport $report,
-		private readonly AggregationRunnerInterface $runner,
-		private readonly TimeseriesRequestValidator $validator,
+		private readonly AggregationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -149,7 +147,7 @@ class CrossRegisterReportController extends Controller {
 		}
 
 		$column = AggregateReportEnvelope::column(field: $groupBy);
-		$queryFor = fn (string $register, string $schema): AggregationQuery => $this->validator->validate(
+		$queryFor = fn (string $register, string $schema): AggregationQuery => $this->services->validator->validate(
 			input: [
 				'field' => $column,
 				'interval' => $interval,
@@ -160,7 +158,7 @@ class CrossRegisterReportController extends Controller {
 				'filter' => [],
 				'cumulative' => false,
 			],
-			schema: $this->runner->findSchema(schemaRef: $schema, registerRef: $register)
+			schema: $this->services->runner->findSchema(schemaRef: $schema, registerRef: $register)
 		);
 
 		$result = $this->report->series(registerRefs: $registers, gap: $interval, range: $range, queryFor: $queryFor);
