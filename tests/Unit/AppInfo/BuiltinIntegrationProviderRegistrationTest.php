@@ -93,7 +93,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup' => [
 			'OCA\OpenRegister\Db\RegisterMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
-			'OCA\OpenRegister\Service\Object\PermissionCheckInterface',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface',
 			'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 			'OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade',
 			'OCP\ICacheFactory',

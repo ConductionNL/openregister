@@ -432,6 +432,7 @@ final class CoreServiceBindings {
 		ObjectValidatorInterface::class => ValidateObject::class,
 		PermissionCacheInterface::class => PermissionHandler::class,
 		PermissionCheckInterface::class => PermissionHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadCheck::class,
 		PermissionEnforcementInterface::class => PermissionHandler::class,
 		PermissionExplanationInterface::class => PermissionHandler::class,
 		PermissionHandlerInterface::class => PermissionHandler::class,

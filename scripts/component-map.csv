@@ -3535,6 +3535,8 @@ Service/History/,,Service,,,,,Core
 Service/Import/,,Service,,,,,Configuration
 Service/Integration/,,Service,,,,,Integrations
 Service/Integration/ExternalRegisterLookup.php,182,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookup.php,0,,Integrations
+Kernel/Contracts/SchemaReadCheckInterface.php,,Kernel,,,,,Kernel
+Service/Object/SchemaReadCheck.php,,Service,,,,,Core
 Service/Integration/ExternalRegisterLookupInterface.php,41,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookupInterface.php,0,,Integrations
 Service/Interaction/,,Service,,,,,Processes
 Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications

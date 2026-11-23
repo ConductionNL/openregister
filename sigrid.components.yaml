@@ -696,6 +696,7 @@ components:
       - ".*/lib/Service/Object/SaveObjects[.]php"
       - ".*/lib/Service/Object/SavedObjectScope[.]php"
       - ".*/lib/Service/Object/SavedScopeIds[.]php"
+      - ".*/lib/Service/Object/SchemaReadCheck[.]php"
       - ".*/lib/Service/Object/SchemaRevalidation[.]php"
       - ".*/lib/Service/Object/SchemaTypeConverter[.]php"
       - ".*/lib/Service/Object/SchemaTypeConverterInterface[.]php"

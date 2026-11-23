@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Repair\ImportExternalRegisterRegister;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -72,5 +73,12 @@ final class ImportExternalRegisterRegisterTest extends TestCase {
 			$this->assertStringContainsString('{key}', $source['config']['find'], $slug);
 			$this->assertArrayHasKey($source['config']['id'], $schema['properties'], $slug . ' must declare the field its id comes from');
 		}
+	}
+
+	public function testTheRestatedConfigurationIdIsTheDescriptorsOwn(): void {
+		$this->assertSame(
+			DescriptorConfigIdsInterface::EXTERNAL_REGISTERS,
+			(new ReflectionClassConstant(ImportExternalRegisterRegister::class, 'CONFIG_APP_ID'))->getValue()
+		);
 	}
 }

@@ -190,7 +190,7 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Integration\ExternalRegisterLookup::class => [
 			'registers'   => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
 			'schemas'     => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'permissions' => \OCA\OpenRegister\Service\Object\PermissionCheckInterface::class,
+			'permissions' => \OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface::class,
 			'http'        => \OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class,
 			'degrade'     => \OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade::class,
 			'caches'      => \OCP\ICacheFactory::class,

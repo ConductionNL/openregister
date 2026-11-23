@@ -34,7 +34,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Imports the external-registers register (bag-adres, brk-perceel, woz-waarde).
@@ -65,8 +64,11 @@ class ImportExternalRegisterRegister extends AbstractRegisterImportStep {
 
 	/**
 	 * The configuration id the descriptor imports under.
+	 *
+	 * Restated here so this Platform step names no Configuration type; it equals
+	 * DescriptorConfigIdsInterface::EXTERNAL_REGISTERS, which its test pins.
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::EXTERNAL_REGISTERS;
+	protected const CONFIG_APP_ID = 'openregister.external-registers';
 
 	/**
 	 * The repair step's name.

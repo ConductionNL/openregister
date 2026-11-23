@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade;
 use OCA\OpenRegister\Service\Integration\ExternalRegisterLookup;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Object\SchemaReadCheck;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -88,7 +89,7 @@ final class ExternalRegisterLookupTest extends TestCase {
 		return new ExternalRegisterLookup(
 			$this->registers,
 			$this->schemas,
-			$this->permissions,
+			new SchemaReadCheck(permissions: $this->permissions),
 			$this->http,
 			new ExternalRegisterDegrade(),
 			$this->caches,

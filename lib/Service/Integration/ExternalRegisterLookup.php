@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\ICache;
@@ -62,7 +62,7 @@ class ExternalRegisterLookup implements ExternalRegisterLookupInterface {
 	 *
 	 * @param RegisterMapperInterface   $registers   Resolves the register.
 	 * @param SchemaMapperInterface     $schemas     Resolves the sourced schema.
-	 * @param PermissionCheckInterface  $permissions The caller's read right on the schema.
+	 * @param SchemaReadCheckInterface  $permissions The caller's read right on the schema.
 	 * @param OpenConnectorHttpProvider $http        Reads the record from the source.
 	 * @param ExternalRegisterDegrade   $degrade     Names the state of the read.
 	 * @param ICacheFactory             $caches      Holds an answer as long as its state allows.
@@ -74,7 +74,7 @@ class ExternalRegisterLookup implements ExternalRegisterLookupInterface {
 	public function __construct(
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly PermissionCheckInterface $permissions,
+		private readonly SchemaReadCheckInterface $permissions,
 		private readonly OpenConnectorHttpProvider $http,
 		private readonly ExternalRegisterDegrade $degrade,
 		private readonly ICacheFactory $caches,
@@ -136,11 +136,7 @@ class ExternalRegisterLookup implements ExternalRegisterLookupInterface {
 			return null;
 		}
 
-		$allowed = $this->permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'read',
-			register: (string)$registerEntity->getId()
-		);
+		$allowed = $this->permissions->canReadSchema(schema: $schemaEntity, register: (string)$registerEntity->getId());
 		if ($allowed !== true) {
 			return null;
 		}
