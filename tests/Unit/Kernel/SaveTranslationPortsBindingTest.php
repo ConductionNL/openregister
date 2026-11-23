@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -42,7 +43,7 @@ final class SaveTranslationPortsBindingTest extends TestCase {
 
 	public function testTheStatusServiceAnswersTheDerivedTranslationsPort(): void {
 		self::assertTrue(is_subclass_of(TranslationStatusService::class, DerivedTranslationsInterface::class));
-		self::assertSame(TranslationStatusService::class, ContractBindings::BINDINGS[DerivedTranslationsInterface::class] ?? null);
+		self::assertSame(TranslationStatusService::class, CoreServiceBindings::BINDINGS[DerivedTranslationsInterface::class] ?? null);
 	}
 
 	public function testTheSavePathTypesAgainstThePorts(): void {
