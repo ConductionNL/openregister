@@ -24,34 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-use OCP\IUser;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
-
 /**
- * One partial update: the object, the fields that change, where to find it and who acts.
+ * The published ObjectPatch, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\ObjectPatch, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class ObjectPatch {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string           $objectId    The object's id or UUID, as the caller holds it.
-	 * @param array            $data        The fields to merge onto the stored object.
-	 * @param ObjectFindTarget $target      The register and schema the caller named.
-	 * @param IUser|null       $currentUser Explicit acting user, or null for the session user.
-	 *
-	 * @phpstan-param array<string, mixed> $data
-	 * @psalm-param   array<string, mixed> $data
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		public readonly string $objectId,
-		public readonly array $data,
-		public readonly ObjectFindTarget $target=new ObjectFindTarget(),
-		public readonly ?IUser $currentUser=null,
-	) {
-	}//end __construct()
+final class ObjectPatch extends \OCA\OpenRegister\Contract\ObjectPatch {
 }//end class
