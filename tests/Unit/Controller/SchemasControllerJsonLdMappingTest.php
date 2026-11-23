@@ -75,7 +75,6 @@ class SchemasControllerJsonLdMappingTest extends TestCase {
 		$urlGenerator->method('linkToRouteAbsolute')->willReturn('https://nc.test/ctx');
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

@@ -180,7 +180,6 @@ class SchemasControllerTest extends TestCase {
 		);
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->config,
 			$this->schemaMapper,
@@ -2064,7 +2063,6 @@ class SchemasControllerTest extends TestCase {
 		);
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->config,
 			$schemaMapper,
