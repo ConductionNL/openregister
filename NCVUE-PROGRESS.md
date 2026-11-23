@@ -11,4 +11,8 @@
 2026-11-23T08:08:41Z ncvue-1 start
 2026-11-23T08:08:39Z ncvue-5 start
 2026-11-23T08:08:42Z ncvue-3 start
+2026-11-23T08:24:48Z ncvue-1 #1195 merged (retargeted to main; kept main's neutral GitHub help, added providerMeta/vault link/translated reason; main 9eafa328)
+2026-11-23T08:24:21Z ncvue-2 #2210 merged (eslint 10.15.0, main 09f999ff)
 2026-11-23T08:11:41Z ncvue-5 closed #1727 (superseded by reports-page-catalogue on main) and #2015 (screens.md already on main via #2139)
+2026-11-23T08:18:40Z ncvue-5 #2213 retargeted to main, main merged in, all gates green; admin-merge refused by permission check, left open for a human merge. Lane share otherwise done.
+2026-11-23T08:20:35Z ncvue-0 #2016 merged (dupes vs main dropped), #2034 merged (+ fixed data-bulk-edit dupe), #2214 merged (green), #1728 closed (sections layout already on main); lane share done, main 3ed9d1cc
