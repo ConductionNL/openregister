@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -34,7 +35,6 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -66,7 +66,6 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 	private function service(): ExportService {
 		return new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$this->objects,
 			$this->createMock(CacheHandler::class),
@@ -151,8 +150,7 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 			}),
 			true,
 			true,
-			null,
-			null
+			$this->equalTo(new ObjectSelection())
 		)->willReturn(23500);
 
 		$this->assertSame(23500, $this->service()->countExportTotal(request: $this->request(page: new ExportPage(number: 2))));

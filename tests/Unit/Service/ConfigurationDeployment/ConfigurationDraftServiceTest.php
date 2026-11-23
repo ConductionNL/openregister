@@ -101,7 +101,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 
 		$draftMapper = $this->createMock(ConfigurationDraftMapper::class);
 		$draftMapper->method('findBySet')->willReturn($drafts);
-		$draftMapper->method('findAtAddress')->willReturn(null);
+		$draftMapper->method('findAt')->willReturn(null);
 		$draftMapper->method('createFromArray')->willReturnCallback(
 			static function (array $data): ConfigurationDraft {
 				$created = new ConfigurationDraft();
@@ -132,8 +132,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			$store,
 			new ConfigurationKeyRegistry(),
 			$session,
-			$appConfig,
-			'openregister'
+			$appConfig
 		);
 
 		return [$service, $store, $draftMapper];
@@ -168,7 +167,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 		$sets = $this->createMock(ConfigurationDraftSetMapper::class);
 		$sets->method('findByUuid')->willReturn($this->set());
 
-		$draftMapper->method('findAtAddress')->willReturn($existing);
+		$draftMapper->method('findAt')->willReturn($existing);
 		$draftMapper->method('save')->willReturnArgument(0);
 		$draftMapper->expects($this->never())->method('createFromArray');
 
@@ -188,8 +187,7 @@ final class ConfigurationDraftServiceTest extends TestCase {
 			$store,
 			new ConfigurationKeyRegistry(),
 			$session,
-			$this->createMock(IAppConfig::class),
-			'openregister'
+			$this->createMock(IAppConfig::class)
 		);
 
 		$draft = $service->draftValue(new ConfigurationDraftTarget('set-1', new ConfigurationAddress(ConfigurationLayer::INSTANCE, null, 'rbac')), ['enabled' => true]);
