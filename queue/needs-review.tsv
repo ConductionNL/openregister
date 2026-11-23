@@ -1,11 +1,1 @@
 # pr	head	last_approved	reason
-10022	173cfca6d653db5646cd343b85cd9d6bc5cb0176	-	tests only: frontend coverage batch 1 (orcovb)
-10025	feb52cfe9ada6180c0055c9363a530c0d12d2a78	-	tests only: frontend coverage batch 2 (orcovb)
-10027	032a57cba29d220b46ce03d809d8d79f5a94c57f	-	tests only: frontend coverage batch 3 (orcovb)
-10029	bdd094ea5214546067ca218a4c694e4f5529ef68	-	tests only: frontend coverage batch 4 (orcovb)
-10032	28e26df8650382222a59bd7b48bff384beec0458	-	tests only: @uses metadata, remaining tests/Unit dirs (orcovb)
-10055	0f5d134c006057c6e1cb4c29d44819d6db69b368	-	scope-file only: licence exclude for every @nextcloud package (license2)
-10061	067b7beed9eed9a8cdb61dee926e668df6c32714	c8d3817dae3b3b39d54bf7e75ff3cda30f6fa085	integrator merged main and regenerated sbom.cdx.json (lockfile unchanged vs the approved head)
-8948	23d6bb7ece1bc6ffafd8b04cb65bba93e698c3dc	c58650a7f085c8a1d8ffdc97ff5c0c5b67ac30d6	integrator merged main (component-map rows kept from both sides, patterns regenerated) and re-pinned the listener order, registration sequence and the non-ObjectService find of SharerAccessSweepJob::objectOf; lib unchanged
-9943	2314f92f264d1f395e8ee95462e8169d98aaae3f	6aa9d5c88ec5f861d9a47efa88ea4c6c04619335	integrator: main merged; fix commit db1b79be (migration returns schema on early exit, hydration golden expiresAt); review that commit
-10015	fb43e991a4e1cfff74ec94355081c4334b92827b	846b4821f835b1c889c6fb75d914844b39f0025e	integrator: main merged, 116 docblock-only @uses conflicts resolved as union
