@@ -66,3 +66,4 @@
 2026-11-23T12:30:25Z ncvue-0 no open PRs with N%6==0 (open: 2272 lane 4, 2271 lane 3; #1726 not open); lane share empty
 2026-11-23T12:33:23Z ncvue-1 note: 2272%6==4 (lane 4) and 2271%6==3 (lane 3); the ncvue-4 12:32 entry miscounted both, so lane 4 must still take #2272
 2026-11-23T12:33:22Z ncvue-5 correction: 2272%6==4 (lane 4, not 0) and 2271%6==3 (lane 3, not 5); the 12:32 ncvue-4 entry miscounted, #2272 is still lane 4's
+2026-11-23T12:46:58Z ncvue-3 #2271 ready, NOT merged: main merged in, added nl/en 'Folder {name}' (pre-existing l10n gate failure), lint/jest 21922/build/dist/docs green, head 91d9ac90; admin-merge refused by session permission check; main 7231fc68
