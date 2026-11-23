@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
@@ -52,9 +54,11 @@ final class A18InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, class-string>
 	 */
 	private const INTERFACES = [
+		ArchivalSettingsInterface::class => ObjectRetentionHandler::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		PartySchemaCatalogueInterface::class => PartyService::class,
 		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
+		RetentionSettingsInterface::class => ObjectRetentionHandler::class,
 		TrustedPartyReaderInterface::class => PartyService::class,
 	];
 
@@ -79,13 +83,8 @@ final class A18InterfaceBindingsTest extends TestCase {
 			'Notifications/Service/ExampleSet/ExampleSetTimelineEntries.php',
 			'Service/ContractBindings.php',
 			'Service/ExampleSet/ExampleSetAppointments.php',
-			'Service/ExampleSet/ExampleSetAuditEntries.php',
 			'Service/ExampleSet/ExampleSetCasePlans.php',
-			'Service/ExampleSet/ExampleSetDeckCards.php',
-			'Service/ExampleSet/ExampleSetEmailLinks.php',
-			'Service/ExampleSet/ExampleSetGrants.php',
 			'Service/ExampleSet/ExampleSetParties.php',
-			'Service/ExampleSet/ExampleSetTalkConversations.php',
 		],
 	];
 

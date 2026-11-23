@@ -19,12 +19,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\Service\File\MalwareScanGate;
+use OCA\OpenRegister\Service\File\MalwareScanState;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSettingsControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\ServiceHealthProbe;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
@@ -105,6 +107,13 @@ class FileSettingsController extends Controller {
 	private readonly ?DocumentStore $documentStore;
 
 	/**
+	 * Whether uploads can be scanned for malware; null leaves the state out.
+	 *
+	 * @var MalwareScanState|null
+	 */
+	private readonly ?MalwareScanState $malwareScanState;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                       $request  The request.
@@ -114,11 +123,12 @@ class FileSettingsController extends Controller {
 		IRequest $request,
 		FileSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->container = $services->container;
 		$this->settingsService = $services->settingsService;
 		$this->logger = $services->logger;
 		$this->documentStore = $services->documentStore;
+		$this->malwareScanState = $services->malwareScanState;
 	}//end __construct()
 
 	/**
@@ -141,6 +151,11 @@ class FileSettingsController extends Controller {
 			$data = $this->settingsService->getFileSettingsOnly();
 			if ($this->documentStore !== null) {
 				$data['documentStore'] = $this->describeDocumentStore();
+			}
+
+			if ($this->malwareScanState !== null) {
+				// Whether uploads can be scanned for malware (upload-malware-scan REQ-UMS-001).
+				$data[MalwareScanGate::METADATA_KEY] = $this->malwareScanState->state();
 			}
 
 			return new JSONResponse(data: $data);

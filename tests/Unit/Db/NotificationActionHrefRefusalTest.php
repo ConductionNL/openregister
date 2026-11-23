@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -135,7 +136,8 @@ final class NotificationActionHrefRefusalTest extends TestCase {
 			$this->checkDataDeclarations(schema: $schema);
 		};
 		(function (LoggerInterface $logger): void {
-			$this->logger = $logger;
+			$this->logger          = $logger;
+			$this->eventDispatcher = new ProcessDeclarationChecksDispatcher(logger: $logger);
 		})->call($mapper, $logger);
 		$schema = self::schemaWith(['kind' => 'url', 'href' => 'call']);
 

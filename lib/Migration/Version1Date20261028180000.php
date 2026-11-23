@@ -26,14 +26,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `sender_name` to `openregister_email_links`.
  *
  * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
  */
-class Version1Date20261028180000 extends SimpleMigrationStep {
+class Version1Date20261028180000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -52,7 +51,7 @@ class Version1Date20261028180000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-senders-display-name
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -66,5 +65,5 @@ class Version1Date20261028180000 extends SimpleMigrationStep {
 		$table->addColumn('sender_name', Types::STRING, ['notnull' => false, 'length' => 255]);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

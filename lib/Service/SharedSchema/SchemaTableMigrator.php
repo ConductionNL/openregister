@@ -515,7 +515,7 @@ class SchemaTableMigrator {
 	private function tableExists(string $table): bool {
 		try {
 			$stmt = $this->db->prepare(
-				'SELECT 1 FROM information_schema.tables WHERE table_name = ? LIMIT 1'
+				'SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = ' . $this->currentSchemaFunction() . ' LIMIT 1'
 			);
 			$stmt->execute([$table]);
 			return $stmt->fetchOne() !== false;
@@ -524,6 +524,26 @@ class SchemaTableMigrator {
 			return false;
 		}
 	}//end tableExists()
+
+	/**
+	 * The SQL function that names the instance's own database, to keep a catalogue query inside it.
+	 *
+	 * @return string `current_schema()` on PostgreSQL, `DATABASE()` elsewhere.
+	 */
+	private function currentSchemaFunction(): string {
+		try {
+			$platform = $this->db->getDatabasePlatform()::class;
+		} catch (Throwable $e) {
+			unset($e);
+			return 'DATABASE()';
+		}
+
+		if (stripos($platform, 'PostgreSQL') !== false) {
+			return 'current_schema()';
+		}
+
+		return 'DATABASE()';
+	}//end currentSchemaFunction()
 
 	/**
 	 * The configured table prefix.

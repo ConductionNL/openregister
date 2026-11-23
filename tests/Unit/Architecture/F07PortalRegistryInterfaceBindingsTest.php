@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryRequestInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
@@ -55,7 +56,7 @@ final class F07PortalRegistryInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		PortalTaskDeliveryService::class => [PortalTaskDeliveryRequestInterface::class, ContractBindings::class, 'Service/'],
 		PortalTaskService::class => [PortalTaskServiceInterface::class, ContractBindings::class, 'Service/'],
-		RegistrySubscriptionService::class => [RegistrySubscriptionServiceInterface::class, ContractBindings::class, 'Service/'],
+		RegistrySubscriptionService::class => [RegistrySubscriptionServiceInterface::class, CoreServiceBindings::class, 'Service/'],
 	];
 
 	/**

@@ -375,7 +375,7 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 				return new AuditTrail();
 			}
 		);
-		$auditMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$auditMapper->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use (&$calls): AuditTrail {
 				$calls[] = ['auditEntry' => $action, 'object' => $object->getUuid(), 'context' => $context, 'actorId' => $actorId];
 				return new AuditTrail();

@@ -71,6 +71,41 @@ class ImportPreviewRowMapper extends QBMapper implements ImportPreviewRowMapperI
 	}//end findByPreview()
 
 	/**
+	 * One page of a run's failed rows, in file order: a skip, a refusal, or a
+	 * create or update whose write failed.
+	 *
+	 * @param int       $previewId The run's id.
+	 * @param ListQuery $query     The page (unbounded for every row).
+	 *
+	 * @return ImportPreviewRow[] The rows.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-the-failed-rows-of-an-import-are-exportable-and-retryable-req-rcn-006
+	 */
+	public function findFailed(int $previewId, ListQuery $query): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('preview_id', $qb->createNamedParameter($previewId, IQueryBuilder::PARAM_INT)))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->in(
+						'decision',
+						$qb->createNamedParameter(
+							[ImportPreviewRow::DECISION_SKIP, ImportPreviewRow::DECISION_REFUSE],
+							IQueryBuilder::PARAM_STR_ARRAY
+						)
+					),
+					$qb->expr()->eq('outcome', $qb->createNamedParameter(ImportPreviewRow::OUTCOME_FAILED))
+				)
+			)
+			->orderBy('source_row', 'ASC');
+
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
+
+		return $this->findEntities(query: $qb);
+	}//end findFailed()
+
+	/**
 	 * The rows a commit still has to write: a create or an update that no
 	 * earlier commit stamped. The idempotence key is `applied_at`, never the
 	 * decision, so a retry writes exactly what the first run did not.

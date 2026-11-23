@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Exception;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
 use RuntimeException;
 use Throwable;
 
@@ -43,7 +44,7 @@ use Throwable;
  * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md
  *   — Requirement: Generic settings surface (Scenario: Foundation missing is explicit)
  */
-class FoundationUnavailableException extends RuntimeException {
+class FoundationUnavailableException extends RuntimeException implements ServiceUnavailableExceptionInterface {
 	/**
 	 * Construct the foundation-unavailable exception with diagnostic context.
 	 *

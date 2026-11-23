@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hinge;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Repair\IntakeSourceRegisterSlugsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\IntakeSourceRegisterAddressInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -127,8 +127,8 @@ class IntakeSourceRegistry {
 	private function findSourceObjects(array $filters): ?array {
 		try {
 			return $this->objectService
-				->setRegister(register: IntakeSourceRegisterSlugsInterface::REGISTER_SLUG)
-				->setSchema(schema: IntakeSourceRegisterSlugsInterface::SCHEMA_SLUG)
+				->setRegister(register: IntakeSourceRegisterAddressInterface::REGISTER_SLUG)
+				->setSchema(schema: IntakeSourceRegisterAddressInterface::SCHEMA_SLUG)
 				->findAll(config: ['filters' => $filters]);
 		} catch (Throwable $e) {
 			$this->logger->debug(

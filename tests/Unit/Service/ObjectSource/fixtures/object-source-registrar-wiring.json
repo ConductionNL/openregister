@@ -30,11 +30,11 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalDavVtodoObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\TaskService",
+            "OCA\\OpenRegister\\Service\\UserTaskListInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "taskService": "OCA\\OpenRegister\\Service\\TaskService",
+            "taskService": "OCA\\OpenRegister\\Service\\UserTaskListInterface",
             "app": "(no property)"
         }
     },
@@ -98,11 +98,11 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalendarEventObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\CalendarEventService",
+            "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\UserCalendarEventsInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "calendarEventService": "OCA\\OpenRegister\\Service\\CalendarEventService",
+            "calendarEventService": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\UserCalendarEventsInterface",
             "app": "(no property)"
         }
     },
@@ -138,11 +138,11 @@
     },
     "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\Credential\\CredentialStore",
+            "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\CredentialSecretReaderInterface",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "credentialStore": "OCA\\OpenRegister\\Service\\Credential\\CredentialStore",
+            "credentialStore": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\CredentialSecretReaderInterface",
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
@@ -240,20 +240,6 @@
         "params": {
             "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
             "session": "(no property)"
-        }
-    },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\OpenConnectorHttpProvider": {
-        "asked": [
-            "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
-            "OCA\\OpenRegister\\Db\\MappingMapperInterface",
-            "OCA\\OpenRegister\\Service\\MappingService",
-            "Psr\\Log\\LoggerInterface"
-        ],
-        "params": {
-            "router": "OCA\\OpenRegister\\Service\\Integration\\ExternalIntegrationRouterInterface",
-            "mappingMapper": "OCA\\OpenRegister\\Db\\MappingMapperInterface",
-            "mappingService": "OCA\\OpenRegister\\Service\\MappingService",
-            "logger": "Psr\\Log\\LoggerInterface"
         }
     }
 }

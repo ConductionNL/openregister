@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -368,7 +368,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->logger
 		);
 

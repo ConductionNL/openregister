@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -113,7 +113,7 @@ class DsarCaseControllerTest extends TestCase {
 			$this->createMock(ObjectService::class),
 			($accessor ?? $this->createMock(CaseObjectAccessor::class)),
 			($access ?? $this->createMock(CaseAccessControl::class)),
-			$this->createMock(TransitionEngine::class),
+			$this->createMock(LifecycleTransitionInterface::class),
 			$this->createMock(EvidenceHarvestService::class),
 			$this->createMock(RedactionWriteService::class),
 			$this->createMock(ExportBundleService::class),
@@ -238,7 +238,7 @@ class DsarCaseControllerTest extends TestCase {
 			$this->createMock(ObjectService::class),
 			$accessor,
 			$access,
-			$this->createMock(TransitionEngine::class),
+			$this->createMock(LifecycleTransitionInterface::class),
 			$harvest,
 			$this->createMock(RedactionWriteService::class),
 			$this->createMock(ExportBundleService::class),
@@ -381,7 +381,7 @@ class DsarCaseControllerTest extends TestCase {
 			$this->createMock(ObjectService::class),
 			$accessor,
 			$access,
-			$this->createMock(TransitionEngine::class),
+			$this->createMock(LifecycleTransitionInterface::class),
 			$this->createMock(EvidenceHarvestService::class),
 			$this->createMock(RedactionWriteService::class),
 			$this->createMock(ExportBundleService::class),
@@ -442,7 +442,7 @@ class DsarCaseControllerTest extends TestCase {
 			$this->createMock(ObjectService::class),
 			$accessor,
 			$access,
-			$this->createMock(TransitionEngine::class),
+			$this->createMock(LifecycleTransitionInterface::class),
 			$this->createMock(EvidenceHarvestService::class),
 			$redaction,
 			$bundles,

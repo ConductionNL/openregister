@@ -27,9 +27,9 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -44,14 +44,14 @@ class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaCatalogInterface $catalog    Reads the folders and counts the objects of the organisation
-	 *                                           (tables), and resolves the schema slug an object quota counts (schemas).
-	 * @param FileMapperInterface    $fileMapper Sums file cache sizes.
-	 * @param LoggerInterface        $logger     Logger.
+	 * @param SchemaCatalogInterface  $catalog    Reads the folders and counts the objects of the organisation
+	 *                                            (tables), and resolves the schema slug an object quota counts (schemas).
+	 * @param FileSizeTotalsInterface $fileMapper Sums file cache sizes.
+	 * @param LoggerInterface         $logger     Logger.
 	 */
 	public function __construct(
 		private readonly SchemaCatalogInterface $catalog,
-		private readonly FileMapperInterface $fileMapper,
+		private readonly FileSizeTotalsInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

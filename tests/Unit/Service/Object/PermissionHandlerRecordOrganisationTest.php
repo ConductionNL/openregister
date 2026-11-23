@@ -63,7 +63,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
- * @uses   \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses   \OCA\OpenRegister\Contract\ObjectSelection
  * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
  * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
@@ -90,6 +90,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 

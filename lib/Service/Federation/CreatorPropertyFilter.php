@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Federation;
 
-use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
@@ -62,9 +62,9 @@ class CreatorPropertyFilter {
 	/**
 	 * The rendered object with only the properties the share's creator may read.
 	 *
-	 * @param FederatedShare       $share    The share being served.
-	 * @param ObjectEntity         $object   The stored object.
-	 * @param array<string, mixed> $rendered The object as rendered.
+	 * @param FederatedShareInterface $share    The share being served.
+	 * @param ObjectEntity            $object   The stored object.
+	 * @param array<string, mixed>    $rendered The object as rendered.
 	 *
 	 * @return array<string, mixed> The rendered object, filtered.
 	 *
@@ -72,7 +72,7 @@ class CreatorPropertyFilter {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitRevealMasks' rules are pure functions.
 	 */
-	public function readable(FederatedShare $share, ObjectEntity $object, array $rendered): array {
+	public function readable(FederatedShareInterface $share, ObjectEntity $object, array $rendered): array {
 		$bare = $this->withoutProperties(rendered: $rendered);
 
 		$schemaId = trim((string)$object->getSchema());
@@ -103,7 +103,7 @@ class CreatorPropertyFilter {
 	/**
 	 * The rendered object reduced to its record metadata and id.
 	 *
-	 * @param array<string, mixed> $rendered The object as rendered.
+	 * @param array<string, mixed>    $rendered The object as rendered.
 	 *
 	 * @return array<string, mixed>
 	 */

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Archival\DestructionListConflictRefresh;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Archival\LegalHoldServiceInterface;
@@ -40,6 +41,7 @@ final class ArchivalDecisions {
 	 * @param LegalHoldServiceInterface         $legalHoldService   Legal hold service.
 	 * @param DestructionReviewServiceInterface $reviews            Assignment, sign-off and the decision history.
 	 * @param ReviewOutcomeServiceInterface     $outcomes           Carries an answer out against the record.
+	 * @param DestructionListConflictRefresh|null $conflictRefresh  Recomputes the entries' link conflicts on a read; none when null.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
@@ -48,6 +50,7 @@ final class ArchivalDecisions {
 		public readonly LegalHoldServiceInterface $legalHoldService,
 		public readonly DestructionReviewServiceInterface $reviews,
 		public readonly ReviewOutcomeServiceInterface $outcomes,
+		public readonly ?DestructionListConflictRefresh $conflictRefresh = null,
 	) {
 	}//end __construct()
 }//end class

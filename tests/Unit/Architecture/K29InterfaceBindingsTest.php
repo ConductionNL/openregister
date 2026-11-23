@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -54,7 +55,7 @@ final class K29InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('bindings')]
 	public function testTheInterfaceIsBound(string $contract, string $service): void {
-		$this->assertSame($service, ContractBindings::BINDINGS[$contract] ?? null);
+		$this->assertSame($service, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS)[$contract] ?? null);
 	}//end testTheInterfaceIsBound()
 
 	/**

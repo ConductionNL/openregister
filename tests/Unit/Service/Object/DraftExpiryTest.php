@@ -200,7 +200,7 @@ class DraftExpiryTest extends TestCase {
 				];
 								// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(AuditTrailMapper::class);
-				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+				$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null): AuditTrail {
 						$this->actors[] = $actorId;
 

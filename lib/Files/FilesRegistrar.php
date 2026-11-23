@@ -30,15 +30,22 @@ use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Service\File\ObjectFilesArchive;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
@@ -52,16 +59,38 @@ use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileTagCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
+use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
+use OCA\OpenRegister\Files\Service\File\ManagedFiles;
+use OCA\OpenRegister\Files\Service\FileSettingRules;
+use OCA\OpenRegister\Kernel\Contracts\Files\CallerFileRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\EntityMentionDecisionsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\FileSettingRulesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\ManagedFilesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\OfficeDocumentConversionInterface;
+use OCA\OpenRegister\Kernel\Contracts\Files\RegisterFolderProvisioningInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -75,26 +104,44 @@ final class FilesRegistrar
      * conversion API, so whichever office server registered a provider does the work.
      */
     public const BINDINGS = [
-        AccessLinkReaderInterface::class          => AccessLinkReader::class,
-        ChunkIndexOverviewInterface::class        => ChunkMapper::class,
-        ChunkMapperInterface::class               => ChunkMapper::class,
-        ChunkSourceReaderInterface::class         => ChunkMapper::class,
-        ChunkStoreInterface::class                => ChunkMapper::class,
-        DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
-        FileAuditHandlerInterface::class          => FileAuditHandler::class,
-        FileMapperInterface::class                => FileMapper::class,
-        FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
-        AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
-        FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
-        FileSharingHandlerInterface::class        => FileSharingHandler::class,
-        NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
-        NoteServiceInterface::class               => NoteService::class,
-        RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
-        RiskLevelServiceInterface::class          => RiskLevelService::class,
-        ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
-        TaggingHandlerInterface::class            => TaggingHandler::class,
-        TextExtractionServiceInterface::class     => TextExtractionService::class,
-        UploadServiceInterface::class             => UploadService::class,
+        AccessLinkReaderInterface::class           => AccessLinkReader::class,
+        CallerFileRightsInterface::class           => CallerFileAccess::class,
+        ChunkIndexOverviewInterface::class         => ChunkMapper::class,
+        ChunkMapperInterface::class                => ChunkMapper::class,
+        ChunkSourceReaderInterface::class          => ChunkMapper::class,
+        ChunkStoreInterface::class                 => ChunkMapper::class,
+        DetectionPatternsVersionInterface::class   => PatternSetVersion::class,
+        DocumentProcessingHandlerInterface::class  => DocumentProcessingHandler::class,
+        EntityMentionDecisionsInterface::class     => EntityRelationMapperInterface::class,
+        FileAccountInterface::class                => FileOwnershipHandler::class,
+        FileAuditHandlerInterface::class           => FileAuditHandler::class,
+        FileMapperInterface::class                 => FileMapper::class,
+        FileSizeTotalsInterface::class             => FileMapper::class,
+        FileOwnershipHandlerInterface::class       => FileOwnershipHandler::class,
+        AntivirusScannerInterface::class           => AntivirusScannerAdapter::class,
+        FileReadRestrictionInterface::class        => FileRestrictionGuard::class,
+        FileRestrictionGuardInterface::class       => FileRestrictionGuard::class,
+        FileScopeInterface::class                  => FileScopeReader::class,
+        FileSettingRulesInterface::class           => FileSettingRules::class,
+        FileSharingHandlerInterface::class         => FileSharingHandler::class,
+        FileTagCatalogueInterface::class           => FileServiceInterface::class,
+        ManagedFilesInterface::class               => ManagedFiles::class,
+        NcOfficeConverterInterface::class          => ConversionManagerConverter::class,
+        NoteServiceInterface::class                => NoteService::class,
+        ObjectFileRightsInterface::class           => ObjectFileAccess::class,
+        ObjectFileRecordsInterface::class          => FileMapper::class,
+        ObjectFilesArchiveInterface::class         => ObjectFilesArchive::class,
+        OfficeDocumentConversionInterface::class   => ConversionManagerConverter::class,
+        ReadableFileHitsInterface::class           => FileReadScope::class,
+        RegisterFolderProvisionerInterface::class  => RegisterFolderProvisioner::class,
+        RegisterFolderProvisioningInterface::class => RegisterFolderProvisioner::class,
+        RegisterFolderRecordsInterface::class      => RegisterFolderRecorder::class,
+        RiskLevelServiceInterface::class           => RiskLevelService::class,
+        ShareLinkUrlInterface::class               => ShareUrlBuilder::class,
+        ShareUrlBuilderInterface::class            => ShareUrlBuilder::class,
+        TaggingHandlerInterface::class             => TaggingHandler::class,
+        TextExtractionServiceInterface::class      => TextExtractionService::class,
+        UploadServiceInterface::class              => UploadService::class,
     ];
 
     /**

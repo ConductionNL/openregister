@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Kernel\Contracts\DecisionInterface;
 use OCA\OpenRegister\Kernel\Contracts\ReviewPolicyInterface;
 
 /**
@@ -60,7 +60,7 @@ class DecisionChangeRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * Constructor.
 	 *
-	 * @param Decision              $decision The decision someone wants to change.
+	 * @param DecisionInterface     $decision The decision someone wants to change.
 	 * @param string                $actorId  The user who wants to change it.
 	 * @param ReviewPolicyInterface $policy   The policy that applies.
 	 * @param array<string, mixed>  $subject  What the decision is on: subjectType,
@@ -71,7 +71,7 @@ class DecisionChangeRequestedEvent extends AbstractDecisionRequestEvent {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
 	public function __construct(
-		private readonly Decision $decision,
+		private readonly DecisionInterface $decision,
 		string $actorId,
 		ReviewPolicyInterface $policy,
 		array $subject,
@@ -83,11 +83,11 @@ class DecisionChangeRequestedEvent extends AbstractDecisionRequestEvent {
 	/**
 	 * The decision someone wants to change.
 	 *
-	 * @return Decision The decision.
+	 * @return DecisionInterface The decision.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
-	public function getDecision(): Decision {
+	public function getDecision(): DecisionInterface {
 		return $this->decision;
 	}//end getDecision()
 

@@ -41,14 +41,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the content report table.
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class Version1Date20260916230800 extends SimpleMigrationStep {
+class Version1Date20260916230800 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -60,7 +59,7 @@ class Version1Date20260916230800 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -106,5 +105,5 @@ class Version1Date20260916230800 extends SimpleMigrationStep {
 		$table->addIndex(['expires'], 'or_creport_expires_idx');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

@@ -74,7 +74,7 @@ class RegistersControllerTest extends TestCase {
 	 * @var (\OCA\OpenRegister\Service\Schemas\RegisterModelService&MockObject)|null
 	 */
 	private ?\OCA\OpenRegister\Service\Schemas\RegisterModelService $modelService = null;
-	private \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder&MockObject $appImportJobRecorder;
+	private \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface&MockObject $appImportJobRecorder;
 
 	/**
 	 * The user the mocked session resolves to. Defaults to an admin so write
@@ -119,12 +119,12 @@ class RegistersControllerTest extends TestCase {
 		// checkRegisterManagePermission() resolves IGroupManager via the container
 		// on its no-authorization (admin-only) branch — return the stubbed one.
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
+		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class);
 		$this->container->method('get')->willReturnCallback(function ($id) {
 			if ($id === \OCP\IGroupManager::class) {
 				return $this->groupManager;
 			}
-			if ($id === \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class) {
+			if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class) {
 				return $this->appImportJobRecorder;
 			}
 			if ($id === \OCA\OpenRegister\Service\Schemas\RegisterModelService::class) {
@@ -809,7 +809,13 @@ class RegistersControllerTest extends TestCase {
 
 	// ── Destroy with DatabaseConstraintException ──────────────────────
 
-	public function testDestroyReturns500OnDatabaseConstraintException(): void {
+	/**
+	 * A constraint failure on delete is a conflict, answered through the
+	 * exception-translation trait (apphost-settings-plane, task 3.2).
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	public function testDestroyReturns409OnDatabaseConstraintException(): void {
 		$register = $this->createRealRegister(1, 'Test');
 		$this->registerService->method('find')->willReturn($register);
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
@@ -818,8 +824,27 @@ class RegistersControllerTest extends TestCase {
 
 		$result = $this->controller->destroy(1);
 
-		// DatabaseConstraintException extends Exception, so caught by generic catch -> 500
+		// A typed conflict keeps its status and its message.
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame('Foreign key constraint', $result->getData()['message']);
+	}
+
+	/**
+	 * An untyped failure on delete answers a generic 500 and leaks no detail.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	public function testDestroyHidesAnUntypedFailure(): void {
+		$register = $this->createRealRegister(1, 'Test');
+		$this->registerService->method('find')->willReturn($register);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+		$this->registerService->method('delete')
+			->willThrowException(new \RuntimeException('SQLSTATE[HY000] secret table detail'));
+
+		$result = $this->controller->destroy(1);
+
 		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	// ── Objects with pagination params ────────────────────────────────

@@ -26,7 +26,6 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\RevertControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -35,6 +34,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Object\RevertPoint;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -90,7 +90,7 @@ class RevertController extends Controller {
 		IRequest $request,
 		RevertControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 	}//end __construct()
 

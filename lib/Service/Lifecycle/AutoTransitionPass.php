@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Log\LoggerInterface;
 
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class AutoTransitionPass implements AutoTransitionPassInterface {
+class AutoTransitionPass implements AutoTransitionPassInterface, SaveBoundaryInterface {
 
 	/**
 	 * The most automatic moves one object may make in one pass.

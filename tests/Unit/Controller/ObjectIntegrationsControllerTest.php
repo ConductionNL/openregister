@@ -131,6 +131,24 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 }//end class
 
 /**
+ * A stub provider that declares two extra top-level keys of its list answer.
+ */
+class _ControllerExtraKeysStubProvider extends _ControllerStubProvider implements \OCA\OpenRegister\Service\Integration\DeclaresListExtraKeys {
+
+	/**
+	 * @param array<int,string> $declared The keys to declare.
+	 * @param array             $answer   What list() answers.
+	 */
+	public function __construct(private array $declared, array $answer) {
+		parent::__construct(id: 'layout', listEnvelope: $answer);
+	}//end __construct()
+
+	public function listExtraKeys(): array {
+		return $this->declared;
+	}//end listExtraKeys()
+}//end class
+
+/**
  * Unit tests for ObjectIntegrationsController.
  */
 class ObjectIntegrationsControllerTest extends TestCase {
@@ -362,6 +380,48 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(42, $body['total']);
 		$this->assertSame('1', $body['nextCursor']);
 	}//end testIndexPassesThroughProviderEnvelope()
+
+	/**
+	 * The answer of a layout leaf: an envelope with two explanation keys and an internal one.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function layoutAnswer(): array {
+		return [
+			'items' => [['id' => 'layout-1']],
+			'total' => 1,
+			'nextCursor' => null,
+			'appliedLayers' => [['id' => 'base'], ['id' => 'override']],
+			'withheld' => [['id' => 'stale', 'reason' => 'base moved']],
+			'internal' => 'not for consumers',
+		];
+	}//end layoutAnswer()
+
+	public function testIndexPassesThroughTheExtraKeysAProviderDeclares(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerExtraKeysStubProvider(declared: ['appliedLayers', 'withheld', 'total'], answer: self::layoutAnswer()));
+
+		$response = $this->buildController($registry)->index('r', 's', 'o', 'layout');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$body = $response->getData();
+		$this->assertSame([['id' => 'layout-1']], $body['items']);
+		$this->assertSame(1, $body['total']);
+		$this->assertNull($body['nextCursor']);
+		$this->assertSame([['id' => 'base'], ['id' => 'override']], $body['appliedLayers']);
+		$this->assertSame([['id' => 'stale', 'reason' => 'base moved']], $body['withheld']);
+		$this->assertArrayNotHasKey('internal', $body);
+		$this->assertSame(['items', 'results', 'total', 'nextCursor', 'appliedLayers', 'withheld'], array_keys($body));
+	}//end testIndexPassesThroughTheExtraKeysAProviderDeclares()
+
+	public function testIndexDropsExtraKeysOfAProviderThatDeclaresNone(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider(id: 'layout', listEnvelope: self::layoutAnswer()));
+
+		$body = $this->buildController($registry)->index('r', 's', 'o', 'layout')->getData();
+
+		$this->assertSame(['items', 'results', 'total', 'nextCursor'], array_keys($body));
+	}//end testIndexDropsExtraKeysOfAProviderThatDeclaresNone()
 
 	public function testIndexNormalizesResultsKeyedEnvelope(): void {
 		$registry = new IntegrationRegistry(new NullLogger());

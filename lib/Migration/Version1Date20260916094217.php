@@ -40,14 +40,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the `shared_with` declaration to registers and schemas.
  *
  * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
  */
-class Version1Date20260916094217 extends SimpleMigrationStep {
+class Version1Date20260916094217 extends TargetedMigrationStep {
 
 	/**
 	 * The tables that can carry a shared master data declaration.
@@ -80,7 +79,7 @@ class Version1Date20260916094217 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		$added = 0;
 
@@ -124,5 +123,5 @@ class Version1Date20260916094217 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

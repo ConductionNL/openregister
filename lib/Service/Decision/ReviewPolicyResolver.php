@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -50,14 +50,14 @@ class ReviewPolicyResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface            $schemaMapper Reads the schema's declaration.
-	 * @param FileSettingsHandler     $fileSettings Holds the instance default.
-	 * @param ReviewPolicyFileOwners  $fileOwners   Finds a relation's file and the object it belongs to.
-	 * @param LoggerInterface         $logger       Records a policy that could not be read.
+	 * @param SchemaMapperInterface       $schemaMapper Reads the schema's declaration.
+	 * @param FileSettingsReaderInterface $fileSettings Holds the instance default.
+	 * @param ReviewPolicyFileOwners      $fileOwners   Finds a relation's file and the object it belongs to.
+	 * @param LoggerInterface             $logger       Records a policy that could not be read.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly FileSettingsHandler $fileSettings,
+		private readonly FileSettingsReaderInterface $fileSettings,
 		private readonly ReviewPolicyFileOwners $fileOwners,
 		private readonly LoggerInterface $logger,
 	) {

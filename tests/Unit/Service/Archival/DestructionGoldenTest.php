@@ -53,6 +53,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Service\Archival\ReviewerAssignment;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
+use DateTimeImmutable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -225,7 +228,7 @@ class DestructionGoldenTest extends TestCase {
 					'not-an-entry',
 				],
 				'decisions' => $this->decidedList()['decisions'],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0]],
 				'excludedObjects' => [
 					[
 						'uuid' => 'keep',
@@ -265,7 +268,7 @@ class DestructionGoldenTest extends TestCase {
 					['uuid' => 'b', 'status' => 'uitgezonderd', 'exclusionReason' => 'Geen reden opgegeven'],
 					['uuid' => 'keep', 'decision' => 'retain', 'status' => 'uitgezonderd', 'exclusionReason' => 'Review decision "retain"'],
 				],
-				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial']],
+				'approvals' => [['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_partial', 'destroyedOverConflict' => 0]],
 				'objectCount' => 1,
 				'status' => 'approved',
 			],
@@ -329,8 +332,8 @@ class DestructionGoldenTest extends TestCase {
 		$this->assertSame('approved', $second['status']);
 		$this->assertSame(
 			[
-				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
-				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all'],
+				['userId' => 'approver-1', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
+				['userId' => 'system', 'approvedAt' => self::NOW, 'action' => 'approve_all', 'destroyedOverConflict' => 0],
 			],
 			$second['approvals']
 		);
@@ -538,15 +541,15 @@ class DestructionGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['objects' => [['uuid' => 'a', 'reviewer' => 'new', 'assignedAt' => '2026-02-03T04:05:06+01:00'], $list['objects'][1]]],
-			$review->assignReviewer($list, 'a', 'new', $at)
+			$review->assignReviewer(listData: $list, assignment: new ReviewerAssignment(entryUuid: 'a', reviewer: 'new', assignedAt: $at))
 		);
-		$this->assertSame(['objects' => [['uuid' => 'a'], $list['objects'][1]]], $review->assignReviewer($list, 'a', null, $at));
-		$this->assertSame(['objects' => [['uuid' => 'a'], $list['objects'][1]]], $review->assignReviewer($list, 'a', '  '));
+		$this->assertSame(['objects' => [['uuid' => 'a'], $list['objects'][1]]], $review->assignReviewer(listData: $list, assignment: new ReviewerAssignment(entryUuid: 'a', reviewer: null, assignedAt: $at)));
+		$this->assertSame(['objects' => [['uuid' => 'a'], $list['objects'][1]]], $review->assignReviewer(listData: $list, assignment: new ReviewerAssignment(entryUuid: 'a', reviewer: '  ', assignedAt: new DateTimeImmutable())));
 
 		$messages = [];
 		foreach (['d', 'zz'] as $uuid) {
 			try {
-				$review->assignReviewer($list, $uuid, 'new', $at);
+				$review->assignReviewer(listData: $list, assignment: new ReviewerAssignment(entryUuid: $uuid, reviewer: 'new', assignedAt: $at));
 			} catch (InvalidArgumentException $e) {
 				$messages[] = $e->getMessage();
 			}
@@ -578,7 +581,7 @@ class DestructionGoldenTest extends TestCase {
 			'assignedAt' => $assignedAt, 'archiefactiedatum' => $date, 'classification' => $class,
 		];
 
-		$all = $review->pendingEntries($list, 'L');
+		$all = $review->pendingEntries(listData: $list, query: new PendingReviewQuery(listUuid: 'L', reviewer: null, waitingSince: null));
 		$this->assertSame(
 			[
 				$row('early', 'Early', 'ann', '2026-01-01T00:00:00+00:00', '2020-01-01', 'B1'),
@@ -591,10 +594,10 @@ class DestructionGoldenTest extends TestCase {
 		$this->assertSame(['ann' => 2, 'bob' => 2], $review->countByReviewer($all));
 
 		$cutoff = new \DateTimeImmutable('2026-02-01T00:00:00+00:00');
-		$this->assertSame(['early', 'never', 'garbled'], array_column($review->pendingEntries($list, 'L', null, $cutoff), 'uuid'));
-		$this->assertSame(['early'], array_column($review->pendingEntries($list, 'L', 'ann', $cutoff), 'uuid'));
-		$this->assertSame(['early'], array_column($review->pendingEntries($list, 'L', 'ann', new \DateTimeImmutable('2026-01-01T00:00:00+00:00')), 'uuid'));
-		$this->assertSame([], $review->pendingEntries(['objects' => 'none'], 'L'));
+		$this->assertSame(['early', 'never', 'garbled'], array_column($review->pendingEntries(listData: $list, query: new PendingReviewQuery(listUuid: 'L', reviewer: null, waitingSince: $cutoff)), 'uuid'));
+		$this->assertSame(['early'], array_column($review->pendingEntries(listData: $list, query: new PendingReviewQuery(listUuid: 'L', reviewer: 'ann', waitingSince: $cutoff)), 'uuid'));
+		$this->assertSame(['early'], array_column($review->pendingEntries(listData: $list, query: new PendingReviewQuery(listUuid: 'L', reviewer: 'ann', waitingSince: new \DateTimeImmutable('2026-01-01T00:00:00+00:00'))), 'uuid'));
+		$this->assertSame([], $review->pendingEntries(listData: ['objects' => 'none'], query: new PendingReviewQuery(listUuid: 'L', reviewer: null, waitingSince: null)));
 		$this->assertSame([['uuid' => 'nobody', 'title' => 'nobody']], array_slice($review->unassignedEntries($list), 0));
 	}//end testPendingEntriesFilterByReviewerAndWaitingTime()
 

@@ -22,9 +22,6 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-
 /**
  * The translation and aggregation collaborators that shape a GraphQL result.
  *
@@ -36,14 +33,12 @@ final class GraphQLResolverShaping {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  Translation handler
-	 * @param AggregationRunner                                   $aggregationRunner   Ad-hoc aggregation dispatcher.
-	 * @param TimeseriesRequestValidatorInterface                 $timeseriesValidator Validator for `groupBy` arg.
+	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
+	 * @param ListAggregations                                    $aggregations       Runs a list query's `groupBy` and declared aggregation.
 	 */
 	public function __construct(
 		public readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
-		public readonly AggregationRunner $aggregationRunner,
-		public readonly TimeseriesRequestValidatorInterface $timeseriesValidator,
+		public readonly ListAggregations $aggregations,
 	) {
 	}//end __construct()
 }//end class

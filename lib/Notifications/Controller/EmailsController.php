@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -112,7 +112,7 @@ class EmailsController extends Controller {
 		IRequest $request,
 		EmailsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->emailService = $services->domain->emailService;
 		$this->emailLinkService = $services->domain->emailLinkService;

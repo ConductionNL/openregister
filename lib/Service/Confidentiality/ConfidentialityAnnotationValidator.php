@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Confidentiality;
 
+use OCA\OpenRegister\Db\Schema;
+
 /**
  * Finds the faults in an `x-openregister-confidentiality` block.
  *
@@ -33,7 +35,7 @@ final class ConfidentialityAnnotationValidator {
 	/**
 	 * The schema configuration key holding the block.
 	 */
-	public const ANNOTATION = 'x-openregister-confidentiality';
+	public const ANNOTATION = Schema::CONFIDENTIALITY_ANNOTATION;
 
 	/**
 	 * The faults in a block, empty when it can be honoured.

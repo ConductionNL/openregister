@@ -79,12 +79,14 @@ class UpdateFileHandler {
 	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels writes.
 	 *                                                         Null-safe so legacy fixtures keep working.
+	 * @param FileChecksum|null $checksum Records the SHA-256 of the written content.
 	 */
 	public function __construct(
 		private readonly UpdateFileLocator $locator,
 		private readonly UpdateFileGuards $guards,
 		private readonly LoggerInterface $logger,
 		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
+		private readonly ?FileChecksum $checksum = null,
 	) {
 	}//end __construct()
 
@@ -658,6 +660,7 @@ class UpdateFileHandler {
 		$this->note(level: 'debug', message: 'Successfully updated file content: ' . $file->getName());
 
 		$this->guards->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+		$this->checksum?->record(file: $file);
 	}//end writeContent()
 
 	/**

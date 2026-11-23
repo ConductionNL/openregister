@@ -28,7 +28,6 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Controller\Support\FileActionTarget;
@@ -60,6 +59,7 @@ use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FetchedFile;
@@ -244,7 +244,7 @@ class FilesController extends Controller {
 		FilesControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->rootFolder = $services->store->rootFolder;
 		$this->userManager = $services->platform->userManager;
 		$this->eventDispatcher = $services->platform->eventDispatcher;

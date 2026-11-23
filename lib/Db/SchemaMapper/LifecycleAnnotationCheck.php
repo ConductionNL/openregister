@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\ProcessDeclarationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,10 +73,12 @@ final class LifecycleAnnotationCheck {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Receives the advisory faults.
+	 * @param LoggerInterface           $logger    Receives the advisory faults.
+	 * @param DiscardedAnnotations|null $discarded Collects the advisory faults for the save response.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?DiscardedAnnotations $discarded = null,
 	) {
 	}//end __construct()
 
@@ -106,7 +108,7 @@ final class LifecycleAnnotationCheck {
 			return;
 		}
 
-		$errors = SchemaDeclarationValidators::lifecycle()->validate($annotation->shape());
+		$errors = ProcessDeclarationValidators::lifecycle()->validate($annotation->shape());
 		if (count($errors) === 0) {
 			return;
 		}
@@ -116,6 +118,7 @@ final class LifecycleAnnotationCheck {
 			$annotation->label() . ' is invalid; it was stored as written and the lifecycle listener still acts on it: '
 			. implode(' ', array_map(static fn (array $err) => $err['message'], $errors))
 		);
+		$this->discarded?->record(family: 'x-openregister-lifecycle', schema: $schema, errors: $errors);
 	}//end check()
 
 	/**

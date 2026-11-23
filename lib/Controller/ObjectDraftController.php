@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -41,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
@@ -127,7 +127,7 @@ class ObjectDraftController extends Controller {
 		IRequest $request,
 		ObjectDraftControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objects = $services->domain->objects;
 		$this->registers = $services->domain->registers;
 		$this->schemas = $services->domain->schemas;

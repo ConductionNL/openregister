@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add `or_flowrun_flow_created_idx` on openregister_flow_runs(flow_id, created).
@@ -38,7 +37,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/tasks-progress-report/tasks.md
  */
-class Version1Date20261113220000 extends SimpleMigrationStep {
+class Version1Date20261113220000 extends TargetedMigrationStep {
 
 	/**
 	 * The index name.
@@ -56,7 +55,7 @@ class Version1Date20261113220000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/tasks-progress-report/tasks.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -76,5 +75,5 @@ class Version1Date20261113220000 extends SimpleMigrationStep {
 		$output->info('Added ' . self::INDEX . ' on openregister_flow_runs(flow_id, created) for the flow progress report.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

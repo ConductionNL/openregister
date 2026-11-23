@@ -266,7 +266,7 @@ class MagicFacetHandlerTermsUnionTest extends TestCase {
 			],
 			$this->withoutMetrics($facets)
 		);
-		$probe = 'SELECT LOWER(column_name) as col FROM information_schema.columns WHERE table_name = ?';
+		$probe = 'SELECT LOWER(column_name) as col FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()';
 		$this->assertSame(
 			[
 				$probe,

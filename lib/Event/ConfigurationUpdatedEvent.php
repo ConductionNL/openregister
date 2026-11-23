@@ -23,7 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -36,28 +37,28 @@ class ConfigurationUpdatedEvent extends Event {
 	/**
 	 * The updated configuration state.
 	 *
-	 * @var Configuration The configuration after update.
+	 * @var ConfigurationInterface&Entity The configuration after update.
 	 */
-	private Configuration $newConfiguration;
+	private ConfigurationInterface $newConfiguration;
 
 	/**
 	 * The previous configuration state.
 	 *
-	 * @var Configuration The configuration before update.
+	 * @var ConfigurationInterface&Entity The configuration before update.
 	 */
-	private Configuration $oldConfiguration;
+	private ConfigurationInterface $oldConfiguration;
 
 	/**
 	 * Constructor for ConfigurationUpdatedEvent.
 	 *
-	 * @param Configuration $newConfiguration The configuration after update.
-	 * @param Configuration $oldConfiguration The configuration before update.
+	 * @param ConfigurationInterface&Entity $newConfiguration The configuration after update.
+	 * @param ConfigurationInterface&Entity $oldConfiguration The configuration before update.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	public function __construct(Configuration $newConfiguration, Configuration $oldConfiguration) {
+	public function __construct(ConfigurationInterface $newConfiguration, ConfigurationInterface $oldConfiguration) {
 		parent::__construct();
 		$this->newConfiguration = $newConfiguration;
 		$this->oldConfiguration = $oldConfiguration;
@@ -73,33 +74,33 @@ class ConfigurationUpdatedEvent extends Event {
 	 * covering it doubled the event with addMethods(['getConfiguration']),
 	 * which invents the method on the mock and never consults the real class.
 	 *
-	 * @return Configuration The configuration after update.
+	 * @return ConfigurationInterface&Entity The configuration after update.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
 	 */
-	public function getConfiguration(): Configuration {
+	public function getConfiguration(): ConfigurationInterface {
 		return $this->newConfiguration;
 	}//end getConfiguration()
 
 	/**
 	 * Get the updated configuration.
 	 *
-	 * @return Configuration The configuration after update.
+	 * @return ConfigurationInterface&Entity The configuration after update.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
 	 */
-	public function getNewConfiguration(): Configuration {
+	public function getNewConfiguration(): ConfigurationInterface {
 		return $this->newConfiguration;
 	}//end getNewConfiguration()
 
 	/**
 	 * Get the original configuration.
 	 *
-	 * @return Configuration The configuration before update.
+	 * @return ConfigurationInterface&Entity The configuration before update.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
 	 */
-	public function getOldConfiguration(): Configuration {
+	public function getOldConfiguration(): ConfigurationInterface {
 		return $this->oldConfiguration;
 	}//end getOldConfiguration()
 }//end class

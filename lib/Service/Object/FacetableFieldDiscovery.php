@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Generator;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use Psr\Log\LoggerInterface;
@@ -58,13 +58,15 @@ final class FacetableFieldDiscovery {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface          $logger       The logger.
-	 * @param PropertyRbacHandlerInterface|null $propertyRbac Decides governed properties; absent, they are withheld.
+	 * @param LoggerInterface                   $logger        The logger.
+	 * @param PropertySearchProfileInterface    $searchProfile What a property declares about being searched.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac  Decides governed properties; absent, they are withheld.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly PropertySearchProfileInterface $searchProfile,
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac,
 	) {
 	}//end __construct()
@@ -159,7 +161,7 @@ final class FacetableFieldDiscovery {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
 	private function describeProperty(array $property): array {
-		$searchable = (new PropertySearchProfile())->declaredBy(property: $property);
+		$searchable = $this->searchProfile->declaredBy(property: $property);
 		$title = $property['title'] ?? null;
 		return [
 			'searchable' => $searchable + ['title' => $title],

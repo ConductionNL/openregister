@@ -60,9 +60,14 @@ final class F11ValueInterfacesTest extends TestCase {
 	 * The e-Depot background jobs below still inject the classes; they are left for
 	 * the lane that owns lib/BackgroundJob.
 	 *
+	 * The Core field rules port returns the class: PropertyRbacHandlerInterface::stateFieldRulesFor()
+	 * publishes StateFieldRules to its callers, and the port answers that method.
+	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		StateFieldRules::class => ['Kernel/Contracts/Core/FieldRulesSourceInterface.php'],
+	];
 
 	/**
 	 * One case per class.

@@ -20,8 +20,31 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AccountConsumerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
+use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider;
@@ -40,9 +63,16 @@ use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\ScheduledMessageDelivery;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Service\Sync\RestApiSourceFetcher;
+use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -65,18 +95,36 @@ final class IntegrationWiring {
 	 * Callers that only read the registry type against its read-side contracts;
 	 * registration (addProvider, withProviders, setLeafLoader) stays on
 	 * IntegrationRegistry. The lookup and dispatch controllers type against the
-	 * provider contracts.
+	 * provider contracts. The mail-sidebar link service is bound here because
+	 * linking Mail messages to objects is integration work. The CloudEvent
+	 * formatter and the webhook interception cache are bound here because
+	 * their only users are the webhook services, which are integration work.
+	 * The MCP tool reach levels are bound here because the tool grants and reach
+	 * of lib/Service/Capability are MCP agent work and count to Integrations.
+	 * The Core credential reader port resolves to the active credential store
+	 * leaf, so Core's DBAL connection factory reads secrets without naming it.
 	 *
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AccountConsumerInterface::class => AccountConsumerLookup::class,
+		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
+		CloudEventFormatterInterface::class => CloudEventFormatter::class,
+		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
+		CredentialSecretReaderInterface::class => CredentialStore::class,
+		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,
 		LeafRegistryInterface::class => LeafRegistry::class,
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
+		PageWidgetDeclarationInterface::class => IntegrationRegistry::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
+		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
+		ToolReachLevels::class => ToolReachResolver::class,
+		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 	];
 
 	/**
@@ -138,6 +186,16 @@ final class IntegrationWiring {
 	];
 
 	/**
+	 * The object-source providers of this component bootObjectSources() adds to the object source registry, in order.
+	 *
+	 * @var list<class-string>
+	 */
+	private const OBJECT_SOURCE_PROVIDERS = [
+		// An external register (BAG, BRK, WOZ, ...) through a configured OpenConnector source.
+		OpenConnectorHttpProvider::class,
+	];
+
+	/**
 	 * Register the IntegrationRegistry + ExternalIntegrationRouter
 	 * services used by the pluggable integration registry.
 	 *
@@ -159,7 +217,9 @@ final class IntegrationWiring {
 		self::registerValidators(context: $context);
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
+		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
+		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
@@ -265,6 +325,60 @@ final class IntegrationWiring {
 	}//end registerBuiltinIntegrationProviders()
 
 	/**
+	 * Register the integration seams that need a factory: the published email-link read, the credential store and the source-fetcher registry.
+	 *
+	 * Each is integration work, so this area binds it rather than Core's
+	 * ServiceRegistrar, which only names Core classes.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
+	 */
+	private static function registerSeams(IRegistrationContext $context): void {
+		// The published read of an object's linked emails, for consuming apps.
+		$context->registerService(
+			EmailLinkReaderInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// Credential broker (credential-broker-service + credential-doriath-leaf):
+		// bind the CredentialStore abstraction through the CredentialStoreResolver
+		// (design D-A) — the Doriath application-vault leaf when the doriath app is
+		// eligible (enabled + service classes + application-scoped seam methods +
+		// OR self-registration), else the NC encrypted per-user vault leaf. The
+		// broker and controller keep depending only on the CredentialStore
+		// interface; this factory is the ONLY place the selection happens.
+		$context->registerService(
+			CredentialStore::class,
+			static function (ContainerInterface $c) {
+				return $c->get(CredentialStoreResolver::class)->resolve();
+			}
+		);
+
+		// The data-sync source-fetcher registry pre-loaded with the built-in
+		// REST/OpenRegister fetcher. Apps can register additional fetchers
+		// (OData, SOAP, CSV) by resolving and extending this service.
+		$context->registerService(SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
+	}//end registerSeams()
+
+	/**
+	 * Build the SourceFetcherRegistry service.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return SourceFetcherRegistry
+	 */
+	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
+		$registry = new SourceFetcherRegistry();
+		$registry->register($container->get(RestApiSourceFetcher::class));
+		return $registry;
+	}//end buildSourceFetcherRegistry()
+
+	/**
 	 * Resolve every BuiltinProviders/* class and register it with the
 	 * shared IntegrationRegistry.
 	 *
@@ -336,6 +450,35 @@ final class IntegrationWiring {
 			}
 		}
 	}//end addBuiltinProviders()
+
+	/**
+	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
+	 *
+	 * Runs in boot() after ObjectSourceRegistrar::boot(), so these providers follow
+	 * the built-in ones in the registry. Guarded like that step: without a registry
+	 * nothing is added, and a provider that cannot be resolved is logged and skipped.
+	 *
+	 * @param mixed $server Server container (passed in from boot()).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public static function bootObjectSources($server): void {
+		try {
+			$registry = $server->get(ObjectSourceRegistry::class);
+		} catch (\Throwable $e) {
+			return;
+		}
+
+		foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
+			try {
+				$registry->addProvider($server->get($providerClass));
+			} catch (\Throwable $e) {
+				self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+			}
+		}
+	}//end bootObjectSources()
 
 	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.

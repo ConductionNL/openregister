@@ -23,7 +23,7 @@
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 use OCP\AppFramework\Controller;
@@ -54,7 +54,7 @@ class GraphQLSubscriptionController extends Controller {
 		IRequest $request,
 		private readonly SubscriptionService $subscriptionService,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 

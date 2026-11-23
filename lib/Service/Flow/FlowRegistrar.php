@@ -26,11 +26,19 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * The body lives in FlowWiring, in this component;
  * this class keeps the entry points its callers use.
  *
- * Registers the flow run guards, the shared run context and the loop step dispatcher.
+ * Registers the flow run guards, the shared run context, the loop step dispatcher,
+ * the lifecycle request state and the task services that are built by hand.
  *
  * Application::register() calls register() once.
  */
 final class FlowRegistrar {
+
+	/**
+	 * The interfaces callers outside the component type against, bound to their class.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = FlowWiring::BINDINGS;
 
 	/**
 	 * Register the flow run guards, the run context and the step dispatcher.

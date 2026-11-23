@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use DateTimeInterface;
 use InvalidArgumentException;
 
 /**
@@ -69,9 +68,7 @@ interface DestructionReviewServiceInterface {
 	 * when an entry is handed to a second reviewer.
 	 *
 	 * @param array<string, mixed> $listData   The destruction list's own data.
-	 * @param string               $entryUuid  The uuid of the object the entry is about.
-	 * @param string|null          $reviewer   The reviewer's user id, or null to unassign.
-	 * @param DateTimeInterface|null $assignedAt The moment of assignment; now when omitted.
+	 * @param ReviewerAssignment   $assignment The entry's object uuid, the reviewer's user id (null to unassign) and the moment.
 	 *
 	 * @return array<string, mixed> The list data, with the entry assigned.
 	 *
@@ -79,7 +76,7 @@ interface DestructionReviewServiceInterface {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function assignReviewer(array $listData, string $entryUuid, ?string $reviewer, ?DateTimeInterface $assignedAt = null): array;
+	public function assignReviewer(array $listData, ReviewerAssignment $assignment): array;
 
 	/**
 	 * The entries of a destruction list, as a list.
@@ -107,16 +104,15 @@ interface DestructionReviewServiceInterface {
 	/**
 	 * The entries still waiting on somebody.
 	 *
-	 * @param array<string, mixed>   $listData     The destruction list's own data.
-	 * @param string                 $listUuid     The uuid of the list, carried onto each entry.
-	 * @param string|null            $reviewer     Only this reviewer's entries, or every assigned entry when null.
-	 * @param DateTimeInterface|null $waitingSince Only entries assigned at or before this moment.
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param PendingReviewQuery   $query    The list's uuid, carried onto each entry, the reviewer (every assigned entry when
+	 *                                       null) and how long an entry must have waited.
 	 *
 	 * @return array<int, array<string, mixed>> The pending entries, each naming its list.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array;
+	public function pendingEntries(array $listData, PendingReviewQuery $query): array;
 
 	/**
 	 * Record one reviewer's answer, in the one decision history.
@@ -133,14 +129,45 @@ interface DestructionReviewServiceInterface {
 	 *                                          answer), the new archiefactiedatum a retention requires, and
 	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
+	 * @param array<int, array<string, mixed>> $overriddenConflicts The link conflicts an acknowledged destroy
+	 *                                          overrides, from assertConflictsAcknowledged(); recorded on the
+	 *                                          decision as `overriddenConflicts` when not empty.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
-	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array;
+	public function recordAnswer(
+		array $listData,
+		string $entryUuid,
+		ReviewerAnswer $given,
+		?string $transferRef = null,
+		array $overriddenConflicts = []
+	): array;
+
+	/**
+	 * Refuse a destroy answer over link conflicts the reviewer did not acknowledge.
+	 *
+	 * Called before anything is applied to the record. Only a `destroy` answer
+	 * is checked: a retention or a transfer destroys nothing. The entry's
+	 * conflicts are recomputed now; an entry whose conflicts could not all be
+	 * established counts as one with conflicts, so a check that could not run
+	 * never reads as "nothing to acknowledge".
+	 *
+	 * @param string $entryUuid    The uuid of the record the entry is about.
+	 * @param string $answer       The answer given.
+	 * @param bool   $acknowledged Whether the request carries `acknowledgeConflicts: true`.
+	 *
+	 * @return array<int, array<string, mixed>> The conflicts an acknowledged destroy overrides; empty when none.
+	 *
+	 * @throws LinkConflictsNotAcknowledgedException When the entry has conflicts and they were not acknowledged.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	public function assertConflictsAcknowledged(string $entryUuid, string $answer, bool $acknowledged): array;
 
 	/**
 	 * A reviewer's answer, as the reviewer gave it.

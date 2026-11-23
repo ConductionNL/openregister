@@ -5459,10 +5459,6 @@ parameters:
 			count: 1
 			path: lib/Service/XwikiLinkService.php
 
-		-
-			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/CaseTypeAuthorizationService.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Settings\\\\IntegrationsAdminSettings\\:\\:\\$l10n is never read, only written\\.$#"

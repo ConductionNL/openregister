@@ -24,10 +24,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -92,7 +93,7 @@ class ConfigurationsController extends Controller {
 		IRequest $request,
 		ConfigurationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->configurationMapper = $services->records->configurationMapper;
 		$this->configurationService = $services->records->configurationService;
@@ -126,10 +127,6 @@ class ConfigurationsController extends Controller {
 
 		unset($filters['_route']);
 
-		$searchParams = [];
-		$searchConditions = [];
-		$filters = $filters;
-
 		// Admins bypass multitenancy so they can see all configurations.
 		// Non-admin authenticated users see only their tenant's configurations.
 		$multitenancy = ($this->isCurrentUserAdmin() === false);
@@ -137,12 +134,8 @@ class ConfigurationsController extends Controller {
 		// Return all configurations that match the search conditions.
 		return new JSONResponse(
 			data: [
-				'results' => $this->configurationMapper->findAll(
-					limit: null,
-					offset: null,
-					filters: $filters,
-					searchConditions: $searchConditions,
-					searchParams: $searchParams,
+				'results' => $this->configurationMapper->findListing(
+					query: ListQuery::unbounded(filters: $filters),
 					_multitenancy: $multitenancy
 				),
 			]
