@@ -3901,3 +3901,6 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T23:29:20Z integrator-20261123T232305-69d0e3c5 NORESULT tree 3440d7099c: deps failed
 2026-11-23T23:36:26Z session-20261123T223729-bcfad98c cloud-or-reviewer-0: 6 reviewed (5968, 10260, 10456, 10508, 10516, 10520 APPROVE); 10540 and 11000 REVERIFY heads conflict with main (no verdict); all other N%4==0 open main PRs have a verdict at head
 2026-11-23T23:37:37Z integrator-20261123T232305-69d0e3c5 GREEN tree 3440d7099c on dev e353e627c0 prs 4 front=skip: Tests: 63597, Assertions: 223651, Errors: 9, Failures: 6, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-23T23:37:55Z integrator-20261123T232305-69d0e3c5 PUSH-REFUSED Auto packing the repository in background for optimum performance.
+See "git help gc" for manual housekeeping.
+remote: error: GH013: Repository rule violations f; per-PR merges
