@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\IdentifierSchemeRunMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -78,7 +79,7 @@ class IdentifierSchemeMigrationService {
 	 * @param SchemaMapperInterface     $schemas    The schema whose property is migrated.
 	 * @param ObjectOperationsInterface $objects    Reads and saves the objects.
 	 * @param ForeignIdentifierRegistry $foreignIds Keeps each previous value findable.
-	 * @param SequenceServiceInterface  $sequences  Keeps the counter past every rewritten number.
+	 * @param RunningNumbersInterface   $sequences  Keeps the counter past every rewritten number.
 	 * @param IJobList                  $jobList    Queues the background job.
 	 * @param IConfig                   $config     The instance id, which names the issuer.
 	 *
@@ -89,7 +90,7 @@ class IdentifierSchemeMigrationService {
 		private readonly SchemaMapperInterface $schemas,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly ForeignIdentifierRegistry $foreignIds,
-		private readonly SequenceServiceInterface $sequences,
+		private readonly RunningNumbersInterface $sequences,
 		private readonly IJobList $jobList,
 		private readonly IConfig $config,
 	) {
@@ -418,7 +419,7 @@ class IdentifierSchemeMigrationService {
 			$this->foreignIds->record(objectUuid: (string)$object->getUuid(), issuer: $this->previousIssuer(), value: $old);
 			$this->save(pass: $pass, object: $object, data: array_replace($data, [$property => $new]));
 			$this->sequences->advanceTo(
-				new SequenceScope(registerId: 0, schemaId: 0, scopeKey: 'gen:'.$pass->current->sequence().'|'.$pass->current->periodAt(moment: $moment)),
+				'gen:'.$pass->current->sequence().'|'.$pass->current->periodAt(moment: $moment),
 				reserved: $parsed['sequence']
 			);
 		} catch (Throwable $e) {

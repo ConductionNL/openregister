@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\IdentifierSchemeRunMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -40,8 +41,6 @@ use OCA\OpenRegister\Service\IdentifierSchemePass;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
 use OCA\OpenRegister\Service\Schemas\IdentityRewriteScope;
-use OCA\OpenRegister\Service\SequenceScope;
-use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\BackgroundJob\IJobList;
 use OCP\DB\Exception as DbException;
@@ -68,7 +67,6 @@ use RuntimeException;
 #[UsesClass(GeneratedIdentifierDeclaration::class)]
 #[UsesClass(GeneratedIdentifierDeclarationReader::class)]
 #[UsesClass(IdentityRewriteScope::class)]
-#[UsesClass(SequenceScope::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(ObjectFindTarget::class)]
@@ -104,9 +102,9 @@ class IdentifierSchemeMigrationServiceTest extends TestCase {
 	/**
 	 * The counter.
 	 *
-	 * @var SequenceServiceInterface&MockObject
+	 * @var RunningNumbersInterface&MockObject
 	 */
-	private SequenceServiceInterface&MockObject $sequences;
+	private RunningNumbersInterface&MockObject $sequences;
 
 	/**
 	 * The job list.
@@ -132,7 +130,7 @@ class IdentifierSchemeMigrationServiceTest extends TestCase {
 		$this->runs       = $this->memoryRuns();
 		$this->foreignIds = new ForeignIdentifierRegistry($this->memoryForeignIds());
 		$this->objects    = $this->createMock(ObjectOperationsInterface::class);
-		$this->sequences  = $this->createMock(SequenceServiceInterface::class);
+		$this->sequences  = $this->createMock(RunningNumbersInterface::class);
 		$this->jobList    = $this->createMock(IJobList::class);
 		$this->service    = $this->serviceWith(schema: self::schema(annotation: ['sequence' => 'case', 'format' => 'Z-{year}-{seq:5}', 'resetOn' => 'year']));
 	}//end setUp()
@@ -271,7 +269,7 @@ class IdentifierSchemeMigrationServiceTest extends TestCase {
 				}
 			);
 		$this->sequences->expects($this->once())->method('advanceTo')
-			->with($this->callback(static fn (SequenceScope $scope): bool => $scope->scopeKey === 'gen:case|2025'), 7);
+			->with('gen:case|2025', 7);
 
 		$this->assertTrue($this->service->processBatch(run: $run, batchSize: 50));
 

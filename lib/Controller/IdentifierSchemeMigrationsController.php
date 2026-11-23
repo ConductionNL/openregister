@@ -28,11 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\IdentifierSchemeMigrationRunningException;
 use OCA\OpenRegister\Service\IdentifierSchemeMigrationService;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -69,7 +69,7 @@ class IdentifierSchemeMigrationsController extends Controller {
 		private readonly IdentifierSchemeMigrationService $migrations,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -85,7 +85,7 @@ class IdentifierSchemeMigrationsController extends Controller {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function create(int $id): JSONResponse {
 		$refusal = $this->gate->refusal(forbidden: self::ADMIN_ONLY);
 		if ($refusal !== null) {
@@ -120,7 +120,7 @@ class IdentifierSchemeMigrationsController extends Controller {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-second-human-identifier-reserved-values-and-a-scheme-change-as-a-migration-req-gid-006
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function show(int $run): JSONResponse {
 		$refusal = $this->gate->refusal(forbidden: self::ADMIN_ONLY);
 		if ($refusal !== null) {
