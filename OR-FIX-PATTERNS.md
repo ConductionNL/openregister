@@ -448,3 +448,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: tests/Unit/Architecture/ClassAliasStubTest::testStubMatchesTheAliasMap 'tests/stubs/ClassAliases.php does not match appinfo/class-aliases.json'.
 - Cause: #8106 ships a stub generated from appinfo/class-aliases.json; every main change to that json (e.g. new Notifications/Files controller aliases) makes it stale.
 - Fix: python3 scripts/class-alias-stubs.py, commit the stub; rerun Architecture (see #8106 1000ddfa).
+## Jest initial-data golden misses a component's new data() fields (or-fix-14)
+- Symptom: src/services/initial-data.golden.spec.js '<Component> starts from the recorded state' fails, snapshot + only the PR's new data() keys; PHP suites all green, so PHP-only checks miss it.
+- Cause: the golden pins every settings component's data() shape; a PR adding fields to e.g. FileConfiguration.vue never re-recorded it.
+- Fix: npx jest --findRelatedTests <PR's src files> on the merged tree (npm ci --ignore-scripts, ~30s); then npx jest src/services/initial-data.golden.spec.js -u, check the .snap diff is only the PR's keys, commit (#10494 90b4b7a5).
