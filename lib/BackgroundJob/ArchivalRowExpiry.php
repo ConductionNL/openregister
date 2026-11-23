@@ -29,6 +29,7 @@ use Exception;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluatorFactory;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluatorInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\AnnotatedRow;
 
 /**
  * Reads a row's `_created` and evaluates the schema's retention rules against it.
@@ -77,7 +78,7 @@ final class ArchivalRowExpiry {
 
 		try {
 			$row    = $this->stripMetadataColumns(row: $row);
-			$result = $this->retentionEvaluator->evaluate(annotation: $sweep->annotation, row: $row, createdAt: $createdAt);
+			$result = $this->retentionEvaluator->evaluate(subject: new AnnotatedRow(annotation: $sweep->annotation, row: $row, createdAt: $createdAt));
 		} catch (Exception $error) {
 			$this->warn(message: sprintf('Skipping row on "%s": %s', $sweep->schemaSlug, $error->getMessage()));
 			return null;
