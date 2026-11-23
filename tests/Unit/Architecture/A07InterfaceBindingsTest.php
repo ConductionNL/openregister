@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
@@ -195,7 +195,7 @@ final class A07InterfaceBindingsTest extends TestCase {
 
 		$this->assertTrue(is_subclass_of(object_or_class: $origin, class: $role), $origin . ' extends ' . $role);
 		$this->assertTrue(is_subclass_of(object_or_class: $class, class: $role), $class . ' implements ' . $role);
-		$this->assertSame($class, ContractBindings::BINDINGS[$role] ?? null, $role . ' is bound');
+		$this->assertSame($class, CoreServiceBindings::BINDINGS[$role] ?? null, $role . ' is bound');
 	}//end testTheRoleIsExtendedImplementedAndBound()
 
 	/**
