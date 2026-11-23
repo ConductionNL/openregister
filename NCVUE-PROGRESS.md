@@ -26,3 +26,4 @@
 2026-11-23T08:33:34Z ncvue-3 #2133 and #2211 retargeted to main, main merged in, all local gates green, pushed; admin merge REFUSED by session permission check, both left open ready to merge; main 9eafa328
 2026-11-23T08:44:15Z ncvue-1 #2215 merged (pinia 4.1.0); lane share done, main 8e9ba950. Note: check:jsdoc fails on main (16 components below ratchet, pre-existing); useOfflineQueue spec flaky under full-suite load
 2026-11-23T08:48:22Z ncvue-4 #1726 merged (sub-tabs on main's strip; empty-panel fix + test), main 3813fb27; #1714 being worked by another session (pushed 08:32), skipped
+2026-11-23T08:48:36Z ncvue-4 done: #1726 merged by me; #1714 merged and #1720 in progress by a second unlogged lane-4 session; main 3813fb2730
