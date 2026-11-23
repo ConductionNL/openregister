@@ -550,3 +550,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Integrations Support class typed on a Core read gate after main's edge baseline (or-fix-6)
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline 'lib/Controller/Support/<X>.php -> lib/Service/Object/ObjectReadAccessInterface.php (Integrations -> Core)'.
 - Fix: type it on Kernel\Contracts\ObjectReadCheckInterface::isReadable(ObjectRef): bool (added by #11006 4b537d27; ObjectReadAccess implements it, bound in CoreServiceBindings). Until #11006 lands, add the same port (root Kernel/Contracts, csv row ',,Kernel,,,,,Kernel') and a bool wrapper over readable().
+## Constructor bundle relocates a grandfathered cross-component edge (or-fix-1)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/<Area>/<NewBundle>.php -> lib/<OtherArea>/...Interface.php' on a gi3/ctor-bundle PR; main's baseline has the same edge from the class the bundle feeds.
+- Cause: the baseline is per file pair; moving a foreign-typed collaborator into a new bundle file is a new edge even though the dependency is unchanged.
+- Fix: keep that collaborator a direct constructor param of the original class (named, after the bundle), drop it from the bundle, move the tests' 'x:' arg out of the bundle call (line-based script); never add to the baseline (#9801 fe7aaf5f).
