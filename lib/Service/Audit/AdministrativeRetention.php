@@ -32,8 +32,8 @@ use DateInterval;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\AdministrativeRetentionPeriod;
 use OCP\IAppConfig;
-use Throwable;
 
 /**
  * Reads, validates and applies the administrative retention.
@@ -43,25 +43,18 @@ use Throwable;
 class AdministrativeRetention {
 
 	/**
-	 * The app the setting lives under.
-	 *
-	 * @var string
-	 */
-	private const APP = 'openregister';
-
-	/**
 	 * The setting: an ISO 8601 duration.
 	 *
 	 * @var string
 	 */
-	public const CONFIG_KEY = 'audit.administrativeRetention';
+	public const CONFIG_KEY = AdministrativeRetentionPeriod::CONFIG_KEY;
 
 	/**
 	 * The period when nothing, or nothing usable, is stored.
 	 *
 	 * @var string
 	 */
-	public const DEFAULT_PERIOD = 'P10Y';
+	public const DEFAULT_PERIOD = AdministrativeRetentionPeriod::DEFAULT_PERIOD;
 
 	/**
 	 * Constructor.
@@ -81,17 +74,7 @@ class AdministrativeRetention {
 	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
 	 */
 	public function period(): string {
-		if ($this->appConfig === null) {
-			return self::DEFAULT_PERIOD;
-		}
-
-		try {
-			$stored = trim($this->appConfig->getValueString(self::APP, self::CONFIG_KEY, self::DEFAULT_PERIOD));
-			self::interval(period: $stored);
-			return $stored;
-		} catch (Throwable) {
-			return self::DEFAULT_PERIOD;
-		}
+		return (new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->period();
 	}//end period()
 
 	/**
@@ -106,11 +89,7 @@ class AdministrativeRetention {
 	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
 	 */
 	public function store(string $period): string {
-		$period = trim($period);
-		self::interval(period: $period);
-		$this->appConfig?->setValueString(self::APP, self::CONFIG_KEY, $period);
-
-		return $period;
+		return (new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->store(period: $period);
 	}//end store()
 
 	/**
@@ -147,17 +126,9 @@ class AdministrativeRetention {
 	 *
 	 * @throws InvalidArgumentException When it is empty or cannot be parsed.
 	 *
-		 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
 	 */
 	public static function interval(string $period): DateInterval {
-		if (preg_match('/^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/', $period) !== 1) {
-			throw new InvalidArgumentException('The administrative audit retention must be an ISO 8601 duration such as P10Y, got "' . $period . '".');
-		}
-
-		try {
-			return new DateInterval($period);
-		} catch (Throwable $e) {
-			throw new InvalidArgumentException('The administrative audit retention must be an ISO 8601 duration such as P10Y, got "' . $period . '".', 0, $e);
-		}
+		return AdministrativeRetentionPeriod::interval(period: $period);
 	}//end interval()
 }//end class

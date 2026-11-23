@@ -23,8 +23,8 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AdministrativeRetentionPeriod;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCP\IAppConfig;
@@ -223,7 +223,7 @@ class ConfigurationSettingsHandler {
 					raw: $this->appConfig->getValueString(AppIdentity::APP_ID, ReadEventVisibility::CONFIG_KEY, '[]')
 				),
 				// REQ-HSA-011: how long administrative audit rows are kept.
-				'administrativeRetention' => (new AdministrativeRetention(appConfig: $this->appConfig))->period(),
+				'administrativeRetention' => (new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->period(),
 			],
 		];
 	}//end operationalSettings()
@@ -449,7 +449,7 @@ class ConfigurationSettingsHandler {
 		$this->storeFlowSettings(flow: $data['flow'] ?? null);
 		$this->storeAuditSettings(audit: $data['audit'] ?? null);
 		if ($retention !== null) {
-			(new AdministrativeRetention(appConfig: $this->appConfig))->store(period: $retention);
+			(new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->store(period: $retention);
 		}
 
 		foreach (['multitenancy', 'retention'] as $key) {
@@ -528,7 +528,7 @@ class ConfigurationSettingsHandler {
 		}
 
 		$period = trim($audit['administrativeRetention']);
-		AdministrativeRetention::interval(period: $period);
+		AdministrativeRetentionPeriod::interval(period: $period);
 
 		return $period;
 	}//end submittedAdministrativeRetention()

@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\AdministrativeRetentionPeriod;
 use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCP\IAppConfig;
@@ -44,6 +45,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(AdministrativeRetention::class)]
+#[CoversClass(AdministrativeRetentionPeriod::class)]
 #[UsesClass(AuditTrail::class)]
 #[UsesClass(AuditTrailMapper::class)]
 #[UsesClass(AuditTrailMapperServices::class)]

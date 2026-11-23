@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Migration\Version1Date20261114230015;
+use OCA\OpenRegister\Kernel\Contracts\AdministrativeRetentionPeriod;
 use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
@@ -60,6 +61,7 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(AuditTrailMapperServices::class)]
 #[UsesClass(AuditHashService::class)]
 #[UsesClass(AdministrativeRetention::class)]
+#[UsesClass(AdministrativeRetentionPeriod::class)]
 #[UsesClass(EntityEditAuditor::class)]
 #[UsesClass(SettingsChangeAuditor::class)]
 #[UsesClass(AuditEntryWriter::class)]
