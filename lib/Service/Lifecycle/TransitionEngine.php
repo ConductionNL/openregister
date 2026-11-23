@@ -54,6 +54,7 @@ use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -77,7 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * contract, and live beside `publishedInputs()` for the reason above: one
  * place decides what a client is told a transition asks for.
  */
-class TransitionEngine {
+class TransitionEngine implements LifecycleTransitionInterface {
 	/**
 	 * App-config key opting an instance into the documented slug contract.
 	 *
@@ -211,20 +212,19 @@ class TransitionEngine {
 	 * that throws here is a real bug, and the side effect it owns (a legal hold,
 	 * a ledger posting, an outbound notification) did not happen.
 	 *
+	 * The acting user is read from the session, as every transition path
+	 * snapshots it for its own write.
+	 *
 	 * @param ObjectEntity $object The saved object, in its post-transition state.
 	 * @param TransitionMove $move The action applied and the states it moved between.
-	 * @param string|null $userId The acting user, when there is a session.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function dispatchTransitioned(
-		ObjectEntity $object,
-		TransitionMove $move,
-		?string $userId,
-	): void {
+	private function dispatchTransitioned(ObjectEntity $object, TransitionMove $move): void {
 		$scope = $this->transitionEventScope(object: $object);
+		$userId = $this->userSession->getUser()?->getUID();
 
 		// Read from the pass's ambient frame, never from a parameter on
 		// transition(): a caller that could pass `automatic: true` could claim
@@ -418,8 +418,9 @@ class TransitionEngine {
 		// named move before any automatic move that followed from it. Leaving
 		// the OUTERMOST boundary drains, so the entity answered here is the one
 		// the last automatic move produced, when there was one.
+		$command = new TransitionCommand(objectId: $objectId, submission: new TransitionSubmission(action: $action, data: $data));
 		$move = fn (): ObjectEntity => $this->writeBoundary->around(
-			write: fn (): ObjectEntity => $this->applyTransition(objectId: $objectId, action: $action, data: $data)
+			write: fn (): ObjectEntity => $this->applyTransition(command: $command)
 		);
 		if ($actor === null) {
 			return $move();
@@ -476,20 +477,35 @@ class TransitionEngine {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transitionAsSystem(string $objectId, string $action, string $app, array $data = []): ObjectEntity {
+		$command = new TransitionCommand(objectId: $objectId, submission: new TransitionSubmission(action: $action, data: $data));
+		return $this->transitionApprovedBy(command: $command, app: $app);
+	}//end transitionAsSystem()
+
+	/**
+	 * Apply a named transition as the system, for transitionAsSystem() only.
+	 *
+	 * Private, so no controller and no other class can reach the system path
+	 * except through {@see transitionAsSystem()}.
+	 *
+	 * @param TransitionCommand $command The object id, the action and its input values.
+	 * @param string $app The id of the app taking responsibility for the caller check.
+	 *
+	 * @return ObjectEntity The saved object after the transition.
+	 *
+	 * @throws InvalidArgumentException When `$app` is empty.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function transitionApprovedBy(TransitionCommand $command, string $app): ObjectEntity {
 		$app = trim($app);
 		if ($app === '') {
 			throw new InvalidArgumentException('A transition run as the system must name the app that approved the caller.');
 		}
 
 		return $this->writeBoundary->around(
-			write: fn (): ObjectEntity => $this->applyTransition(
-				objectId: $objectId,
-				action: $action,
-				data: $data,
-				asSystemFor: $app
-			)
+			write: fn (): ObjectEntity => $this->applyTransition(command: $command, asSystemFor: $app)
 		);
-	}//end transitionAsSystem()
+	}//end transitionApprovedBy()
 
 	/**
 	 * Resolve the object/schema/annotation a transition acts on, guarding presence and permission.
@@ -611,22 +627,21 @@ class TransitionEngine {
 	 * The whole of the pre-existing `transition()` body, split out so the boundary
 	 * wraps it in one place and nothing inside can return past the drain.
 	 *
-	 * @param string $objectId Object id/uuid/slug.
-	 * @param string $action Transition action name.
-	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 * @param TransitionCommand $command The object id, the action and its input values.
 	 * @param string|null $asSystemFor The app a system transition runs for, null for an ordinary one.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 */
-	private function applyTransition(
-		string $objectId,
-		string $action,
-		array $data = [],
-		?string $asSystemFor = null,
-	): ObjectEntity {
-		$subject = $this->resolveTransitionSubject(objectId: $objectId, asSystem: ($asSystemFor !== null));
+	private function applyTransition(TransitionCommand $command, ?string $asSystemFor = null): ObjectEntity {
+		$asSystem = ($asSystemFor !== null);
+		$subject = $this->resolveTransitionSubject(objectId: $command->objectId, asSystem: $asSystem);
+		$action = $command->submission->action;
+		$run = new TransitionRun(
+			request: new TransitionRequest(object: $subject['object'], action: $action, data: $command->submission->data, asSystem: $asSystem),
+			annotation: $subject['annotation']
+		);
 		if ($asSystemFor === null) {
-			return $this->applyToSubject(subject: $subject, action: $action, data: $data);
+			return $this->applyToSubject(run: $run);
 		}
 
 		$uuid = (string)$subject['object']->getUuid();
@@ -643,48 +658,35 @@ class TransitionEngine {
 		);
 
 		return $this->writeBoundary->runningAsSystem(
-			uuid: $uuid,
-			app: $asSystemFor,
-			write: fn (): ObjectEntity => $this->applyToSubject(
-				subject: $subject,
-				action: $action,
-				data: $data,
-				asSystem: true
-			)
+			approval: new SystemApproval(app: $asSystemFor, uuid: $uuid),
+			write: fn (): ObjectEntity => $this->applyToSubject(run: $run)
 		);
 	}//end applyTransition()
 
 	/**
 	 * Apply a named transition to a subject already resolved and cleared.
 	 *
-	 * @param array<string, mixed> $subject What resolveTransitionSubject() answered.
-	 * @param string $action Transition action name.
-	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
-	 * @param bool $asSystem True on the system path: the writes skip RBAC and the organisation filter.
+	 * @param TransitionRun $run The object, the action, its payload and path, and the lifecycle
+	 *                           annotation. On the system path the writes skip RBAC and the
+	 *                           organisation filter.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
-	 * @psalm-param array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>} $subject
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyToSubject(array $subject, string $action, array $data, bool $asSystem = false): ObjectEntity {
-		$object = $subject['object'];
-		$annotation = $subject['annotation'];
+	private function applyToSubject(TransitionRun $run): ObjectEntity {
+		$request = $run->request;
+		$object = $request->object;
+		$action = $request->action;
+		$asSystem = $request->asSystem;
 
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		$transitions = (array)($annotation['transitions'] ?? []);
+		$field = $run->field();
+		$transitions = (array)($run->annotation['transitions'] ?? []);
 
 		// Static transitions take precedence; a delegating mode answers only
 		// when no non-empty static map is declared.
 		if ($transitions === []) {
-			$delegated = $this->applyDelegatedTransition(
-				request: new TransitionRequest(object: $object, action: $action, data: $data, asSystem: $asSystem),
-				annotation: $annotation,
-				field: $field
-			);
+			$delegated = $this->applyDelegatedTransition(run: $run);
 			if ($delegated !== null) {
 				return $delegated;
 			}
@@ -716,10 +718,9 @@ class TransitionEngine {
 		// Validate the payload against the transition's `inputs` allowlist and
 		// merge the accepted values BEFORE flipping the lifecycle field, so the
 		// status write always wins and both land in the same save.
-		$accepted = $this->resolveTransitionInputs(
+		$accepted = $this->acceptInputs(
 			inputs: (array)($spec['inputs'] ?? []),
-			data: $data,
-			action: $action
+			submission: new TransitionSubmission(action: $action, data: $request->data)
 		);
 		$objectData = array_merge($objectData, $accepted);
 
@@ -737,10 +738,8 @@ class TransitionEngine {
 		// Name the transition for the listeners. They see only object data and
 		// would otherwise pick the first transition with this from/to pair,
 		// judging and acting on a twin rather than the action asked for.
-		$uuid = (string)$object->getUuid();
 		$saved = $this->writeBoundary->declaringAction(
-			uuid: $uuid,
-			action: $action,
+			request: $request,
 			write: fn (): ObjectEntity => $this->objectService->saveObject(
 				object: $objectData,
 				options: new ObjectSaveOptions(
@@ -753,16 +752,13 @@ class TransitionEngine {
 			)
 		);
 
-		$userId = $actingUser?->getUID();
-
 		$this->dispatchTransitioned(
 			object: $saved,
 			move: new TransitionMove(
 				action: $action,
 				from: $currentValue,
 				to: $targetState
-			),
-			userId: $userId
+			)
 		);
 
 		return $saved;
@@ -782,36 +778,23 @@ class TransitionEngine {
 	 * because both modes answer with the saved entity, so there is nothing to
 	 * return separately.
 	 *
-	 * @param TransitionRequest $request The object, action, payload and path of the move.
-	 * @param array<string, mixed> $annotation The `x-openregister-lifecycle` block.
-	 * @param string $field The lifecycle field name on the object.
+	 * @param TransitionRun $run The object, action, payload and path of the move, and the
+	 *                           `x-openregister-lifecycle` block.
 	 *
 	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyDelegatedTransition(
-		TransitionRequest $request,
-		array $annotation,
-		string $field,
-	): ?ObjectEntity {
-		$provider = trim((string)($annotation['provider'] ?? ''));
+	private function applyDelegatedTransition(TransitionRun $run): ?ObjectEntity {
+		$provider = trim((string)($run->annotation['provider'] ?? ''));
 		if ($provider !== '') {
-			return $this->applyProviderTransition(
-				request: $request,
-				tag: $provider,
-				field: $field
-			);
+			return $this->applyProviderTransition(run: $run, tag: $provider);
 		}
 
-		$graph = (array)($annotation['graph'] ?? []);
+		$graph = (array)($run->annotation['graph'] ?? []);
 		if ($graph !== []) {
-			return $this->applyGraphTransition(
-				request: $request,
-				graph: $graph,
-				field: $field
-			);
+			return $this->applyGraphTransition(run: $run, graph: new LifecycleGraphBlock(block: $graph, field: $run->field()));
 		}
 
 		return null;
@@ -861,12 +844,11 @@ class TransitionEngine {
 	 * rule-driven move that follows from this one is still drained and still
 	 * wins the entity that is answered.
 	 *
-	 * @param TransitionRequest $request The object as it stood before the move, the action, the
-	 *                                   payload, and the path: on the system path the re-read skips
-	 *                                   RBAC and the organisation filter. The provider performs its
-	 *                                   own write and its own checks.
+	 * @param TransitionRun $run The object as it stood before the move, the action, the payload,
+	 *                           the path (on the system path the re-read skips RBAC and the
+	 *                           organisation filter) and the annotation naming the lifecycle
+	 *                           field. The provider performs its own write and its own checks.
 	 * @param string $tag The `provider` DI tag off the annotation.
-	 * @param string $field The lifecycle field name on the object.
 	 *
 	 * @return ObjectEntity The object re-read after the provider's write.
 	 *
@@ -879,17 +861,14 @@ class TransitionEngine {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function applyProviderTransition(
-		TransitionRequest $request,
-		string $tag,
-		string $field,
-	): ObjectEntity {
+	private function applyProviderTransition(TransitionRun $run, string $tag): ObjectEntity {
 		$provider = $this->providerRegistry->resolve(tag: $tag);
 
+		$request = $run->request;
 		$actingUser = $this->userSession->getUser();
 		$objectId = (string)$request->object->getUuid();
 		$before = ($request->object->getObject() ?? []);
-		$from = (string)($before[$field] ?? '');
+		$from = $run->currentState();
 
 		try {
 			$report = $provider->execute(
@@ -960,9 +939,8 @@ class TransitionEngine {
 			move: new TransitionMove(
 				action: $request->action,
 				from: $from,
-				to: $this->providerTargetState(report: $report, saved: $saved, field: $field)
-			),
-			userId: $actingUser?->getUID()
+				to: $this->providerTargetState(report: $report, stored: (string)(($saved->getObject() ?? [])[$run->field()] ?? ''))
+			)
 		);
 
 		return $saved;
@@ -979,20 +957,19 @@ class TransitionEngine {
 	 * truth and cannot disagree with what was persisted.
 	 *
 	 * @param array<string, mixed> $report What the provider answered.
-	 * @param ObjectEntity $saved The object as re-read after the write.
-	 * @param string $field The lifecycle field name on the object.
+	 * @param string $stored The lifecycle field's value on the object as re-read after the write.
 	 *
 	 * @return string The target state, empty when neither source names one.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function providerTargetState(array $report, ObjectEntity $saved, string $field): string {
+	private function providerTargetState(array $report, string $stored): string {
 		$reported = trim((string)($report['to'] ?? ''));
 		if ($reported !== '') {
 			return $reported;
 		}
 
-		return (string)(($saved->getObject() ?? [])[$field] ?? '');
+		return $stored;
 	}//end providerTargetState()
 
 	/**
@@ -1075,7 +1052,7 @@ class TransitionEngine {
 
 			$graph = (array)($annotation['graph'] ?? []);
 			if ($graph !== []) {
-				return $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+				return $this->deriveGraphActions(object: $object, graph: new LifecycleGraphBlock(block: $graph, field: $field));
 			}
 		}
 
@@ -1285,18 +1262,17 @@ class TransitionEngine {
 	 * client can only apply a `move-to-<uuid>` the graph currently offers.
 	 *
 	 * @param ObjectEntity $object The transitioning object.
-	 * @param array<string, mixed> $graph The `graph` block off the annotation.
-	 * @param string $field The lifecycle field name on the object.
+	 * @param LifecycleGraphBlock $graph The `graph` block off the annotation and the lifecycle field it drives.
 	 *
 	 * @return list<array{action:string,to:string,label:string,requires:?string,description:?string,inputs:list<array{field:string,required:bool}>}>
 	 *
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function deriveGraphActions(ObjectEntity $object, array $graph, string $field): array {
+	private function deriveGraphActions(ObjectEntity $object, LifecycleGraphBlock $graph): array {
 		return array_map(
 			static fn (array $candidate): array => $candidate['published'],
-			$this->graphCandidates(object: $object, graph: $graph, field: $field)
+			$this->graphCandidates(object: $object, graph: $graph->block, field: $graph->field)
 		);
 	}//end deriveGraphActions()
 
@@ -1884,6 +1860,28 @@ class TransitionEngine {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
 	public function resolveTransitionInputs(array $inputs, array $data, string $action): array {
+		return $this->acceptInputs(inputs: $inputs, submission: new TransitionSubmission(action: $action, data: $data));
+	}//end resolveTransitionInputs()
+
+	/**
+	 * Validate a submission against a transition's declared `inputs` allowlist.
+	 *
+	 * The body of {@see resolveTransitionInputs()}, which keeps its signature
+	 * for the task form and delegates here.
+	 *
+	 * @param array<int, mixed> $inputs The transition's declared `inputs` list.
+	 * @param TransitionSubmission $submission The action (named in each refusal) and the caller-supplied payload.
+	 *
+	 * @return array<string, mixed> The accepted field => value pairs to merge into the write.
+	 *
+	 * @throws InvalidTransitionInputException When the payload contains an undeclared
+	 *                          key, or a `required` input is absent or empty-string.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 */
+	private function acceptInputs(array $inputs, TransitionSubmission $submission): array {
+		$action = $submission->action;
+		$data = $submission->data;
 		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
 
 		// Reject any payload key the transition does not declare.
@@ -1915,7 +1913,7 @@ class TransitionEngine {
 
 		// Everything present is declared — merge it all.
 		return $data;
-	}//end resolveTransitionInputs()
+	}//end acceptInputs()
 
 
 	/**
@@ -1986,12 +1984,11 @@ class TransitionEngine {
 	 * to the target UUID, saves through the unchanged ObjectService path, and
 	 * dispatches `ObjectTransitionedEvent`. Rejection never mutates the object.
 	 *
-	 * @param TransitionRequest $request The object, the requested action (`move-to-<uuid>`, a side
-	 *                                   move or `reopen`), the payload (only the action's declared
-	 *                                   `form` properties are accepted) and the path: on the system
-	 *                                   path the save skips RBAC and the organisation filter.
-	 * @param array<string, mixed> $graph The `graph` block off the annotation.
-	 * @param string $field The lifecycle field name on the object.
+	 * @param TransitionRun $run The object, the requested action (`move-to-<uuid>`, a side
+	 *                           move or `reopen`), the payload (only the action's declared
+	 *                           `form` properties are accepted) and the path: on the system
+	 *                           path the save skips RBAC and the organisation filter.
+	 * @param LifecycleGraphBlock $graph The `graph` block off the annotation and the lifecycle field it drives.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
@@ -2001,18 +1998,17 @@ class TransitionEngine {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
 	 */
-	private function applyGraphTransition(
-		TransitionRequest $request,
-		array $graph,
-		string $field,
-	): ObjectEntity {
+	private function applyGraphTransition(TransitionRun $run, LifecycleGraphBlock $graph): ObjectEntity {
+		$request = $run->request;
+		$field = $graph->field;
+
 		// A graph that declares no form accepts no payload at all, refused
 		// before any sibling is read, exactly as before forms existed.
-		if ($this->graphMoves->declaresForms(graph: $graph) === false) {
-			$this->resolveTransitionInputs(inputs: [], data: $request->data, action: $request->action);
+		if ($this->graphMoves->declaresForms(graph: $graph->block) === false) {
+			$this->acceptInputs(inputs: [], submission: new TransitionSubmission(action: $request->action, data: $request->data));
 		}
 
-		$candidates = $this->graphCandidates(object: $request->object, graph: $graph, field: $field);
+		$candidates = $this->graphCandidates(object: $request->object, graph: $graph->block, field: $field);
 
 		$match = null;
 		foreach ($candidates as $candidate) {
@@ -2046,8 +2042,7 @@ class TransitionEngine {
 		// Name the move for the listeners and the audit trail, so a reopen is
 		// recorded as a reopen rather than as an anonymous status change.
 		$saved = $this->writeBoundary->declaringAction(
-			uuid: (string)$request->object->getUuid(),
-			action: $request->action,
+			request: $request,
 			write: fn (): ObjectEntity => $this->objectService->saveObject(
 				object: $objectData,
 				options: new ObjectSaveOptions(
@@ -2066,8 +2061,7 @@ class TransitionEngine {
 				action: $request->action,
 				from: $from,
 				to: $targetState
-			),
-			userId: $actingUser?->getUID()
+			)
 		);
 
 		return $saved;

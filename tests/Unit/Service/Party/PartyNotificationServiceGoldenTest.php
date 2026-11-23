@@ -19,7 +19,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Notifications\Service\Party\PartyReachGates;
+use OCA\OpenRegister\Service\Party\PartyRecipients;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -133,7 +133,7 @@ class PartyNotificationServiceGoldenTest extends TestCase
             }
         );
 
-        return new PartyNotificationService($linkMapper, $partyService, $email, new PartyReachGates(indicators: $indicators, optOut: $optOut));
+        return new PartyNotificationService(new PartyRecipients(links: $linkMapper, parties: $partyService, indicators: $indicators), $email, $optOut);
     }
 
     /**

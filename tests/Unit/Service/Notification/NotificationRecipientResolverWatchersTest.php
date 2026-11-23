@@ -20,8 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -53,9 +52,9 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 	/**
 	 * The watcher primitive, mocked.
 	 *
-	 * @var WatcherService
+	 * @var ObjectWatchersInterface&\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private WatcherService $watchers;
+	private ObjectWatchersInterface $watchers;
 
 	/**
 	 * The RBAC evaluator, mocked.
@@ -73,7 +72,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$this->object = $this->createMock(originalClassName: ObjectEntity::class);
 		$this->object->method('getUuid')->willReturn('uuid-case-1');
 
-		$this->watchers = $this->createMock(originalClassName: WatcherService::class);
+		$this->watchers = $this->createMock(originalClassName: ObjectWatchersInterface::class);
 		$this->permissions = $this->createMock(originalClassName: PermissionHandlerInterface::class);
 	}//end setUp()
 
@@ -86,7 +85,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$container = $this->createMock(originalClassName: IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === WatcherServiceInterface::class) {
+				if ($id === ObjectWatchersInterface::class) {
 					return $this->watchers;
 				}
 

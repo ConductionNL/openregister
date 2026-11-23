@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Event\ObjectEventSubscription;
+
 /**
  * The class names of listeners that code outside this component registers with
  * the event dispatcher. Each constant is the listener's own ::class string, so the
@@ -35,7 +37,7 @@ interface ListenerClassesInterface {
 	/**
 	 * The proxy ObjectEventSubscription registers for filtered object-event subscriptions.
 	 *
-	 * @var class-string<ObjectEventProxyListener>
+	 * @var string The ObjectEventProxyListener class name.
 	 */
-	public const OBJECT_EVENT_PROXY = ObjectEventProxyListener::class;
+	public const OBJECT_EVENT_PROXY = ObjectEventSubscription::PROXY_LISTENER;
 }//end interface

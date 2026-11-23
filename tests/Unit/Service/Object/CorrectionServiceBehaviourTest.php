@@ -28,7 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionAuditing;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
-use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ActionRightCheckInterface;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
@@ -74,9 +74,9 @@ class CorrectionServiceBehaviourTest extends TestCase {
 	/**
 	 * The action right check.
 	 *
-	 * @var OpenRegisterActionAuthService&MockObject
+	 * @var ActionRightCheckInterface&MockObject
 	 */
-	private OpenRegisterActionAuthService $actionAuth;
+	private ActionRightCheckInterface $actionAuth;
 
 	/**
 	 * The user session.
@@ -113,7 +113,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
-		$this->actionAuth = $this->createMock(OpenRegisterActionAuthService::class);
+		$this->actionAuth = $this->createMock(ActionRightCheckInterface::class);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->audit = $this->createMock(AuditTrailMapperInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);

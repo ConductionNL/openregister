@@ -27,10 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigPublishRequest;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Config\ConfigPublishTarget;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
@@ -114,7 +114,7 @@ class FederatedConfigController extends Controller {
 		IRequest $request,
 		FederatedConfigControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->service;
 		$this->access = $services->access;
 		$this->config = $services->config;

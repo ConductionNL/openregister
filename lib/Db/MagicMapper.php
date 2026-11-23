@@ -46,11 +46,14 @@ use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
@@ -790,10 +793,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class),
 			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
 			relatedRows: $relatedRowApplier,
-			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
+			languageService: $this->container->get(RequestLanguagesInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
-			appConfig: $this->appConfig
+			appConfig: $this->appConfig,
+			searchProfile: $this->container->get(PropertySearchProfileInterface::class)
 		);
 	}//end initializeSearchHandler()
 
@@ -979,7 +983,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 		}
 
-		return $sql;
+		return $sql.$this->columnSql()->check(type: (string)$definition['type'], name: (string)$definition['name']);
 	}//end buildAddColumnSql()
 
 	/**
@@ -2985,7 +2989,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->invalidateTableMemos();
 
 		// Create indexes for performance.
-		$this->createTableIndexes(tableName: $tableName, schema: $schema);
+		$this->createNewTableIndexes(tableName: $tableName, schema: $schema);
 
 		// Store schema version for change detection.
 		$this->storeRegisterSchemaVersion(register: $register, schema: $schema);
@@ -3067,10 +3071,28 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string The SQL type string
 	 */
 	private function mapColumnTypeToSQL(string $type, array $column): string {
-		$isPostgres = $this->db->getDatabasePlatform() instanceof PostgreSQLPlatform;
-
-		return (new MagicColumnSql(isPostgres: $isPostgres))->type(type: $type, column: $column);
+		return $this->columnSql()->type(type: $type, column: $column);
 	}//end mapColumnTypeToSQL()
+
+	/**
+	 * The condition that keeps a catalogue query inside this instance's own database.
+	 *
+	 * @return string
+	 */
+	private function catalogueScope(): string {
+		return (new CatalogueScope(db: $this->db))->condition();
+	}//end catalogueScope()
+
+	/**
+	 * The column writer of the connection's platform.
+	 *
+	 * @return MagicColumnSql
+	 */
+	private function columnSql(): MagicColumnSql {
+		$platform = $this->db->getDatabasePlatform();
+
+		return new MagicColumnSql(isPostgres: ($platform instanceof PostgreSQLPlatform), jsonAsText: ($platform instanceof MariaDBPlatform));
+	}//end columnSql()
 
 	/**
 	 * Create indexes for table performance
@@ -3087,6 +3109,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
+
+	/**
+	 * Create the indexes of a table created just now; on MariaDB the standard ones go in one statement.
+	 *
+	 * @param string $tableName The table name
+	 * @param Schema $schema    The schema for index analysis
+	 *
+	 * @return void
+	 */
+	private function createNewTableIndexes(string $tableName, Schema $schema): void {
+		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$run->indexesAtOnce = ($this->db->getDatabasePlatform() instanceof MariaDBPlatform);
+		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer->create(run: $run, schema: $schema);
+	}//end createNewTableIndexes()
 
 	/**
 	 * Save single object to register+schema-specific table
@@ -3787,7 +3824,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			tableName: $tableName,
 			fullTableName: $this->getFullTableName(tableName: $tableName),
 			columns: $columns,
-			isPostgres: $this->onPostgres()
+			isPostgres: $this->onPostgres(),
+			jsonAsText: ($this->db->getDatabasePlatform() instanceof MariaDBPlatform)
 		);
 	}//end tableSync()
 
@@ -5293,7 +5331,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -5758,7 +5796,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$prefix = $this->getTablePrefix();
 		$tablePattern = $prefix . 'openregister_table_%';
 
-		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?';
+		$sql = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope();
 		$stmt = $this->db->prepare($sql);
 		$result = $stmt->execute([$tablePattern]);
 		$tables = $result->fetchAll();
@@ -6307,7 +6345,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function listCrossTableScanTables(MagicCrossTableScan $scan): void {
 		$prefix = $this->getTablePrefix();
-		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?');
+		$stmt = $this->db->prepare('SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND ' . $this->catalogueScope());
 		$tables = $stmt->execute([$prefix . 'openregister_table_%'])->fetchAll();
 
 		$scan->tables = [];
@@ -7221,7 +7259,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function softDeleteRow(MagicTableTarget $target, ObjectEntity $entity): void {
 		if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
 			// Mark as deleted using entity method.
-			$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+			$entity->softDelete(userSession: $this->userSession, deletion: new SoftDeletion(reason: 'Soft deleted via MagicMapper', retentionDays: 30));
 		}
 
 		// Update entity in table with deleted field set.
@@ -8821,7 +8859,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// catalog index, so each lookup walked the columns of every table
 		// (89k columns over 1.7k magic tables: 18-33 ms against 3-4 ms).
 		$sql = 'SELECT LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns
-                WHERE table_name = ?';
+                WHERE table_name = ? AND ' . $this->catalogueScope();
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([$fullTableNameLower]);
@@ -11535,7 +11573,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeBoundTables(): PurposeBoundTables {
-		return new PurposeBoundTables(guard: $this->container->get(PurposeGuardInterface::class));
+		return new PurposeBoundTables(guard: $this->container->get(ReadPurposeGuardInterface::class));
 	}//end purposeBoundTables()
 
 	/**

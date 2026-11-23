@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
-use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\DetectionPatternsVersionInterface;
 use OCP\App\IAppManager;
 use Throwable;
 
@@ -48,12 +48,14 @@ final class DetectorVersionReader {
 	/**
 	 * Build the reader.
 	 *
-	 * @param IAppManager $appManager Reports installed app versions.
+	 * @param IAppManager                       $appManager Reports installed app versions.
+	 * @param DetectionPatternsVersionInterface $patterns   The version of the pattern backend's patterns.
 	 *
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
+		private readonly DetectionPatternsVersionInterface $patterns,
 	) {
 	}//end __construct()
 
@@ -73,8 +75,8 @@ final class DetectorVersionReader {
 				fields: [
 					'engine' => self::PATTERN_ENGINE,
 					'engineVersion' => $this->appVersion(appId: 'openregister'),
-					'patternSetVersion' => NlPatternSet::VERSION,
-					'changedAt' => NlPatternSet::CHANGED_AT,
+					'patternSetVersion' => $this->patterns->patternsVersion(),
+					'changedAt' => $this->patterns->patternsChangedAt(),
 				]
 			),
 			BackendState::METHOD_OPENANONYMISER => new DetectorVersion(
@@ -84,7 +86,7 @@ final class DetectorVersionReader {
 				]
 			),
 			BackendState::METHOD_HYBRID => new DetectorVersion(
-				fields: ['engine' => BackendState::METHOD_HYBRID, 'patternSetVersion' => NlPatternSet::VERSION]
+				fields: ['engine' => BackendState::METHOD_HYBRID, 'patternSetVersion' => $this->patterns->patternsVersion()]
 			),
 			default => new DetectorVersion(fields: ['engine' => $method]),
 		};

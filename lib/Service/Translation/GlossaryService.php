@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Translation;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -266,8 +267,7 @@ class GlossaryService {
 	private function rows(string $schema, array $filters): array {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
-				registerSlug: self::REGISTER,
-				schemaSlug: $schema,
+				target: new RegisterSchemaSlugs(register: self::REGISTER, schema: $schema),
 				filters: $filters
 			);
 		} catch (Throwable $failure) {

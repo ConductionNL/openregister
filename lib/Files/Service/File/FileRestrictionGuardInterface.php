@@ -22,43 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use OCP\Files\Node;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 
 /**
  * The one verdict on a restricted file: may the caller read it.
+ *
+ * Its methods are the Core port FileReadRestrictionInterface, which the file handlers ask; this
+ * name stays for the callers in Files and Integrations.
  */
-interface FileRestrictionGuardInterface {
-
-	/**
-	 * The verdict on several files at once, with one lookup.
-	 *
-	 * @param list<int> $fileIds The Nextcloud file ids.
-	 *
-	 * @return array<int, bool> The verdict per file id.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
-	 */
-	public function readable(array $fileIds): array;
-
-	/**
-	 * Keep only the nodes the caller may read, in their order.
-	 *
-	 * @param array<int|string, Node> $nodes The nodes.
-	 *
-	 * @return list<Node> The readable nodes.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
-	 */
-	public function readableNodes(array $nodes): array;
-
-	/**
-	 * Whether a file carries a restriction at all, whoever asks. A failed lookup answers true.
-	 *
-	 * @param int $fileId The Nextcloud file id.
-	 *
-	 * @return bool True when restricted, or when that cannot be told.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-has-no-public-link-req-pfrr-004
-	 */
-	public function isRestricted(int $fileId): bool;
+interface FileRestrictionGuardInterface extends FileReadRestrictionInterface {
 }//end interface

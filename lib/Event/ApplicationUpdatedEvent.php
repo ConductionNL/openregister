@@ -23,7 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Application;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -34,26 +35,26 @@ class ApplicationUpdatedEvent extends Event {
 	/**
 	 * The updated application state.
 	 *
-	 * @var Application The application after update.
+	 * @var ApplicationInterface&Entity The application after update.
 	 */
-	private Application $newApplication;
+	private ApplicationInterface $newApplication;
 
 	/**
 	 * The previous application state.
 	 *
-	 * @var Application The application before update.
+	 * @var ApplicationInterface&Entity The application before update.
 	 */
-	private Application $oldApplication;
+	private ApplicationInterface $oldApplication;
 
 	/**
 	 * Constructor for ApplicationUpdatedEvent.
 	 *
-	 * @param Application $newApplication The application after update.
-	 * @param Application $oldApplication The application before update.
+	 * @param ApplicationInterface&Entity $newApplication The application after update.
+	 * @param ApplicationInterface&Entity $oldApplication The application before update.
 	 *
 	 * @return void
 	 */
-	public function __construct(Application $newApplication, Application $oldApplication) {
+	public function __construct(ApplicationInterface $newApplication, ApplicationInterface $oldApplication) {
 		parent::__construct();
 		$this->newApplication = $newApplication;
 		$this->oldApplication = $oldApplication;
@@ -62,22 +63,22 @@ class ApplicationUpdatedEvent extends Event {
 	/**
 	 * Get the updated application
 	 *
-	 * @return Application The application after update
+	 * @return ApplicationInterface&Entity The application after update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getNewApplication(): Application {
+	public function getNewApplication(): ApplicationInterface {
 		return $this->newApplication;
 	}//end getNewApplication()
 
 	/**
 	 * Get the original application
 	 *
-	 * @return Application The application before update
+	 * @return ApplicationInterface&Entity The application before update
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOldApplication(): Application {
+	public function getOldApplication(): ApplicationInterface {
 		return $this->oldApplication;
 	}//end getOldApplication()
 }//end class

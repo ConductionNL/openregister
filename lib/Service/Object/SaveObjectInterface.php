@@ -29,7 +29,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 
 /**
  * Every public method of SaveObject. Callers depend on this interface, not on the class.
@@ -179,7 +178,7 @@ interface SaveObjectInterface extends
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */

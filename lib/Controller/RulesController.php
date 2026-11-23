@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaRule;
@@ -35,7 +36,6 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rules\RuleReplayRequest as ReplayAsk;
 use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
@@ -189,7 +189,7 @@ class RulesController extends Controller {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function index(string $schema): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -219,7 +219,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function setEnabled(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -255,7 +255,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function evaluate(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -307,7 +307,7 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function replay(string $schema, string $ruleId): JSONResponse {
 		$entity = $this->resolveSchema(reference: $schema);
 		if ($entity === null) {
@@ -417,15 +417,15 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function runs(string $ruleId): JSONResponse {
 		$verdict = $this->verdictFilter();
 		if ($verdict instanceof JSONResponse) {
 			return $verdict;
 		}
 
-		$since = ExampleSetDateValue::moment(value: $this->request->getParam('since'));
-		$until = ExampleSetDateValue::moment(value: $this->request->getParam('until'));
+		$since = $this->periodBound(name: 'since');
+		$until = $this->periodBound(name: 'until');
 		$limit = (int)($this->request->getParam('limit') ?? RuleRunMapperInterface::DEFAULT_LIMIT);
 		$offset = (int)($this->request->getParam('offset') ?? 0);
 
@@ -435,6 +435,31 @@ class RulesController extends Controller {
 		return new JSONResponse(['ruleId' => $ruleId, 'total' => $total, 'runs' => array_map(static fn ($run): array => $run->jsonSerialize(), $runs)]);
 
 	}//end runs()
+
+	/**
+	 * One end of the run log's period: the named parameter as a moment, or null.
+	 *
+	 * A missing, blank or unreadable value leaves that end of the period open.
+	 *
+	 * @param string $name The query parameter, `since` or `until`.
+	 *
+	 * @return DateTime|null The moment, or null for an open end.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function periodBound(string $name): ?DateTime {
+		$value  = $this->request->getParam($name);
+		$moment = false;
+		if (is_string($value) === true && trim($value) !== '') {
+			$moment = date_create($value);
+		}
+
+		if ($moment instanceof DateTime) {
+			return $moment;
+		}
+
+		return null;
+	}//end periodBound()
 
 	/**
 	 * The verdict the run log is narrowed to, null for none, or the refusal.

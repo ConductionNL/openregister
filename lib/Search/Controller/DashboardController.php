@@ -21,8 +21,8 @@
 namespace OCA\OpenRegister\Search\Controller;
 
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
@@ -84,7 +84,7 @@ class DashboardController extends Controller {
 	 * @param DashboardControllerServices $services The dashboard API services.
 	 */
 	public function __construct(IRequest $request, DashboardControllerServices $services) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->dashboardService = $services->dashboardService;
 		$this->session          = $services->session;

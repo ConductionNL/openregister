@@ -38,6 +38,8 @@ use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -255,5 +257,33 @@ class TimelineAdminControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 		$this->assertStringNotContainsString('openregister_timeline_kinds', $response->getData()['message']);
+	}
+
+	/**
+	 * The administrator-only endpoints, which the delegated admin setting also opens.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function delegatedEndpoints(): array {
+		return [
+			'declare kind'        => ['declareKind'],
+			'withdraw kind'       => ['withdrawKind'],
+			'declare pattern'     => ['declarePattern'],
+			'withdraw pattern'    => ['withdrawPattern'],
+			'declare text block'  => ['declareTextBlock'],
+			'withdraw text block' => ['withdrawTextBlock'],
+		];
+	}
+
+	/**
+	 * The attribute argument Nextcloud's security middleware reads is still the admin panel's class name.
+	 *
+	 * @dataProvider delegatedEndpoints
+	 */
+	public function testTheEndpointIsDelegatedThroughTheAdminPanel(string $method): void {
+		$attributes = (new \ReflectionMethod(TimelineAdminController::class, $method))->getAttributes(AuthorizedAdminSetting::class);
+
+		$this->assertCount(1, $attributes);
+		$this->assertSame(['settings' => OpenRegisterAdmin::class], $attributes[0]->getArguments());
 	}
 }

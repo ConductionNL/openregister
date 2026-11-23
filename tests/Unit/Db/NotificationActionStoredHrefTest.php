@@ -25,7 +25,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -34,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 
 final class NotificationActionStoredHrefTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -127,7 +127,7 @@ final class NotificationActionStoredHrefTest extends TestCase {
 			),
 			appConfig: $this->createMock(IAppConfig::class),
 			services: new SchemaMapperServices(
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				eventDispatcher: new ProcessDeclarationChecksDispatcher(logger: $logger),
 				validator: $this->createMock(PropertyValidatorHandler::class),
 				logger: $logger
 			)

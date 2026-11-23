@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -141,7 +141,7 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$this->service = new ReferentialIntegrityService(
 			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->mapper, db: $this->db),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(CascadeRetentionCheckInterface::class)),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

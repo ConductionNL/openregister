@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
+use JsonSerializable;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
@@ -1073,7 +1074,7 @@ class DeletedController extends Controller {
 					'objectUuid' => $id,
 					'total' => count($records),
 					'results' => array_map(
-						static fn (\OCA\OpenRegister\Db\AuditTrail $record): array => $record->jsonSerialize(),
+						static fn (JsonSerializable $record): array => $record->jsonSerialize(),
 						$records
 					),
 				]

@@ -64,6 +64,7 @@ use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -76,7 +77,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class WebhookEventListener implements IEventListener {
+class WebhookEventListener implements IEventListener, AppEventWebhookListenerInterface {
 
 	/**
 	 * Events whose payload is one serialised entity: event class => [objectType, action, getter].

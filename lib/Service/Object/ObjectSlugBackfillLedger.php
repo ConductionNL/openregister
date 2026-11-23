@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -198,7 +197,7 @@ class ObjectSlugBackfillLedger {
 	/**
 	 * Put the full change list in the log when the audit entry cannot hold it.
 	 *
-	 * The entry lists the first {@see AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES}
+	 * The entry lists the first {@see AuditTrailMapperInterface::SLUG_BACKFILL_MAX_CHANGES}
 	 * changes; the rest of a large run is reconstructable from these lines.
 	 *
 	 * @param ObjectSlugChangeSet $applied The writes that were applied and their table.
@@ -206,7 +205,7 @@ class ObjectSlugBackfillLedger {
 	 * @return void
 	 */
 	private function logLargeRun(ObjectSlugChangeSet $applied): void {
-		if (count($applied->changes) <= AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES) {
+		if (count($applied->changes) <= AuditTrailMapperInterface::SLUG_BACKFILL_MAX_CHANGES) {
 			return;
 		}
 
@@ -228,7 +227,7 @@ class ObjectSlugBackfillLedger {
 	 * @return array<int, string>
 	 */
 	private function changeListParts(ObjectSlugChangeSet $applied): array {
-		$parts = array_chunk($applied->changes, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
+		$parts = array_chunk($applied->changes, AuditTrailMapperInterface::SLUG_BACKFILL_MAX_CHANGES);
 
 		$messages = [];
 		foreach ($parts as $index => $part) {

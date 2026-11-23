@@ -419,15 +419,13 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 	}//end __toString()
 
 	/**
-	 * The ids a configuration lists as its registers, see ManagedByConfigurationTrait.
+	 * The member list a configuration keeps its registers in, see ManagedByConfigurationTrait.
 	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array|null
+	 * @return string
 	 */
-	protected function configurationMembers(Configuration $configuration): ?array {
-		return $configuration->getRegisters();
-	}//end configurationMembers()
+	protected function configurationMemberKind(): string {
+		return 'registers';
+	}//end configurationMemberKind()
 
 	/**
 	 * Get the default language for this register: the first configured, else 'nl'.

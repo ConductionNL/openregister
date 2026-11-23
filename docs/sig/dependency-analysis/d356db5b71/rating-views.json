@@ -1,0 +1,183 @@
+{
+  "A": {
+    "components": 1,
+    "hidden_share": 1.0,
+    "violation_degree": 0.0,
+    "violations": {},
+    "independence": 5.5,
+    "entanglement": 5.5,
+    "modularity": 5.35,
+    "overall": [
+      5.12,
+      5.12
+    ]
+  },
+  "B": {
+    "components": 39,
+    "hidden_share": 0.8517,
+    "violation_degree": 0.0554,
+    "violations": {
+      "cyclic": 44,
+      "indirect-cyclic": 13,
+      "transitive": 18
+    },
+    "independence": 2.15,
+    "entanglement": 4.02,
+    "modularity": 3.74,
+    "overall": [
+      4.37,
+      4.47
+    ]
+  },
+  "C": {
+    "components": 10,
+    "hidden_share": 0.6254,
+    "violation_degree": 0.1938,
+    "violations": {
+      "cyclic": 43,
+      "indirect-cyclic": 2,
+      "transitive": 4
+    },
+    "independence": 1.3,
+    "entanglement": 2.21,
+    "modularity": 2.85,
+    "overall": [
+      3.96,
+      4.2
+    ],
+    "exposed_by_kind": {
+      "concrete class": {
+        "files": 1479,
+        "loc": 141213
+      },
+      "mapper": {
+        "files": 90,
+        "loc": 8960
+      },
+      "interface": {
+        "files": 821,
+        "loc": 8723
+      },
+      "entity": {
+        "files": 68,
+        "loc": 5797
+      },
+      "exception": {
+        "files": 141,
+        "loc": 4627
+      },
+      "event": {
+        "files": 106,
+        "loc": 1772
+      },
+      "trait": {
+        "files": 30,
+        "loc": 703
+      }
+    },
+    "exposed_by_component": {
+      "Core": {
+        "loc": 154967,
+        "exposed_loc": 67182
+      },
+      "Processes": {
+        "loc": 84862,
+        "exposed_loc": 38513
+      },
+      "Configuration": {
+        "loc": 56686,
+        "exposed_loc": 10651
+      },
+      "Integrations": {
+        "loc": 55846,
+        "exposed_loc": 20258
+      },
+      "Compliance": {
+        "loc": 34940,
+        "exposed_loc": 17832
+      },
+      "Notifications": {
+        "loc": 19855,
+        "exposed_loc": 1734
+      },
+      "Files": {
+        "loc": 18732,
+        "exposed_loc": 3741
+      },
+      "Search": {
+        "loc": 15131,
+        "exposed_loc": 2286
+      },
+      "Kernel": {
+        "loc": 9059,
+        "exposed_loc": 8079
+      },
+      "Platform": {
+        "loc": 8512,
+        "exposed_loc": 1519
+      }
+    }
+  },
+  "D": {
+    "components": 9,
+    "hidden_share": 0.6322,
+    "violation_degree": 0.2235,
+    "violations": {
+      "cyclic": 37,
+      "indirect-cyclic": 2,
+      "transitive": 4
+    },
+    "independence": 1.31,
+    "entanglement": 2.01,
+    "modularity": 2.79,
+    "overall": [
+      3.93,
+      4.19
+    ],
+    "foundation_backrefs": {
+      "Processes": 334,
+      "Integrations": 245,
+      "Compliance": 244,
+      "Configuration": 150,
+      "Search": 92,
+      "Files": 60,
+      "Platform": 58,
+      "Notifications": 27
+    }
+  },
+  "E": {
+    "components": 9,
+    "hidden_share": 0.679,
+    "violation_degree": 0.0785,
+    "violations": {
+      "cyclic": 29,
+      "indirect-cyclic": 2,
+      "transitive": 4
+    },
+    "independence": 1.37,
+    "entanglement": 3.45,
+    "modularity": 3.29,
+    "overall": [
+      4.12,
+      4.3
+    ]
+  },
+  "targets": {
+    "4.0": {
+      "exposed_share": 0.0412,
+      "violation_degree": 0.0562
+    },
+    "4.5": {
+      "exposed_share": 0.0275,
+      "violation_degree": 0.0375
+    },
+    "5.0": {
+      "exposed_share": 0.0137,
+      "violation_degree": 0.0187
+    },
+    "5.5": {
+      "exposed_share": 0.0,
+      "violation_degree": 0.0
+    }
+  }
+}

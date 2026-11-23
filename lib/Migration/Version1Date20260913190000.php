@@ -36,14 +36,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the object watchers table.
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
-class Version1Date20260913190000 extends SimpleMigrationStep {
+class Version1Date20260913190000 extends TargetedMigrationStep {
 
 	/**
 	 * The watchers table.
@@ -63,7 +62,7 @@ class Version1Date20260913190000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === true) {
@@ -87,5 +86,5 @@ class Version1Date20260913190000 extends SimpleMigrationStep {
 		$table->addIndex(['user_id', 'register', 'schema'], 'or_watcher_user_scope');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

@@ -31,9 +31,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Registry\RegistryIdentity;
 use OCA\OpenRegister\Service\Registry\InboundUpdate;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RegistryUpdatesControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -77,7 +77,7 @@ class RegistryUpdatesController extends Controller {
 		IRequest $request,
 		RegistryUpdatesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->subscriptions = $services->subscriptions;
 		$this->logger = $services->logger;
 	}//end __construct()

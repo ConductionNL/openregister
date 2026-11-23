@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ContentReportMapper;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -72,9 +73,9 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 		AuditSink::class => [AuditSinkInterface::class, ContractBindings::class],
 		AuditSinkStatus::class => [AuditSinkStatusInterface::class, ContractBindings::class],
 		AuditTrailPageService::class => [AuditTrailPageServiceInterface::class, ContractBindings::class],
-		ContentReportMapper::class => [ContentReportMapperInterface::class, DbRegistrar::class],
+		ContentReportMapper::class => [ContentReportMapperInterface::class, ComplianceMapperRegistrar::class],
 		ContentReportService::class => [ContentReportServiceInterface::class, ContractBindings::class],
-		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
+		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, CoreServiceBindings::class],
 		ObjectHistoryForReaders::class => [ObjectHistoryForReadersInterface::class, ContractBindings::class],
 		ReadableAuditTrailLister::class => [ReadableAuditTrailListerInterface::class, ContractBindings::class],
 	];

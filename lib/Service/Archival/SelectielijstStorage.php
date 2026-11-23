@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 
 /**
  * The selectielijst store: the settings that name its register, schema and
@@ -38,12 +38,12 @@ final class SelectielijstStorage {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ArchivalSettingsReaderInterface $settings Names the selectielijst register, schema and version in use.
+	 * @param ArchivalSettingsInterface       $settings Names the selectielijst register, schema and version in use.
 	 * @param SchemaCatalogInterface          $catalog  The register, schema and object mappers.
 	 * @param SaveObjectWriterInterface       $writer   Stores a row.
 	 */
 	public function __construct(
-		public readonly ArchivalSettingsReaderInterface $settings,
+		public readonly ArchivalSettingsInterface $settings,
 		public readonly SchemaCatalogInterface $catalog,
 		public readonly SaveObjectWriterInterface $writer,
 	) {

@@ -22,7 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
@@ -36,6 +40,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
+use OCA\OpenRegister\Search\Service\Geo\SpatialFilter;
+use OCA\OpenRegister\Kernel\Contracts\Core\SpatialFilterInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
@@ -44,6 +50,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -51,8 +58,6 @@ use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
@@ -63,9 +68,12 @@ use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
+use OCA\OpenRegister\Search\Service\StoredViewQueries;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+
 
 /**
  * The wiring behind SearchRegistrar.
@@ -88,8 +96,10 @@ final class SearchWiring {
 		GeoFeatureCollectionBuilderInterface::class => GeoFeatureCollectionBuilder::class,
 		GeoFilterApplierInterface::class => GeoFilterApplier::class,
 		GeoFilterParserInterface::class => GeoFilterParser::class,
+		SpatialFilterInterface::class => SpatialFilter::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
@@ -100,13 +110,14 @@ final class SearchWiring {
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
 		ViewMapperInterface::class => ViewMapper::class,
-		ExampleSetViewRowsInterface::class => ExampleSetViews::class,
+		ViewFinderInterface::class => ViewMapper::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
+		StoredViewQueriesInterface::class => StoredViewQueries::class,
 	];
 
 	/**
-	 * Register the Search component's services.
+	 * Register the Search component's services and its schema-save listener.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -120,6 +131,13 @@ final class SearchWiring {
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
+
+		// The aggregations declaration check runs inside the schema save, in the
+		// AGGREGATIONS slot of SchemaDeclarationOrder the mapper keeps for it.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, AggregationDeclarationCheckListener::class);
+
+		// The unique-hint declaration check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, UniqueHintDeclarationCheckListener::class);
 	}//end register()
 
 	/**

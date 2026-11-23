@@ -22,24 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
+
 /**
  * The request-language state the language middleware writes and the Db layer reads on LanguageService.
+ *
+ * The two reads the object store needs, getAcceptedLanguages() and getPreferredLanguage(),
+ * come from the Core port RequestLanguagesInterface this interface extends.
  */
-interface LanguageServiceInterface {
-
-	/**
-	 * Get the full list of accepted languages in priority order.
-	 *
-	 * @return string[] Array of BCP 47 language codes
-	 */
-	public function getAcceptedLanguages(): array;
-
-	/**
-	 * Get the preferred language.
-	 *
-	 * @return string The BCP 47 language code
-	 */
-	public function getPreferredLanguage(): string;
+interface LanguageServiceInterface extends RequestLanguagesInterface {
 
 	/**
 	 * Check if a fallback language was used.

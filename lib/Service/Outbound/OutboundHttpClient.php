@@ -40,9 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
-use GuzzleHttp\Exception\RequestException;
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
-use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IPromise;
 use OCP\Http\Client\IResponse;
@@ -71,14 +69,14 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @param IClient $inner The client this one decorates.
 	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
-	 * @param BreakerRegistry|null $breakers The dependency breakers; null leaves calls unguarded.
+	 * @param OutboundBreakerInterface|null $breakers The dependency breakers; null leaves calls unguarded.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClient $inner,
 		private readonly ProxySettingsInterface $proxy,
-		private readonly ?BreakerRegistry $breakers = null,
+		private readonly ?OutboundBreakerInterface $breakers = null,
 	) {
 
 	}//end __construct()
@@ -400,11 +398,10 @@ class OutboundHttpClient implements IClient {
 	/**
 	 * Send one request through the dependency's breaker.
 	 *
-	 * While the breaker is open the request is NOT sent: the caller gets a
-	 * DependencyUnavailableException at once. Otherwise the outcome is counted:
-	 * a connect error, a timeout, a 5xx or a 429 is a failure (a 429's
-	 * Retry-After becomes the cool-down when longer); any other response,
-	 * a 404 included, is the caller's problem and counts as a success.
+	 * While the breaker is open the request is NOT sent: the caller gets the
+	 * breaker's refusal at once. Otherwise the outcome is counted by the
+	 * breaker. A request that names no host, or a client without breakers,
+	 * is sent unguarded.
 	 *
 	 * @param string   $uri     The request URI.
 	 * @param array    $options The caller's request options.
@@ -412,116 +409,32 @@ class OutboundHttpClient implements IClient {
 	 *
 	 * @return IResponse The response.
 	 *
-	 * @throws DependencyUnavailableException While the dependency's breaker is open.
-	 * @throws Throwable What the transport threw.
+	 * @throws Throwable The breaker's refusal while it is open, or what the transport threw.
 	 *
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	private function guarded(string $uri, array $options, callable $send): IResponse {
-		$key     = $this->breakerKey(uri: $uri, options: $options);
-		$options = self::withoutDependency(options: $options);
-		if ($key === null || $this->breakers === null) {
+		$dependency = self::dependencyOf(uri: $uri, options: $options);
+		$options    = self::withoutDependency(options: $options);
+		if ($dependency === null || $this->breakers === null) {
 			return $send($options);
 		}
 
-		$breaker = $this->breakers->breaker();
-		$breaker->allow(key: $key);
-
-		try {
-			$response = $send($options);
-		} catch (DependencyUnavailableException $refused) {
-			throw $refused;
-		} catch (Throwable $failure) {
-			$this->record(key: $key, response: self::responseOf(failure: $failure));
-			throw $failure;
-		}
-
-		$this->record(key: $key, response: $response);
-		return $response;
+		return $this->breakers->send(dependency: $dependency, send: static fn (): IResponse => $send($options));
 	}//end guarded()
 
 	/**
-	 * Count one outcome on the breaker.
-	 *
-	 * @param string                           $key      The breaker key.
-	 * @param IResponse|ResponseInterface|null $response The response, or null when none arrived (connect error, timeout).
-	 *
-	 * @return void
-	 */
-	private function record(string $key, IResponse|ResponseInterface|null $response): void {
-		$breaker = $this->breakers?->breaker();
-		if ($breaker === null) {
-			return;
-		}
-
-		if ($response === null) {
-			$breaker->recordFailure(key: $key);
-			return;
-		}
-
-		$status = $response->getStatusCode();
-		if ($status === 429) {
-			$breaker->recordFailure(key: $key, retryAfter: self::retryAfter(response: $response));
-			return;
-		}
-
-		if ($status >= 500) {
-			$breaker->recordFailure(key: $key);
-			return;
-		}
-
-		$breaker->recordSuccess(key: $key);
-	}//end record()
-
-	/**
-	 * The response a transport failure carried, if any.
-	 *
-	 * @param Throwable $failure What the transport threw.
-	 *
-	 * @return ResponseInterface|null The response, or null for a connect error or timeout.
-	 */
-	private static function responseOf(Throwable $failure): ?ResponseInterface {
-		if ($failure instanceof RequestException) {
-			return $failure->getResponse();
-		}
-
-		return null;
-	}//end responseOf()
-
-	/**
-	 * A 429's Retry-After in seconds, when it gives a number of seconds.
-	 *
-	 * @param IResponse|ResponseInterface $response The response.
-	 *
-	 * @return int|null The seconds, or null.
-	 */
-	private static function retryAfter(IResponse|ResponseInterface $response): ?int {
-		if ($response instanceof ResponseInterface) {
-			$value = $response->getHeaderLine('Retry-After');
-		} else {
-			$value = $response->getHeader('Retry-After');
-		}
-
-		$value = trim($value);
-		if ($value === '' || ctype_digit($value) === false) {
-			return null;
-		}
-
-		return (int) $value;
-	}//end retryAfter()
-
-	/**
-	 * The breaker key of one request: the named dependency, else the host.
+	 * The dependency one request reaches: the named dependency, else the host.
 	 *
 	 * @param string $uri     The request URI.
 	 * @param array  $options The caller's request options.
 	 *
-	 * @return string|null The key, or null when the URI names no host.
+	 * @return string|null The dependency, or null when the URI names no host.
 	 */
-	private function breakerKey(string $uri, array $options): ?string {
+	private static function dependencyOf(string $uri, array $options): ?string {
 		$named = $options[self::DEPENDENCY_OPTION] ?? null;
 		if (is_string($named) === true && trim($named) !== '') {
-			return BreakerRegistry::outboundKey(hostOrName: $named);
+			return $named;
 		}
 
 		$host = parse_url($uri, PHP_URL_HOST);
@@ -529,8 +442,8 @@ class OutboundHttpClient implements IClient {
 			return null;
 		}
 
-		return BreakerRegistry::outboundKey(hostOrName: $host);
-	}//end breakerKey()
+		return $host;
+	}//end dependencyOf()
 
 	/**
 	 * The options without the dependency name, which the transport must not see.

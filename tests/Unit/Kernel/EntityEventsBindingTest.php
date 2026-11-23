@@ -25,12 +25,27 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Application;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Event\ApplicationCreatedEvent;
+use OCA\OpenRegister\Event\ApplicationDeletedEvent;
+use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\EventDispatcher\Event;
@@ -58,7 +73,7 @@ final class EntityEventsBindingTest extends TestCase {
 
 	public function testTheContractResolvesToTheCorePublisher(): void {
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ServiceRegistrar::register(context: $context);
 
 		$this->assertContains(['alias' => EntityEventsInterface::class, 'target' => EntityEventPublisher::class], $context->aliases);
 		$this->assertTrue(is_subclass_of(EntityEventPublisher::class, EntityEventsInterface::class));
@@ -94,6 +109,120 @@ final class EntityEventsBindingTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 		(new EntityEventPublisher(dispatcher: $dispatcher))->sourceCreated(new Application());
+	}
+
+	public function testApplicationConfigurationAndSourceEventsCarryTheEntitiesTheyWereGiven(): void {
+		$events = [];
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(static function (Event $event) use (&$events): void {
+			$events[] = $event;
+		});
+		$publisher = new EntityEventPublisher(dispatcher: $dispatcher);
+		[$newApplication, $oldApplication] = [new Application(), new Application()];
+		[$newConfiguration, $oldConfiguration] = [new Configuration(), new Configuration()];
+		[$newSource, $oldSource] = [new Source(), new Source()];
+
+		$publisher->applicationCreated($newApplication);
+		$publisher->applicationUpdated($newApplication, $oldApplication);
+		$publisher->applicationDeleted($oldApplication);
+		$publisher->configurationCreated($newConfiguration);
+		$publisher->configurationUpdated($newConfiguration, $oldConfiguration);
+		$publisher->configurationDeleted($oldConfiguration);
+		$publisher->sourceCreated($newSource);
+		$publisher->sourceUpdated($newSource, $oldSource);
+		$publisher->sourceDeleted($oldSource);
+
+		$this->assertSame(
+			[
+				ApplicationCreatedEvent::class,
+				ApplicationUpdatedEvent::class,
+				ApplicationDeletedEvent::class,
+				ConfigurationCreatedEvent::class,
+				ConfigurationUpdatedEvent::class,
+				ConfigurationDeletedEvent::class,
+				SourceCreatedEvent::class,
+				SourceUpdatedEvent::class,
+				SourceDeletedEvent::class,
+			],
+			array_map(static fn (Event $event): string => get_class($event), $events)
+		);
+		$this->assertSame($newApplication, $events[0]->getApplication());
+		$this->assertSame($newApplication, $events[1]->getNewApplication());
+		$this->assertSame($oldApplication, $events[1]->getOldApplication());
+		$this->assertSame($oldApplication, $events[2]->getApplication());
+		$this->assertSame($newConfiguration, $events[3]->getConfiguration());
+		$this->assertSame($newConfiguration, $events[4]->getNewConfiguration());
+		$this->assertSame($oldConfiguration, $events[4]->getOldConfiguration());
+		$this->assertSame($oldConfiguration, $events[5]->getConfiguration());
+		$this->assertSame($newSource, $events[6]->getSource());
+		$this->assertSame($newSource, $events[7]->getNewSource());
+		$this->assertSame($oldSource, $events[7]->getOldSource());
+		$this->assertSame($oldSource, $events[8]->getSource());
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: array<int, object>}>
+	 */
+	public static function wrongEntities(): array {
+		return [
+			'application created from a source'        => ['applicationCreated', [new Source()]],
+			'application updated from a configuration' => ['applicationUpdated', [new Application(), new Configuration()]],
+			'application deleted from a schema'        => ['applicationDeleted', [new Schema()]],
+			'configuration created from an application' => ['configurationCreated', [new Application()]],
+			'configuration updated from a source'      => ['configurationUpdated', [new Source(), new Configuration()]],
+			'configuration deleted from a source'      => ['configurationDeleted', [new Source()]],
+			'source updated from an application'       => ['sourceUpdated', [new Source(), new Application()]],
+			'source deleted from a configuration'      => ['sourceDeleted', [new Configuration()]],
+		];
+	}
+
+	/**
+	 * @param string             $method   The publisher method.
+	 * @param array<int, object> $entities The entities passed to it.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider wrongEntities
+	 */
+	public function testEveryApplicationConfigurationAndSourceAnnouncementRefusesAnotherEntity(string $method, array $entities): void {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('dispatchTyped');
+
+		$this->expectException(InvalidArgumentException::class);
+		(new EntityEventPublisher(dispatcher: $dispatcher))->{$method}(...$entities);
+	}
+
+	public function testTheRefusalNamesTheContractAndTheClassItGot(): void {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Expected ' . SourceInterface::class . ', got ' . Application::class . '.');
+		(new EntityEventPublisher(dispatcher: $dispatcher))->sourceCreated(new Application());
+	}
+
+	public function testATerminalTaskIsAnnouncedWithTheRowItWasGiven(): void {
+		$events     = [];
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(static function (Event $event) use (&$events): void {
+			$events[] = $event;
+		});
+		$task = new Task();
+
+		(new EntityEventPublisher(dispatcher: $dispatcher))->taskTerminal(task: $task, committed: false);
+
+		$this->assertCount(1, $events);
+		$this->assertInstanceOf(TaskTerminalEvent::class, $events[0]);
+		$this->assertSame($task, $events[0]->getTask());
+		$this->assertFalse($events[0]->isCommitted());
+	}
+
+	public function testATerminalTaskAnnouncementRefusesAnEntityThatIsNoTask(): void {
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->expects($this->never())->method('dispatchTyped');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('Expected ' . TaskInterface::class . ', got ' . Application::class . '.');
+		(new EntityEventPublisher(dispatcher: $dispatcher))->taskTerminal(task: new Application(), committed: true);
 	}
 
 	public function testOnlyTheListedMappersNameAnEventClass(): void {

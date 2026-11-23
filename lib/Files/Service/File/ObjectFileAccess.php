@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -50,28 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/file-actions/spec.md
  */
-class ObjectFileAccess {
-
-	/**
-	 * The file verb for reading an object's files.
-	 *
-	 * @var string
-	 */
-	public const READ_FILES = 'readFiles';
-
-	/**
-	 * The file verb for adding a file or changing one.
-	 *
-	 * @var string
-	 */
-	public const ADD_FILES = 'addFiles';
-
-	/**
-	 * The file verb for deleting a file.
-	 *
-	 * @var string
-	 */
-	public const DELETE_FILES = 'deleteFiles';
+class ObjectFileAccess implements ObjectFileRightsInterface {
 
 	/**
 	 * The file verbs; a block naming any of them opts its schema in.

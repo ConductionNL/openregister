@@ -29,7 +29,7 @@
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -59,7 +59,7 @@ class GraphQLController extends Controller {
 		IRequest $request,
 		private readonly GraphQLControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -187,7 +187,7 @@ class GraphQLController extends Controller {
 	 * @spec openspec/changes/api-explorer-in-the-app/tasks.md#task-1.2
 	 */
 	public function explorer(): TemplateResponse {
-		$response = new TemplateResponse(appName: Application::APP_ID, templateName: 'graphqlExplorer', params: []);
+		$response = new TemplateResponse(appName: AppIdentity::APP_ID, templateName: 'graphqlExplorer', params: []);
 		$response->setContentSecurityPolicy($this->explorerPolicy());
 
 		return $response;

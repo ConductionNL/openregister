@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 
 /**
@@ -33,13 +34,13 @@ final class RegisterServiceHelpers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FileFolderServiceInterface $fileService        Creates and deletes register folders.
-	 * @param RegisterSerializer         $registerSerializer Applies _extend post-processing.
+	 * @param EntityFolderInterface $fileService        Creates and deletes register folders.
+	 * @param RegisterSerializer    $registerSerializer Applies _extend post-processing.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
-		public readonly FileFolderServiceInterface $fileService,
+		public readonly EntityFolderInterface $fileService,
 		public readonly RegisterSerializer $registerSerializer,
 	) {
 	}//end __construct()

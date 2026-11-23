@@ -111,6 +111,15 @@ class FileReadScopeFailClosedTest extends TestCase {
 		$this->assertSame([], $hits);
 	}//end testACallerWithoutAFileTreeSeesNoHits()
 
+	public function testTheScopeAnswersTheReadableFileHitsPortTheSameWay(): void {
+		$this->root->method('getUserFolder')->with('ana')->willThrowException(new NotPermittedException('no home'));
+
+		$port = $this->scope();
+
+		$this->assertInstanceOf(\OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface::class, $port);
+		$this->assertSame([], $port->readableResults([['entity_type' => 'file', 'entity_id' => 1]]));
+	}//end testTheScopeAnswersTheReadableFileHitsPortTheSameWay()
+
 	public function testACallerWithoutAFileTreeMayNotReadAFile(): void {
 		$this->root->method('getUserFolder')->willThrowException(new NotPermittedException('no home'));
 

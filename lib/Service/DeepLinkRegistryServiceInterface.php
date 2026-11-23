@@ -24,25 +24,15 @@ namespace OCA\OpenRegister\Service;
 
 use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
+use OCA\OpenRegister\Event\DeepLinkCollectorInterface;
 
 /**
  * The deep-link registration and resolution other components call on DeepLinkRegistryService.
+ *
+ * Adding a registration is the Kernel-area DeepLinkCollectorInterface, which the
+ * registration event hands its listeners.
  */
-interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
-
-	/**
-	 * Add a deep link registration for its (register, schema) combination.
-	 *
-	 * @param DeepLinkRegistration $registration The consuming app, the register and schema slugs, the URL template with
-	 *                                           placeholders (e.g. "/apps/procest/#/cases/{uuid}"), the optional icon
-	 *                                           (defaults to "icon-{appId}") and the optional unified-search label.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	public function add(DeepLinkRegistration $registration): void;
+interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface, DeepLinkCollectorInterface {
 
 	/**
 	 * Ask the apps for their deep links, once per process.

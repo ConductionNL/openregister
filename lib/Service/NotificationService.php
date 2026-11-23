@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 use OCP\IGroupManager;
 use OCP\Notification\IManager;
 use Psr\Log\LoggerInterface;
@@ -86,7 +86,7 @@ class NotificationService implements NotificationServiceInterface {
 	 * configuration updates. Always includes admin group regardless of configuration.
 	 * Deduplicates users across multiple groups to avoid duplicate notifications.
 	 *
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return int Number of notifications successfully sent (0 or positive integer)
 	 *
@@ -94,7 +94,7 @@ class NotificationService implements NotificationServiceInterface {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function notifyConfigurationUpdate(Configuration $configuration): int {
+	public function notifyConfigurationUpdate(ConfigurationInterface $configuration): int {
 		// Log start of notification process for monitoring.
 		$this->logger->info(
 			message: "[NotificationService] Sending configuration update notification for: {$configuration->getTitle()}",
@@ -113,11 +113,11 @@ class NotificationService implements NotificationServiceInterface {
 	/**
 	 * Notify every recipient of a configuration's update.
 	 *
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return int Number of notifications successfully sent
 	 */
-	private function notifyRecipients(Configuration $configuration): int {
+	private function notifyRecipients(ConfigurationInterface $configuration): int {
 		$notificationCount = 0;
 		foreach ($this->recipientsOf(configuration: $configuration) as $userId) {
 			$notificationCount += $this->trySendUpdateNotification(userId: $userId, configuration: $configuration);
@@ -132,11 +132,11 @@ class NotificationService implements NotificationServiceInterface {
 	 * The admin group is always included so critical updates always reach administrators.
 	 * Users in several groups are notified once, in order of first appearance.
 	 *
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return array<int,int|string> User ids (numeric ids come back as int array keys)
 	 */
-	private function recipientsOf(Configuration $configuration): array {
+	private function recipientsOf(ConfigurationInterface $configuration): array {
 		$notificationGroups = $configuration->getNotificationGroups() ?? [];
 		if (in_array('admin', $notificationGroups, true) === false) {
 			$notificationGroups[] = 'admin';
@@ -177,11 +177,11 @@ class NotificationService implements NotificationServiceInterface {
 	 * Notify one user, logging a failure instead of throwing it.
 	 *
 	 * @param string        $userId        The user ID to notify
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return int 1 when sent, 0 when sending failed
 	 */
-	private function trySendUpdateNotification(string $userId, Configuration $configuration): int {
+	private function trySendUpdateNotification(string $userId, ConfigurationInterface $configuration): int {
 		try {
 			$this->sendUpdateNotification(userId: $userId, notice: $this->noticeFor(configuration: $configuration));
 			return 1;
@@ -201,11 +201,11 @@ class NotificationService implements NotificationServiceInterface {
 	 * Built in this (non-strict) file so title, id and versions are coerced to the
 	 * notice's types exactly as the former scalar parameters were.
 	 *
-	 * @param Configuration $configuration The configuration entity with available update
+	 * @param ConfigurationInterface $configuration The configuration entity with available update
 	 *
 	 * @return ConfigurationUpdateNotice
 	 */
-	private function noticeFor(Configuration $configuration): ConfigurationUpdateNotice {
+	private function noticeFor(ConfigurationInterface $configuration): ConfigurationUpdateNotice {
 		return new ConfigurationUpdateNotice(
 			configurationTitle: $configuration->getTitle(),
 			configurationId: $configuration->getId(),
@@ -247,13 +247,13 @@ class NotificationService implements NotificationServiceInterface {
 	 *
 	 * Removes notifications for a specific configuration after update is applied.
 	 *
-	 * @param Configuration $configuration The configuration that was updated
+	 * @param ConfigurationInterface $configuration The configuration that was updated
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function markConfigurationUpdated(Configuration $configuration): void {
+	public function markConfigurationUpdated(ConfigurationInterface $configuration): void {
 		$notification = $this->notificationManager->createNotification();
 
 		$notification->setApp('openregister')

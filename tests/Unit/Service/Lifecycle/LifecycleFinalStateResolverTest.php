@@ -258,4 +258,21 @@ class LifecycleFinalStateResolverTest extends TestCase {
 			);
 		}
 	}
+
+	public function testAListOfStatesIsAStrictMembershipTestAndReadsNoRow(): void {
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->assertTrue($this->resolver->isFinalState(final: ['afgehandeld', 'ingetrokken'], state: 'ingetrokken'));
+		$this->assertFalse($this->resolver->isFinalState(final: ['afgehandeld', 'ingetrokken'], state: 'in-behandeling'));
+		$this->assertFalse($this->resolver->isFinalState(final: ['1'], state: '01'));
+		$this->assertFalse($this->resolver->isFinalState(final: [], state: 'afgehandeld'));
+	}
+
+	public function testTheReferenceFormIsAnsweredByTheReferencedRow(): void {
+		$this->objects->method('findAcrossAllSources')
+			->willReturn($this->row(['name' => 'Afgehandeld', 'isFinal' => true]));
+
+		$this->assertTrue($this->resolver->isFinalState(final: $this->declaration(), state: '9f1c0a2e-0c3a-4f62-9a9d-6a0f1d2b3c44'));
+		$this->assertFalse($this->resolver->isFinalState(final: ['from' => 'statusType'], state: 'uuid-1'));
+	}
 }

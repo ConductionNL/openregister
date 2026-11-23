@@ -42,12 +42,8 @@ final class AccessListenerRegistrar {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		// Access derived from what an identity provider asserted, once per
-		// sign-in. Costs one app-config read on an instance that declares no
-		// rule, and never fails a sign-in: see the listener.
-		$context->registerEventListener(
-			\OCP\User\Events\UserLoggedInEvent::class,
-			\OCA\OpenRegister\Listener\IdentityClaimsLoginListener::class
-		);
+		// sign-in: a Core listener, registered through Core's slot at this position.
+		\OCA\OpenRegister\Listener\CoreListenerRegistrar::identityClaims(context: $context);
 
 		// A removed user's object shares end with them.
 		$context->registerEventListener(

@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Kernel\Contracts\CaseItemInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -43,11 +43,11 @@ class CaseItemTransitionedEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseItem $item The item, already persisted in its new state.
-	 * @param string $fromState The state it left.
+	 * @param CaseItemInterface $item      The item, already persisted in its new state.
+	 * @param string            $fromState The state it left.
 	 */
 	public function __construct(
-		private readonly CaseItem $item,
+		private readonly CaseItemInterface $item,
 		private readonly string $fromState,
 	) {
 		parent::__construct();
@@ -57,11 +57,11 @@ class CaseItemTransitionedEvent extends Event {
 	/**
 	 * The transitioned item.
 	 *
-	 * @return CaseItem The item as persisted.
+	 * @return CaseItemInterface The item as persisted.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	public function getItem(): CaseItem {
+	public function getItem(): CaseItemInterface {
 		return $this->item;
 	}//end getItem()
 
@@ -85,12 +85,11 @@ class CaseItemTransitionedEvent extends Event {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function getCatalogTrigger(): ?string {
-		$state = (string)$this->item->getState();
-		if (in_array($state, CaseItem::TERMINAL_STATES, true) === false) {
+		if ($this->item->isInTerminalState() === false) {
 			return null;
 		}
 
-		return 'case.item.' . $state;
+		return 'case.item.' . (string)$this->item->getState();
 	}//end getCatalogTrigger()
 
 	/**

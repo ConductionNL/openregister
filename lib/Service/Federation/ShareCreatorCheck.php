@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Federation;
 
-use OCA\OpenRegister\Db\FederatedShare;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -58,13 +58,13 @@ class ShareCreatorCheck {
 	/**
 	 * Why the share's creator may not hand out this share now, or null when they still may.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 *
 	 * @return string|null The refusal.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function refusal(FederatedShare $share): ?string {
+	public function refusal(FederatedShareInterface $share): ?string {
 		$owner = (string)$share->getOwner();
 		if ($owner === '') {
 			return 'creator not recorded (created before creators were recorded)';
@@ -85,7 +85,7 @@ class ShareCreatorCheck {
 	/**
 	 * Run a check with the share's creator as the active user.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 * @param callable       $check The check, run without arguments.
 	 *
 	 * @return mixed What the check returns.
@@ -94,7 +94,7 @@ class ShareCreatorCheck {
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function asCreator(FederatedShare $share, callable $check): mixed {
+	public function asCreator(FederatedShareInterface $share, callable $check): mixed {
 		$owner = (string)$share->getOwner();
 		$creator = null;
 		if ($owner !== '') {

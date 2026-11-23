@@ -316,6 +316,26 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	}//end findByFileIds()
 
 	/**
+	 * The category of each file that has an OR-side row, keyed by file id.
+	 *
+	 * Reads the rows findByFileIds() returns, in the same single query.
+	 *
+	 * @param int[] $fileIds The Nextcloud filecache fileids to look up.
+	 *
+	 * @return array<int, string|null> Map of fileId => category for rows that exist.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function findCategoriesByFileIds(array $fileIds): array {
+		$categories = [];
+		foreach ($this->findByFileIds(fileIds: $fileIds) as $fileId => $row) {
+			$categories[$fileId] = $row->getCategory();
+		}
+
+		return $categories;
+	}//end findCategoriesByFileIds()
+
+	/**
 	 * Get all files for a given node (parent) and/or file IDs with share information and owner data.
 	 *
 	 * @param int|null $node The parent node ID (optional)

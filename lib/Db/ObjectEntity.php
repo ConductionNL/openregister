@@ -181,6 +181,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 */
 	public const PRESERVED_ARCHIVAL_STATUSES = ['semi_static', 'semi_statisch', 'gearchiveerd'];
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
 
 	/**
 	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
@@ -2278,23 +2279,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getLockedBy()
 
 	/**
-	 * Delete the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string $deletedReason Reason for deletion
-	 * @param int $retentionPeriod Retention period in days (default: 30 days)
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @return static Returns the entity
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
-	}//end delete()
-
-	/**
 	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
 	 *
 	 * The retention handed in is the window (a non-positive one takes the
@@ -2314,7 +2298,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
-	}//end delete()
+	}//end softDelete()
 
 	/**
 	 * Whether an active legal hold keeps this record from being destroyed.
@@ -2629,58 +2613,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end __toString()
 
 	/**
-	 * Check if this object is managed by any configuration
+	 * The member list a configuration keeps its objects in, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the object's ID is present in the objects array
-	 * of any provided configuration entities.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this object is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return string
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$objects = $configuration->getObjects();
-			if (in_array($this->id, $objects ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this object
-	 *
-	 * Returns the first configuration that has this object's ID in its objects array.
-	 * Returns null if the object is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this object, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$objects = $configuration->getObjects();
-			if (in_array($this->id, $objects ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMemberKind(): string {
+		return 'objects';
+	}//end configurationMemberKind()
 }//end class

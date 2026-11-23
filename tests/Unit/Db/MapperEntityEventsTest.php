@@ -267,6 +267,7 @@ final class MapperEntityEventsTest extends TestCase {
 			array_column($this->events, 0),
 			'insert announces nothing; update and updateIfOpen announce a terminal task'
 		);
+		// The terminal event carries the task in its base (the Kernel task contract), so `committed` is read off the subclass first.
 		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[0][1]);
 		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[1][1]);
 	}

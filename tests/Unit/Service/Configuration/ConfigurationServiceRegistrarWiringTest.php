@@ -185,6 +185,9 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\Configuration\\ExportHandler',
 				'OCA\\OpenRegister\\Service\\Configuration\\UploadHandler',
 			],
+			'OCA\\OpenRegister\\Service\\Translation\\TranslationProviderInterface' => [
+				'OCA\\OpenRegister\\Service\\Translation\\TranslationProviderResolver',
+			],
 			'OCA\\OpenRegister\\Service\\Settings\\ValidationOperationsHandler' => [
 				'OCA\\OpenRegister\\Db\\SchemaMapperInterface',
 				'Psr\\Log\\LoggerInterface',
