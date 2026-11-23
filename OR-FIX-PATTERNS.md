@@ -599,3 +599,9 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: two sessions of one lane run at once; a push is rejected non-fast-forward because the other session pushed the same fix minutes earlier (#10363 66a5487e, #10543 eff058c2 on 23 Nov).
 - Cause: the lane text greps `git log --format=%s` for 'or-fix-K', but verdict/pattern rows land under generic subjects, so the guard never fires.
 - Fix: check content instead: `git -C ~/q log --since='50 minutes ago' -p -- verdicts.txt OR-FIX-PATTERNS.md | grep -c 'or-fix-K'`; non-zero means another session of the lane is active: end.
+## ADR-013 gate fixes that worked on lane 14 (or-fix-14)
+- Port shapes: a Kernel/Contracts ROOT interface with a Core/Compliance/Integrations adapter holding the old body (#10534 ObjectActivityAudit, #10494 DetectorRecord, #10514 ConsumerGrantListing); or let the existing class implement the Kernel port and bind it in the area's map (CoreServiceBindings, ComplianceServiceBindings, FilesRegistrar::BINDINGS + its count test, Service/Bindings/AccessBindings), never ContractBindings (Configuration).
+- A request-shared service (TokenGrantSource, registered in RbacWiring) gets its port as an alias in CoreServiceBindings, so the alias resolves to the same instance.
+- Constants other areas compare against: move them to a Kernel interface and let the area interface extend it (BackendMethodsInterface extends Kernel AnonymisationMethodsInterface): every Old::CONST keeps resolving.
+- A plain exception mapped to an area (Exception/AuthenticationException was Integrations) can be remapped to Kernel in the csv when it has no lib deps.
+- Helper: a 6-line python that imports scripts/component-deps.py (load_tool()[0], component_function, php_dependencies) prints every edge of the PR's added files with components; much faster than reading the 8-min Architecture run.
