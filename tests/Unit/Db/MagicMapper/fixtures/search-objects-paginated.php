@@ -755,7 +755,7 @@ return array (
     'calls' => 
     array (
       0 => 'register find [404,false,false]',
-      1 => 'findMultiple [["u1"],false,null]',
+      1 => 'findMultiple [["u1"],false,null,null]',
       2 => 'searchAcross [{"register":404,"schema":2,"_search":"x","_ids":["u1"],"_rbac":true,"_multitenancy":true},[]]',
       3 => 'countAcross [{"register":404,"schema":2,"_search":"x","_ids":["u1"],"_rbac":true,"_multitenancy":true},[]]',
     ),
@@ -2066,7 +2066,7 @@ return array (
   array (
     'calls' => 
     array (
-      0 => 'findMultiple [["u1","u2"],false,null]',
+      0 => 'findMultiple [["u1","u2"],false,null,null]',
       1 => 'register find [1,false,false]',
       2 => 'schema find [2,[],false,false]',
       3 => 'register find [5,false,false]',
@@ -2334,7 +2334,7 @@ return array (
     'calls' => 
     array (
       0 => 'register find [404,false,false]',
-      1 => 'findMultiple [["u1"],false,null]',
+      1 => 'findMultiple [["u1"],false,null,null]',
       2 => 'register find [1,false,false]',
       3 => 'schema find [2,[],false,false]',
       4 => 'searchAcross [{"_ids":["u1"],"register":404,"schema":2,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
@@ -2947,7 +2947,7 @@ return array (
   array (
     'calls' => 
     array (
-      0 => 'findMultiple [["u1"],false,null]',
+      0 => 'findMultiple [["u1"],false,null,null]',
       1 => 'searchAcross [{"_ids":["u1"],"_relations_contains":"r","_search":"s","_rbac":true,"_multitenancy":true},[]]',
       2 => 'countAcross [{"_ids":["u1"],"_relations_contains":"r","_search":"s","_rbac":true,"_multitenancy":true},[]]',
     ),
