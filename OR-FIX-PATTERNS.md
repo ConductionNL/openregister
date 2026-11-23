@@ -646,3 +646,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest lists 'lib/Service/ComplianceServiceBindings.php -> lib/Kernel/Contracts/Core/...Interface.php (Compliance -> Core)' or lib/Service/*Interface.php on a cloud/mod-X08 PR; main's baseline has the same pair from lib/Service/ContractBindings.php.
 - Cause: the baseline is per file pair; a binding row whose interface is Core-mapped is a new edge once it moves out of ContractBindings (Configuration).
 - Fix: leave those rows in ContractBindings (FQCN lines, drop now-unused uses in the area map), point their binding tests (C01/C03/C07/C09/F12, Kernel *BindingTest) back at ContractBindings, rerun tools/sig/modularity_check.py --write-baseline. Stacked PRs: merge the fixed parent head first (#11001 on #11000, 5fa43f9a).
+## Inherited red on main 6e870ca5: ComponentDependencyRulesTest 4 Files -> Core edges (or-fix-1)
+- Symptom: every merged PR lists DecisionMetadataEdit/EntityMentionDecisionsInterface -> Db/EntityRelation and Files ManagedFiles -> Service/File/DocumentStore, ManagedFileOwnerLookup (Files -> Core).
+- Cause: red on plain main 6e870ca5 (from 9272bccc6 Files-owned ports); not the PR's. Compare the edge list to these four before fixing anything.
