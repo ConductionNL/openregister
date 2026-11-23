@@ -35,6 +35,8 @@ use OCA\OpenRegister\Mcp\Listener\McpDeclarationChecksListener;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDeclarationCheckListener;
 use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
+use OCA\OpenRegister\Search\Listener\SearchDeclarationChecksListener;
+use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -150,6 +152,7 @@ final class ProcessDeclarationChecksDispatcher implements IEventDispatcher, Cont
 			new TeamResourcesDeclarationCheckListener(),
 			new UniqueHintDeclarationCheckListener(),
 			new AggregationDeclarationCheckListener(logger: $logger),
+			new SearchDeclarationChecksListener(widgets: new WidgetAnnotationValidator()),
 		];
 	}//end listeners()
 
