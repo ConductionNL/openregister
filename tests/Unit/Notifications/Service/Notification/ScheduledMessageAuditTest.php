@@ -25,10 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageAudit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -38,87 +35,67 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageAudit
- * @uses   \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
  */
 class ScheduledMessageAuditTest extends TestCase {
 
 	private const MESSAGE = ['id' => '7', 'channel' => 'email', 'objectUuid' => 'case-1', 'attempts' => 2, 'messageId' => '<a@b>'];
 
-	private MagicObjectFinderInterface&MockObject $objects;
-
-	private AuditTrailMapperInterface&MockObject $auditTrail;
+	private ObjectActivityAuditInterface&MockObject $activity;
 
 	private LoggerInterface&MockObject $logger;
 
-	/** @var ObjectAuditEvent[] */
-	private array $events = [];
-
-	private ObjectEntity $case;
+	/** @var array<int, array{string, string, array<string, mixed>}> */
+	private array $entries = [];
 
 	protected function setUp(): void {
-		$this->case = new ObjectEntity();
-		$this->case->setUuid('case-1');
-		$this->objects    = $this->createMock(MagicObjectFinderInterface::class);
-		$this->auditTrail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->logger     = $this->createMock(LoggerInterface::class);
-		$this->auditTrail->method('recordObjectEvent')->willReturnCallback(function (ObjectAuditEvent $event) {
-			$this->events[] = $event;
-			return null;
+		$this->activity = $this->createMock(ObjectActivityAuditInterface::class);
+		$this->logger   = $this->createMock(LoggerInterface::class);
+		$this->activity->method('record')->willReturnCallback(function (string $objectUuid, string $action, array $context = []): void {
+			$this->entries[] = [$objectUuid, $action, $context];
 		});
 	}
 
 	private function audit(): ScheduledMessageAudit {
-		return new ScheduledMessageAudit($this->objects, $this->auditTrail, $this->logger);
+		return new ScheduledMessageAudit($this->activity, $this->logger);
 	}
 
-	public function testASentMessageIsRecordedOnItsObjectReadWithoutAUser(): void {
-		$this->objects->expects($this->once())->method('find')
-			->with('case-1', null, null, false, false, false)
-			->willReturn($this->case);
-
+	public function testASentMessageIsRecordedOnItsObject(): void {
 		$this->audit()->sent(message: self::MESSAGE);
 
-		$this->assertCount(1, $this->events);
-		$this->assertSame($this->case, $this->events[0]->object);
-		$this->assertSame('message.sent', $this->events[0]->action);
-		$this->assertSame(['message' => '7', 'channel' => 'email', 'messageId' => '<a@b>'], $this->events[0]->context);
+		$this->assertSame([['case-1', 'message.sent', ['message' => '7', 'channel' => 'email', 'messageId' => '<a@b>']]], $this->entries);
 	}
 
 	public function testAFailureRecordsTheCauseTheAttemptAndWhetherItIsParked(): void {
-		$this->objects->method('find')->willReturn($this->case);
-
 		$this->audit()->failed(message: self::MESSAGE, outcome: ['state' => 'pending', 'lastError' => 'upstream_service_down']);
 		$this->audit()->failed(message: ['attempts' => 5] + self::MESSAGE, outcome: ['state' => 'parked', 'lastError' => 'upstream_service_down']);
 
-		$this->assertSame('message.failed', $this->events[0]->action);
-		$this->assertSame(['message' => '7', 'channel' => 'email', 'error' => 'upstream_service_down', 'attempt' => 2, 'parked' => false], $this->events[0]->context);
-		$this->assertSame(['message' => '7', 'channel' => 'email', 'error' => 'upstream_service_down', 'attempt' => 5, 'parked' => true], $this->events[1]->context);
+		$this->assertSame('message.failed', $this->entries[0][1]);
+		$this->assertSame(['message' => '7', 'channel' => 'email', 'error' => 'upstream_service_down', 'attempt' => 2, 'parked' => false], $this->entries[0][2]);
+		$this->assertSame(['message' => '7', 'channel' => 'email', 'error' => 'upstream_service_down', 'attempt' => 5, 'parked' => true], $this->entries[1][2]);
 	}
 
 	public function testAnUnboundMessageWritesNothing(): void {
-		$this->objects->expects($this->never())->method('find');
-		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
+		$this->activity->expects($this->never())->method('record');
 
 		$this->audit()->sent(message: ['objectUuid' => null] + self::MESSAGE);
 		$this->audit()->failed(message: ['objectUuid' => ''] + self::MESSAGE, outcome: ['state' => 'pending']);
 	}
 
 	public function testAnObjectThatIsGoneIsLoggedAndNeverFailsTheSweep(): void {
-		$this->objects->method('find')->willThrowException(new DoesNotExistException('gone'));
-		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
+		$activity = $this->createMock(ObjectActivityAuditInterface::class);
+		$activity->method('record')->willThrowException(new DoesNotExistException('gone'));
 		$this->logger->expects($this->once())->method('warning')
 			->with('[ScheduledMessageAudit] audit entry failed', ['action' => 'message.sent', 'message' => '7', 'error' => 'gone']);
 
-		$this->audit()->sent(message: self::MESSAGE);
+		(new ScheduledMessageAudit($activity, $this->logger))->sent(message: self::MESSAGE);
 	}
 
 	public function testAnAuditWriteThatFailsIsLogged(): void {
-		$this->objects->method('find')->willReturn($this->case);
-		$auditTrail = $this->createMock(AuditTrailMapperInterface::class);
-		$auditTrail->method('recordObjectEvent')->willThrowException(new RuntimeException('db down'));
+		$activity = $this->createMock(ObjectActivityAuditInterface::class);
+		$activity->method('record')->willThrowException(new RuntimeException('db down'));
 		$this->logger->expects($this->once())->method('warning')
 			->with('[ScheduledMessageAudit] audit entry failed', ['action' => 'message.failed', 'message' => '7', 'error' => 'db down']);
 
-		(new ScheduledMessageAudit($this->objects, $auditTrail, $this->logger))->failed(message: self::MESSAGE, outcome: ['state' => 'pending']);
+		(new ScheduledMessageAudit($activity, $this->logger))->failed(message: self::MESSAGE, outcome: ['state' => 'pending']);
 	}
 }//end class

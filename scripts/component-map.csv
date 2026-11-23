@@ -1605,6 +1605,8 @@ Notifications/Service/Notification/ScheduledFilterGrammar.php,34,Notifications,N
 Notifications/Service/Notification/ScheduledFilterParser.php,368,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterParser.php,2,,Notifications
 Notifications/Service/Notification/ScheduledFilterPosition.php,41,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterPosition.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageAudit.php,57,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageAudit.php,0,,Notifications
+Kernel/Contracts/ObjectActivityAuditInterface.php,,Kernel,,,,,Kernel
+Service/Object/ObjectActivityAudit.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessagePolicy.php,74,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessagePolicy.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageStore.php,60,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageStore.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageStoreInterface.php,0,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageStoreInterface.php,0,,Notifications

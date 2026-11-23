@@ -22,9 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -55,13 +53,11 @@ class ScheduledMessageAudit {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicObjectFinderInterface $objects    Reads the bound object, without a user.
-	 * @param AuditTrailMapperInterface  $auditTrail Writes on the bound object's audit trail.
-	 * @param LoggerInterface            $logger     Logs an entry that could not be written.
+	 * @param ObjectActivityAuditInterface $activity Reads the bound object without a user and writes on its audit trail.
+	 * @param LoggerInterface              $logger   Logs an entry that could not be written.
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $objects,
-		private readonly AuditTrailMapperInterface $auditTrail,
+		private readonly ObjectActivityAuditInterface $activity,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -123,13 +119,10 @@ class ScheduledMessageAudit {
 		}
 
 		try {
-			$object = $this->objects->find(identifier: $objectUuid, _rbac: false, _multitenancy: false);
-			$this->auditTrail->recordObjectEvent(
-				event: new ObjectAuditEvent(
-					object: $object,
-					action: $action,
-					context: ['message' => (string)($message['id'] ?? ''), 'channel' => (string)($message['channel'] ?? '')] + $context
-				)
+			$this->activity->record(
+				objectUuid: $objectUuid,
+				action: $action,
+				context: ['message' => (string)($message['id'] ?? ''), 'channel' => (string)($message['channel'] ?? '')] + $context
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

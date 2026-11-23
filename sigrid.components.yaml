@@ -560,6 +560,7 @@ components:
       - ".*/lib/Service/Object/NotSuppliedEntry[.]php"
       - ".*/lib/Service/Object/NotSuppliedHandler[.]php"
       - ".*/lib/Service/Object/NotSuppliedRules[.]php"
+      - ".*/lib/Service/Object/ObjectActivityAudit[.]php"
       - ".*/lib/Service/Object/ObjectCacheInvalidationInterface[.]php"
       - ".*/lib/Service/Object/ObjectCacheInvalidator[.]php"
       - ".*/lib/Service/Object/ObjectCacheMaintenanceInterface[.]php"
