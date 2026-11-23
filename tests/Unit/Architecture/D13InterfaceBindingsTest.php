@@ -56,7 +56,7 @@ use OCA\OpenRegister\Db\SyncRecordMapper;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
@@ -87,8 +87,8 @@ final class D13InterfaceBindingsTest extends TestCase {
 		ApplicationMapper::class => [ApplicationMapperInterface::class, ConfigurationMapperRegistrar::class],
 		BulkJobMapper::class => [BulkJobMapperInterface::class, ProcessesMapperRegistrar::class],
 		BulkJobMemberMapper::class => [BulkJobMemberMapperInterface::class, ProcessesMapperRegistrar::class],
-		DraftActivation::class => [DraftActivationInterface::class, ContractBindings::class],
-		DraftExpiry::class => [DraftExpiryInterface::class, ContractBindings::class],
+		DraftActivation::class => [DraftActivationInterface::class, CoreServiceBindings::class],
+		DraftExpiry::class => [DraftExpiryInterface::class, CoreServiceBindings::class],
 		EndpointLogMapper::class => [EndpointLogMapperInterface::class, IntegrationsMapperRegistrar::class],
 		EndpointMapper::class => [EndpointMapperInterface::class, IntegrationsMapperRegistrar::class],
 		FlowTriggerMapper::class => [FlowTriggerMapperInterface::class, ProcessesMapperRegistrar::class],

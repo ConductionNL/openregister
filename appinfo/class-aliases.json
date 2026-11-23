@@ -1096,6 +1096,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\ObjectFilesArchiveController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\ObjectFilesArchiveController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\ObjectFolderController": {
 			"class": "OCA\\OpenRegister\\Files\\Controller\\ObjectFolderController",
 			"eager": false,

@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -39,7 +39,7 @@ final class F04OrganisationAuditorInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string|null, 2: string}>
 	 */
 	private const HIDDEN = [
-		OrganisationLifecycleAuditor::class => [OrganisationEditAuditorInterface::class, ContractBindings::class, 'Service'],
+		OrganisationLifecycleAuditor::class => [OrganisationEditAuditorInterface::class, CoreServiceBindings::class, 'Service'],
 	];
 
 	/**
