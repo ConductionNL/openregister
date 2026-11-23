@@ -3905,3 +3905,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 See "git help gc" for manual housekeeping.
 remote: error: GH013: Repository rule violations f; per-PR merges
 2026-11-23T23:38:36Z integrator-20261123T232305-69d0e3c5 MERGED-TREE 3440d7099c: 4 PRs, main now 4401ff3862 = tested tree
+2026-11-23T23:43:06Z or-fix-1 done at main 6e870ca5: fixed 10451 (ba46e955), 10531 (c2cf3dad), 11001 (5fa43f9a), 10541 (4219039f); 9781 9841 9921 10381 10491 10521 10581 11021 merge clean, Architecture + touched tests green bar inherited ComponentDependencyRulesTest 4 Files->Core edges, AreaMapperRegistrarsTest, AnonymousEnvelopeReadPathsTest; 10641 product question open; 7721 obsolete; 10621 10981 deps, clean merge
