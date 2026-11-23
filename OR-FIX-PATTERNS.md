@@ -534,3 +534,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists a PR's new lib/Mcp|Service class -> lib/Db/... (Integrations -> Core/Compliance), plus lib/Service/ServiceRegistrar.php -> <that class> (Core -> Integrations).
 - Cause: the new class copies what a main sibling in its own component already does (e.g. ToolInvocationAudit, whose Db edges are baselined); the copy gets new edges, and ServiceRegistrar may only name Core classes.
 - Fix: delegate to the sibling (same-component edge is free; add a small additive method such as withSource() and a constructor default so DI autowires it), and move the binding into the area's wiring (IntegrationWiring::BINDINGS); revert ServiceRegistrar(+Test) to main. Never extend the baseline (#10567 1316708d).
+
+## New binding in ContractBindings trips ComponentDependencyRulesTest (or-fix-2)
+- Symptom: Architecture ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/ContractBindings.php -> lib/Service/<Area>/X.php (Configuration -> <Component>)'.
+- Cause: main gates ADR-013 Rule 1 as a ratchet; ContractBindings is Configuration, so a PR adding an Interface => Class pair for another component's class adds a new edge (old pairs are baselined).
+- Fix: move the pair (and its use lines) to that component's own bindings list, e.g. Service/Flow/FlowWiring::BINDINGS for Flow nodes (as LockObjectNodeInterface); add it to FlowWiringTest's pinned BINDINGS array in the same order and a test asserting it. Never add to the baseline. (#10182 0259bb89)
