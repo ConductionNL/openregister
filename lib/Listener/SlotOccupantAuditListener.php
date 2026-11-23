@@ -43,13 +43,14 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\AbstractPersonLinkEvent;
 use OCA\OpenRegister\Event\PersonLinkedEvent;
 use OCA\OpenRegister\Event\PersonUnlinkedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ContactLinkInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -99,14 +100,14 @@ class SlotOccupantAuditListener implements IEventListener {
 			return;
 		}
 
-		// The event carries the Core interface; only the stored entity says whether it links a user.
+		// The event carries the Kernel interface; only a stored link row carries the columns read below.
 		$link = $event->getLink();
-		if ($link instanceof ContactLink === false) {
+		if ($link instanceof Entity === false) {
 			return;
 		}
 
 		$objectUuid = (string)($link->getObjectUuid() ?? '');
-		if ($link->isUserLink() === false || $objectUuid === '') {
+		if (self::isUserLink(link: $link) === false || $objectUuid === '') {
 			return;
 		}
 
@@ -121,15 +122,28 @@ class SlotOccupantAuditListener implements IEventListener {
 	}//end handle()
 
 	/**
+	 * Whether a link names a Nextcloud user rather than a vCard or a party.
+	 *
+	 * @param ContactLinkInterface $link The link.
+	 *
+	 * @return bool
+	 */
+	private static function isUserLink(ContactLinkInterface $link): bool {
+		$userId = $link->getUserId();
+
+		return $userId !== null && $userId !== '';
+	}//end isUserLink()
+
+	/**
 	 * Write the entry, unless the object is readable and names no slot.
 	 *
 	 * @param AbstractPersonLinkEvent $event      The link event.
-	 * @param ContactLink             $link       The link as stored (or as it was, on removal).
+	 * @param ContactLinkInterface&Entity $link     The link as stored (or as it was, on removal).
 	 * @param string                  $objectUuid The object the link is on.
 	 *
 	 * @return void
 	 */
-	private function record(AbstractPersonLinkEvent $event, ContactLink $link, string $objectUuid): void {
+	private function record(AbstractPersonLinkEvent $event, ContactLinkInterface&Entity $link, string $objectUuid): void {
 		$object = $this->readObject(objectUuid: $objectUuid);
 		$slots = [];
 		if ($object !== null) {
@@ -176,12 +190,12 @@ class SlotOccupantAuditListener implements IEventListener {
 	/**
 	 * An entity naming the link's object, for an entry when the object could not be read.
 	 *
-	 * @param ContactLink $link       The link.
+	 * @param ContactLinkInterface&Entity $link       The link.
 	 * @param string      $objectUuid The object's uuid.
 	 *
 	 * @return ObjectEntity The stand-in.
 	 */
-	private function standIn(ContactLink $link, string $objectUuid): ObjectEntity {
+	private function standIn(ContactLinkInterface&Entity $link, string $objectUuid): ObjectEntity {
 		$object = new ObjectEntity();
 		$object->setUuid($objectUuid);
 		$object->setRegister(self::idOrNull(id: $link->getRegisterId()));

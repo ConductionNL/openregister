@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Service\ContactLinkRoleOccupants;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -181,7 +182,7 @@ class SlotGrantResolutionTest extends TestCase {
 			}
 		);
 
-		return new PartyRoleSlotResolver(links: $mapper, logger: new NullLogger());
+		return new PartyRoleSlotResolver(links: new ContactLinkRoleOccupants(links: $mapper), logger: new NullLogger());
 	}//end slotResolver()
 
 	/**

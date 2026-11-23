@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRoleOccupantsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -73,11 +72,11 @@ class PartyRoleSlotResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapperInterface $links  The link rows a party role lives in.
-	 * @param LoggerInterface            $logger Says why a lookup answered "nobody".
+	 * @param ObjectRoleOccupantsInterface $links  Who holds which party role on an object today.
+	 * @param LoggerInterface              $logger Says why a lookup answered "nobody".
 	 */
 	public function __construct(
-		private readonly ContactLinkMapperInterface $links,
+		private readonly ObjectRoleOccupantsInterface $links,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -174,7 +173,7 @@ class PartyRoleSlotResolver {
 		}
 
 		try {
-			$links = $this->links->findByObjectUuid($objectUuid);
+			return $this->links->activeUserRoles(objectUuid: $objectUuid, userId: $userId);
 		} catch (Throwable $e) {
 			// Fail CLOSED: a slot whose occupant cannot be read is held by
 			// nobody for this question.
@@ -184,44 +183,5 @@ class PartyRoleSlotResolver {
 			);
 			return [];
 		}
-
-		$roles = [];
-		foreach ($links as $link) {
-			$role = $this->occupiedRole(link: $link, userId: $userId);
-			if ($role !== null) {
-				$roles[$role] = true;
-			}
-		}
-
-		return array_keys($roles);
 	}//end rolesHeldBy()
-
-	/**
-	 * The role a link gives this user today, or null when it gives none.
-	 *
-	 * @param mixed  $link   One link row.
-	 * @param string $userId The caller.
-	 *
-	 * @return string|null The role.
-	 */
-	private function occupiedRole(mixed $link, string $userId): ?string {
-		if (($link instanceof ContactLink) === false || $link->isUserLink() === false || $link->getUserId() !== $userId) {
-			return null;
-		}
-
-		$role = trim((string)($link->getRole() ?? ''));
-		if ($role === '') {
-			return null;
-		}
-
-		try {
-			if ($link->isActiveOn() === false) {
-				return null;
-			}
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		return $role;
-	}//end occupiedRole()
 }//end class

@@ -24,13 +24,13 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -108,16 +108,16 @@ class BreakGlassService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper     $trail         The chained trail the takes and uses are sealed in.
-	 * @param IUserSession         $userSession   Who is asking.
-	 * @param IGroupManager        $groupManager  The caller's groups, and the recipients' members.
-	 * @param INotificationManager $notifications Tells the declared recipients.
-	 * @param IAppConfig           $appConfig     The administered limit.
-	 * @param ITimeFactory         $clock         Now.
-	 * @param LoggerInterface      $logger        Says why something answered no.
+	 * @param AuditTrailMapperInterface $trail         The chained trail the takes and uses are sealed in.
+	 * @param IUserSession              $userSession   Who is asking.
+	 * @param IGroupManager             $groupManager  The caller's groups, and the recipients' members.
+	 * @param INotificationManager      $notifications Tells the declared recipients.
+	 * @param IAppConfig                $appConfig     The administered limit.
+	 * @param ITimeFactory              $clock         Now.
+	 * @param LoggerInterface           $logger        Says why something answered no.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $trail,
+		private readonly AuditTrailMapperInterface $trail,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INotificationManager $notifications,
@@ -266,7 +266,7 @@ class BreakGlassService {
 	 * @return BreakGlassTake|null The take.
 	 */
 	private function takeOf(mixed $row): ?BreakGlassTake {
-		if (($row instanceof AuditTrail) === false || $row->getAction() !== self::TAKEN_ACTION) {
+		if (($row instanceof AuditRecordInterface) === false || $row->getAction() !== self::TAKEN_ACTION) {
 			return null;
 		}
 
@@ -314,7 +314,7 @@ class BreakGlassService {
 	 */
 	private function limitSeconds(): ?int {
 		try {
-			$configured = $this->appConfig->getValueString(Application::APP_ID, self::LIMIT_CONFIG_KEY, '');
+			$configured = $this->appConfig->getValueString(AppIdentity::APP_ID, self::LIMIT_CONFIG_KEY, '');
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -339,7 +339,7 @@ class BreakGlassService {
 		foreach ($this->recipients(declaration: $declaration, grantee: (string)$context['grantee']) as $recipient) {
 			try {
 				$notification = $this->notifications->createNotification();
-				$notification->setApp(Application::APP_ID);
+				$notification->setApp(AppIdentity::APP_ID);
 				$notification->setUser($recipient);
 				$notification->setDateTime(new DateTime('@' . $this->clock->getTime()));
 				$notification->setObject('object', (string)$object->getUuid());

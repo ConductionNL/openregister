@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Service\ContactLinkRoleOccupants;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
 use PHPUnit\Framework\TestCase;
@@ -75,7 +76,7 @@ class PartyRoleSlotResolverTest extends TestCase {
 		$mapper = $this->createMock(ContactLinkMapperInterface::class);
 		$mapper->method('findByObjectUuid')->with(self::OBJECT)->willReturn($links);
 
-		return new PartyRoleSlotResolver(links: $mapper, logger: new NullLogger());
+		return new PartyRoleSlotResolver(links: new ContactLinkRoleOccupants(links: $mapper), logger: new NullLogger());
 	}//end resolverOver()
 
 	/**
@@ -161,7 +162,7 @@ class PartyRoleSlotResolverTest extends TestCase {
 	public function testABlankCallerOrObjectHoldsNothing(): void {
 		$mapper = $this->createMock(ContactLinkMapperInterface::class);
 		$mapper->expects($this->never())->method('findByObjectUuid');
-		$resolver = new PartyRoleSlotResolver(links: $mapper, logger: new NullLogger());
+		$resolver = new PartyRoleSlotResolver(links: new ContactLinkRoleOccupants(links: $mapper), logger: new NullLogger());
 
 		$this->assertSame([], $resolver->rolesHeldBy(null, self::OBJECT));
 		$this->assertSame([], $resolver->rolesHeldBy('', self::OBJECT));
@@ -181,7 +182,7 @@ class PartyRoleSlotResolverTest extends TestCase {
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 		$logger->expects($this->once())->method('warning');
 
-		$resolver = new PartyRoleSlotResolver(links: $mapper, logger: $logger);
+		$resolver = new PartyRoleSlotResolver(links: new ContactLinkRoleOccupants(links: $mapper), logger: $logger);
 
 		$this->assertSame([], $resolver->rolesHeldBy('ana', self::OBJECT));
 	}//end testALookupFailureHoldsNothing()
