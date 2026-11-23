@@ -140,3 +140,8 @@ foreach (spl_autoload_functions() as $autoload) {
 // beStrictAboutOutputDuringTests mode treats any output during the bootstrap
 // as a test error (PHPUnit\Framework\Exception).  The bootstrap runs once and
 // the message is only useful during active debugging.
+
+// Keep the old name of every moved class working, as Application::register() does at
+// boot (ADR-012 Rule 4). Same call as tests/bootstrap.php, last for the same reason:
+// an eager entry autoloads its new class now.
+\OCA\OpenRegister\AppInfo\ClassAliasMap::fromFile()->aliasClasses();
