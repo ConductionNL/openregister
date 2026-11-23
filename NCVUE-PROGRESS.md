@@ -64,3 +64,4 @@
 2026-11-23T12:30:21Z ncvue-4 start
 2026-11-23T12:32:21Z ncvue-4 no open PRs with N%6==4 (open: 2272 lane 4? no, 2272%6=0 lane 0; 2271 lane 5); lane share empty
 2026-11-23T12:30:25Z ncvue-0 no open PRs with N%6==0 (open: 2272 lane 4, 2271 lane 3; #1726 not open); lane share empty
+2026-11-23T12:33:22Z ncvue-5 correction: 2272%6==4 (lane 4, not 0) and 2271%6==3 (lane 3, not 5); the 12:32 ncvue-4 entry miscounted, #2272 is still lane 4's
