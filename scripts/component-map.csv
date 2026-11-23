@@ -983,9 +983,9 @@ Event/ObjectUnlockedEvent.php,14,Event,Event,Event/ObjectUnlockedEvent.php,6,,Ke
 Event/ObjectUpdatedEvent.php,22,Event,Event,Event/ObjectUpdatedEvent.php,851,,Kernel
 Event/ObjectUpdatingEvent.php,17,Event,Event,Event/ObjectUpdatingEvent.php,1321,,Kernel
 Event/ObjectsMergedEvent.php,26,Event,Event,Event/ObjectsMergedEvent.php,12,,Kernel
-Event/OrganisationCreatedEvent.php,15,Event,Event,Event/OrganisationCreatedEvent.php,3,,Core
-Event/OrganisationDeletedEvent.php,14,Event,Event,Event/OrganisationDeletedEvent.php,0,,Core
-Event/OrganisationUpdatedEvent.php,22,Event,Event,Event/OrganisationUpdatedEvent.php,8,,Core
+Event/OrganisationCreatedEvent.php,15,Event,Event,Event/OrganisationCreatedEvent.php,3,,Kernel
+Event/OrganisationDeletedEvent.php,14,Event,Event,Event/OrganisationDeletedEvent.php,0,,Kernel
+Event/OrganisationUpdatedEvent.php,22,Event,Event,Event/OrganisationUpdatedEvent.php,8,,Kernel
 Event/PermissionsDeclaringEvent.php,46,Event,Event,Event/PermissionsDeclaringEvent.php,0,,Kernel
 Event/PersonLinkUpdatedEvent.php,15,Event,Event,Event/PersonLinkUpdatedEvent.php,8,,Integrations
 Event/PersonLinkedEvent.php,15,Event,Event,Event/PersonLinkedEvent.php,12,,Integrations
@@ -1257,6 +1257,7 @@ Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
+Kernel/Contracts/AdministrativeRetentionPeriod.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
 Kernel/Contracts/AppSettingsInterface.php,42,Kernel,Kernel,Kernel/Contracts/AppSettingsInterface.php,0,,Kernel
 Kernel/Contracts/ContactMatcherInterface.php,11,Kernel,Kernel,Kernel/Contracts/ContactMatcherInterface.php,0,,Kernel
@@ -3834,7 +3835,7 @@ Event/AbstractConfigurationEvent.php,,Event,,,,,Kernel
 Event/AbstractConversationEvent.php,,Event,,,,,Kernel
 Event/AbstractDecisionRequestEvent.php,,Event,,,,,Processes
 Event/AbstractObjectEntityEvent.php,,Event,,,,,Kernel
-Event/AbstractOrganisationEvent.php,,Event,,,,,Core
+Event/AbstractOrganisationEvent.php,,Event,,,,,Kernel
 Event/AbstractPersonLinkEvent.php,,Event,,,,,Integrations
 Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Core
