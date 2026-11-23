@@ -35,7 +35,6 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -67,7 +66,6 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 	private function service(): ExportService {
 		return new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$this->objects,
 			$this->createMock(CacheHandler::class),
