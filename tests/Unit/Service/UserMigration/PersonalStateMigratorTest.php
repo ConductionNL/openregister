@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\UserMigration;
 
 use DateTime;
 use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
@@ -48,7 +47,6 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Db\CalendarFeedToken
- * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
  */
 final class PersonalStateMigratorTest extends TestCase {
 
@@ -360,25 +358,35 @@ final class PersonalStateMigratorTest extends TestCase {
 	}//end testTheReportNamesEachItemNotRestored()
 
 	/**
+	 * The restated schema scope is the calendar feed's own.
+	 */
+	public function testTheFeedScopeSchemaIsTheCalendarFeedsOwn(): void {
+		$this->assertSame(CalendarFeedToken::SCOPE_SCHEMA, PersonalStateMigrator::FEED_SCOPE_SCHEMA);
+	}//end testTheFeedScopeSchemaIsTheCalendarFeedsOwn()
+
+	/**
 	 * A calendar feed token travels as its details only: label, scope with a
 	 * portable schema reference, and dates. Its value never leaves (D-4).
 	 */
 	public function testFeedTokenDetailsAreExportedWithoutTheirValue(): void {
-		$token = new CalendarFeedToken();
-		$token->setToken('feed-secret-0f9a');
-		$token->setUserId('alice');
-		$token->setLabel('Mijn zaken in de agenda');
-		$token->setScopeType(CalendarFeedToken::SCOPE_SCHEMA);
-		$token->setScopeId('9');
-		$token->setCreatedAt(new DateTime('2026-03-01T10:00:00+00:00'));
-		$token->setExpiresAt(new DateTime('2027-03-01T10:00:00+00:00'));
-		$token->setLastReadAt(new DateTime('2026-11-01T08:30:00+00:00'));
-		$view = new CalendarFeedToken();
-		$view->setToken('feed-secret-77b1');
-		$view->setLabel('Teamplanning');
-		$view->setScopeType(CalendarFeedToken::SCOPE_VIEW);
-		$view->setScopeId('12');
-		$view->setRevokedAt(new DateTime('2026-06-01T00:00:00+00:00'));
+		$token = [
+			'label' => 'Mijn zaken in de agenda',
+			'scopeType' => CalendarFeedToken::SCOPE_SCHEMA,
+			'scopeId' => '9',
+			'createdAt' => new DateTime('2026-03-01T10:00:00+00:00'),
+			'expiresAt' => new DateTime('2027-03-01T10:00:00+00:00'),
+			'revokedAt' => null,
+			'lastReadAt' => new DateTime('2026-11-01T08:30:00+00:00'),
+		];
+		$view = [
+			'label' => 'Teamplanning',
+			'scopeType' => CalendarFeedToken::SCOPE_VIEW,
+			'scopeId' => '12',
+			'createdAt' => null,
+			'expiresAt' => null,
+			'revokedAt' => new DateTime('2026-06-01T00:00:00+00:00'),
+			'lastReadAt' => null,
+		];
 		$this->reader->method('ownedViews')->willReturn([]);
 		$this->reader->method('watches')->willReturn([]);
 		$this->reader->expects($this->once())->method('feedTokens')->with('alice')->willReturn([$token, $view]);
@@ -419,15 +427,15 @@ final class PersonalStateMigratorTest extends TestCase {
 	 * The user's own notes and timeline entries travel as a readable archive, with portable references.
 	 */
 	public function testOwnNotesAndTimelineEntriesAreExportedAsAnArchive(): void {
-		$entry = new TimelineEntry();
-		$entry->setObjectUuid('obj-1');
-		$entry->setRegister('3');
-		$entry->setSchema('9');
-		$entry->setKind('note');
-		$entry->setAuthor('alice');
-		$entry->setVisibility('internal');
-		$entry->setMessage('Aanvrager gebeld, stukken volgen.');
-		$entry->setCreated(new DateTime('2026-10-05T09:15:00+00:00'));
+		$entry = [
+			'objectUuid' => 'obj-1',
+			'register' => '3',
+			'schema' => '9',
+			'kind' => 'note',
+			'visibility' => 'internal',
+			'message' => 'Aanvrager gebeld, stukken volgen.',
+			'created' => new DateTime('2026-10-05T09:15:00+00:00'),
+		];
 		$note = ['objectUuid' => 'obj-2', 'message' => 'Termijn verlengd.', 'createdAt' => '2026-10-06 11:00:00'];
 		$this->reader->method('ownedViews')->willReturn([]);
 		$this->reader->method('watches')->willReturn([]);

@@ -27,12 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\UserMigration;
 
-use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use DateTime;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
@@ -105,14 +104,14 @@ class PersonalStateReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection           $db          The database.
-	 * @param IConfig|null            $config      The user values holding the notification preferences.
-	 * @param ReadHistoryService|null $readHistory The read history behind "recently opened".
+	 * @param IDBConnection            $db          The database.
+	 * @param IConfig|null             $config      The user values holding the notification preferences.
+	 * @param RecentLensInterface|null $readHistory The read history behind "recently opened".
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ?IConfig $config = null,
-		private readonly ?ReadHistoryService $readHistory = null,
+		private readonly ?RecentLensInterface $readHistory = null,
 	) {
 	}//end __construct()
 
@@ -239,18 +238,26 @@ class PersonalStateReader {
 	}//end watches()
 
 	/**
-	 * The calendar feed tokens the user created, revoked ones included.
+	 * The calendar feed tokens the user created, revoked ones included: their details, never their value.
 	 *
 	 * @param string $userId The user.
 	 *
-	 * @return list<CalendarFeedToken>
+	 * @return list<array{label: string|null, scopeType: string|null, scopeId: string|null, createdAt: DateTime|null, expiresAt: DateTime|null, revokedAt: DateTime|null, lastReadAt: DateTime|null}>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
 	 */
 	public function feedTokens(string $userId): array {
 		$tokens = [];
 		foreach ($this->rowsOf(table: self::FEED_TOKENS_TABLE, column: 'user_id', userId: $userId) as $row) {
-			$tokens[] = CalendarFeedToken::fromRow($row);
+			$tokens[] = [
+				'label' => self::stringOrNull(value: ($row['label'] ?? null)),
+				'scopeType' => self::stringOrNull(value: ($row['scope_type'] ?? null)),
+				'scopeId' => self::stringOrNull(value: ($row['scope_id'] ?? null)),
+				'createdAt' => self::momentOrNull(value: ($row['created_at'] ?? null)),
+				'expiresAt' => self::momentOrNull(value: ($row['expires_at'] ?? null)),
+				'revokedAt' => self::momentOrNull(value: ($row['revoked_at'] ?? null)),
+				'lastReadAt' => self::momentOrNull(value: ($row['last_read_at'] ?? null)),
+			];
 		}
 
 		return $tokens;
@@ -261,14 +268,22 @@ class PersonalStateReader {
 	 *
 	 * @param string $userId The user.
 	 *
-	 * @return list<TimelineEntry>
+	 * @return list<array{objectUuid: string|null, register: string|null, schema: string|null, kind: string|null, visibility: string, message: string|null, created: DateTime|null}>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
 	 */
 	public function timelineEntries(string $userId): array {
 		$entries = [];
 		foreach ($this->rowsOf(table: self::TIMELINE_TABLE, column: 'author', userId: $userId) as $row) {
-			$entries[] = TimelineEntry::fromRow($row);
+			$entries[] = [
+				'objectUuid' => self::stringOrNull(value: ($row['object_uuid'] ?? null)),
+				'register' => self::stringOrNull(value: ($row['register'] ?? null)),
+				'schema' => self::stringOrNull(value: ($row['schema'] ?? null)),
+				'kind' => self::stringOrNull(value: ($row['kind'] ?? null)),
+				'visibility' => (self::stringOrNull(value: ($row['visibility'] ?? null)) ?? 'internal'),
+				'message' => self::stringOrNull(value: ($row['message'] ?? null)),
+				'created' => self::momentOrNull(value: ($row['created'] ?? null)),
+			];
 		}
 
 		return $entries;
@@ -325,6 +340,25 @@ class PersonalStateReader {
 
 		return (string)$value;
 	}//end stringOrNull()
+
+	/**
+	 * A stored moment as a date, or null, read as a datetime column of an entity is.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return DateTime|null
+	 */
+	private static function momentOrNull(mixed $value): ?DateTime {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		if ($value instanceof DateTime) {
+			return $value;
+		}
+
+		return new DateTime((string)$value);
+	}//end momentOrNull()
 
 	/**
 	 * The rows of a table that belong to the user, by id.

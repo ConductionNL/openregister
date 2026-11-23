@@ -17,7 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\UserMigration;
 
 use OCA\OpenRegister\Service\UserMigration\PersonalStateReader;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -29,8 +29,6 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\UserMigration\PersonalStateReader
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Notifications\Db\Watcher
- * @uses \OCA\OpenRegister\Db\CalendarFeedToken
- * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
  */
 final class PersonalStateReaderTest extends TestCase {
 
@@ -119,8 +117,11 @@ final class PersonalStateReaderTest extends TestCase {
 
 		$this->assertSame(['table' => 'openregister_calendar_feeds', 'column' => 'user_id', 'value' => 'alice', 'order' => 'id ASC'], $this->sorted());
 		$this->assertCount(1, $tokens);
-		$this->assertSame('Agenda', $tokens[0]->getLabel());
-		$this->assertSame('9', $tokens[0]->getScopeId());
+		$this->assertSame('Agenda', $tokens[0]['label']);
+		$this->assertSame('schema', $tokens[0]['scopeType']);
+		$this->assertSame('9', $tokens[0]['scopeId']);
+		$this->assertArrayNotHasKey('token', $tokens[0]);
+		$this->assertNull($tokens[0]['createdAt']);
 	}//end testFeedTokensAreReadByUser()
 
 	/**
@@ -130,7 +131,9 @@ final class PersonalStateReaderTest extends TestCase {
 		$entries = $this->reader(rows: [['id' => 6, 'author' => 'alice', 'object_uuid' => 'obj-1', 'message' => 'Gebeld.']])->timelineEntries(userId: 'alice');
 
 		$this->assertSame(['table' => 'openregister_timeline_entries', 'column' => 'author', 'value' => 'alice', 'order' => 'id ASC'], $this->sorted());
-		$this->assertSame('Gebeld.', $entries[0]->getMessage());
+		$this->assertSame('Gebeld.', $entries[0]['message']);
+		$this->assertSame('obj-1', $entries[0]['objectUuid']);
+		$this->assertSame('internal', $entries[0]['visibility']);
 	}//end testTimelineEntriesAreReadByAuthor()
 
 	/**
@@ -194,7 +197,7 @@ final class PersonalStateReaderTest extends TestCase {
 	 * Task 1.2: recently opened is the `_recent` lens's own history, newest first, uuid and moment only.
 	 */
 	public function testRecentsAreTheReadHistoryOfTheUser(): void {
-		$history = $this->createMock(ReadHistoryService::class);
+		$history = $this->createMock(RecentLensInterface::class);
 		$history->expects($this->once())->method('resolveRecentLens')->with('alice')->willReturn(
 			['available' => true, 'reason' => null, 'views' => ['obj-9' => '2026-11-02 09:15:00', 'obj-4' => '2026-11-01 16:40:00']]
 		);
@@ -210,9 +213,9 @@ final class PersonalStateReaderTest extends TestCase {
 	 * An audit trail that is off or unreadable lists no recents; no user or no history reads nothing.
 	 */
 	public function testRecentsAreEmptyWhenTheHistoryCannotAnswer(): void {
-		$history = $this->createMock(ReadHistoryService::class);
+		$history = $this->createMock(RecentLensInterface::class);
 		$history->expects($this->once())->method('resolveRecentLens')->willReturn(
-			['available' => false, 'reason' => ReadHistoryService::REASON_AUDIT_TRAIL_DISABLED, 'views' => ['obj-1' => 'x']]
+			['available' => false, 'reason' => 'audit-trail-disabled', 'views' => ['obj-1' => 'x']]
 		);
 		$db = $this->createMock(IDBConnection::class);
 

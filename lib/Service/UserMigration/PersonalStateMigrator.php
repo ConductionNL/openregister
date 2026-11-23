@@ -34,8 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\UserMigration;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
@@ -124,6 +122,15 @@ class PersonalStateMigrator implements IMigrator {
 	public const NOTIFICATION_PREFERENCES = self::PATH . 'notification-preferences.json';
 
 	/**
+	 * The scope type of a feed token that shows one schema, whose id travels as a portable reference.
+	 * The calendar feed's own value (CalendarFeedToken::SCOPE_SCHEMA), restated so this Platform
+	 * class names no Processes entity; a test pins the two equal.
+	 *
+	 * @var string
+	 */
+	public const FEED_SCOPE_SCHEMA = 'schema';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PersonalStateReader    $reader     Reads what the user holds.
@@ -166,9 +173,9 @@ class PersonalStateMigrator implements IMigrator {
 
 		$views = array_map(fn (View $view): array => $this->portableView(view: $view), $this->reader->ownedViews(userId: $user->getUID()));
 		$watches = array_map(fn (Watcher $watch): array => $this->portableWatch(watch: $watch), $this->reader->watches(userId: $user->getUID()));
-		$tokens = array_map(fn (CalendarFeedToken $token): array => $this->portableFeedToken(token: $token), $this->reader->feedTokens(userId: $uid));
+		$tokens = array_map(fn (array $token): array => $this->portableFeedToken(token: $token), $this->reader->feedTokens(userId: $uid));
 		$notes = $this->reader->notes(userId: $uid);
-		$timeline = array_map(fn (TimelineEntry $entry): array => $this->archivedEntry(entry: $entry), $this->reader->timelineEntries(userId: $uid));
+		$timeline = array_map(fn (array $entry): array => $this->archivedEntry(entry: $entry), $this->reader->timelineEntries(userId: $uid));
 		$recents = $this->reader->recents(userId: $uid);
 		$preferences = $this->reader->notificationPreferences(userId: $uid);
 
@@ -386,47 +393,47 @@ class PersonalStateMigrator implements IMigrator {
 	 * A calendar feed token's details, without its value (D-4): what it was
 	 * called, what it showed and when it was made, used, expires or was revoked.
 	 *
-	 * @param CalendarFeedToken $token The token.
+	 * @param array{label: string|null, scopeType: string|null, scopeId: string|null, createdAt: DateTimeInterface|null, expiresAt: DateTimeInterface|null, revokedAt: DateTimeInterface|null, lastReadAt: DateTimeInterface|null} $token The token's details, as the reader gives them.
 	 *
 	 * @return array<string, string|null>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
 	 */
-	private function portableFeedToken(CalendarFeedToken $token): array {
-		$scopeId = $token->getScopeId();
-		if ($token->getScopeType() === CalendarFeedToken::SCOPE_SCHEMA && $scopeId !== null) {
+	private function portableFeedToken(array $token): array {
+		$scopeId = $token['scopeId'];
+		if ($token['scopeType'] === self::FEED_SCOPE_SCHEMA && $scopeId !== null) {
 			$scopeId = $this->references->portable(kind: RegisterReferences::SCHEMA, reference: $scopeId);
 		}
 
 		return [
-			'label' => $token->getLabel(),
-			'scopeType' => $token->getScopeType(),
+			'label' => $token['label'],
+			'scopeType' => $token['scopeType'],
 			'scopeId' => $scopeId,
-			'createdAt' => self::moment(value: $token->getCreatedAt()),
-			'expiresAt' => self::moment(value: $token->getExpiresAt()),
-			'revokedAt' => self::moment(value: $token->getRevokedAt()),
-			'lastReadAt' => self::moment(value: $token->getLastReadAt()),
+			'createdAt' => self::moment(value: $token['createdAt']),
+			'expiresAt' => self::moment(value: $token['expiresAt']),
+			'revokedAt' => self::moment(value: $token['revokedAt']),
+			'lastReadAt' => self::moment(value: $token['lastReadAt']),
 		];
 	}//end portableFeedToken()
 
 	/**
 	 * A timeline entry the user wrote, as an archive line: what, where and when.
 	 *
-	 * @param TimelineEntry $entry The entry.
+	 * @param array{objectUuid: string|null, register: string|null, schema: string|null, kind: string|null, visibility: string, message: string|null, created: DateTimeInterface|null} $entry The entry, as the reader gives it.
 	 *
 	 * @return array<string, string|null>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
 	 */
-	private function archivedEntry(TimelineEntry $entry): array {
+	private function archivedEntry(array $entry): array {
 		return [
-			'objectUuid' => $entry->getObjectUuid(),
-			'register' => $this->references->portable(kind: RegisterReferences::REGISTER, reference: (string)$entry->getRegister()),
-			'schema' => $this->references->portable(kind: RegisterReferences::SCHEMA, reference: (string)$entry->getSchema()),
-			'kind' => $entry->getKind(),
-			'visibility' => $entry->getVisibility(),
-			'message' => $entry->getMessage(),
-			'createdAt' => self::moment(value: $entry->getCreated()),
+			'objectUuid' => $entry['objectUuid'],
+			'register' => $this->references->portable(kind: RegisterReferences::REGISTER, reference: (string)$entry['register']),
+			'schema' => $this->references->portable(kind: RegisterReferences::SCHEMA, reference: (string)$entry['schema']),
+			'kind' => $entry['kind'],
+			'visibility' => $entry['visibility'],
+			'message' => $entry['message'],
+			'createdAt' => self::moment(value: $entry['created']),
 		];
 	}//end archivedEntry()
 

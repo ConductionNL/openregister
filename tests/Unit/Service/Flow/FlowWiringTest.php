@@ -44,6 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
@@ -397,6 +398,7 @@ final class FlowWiringTest extends TestCase {
 				TaskGaugeInterface::class                  => TaskMetricsProvider::class,
 				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
 				ReadHistoryInterface::class                => ReadHistoryService::class,
+				RecentLensInterface::class                 => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
 				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
