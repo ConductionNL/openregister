@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\Schema;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Schema\PreviewUrlTemplate;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -99,5 +100,15 @@ final class PreviewUrlTemplateTest extends TestCase {
 
 	public function testASchemaWithoutATemplateHasNone(): void {
 		self::assertNull((new Schema())->getPreviewUrl());
+	}
+
+	public function testTheTemplateIsReadableThroughTheKernelInterface(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['previewUrl' => self::TEMPLATE]);
+
+		$read = static fn (SchemaInterface $s): ?string => $s->getPreviewUrl();
+
+		self::assertSame(self::TEMPLATE, $read($schema));
+		self::assertNull($read(new Schema()));
 	}
 }
