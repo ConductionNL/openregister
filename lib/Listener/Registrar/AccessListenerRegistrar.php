@@ -52,9 +52,6 @@ final class AccessListenerRegistrar {
 		);
 
 		// A revoked personal token takes its grant with it (scoped-api-tokens 1.1c).
-		$context->registerEventListener(
-			\OCP\Authentication\Events\TokenInvalidatedEvent::class,
-			\OCA\OpenRegister\Listener\PersonalTokenGrantRevokedListener::class
-		);
+		\OCA\OpenRegister\Listener\CoreListenerRegistrar::personalTokenGrantRevoked(context: $context);
 	}//end register()
 }//end class

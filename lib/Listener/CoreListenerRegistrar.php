@@ -35,6 +35,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\User\Events\UserLoggedInEvent;
+use OCP\Authentication\Events\TokenInvalidatedEvent;
 
 /**
  * Subscribes the Core area's listeners, one public slot per position.
@@ -68,6 +69,19 @@ final class CoreListenerRegistrar {
 	public static function identityClaims(IRegistrationContext $context): void {
 		$context->registerEventListener(UserLoggedInEvent::class, IdentityClaimsLoginListener::class);
 	}//end identityClaims()
+
+	/**
+	 * A revoked personal token takes its grant with it (scoped-api-tokens 1.1c).
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function personalTokenGrantRevoked(IRegistrationContext $context): void {
+		$context->registerEventListener(TokenInvalidatedEvent::class, PersonalTokenGrantRevokedListener::class);
+	}//end personalTokenGrantRevoked()
 
 	/**
 	 * The generated identifier: issued on create, frozen on update.

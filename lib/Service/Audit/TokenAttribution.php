@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -132,17 +132,17 @@ class TokenAttribution implements TokenAttributionInterface {
 	 */
 	private function applyActorVia(AuditTrail $auditTrail): void {
 		$rows   = new AuditRowAttribution();
-		$source = $rows->requestContext(container: $this->container, class: TokenGrantSource::class);
+		$source = $rows->requestContext(container: $this->container, class: CurrentTokenGrantInterface::class);
 		if ($source === null) {
 			return;
 		}
 
-		$grant = $source->current();
-		if ($grant === null || $grant->tokenId === '') {
+		$tokenId = $source->currentTokenId();
+		if ($tokenId === null) {
 			return;
 		}
 
-		$rows->mergeIntoSummary(auditTrail: $auditTrail, entries: ['actorVia' => $grant->tokenId]);
+		$rows->mergeIntoSummary(auditTrail: $auditTrail, entries: ['actorVia' => $tokenId]);
 	}//end applyActorVia()
 
 	/**

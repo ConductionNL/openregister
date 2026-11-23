@@ -26,6 +26,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\BackgroundJob\TokenGrantLapseJob;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Service\Consumer\ConsumerGrantListing;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
@@ -44,6 +45,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\TokenGrantLapseJob
  * @uses   \OCA\OpenRegister\Db\Consumer
+ * @uses   \OCA\OpenRegister\Service\Consumer\ConsumerGrantListing
  * @uses   \OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrant
  * @uses   \OCA\OpenRegister\Service\Rbac\TokenGrantReach
@@ -134,7 +136,7 @@ class TokenGrantLapseJobTest extends TestCase {
 		$this->arguments = [
 			'time' => $time,
 			'logger' => $this->logger,
-			'consumers' => $this->consumers,
+			'consumers' => new ConsumerGrantListing(consumers: $this->consumers),
 			'validator' => new TokenGrantValidator(catalogue: $this->createMock(PermissionCatalogueInterface::class)),
 			'notifications' => $this->notifications,
 			'users' => $users,
@@ -306,8 +308,8 @@ class TokenGrantLapseJobTest extends TestCase {
 	public function testTheWindowIsFourteenDays(): void {
 		$now = new DateTimeImmutable(self::NOW);
 
-		$this->assertSame(1, $this->job->warnFor(consumer: $this->consumer(uuid: 'c-1', expiresAt: '2026-11-29T12:00:00+00:00'), now: $now));
-		$this->assertSame(0, $this->job->warnFor(consumer: $this->consumer(uuid: 'c-2', expiresAt: '2026-11-30T12:00:00+00:00'), now: $now));
+		$this->assertSame(1, $this->job->warnFor(consumer: ConsumerGrantListing::row(consumer: $this->consumer(uuid: 'c-1', expiresAt: '2026-11-29T12:00:00+00:00')), now: $now));
+		$this->assertSame(0, $this->job->warnFor(consumer: ConsumerGrantListing::row(consumer: $this->consumer(uuid: 'c-2', expiresAt: '2026-11-30T12:00:00+00:00')), now: $now));
 		$this->assertSame(14, $this->sent[0]['parameters']['daysLeft']);
 		$this->assertCount(1, $this->sent);
 	}//end testTheWindowIsFourteenDays()
@@ -341,8 +343,8 @@ class TokenGrantLapseJobTest extends TestCase {
 		$now = new DateTimeImmutable(self::NOW);
 		$this->notifications->expects($this->never())->method('notify');
 
-		$this->assertSame(0, $this->job->warnFor(consumer: $this->consumer(uuid: 'c-1', expiresAt: '2026-11-20T12:00:00+00:00', userId: null), now: $now));
-		$this->assertSame(0, $this->job->warnFor(consumer: $this->consumer(uuid: 'c-2', expiresAt: '2026-11-20T12:00:00+00:00', userId: 'gone'), now: $now));
+		$this->assertSame(0, $this->job->warnFor(consumer: ConsumerGrantListing::row(consumer: $this->consumer(uuid: 'c-1', expiresAt: '2026-11-20T12:00:00+00:00', userId: null)), now: $now));
+		$this->assertSame(0, $this->job->warnFor(consumer: ConsumerGrantListing::row(consumer: $this->consumer(uuid: 'c-2', expiresAt: '2026-11-20T12:00:00+00:00', userId: 'gone')), now: $now));
 	}//end testAHolderlessTokenWarnsNobody()
 
 	/**

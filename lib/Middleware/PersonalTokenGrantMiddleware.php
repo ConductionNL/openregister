@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Exception\TokenRateLimitExceededException;
-use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantBinder;
+use OCA\OpenRegister\Kernel\Contracts\PersonalTokenGrantBinderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -45,10 +45,10 @@ class PersonalTokenGrantMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param PersonalTokenGrantBinder $binder Binds the calling token's grant.
+	 * @param PersonalTokenGrantBinderInterface $binder Binds the calling token's grant.
 	 */
 	public function __construct(
-		private readonly PersonalTokenGrantBinder $binder,
+		private readonly PersonalTokenGrantBinderInterface $binder,
 	) {
 	}//end __construct()
 

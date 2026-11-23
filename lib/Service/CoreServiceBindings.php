@@ -333,6 +333,10 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
+use OCA\OpenRegister\Kernel\Contracts\PersonalTokenGrantBinderInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantBinder;
 
 /**
  * Interface => service map of the Core area, registered by ServiceRegistrar.
@@ -359,6 +363,9 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		// The one shared TokenGrantSource (registered in RbacWiring): the alias resolves to that instance.
+		CurrentTokenGrantInterface::class => TokenGrantSource::class,
+		PersonalTokenGrantBinderInterface::class => PersonalTokenGrantBinder::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,

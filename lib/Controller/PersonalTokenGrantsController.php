@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\PersonalTokenGrantsServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -69,7 +69,7 @@ class PersonalTokenGrantsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly PersonalTokenGrantsServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTimeInterface;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IConfig;
 
 /**
@@ -98,7 +98,7 @@ class PersonalTokenGrantStore {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	public function read(string $uid, string $tokenId): ?array {
-		$raw = (string) $this->config->getUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId), '');
+		$raw = (string) $this->config->getUserValue($uid, AppIdentity::APP_ID, self::key(tokenId: $tokenId), '');
 		if ($raw === '') {
 			return null;
 		}
@@ -170,7 +170,7 @@ class PersonalTokenGrantStore {
 			$record['label'] = $label;
 		}
 
-		$this->config->setUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId), (string) json_encode($record));
+		$this->config->setUserValue($uid, AppIdentity::APP_ID, self::key(tokenId: $tokenId), (string) json_encode($record));
 		$this->index(uid: $uid, tokenId: $tokenId, present: true);
 
 		return $record;
@@ -187,7 +187,7 @@ class PersonalTokenGrantStore {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	public function remove(string $uid, string $tokenId): void {
-		$this->config->deleteUserValue($uid, Application::APP_ID, self::key(tokenId: $tokenId));
+		$this->config->deleteUserValue($uid, AppIdentity::APP_ID, self::key(tokenId: $tokenId));
 		$this->index(uid: $uid, tokenId: $tokenId, present: false);
 	}//end remove()
 
@@ -199,7 +199,7 @@ class PersonalTokenGrantStore {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
 	 */
 	public function all(): array {
-		$entries = json_decode((string) $this->config->getAppValue(Application::APP_ID, self::INDEX_KEY, '[]'), true);
+		$entries = json_decode((string) $this->config->getAppValue(AppIdentity::APP_ID, self::INDEX_KEY, '[]'), true);
 		if (is_array($entries) === false) {
 			return [];
 		}
@@ -234,7 +234,7 @@ class PersonalTokenGrantStore {
 			$tokens[] = ['uid' => $uid, 'tokenId' => $tokenId];
 		}
 
-		$this->config->setAppValue(Application::APP_ID, self::INDEX_KEY, (string) json_encode($tokens));
+		$this->config->setAppValue(AppIdentity::APP_ID, self::INDEX_KEY, (string) json_encode($tokens));
 	}//end index()
 
 	/**

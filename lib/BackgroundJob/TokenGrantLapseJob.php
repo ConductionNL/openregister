@@ -24,8 +24,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\Consumer;
-use OCA\OpenRegister\Db\ConsumerMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConsumerGrantsInterface;
 use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantStore;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantValidator;
@@ -74,7 +73,7 @@ class TokenGrantLapseJob extends TimedJob {
 	 *
 	 * @param ITimeFactory            $time          Time factory for TimedJob, and the sweep's clock.
 	 * @param LoggerInterface         $logger        Diagnostics.
-	 * @param ConsumerMapperInterface $consumers     Lists the Consumers whose grants are read.
+	 * @param ConsumerGrantsInterface $consumers     Lists the Consumers whose grants are read.
 	 * @param TokenGrantValidator     $validator     Answers whether a grant lapses soon.
 	 * @param INotificationManager    $notifications Sends the warning.
 	 * @param IUserManager            $users         Confirms the holder still exists.
@@ -83,7 +82,7 @@ class TokenGrantLapseJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly LoggerInterface $logger,
-		private readonly ConsumerMapperInterface $consumers,
+		private readonly ConsumerGrantsInterface $consumers,
 		private readonly TokenGrantValidator $validator,
 		private readonly INotificationManager $notifications,
 		private readonly IUserManager $users,
@@ -112,7 +111,7 @@ class TokenGrantLapseJob extends TimedJob {
 		try {
 			$now    = $this->time->getDateTime();
 			$warned = 0;
-			foreach ($this->consumers->findAll() as $consumer) {
+			foreach ($this->consumers->consumerGrants() as $consumer) {
 				$warned += $this->warnFor(consumer: $consumer, now: $now);
 			}
 
@@ -129,24 +128,20 @@ class TokenGrantLapseJob extends TimedJob {
 	/**
 	 * Warn the holder of one Consumer when its grant lapses within the window.
 	 *
-	 * @param Consumer          $consumer The Consumer.
-	 * @param DateTimeInterface $now      The sweep's moment.
+	 * @param array{tokenId: string, holder: string, name: string, stored: mixed} $consumer The Consumer, as ConsumerGrantsInterface lists it.
+	 * @param DateTimeInterface                                                   $now      The sweep's moment.
 	 *
 	 * @return int 1 when the holder was warned, else 0.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
 	 */
-	public function warnFor(Consumer $consumer, DateTimeInterface $now): int {
-		$tokenId = (string)($consumer->getUuid() ?? $consumer->getId());
-		$grant   = TokenGrant::fromStored(
-			stored: ($consumer->getAuthorizationConfiguration()[TokenGrant::KEY] ?? null),
-			tokenId: $tokenId
-		);
+	public function warnFor(array $consumer, DateTimeInterface $now): int {
+		$grant = TokenGrant::fromStored(stored: $consumer['stored'], tokenId: $consumer['tokenId']);
 
 		return $this->notifyIfLapsing(
 			grant: $grant,
-			holder: (string)($consumer->getUserId() ?? ''),
-			name: (string)($consumer->getName() ?? $tokenId),
+			holder: $consumer['holder'],
+			name: $consumer['name'],
 			now: $now
 		);
 	}//end warnFor()

@@ -37,13 +37,14 @@ use OCP\Authentication\Token\IProvider as ITokenProvider;
 use OCP\ICacheFactory;
 use OCP\ISession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\PersonalTokenGrantBinderInterface;
 
 /**
  * Binds a personal token's grant to the request.
  *
  * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
  */
-class PersonalTokenGrantBinder {
+class PersonalTokenGrantBinder implements PersonalTokenGrantBinderInterface {
 
 	/**
 	 * The session key Nextcloud keeps an API caller's app password under.

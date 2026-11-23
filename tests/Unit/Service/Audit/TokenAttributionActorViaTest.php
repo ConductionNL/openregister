@@ -25,6 +25,8 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\Audit\AuditRowAttribution;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -41,7 +43,7 @@ final class TokenAttributionActorViaTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($source): object {
-				if ($class === TokenGrantSource::class && $source !== null) {
+				if ($class === CurrentTokenGrantInterface::class && $source !== null) {
 					return $source;
 				}
 
@@ -93,6 +95,11 @@ final class TokenAttributionActorViaTest extends TestCase {
 
 		self::assertArrayNotHasKey('actorVia', ($entry->getResultSummary() ?? []));
 	}//end testAGrantWithoutAnIdCarriesNoActorVia()
+
+	public function testTheGrantPortIsTheOneSharedTokenGrantSource(): void {
+		$this->assertSame(TokenGrantSource::class, CoreServiceBindings::BINDINGS[CurrentTokenGrantInterface::class]);
+		$this->assertInstanceOf(CurrentTokenGrantInterface::class, new TokenGrantSource());
+	}//end testTheGrantPortIsTheOneSharedTokenGrantSource()
 
 	public function testAnUnresolvableGrantSourceWritesNothing(): void {
 		$entry = new AuditTrail();
