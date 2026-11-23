@@ -23,3 +23,4 @@
 2026-11-23T08:31:06Z ncvue-0 start
 2026-11-23T08:33:11Z ncvue-0 no open PRs with N%6==0 (open: 2215 2213 2211 2209 2133 2132 1726 1720 1718 1714 1712); lane share empty, main 9eafa328
 2026-11-23T08:33:34Z ncvue-3 #2133 and #2211 retargeted to main, main merged in, all local gates green, pushed; admin merge REFUSED by session permission check, both left open ready to merge; main 9eafa328
+2026-11-23T09:01:21Z ncvue-2 #1712 merged (connections page, schema 2.190.0, main e73ce869)
