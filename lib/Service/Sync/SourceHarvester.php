@@ -39,6 +39,8 @@ use Throwable;
 /**
  * Looks the source up, checks it can run, holds its lock, runs the pipeline and records the
  * last sync status and date on the source.
+ *
+ * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
  */
 class SourceHarvester implements SourceHarvesterInterface {
 
@@ -66,6 +68,8 @@ class SourceHarvester implements SourceHarvesterInterface {
 	 * @param string $sourceUuid The source uuid.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public static function lockKey(string $sourceUuid): string {
 		return 'openregister/harvest/'.$sourceUuid;

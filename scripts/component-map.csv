@@ -2144,12 +2144,12 @@ Service/Deletion/DestructionScopeReader.php,38,Service,Service,Service/Deletion/
 Service/Deletion/DestructionScopeService.php,175,Service,Service,Service/Deletion/DestructionScopeService.php,1,141,Core
 Service/Deletion/RetentionClockService.php,140,Service,Compliance,Compliance/Service/Deletion/RetentionClockService.php,0,199,Core
 Service/DemoDataService.php,116,Service,Configuration,Configuration/Service/DemoDataService.php,0,,Configuration
-Service/Dmn/DecisionEvaluationException.php,18,Service,Flows,Flows/Service/Dmn/DecisionEvaluationException.php,8,,Processes
+Service/Dmn/DecisionEvaluationException.php,18,Service,Flows,Flows/Service/Dmn/DecisionEvaluationException.php,8,,Kernel
 Service/Dmn/DecisionTableBulkGuard.php,81,Service,Flows,Flows/Service/Dmn/DecisionTableBulkGuard.php,0,305,Processes
-Service/Dmn/DecisionTableEvaluator.php,184,Service,Flows,Flows/Service/Dmn/DecisionTableEvaluator.php,36,,Processes
+Service/Dmn/DecisionTableEvaluator.php,184,Service,Flows,Flows/Service/Dmn/DecisionTableEvaluator.php,36,,Kernel
 Service/Dmn/DecisionTableStore.php,89,Service,Flows,Flows/Service/Dmn/DecisionTableStore.php,15,,Processes
 Service/Dmn/DecisionTableValidator.php,138,Service,Flows,Flows/Service/Dmn/DecisionTableValidator.php,0,,Processes
-Service/Dmn/UnaryTestEvaluator.php,177,Service,Flows,Flows/Service/Dmn/UnaryTestEvaluator.php,2,,Processes
+Service/Dmn/UnaryTestEvaluator.php,177,Service,Flows,Flows/Service/Dmn/UnaryTestEvaluator.php,2,,Kernel
 Service/DsarErasureRun.php,33,Service,Compliance,Compliance/Service/DsarErasureRun.php,0,,Compliance
 Service/DsarService.php,284,Service,Compliance,Compliance/Service/DsarService.php,1,,Compliance
 Service/Edepot/EdepotTransferService.php,568,Service,Compliance,Compliance/Service/Edepot/EdepotTransferService.php,1,35,Compliance
@@ -3227,7 +3227,7 @@ Service/Search/SnippetBuilder.php,107,Service,Service,Service/Search/SnippetBuil
 Service/Search/VectorResultFilter.php,135,Service,Service,Service/Search/VectorResultFilter.php,0,,Search
 Service/Search/VectorSearchFacade.php,81,Service,Search,Service/Search/VectorSearchFacade.php,0,,Search
 Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchTrailService.php,0,38,Compliance
-Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
+Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Kernel
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
 Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Processes
@@ -4669,3 +4669,9 @@ Kernel/Contracts/SourceHarvestRefused.php,,Kernel,,,,,Kernel
 Kernel/Contracts/StoredFlowWriterInterface.php,,Kernel,,,,,Kernel
 Service/Sync/SourceHarvester.php,,Service,,,,,Integrations
 Service/Flow/StoredFlowWriter.php,,Service,,,,,Processes
+Service/Dmn/UnaryTestValue.php,,Service,,,,,Kernel
+Service/Dmn/ResolvedInputs.php,,Service,,,,,Kernel
+Service/Dmn/RuleMatch.php,,Service,,,,,Kernel
+Service/Dmn/DecisionTableValidatorInterface.php,,Service,,,,,Kernel
+Service/Oas/OasRequestValidatorInterface.php,,Service,,,,,Kernel
+Service/Object/PermissionCheckInterface.php,,Service,,,,,Kernel

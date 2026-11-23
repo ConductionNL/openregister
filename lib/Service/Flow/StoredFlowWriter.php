@@ -40,6 +40,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * are unchanged is updated in place (enabled flag, name, organisation); otherwise a published
  * flow gets a draft first, then is validated, updated and published again. A stored flow keeps
  * its owner.
+ *
+ * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
  */
 class StoredFlowWriter implements StoredFlowWriterInterface {
 
@@ -102,6 +104,21 @@ class StoredFlowWriter implements StoredFlowWriterInterface {
 			$this->flows->deleteStored(flow: $stored);
 		}
 	}//end remove()
+
+	/**
+	 * Start the flow through its manual trigger.
+	 *
+	 * @param string $uuid The flow uuid.
+	 *
+	 * @return string The run uuid.
+	 *
+	 * @throws DoesNotExistException When no such flow is stored.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function startManual(string $uuid): string {
+		return (string)$this->flows->run(uuid: $uuid, trigger: Flow::TRIGGER_MANUAL)->getUuid();
+	}//end startManual()
 
 	/**
 	 * The stored flow, or null.

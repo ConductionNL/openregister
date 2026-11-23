@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use Throwable;
 
 /**
@@ -83,14 +83,14 @@ class SyncRecordResolver {
 	 * @param SyncRecordMapperInterface  $records     The sync records.
 	 * @param HarvestImportServices      $import      The mapping lookup and the object service.
 	 * @param HarvestPipelineService     $pipeline    Maps and guards a harvested item exactly as the import does.
-	 * @param PermissionHandlerInterface $permissions Answers whether the caller may change an object.
+	 * @param PermissionCheckInterface   $permissions Answers whether the caller may change an object.
 	 * @param SchemaMapperInterface      $schemas     The schema an object's rights are read from.
 	 */
 	public function __construct(
 		private readonly SyncRecordMapperInterface $records,
 		private readonly HarvestImportServices $import,
 		private readonly HarvestPipelineService $pipeline,
-		private readonly PermissionHandlerInterface $permissions,
+		private readonly PermissionCheckInterface $permissions,
 		private readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()

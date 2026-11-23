@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sync;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SourceHarvestFlow;
@@ -78,7 +80,9 @@ class SourceServiceTest extends TestCase {
 			fetchers: $this->fetchers,
 			users: $this->users,
 			session: $session,
-			flows: $this->flows
+			flows: $this->flows,
+			tables: new DecisionTableValidator(),
+			schemas: new OasRequestValidator()
 		);
 	}
 

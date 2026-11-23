@@ -31,8 +31,8 @@ use Cron\CronExpression;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
-use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
-use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
@@ -63,8 +63,8 @@ class SourceService {
 	 * @param IUserManager                 $users     Resolves `runAs`.
 	 * @param IUserSession                 $session   The user saving, who owns the source's flow.
 	 * @param SourceHarvestFlow            $flows     Writes and removes the source's flow.
-	 * @param DecisionTableValidator       $tables    Checks `conflictRules`.
-	 * @param OasRequestValidator          $schemas   Checks `config` against the fetcher's JSON Schema.
+	 * @param DecisionTableValidatorInterface $tables  Checks `conflictRules`.
+	 * @param OasRequestValidatorInterface    $schemas Checks `config` against the fetcher's JSON Schema.
 	 */
 	public function __construct(
 		private readonly SourceMapperInterface $sources,
@@ -72,8 +72,8 @@ class SourceService {
 		private readonly IUserManager $users,
 		private readonly IUserSession $session,
 		private readonly SourceHarvestFlow $flows,
-		private readonly DecisionTableValidator $tables=new DecisionTableValidator(),
-		private readonly OasRequestValidator $schemas=new OasRequestValidator(),
+		private readonly DecisionTableValidatorInterface $tables,
+		private readonly OasRequestValidatorInterface $schemas,
 	) {
 	}//end __construct()
 

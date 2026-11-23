@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
- * One scheduled flow, keyed by uuid, kept equal to the definition its owner describes.
+ * One scheduled flow, keyed by uuid, kept equal to the definition its owner describes, and started by hand.
  *
  * Implemented by \OCA\OpenRegister\Service\Flow\StoredFlowWriter (Processes); called by
  * \OCA\OpenRegister\Service\Sync\SourceHarvestFlow (Integrations).
@@ -57,4 +57,17 @@ interface StoredFlowWriterInterface {
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function remove(string $uuid): void;
+
+	/**
+	 * Start the flow through its manual trigger.
+	 *
+	 * @param string $uuid The flow uuid.
+	 *
+	 * @return string The run uuid.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such flow is stored.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function startManual(string $uuid): string;
 }//end interface

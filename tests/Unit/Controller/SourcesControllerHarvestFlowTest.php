@@ -30,12 +30,16 @@ use OCA\OpenRegister\Controller\Support\SourcesDomain;
 use OCA\OpenRegister\Controller\Support\SourcesMappers;
 use OCA\OpenRegister\Controller\Support\SourcesPlatform;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\StoredFlowWriter;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SourceRefused;
@@ -63,6 +67,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\Source
  * @uses   \OCA\OpenRegister\Db\Source\SourceJson
  * @uses   \OCA\OpenRegister\Db\FlowRun
+ * @uses   \OCA\OpenRegister\Service\Flow\StoredFlowWriter
  * @uses   \OCA\OpenRegister\Service\Sync\SourceRefused
  */
 class SourcesControllerHarvestFlowTest extends TestCase {
@@ -111,7 +116,12 @@ class SourcesControllerHarvestFlowTest extends TestCase {
 					connectionFactory: $this->createMock(DbalConnectionFactoryInterface::class),
 					introspectionService: $this->createMock(DatabaseIntrospectionServiceInterface::class),
 					sourceService: $this->service,
-					flows: $this->flows,
+					flows: new StoredFlowWriter(
+						mapper: $this->createMock(FlowMapperInterface::class),
+						versions: $this->createMock(FlowVersionServiceInterface::class),
+						flows: $this->flows,
+						validator: $this->createMock(FlowTriggerValidatorInterface::class)
+					),
 				),
 				platform: new SourcesPlatform(
 					config: $this->createMock(IAppConfig::class),

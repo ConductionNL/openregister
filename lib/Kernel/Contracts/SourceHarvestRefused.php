@@ -30,6 +30,8 @@ use RuntimeException;
 
 /**
  * A harvest that did not run: the message is the reason, isError() whether the run failed or was skipped.
+ *
+ * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
  */
 final class SourceHarvestRefused extends RuntimeException {
 
@@ -48,13 +50,15 @@ final class SourceHarvestRefused extends RuntimeException {
 	 * @param bool   $isError Whether the run failed (true) or was skipped (false).
 	 */
 	public function __construct(string $reason, private readonly bool $isError) {
-		parent::__construct($reason);
+		parent::__construct(message: $reason);
 	}//end __construct()
 
 	/**
 	 * Whether the refusal fails the run.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function isError(): bool {
 		return $this->isError;

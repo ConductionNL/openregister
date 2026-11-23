@@ -27,7 +27,7 @@ use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
@@ -35,7 +35,6 @@ use OCA\OpenRegister\Service\Dbal\QueryPreviewException;
 use OCA\OpenRegister\Service\Dbal\QueryPreviewService;
 use OCA\OpenRegister\Service\Sync\HarvestRun;
 use OCA\OpenRegister\Service\Sync\SourceRefused;
-use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -400,16 +399,16 @@ class SourcesController extends Controller {
 	/**
 	 * Start a scheduled source's flow through its manual trigger.
 	 *
-	 * @param FlowServiceInterface $flows  The flow service.
-	 * @param string               $flowId The source's flow.
+	 * @param StoredFlowWriterInterface $flows  Starts the flow.
+	 * @param string                    $flowId The source's flow.
 	 *
 	 * @return JSONResponse `{runId, flowId}` (202), or the refusal.
 	 *
 	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
-	private function startFlow(FlowServiceInterface $flows, string $flowId): JSONResponse {
+	private function startFlow(StoredFlowWriterInterface $flows, string $flowId): JSONResponse {
 		try {
-			$run = $flows->run(uuid: $flowId, trigger: Flow::TRIGGER_MANUAL);
+			$runId = $flows->startManual(uuid: $flowId);
 		} catch (DoesNotExistException $exception) {
 			return $this->fail(message: $this->l10n->t('Not Found'), status: 404);
 		} catch (Throwable $exception) {
@@ -419,7 +418,7 @@ class SourcesController extends Controller {
 			);
 		}
 
-		return new JSONResponse(data: ['runId' => (string)$run->getUuid(), 'flowId' => $flowId], statusCode: 202);
+		return new JSONResponse(data: ['runId' => $runId, 'flowId' => $flowId], statusCode: 202);
 	}//end startFlow()
 
 	/**
