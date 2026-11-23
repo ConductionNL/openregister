@@ -401,7 +401,7 @@ export default {
 		 */
 		async fetchResults(register, schema, params) {
 			const response = await axios.get(this.objectsUrl(register, schema), {
-				params: { ...params, _limit: 20 },
+				params: { ...params, _limit: 20, _extend: 'status' },
 				timeout: 10000,
 			})
 			const results = response.data?.results || response.data || []

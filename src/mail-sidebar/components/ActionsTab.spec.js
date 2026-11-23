@@ -207,7 +207,7 @@ describe('ActionsTab search', () => {
 		await flushPromises()
 		expect(axios.get).toHaveBeenCalledTimes(1)
 		expect(axios.get).toHaveBeenCalledWith(LEADS_OBJECTS, {
-			params: { _search: 'acm', _limit: 20 },
+			params: { _search: 'acm', _limit: 20, _extend: 'status' },
 			timeout: 10000,
 		})
 		expect(wrapper.vm.searching[5]).toBe(false)

@@ -244,7 +244,7 @@ describe('ObjectsTab details', () => {
 		ctx.resolveNames = jest.fn()
 		await ctx.loadDetails()
 		expect(axios.get).toHaveBeenCalledTimes(1)
-		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/objects/2/5/u1')
+		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/objects/2/5/u1', { params: { _extend: 'status' } })
 		const merged = ctx.detail(ctx.objects[0])
 		expect(merged.statusPublicLabel).toBe('Received')
 		expect(merged.name).toBe('Case one')

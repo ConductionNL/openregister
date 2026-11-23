@@ -33,6 +33,9 @@ describe('objectSubline', () => {
 
 describe('objectStatus', () => {
 	it('names the status by its label, never by a reference id', () => {
+		expect(objectStatus({ status: { name: 'Received' }, statusPublicLabel: 'Ontvangen' })).toBe('Received')
+		expect(objectStatus({ status: { title: 'Closed' } })).toBe('Closed')
+		expect(objectStatus({ status: {}, statusLabel: 'in progress' })).toBe('in progress')
 		expect(objectStatus({ statusLabel: 'in progress', status: 'x' })).toBe('in progress')
 		expect(objectStatus({ statusPublicLabel: 'Received' })).toBe('Received')
 		expect(objectStatus({ statusName: 'closed' })).toBe('closed')

@@ -274,8 +274,8 @@ export default {
 		},
 
 		/**
-		 * A connected item with what the object itself says, rendered in the
-		 * reader's language, over the lookup's raw row.
+		 * A connected item with what the object itself says (its status named
+		 * by the status object), over the lookup's raw row.
 		 *
 		 * @param {object} obj The connected item.
 		 * @return {object}
@@ -287,8 +287,8 @@ export default {
 		},
 
 		/**
-		 * Read each connected item as an object, for its status in the
-		 * reader's language and its handler. A failed read keeps the lookup's row.
+		 * Read each connected item as an object with its status extended, for
+		 * the status's name and the handler. A failed read keeps the lookup's row.
 		 *
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -301,7 +301,7 @@ export default {
 						register: target.register,
 						schema: target.schema,
 						uuid: target.objectId,
-					}))
+					}), { params: { _extend: 'status' } })
 					if (response.data && typeof response.data === 'object') {
 						this.details = { ...this.details, [obj.uuid]: response.data }
 						this.resolveNames([response.data])

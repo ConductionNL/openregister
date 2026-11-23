@@ -38,14 +38,20 @@ export function objectSubline(obj) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
- * The object's status as a reader names it: its `statusLabel`,
- * `statusPublicLabel` or `statusName`, else a `status` that is not a
- * reference id, or ''.
+ * The object's status as a reader names it: the name of an extended status
+ * object, its `statusLabel`, `statusPublicLabel` or `statusName`, else a
+ * `status` that is not a reference id, or ''.
  *
  * @param {object|null} obj The object, as a search result or a connection.
  * @return {string}
  */
 export function objectStatus(obj) {
+	// A status read with _extend=status is the status object itself: its name.
+	const status = obj?.status
+	if (status && typeof status === 'object') {
+		const name = status.name ?? status.title
+		if (typeof name === 'string' && name !== '') return name
+	}
 	for (const key of ['statusLabel', 'statusPublicLabel', 'statusName', 'status']) {
 		const value = obj?.[key]
 		if (typeof value === 'string' && value !== '' && !UUID_RE.test(value)) {
