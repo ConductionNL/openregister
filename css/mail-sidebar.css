@@ -91,7 +91,7 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 /* The pressed Connections button in the mail's subject bar opens and closes
  * the panel and counts the connections (MlConnections). Mail's subject bar is
  * its own, so the button sits over its right end. */
-.or-mail-connections-button {
+#openregister-mail-sidebar .or-mail-connections-button {
 	position: fixed;
 	top: calc(var(--header-height, 50px) + 14px);
 	inset-inline-end: 16px;
@@ -111,11 +111,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	cursor: pointer;
 }
 
-.or-mail-connections-button--panel-open {
+#openregister-mail-sidebar .or-mail-connections-button--panel-open {
 	inset-inline-end: calc(var(--or-mail-panel-width, 400px) + 16px);
 }
 
-.or-mail-connections-button[aria-pressed='true'] {
+#openregister-mail-sidebar .or-mail-connections-button[aria-pressed='true'] {
 	border-color: var(--color-primary-element-light-text, var(--color-primary-element));
 	background: var(--color-primary-element-light);
 	color: var(--color-primary-element-light-text, var(--color-primary-element));
@@ -139,7 +139,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-connect
 	padding-inline-end: 190px !important;
 }
 
-/* "+ Add to case" beside each attachment in the reading pane. */
+/* "+ Add to case" beside each attachment in the reading pane, on the same line. */
+#mail-message .attachment:has(> .or-mail-add-to-object:not([hidden])) {
+	flex-wrap: nowrap !important;
+}
+
 #mail-message .attachment > .or-mail-add-to-object {
 	flex: none;
 	display: inline-flex;

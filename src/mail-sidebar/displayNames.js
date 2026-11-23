@@ -8,6 +8,7 @@
  *
  * @spec openspec/specs/mail-sidebar/spec.md
  */
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateOcsUrl } from '@nextcloud/router'
 
@@ -22,6 +23,11 @@ const cache = new Map()
 export function displayNameOf(uid) {
 	if (!uid) {
 		return Promise.resolve('')
+	}
+	// The autocomplete leaves the signed-in user out, so they are named from the session.
+	const me = getCurrentUser()
+	if (me?.uid === uid) {
+		return Promise.resolve(me.displayName || uid)
 	}
 	if (!cache.has(uid)) {
 		cache.set(uid, axios.get(generateOcsUrl('core/autocomplete/get'), {

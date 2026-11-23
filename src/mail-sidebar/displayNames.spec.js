@@ -11,6 +11,7 @@ import { clearDisplayNames, displayNameOf } from './displayNames.js'
 
 jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn() } }))
 jest.mock('@nextcloud/router', () => ({ generateOcsUrl: (path) => '/ocs/v2.php/' + path }))
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: () => ({ uid: 'me', displayName: 'Myself' }) }))
 
 beforeEach(() => {
 	clearDisplayNames()
@@ -18,6 +19,11 @@ beforeEach(() => {
 })
 
 describe('displayNameOf', () => {
+	it('names the signed-in user from the session, without asking', async () => {
+		expect(await displayNameOf('me')).toBe('Myself')
+		expect(axios.get).not.toHaveBeenCalled()
+	})
+
 	it('reads a user once and returns the exact match', async () => {
 		axios.get.mockResolvedValue({ data: { ocs: { data: [{ id: 'pieter2', label: 'Pieter Two' }, { id: 'pieter', label: 'Pieter Jansen' }] } } })
 		expect(await displayNameOf('pieter')).toBe('Pieter Jansen')

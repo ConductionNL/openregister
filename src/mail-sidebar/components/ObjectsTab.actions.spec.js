@@ -236,3 +236,26 @@ describe('ObjectsTab add and undo', () => {
 		expect(showError).toHaveBeenCalledWith('Failed to remove connection')
 	})
 })
+
+describe('ObjectsTab details', () => {
+	it('reads each connected item as an object and shows its rendered fields over the row', async () => {
+		axios.get.mockResolvedValueOnce({ data: { statusPublicLabel: 'Received', assignee: 'anouk', title: 'Ignored' } })
+		const ctx = tab({ objects: [{ uuid: 'u1', name: 'Case one', register: 2, schemaId: 5, statusLabel: 'Ontvangen' }, { uuid: 'u2' }] })
+		ctx.resolveNames = jest.fn()
+		await ctx.loadDetails()
+		expect(axios.get).toHaveBeenCalledTimes(1)
+		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/objects/2/5/u1')
+		const merged = ctx.detail(ctx.objects[0])
+		expect(merged.statusPublicLabel).toBe('Received')
+		expect(merged.name).toBe('Case one')
+		expect(ctx.detail(ctx.objects[1])).toBe(ctx.objects[1])
+		expect(ctx.resolveNames).toHaveBeenCalledWith([{ statusPublicLabel: 'Received', assignee: 'anouk', title: 'Ignored' }])
+	})
+
+	it('keeps the row when the object cannot be read', async () => {
+		axios.get.mockRejectedValueOnce(new Error('403'))
+		const ctx = tab({ objects: [{ uuid: 'u1', register: 2, schemaId: 5 }] })
+		await ctx.loadDetails()
+		expect(ctx.details).toEqual({})
+	})
+})

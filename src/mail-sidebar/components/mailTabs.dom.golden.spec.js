@@ -206,11 +206,17 @@ describe('ObjectsTab golden', () => {
 
 		await wrapper.setProps({ messageId: 8 })
 		await flushPromises()
-		expect(axios.get).toHaveBeenCalledTimes(2)
-		expect(axios.get).toHaveBeenLastCalledWith(
+		const lookups = axios.get.mock.calls.filter(([url]) => url.includes('/api/linked/mail/'))
+		expect(lookups.map(([url]) => url)).toEqual([
+			'/index.php/apps/openregister/api/linked/mail/1/7',
 			'/index.php/apps/openregister/api/linked/mail/1/8',
-			{ timeout: 10000 },
-		)
+		])
+		// Each item with a register and schema is also read as an object, once per load.
+		const reads = axios.get.mock.calls.filter(([url]) => url.includes('/api/objects/'))
+		expect(reads.map(([url]) => url)).toEqual([
+			'/index.php/apps/openregister/api/objects/2/5/u-1',
+			'/index.php/apps/openregister/api/objects/2/5/u-1',
+		])
 		expect(wrapper.emitted('count')).toEqual([[2], [2]])
 	})
 })

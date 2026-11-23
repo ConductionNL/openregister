@@ -24,7 +24,7 @@
 				<div class="or-mail-object-card__header">
 					<span class="or-mail-object-card__kind">
 						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
-						<span v-if="objectIdentifier(obj)" class="or-mail-object-card__id">#{{ objectIdentifier(obj) }}</span>
+						<span v-if="objectIdentifier(detail(obj))" class="or-mail-object-card__id">#{{ objectIdentifier(detail(obj)) }}</span>
 					</span>
 					<NcButton
 						variant="tertiary"
@@ -46,13 +46,13 @@
 					:title="t('openregister', 'Open connected item')">
 					{{ displayName(obj) }}
 				</a>
-				<p v-if="objectSubline(obj)" class="or-mail-object-card__sub">
-					{{ objectSubline(obj) }}
+				<p v-if="objectSubline(detail(obj))" class="or-mail-object-card__sub">
+					{{ objectSubline(detail(obj)) }}
 				</p>
 				<ObjectStatus
 					class="or-mail-object-card__status"
-					:status="objectStatus(obj)"
-					:handler="nameOf(objectHandler(obj))" />
+					:status="objectStatus(detail(obj))"
+					:handler="nameOf(objectHandler(detail(obj)))" />
 				<p v-if="dropTarget === obj.uuid" class="or-mail-object-card__drop">
 					<Paperclip :size="16" />
 					{{ t('openregister', 'Drop an attachment here to add it') }}
@@ -143,6 +143,8 @@ export default {
 			dropTarget: null,
 			// Display names of handlers by user id, '' while being read.
 			names: {},
+			// Each connected item as the object API renders it, by uuid.
+			details: {},
 		}
 	},
 
@@ -267,16 +269,57 @@ export default {
 				this.$emit('count', this.objects.length)
 				this.$emit('objects', this.objects)
 				this.resolveNames()
+				this.loadDetails()
 			}
 		},
 
 		/**
-		 * Read the display names of the connected items' handlers.
+		 * A connected item with what the object itself says, rendered in the
+		 * reader's language, over the lookup's raw row.
+		 *
+		 * @param {object} obj The connected item.
+		 * @return {object}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		detail(obj) {
+			const rendered = this.details[obj.uuid]
+			return rendered ? { ...obj, ...rendered, name: obj.name } : obj
+		},
+
+		/**
+		 * Read each connected item as an object, for its status in the
+		 * reader's language and its handler. A failed read keeps the lookup's row.
 		 *
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		resolveNames() {
-			for (const uid of new Set(this.objects.map(objectHandler).filter(Boolean))) {
+		async loadDetails() {
+			await Promise.all(this.objects.map(async (obj) => {
+				const target = uploadTargetOf(obj)
+				if (!target) return
+				try {
+					const response = await axios.get(generateUrl('/apps/openregister/api/objects/{register}/{schema}/{uuid}', {
+						register: target.register,
+						schema: target.schema,
+						uuid: target.objectId,
+					}))
+					if (response.data && typeof response.data === 'object') {
+						this.details = { ...this.details, [obj.uuid]: response.data }
+						this.resolveNames([response.data])
+					}
+				} catch {
+					// The lookup's row stays what the card shows.
+				}
+			}))
+		},
+
+		/**
+		 * Read the display names of the handlers of these items.
+		 *
+		 * @param {Array<object>} [objects] The items; the connected ones by default.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		resolveNames(objects = this.objects) {
+			for (const uid of new Set(objects.map(objectHandler).filter(Boolean))) {
 				if (this.names[uid] !== undefined) continue
 				this.names[uid] = ''
 				displayNameOf(uid).then((name) => {
