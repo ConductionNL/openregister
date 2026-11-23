@@ -348,6 +348,28 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 	}//end testTheRecordNumberIsTheFirstPlainIdentifyingField()
 
 	/**
+	 * A row's description is the object's own, else the schema's description field.
+	 *
+	 * @return void
+	 */
+	public function testTheDescriptionFallsBackToTheSchemaDescriptionField(): void {
+		$objectDescription = new \ReflectionMethod(LinkedEntityService::class, 'objectDescription');
+		$service = $this->service();
+		$schema = new Schema();
+		$schema->setConfiguration(['objectDescriptionField' => 'summary']);
+		$object = new ObjectEntity();
+		$object->setObject(['summary' => 'From the data']);
+
+		$this->assertSame('From the data', $objectDescription->invoke($service, $schema, $object));
+		$object->setDescription('Its own');
+		$this->assertSame('Its own', $objectDescription->invoke($service, $schema, $object));
+		$object->setDescription(null);
+		$object->setObject(['summary' => '']);
+		$this->assertNull($objectDescription->invoke($service, $schema, $object));
+		$this->assertNull($objectDescription->invoke($service, new Schema(), $object));
+	}//end testTheDescriptionFallsBackToTheSchemaDescriptionField()
+
+	/**
 	 * A failing magic table or entity table is logged and the lookup returns what the others found.
 	 *
 	 * @return void

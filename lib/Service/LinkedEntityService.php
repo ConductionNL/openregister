@@ -464,7 +464,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'uuid' => $object->getUuid(),
 			'name' => $object->getName(),
 			'identifier' => $this->recordNumber(object: $object),
-			'description' => $object->getDescription(),
+			'description' => $this->objectDescription(schema: $schema, object: $object),
 			'schema' => $schema->getTitle(),
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
@@ -472,6 +472,27 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'url' => $this->deepLink(object: $object, schemaId: $schemaId),
 		];
 	}//end objectResult()
+
+	/**
+	 * The object's description: its own, else the field the schema names as its
+	 * description (`objectDescriptionField`), or null.
+	 *
+	 * @param Schema       $schema The object's schema
+	 * @param ObjectEntity $object The linked object
+	 *
+	 * @return string|null The description
+	 */
+	private function objectDescription(Schema $schema, ObjectEntity $object): ?string {
+		$description = $object->getDescription();
+		if (is_string($description) === true && $description !== '') {
+			return $description;
+		}
+
+		$field = ($schema->getConfiguration()['objectDescriptionField'] ?? null);
+		$value = (is_string($field) === true ? ($object->getObject()[$field] ?? null) : null);
+
+		return (is_string($value) === true && $value !== '') ? $value : null;
+	}//end objectDescription()
 
 	/**
 	 * The object's record number: its `identifier`, `number` or `reference` field,
