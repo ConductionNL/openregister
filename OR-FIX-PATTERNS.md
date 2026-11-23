@@ -617,3 +617,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: python3 scripts/component-deps.py says 0 new edges, yet ComponentDependencyRulesTest lists edges to your new port, and testPhpReaderAgreesWithTheScript fails with a huge array diff.
 - Cause: the script reads git-tracked files only; the PHP reader walks lib/. And lib/Kernel/Contracts/Core/* maps to Core, not Kernel: a Processes caller of a port there is still Processes -> Core.
 - Fix: git add new files before running the script; put a cross-area port in root lib/Kernel/Contracts (csv ',,Kernel,Kernel,...,0,,Kernel'), implement it in the owning area, bind it there (#10269 4b09b541 MandateEvidenceInterface).
+## Inherited red on main 6e870ca5: ComponentDependencyRulesTest 4 Files -> Core edges (or-fix-4)
+- Symptom: testNoComponentEdgeBeyondTheBaseline lists DecisionMetadataEdit -> EntityRelation, ManagedFiles -> DocumentStore / ManagedFileOwnerLookup, Kernel/Contracts/Files/EntityMentionDecisionsInterface -> EntityRelation (Files -> Core).
+- Same four on plain main (python3 scripts/component-deps.py in a main worktree): inherited, do not fix in a PR. Also inherited there: ReservedColumnNamesTest (MariaDB lex.h 404), AnonymousEnvelopeReadPathsTest (4), phpstan ApiCallerMiddleware $version.
