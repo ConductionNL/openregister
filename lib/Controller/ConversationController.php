@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
@@ -504,7 +505,9 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 			return $title;
 		}
 
-		return $this->chatService->ensureUniqueTitle(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agentId);
+		return $this->chatService->ensureUniqueTitle(
+			claim: new TitleClaim(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agentId)
+		);
 	}//end titleFor()
 
 	/**
