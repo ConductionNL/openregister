@@ -218,6 +218,7 @@ final class ContractBindings {
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
 		RecordTemplateStoreInterface::class => RecordTemplateService::class,
 		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
+		UserTaskListInterface::class => \OCA\OpenRegister\Service\TaskService::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
 		BulkTranslationServiceInterface::class => BulkTranslationService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,

@@ -464,7 +464,6 @@ final class ProcessesServiceBindings {
 		TriggerManualNodeInterface::class                => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class                => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class              => TriggerScheduleNode::class,
-		UserTaskListInterface::class                     => TaskService::class,
 		UserTaskNodeInterface::class                     => UserTaskNode::class,
 		ZaaktypeCaseSkeletonMapperInterface::class       => ZaaktypeCaseSkeletonMapper::class,
 		CalculationEvaluatorInterface::class             => CalculationEvaluator::class,

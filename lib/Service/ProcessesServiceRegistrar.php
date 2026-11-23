@@ -22,14 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\DbRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
  * Binds the interfaces of the Processes area's services.
  *
- * Application names this class only, right after ContractBindingsRegistrar;
- * the map lives in ProcessesServiceBindings, inside the area.
+ * FlowRegistrar (the Processes entry point Application calls) runs it; the map
+ * lives in ProcessesServiceBindings, inside the area. No other registrar binds
+ * these interfaces, so their order against ContractBindings does not matter.
  *
  * @spec exclude Container wiring; no behaviour of its own.
  */
@@ -45,6 +45,8 @@ final class ProcessesServiceRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		DbRegistrar::bind(context: $context, bindings: ProcessesServiceBindings::BINDINGS);
+		foreach (ProcessesServiceBindings::BINDINGS as $contract => $class) {
+			$context->registerServiceAlias($contract, $class);
+		}
 	}//end register()
 }//end class
