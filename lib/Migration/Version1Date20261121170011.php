@@ -39,7 +39,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
  */
-class Version1Date20261121170000 extends TargetedMigrationStep {
+class Version1Date20261121170011 extends TargetedMigrationStep {
 	private const TABLE = 'openregister_federated_shares';
 
 	/**
