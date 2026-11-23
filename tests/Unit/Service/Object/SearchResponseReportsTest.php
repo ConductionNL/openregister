@@ -54,14 +54,14 @@ class SearchResponseReportsTest extends TestCase {
 	 * @return void
 	 */
 	public function testSearchReportsOnlyWhatShapedTheSearch(): void {
-		$this->assertSame([], $this->reports->searchReports(query: [], historyPredicate: HistoryPredicate::parse(query: []), expansion: DictionaryExpansion::unchanged(term: 'a')));
-		$this->assertSame([], $this->reports->searchReports(query: ['_recentLens' => 'x'], historyPredicate: HistoryPredicate::parse(query: []), expansion: null));
+		$this->assertSame([], ($this->reports->historyReport(historyPredicate: HistoryPredicate::parse(query: [])) + $this->reports->searchReports(query: [], expansion: DictionaryExpansion::unchanged(term: 'a'))));
+		$this->assertSame([], ($this->reports->historyReport(historyPredicate: HistoryPredicate::parse(query: [])) + $this->reports->searchReports(query: ['_recentLens' => 'x'], expansion: null)));
 
-		$reports = $this->reports->searchReports(
-			query: ['_recentLens' => ['days' => 7]],
-			historyPredicate: HistoryPredicate::parse(query: ['_was_ever' => ['status' => 'open']]),
-			expansion: DictionaryExpansion::expanded(term: 'a b', original: 'a', added: ['b'], removed: [])
-		);
+		$reports = $this->reports->historyReport(historyPredicate: HistoryPredicate::parse(query: ['_was_ever' => ['status' => 'open']]))
+			+ $this->reports->searchReports(
+				query: ['_recentLens' => ['days' => 7]],
+				expansion: DictionaryExpansion::expanded(term: 'a b', original: 'a', added: ['b'], removed: [])
+			);
 
 		$this->assertSame(['status' => 'open'], $reports['history']['wasEver']);
 		$this->assertSame(['b'], $reports['dictionary']['added']);
@@ -75,7 +75,7 @@ class SearchResponseReportsTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableHistoryPredicateIsReported(): void {
-		$reports = $this->reports->searchReports(query: [], historyPredicate: HistoryPredicate::parse(query: ['_changed_between' => ['x' => 'y']]), expansion: null);
+		$reports = $this->reports->historyReport(historyPredicate: HistoryPredicate::parse(query: ['_changed_between' => ['x' => 'y']]));
 
 		$this->assertSame(['_changed_between[x]'], $reports['history']['unparsed']);
 	}//end testAnUnreadableHistoryPredicateIsReported()
