@@ -31,6 +31,18 @@ jest.mock('./services/libraryTranslations.js', () => ({
 	registerLibraryTranslations: () => mockRegister(),
 }))
 
+/**
+ * Let the lazily loaded tab components resolve and render.
+ *
+ * @return {Promise<void>}
+ */
+async function settle() {
+	for (let i = 0; i < 10; i++) {
+		await Promise.resolve()
+	}
+	await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 let tabs
 
 /**
@@ -64,10 +76,11 @@ afterEach(() => {
 })
 
 describe('files-sidebar entry', () => {
-	it('registers translations, the integration registry and both tabs', () => {
+	it('registers both tabs and loads none of their code until one renders', async () => {
 		load()
-		expect(mockRegister).toHaveBeenCalledTimes(1)
-		expect(mockEnsure).toHaveBeenCalledTimes(1)
+		await settle()
+		expect(mockRegister).not.toHaveBeenCalled()
+		expect(mockEnsure).not.toHaveBeenCalled()
 		expect(tabs.map((t) => [t.id, t.name])).toEqual([
 			['openregister-objects', 'Register objects'],
 			['openregister-extraction', 'Extraction'],
@@ -77,6 +90,15 @@ describe('files-sidebar entry', () => {
 			expect(tab.enabled({ id: 1 })).toBe(true)
 			expect(tab.enabled(null)).toBe(false)
 		}
+	})
+
+	it('registers translations and the integration registry once, when the first tab renders', async () => {
+		load()
+		tabs[0].mount(document.createElement('div'), { id: 1 })
+		tabs[1].mount(document.createElement('div'), { id: 1 })
+		await settle()
+		expect(mockRegister).toHaveBeenCalledTimes(1)
+		expect(mockEnsure).toHaveBeenCalledTimes(1)
 	})
 
 	it('registers nothing where the Files sidebar is missing', () => {
@@ -94,6 +116,7 @@ describe('files-sidebar entry', () => {
 		const el = document.createElement('div')
 
 		tab.mount(el, { id: 5 })
+		await settle()
 		expect(el.querySelector(`.${cls}`).textContent).toBe('5')
 		expect(isReactive(el[propsKey])).toBe(true)
 		const first = el[appKey]
@@ -105,6 +128,7 @@ describe('files-sidebar entry', () => {
 
 		const unmount = jest.spyOn(first, 'unmount')
 		tab.mount(el, { id: 7 })
+		await settle()
 		expect(unmount).toHaveBeenCalledTimes(1)
 		expect(el.querySelectorAll(`.${cls}`)).toHaveLength(1)
 
