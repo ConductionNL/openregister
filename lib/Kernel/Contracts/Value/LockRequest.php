@@ -24,41 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-
 /**
- * The arguments of LockHandler::lock(), carried together through its steps.
+ * The published LockRequest, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\LockRequest, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  */
-final class LockRequest {
-
-	/**
-	 * Flow run taking the lock, for a run-scoped lock.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $runUuid;
-
-	/**
-	 * Flow node that took it, recorded for the sweep.
-	 *
-	 * @var string|null
-	 */
-	public readonly ?string $nodeId;
-
-	/**
-	 * Constructor
-	 *
-	 * @param string      $identifier Object ID or UUID.
-	 * @param string|null $process    What the lock is taken for.
-	 * @param int|null    $duration   Lock duration in seconds.
-	 * @param LockRunStep $runStep    The flow run and node taking it, both null outside a run.
-	 */
-	public function __construct(
-		public readonly string $identifier,
-		public readonly ?string $process=null,
-		public readonly ?int $duration=null,
-		LockRunStep $runStep=new LockRunStep(runUuid: null, nodeId: null),
-	) {
-		$this->runUuid = $runStep->runUuid;
-		$this->nodeId = $runStep->nodeId;
-	}//end __construct()
+final class LockRequest extends \OCA\OpenRegister\Contract\LockRequest {
 }//end class
