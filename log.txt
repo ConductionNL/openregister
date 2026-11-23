@@ -3841,3 +3841,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T19:25:55Z integrator-20261123T185213-ed14d34e GREEN tree d086064fef on dev ff0f786ea8 prs 8 front=ok: Tests: 63568, Assertions: 223427, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-23T19:26:15Z integrator-20261123T185213-ed14d34e PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-23T19:28:03Z integrator-20261123T185213-ed14d34e MERGED-TREE d086064fef: 8 PRs, main now 66648adda0 = tested tree
+2026-11-23T19:33:11Z integrator-20261123T185213-ed14d34e RED tree 0227507a19 prs 8 front=ok: Tests: 63576, Assertions: 223466, Errors: 11, Failures: 1, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Listener\MailAppScriptListenerGoldenTest::testEligibleMailPage;OCA\OpenRegister\Tests\Unit\Listener\PushClientScriptListenerTest::testASignedInPageQueuesThePushClientOnce
