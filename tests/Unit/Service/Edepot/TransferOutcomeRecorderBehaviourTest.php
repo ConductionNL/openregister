@@ -30,7 +30,6 @@ use OCA\OpenRegister\Service\Edepot\TransferContext;
 use OCA\OpenRegister\Service\Edepot\TransferOutcomeRecorder;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCA\OpenRegister\Service\Edepot\TransferSettings;
-use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -142,8 +141,8 @@ class TransferOutcomeRecorderBehaviourTest extends TestCase {
 		];
 		$expectedChecksums = [['name' => 'a.pdf', 'sha256' => 'abc'], ['name' => 'b.txt', 'sha256' => '']];
 
-		$this->auditTrail->expects($this->once())->method('recordChange')
-			->with(AuditChangeCalls::matching([$object, $object, 'archival.transferred']));
+		$this->auditTrail->expects($this->once())->method('createAuditTrail')
+			->with($object, $object, 'archival.transferred');
 		$this->records->expects($this->once())->method('createProof')->with(
 			[
 				'objectUuid' => 'obj-1',
