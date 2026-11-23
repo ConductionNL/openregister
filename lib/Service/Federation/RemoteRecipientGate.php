@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Federation;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,12 +68,12 @@ class RemoteRecipientGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionExplanationInterface $permissions The one evaluator.
+	 * @param RemoteRecipientDenialInterface $permissions The one evaluator.
 	 * @param SchemaMapperInterface $schemas     Finds an object's schema.
 	 * @param LoggerInterface       $logger      Says why an object was not served.
 	 */
 	public function __construct(
-		private readonly PermissionExplanationInterface $permissions,
+		private readonly RemoteRecipientDenialInterface $permissions,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {

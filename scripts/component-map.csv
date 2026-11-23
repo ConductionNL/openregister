@@ -2257,11 +2257,11 @@ Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Servi
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
-Service/Federation/OcmShareSender.php,,Service,,,,,Core
+Service/Federation/OcmShareSender.php,,Service,,,,,Integrations
 Service/Federation/RemoteShareNotification.php,50,Service,Access,Access/Service/Federation/RemoteShareNotification.php,0,,Integrations
 Service/Federation/ShareGrantor.php,57,Service,Access,Access/Service/Federation/ShareGrantor.php,0,367,Core
-Service/Federation/ShareCrosses.php,,Service,,,,,Core
-Service/Federation/RemoteRecipientGate.php,,Service,,,,,Core
+Service/Federation/ShareCrosses.php,,Service,,,,,Integrations
+Service/Federation/RemoteRecipientGate.php,,Service,,,,,Integrations
 Service/Federation/ShareTargets.php,60,Service,Access,Access/Service/Federation/ShareTargets.php,0,,Core
 Service/FederationShareService.php,116,Service,Integrations,Integrations/Service/FederationShareService.php,4,,Integrations
 Service/FieldEncryptionHandler.php,104,Service,Service,Service/FieldEncryptionHandler.php,0,,Core
@@ -4645,3 +4645,4 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel

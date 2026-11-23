@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1720,16 +1722,20 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * FAIL CLOSED: a cascade that cannot be resolved answers a denial, as every
 	 * caller of {@see resolveAuthorization()} must.
 	 *
-	 * @param Schema             $schema     The object's schema.
-	 * @param ObjectEntity       $object     The object.
-	 * @param array<int, string> $principals The recipient's principal names.
-	 * @param string             $action     The verb.
+	 * @param SchemaInterface       $schema     The object's schema.
+	 * @param ObjectEntityInterface $object     The object.
+	 * @param array<int, string>    $principals The recipient's principal names.
+	 * @param string                $action     The verb.
 	 *
 	 * @return array|null The denial, or null when the verb is not denied.
 	 *
 	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
 	 */
-	public function remoteRecipientDenial(Schema $schema, ObjectEntity $object, array $principals, string $action): ?array {
+	public function remoteRecipientDenial(SchemaInterface $schema, ObjectEntityInterface $object, array $principals, string $action): ?array {
+		if ($schema instanceof Schema === false || $object instanceof ObjectEntity === false) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
 		try {
 			$authorization = $this->resolveAuthorization(schema: $schema, object: $object);
 		} catch (\Throwable $e) {

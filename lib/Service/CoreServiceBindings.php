@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -433,6 +434,7 @@ final class CoreServiceBindings {
 		PermissionScopeInterface::class => PermissionHandler::class,
 		QueryHandlerInterface::class => QueryHandler::class,
 		RelationAddressRewriteInterface::class => RelationAddressRewrite::class,
+		RemoteRecipientDenialInterface::class => PermissionHandler::class,
 		RenderObjectInterface::class => RenderObject::class,
 		RetentionDestructionInterface::class => RetentionDestruction::class,
 		RevertHandlerInterface::class => RevertHandler::class,

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
 use OCP\IUser;
 
 /**
@@ -31,7 +32,7 @@ use OCP\IUser;
  *
  * Callers that need only this role depend on it, not on the whole handler.
  */
-interface PermissionExplanationInterface {
+interface PermissionExplanationInterface extends RemoteRecipientDenialInterface {
 
 	/**
 	 * The deny rule that is allowed to change this answer, or null.
@@ -156,20 +157,6 @@ interface PermissionExplanationInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array;
-
-	/**
-	 * The denial that removes a verb from a federated recipient on one object, or null.
-	 *
-	 * @param Schema             $schema     The object's schema.
-	 * @param ObjectEntity       $object     The object.
-	 * @param array<int, string> $principals The recipient's principal names (`remote:*`, `remote:<cloud id>`).
-	 * @param string             $action     The verb.
-	 *
-	 * @return array|null The denial, or null when the verb is not denied.
-	 *
-	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
-	 */
-	public function remoteRecipientDenial(Schema $schema, ObjectEntity $object, array $principals, string $action): ?array;
 
 	/**
 	 * The scopes a schema's department matrix compiles to for one user, for
