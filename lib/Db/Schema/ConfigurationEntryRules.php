@@ -31,7 +31,16 @@ use OCA\OpenRegister\Db\Schema;
 final class ConfigurationEntryRules {
 	// `objectSlugField` was missing here, so every save and import dropped it
 	// and object slugs could not be switched on outside the database (#4037).
-	private const CONFIG_STRING_FIELDS = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
+	// `mailObjectName` is what one item is called in the Mail panel's sentences
+	// ("New work queue item from this mail"), when the schema title names the collection.
+	private const CONFIG_STRING_FIELDS = [
+		'objectNameField',
+		'objectDescriptionField',
+		'objectSummaryField',
+		'objectImageField',
+		'objectSlugField',
+		'mailObjectName',
+	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu
 	// on an index page (or#4103). Off the allowlist it was dropped without
 	// a log line, so `allowExport: true` on every app page was a no-op.

@@ -5,7 +5,7 @@
  * @spec exclude Unit test of client-side form control choice.
  */
 import axios from '@nextcloud/axios'
-import CreateConnectedObjectDialog, { dateOf, enumLabel, groupOptions, inSchemaOrder, isGroup, isoDateOf, isRelation, relationOptions } from './CreateConnectedObjectDialog.vue'
+import CreateConnectedObjectDialog, { dateOf, enumLabel, groupOptions, inSchemaOrder, isGroup, isoDateOf, isRelation, loadingOptions, relationOptions } from './CreateConnectedObjectDialog.vue'
 
 jest.mock('@nextcloud/axios', () => ({ get: jest.fn() }))
 jest.mock('@nextcloud/router', () => ({
@@ -195,5 +195,20 @@ describe('CreateConnectedObjectDialog order and groups', () => {
 		input.scrollLeft = 80
 		showFieldStart.call(ctx, { target: input })
 		expect(input.scrollLeft).toBe(80)
+	})
+})
+
+describe('CreateConnectedObjectDialog loading names', () => {
+	it('shows the current value under Loading… until its name is read, never the raw id', () => {
+		expect(loadingOptions('3c0f5a00-0000-4000-a000-00000000a002')).toEqual([{ value: '3c0f5a00-0000-4000-a000-00000000a002', label: 'Loading…' }])
+		expect(loadingOptions('')).toEqual([])
+	})
+
+	it('marks the group list read when the read ends, also when it fails', async () => {
+		const { loadGroups } = CreateConnectedObjectDialog.methods
+		axios.get.mockRejectedValueOnce(new Error('down'))
+		const ctx = { schema: { properties: { team: { referenceType: 'nextcloud-group' } } }, initialData: { team: 'g' }, groups: [], groupsLoaded: false }
+		await loadGroups.call(ctx)
+		expect(ctx.groupsLoaded).toBe(true)
 	})
 })

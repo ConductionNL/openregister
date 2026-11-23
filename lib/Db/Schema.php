@@ -1696,6 +1696,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
 	 *   See: ConductionNL/opencatalogi#577
+	 * - 'mailObjectName': (string) What one item is called in the Mail panel's sentences
 	 * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
 	 *   "create from email" action. Keys are schema property names, string
 	 *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/

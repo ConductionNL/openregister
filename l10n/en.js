@@ -3929,7 +3929,10 @@ OC.L10N.register(
     "email address" : "email address",
     "phone number" : "phone number",
     "link" : "link",
-    "other" : "other"
+    "other" : "other",
+    "connected to {name} #{number}" : "connected to {name} #{number}",
+    "connected to {name}" : "connected to {name}",
+    "_%n message_::_%n messages_" : ["%n message", "%n messages"]
 },
 "nplurals=2; plural=(n != 1);"
 );

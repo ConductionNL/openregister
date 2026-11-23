@@ -502,6 +502,18 @@
             "objectNameField"
         ]
     },
+    "save mail object name": {
+        "kept": {
+            "mailObjectName": "work queue item"
+        },
+        "dropped": []
+    },
+    "save mail object name number": {
+        "kept": null,
+        "dropped": [
+            "mailObjectName"
+        ]
+    },
     "save bool field text": {
         "kept": {
             "autoShare": true

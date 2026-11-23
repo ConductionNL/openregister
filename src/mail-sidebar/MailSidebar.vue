@@ -118,6 +118,7 @@ import ObjectsTab from './components/ObjectsTab.vue'
 import { useAddToObject } from './composables/useAddToObject.js'
 import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
 import { useMailObserver } from './composables/useMailObserver.js'
+import { useSubjectLine } from './composables/useSubjectLine.js'
 import { objectIdentifier } from './objectRow.js'
 import { sentenceName } from './sentenceName.js'
 
@@ -151,6 +152,7 @@ export default {
 			? t('openregister', 'Add to {name}', { name: sentenceName(connected.value[0].schema) })
 			: ''))
 		useAddToObject(addLabel, (attachment) => objectsTab.value?.addAttachment(attachment))
+		useSubjectLine(connected)
 		return { ...mailObserver, connected, objectsTab }
 	},
 

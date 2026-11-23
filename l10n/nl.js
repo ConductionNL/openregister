@@ -4043,7 +4043,10 @@ OC.L10N.register(
     "email address" : "e-mailadres",
     "phone number" : "telefoonnummer",
     "link" : "link",
-    "other" : "overig"
+    "other" : "overig",
+    "connected to {name} #{number}" : "gekoppeld aan {name} #{number}",
+    "connected to {name}" : "gekoppeld aan {name}",
+    "_%n message_::_%n messages_" : ["%n bericht", "%n berichten"]
 },
 "nplurals=2; plural=(n != 1);"
 );

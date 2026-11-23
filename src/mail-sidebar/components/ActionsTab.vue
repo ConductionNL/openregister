@@ -50,7 +50,7 @@
 					<NcLoadingIcon :size="20" />
 					<span>{{
 						t('openregister', 'Creating {name}…', {
-							name: sentenceName(schema.title),
+							name: itemName(schema),
 						})
 					}}</span>
 				</div>
@@ -97,7 +97,7 @@
 							class="or-action-nomatch">
 							{{
 								t('openregister', 'No {name} matches “{term}”.', {
-									name: sentenceName(schema.title),
+									name: itemName(schema),
 									term: searchTerms[schema.id],
 								})
 							}}
@@ -114,7 +114,7 @@
 						<Plus :size="20" />
 						{{
 							t('openregister', 'New {name} from this mail', {
-								name: sentenceName(schema.title),
+								name: itemName(schema),
 							})
 						}}
 					</button>
@@ -148,7 +148,7 @@ import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjec
 import ObjectRow from './ObjectRow.vue'
 import { displayNameOf } from '../displayNames.js'
 import { objectHandler, objectIdentifier, objectStatus } from '../objectRow.js'
-import { sentenceName } from '../sentenceName.js'
+import { itemName } from '../sentenceName.js'
 
 /**
  * Fetch the registers, to find the register of each schema.
@@ -217,7 +217,7 @@ export default {
 
 	methods: {
 		t,
-		sentenceName,
+		itemName,
 		objectIdentifier,
 		objectStatus,
 		objectHandler,
@@ -646,7 +646,7 @@ export default {
 				const detail = err.response?.data?.error || err.response?.data || ''
 				showError(
 					t('openregister', 'Failed to create {name} from email', {
-						name: sentenceName(schema.title),
+						name: itemName(schema),
 					}),
 				)
 				console.error('[ActionsTab] Create from email failed:', detail, err)
