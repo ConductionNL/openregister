@@ -596,7 +596,7 @@ Controller/TaskNotesController.php,95,Controller,Work,Work/Controller/TaskNotesC
 Controller/TasksController.php,262,Controller,Work,Work/Controller/TasksController.php,0,,Processes
 Controller/TimeTrackerLinksController.php,95,Controller,Integrations,Integrations/Controller/TimeTrackerLinksController.php,0,,Integrations
 Controller/TmloController.php,186,Controller,Compliance,Compliance/Controller/TmloController.php,0,,Compliance
-Controller/Trait/HandlesExceptionsTrait.php,117,Controller,Service,Service/Controller/Trait/HandlesExceptionsTrait.php,0,237,Core
+Controller/Trait/HandlesExceptionsTrait.php,117,Controller,Service,Service/Controller/Trait/HandlesExceptionsTrait.php,0,237,Kernel
 Controller/Trait/ObjectLinkActionsTrait.php,66,Controller,Service,Service/Controller/Trait/ObjectLinkActionsTrait.php,0,,Integrations
 Controller/Trait/RequiresJsonBodyTrait.php,19,Controller,Service,Service/Controller/Trait/RequiresJsonBodyTrait.php,0,,Core
 Controller/Trait/ResolvesLinkedObjectTrait.php,14,Controller,Service,Service/Controller/Trait/ResolvesLinkedObjectTrait.php,0,,Core
@@ -1017,7 +1017,7 @@ Event/ViewDeletedEvent.php,14,Event,Event,Event/ViewDeletedEvent.php,0,,Kernel
 Event/ViewUpdatedEvent.php,22,Event,Event,Event/ViewUpdatedEvent.php,0,,Kernel
 Event/WriteVetoState.php,25,Event,Event,Event/WriteVetoState.php,0,,Kernel
 Exception/AnalyzeRequestRejectedException.php,26,Exception,Exception,Exception/AnalyzeRequestRejectedException.php,0,,Kernel
-Exception/AppendOnlyException.php,35,Exception,Exception,Exception/AppendOnlyException.php,0,,Core
+Exception/AppendOnlyException.php,35,Exception,Exception,Exception/AppendOnlyException.php,0,,Kernel
 Exception/ArchivalImmutableException.php,39,Exception,Exception,Exception/ArchivalImmutableException.php,9,,Kernel
 Exception/ArchiveNotOfferedException.php,15,Exception,Exception,Exception/ArchiveNotOfferedException.php,0,,Core
 Exception/AuthenticationException.php,13,Exception,Exception,Exception/AuthenticationException.php,40,,Integrations
@@ -1041,7 +1041,7 @@ Exception/ConfidenceThresholdOutOfRangeException.php,6,Exception,Exception,Excep
 Exception/ConsistencyCheckWouldWriteException.php,14,Exception,Exception,Exception/ConsistencyCheckWouldWriteException.php,0,,Configuration
 Exception/CorrectionRefusedException.php,10,Exception,Exception,Exception/CorrectionRefusedException.php,0,,Kernel
 Exception/CustomValidationException.php,13,Exception,Exception,Exception/CustomValidationException.php,59,,Kernel
-Exception/DatabaseConstraintException.php,64,Exception,Exception,Exception/DatabaseConstraintException.php,0,,Core
+Exception/DatabaseConstraintException.php,64,Exception,Exception,Exception/DatabaseConstraintException.php,0,,Kernel
 Exception/DecisionConflictException.php,6,Exception,Exception,Exception/DecisionConflictException.php,0,,Kernel
 Exception/DraftActivationRefusedException.php,43,Exception,Exception,Exception/DraftActivationRefusedException.php,0,,Core
 Exception/DraftAlreadyLeftException.php,5,Exception,Exception,Exception/DraftAlreadyLeftException.php,0,,Kernel
@@ -1105,7 +1105,7 @@ Exception/RelatedRowFilterNotSupportedException.php,6,Exception,Exception,Except
 Exception/RepairRefusedException.php,14,Exception,Exception,Exception/RepairRefusedException.php,0,,Configuration
 Exception/SanitizationException.php,26,Exception,Exception,Exception/SanitizationException.php,4,,Files
 Exception/SchemaImportException.php,31,Exception,Exception,Exception/SchemaImportException.php,0,,Core
-Exception/SchemaNotFoundException.php,9,Exception,Exception,Exception/SchemaNotFoundException.php,4,,Core
+Exception/SchemaNotFoundException.php,9,Exception,Exception,Exception/SchemaNotFoundException.php,4,,Kernel
 Exception/SchemaNotInRegisterException.php,70,Exception,Exception,Exception/SchemaNotInRegisterException.php,0,,Kernel
 Exception/SchemaRunConcurrencyException.php,6,Exception,Exception,Exception/SchemaRunConcurrencyException.php,0,,Core
 Exception/SearchTermSyntaxException.php,22,Exception,Exception,Exception/SearchTermSyntaxException.php,0,,Core
@@ -3118,10 +3118,10 @@ Service/Resilience/BreakerRegistry.php,237,Service,Platform,Platform/Service/Res
 Service/Resilience/BreakerThresholds.php,55,Service,Platform,Platform/Service/Resilience/BreakerThresholds.php,0,,Platform
 Service/Resilience/CircuitBreaker.php,399,Service,Platform,Platform/Service/Resilience/CircuitBreaker.php,0,,Platform
 Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
-Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core
-Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Core
-Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
-Service/Resolver/Exception/SchemaNotFoundException.php,33,Service,Service,Service/Resolver/Exception/SchemaNotFoundException.php,0,,Core
+Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Kernel
+Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Kernel
+Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Kernel
+Service/Resolver/Exception/SchemaNotFoundException.php,33,Service,Service,Service/Resolver/Exception/SchemaNotFoundException.php,0,,Kernel
 Service/Resolver/RegisterSchemaPair.php,26,Service,Service,Service/Resolver/RegisterSchemaPair.php,0,,Core
 Service/RetentionPass.php,45,Service,Compliance,Compliance/Service/RetentionPass.php,0,,Compliance
 Service/RetentionService.php,465,Service,Compliance,Compliance/Service/RetentionService.php,4,46,Compliance
@@ -3857,7 +3857,7 @@ Event/ObjectLeavingEvent.php,,Event,,,,,Core
 Event/PermissionVerb.php,,Event,,,,,Kernel
 Exception/ActionParameterTypeException.php,,Exception,,,,,Processes
 Exception/BrokenReference.php,,Exception,,,,,Core
-Exception/DatabaseConstraintMessages.php,,Exception,,,,,Core
+Exception/DatabaseConstraintMessages.php,,Exception,,,,,Kernel
 Exception/ObjectLookupFailedException.php,,Exception,,,,,Core
 Exception/ObjectStateMarker.php,,Exception,,,,,Kernel
 Exception/ReferenceCycle.php,,Exception,,,,,Core
@@ -4640,3 +4640,7 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
+Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
+Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
+Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel

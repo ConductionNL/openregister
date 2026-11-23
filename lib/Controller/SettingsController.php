@@ -23,13 +23,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
