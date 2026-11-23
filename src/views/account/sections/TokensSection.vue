@@ -195,11 +195,9 @@ export default {
 		 */
 		async createToken() {
 			try {
-				const payload = { name: this.newTokenName }
-				if (this.newTokenExpires) payload.expiresIn = this.newTokenExpires
 				const { data } = await axios.post(
 					generateUrl('/apps/openregister/api/user/me/tokens'),
-					payload,
+					this.newTokenPayload(),
 				)
 				this.createdToken = data.token
 				this.showCreateModal = false
@@ -209,6 +207,18 @@ export default {
 			} catch (e) {
 				this.setStatusError(e, t('openregister', 'Failed to create token'))
 			}
+		},
+
+		/**
+		 * The name and, when chosen, the expiry of the token to create.
+		 *
+		 * @spec exclude UI plumbing — POST + reveal-modal glue around the account-self-service token list contract.
+		 * @return {object} The request body
+		 */
+		newTokenPayload() {
+			const payload = { name: this.newTokenName }
+			if (this.newTokenExpires) payload.expiresIn = this.newTokenExpires
+			return payload
 		},
 
 		/**
