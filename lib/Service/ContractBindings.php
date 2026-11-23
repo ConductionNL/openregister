@@ -246,10 +246,6 @@ use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
@@ -797,8 +793,6 @@ final class ContractBindings {
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,
 		TrustedPartyReaderInterface::class => PartyService::class,
-		TriggerCalendarNodeInterface::class => TriggerCalendarNode::class,
-		TriggerWebhookNodeInterface::class => TriggerWebhookNode::class,
 		TriggerManualNodeInterface::class => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,

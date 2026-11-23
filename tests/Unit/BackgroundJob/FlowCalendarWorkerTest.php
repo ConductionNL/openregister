@@ -11,7 +11,6 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\FlowCalendarWorker;
-use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\Service\Flow\FlowCalendarService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -57,7 +56,7 @@ class FlowCalendarWorkerTest extends TestCase {
 		$this->now = new DateTime('2027-03-01T00:05:00+00:00');
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getDateTime')->willReturn($this->now);
-		$this->job = new FlowCalendarWorker(new JobRuntime($time, $this->logger), $this->calendar);
+		$this->job = new FlowCalendarWorker($time, $this->logger, $this->calendar);
 	}//end setUp()
 
 	private function runJob(): void {

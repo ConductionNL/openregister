@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Flow\FlowCalendarService;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -40,24 +41,21 @@ use Throwable;
 class FlowCalendarWorker extends TimedJob {
 
 	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param JobRuntime          $runtime  Clock and logger.
+	 * Takes the clock and logger directly rather than the Core JobRuntime bundle,
+	 * so this Processes job does not depend on the Core component.
+	 *
+	 * @param ITimeFactory        $time     Scheduler clock.
+	 * @param LoggerInterface     $logger   Logger.
 	 * @param FlowCalendarService $calendar Fires the due moments.
 	 */
 	public function __construct(
-		JobRuntime $runtime,
+		ITimeFactory $time,
+		private readonly LoggerInterface $logger,
 		private readonly FlowCalendarService $calendar,
 	) {
-		$this->logger = $runtime->logger;
-		parent::__construct(time: $runtime->time);
+		parent::__construct(time: $time);
 		$this->setInterval(seconds: 300);
 	}//end __construct()
 

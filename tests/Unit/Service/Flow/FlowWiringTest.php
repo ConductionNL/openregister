@@ -78,10 +78,15 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -294,6 +299,22 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The calendar and webhook trigger nodes are bound by their own area, not by the Configuration map.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
+	 */
+	public function testTheCalendarAndWebhookTriggerNodesAreBoundByTheFlowArea(): void {
+		self::assertSame(expected: TriggerCalendarNode::class, actual: (FlowWiring::BINDINGS[TriggerCalendarNodeInterface::class] ?? null));
+		self::assertSame(expected: TriggerWebhookNode::class, actual: (FlowWiring::BINDINGS[TriggerWebhookNodeInterface::class] ?? null));
+		self::assertTrue(condition: is_a(TriggerCalendarNode::class, TriggerCalendarNodeInterface::class, true));
+		self::assertTrue(condition: is_a(TriggerWebhookNode::class, TriggerWebhookNodeInterface::class, true));
+		self::assertArrayNotHasKey(key: TriggerCalendarNodeInterface::class, array: ContractBindings::BINDINGS);
+		self::assertArrayNotHasKey(key: TriggerWebhookNodeInterface::class, array: ContractBindings::BINDINGS);
+	}//end testTheCalendarAndWebhookTriggerNodesAreBoundByTheFlowArea()
+
+	/**
 	 * The read history port is answered by the read history service.
 	 *
 	 * @return void
@@ -413,6 +434,8 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				TriggerCalendarNodeInterface::class        => TriggerCalendarNode::class,
+				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,
