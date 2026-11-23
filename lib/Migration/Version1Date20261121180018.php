@@ -36,7 +36,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
  */
-class Version1Date20261121180000 extends TargetedMigrationStep {
+class Version1Date20261121180018 extends TargetedMigrationStep {
 
 	/**
 	 * Add the withdrawal columns.

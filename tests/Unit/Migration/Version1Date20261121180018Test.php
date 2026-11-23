@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use OCA\OpenRegister\Migration\Version1Date20261121180000;
+use OCA\OpenRegister\Migration\Version1Date20261121180018;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
@@ -31,9 +31,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * The migration.
  *
- * @covers \OCA\OpenRegister\Migration\Version1Date20261121180000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261121180018
  */
-class Version1Date20261121180000Test extends TestCase {
+class Version1Date20261121180018Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	/**
@@ -44,7 +44,7 @@ class Version1Date20261121180000Test extends TestCase {
 	 * @return ISchemaWrapper|null What changeSchema() returned.
 	 */
 	private function apply(ISchemaWrapper $schema): ?ISchemaWrapper {
-		return (new Version1Date20261121180000())->changeSchema(
+		return (new Version1Date20261121180018())->changeSchema(
 			output: $this->createMock(IOutput::class),
 			schemaClosure: static fn (): ISchemaWrapper => $schema,
 			options: []
