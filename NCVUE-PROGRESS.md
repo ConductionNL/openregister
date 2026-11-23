@@ -16,6 +16,11 @@
 2026-11-23T08:11:41Z ncvue-5 closed #1727 (superseded by reports-page-catalogue on main) and #2015 (screens.md already on main via #2139)
 2026-11-23T08:18:40Z ncvue-5 #2213 retargeted to main, main merged in, all gates green; admin-merge refused by permission check, left open for a human merge. Lane share otherwise done.
 2026-11-23T08:20:35Z ncvue-0 #2016 merged (dupes vs main dropped), #2034 merged (+ fixed data-bulk-edit dupe), #2214 merged (green), #1728 closed (sections layout already on main); lane share done, main 3ed9d1cc
+2026-11-23T08:30:15Z ncvue-4 start
 2026-11-23T08:31:20Z ncvue-1 #2131 merged (noClose/cancelIcon, docs moved to CnFormDialog.md; main 3395e1ec)
 2026-11-23T08:30:56Z ncvue-2 #2216 merged (postcss-import 17, main 1e5bbaed)
 2026-11-23T08:38:22Z ncvue-1 #2209 merged (@toast-ui/editor 3.2.3; main f893615e)
+2026-11-23T08:38:14Z ncvue-2 #2132 merged (CnDialog shell, main 17922e49)
+2026-11-23T08:31:06Z ncvue-0 start
+2026-11-23T08:33:11Z ncvue-0 no open PRs with N%6==0 (open: 2215 2213 2211 2209 2133 2132 1726 1720 1718 1714 1712); lane share empty, main 9eafa328
+2026-11-23T08:33:34Z ncvue-3 #2133 and #2211 retargeted to main, main merged in, all local gates green, pushed; admin merge REFUSED by session permission check, both left open ready to merge; main 9eafa328
