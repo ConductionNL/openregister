@@ -107,7 +107,7 @@
  * @spec openspec/specs/integration-email/spec.md
  */
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
+import { loadTranslations, translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDateTimePicker, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -195,6 +195,23 @@ export function isoDateOf(date) {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+/**
+ * The display label of an enum value: the schema's `x-enum-labels` map, or
+ * the `enumNames` / `enumLabels` list parallel to `enum`, else the value.
+ *
+ * @param {object} def The property definition.
+ * @param {*} value The enum value.
+ * @param {number} index The value's place in `enum`.
+ * @return {string}
+ */
+export function enumLabel(def, value, index) {
+	const map = def['x-enum-labels'] || def.enumLabels
+	if (map && !Array.isArray(map) && typeof map[value] === 'string' && map[value] !== '') return map[value]
+	const list = Array.isArray(def.enumNames) ? def.enumNames : (Array.isArray(def.enumLabels) ? def.enumLabels : null)
+	if (list && typeof list[index] === 'string' && list[index] !== '') return list[index]
+	return String(value)
+}
+
 export default {
 	name: 'CreateConnectedObjectDialog',
 	components: {
@@ -239,6 +256,8 @@ export default {
 		return {
 			form: {},
 			relations: {},
+			// Bumped once the schema owner's catalogue has loaded, so labels re-translate.
+			catalogueLoaded: 0,
 		}
 	},
 
@@ -270,13 +289,16 @@ export default {
 			return Object.keys(this.initialData).map((key) => {
 				const def = props[key] || {}
 				const current = String(this.initialData[key] ?? '')
-				let options = (Array.isArray(def.enum) ? def.enum : []).map((value) => ({ value, label: String(value) }))
+				let options = (Array.isArray(def.enum) ? def.enum : []).map((value, index) => ({
+					value,
+					label: this.translateLabel(enumLabel(def, value, index)),
+				}))
 				if (options.length === 0 && isRelation(def)) {
 					options = this.relations[key] || relationOptions([], {}, current)
 				}
 				return {
 					key,
-					label: def.title || this.humanize(key),
+					label: def.title ? this.translateLabel(def.title) : this.humanize(key),
 					control: this.controlFor(key, def),
 					options,
 					required: (this.schema?.required || []).includes(key),
@@ -297,6 +319,7 @@ export default {
 				if (open) {
 					this.form = { ...this.initialData }
 					this.loadRelations()
+					this.loadOwnerCatalogue()
 				}
 			},
 		},
@@ -306,6 +329,44 @@ export default {
 		t,
 		dateOf,
 		isoDateOf,
+
+		/**
+		 * Translate a schema-authored English label (a property title or an
+		 * enum label) through the catalogue of the app that owns the register,
+		 * then OpenRegister's own; untranslated it stays English.
+		 *
+		 * @param {string} text The English label.
+		 * @return {string}
+		 * @spec openspec/specs/integration-email/spec.md
+		 */
+		translateLabel(text) {
+			// Read so a loaded catalogue re-renders the labels.
+			void this.catalogueLoaded
+			const app = this.register?.application
+			if (app && app !== 'openregister') {
+				const own = t(app, text)
+				if (own !== text) return own
+			}
+			return t('openregister', text)
+		},
+
+		/**
+		 * Load the catalogue of the app that owns the register: Mail's page
+		 * carries only OpenRegister's. A missing catalogue (English) is fine.
+		 *
+		 * @spec openspec/specs/integration-email/spec.md
+		 */
+		async loadOwnerCatalogue() {
+			const app = this.register?.application
+			if (!app || app === 'openregister' || typeof loadTranslations !== 'function') return
+			try {
+				await loadTranslations(app)
+				this.catalogueLoaded++
+			} catch {
+				// No catalogue for this language; the labels stay English.
+			}
+		},
+
 		/**
 		 * @param {string} key
 		 * @spec openspec/specs/integration-email/spec.md
