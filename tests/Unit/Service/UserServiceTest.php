@@ -9,7 +9,7 @@ use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
@@ -68,7 +68,7 @@ class UserServiceTest extends TestCase {
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->service = new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->userManager,
 				groupManager: $this->groupManager,
 				accountManager: $this->accountManager,
@@ -96,7 +96,7 @@ class UserServiceTest extends TestCase {
 	 */
 	private function freshService(): UserService {
 		return new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->userManager,
 				groupManager: $this->groupManager,
 				accountManager: $this->accountManager,

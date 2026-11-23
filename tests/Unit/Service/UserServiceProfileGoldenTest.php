@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
@@ -224,7 +224,7 @@ class UserServiceProfileGoldenTest extends TestCase {
 			}
 		);
 		return new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->createMock(IUserManager::class),
 				groupManager: $this->groupManager,
 				accountManager: $this->accountManager,

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\User\ApiTokenAuditRow;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\User\AvatarUpload;
 use OCA\OpenRegister\Service\User\PasswordChange;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
@@ -138,13 +138,13 @@ class UserService implements UserServiceInterface {
 	/**
 	 * UserService constructor
 	 *
-	 * @param UserDirectory                $directory           The user, group, account and avatar stores.
+	 * @param UserAccountStores                $directory           The user, group, account and avatar stores.
 	 * @param UserPlatform                 $platform            The session, event dispatcher, language factory and logger.
 	 * @param UserStorage                  $storage             The config, database, audit trail and secure random.
 	 * @param OrganisationServiceInterface $organisationService The organisation service.
 	 */
 	public function __construct(
-		private readonly UserDirectory $directory,
+		private readonly UserAccountStores $directory,
 		private readonly UserPlatform $platform,
 		private readonly UserStorage $storage,
 		private readonly OrganisationServiceInterface $organisationService,

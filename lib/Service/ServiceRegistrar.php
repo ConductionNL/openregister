@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 
@@ -215,7 +215,7 @@ final class ServiceRegistrar {
 	 */
 	private static function buildUserService(ContainerInterface $container): \OCA\OpenRegister\Service\UserService {
 			return new UserService(
-				directory: new UserDirectory(
+				directory: new UserAccountStores(
 					userManager: $container->get('OCP\IUserManager'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					accountManager: $container->get('OCP\Accounts\IAccountManager'),

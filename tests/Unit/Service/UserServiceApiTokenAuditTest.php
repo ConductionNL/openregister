@@ -18,7 +18,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCA\OpenRegister\Service\UserService;
@@ -46,7 +46,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Audit\AuditEntryWriter
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry
  * @uses   \OCA\OpenRegister\Db\AuditTrail
- * @uses   \OCA\OpenRegister\Service\User\UserDirectory
+ * @uses   \OCA\OpenRegister\Service\User\UserAccountStores
  * @uses   \OCA\OpenRegister\Service\User\UserPlatform
  * @uses   \OCA\OpenRegister\Service\User\UserStorage
  */
@@ -138,7 +138,7 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		return new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->createMock(IUserManager::class),
 				groupManager: $this->createMock(IGroupManager::class),
 				accountManager: $this->createMock(IAccountManager::class),

@@ -22,7 +22,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCA\OpenRegister\Service\UserService;
@@ -66,7 +66,7 @@ class UserServicePreferencesCharacterisationTest extends TestCase {
 		$this->user->method('getUID')->willReturn('jan');
 
 		$this->service = new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->createMock(IUserManager::class),
 				groupManager: $this->createMock(IGroupManager::class),
 				accountManager: $this->createMock(IAccountManager::class),

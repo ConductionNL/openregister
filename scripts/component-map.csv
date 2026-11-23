@@ -4634,7 +4634,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
-Service/User/UserDirectory.php,,Service,,,,,Core
+Service/User/UserAccountStores.php,,Service,,,,,Core
 Service/User/UserPlatform.php,,Service,,,,,Core
 Service/User/UserStorage.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes

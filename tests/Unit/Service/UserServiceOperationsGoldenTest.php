@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
-use OCA\OpenRegister\Service\User\UserDirectory;
+use OCA\OpenRegister\Service\User\UserAccountStores;
 use OCA\OpenRegister\Service\User\UserPlatform;
 use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccountManager;
@@ -77,7 +77,7 @@ class UserServiceOperationsGoldenTest extends TestCase {
 		$this->random = $this->createMock(ISecureRandom::class);
 		$this->random->method('generate')->willReturnCallback(static fn (int $length): string => str_repeat('k', $length));
 		$this->service = new UserService(
-			directory: new UserDirectory(
+			directory: new UserAccountStores(
 				userManager: $this->userManager,
 				groupManager: $this->createMock(IGroupManager::class),
 				accountManager: $this->createMock(IAccountManager::class),
