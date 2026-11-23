@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -151,8 +152,7 @@ final class ExportServiceAnonymousPagingTest extends TestCase {
 			}),
 			true,
 			true,
-			null,
-			null
+			$this->equalTo(new ObjectSelection())
 		)->willReturn(23500);
 
 		$this->assertSame(23500, $this->service()->countExportTotal(request: $this->request(page: new ExportPage(number: 2))));
