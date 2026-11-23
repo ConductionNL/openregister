@@ -3816,3 +3816,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-23T17:13:55Z integrator-20261123T155733-7ac3bd34 MERGED-TREE 7cc45933cd: 1 PRs, main now 757c57ad64 = tested tree
 2026-11-23T17:17:04Z session-20261123T171704-d704fb6a or-fix-16: share 8456 8996 9236 9816 9836 10156 10456 10496 10516 10996 11016 all APPROVE at head, merge clean with main ec3f0f77d4b; merged-tree Architecture + touched dirs green beyond inherited AreaMapperRegistrarsTest and ReservedColumnNamesTest (upstream 404); nothing to fix
+2026-11-23T17:24:48Z integrator-20261123T155733-7ac3bd34 GREEN tree b08314d503 on dev 757c57ad64 prs 1 front=skip: Tests: 63557, Assertions: 222774, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
