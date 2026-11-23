@@ -38,12 +38,25 @@ class ContractIsALeafTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const PUBLISHED = [
+		'BulkBatchDefaults.php',
+		'BulkSaveOptions.php',
 		'EmailLinkReaderInterface.php',
+		'LockRequest.php',
+		'LockRunStep.php',
+		'ObjectDeletion.php',
 		'ObjectEntityInterface.php',
 		'ObjectFileReaderInterface.php',
+		'ObjectFindOptions.php',
+		'ObjectFindTarget.php',
+		'ObjectPatch.php',
+		'ObjectSaveOptions.php',
 		'ObjectServiceInterface.php',
+		'ObjectValidationVerdict.php',
 		'RegisterSlugResolution.php',
 		'RegisterSlugResolverInterface.php',
+		'SaveActor.php',
+		'SavePolicy.php',
+		'UnlockRequest.php',
 	];
 
 	/**
