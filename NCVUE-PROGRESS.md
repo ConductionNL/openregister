@@ -12,3 +12,4 @@
 2026-11-23T08:08:39Z ncvue-5 start
 2026-11-23T08:08:42Z ncvue-3 start
 2026-11-23T08:11:41Z ncvue-5 closed #1727 (superseded by reports-page-catalogue on main) and #2015 (screens.md already on main via #2139)
+2026-11-23T08:18:40Z ncvue-5 #2213 retargeted to main, main merged in, all gates green; admin-merge refused by permission check, left open for a human merge. Lane share otherwise done.
