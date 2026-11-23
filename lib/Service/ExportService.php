@@ -31,6 +31,10 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -1051,8 +1055,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 			// Apply RBAC filtering.
 			_multitenancy: $selection['multitenancy'],
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selection['ids'],
-			uses: null
+			options: new SearchOptions(selection: new ObjectSelection(ids: $selection['ids']))
 		);
 
 		if ($this->processAudit === null) {
@@ -1084,8 +1087,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 			query: $query,
 			_rbac: true,
 			_multitenancy: $selection['multitenancy'],
-			ids: $selection['ids'],
-			uses: null
+			selection: new ObjectSelection(ids: $selection['ids'])
 		);
 	}//end countExportTotal()
 
