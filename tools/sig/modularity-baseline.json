@@ -34,7 +34,6 @@
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
-  "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php"
  ],
@@ -618,6 +617,8 @@
   "lib/Kernel/Contracts/Core/UserCalendarEventsInterface.php",
   "lib/Kernel/Contracts/Core/ViewFinderInterface.php",
   "lib/Kernel/Contracts/Core/WriteElevationInterface.php",
+  "lib/Kernel/Contracts/CreateCandidate.php",
+  "lib/Kernel/Contracts/CreateGuardInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -862,7 +863,6 @@
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Search/Service/Quality/CreateCandidate.php",
   "lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Search/Service/Search/PlaceholderResolverInterface.php",
   "lib/Search/Service/Search/PlaceholderResolvers.php",
@@ -1847,14 +1847,14 @@
  "exposed_loc": {
   "Compliance": 14300,
   "Configuration": 870,
-  "Core": 34993,
-  "Files": 1275,
+  "Core": 35005,
+  "Files": 1255,
   "Integrations": 17657,
-  "Kernel": 6064,
+  "Kernel": 6085,
   "Notifications": 1760,
   "Platform": 0,
   "Processes": 27011,
-  "Search": 1333
+  "Search": 1317
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -2056,6 +2056,8 @@
   "lib/Kernel/Contracts/ContactMatcherInterface.php",
   "lib/Kernel/Contracts/ConversationInterface.php",
   "lib/Kernel/Contracts/ConversationMapperInterface.php",
+  "lib/Kernel/Contracts/CreateCandidate.php",
+  "lib/Kernel/Contracts/CreateGuardInterface.php",
   "lib/Kernel/Contracts/DecisionInterface.php",
   "lib/Kernel/Contracts/DeckPlacement.php",
   "lib/Kernel/Contracts/DocumentProcessingHandlerInterface.php",
@@ -2185,7 +2187,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 7668,
- "total_loc": 462668,
- "violation_degree": 0.0057
+ "kernel_loc": 7689,
+ "total_loc": 462571,
+ "violation_degree": 0.0056
 }
