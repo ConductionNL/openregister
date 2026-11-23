@@ -3843,3 +3843,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-23T19:28:03Z integrator-20261123T185213-ed14d34e MERGED-TREE d086064fef: 8 PRs, main now 66648adda0 = tested tree
 2026-11-23T19:33:11Z integrator-20261123T185213-ed14d34e RED tree 0227507a19 prs 8 front=ok: Tests: 63576, Assertions: 223466, Errors: 11, Failures: 1, Deprecations: 4, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Listener\MailAppScriptListenerGoldenTest::testEligibleMailPage;OCA\OpenRegister\Tests\Unit\Listener\PushClientScriptListenerTest::testASignedInPageQueuesThePushClientOnce
+2026-11-23T19:34:58Z session-20261123T193457-d34af3f0 or-fix-1 start
