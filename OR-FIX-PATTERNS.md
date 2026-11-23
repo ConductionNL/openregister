@@ -620,3 +620,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Inherited red on main 6e870ca5: ComponentDependencyRulesTest 4 Files -> Core edges (or-fix-4)
 - Symptom: testNoComponentEdgeBeyondTheBaseline lists DecisionMetadataEdit -> EntityRelation, ManagedFiles -> DocumentStore / ManagedFileOwnerLookup, Kernel/Contracts/Files/EntityMentionDecisionsInterface -> EntityRelation (Files -> Core).
 - Same four on plain main (python3 scripts/component-deps.py in a main worktree): inherited, do not fix in a PR. Also inherited there: ReservedColumnNamesTest (MariaDB lex.h 404), AnonymousEnvelopeReadPathsTest (4), phpstan ApiCallerMiddleware $version.
+## Inherited red on main 6e870ca5: AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce (or-fix-8)
+- Symptom: ConfigurationMapperRegistrar binds an interface bound elsewhere: TranslationMapperInterface, TranslationSourceLanguageBackfillInterface.
+- Cause: red on origin/main itself (checked on a detached main checkout), not on PR branches. Do not fix in a PR; treat as inherited like the 4 Files->Core edges.
