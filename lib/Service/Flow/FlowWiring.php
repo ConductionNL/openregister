@@ -174,6 +174,7 @@ final class FlowWiring {
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
+		\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class => ConfigurationFlowTransfer::class,
 		WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
 		PartySearchInterface::class => PartySearchService::class,

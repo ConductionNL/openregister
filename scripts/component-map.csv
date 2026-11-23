@@ -4640,3 +4640,5 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/ConfigurationFlowTransferInterface.php,,Kernel,,,,,Kernel
+Service/Flow/ConfigurationFlowTransfer.php,,Service,,,,,Processes

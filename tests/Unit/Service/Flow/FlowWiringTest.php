@@ -416,6 +416,7 @@ final class FlowWiringTest extends TestCase {
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,
+				\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class => \OCA\OpenRegister\Service\Flow\ConfigurationFlowTransfer::class,
 				WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
 				PartySearchInterface::class                => PartySearchService::class,

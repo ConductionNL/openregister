@@ -79,7 +79,7 @@ class ExportHandlerTest extends TestCase {
 			$this->objectEntityMapper,
 			$this->configurationMapper,
 			$this->mappingMapper,
-			$this->flowMapper,
+			new \OCA\OpenRegister\Service\Flow\ConfigurationFlowTransfer(flowMapper: $this->flowMapper, logger: $this->logger),
 			$this->logger
 		);
 	}

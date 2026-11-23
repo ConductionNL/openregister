@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
-use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -130,14 +129,11 @@ final class ConfigurationServiceRegistrar {
 			\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
 			'ObjectSlugHandler',
 		],
-		// Resolves an existing flow by uuid during import; without it
-		// `components.flows` is not imported at all.
-		'setFlowMapper' => [FlowMapperInterface::class, 'FlowMapper'],
-		// Publishes an imported flow's draft head; without it an imported
-		// flow is written but left as a draft.
-		'setFlowVersionService' => [
-			\OCA\OpenRegister\Service\Flow\FlowVersionService::class,
-			'FlowVersionService',
+		// Imports `components.flows` through the flow engine's port; without it
+		// flows are not imported at all.
+		'setFlowTransfer' => [
+			\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class,
+			'ConfigurationFlowTransfer',
 		],
 	];
 
@@ -439,7 +435,7 @@ final class ConfigurationServiceRegistrar {
 			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
-			flowMapper: $container->get(FlowMapperInterface::class),
+			flowTransfer: $container->get(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			logger: $container->get('Psr\Log\LoggerInterface'),
 			readableObjects: $container->get(ReadableExportObjects::class)
 		);

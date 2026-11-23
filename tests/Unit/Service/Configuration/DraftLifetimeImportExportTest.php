@@ -23,7 +23,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
@@ -142,7 +141,7 @@ class DraftLifetimeImportExportTest extends TestCase {
 			$objectEntityMapper,
 			$configurationMapper,
 			$mappingMapper,
-			$this->createMock(FlowMapper::class),
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			$logger
 		);
 	}//end setUp()

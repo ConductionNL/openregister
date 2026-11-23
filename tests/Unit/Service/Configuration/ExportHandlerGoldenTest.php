@@ -338,7 +338,7 @@ class ExportHandlerGoldenTest extends TestCase {
 			objectEntityMapper: $objectMapper,
 			configurationMapper: $configurationMapper,
 			mappingMapper: $mappingMapper,
-			flowMapper: $flowMapper,
+			flowTransfer: new \OCA\OpenRegister\Service\Flow\ConfigurationFlowTransfer(flowMapper: $flowMapper, logger: $logger),
 			logger: $logger
 		);
 

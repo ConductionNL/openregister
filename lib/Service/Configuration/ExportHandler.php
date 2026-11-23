@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
@@ -127,11 +127,11 @@ class ExportHandler {
 	private readonly MappingMapper $mappingMapper;
 
 	/**
-	 * Flow mapper instance for handling flow operations.
+	 * The flow engine's export side.
 	 *
-	 * @var FlowMapperInterface The flow mapper instance.
+	 * @var ConfigurationFlowTransferInterface Exports a configuration's flows.
 	 */
-	private readonly FlowMapperInterface $flowMapper;
+	private readonly ConfigurationFlowTransferInterface $flowTransfer;
 
 
 	/**
@@ -142,7 +142,7 @@ class ExportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param FlowMapperInterface $flowMapper The flow mapper.
+	 * @param ConfigurationFlowTransferInterface $flowTransfer Exports a configuration's flows.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param ReadableExportObjects|null $readableObjects Projects exported objects to what the caller may read.
 	 */
@@ -152,7 +152,7 @@ class ExportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
-		FlowMapperInterface $flowMapper,
+		ConfigurationFlowTransferInterface $flowTransfer,
 		LoggerInterface $logger,
 		private readonly ?ReadableExportObjects $readableObjects = null,
 	) {
@@ -161,7 +161,7 @@ class ExportHandler {
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->mappingMapper = $mappingMapper;
-		$this->flowMapper = $flowMapper;
+		$this->flowTransfer = $flowTransfer;
 		$this->logger = $logger;
 	}//end __construct()
 
@@ -324,7 +324,7 @@ class ExportHandler {
 			return;
 		}
 
-		foreach ($this->exportFlows(configuration: $run->configuration) as $uuid => $flow) {
+		foreach ($this->flowTransfer->exportFlows(flowUuids: $run->configuration->getFlows() ?? []) as $uuid => $flow) {
 			$run->openApiSpec['components']['flows'][$uuid] = $flow;
 		}
 	}//end addFlows()
@@ -647,48 +647,6 @@ class ExportHandler {
 			]
 		);
 	}//end logMappingFailure()
-
-	/**
-	 * A configuration's flows by uuid, without instance-specific properties.
-	 *
-	 * Unlike mappings, a flow has no slug: `uuid` is kept (not stripped) so
-	 * the importer can resolve an existing flow on the target instance via
-	 * {@see \OCA\OpenRegister\Db\FlowMapper::findByUuid()}.
-	 *
-	 * A flow that cannot be loaded is logged and left out.
-	 *
-	 * @param Configuration $configuration The configuration.
-	 *
-	 * @return array<string, array<string, mixed>>
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function exportFlows(Configuration $configuration): array {
-		$flows = [];
-		foreach ($configuration->getFlows() ?? [] as $flowUuid) {
-			try {
-				$flow = $this->flowMapper->findByUuid($flowUuid);
-				$flowArray = $flow->jsonSerialize();
-				unset(
-					$flowArray['id'],
-					$flowArray['owner'],
-					$flowArray['organisation']
-				);
-
-				$flows[$flow->getUuid()] = $flowArray;
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[ExportHandler] Failed to export flow',
-					context: [
-						'flowUuid' => $flowUuid,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $flows;
-	}//end exportFlows()
 
 	/**
 	 * Attach the declared-group scope map to an exported configuration document.
