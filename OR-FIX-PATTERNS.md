@@ -408,3 +408,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ControllerServicesWiringTest::testEveryBundledServiceReachesTheController '<Controller> loses OwnMailReverseLookup::$linkedEntityService'.
 - Cause: every class in a Controller\Support namespace counts as a bundle; reaches() read bundles with get_object_vars (public only), so a Support collaborator with private promoted fields hid its services.
 - Fix: main's test now (via #11006 b4268150) reads a bundle's initialised fields incl. private; until that lands, apply the same one-line change or make the fields public readonly. Also add the class's component-map row.
+
+## New nullable constructor param missing from BuiltinIntegrationServices::FACTORIES (or-fix-5)
+- Symptom: reviewer BLOCK 'never active in production'; unit tests green because the PR's test builds the service by hand with the new param, which defaults to null.
+- Cause: integration providers and link services are built from the BuiltinIntegrationServices::FACTORIES table (named args), not by DI autowiring; a param added to the constructor is never passed.
+- Fix: add 'param' => <Interface>::class to the class's FACTORIES entry; BuiltinIntegrationServicesTableTest pins a sha256 of the table: copy the actual hash; add a test that BuiltinIntegrationServices::build() hands the instance in (ReflectionProperty on the built service). See #11005 1b1ba39a.
