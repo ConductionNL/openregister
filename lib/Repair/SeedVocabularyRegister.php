@@ -35,7 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
@@ -89,18 +88,33 @@ class SeedVocabularyRegister implements IRepairStep {
 	];
 
 	/**
+	 * The synonym scheme uri; the same value as SearchDictionaryProvider::SYNONYM_SCHEME
+	 * (restated: Repair is Platform and may not name the Core provider, ADR-013).
+	 *
+	 * @var string
+	 */
+	private const SYNONYM_SCHEME = 'https://openregister.app/vocabularies/search-synonyms';
+
+	/**
+	 * The stopword scheme uri; the same value as SearchDictionaryProvider::STOPWORD_SCHEME.
+	 *
+	 * @var string
+	 */
+	private const STOPWORD_SCHEME = 'https://openregister.app/vocabularies/search-stopwords';
+
+	/**
 	 * The search dictionary's concept schemes, seeded empty (see SearchDictionaryProvider).
 	 *
 	 * @var array<int, array{uri: string, title: string, description: string}>
 	 */
 	private const DICTIONARY_SCHEMES = [
 		[
-			'uri'         => SearchDictionaryProvider::SYNONYM_SCHEME,
+			'uri'         => self::SYNONYM_SCHEME,
 			'title'       => 'Search synonyms',
 			'description' => 'Synonym groups for search: a concept\'s prefLabel and its altLabel entries find each other.',
 		],
 		[
-			'uri'         => SearchDictionaryProvider::STOPWORD_SCHEME,
+			'uri'         => self::STOPWORD_SCHEME,
 			'title'       => 'Search stopwords',
 			'description' => 'Words search drops: a concept\'s prefLabel is the word to drop.',
 		],
