@@ -80,6 +80,12 @@ class LinkedEntityController extends Controller {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * The collaborators; its ownMail answers the reverse lookup of a caller who is not an administrator
+	 * @var LinkedEntityControllerServices
+	 */
+	private readonly LinkedEntityControllerServices $services;
+
+	/**
 	 * Constructor for LinkedEntityController.
 	 *
 	 * @param IRequest $request The request object
@@ -94,6 +100,7 @@ class LinkedEntityController extends Controller {
 		$this->logger = $services->session->logger;
 		$this->userSession = $services->session->userSession;
 		$this->groupManager = $services->session->groupManager;
+		$this->services = $services;
 	}//end __construct()
 
 	/**
@@ -328,12 +335,15 @@ class LinkedEntityController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function reverseLookup(string $type, string $entityId): JSONResponse {
-		// SEC-CTRL: admin-only — LinkedEntityService::reverseLookup scans magic
-		// tables with RBAC + multitenancy intentionally disabled (cross-tenant;
-		// TODO #1273). Until per-tenant scoping lands, restrict to admins so an
-		// arbitrary user cannot enumerate cross-tenant object links by entity id.
+		// SEC-CTRL: LinkedEntityService::reverseLookup scans magic tables with RBAC
+		// and multitenancy off. An admin gets the scan as is; anybody else only
+		// for mail in their own Mail account, and only the objects they may read.
 		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequired();
+			if ($this->services->ownMail->handles(type: $type) === false) {
+				return $this->adminRequired();
+			}
+
+			return $this->services->ownMail->answer(type: $type, entityId: $entityId);
 		}
 
 		try {
