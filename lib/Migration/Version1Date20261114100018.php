@@ -40,7 +40,7 @@ use OCP\Migration\IOutput;
  *
  * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114100018 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
