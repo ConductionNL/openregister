@@ -36,7 +36,7 @@ use OCP\Migration\IOutput;
 /**
  * Adds the verdict column to the anonymisation log.
  */
-class Version1Date20261114100000 extends TargetedMigrationStep {
+class Version1Date20261114100011 extends TargetedMigrationStep {
 
 	/**
 	 * Add `verification` to the anonymisation log.
