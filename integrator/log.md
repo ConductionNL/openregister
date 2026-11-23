@@ -23,3 +23,4 @@
 2026-11-23T20:53:02Z GREEN prs=8996,9066,9801,9817,9823,9824,9835,9836 main=165d3bcb82 integrator-cloud
 2026-11-23T21:04:09Z GREEN prs=9837,9844,9845,9846,9847,9860,9864,10995 main=afdda82ad1 integrator-cloud
 2026-11-23T21:12:50Z GREEN prs=10997 main=74e57194ae integrator-cloud
+2026-11-23T22:01:46Z RED prs=9029 main=6e870ca5e2 integrator-cloud (solo=9029; ComponentDependencyRulesTest)
