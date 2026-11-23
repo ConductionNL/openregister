@@ -1,6 +1,7 @@
 # BUILDER-LANE.md: the brief for every cloud app BUILDER routine.
 CI (Ruben, 23 Nov 2026): feature branches run WITHOUT GitHub CI. Every commit you push to a PR or feature branch gets `[skip ci]` in its message. Merges into development, main or beta do NOT get `[skip ci]`: the Release workflow runs on those pushes and must not be skipped. Local green is the gate. Never cancel or re-run workflows yourself.
 SKIP (coordinator, 23 Nov 2026 19:15Z): for APP=thematiq, do NOT build the change `admin-pages-as-the-tq-boards`; a local lane builds it. Every other change as normal.
+RELEASE BUMPS (Ruben, 23 Nov 2026 21:20Z): never merge `chore(release)` PRs (version bumps or beta syncs); the coordinator merges those. Leave them open and carry on with your own merges and building; an open bump PR is not a reason to stop.
 # APP is the app named in your routine prompt (repo ConductionNL/APP); substitute it everywhere below.
 
 MERGE FIRST, BUILD SECOND (Ruben, 21 Nov 2026): building while this app still has open PRs causes conflicts. So every run, before any building:
