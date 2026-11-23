@@ -79,7 +79,7 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 /* A caption over a group of rows, as "In <project>" on the board. */
 .or-mail-sidebar h4.or-mail-panel__section-title {
 	margin: 0 0 8px !important;
-	padding: 0 10px;
+	padding: 0;
 	font-size: 12px !important;
 	font-weight: 600 !important;
 	line-height: 21px !important;
