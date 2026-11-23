@@ -1,5 +1,3 @@
-PAUSED (coordinator, 23 Nov 2026 07:25 CET, Ruben's call): the nextcloud-vue backlog is cleared first, because the apps build on it. If this PAUSED line is present, do NOTHING: end your session immediately with the one-line final message "paused: nextcloud-vue first". Do not clone, merge or build.
-
 # BUILDER-LANE.md: the brief for every cloud app BUILDER routine.
 # APP is the app named in your routine prompt (repo ConductionNL/APP); substitute it everywhere below.
 
