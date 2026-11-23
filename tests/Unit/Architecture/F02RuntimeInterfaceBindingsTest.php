@@ -66,7 +66,7 @@ final class F02RuntimeInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		DedupCreatePolicy::class => [DedupCreatePolicyInterface::class, SearchRegistrar::class],
-		PlaceholderResolver::class => [PlaceholderResolverInterface::class, SearchRegistrar::class],
+		PlaceholderResolver::class => [PlaceholderResolverInterface::class, CoreServiceBindings::class],
 		SourceFetcherRegistry::class => [SourceFetcherLookupInterface::class, ContractBindings::class],
 		TaskObjectAdapter::class => [ObjectEntity::class, null],
 		TrustTierResolver::class => [TrustTierResolverInterface::class, CoreServiceBindings::class],
@@ -75,11 +75,26 @@ final class F02RuntimeInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * None: no outside file names any of these classes.
+	 * PlaceholderResolver lives in the Search directory but counts to Core
+	 * (scripts/component-map.csv), so Core's own map binds it; that map is the
+	 * only file outside the directory that names it.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		PlaceholderResolver::class => ['Service/CoreServiceBindings.php'],
+	];
+
+	/**
+	 * Classes whose area (csv row) differs from their directory, with the area that binds them.
+	 *
+	 * CoreServiceBindingsTest::testEveryClassCountsToCore checks the row.
+	 *
+	 * @var array<class-string, string>
+	 */
+	private const BOUND_BY_ITS_AREA = [
+		PlaceholderResolver::class => 'Core',
+	];
 
 	/**
 	 * One case per class.
@@ -128,7 +143,10 @@ final class F02RuntimeInterfaceBindingsTest extends TestCase {
 	#[DataProvider('boundClasses')]
 	public function testTheInterfaceIsBound(string $class): void {
 		[$contract, $registrar] = self::CLASSES[$class];
-		$this->assertSame(expected: explode('\\', $class)[2], actual: explode('\\', (string) $registrar)[2], message: 'Bound in its own component');
+		if (isset(self::BOUND_BY_ITS_AREA[$class]) === false) {
+			$this->assertSame(expected: explode('\\', $class)[2], actual: explode('\\', (string) $registrar)[2], message: 'Bound in its own component');
+		}
+
 		$bindings = constant($registrar . '::BINDINGS');
 		$this->assertArrayHasKey(key: $contract, array: $bindings);
 		$this->assertSame(expected: $class, actual: $bindings[$contract]);
