@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use DateTimeZone;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -157,8 +158,7 @@ class FillCalendarTimeZones implements IRepairStep {
 	 */
 	private function calendarsWithoutZone(): array {
 		$result = $this->objects->searchObjectsBySlug(
-			registerSlug: FlowTimerDefinitionStore::REGISTER,
-			schemaSlug: FlowTimerDefinitionStore::SCHEMA_CALENDAR,
+			target: new RegisterSchemaSlugs(register: FlowTimerDefinitionStore::REGISTER, schema: FlowTimerDefinitionStore::SCHEMA_CALENDAR),
 			filters: [],
 			_rbac: false,
 			_multitenancy: false

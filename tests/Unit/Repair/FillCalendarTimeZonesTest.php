@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Repair;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -41,6 +42,7 @@ use RuntimeException;
 #[CoversClass(FillCalendarTimeZones::class)]
 #[UsesClass(ObjectSaveOptions::class)]
 #[UsesClass(ObjectFindTarget::class)]
+#[UsesClass(RegisterSchemaSlugs::class)]
 class FillCalendarTimeZonesTest extends TestCase {
 
 	private ObjectOperationsInterface&MockObject $objects;
@@ -99,7 +101,7 @@ class FillCalendarTimeZonesTest extends TestCase {
 	public function testCalendarsWithoutAZoneGetTheInstanceDefaultAndOthersAreLeftAlone(): void {
 		$this->config->method('getSystemValueString')->with('default_timezone', '')->willReturn('Europe/Amsterdam');
 		$this->objects->expects($this->once())->method('searchObjectsBySlug')
-			->with('flow-timers', 'working-calendar', [], false, false)
+			->with(new RegisterSchemaSlugs(register: 'flow-timers', schema: 'working-calendar'), [], false, false)
 			->willReturn([
 				$this->calendar('c-1', ['slug' => 'gemeente', 'workingDays' => [1, 2, 3, 4, 5]]),
 				$this->calendar('c-2', ['slug' => 'nl-national', 'timezone' => 'Europe/Amsterdam']),
