@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\FileService;
@@ -115,7 +117,7 @@ final class D11InterfaceBindingsTest extends TestCase {
 	}//end testTheClassImplementsItsInterface()
 
 	/**
-	 * The interface is bound to the class in ContractBindings.
+	 * The interface is bound to the class in ContractBindings or its area's registrar.
 	 *
 	 * @param class-string $class    The class.
 	 * @param class-string $contract Its interface.
@@ -124,8 +126,9 @@ final class D11InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsBound(string $class, string $contract): void {
-		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
-		$this->assertSame($class, ContractBindings::BINDINGS[$contract]);
+		$bindings = ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + PlatformServiceRegistrar::BINDINGS;
+		$this->assertArrayHasKey(key: $contract, array: $bindings);
+		$this->assertSame(expected: $class, actual: $bindings[$contract]);
 	}//end testTheInterfaceIsBound()
 
 	/**

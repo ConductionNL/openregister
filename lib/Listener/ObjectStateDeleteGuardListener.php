@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -49,12 +49,12 @@ class ObjectStateDeleteGuardListener implements IEventListener {
 
 	/**
 	 * @param IUserSession                  $userSession The caller.
-	 * @param FlowRunContextInterface       $runContext  The ambient flow run, so a lock a run took admits that run.
+	 * @param CurrentFlowRunInterface       $runContext  The ambient flow run, so a lock a run took admits that run.
 	 * @param RetentionDestructionInterface $retention   Whether the retention machinery is destroying, which no lock or archive stops.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
-		private readonly FlowRunContextInterface $runContext,
+		private readonly CurrentFlowRunInterface $runContext,
 		private readonly RetentionDestructionInterface $retention,
 	) {
 	}//end __construct()

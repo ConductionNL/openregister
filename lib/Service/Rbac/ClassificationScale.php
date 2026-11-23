@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\Schema;
+
 /**
  * The `x-openregister-classification` block of one schema, read.
  *
@@ -41,7 +43,7 @@ final class ClassificationScale {
 	/**
 	 * The schema configuration key holding the block.
 	 */
-	public const ANNOTATION = 'x-openregister-classification';
+	public const ANNOTATION = Schema::CLASSIFICATION_ANNOTATION;
 
 	/**
 	 * Constructor.

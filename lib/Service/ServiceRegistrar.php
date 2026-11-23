@@ -20,31 +20,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ObjectFileReader;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerRuntime;
 use OCA\OpenRegister\Service\Object\CacheHandlerStores;
 use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
-use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -69,6 +61,8 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		// Core binds its own interfaces here; each other area binds its own in its own map.
+		DbRegistrar::bind(context: $context, bindings: CoreServiceBindings::BINDINGS);
 		self::registerRequestScoped(context: $context);
 		self::registerSeams(context: $context);
 		self::registerUserAndOrganisation(context: $context);
@@ -93,27 +87,6 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// The named-transition context MUST be shared for the same reason:
-		// TransitionEngine declares the action on one instance and the
-		// lifecycle listeners read it on another. Unshared, every named call
-		// would silently fall back to matching by from/to value.
-		$context->registerService(
-			LifecycleActionContext::class,
-			function () {
-				return new LifecycleActionContext();
-			}
-		);
-
-		// The automatic-transition pass MUST be shared, and for a sharper reason
-		// than the two above: it IS the request's state. The listener records
-		// into it, ObjectService and TransitionEngine open and close boundaries
-		// on it, and the drain reads the lineage the boundary counted. Auto-
-		// wired fresh at each injection point, every one of those would hold its
-		// own counter: nothing would ever reach depth zero with a record in it,
-		// so no automatic transition would ever fire, silently and with no
-		// error anywhere.
-		$context->registerService(AutoTransitionPass::class, self::buildAutoTransitionPass(...));
-
 		// The register-slug resolver MUST be shared. It memoises one indexed
 		// read per candidate list for the life of the request, and a sweep asks
 		// the same question at every call site of the same tick. Nextcloud
@@ -129,14 +102,6 @@ final class ServiceRegistrar {
 			RegisterSlugResolverInterface::class,
 			function ($c) {
 				return $c->get(RegisterSlugResolver::class);
-			}
-		);
-
-		// The published read of an object's linked emails, for consuming apps.
-		$context->registerService(
-			EmailLinkReaderInterface::class,
-			function ($c) {
-				return $c->get(EmailLinkService::class);
 			}
 		);
 
@@ -157,42 +122,11 @@ final class ServiceRegistrar {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
 	 */
 	private static function registerSeams(IRegistrationContext $context): void {
-		// Credential broker (credential-broker-service + credential-doriath-leaf):
-		// bind the CredentialStore abstraction through the CredentialStoreResolver
-		// (design D-A) — the Doriath application-vault leaf when the doriath app is
-		// eligible (enabled + service classes + application-scoped seam methods +
-		// OR self-registration), else the NC encrypted per-user vault leaf. The
-		// broker and controller keep depending only on the CredentialStore
-		// interface; this factory is the ONLY place the selection happens.
-		$context->registerService(
-			\OCA\OpenRegister\Service\Credential\CredentialStore::class,
-			static function ($c) {
-				return $c->get(\OCA\OpenRegister\Service\Credential\CredentialStoreResolver::class)->resolve();
-			}
-		);
-
-		// Bind the translation provider the admin settings select: Nextcloud
-		// Task Processing only when an administrator chose it and confirmed
-		// that record text may be sent; the no-op identity provider otherwise
-		// (ai-translation-with-a-glossary design D-6).
-		$context->registerService(
-			TranslationProviderInterface::class,
-			static function (ContainerInterface $c) {
-				return $c->get(TranslationProviderResolver::class)->resolve();
-			}
-		);
-
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
-
-		// Register the data-sync source-fetcher registry pre-loaded with the
-		// built-in REST/OpenRegister fetcher. Apps can register additional
-		// fetchers (OData, SOAP, CSV) by resolving and extending this service.
-		$context->registerService(\OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
 
 		// Register the standards schema-import service with the bundled,
 		// versioned snapshot resources (schema-import-standards). Built
@@ -219,7 +153,7 @@ final class ServiceRegistrar {
 	}//end registerUserAndOrganisation()
 
 	/**
-	 * Register the object, file, vectorization, task and note services that are built by hand.
+	 * Register the object, file, vectorization and note services that are built by hand.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -228,43 +162,11 @@ final class ServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function registerObjectServices(IRegistrationContext $context): void {
-		// The task inbox and the portal party resolver read the object store
-		// through AbstractObjectMapper, which the autowirer cannot build (it is
-		// abstract) and would silently default to null: an inbox row without
-		// subject context, and a portal task that can match nobody. Both are
-		// wired to the MagicMapper explicitly for that reason.
-		$context->registerService(TaskInboxService::class, self::buildTaskInboxService(...));
-
-		$context->registerService(
-			PortalPartyResolver::class,
-			function (ContainerInterface $container) {
-				return new PortalPartyResolver(
-					objects: $container->get(MagicMapperInterface::class)
-				);
-			}
-		);
-
 		$context->registerService(CacheHandler::class, self::buildCacheHandler(...));
 
 		// FolderManagementHandler without FileService to break circular dependency.
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
-
-		$context->registerService(TaskService::class, self::buildTaskService(...));
 	}//end registerObjectServices()
-
-	/**
-	 * Build the AutoTransitionPass service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return AutoTransitionPass
-	 */
-	private static function buildAutoTransitionPass(ContainerInterface $container): AutoTransitionPass {
-			return new AutoTransitionPass(
-				runner: $container->get(AutoTransitionRunner::class),
-				logger: $container->get(LoggerInterface::class)
-			);
-	}//end buildAutoTransitionPass()
 
 	/**
 	 * Build the RegisterSlugResolver service.
@@ -322,31 +224,10 @@ final class ServiceRegistrar {
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				secureRandom: $container->get('OCP\Security\ISecureRandom'),
 				db: $container->get('OCP\IDBConnection'),
-				l10nFactory: $container->get('OCP\L10N\IFactory')
+				l10nFactory: $container->get('OCP\L10N\IFactory'),
+				auditEntries: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface::class)
 			);
 	}//end buildUserService()
-
-	/**
-	 * Build the TaskInboxService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return TaskInboxService
-	 */
-	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
-			return new TaskInboxService(
-				tasks: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				objects: $container->get(MagicMapperInterface::class),
-				deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
-				// Reads a located task's subject from its own table instead
-				// of searching every magic table for it.
-				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
-				// The per-row `can` list (record-tasks-tab D-4), asked of the
-				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
-			);
-	}//end buildTaskInboxService()
 
 	/**
 	 * Build the CacheHandler service.
@@ -391,7 +272,7 @@ final class ServiceRegistrar {
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
-				folderRecorder: $container->get(\OCA\OpenRegister\Files\Db\RegisterFolderRecorder::class),
+				folderRecorder: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface::class),
 				fileService: null,
 				// Not FileService itself (that would be the cycle this
 				// factory breaks), only the means to resolve it on first use.
@@ -399,48 +280,6 @@ final class ServiceRegistrar {
 				documentStore: $container->get(\OCA\OpenRegister\Service\File\DocumentStore::class)
 			);
 	}//end buildFolderManagementHandler()
-
-	/**
-	 * Build the TaskService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return TaskService
-	 */
-	private static function buildTaskService(ContainerInterface $container): TaskService {
-			// The write-back gate is resolved lazily and best-effort: without
-			// it a PROJECTED VTODO's update is refused (fail closed), and
-			// standalone VTODOs are unaffected either way.
-			$gate = null;
-			try {
-				$gate = $container->get(\OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate::class);
-			} catch (\Throwable $e) {
-				$container->get('Psr\Log\LoggerInterface')->debug(
-					'[Application] TaskVtodoWriteBackGate unavailable for TaskService: ' . $e->getMessage()
-				);
-			}
-
-			return new TaskService(
-				calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
-				userSession: $container->get('OCP\IUserSession'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				urlGenerator: $container->get('OCP\IURLGenerator'),
-				gate: $gate
-			);
-	}//end buildTaskService()
-
-	/**
-	 * Build the SourceFetcherRegistry service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return SourceFetcherRegistry
-	 */
-	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
-		$registry = new SourceFetcherRegistry();
-		$registry->register($container->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
-		return $registry;
-	}//end buildSourceFetcherRegistry()
 
 	/**
 	 * Build the SchemaImportService service.
