@@ -75,12 +75,14 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -114,6 +116,7 @@ final class FilesRegistrar
         FileTagCatalogueInterface::class          => FileServiceInterface::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        ObjectFileCopierInterface::class          => CopyFiles::class,
         ObjectFileRightsInterface::class          => ObjectFileAccess::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
         ObjectFilesArchiveInterface::class        => ObjectFilesArchive::class,

@@ -2780,7 +2780,7 @@ Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
 Service/Object/CopyPayload.php,,Service,,,,,Core
 Service/Object/CopyObject.php,,Service,,,,,Core
-Service/Object/CopyFiles.php,,Service,,,,,Core
+Service/Object/CopyFiles.php,,Service,,,,,Files
 Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
@@ -4643,3 +4643,4 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/ObjectFileCopierInterface.php,,Kernel,,,,,Kernel

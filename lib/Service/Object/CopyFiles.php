@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
@@ -41,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
  */
-class CopyFiles {
+class CopyFiles implements ObjectFileCopierInterface {
 
 	/**
 	 * The outcome of a file copied.
@@ -68,14 +70,20 @@ class CopyFiles {
 	/**
 	 * Copy every file attached to the source onto the copy.
 	 *
-	 * @param ObjectEntity $source The object copied.
-	 * @param ObjectEntity $copy   The new object.
+	 * Only stored objects (Db ObjectEntity) carry files; any other implementation has none to copy.
+	 *
+	 * @param ObjectEntityInterface $source The object copied.
+	 * @param ObjectEntityInterface $copy   The new object.
 	 *
 	 * @return list<array{id: string, title: string, outcome: string, reason: string|null}> One outcome per file, in the source's order.
 	 *
 	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
 	 */
-	public function copy(ObjectEntity $source, ObjectEntity $copy): array {
+	public function copy(ObjectEntityInterface $source, ObjectEntityInterface $copy): array {
+		if ($source instanceof ObjectEntity === false || $copy instanceof ObjectEntity === false) {
+			return [];
+		}
+
 		try {
 			$nodes = $this->files->getFiles(object: $source);
 		} catch (Throwable $e) {

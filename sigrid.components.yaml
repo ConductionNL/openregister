@@ -449,7 +449,6 @@ components:
       - ".*/lib/Service/Object/ConflictRun[.]php"
       - ".*/lib/Service/Object/ContentSearchHandler[.]php"
       - ".*/lib/Service/Object/ContentSearchWidening[.]php"
-      - ".*/lib/Service/Object/CopyFiles[.]php"
       - ".*/lib/Service/Object/CopyObject[.]php"
       - ".*/lib/Service/Object/CopyPayload[.]php"
       - ".*/lib/Service/Object/CorrectionTarget[.]php"
@@ -2389,6 +2388,7 @@ components:
       - ".*/lib/Service/File/UrlFileFetcher[.]php"
       - ".*/lib/Service/File/UrlFileSource[.]php"
       - ".*/lib/Service/File/UrlStreamOpener[.]php"
+      - ".*/lib/Service/Object/CopyFiles[.]php"
       - ".*/lib/Service/Sharing/AccessLinkReaderFilters[.]php"
       - ".*/lib/Service/TextExtraction/[^/]*"
   - name: Search

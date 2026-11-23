@@ -5513,7 +5513,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		// Design D-2: files after the commit, each reported on its own; a
 		// failed file does not undo the committed copy.
 		if (in_array('files', $copy->include, true) === true) {
-			$links['files'] = $this->container->get(\OCA\OpenRegister\Service\Object\CopyFiles::class)->copy(source: $copy->source, copy: $copied);
+			$links['files'] = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface::class)->copy(source: $copy->source, copy: $copied);
 		}
 
 		return $this->copyAnswer(created: $created, links: $links);

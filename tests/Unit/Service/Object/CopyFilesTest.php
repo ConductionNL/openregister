@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCP\Files\File;
@@ -96,6 +98,21 @@ class CopyFilesTest extends TestCase {
 
 		$this->assertSame([], $this->service()->copy(source: $this->object(uuid: 'u-1'), copy: $this->object(uuid: 'u-2')));
 	}//end testASourceWithoutFilesReportsNone()
+
+	/**
+	 * The copy endpoint reaches the service through the Kernel port, and an object that is not a stored entity has no files to copy.
+	 *
+	 * @return void
+	 */
+	public function testAnObjectThatIsNotAStoredEntityHasNoFilesToCopy(): void {
+		$this->files->expects($this->never())->method('getFiles');
+		$this->files->expects($this->never())->method('copyFile');
+
+		$service = $this->service();
+		$this->assertInstanceOf(ObjectFileCopierInterface::class, $service);
+		$this->assertSame([], $service->copy(source: $this->createMock(ObjectEntityInterface::class), copy: $this->object(uuid: 'u-2')));
+		$this->assertSame([], $service->copy(source: $this->object(uuid: 'u-1'), copy: $this->createMock(ObjectEntityInterface::class)));
+	}//end testAnObjectThatIsNotAStoredEntityHasNoFilesToCopy()
 
 	/**
 	 * Set up the file service double.

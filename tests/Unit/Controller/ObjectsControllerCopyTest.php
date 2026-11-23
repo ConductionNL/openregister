@@ -26,7 +26,7 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\CopyObject;
-use OCA\OpenRegister\Service\Object\CopyFiles;
+use OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -48,7 +48,6 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses   \OCA\OpenRegister\Service\Object\CopyPayload
  * @uses   \OCA\OpenRegister\Service\Object\CopyObject
- * @uses   \OCA\OpenRegister\Service\Object\CopyFiles
  * @uses   \OCA\OpenRegister\Controller\Support\CopyRun
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
@@ -272,7 +271,7 @@ class ObjectsControllerCopyTest extends TestCase {
 	 */
 	private CopyObject&MockObject $copyObject;
 
-	private CopyFiles&MockObject $copyFiles;
+	private ObjectFileCopierInterface&MockObject $copyFiles;
 
 	/**
 	 * The transaction calls made, in order.
@@ -357,7 +356,7 @@ class ObjectsControllerCopyTest extends TestCase {
 		);
 		$this->copyObject = $this->createMock(CopyObject::class);
 		$this->copyObject->method('links')->willReturn($links);
-		$this->copyFiles = $this->createMock(CopyFiles::class);
+		$this->copyFiles = $this->createMock(ObjectFileCopierInterface::class);
 		$this->transaction = [];
 		$db = $this->createMock(IDBConnection::class);
 		foreach (['beginTransaction' => 'begin', 'commit' => 'commit', 'rollBack' => 'rollBack'] as $method => $label) {
@@ -374,7 +373,7 @@ class ObjectsControllerCopyTest extends TestCase {
 			fn (string $id): object => match ($id) {
 				IDBConnection::class => $db,
 				CopyObject::class => $this->copyObject,
-				CopyFiles::class => $this->copyFiles,
+				ObjectFileCopierInterface::class => $this->copyFiles,
 				default => $permissions,
 			}
 		);
