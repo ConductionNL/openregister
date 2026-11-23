@@ -579,3 +579,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest lists '<main caller> -> <PR's new value object> (<A> -> <B>)' while the baseline already holds '<main caller> -> <class the value belongs to>'.
 - Cause: the PR introduced a part object (e.g. AggregationLayout) that callers in another area must now name.
 - Fix: give the grandfathered class a small named constructor taking the plain values (AggregationQuery::grouped(groupBy:)) and use it in the outside caller; test it equals the create() form. Never extend the baseline (#9818).
+## New-file edges to dependency-free Core/Files values: map them Kernel (or-fix-6)
+- Symptom: ComponentDependencyRulesTest lists '<PR file> -> lib/Service/File/FileTarget.php|FileUpload.php|Service/Object/FileWriteGuardInterface.php (Files -> Core)', or a PR's own value/exception crossing components.
+- Cause: main's FilesController etc. carry these edges in the baseline; any NEW file naming them is refused, though they depend only on Kernel (ObjectEntity, ObjectStateWriteException).
+- Fix: give the file a csv row with component Kernel (Kernel files may live outside lib/Kernel, cf. Db/ObjectEntity, Exception/*), check its own use lines are Kernel/OCP only, python3 scripts/component-patterns.py. Constants+reader a new file needs from a Configuration class: a root Kernel/Contracts port carrying the constants, implemented by that class (its constants then inherited). See #10526 3aacce0a, #10506 300667ab (TablePdfRendererInterface over ExportService).
