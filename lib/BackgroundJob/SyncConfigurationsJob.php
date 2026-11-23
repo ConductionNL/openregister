@@ -27,7 +27,6 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDeclarations;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
@@ -57,6 +56,16 @@ class SyncConfigurationsJob extends TimedJob {
 	 * @var int
 	 */
 	private const SYNC_CHECK_INTERVAL = 3600;
+
+	/**
+	 * The schema configuration key that declares object actions.
+	 *
+	 * Restated from ObjectActionDefinition::ACTION_BLOCK, which lives in the
+	 * Processes component; this job is Configuration and may not name it.
+	 *
+	 * @var string
+	 */
+	private const ACTION_BLOCK = 'x-openregister-action';
 
 	/**
 	 * Configuration mapper.
@@ -401,8 +410,6 @@ class SyncConfigurationsJob extends TimedJob {
 	 *
 	 * @throws Exception When a schema declares `elevate`.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDeclarations::declarations() is the one reader of the action block.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	private function refuseElevation(array $configData): void {
@@ -428,8 +435,13 @@ class SyncConfigurationsJob extends TimedJob {
 				continue;
 			}
 
-			foreach (ObjectActionDeclarations::declarations(configuration: $schemaConfiguration) as $key => $definition) {
-				if (array_key_exists('elevate', $definition) === true) {
+			$declared = ($schemaConfiguration[self::ACTION_BLOCK] ?? null);
+			if (is_array($declared) === false) {
+				continue;
+			}
+
+			foreach ($declared as $key => $definition) {
+				if (is_array($definition) === true && array_key_exists('elevate', $definition) === true) {
 					throw new Exception(
 						sprintf('Schema "%s", action "%s" declares "elevate"; a synced configuration may not, import it as an administrator.', $slug, $key)
 					);

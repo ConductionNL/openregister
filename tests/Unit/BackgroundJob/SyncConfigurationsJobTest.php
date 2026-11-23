@@ -190,6 +190,12 @@ class SyncConfigurationsJobTest extends TestCase {
 		$this->runJob(null);
 	}
 
+	public function testTheElevationCheckReadsTheActionBlockTheActionReaderReads(): void {
+		$restated = (new \ReflectionClassConstant(SyncConfigurationsJob::class, 'ACTION_BLOCK'))->getValue();
+
+		$this->assertSame(\OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition::ACTION_BLOCK, $restated);
+	}
+
 	public function testRunImportsASyncedDocumentWithActionsWithoutElevate(): void {
 		$config = $this->createConfigEntity(['id' => 1, 'lastSyncDate' => null, 'sourceType' => 'github']);
 		$this->configurationMapper->method('findBySyncEnabled')->willReturn([$config]);
