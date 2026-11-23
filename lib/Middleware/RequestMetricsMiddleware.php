@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
-use OCA\OpenRegister\Service\Observability\RequestMetricsRecorder;
+use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -57,14 +57,14 @@ class RequestMetricsMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest               $request  The request.
-	 * @param RequestMetricsRecorder $recorder The request metrics.
+	 * @param RequestMetricsInterface $recorder The request metrics.
 	 * @param ITimeFactory           $time     The clock.
 	 * @param LoggerInterface        $logger   The logger.
 	 * @param IUserSession|null      $session  The signed-in user, for the request log entry.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly RequestMetricsRecorder $recorder,
+		private readonly RequestMetricsInterface $recorder,
 		private readonly ITimeFactory $time,
 		private readonly LoggerInterface $logger,
 		private readonly ?IUserSession $session = null,

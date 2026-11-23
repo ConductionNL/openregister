@@ -60,6 +60,21 @@ class ObservabilityRegistrarTest extends TestCase {
 	}//end testRegistersTheServicesInOrder()
 
 	/**
+	 * OpenRegister registers its operations dashboard widget; another app id does not.
+	 *
+	 * @return void
+	 */
+	public function testOnlyOpenRegisterRegistersTheOperationsWidget(): void {
+		$own = new RecordingRegistrationContext();
+		ObservabilityRegistrar::register(context: $own, appId: 'openregister');
+		$this->assertSame(expected: [\OCA\OpenRegister\Dashboard\OperationsDashboardWidget::class], actual: $own->widgets);
+
+		$leaf = new RecordingRegistrationContext();
+		ObservabilityRegistrar::register(context: $leaf, appId: 'leafapp');
+		$this->assertSame(expected: [], actual: $leaf->widgets);
+	}//end testOnlyOpenRegisterRegistersTheOperationsWidget()
+
+	/**
 	 * The health and metrics controllers are built for the app id passed in.
 	 *
 	 * @return void

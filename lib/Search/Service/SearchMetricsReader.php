@@ -44,12 +44,34 @@ class SearchMetricsReader {
 	private const TABLE = 'openregister_metrics';
 
 	/**
+	 * The metric types MetricsService records; equal to its METRIC_* constants (pinned by a test).
+	 *
+	 * Restated so the metrics reader (Integrations) does not name the Search service.
+	 */
+	public const METRIC_SEARCH_KEYWORD = 'search_keyword';
+
+	/**
+	 * A semantic search.
+	 */
+	public const METRIC_SEARCH_SEMANTIC = 'search_semantic';
+
+	/**
+	 * A hybrid search.
+	 */
+	public const METRIC_SEARCH_HYBRID = 'search_hybrid';
+
+	/**
+	 * One generated embedding.
+	 */
+	public const METRIC_EMBEDDING_GENERATED = 'embedding_generated';
+
+	/**
 	 * The search type label of each recorded search metric type.
 	 */
 	public const SEARCH_TYPES = [
-		MetricsService::METRIC_SEARCH_KEYWORD => 'keyword',
-		MetricsService::METRIC_SEARCH_SEMANTIC => 'semantic',
-		MetricsService::METRIC_SEARCH_HYBRID => 'hybrid',
+		self::METRIC_SEARCH_KEYWORD => 'keyword',
+		self::METRIC_SEARCH_SEMANTIC => 'semantic',
+		self::METRIC_SEARCH_HYBRID => 'hybrid',
 	];
 
 	/**
@@ -124,7 +146,7 @@ class SearchMetricsReader {
 		$qb->select('status')
 			->selectAlias($qb->func()->count('*'), 'total')
 			->from(self::TABLE)
-			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(MetricsService::METRIC_EMBEDDING_GENERATED)))
+			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(self::METRIC_EMBEDDING_GENERATED)))
 			->groupBy('status');
 
 		$result = $qb->executeQuery();

@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
@@ -152,7 +152,7 @@ class StorageGrowthMetricsProvider implements IMetricsProvider {
 	 * @return int|null
 	 */
 	private function threshold(): ?int {
-		$value = trim($this->appConfig->getValueString(Application::APP_ID, self::THRESHOLD_KEY, ''));
+		$value = trim($this->appConfig->getValueString(AppIdentity::APP_ID, self::THRESHOLD_KEY, ''));
 		if (ctype_digit($value) === false || (int) $value === 0) {
 			return null;
 		}

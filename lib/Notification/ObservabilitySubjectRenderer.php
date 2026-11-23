@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
-use OCA\OpenRegister\Service\Observability\RequestAlertEvaluator;
 use OCP\IL10N;
 use OCP\Notification\INotification;
 
@@ -32,6 +31,20 @@ use OCP\Notification\INotification;
  * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-alerting-threshold-configuration
  */
 class ObservabilitySubjectRenderer extends SubjectRenderer {
+
+	/**
+	 * The error-rate alert subject; equal to RequestAlertEvaluator::SUBJECT_ERROR_RATE (pinned by a test).
+	 *
+	 * @var string
+	 */
+	public const SUBJECT_ERROR_RATE = 'observability_error_rate';
+
+	/**
+	 * The response-time alert subject; equal to RequestAlertEvaluator::SUBJECT_RESPONSE_TIME (pinned by a test).
+	 *
+	 * @var string
+	 */
+	public const SUBJECT_RESPONSE_TIME = 'observability_response_time';
 
 	/**
 	 * Render a request alert notification.
@@ -47,7 +60,7 @@ class ObservabilitySubjectRenderer extends SubjectRenderer {
 		$parameters = $notification->getSubjectParameters();
 		$minutes = (string) ($parameters['windowMinutes'] ?? 5);
 
-		if ($notification->getSubject() === RequestAlertEvaluator::SUBJECT_ERROR_RATE) {
+		if ($notification->getSubject() === self::SUBJECT_ERROR_RATE) {
 			$notification->setParsedSubject($l->t('OpenRegister error rate is over its alert threshold'));
 			$notification->setParsedMessage(
 				$l->t(
@@ -58,7 +71,7 @@ class ObservabilitySubjectRenderer extends SubjectRenderer {
 			return $this->withAppIcon(notification: $notification);
 		}
 
-		if ($notification->getSubject() === RequestAlertEvaluator::SUBJECT_RESPONSE_TIME) {
+		if ($notification->getSubject() === self::SUBJECT_RESPONSE_TIME) {
 			$notification->setParsedSubject($l->t('OpenRegister response time is over its alert threshold'));
 			$notification->setParsedMessage(
 				$l->t(

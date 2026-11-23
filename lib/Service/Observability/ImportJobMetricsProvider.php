@@ -28,7 +28,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
-use OCA\OpenRegister\Db\ImportPreview;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -57,13 +56,27 @@ class ImportJobMetricsProvider implements IMetricsProvider {
 	private const TABLE = 'openregister_import_previews';
 
 	/**
+	 * The running import states; equal to ImportPreview::STATE_PREVIEWING and STATE_COMMITTING (pinned by a test).
+	 *
+	 * @var string
+	 */
+	public const STATE_PREVIEWING = 'previewing';
+
+	/**
+	 * The committing import state.
+	 *
+	 * @var string
+	 */
+	public const STATE_COMMITTING = 'committing';
+
+	/**
 	 * The phase label of each running state.
 	 *
 	 * @var array<string, string>
 	 */
 	private const PHASES = [
-		ImportPreview::STATE_PREVIEWING => 'preview',
-		ImportPreview::STATE_COMMITTING => 'commit',
+		self::STATE_PREVIEWING => 'preview',
+		self::STATE_COMMITTING => 'commit',
 	];
 
 	/**

@@ -210,4 +210,17 @@ final class SearchMetricsReaderTest extends TestCase {
 		$function->method('__toString')->willReturn($sql);
 		return $function;
 	}//end queryFunction()
+
+	/**
+	 * The restated metric types are the ones MetricsService records.
+	 *
+	 * @return void
+	 */
+	public function testTheMetricTypesMatchTheSearchMetricsService(): void {
+		$this->assertSame(\OCA\OpenRegister\Search\Service\MetricsService::METRIC_SEARCH_KEYWORD, SearchMetricsReader::METRIC_SEARCH_KEYWORD);
+		$this->assertSame(\OCA\OpenRegister\Search\Service\MetricsService::METRIC_SEARCH_SEMANTIC, SearchMetricsReader::METRIC_SEARCH_SEMANTIC);
+		$this->assertSame(\OCA\OpenRegister\Search\Service\MetricsService::METRIC_SEARCH_HYBRID, SearchMetricsReader::METRIC_SEARCH_HYBRID);
+		$this->assertSame(\OCA\OpenRegister\Search\Service\MetricsService::METRIC_EMBEDDING_GENERATED, SearchMetricsReader::METRIC_EMBEDDING_GENERATED);
+	}//end testTheMetricTypesMatchTheSearchMetricsService()
+
 }//end class

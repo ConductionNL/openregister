@@ -248,7 +248,7 @@ final class ServiceRegistrar {
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					cacheFactory: $container->get('OCP\ICacheFactory'),
 					container: $container,
-					metrics: $container->get(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class)
+					metrics: $container->get(\OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class)
 				),
 				nameScope: new CacheNameScopeSources(
 					userSession: $container->get('OCP\IUserSession')

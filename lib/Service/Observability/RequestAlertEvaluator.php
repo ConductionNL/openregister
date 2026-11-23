@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Observability;
 
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -155,7 +155,7 @@ class RequestAlertEvaluator {
 		}
 
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::SNAPSHOT_KEY,
 			(string) json_encode([...$current, ...$outcome, 'lastWindow' => $summary])
 		);
@@ -186,7 +186,7 @@ class RequestAlertEvaluator {
 	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-nextcloud-dashboard-integration
 	 */
 	public function lastWindow(): ?array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SNAPSHOT_KEY, ''), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::SNAPSHOT_KEY, ''), true);
 		$window  = null;
 		if (is_array($decoded) === true) {
 			$window = ($decoded['lastWindow'] ?? null);
@@ -377,7 +377,7 @@ class RequestAlertEvaluator {
 	 *     errorRateExceeded: bool, responseTimeExceeded: bool}
 	 */
 	private function snapshot(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::SNAPSHOT_KEY, ''), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::SNAPSHOT_KEY, ''), true);
 		if (is_array($decoded) === false || is_int($decoded['at'] ?? null) === false) {
 			return [
 				'at' => null,
@@ -419,7 +419,7 @@ class RequestAlertEvaluator {
 	 * @return int|null
 	 */
 	private function threshold(string $key): ?int {
-		$value = trim($this->appConfig->getValueString(Application::APP_ID, $key, ''));
+		$value = trim($this->appConfig->getValueString(AppIdentity::APP_ID, $key, ''));
 		if (ctype_digit($value) === false || (int) $value === 0) {
 			return null;
 		}
@@ -444,7 +444,7 @@ class RequestAlertEvaluator {
 
 			foreach ($admins->getUsers() as $user) {
 				$notification = $this->notifications->createNotification();
-				$notification->setApp(Application::APP_ID)
+				$notification->setApp(AppIdentity::APP_ID)
 					->setUser($user->getUID())
 					->setDateTime(new DateTime('@'.$this->time->getTime()))
 					->setObject(self::NOTIFICATION_OBJECT, $subject)

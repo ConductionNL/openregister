@@ -153,4 +153,15 @@ final class ObservabilitySubjectRendererTest extends TestCase {
 		);
 		return $mock;
 	}//end l10n()
+
+	/**
+	 * The renderer's subjects are the ones the alert evaluator sends.
+	 *
+	 * @return void
+	 */
+	public function testTheSubjectsMatchTheAlertEvaluator(): void {
+		$this->assertSame(\OCA\OpenRegister\Service\Observability\RequestAlertEvaluator::SUBJECT_ERROR_RATE, \OCA\OpenRegister\Notification\ObservabilitySubjectRenderer::SUBJECT_ERROR_RATE);
+		$this->assertSame(\OCA\OpenRegister\Service\Observability\RequestAlertEvaluator::SUBJECT_RESPONSE_TIME, \OCA\OpenRegister\Notification\ObservabilitySubjectRenderer::SUBJECT_RESPONSE_TIME);
+	}//end testTheSubjectsMatchTheAlertEvaluator()
+
 }//end class

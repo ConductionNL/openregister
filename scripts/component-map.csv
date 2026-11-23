@@ -1041,7 +1041,7 @@ Exception/ConfidenceThresholdOutOfRangeException.php,6,Exception,Exception,Excep
 Exception/ConsistencyCheckWouldWriteException.php,14,Exception,Exception,Exception/ConsistencyCheckWouldWriteException.php,0,,Configuration
 Exception/CorrectionRefusedException.php,10,Exception,Exception,Exception/CorrectionRefusedException.php,0,,Kernel
 Exception/CustomValidationException.php,13,Exception,Exception,Exception/CustomValidationException.php,59,,Kernel
-Exception/DatabaseConstraintException.php,64,Exception,Exception,Exception/DatabaseConstraintException.php,0,,Core
+Exception/DatabaseConstraintException.php,64,Exception,Exception,Exception/DatabaseConstraintException.php,0,,Kernel
 Exception/DecisionConflictException.php,6,Exception,Exception,Exception/DecisionConflictException.php,0,,Kernel
 Exception/DraftActivationRefusedException.php,43,Exception,Exception,Exception/DraftActivationRefusedException.php,0,,Core
 Exception/DraftAlreadyLeftException.php,5,Exception,Exception,Exception/DraftAlreadyLeftException.php,0,,Kernel
@@ -1276,6 +1276,7 @@ Kernel/Contracts/ObjectImporterInterface.php,49,Kernel,Kernel,Kernel/Contracts/O
 Kernel/Contracts/ObjectMergerInterface.php,14,Kernel,Kernel,Kernel/Contracts/ObjectMergerInterface.php,0,,Kernel
 Kernel/Contracts/ObjectNameCacheInterface.php,10,Kernel,Kernel,Kernel/Contracts/ObjectNameCacheInterface.php,0,,Kernel
 Kernel/Contracts/ObjectOperationsInterface.php,105,Kernel,Kernel,Kernel/Contracts/ObjectOperationsInterface.php,0,,Kernel
+Kernel/Contracts/RequestMetricsInterface.php,9,Kernel,Kernel,Kernel/Contracts/RequestMetricsInterface.php,0,,Kernel
 Kernel/Contracts/RegisterInterface.php,25,Kernel,Kernel,Kernel/Contracts/RegisterInterface.php,1,,Kernel
 Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/ScheduledReportInterface.php,0,,Kernel
 Kernel/Contracts/ScheduledReportsInterface.php,15,Kernel,Kernel,Kernel/Contracts/ScheduledReportsInterface.php,0,,Kernel
@@ -3857,7 +3858,7 @@ Event/ObjectLeavingEvent.php,,Event,,,,,Core
 Event/PermissionVerb.php,,Event,,,,,Kernel
 Exception/ActionParameterTypeException.php,,Exception,,,,,Processes
 Exception/BrokenReference.php,,Exception,,,,,Core
-Exception/DatabaseConstraintMessages.php,,Exception,,,,,Core
+Exception/DatabaseConstraintMessages.php,,Exception,,,,,Kernel
 Exception/ObjectLookupFailedException.php,,Exception,,,,,Core
 Exception/ObjectStateMarker.php,,Exception,,,,,Kernel
 Exception/ReferenceCycle.php,,Exception,,,,,Core
@@ -4381,7 +4382,7 @@ Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
 AppHost/Observability/MetricsAccessGuard.php,,AppHost,,,,,Integrations
-Search/Service/SearchMetricsReader.php,,Search,,,,,Search
+Search/Service/SearchMetricsReader.php,,Search,,,,,Integrations
 Service/Observability/SearchMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/HistogramPoints.php,,Service,,,,,Integrations
 Service/Observability/WebhookDurationMetricsProvider.php,,Service,,,,,Integrations
@@ -4401,9 +4402,9 @@ Service/Observability/CacheMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/ImportJobMetricsProvider.php,,Service,,,,,Integrations
 Service/Observability/RequestAlertEvaluator.php,,Service,,,,,Integrations
 Service/Observability/RequestAlertMetricsProvider.php,,Service,,,,,Integrations
-BackgroundJob/RequestAlertJob.php,,BackgroundJob,,,,,Core
+BackgroundJob/RequestAlertJob.php,,BackgroundJob,,,,,Integrations
 Notification/ObservabilitySubjectRenderer.php,,Notification,,,,,Notifications
-Dashboard/OperationsDashboardWidget.php,,Dashboard,,,,,Platform
+Dashboard/OperationsDashboardWidget.php,,Dashboard,,,,,Integrations
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

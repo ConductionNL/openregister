@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Service\Observability\RequestMetricsRecorder;
+use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
 use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -40,13 +40,13 @@ final class CacheHandlerRuntime {
 	 * @param LoggerInterface    $logger       Logger for performance monitoring
 	 * @param ICacheFactory|null $cacheFactory Cache factory for query result caching
 	 * @param ContainerInterface|null $container Container for lazy loading dependencies
-	 * @param RequestMetricsRecorder|null $metrics Counts cache hits and misses for the metrics endpoint
+	 * @param RequestMetricsInterface|null $metrics Counts cache hits and misses for the metrics endpoint
 	 */
 	public function __construct(
 		public readonly LoggerInterface $logger,
 		public readonly ?ICacheFactory $cacheFactory = null,
 		public readonly ?ContainerInterface $container = null,
-		public readonly ?RequestMetricsRecorder $metrics = null,
+		public readonly ?RequestMetricsInterface $metrics = null,
 	) {
 	}//end __construct()
 }//end class

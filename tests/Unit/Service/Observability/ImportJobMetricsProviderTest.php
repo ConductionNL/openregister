@@ -166,4 +166,15 @@ final class ImportJobMetricsProviderTest extends TestCase {
 
 		return new ImportJobMetricsProvider(db: $db, time: $time, logger: $this->logger);
 	}//end provider()
+
+	/**
+	 * The restated running states are the import preview's own.
+	 *
+	 * @return void
+	 */
+	public function testTheRunningStatesMatchTheImportPreview(): void {
+		$this->assertSame(\OCA\OpenRegister\Db\ImportPreview::STATE_PREVIEWING, \OCA\OpenRegister\Service\Observability\ImportJobMetricsProvider::STATE_PREVIEWING);
+		$this->assertSame(\OCA\OpenRegister\Db\ImportPreview::STATE_COMMITTING, \OCA\OpenRegister\Service\Observability\ImportJobMetricsProvider::STATE_COMMITTING);
+	}//end testTheRunningStatesMatchTheImportPreview()
+
 }//end class

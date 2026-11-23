@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Service\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
-use OCA\OpenRegister\Db\CatalogueScope;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -199,7 +198,7 @@ class ObjectCountMetricsProvider implements IMetricsProvider {
 		}
 
 		$stmt = $this->db->prepare(
-			'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND '.(new CatalogueScope(db: $this->db))->condition()
+			'SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND '.$this->catalogueScope()
 		);
 		$result = $stmt->execute([$prefix.'openregister_table_%']);
 		$tables = [];
@@ -244,4 +243,26 @@ class ObjectCountMetricsProvider implements IMetricsProvider {
 		$result->closeCursor();
 		return $counts;
 	}//end legacyCounts()
+
+	/**
+	 * Limit an information_schema query to this instance's own database, as Db\CatalogueScope does.
+	 *
+	 * Restated here so the Integrations area does not name the Core class.
+	 *
+	 * @return string The table_schema condition for the connection's platform.
+	 */
+	private function catalogueScope(): string {
+		try {
+			$postgres = ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+		} catch (Throwable) {
+			// A connection that cannot name its platform fails on the query itself; the callers handle that.
+			$postgres = false;
+		}
+
+		if ($postgres === true) {
+			return 'table_schema = current_schema()';
+		}
+
+		return 'table_schema = DATABASE()';
+	}//end catalogueScope()
 }//end class

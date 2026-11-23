@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Observability;
 
+use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/production-observability
  */
-class RequestMetricsRecorder {
+class RequestMetricsRecorder implements RequestMetricsInterface {
 
 	/**
 	 * The prefix of every counter key.
