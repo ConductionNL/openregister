@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Anonymisation;
 
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Files\Db\PublicShareRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OriginalCustody;
 use OCA\OpenRegister\Db\OriginalCustodyMapper;
@@ -198,8 +199,8 @@ class OriginalCustodyTest extends TestCase {
 		);
 
 		$fileMapper = $this->createMock(FileMapper::class);
-		$fileMapper->method('publishFile')->willReturnCallback(function (int $fileId): array {
-			$this->shares[] = $fileId;
+		$fileMapper->method('publishFile')->willReturnCallback(function (PublicShareRequest $request): array {
+			$this->shares[] = $request->fileId;
 			return ['id' => 3, 'token' => 'tok', 'accessUrl' => 'https://x/s/tok'];
 		});
 

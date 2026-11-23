@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Files\Db\PublicShareRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\RedactionNotPublishableException;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -84,8 +85,8 @@ class PublishVerdictGuardTest extends TestCase {
 		);
 
 		$fileMapper = $this->createMock(FileMapper::class);
-		$fileMapper->method('publishFile')->willReturnCallback(function (int $fileId): array {
-			$this->shares[] = $fileId;
+		$fileMapper->method('publishFile')->willReturnCallback(function (PublicShareRequest $request): array {
+			$this->shares[] = $request->fileId;
 			return ['id' => 3, 'token' => 'tok', 'accessUrl' => 'https://x/s/tok'];
 		});
 
