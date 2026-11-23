@@ -61,7 +61,7 @@ class ViewObjectSourceProviderFindTest extends TestCase {
 		$schemas->method('find')->with(9)->willReturn(new Schema());
 		$reader = $this->createMock(MagicMapperInterface::class);
 		$reader->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			static function (array $query) use ($rows, &$queries): array {
+			static function (RegisterSchema $table, array $query) use ($rows, &$queries): array {
 				$queries[] = $query;
 
 				return $rows;
