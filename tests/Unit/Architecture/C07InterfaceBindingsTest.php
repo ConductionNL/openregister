@@ -84,7 +84,7 @@ final class C07InterfaceBindingsTest extends TestCase {
 		ArchiveActionDateCalculator::class => [ArchiveReferenceReaderInterface::class, ComplianceServiceBindings::class],
 		AuditHashService::class => [AuditSealInterface::class, ComplianceServiceBindings::class],
 		AuditTrailMapper::class => [AuditTrailMapperInterface::class, ComplianceMapperRegistrar::class],
-		AvgRetentionService::class => [AvgRetentionPassInterface::class, ComplianceServiceBindings::class],
+		AvgRetentionService::class => [AvgRetentionPassInterface::class, ContractBindings::class],
 		DpiaPatternDetectionService::class => [DpiaPatternDetectorInterface::class, ComplianceServiceBindings::class],
 		ExternalGrantLapseNotifier::class => [ExternalGrantLapseNotifierInterface::class, CoreServiceBindings::class],
 		GroupReconciler::class => [GroupReconcilerInterface::class, CoreServiceBindings::class],

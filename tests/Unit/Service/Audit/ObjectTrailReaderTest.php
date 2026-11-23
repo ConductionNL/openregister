@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTrailReaderInterface;
 use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
-use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCP\DB\Exception as DBException;
 use PHPUnit\Framework\TestCase;
 
@@ -88,7 +88,7 @@ class ObjectTrailReaderTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePortIsBoundToTheReader(): void {
-		$this->assertSame(ObjectTrailReader::class, ComplianceServiceBindings::BINDINGS[ObjectTrailReaderInterface::class]);
+		$this->assertSame(ObjectTrailReader::class, ContractBindings::BINDINGS[ObjectTrailReaderInterface::class]);
 		$this->assertInstanceOf(ObjectTrailReaderInterface::class, new ObjectTrailReader(mapper: $this->createMock(AuditTrailMapperInterface::class)));
 	}//end testThePortIsBoundToTheReader()
 }//end class

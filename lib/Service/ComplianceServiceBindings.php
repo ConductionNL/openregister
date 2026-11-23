@@ -22,17 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Kernel\Contracts\Core\AccessLinkUseRecorderInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTrailReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
@@ -69,10 +65,8 @@ use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
-use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
-use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
@@ -84,7 +78,6 @@ use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
-use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\OrganisationContextAttributionInterface;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
@@ -184,18 +177,12 @@ final class ComplianceServiceBindings {
 		SearchTrailRecorderInterface::class            => SearchTrailService::class,
 		AnonymisationBackendServiceInterface::class    => AnonymisationBackendService::class,
 		AnonymiserRequestInterface::class              => AnonymisationBackendService::class,
-		AuditEntryWriterInterface::class               => AuditEntryWriter::class,
-		AccessLinkUseRecorderInterface::class          => AccessLinkUseRecorder::class,
-		SchemaAccessChangeLogInterface::class          => AuthorizationAuditService::class,
-		ObjectTrailReaderInterface::class              => ObjectTrailReader::class,
-		TenantKeyRotationInterface::class              => TenantKeyService::class,
 		ArchivalNominationServiceInterface::class      => ArchivalNominationService::class,
 		ArchivalNominationTriggerInterface::class      => ArchivalNominationService::class,
 		AuditSinkInterface::class                      => AuditSink::class,
 		AuditSinkShipperInterface::class               => AuditSink::class,
 		AuditSinkStatusInterface::class                => AuditSinkStatus::class,
 		AuditTrailPageServiceInterface::class          => AuditTrailPageService::class,
-		AvgComplianceServiceInterface::class           => AvgComplianceService::class,
 		AuditHashServiceInterface::class               => AuditHashService::class,
 		AuditQueryServiceInterface::class              => AuditQueryService::class,
 		DestructionListCreatorInterface::class         => DestructionListCreator::class,
@@ -229,7 +216,6 @@ final class ComplianceServiceBindings {
 		TransferListRunInterface::class                => TransferListService::class,
 		TransferRecordStoreInterface::class            => TransferRecordService::class,
 		SftpTransportInterface::class                  => SftpTransport::class,
-		TmloServiceInterface::class                    => TmloService::class,
 		SubjectExportServiceInterface::class           => SubjectExportService::class,
 		CaseAccessControlInterface::class              => CaseAccessControl::class,
 		CaseObjectAccessorInterface::class             => CaseObjectAccessor::class,
@@ -258,8 +244,6 @@ final class ComplianceServiceBindings {
 		ArchiveReferenceReaderInterface::class         => ArchiveActionDateCalculator::class,
 		AuditSealInterface::class                      => AuditHashService::class,
 		AuditRechainInterface::class                   => AuditHashService::class,
-		SchemaTeardownInterface::class                 => SchemaDeletionService::class,
-		AvgRetentionPassInterface::class               => AvgRetentionService::class,
 		DpiaPatternDetectorInterface::class            => DpiaPatternDetectionService::class,
 		RetentionSweepInterface::class                 => RetentionSweepService::class,
 	];

@@ -908,9 +908,12 @@
   "lib/Service/AppConfigurationImporterInterface.php",
   "lib/Service/AppRegisterImportRunnerInterface.php",
   "lib/Service/Archival/SelectionListSeeder.php",
+  "lib/Service/Audit/AccessLinkUseRecorder.php",
   "lib/Service/Audit/AuditAggregationServiceInterface.php",
+  "lib/Service/Audit/AuditEntryWriter.php",
   "lib/Service/Audit/NamedIdentifier.php",
   "lib/Service/Audit/ObjectHistoryForReaders.php",
+  "lib/Service/Audit/ObjectTrailReader.php",
   "lib/Service/Audit/ReadEventVisibility.php",
   "lib/Service/Audit/SecuritySettingAnnouncer.php",
   "lib/Service/Audit/SecuritySettingRegistry.php",
@@ -923,8 +926,10 @@
   "lib/Service/Authorization/RbacGroupCollector.php",
   "lib/Service/AuthorizationAuditService.php",
   "lib/Service/AuthorizationChange.php",
+  "lib/Service/AvgComplianceService.php",
   "lib/Service/AvgComplianceServiceInterface.php",
   "lib/Service/AvgRetentionPassInterface.php",
+  "lib/Service/AvgRetentionService.php",
   "lib/Service/Bindings/AccessBindings.php",
   "lib/Service/Bindings/FeatureBindings.php",
   "lib/Service/BookmarkLinkService.php",
@@ -1248,7 +1253,6 @@
   "lib/Service/PhotoLinkServiceInterface.php",
   "lib/Service/PollLinkService.php",
   "lib/Service/PollLinkServiceInterface.php",
-  "lib/Service/ProcessesServiceRegistrar.php",
   "lib/Service/ProcessingLogService.php",
   "lib/Service/ProcessingRead.php",
   "lib/Service/PropertyAccessRequest.php",
@@ -1335,6 +1339,7 @@
   "lib/Service/Schema/SchemaRevalidationService.php",
   "lib/Service/Schema/SchemaVersioningService.php",
   "lib/Service/SchemaApplicationMigratorInterface.php",
+  "lib/Service/SchemaDeletionService.php",
   "lib/Service/SchemaDeletionStores.php",
   "lib/Service/SchemaProperty.php",
   "lib/Service/SchemaTeardownInterface.php",
@@ -1393,6 +1398,7 @@
   "lib/Service/Task/TaskState.php",
   "lib/Service/Task/TaskStateRules.php",
   "lib/Service/Task/TaskSubjectLocatorInterface.php",
+  "lib/Service/TaskService.php",
   "lib/Service/TenantKeyRotationInterface.php",
   "lib/Service/TenantKeyService.php",
   "lib/Service/TenantLifecycleServiceInterface.php",
@@ -1402,6 +1408,7 @@
   "lib/Service/TimeTracker/TimeEntry.php",
   "lib/Service/TimeTrackerLinkService.php",
   "lib/Service/TimeTrackerLinkServiceInterface.php",
+  "lib/Service/TmloService.php",
   "lib/Service/TmloServiceInterface.php",
   "lib/Service/TranslationProjectionService.php",
   "lib/Service/TranslationProjectionServiceInterface.php",
@@ -1438,7 +1445,7 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "exposed_loc": {
-  "Compliance": 3694,
+  "Compliance": 4805,
   "Configuration": 870,
   "Core": 34993,
   "Files": 1275,
@@ -1446,7 +1453,7 @@
   "Kernel": 6085,
   "Notifications": 1760,
   "Platform": 0,
-  "Processes": 4799,
+  "Processes": 5032,
   "Search": 1317
  },
  "kernel_files": [
@@ -1781,6 +1788,6 @@
   "lib/Support/UnknownFilterKeys.php"
  ],
  "kernel_loc": 7689,
- "total_loc": 462828,
+ "total_loc": 462822,
  "violation_degree": 0.0064
 }

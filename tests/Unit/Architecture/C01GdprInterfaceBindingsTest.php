@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\AvgComplianceService;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
 use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\DsarServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
@@ -58,7 +59,7 @@ final class C01GdprInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AvgComplianceService::class => [AvgComplianceServiceInterface::class, ComplianceServiceBindings::class],
+		AvgComplianceService::class => [AvgComplianceServiceInterface::class, ContractBindings::class],
 		DataSubjectRequestService::class => [DataSubjectRequestServiceInterface::class, ComplianceServiceBindings::class],
 		DsarService::class => [DsarServiceInterface::class, ComplianceServiceBindings::class],
 		ErasurePreviewService::class => [ErasurePreviewServiceInterface::class, ComplianceServiceBindings::class],

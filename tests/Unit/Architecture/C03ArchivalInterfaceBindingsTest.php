@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TmloServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -54,7 +55,7 @@ final class C03ArchivalInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		SelectielijstImportService::class => [SelectielijstImportServiceInterface::class, ComplianceServiceBindings::class],
 		SelectielijstReferenceResolver::class => [SelectielijstReferenceResolverInterface::class, ComplianceServiceBindings::class],
-		TmloService::class => [TmloServiceInterface::class, ComplianceServiceBindings::class],
+		TmloService::class => [TmloServiceInterface::class, ContractBindings::class],
 	];
 
 	/**

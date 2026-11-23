@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\ReachRevocationLog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -38,7 +38,7 @@ final class SchemaAccessChangeLogBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePortIsBoundToTheAuthorizationAudit(): void {
-		$this->assertSame(AuthorizationAuditService::class, ComplianceServiceBindings::BINDINGS[SchemaAccessChangeLogInterface::class] ?? null);
+		$this->assertSame(AuthorizationAuditService::class, ContractBindings::BINDINGS[SchemaAccessChangeLogInterface::class] ?? null);
 		$this->assertTrue(is_subclass_of(AuthorizationAuditService::class, SchemaAccessChangeLogInterface::class));
 	}//end testThePortIsBoundToTheAuthorizationAudit()
 

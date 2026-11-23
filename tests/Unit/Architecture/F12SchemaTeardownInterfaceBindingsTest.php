@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -47,7 +47,7 @@ final class F12SchemaTeardownInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		SchemaTeardownInterface::class => [SchemaDeletionService::class, ComplianceServiceBindings::class],
+		SchemaTeardownInterface::class => [SchemaDeletionService::class, ContractBindings::class],
 	];
 
 	/**

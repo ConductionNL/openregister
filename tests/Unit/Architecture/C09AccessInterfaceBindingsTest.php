@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\Capability\ToolReachResolver;
-use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Integration\IntegrationWiring;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
@@ -66,7 +66,7 @@ final class C09AccessInterfaceBindingsTest extends TestCase {
 		DeclaredGroupInventoryService::class => [DeclaredGroupInventoryInterface::class, CoreServiceBindings::class],
 		MatrixRowWhere::class => [MatrixRowKeys::class, CoreServiceBindings::class],
 		ShareGrantor::class => [ShareGrantorInterface::class, CoreServiceBindings::class],
-		TenantKeyService::class => [TenantKeyRotationInterface::class, ComplianceServiceBindings::class],
+		TenantKeyService::class => [TenantKeyRotationInterface::class, ContractBindings::class],
 		ToolReachResolver::class => [ToolReachLevels::class, IntegrationWiring::class],
 	];
 
