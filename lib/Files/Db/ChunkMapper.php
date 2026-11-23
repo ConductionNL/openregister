@@ -30,7 +30,6 @@ use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use OCA\OpenRegister\Db\QueryPage;
-use OCA\OpenRegister\Db\Source;
 
 /**
  * Class ChunkMapper
