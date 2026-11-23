@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\DraftDeletedEvent;
 use OCA\OpenRegister\Event\DraftUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -36,8 +37,11 @@ use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectStateDeleteGuardListener;
 use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
+use OCA\OpenRegister\Listener\TeamResourcesDeclarationCheckListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Reference\ObjectTeamResourceProvider;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
+use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\User\Events\UserLoggedInEvent;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -67,6 +71,7 @@ final class CoreListenerRegistrarTest extends TestCase {
 			'facetCache' => ['facetCache', [[ObjectCreatedEvent::class, FacetCacheInvalidationListener::class], [ObjectUpdatedEvent::class, FacetCacheInvalidationListener::class], [ObjectDeletedEvent::class, FacetCacheInvalidationListener::class], [ObjectTransitionedEvent::class, FacetCacheInvalidationListener::class]]],
 			'stateHistory' => ['stateHistory', [[ObjectTransitionedEvent::class, StateHistoryProjectionListener::class]]],
 			'objectCleanup' => ['objectCleanup', [[ObjectDeletedEvent::class, ObjectCleanupListener::class]]],
+			'teamResources' => ['teamResources', [[SchemaDeclarationChecksEvent::class, TeamResourcesDeclarationCheckListener::class]]],
 		];
 	}//end slots()
 
@@ -101,6 +106,19 @@ final class CoreListenerRegistrarTest extends TestCase {
 			$this->pairs(context: $context)
 		);
 	}//end testTheDraftSlotsRegisterOnTheNamedEvent()
+
+	/**
+	 * The team-resources slot also registers the provider that lists a team's objects.
+	 *
+	 * @return void
+	 */
+	public function testTheTeamResourcesSlotRegistersTheProvider(): void {
+		$context = $this->createMock(IRegistrationContext::class);
+		$context->expects($this->once())->method('registerTeamResourceProvider')->with(ObjectTeamResourceProvider::class);
+		$context->expects($this->once())->method('registerEventListener')->with(SchemaDeclarationChecksEvent::class, TeamResourcesDeclarationCheckListener::class);
+
+		CoreListenerRegistrar::teamResources(context: $context);
+	}//end testTheTeamResourcesSlotRegistersTheProvider()
 
 	/**
 	 * Every listener a slot names exists.
