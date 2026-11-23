@@ -3765,7 +3765,7 @@ Db/ProcessingPurposeMapperInterface.php,,Db,,,,,Compliance
 Db/RecordTemplateMapperInterface.php,,Db,,,,,Configuration
 Db/RegisterLookup.php,,Db,,,,,Core
 Db/RegisterMapperServices.php,,Db,,,,,Core
-Db/RegisterSchema.php,,Db,,,,,Core
+Db/RegisterSchema.php,,Db,,,,,Kernel
 Db/RegistrySubscriptionMapperInterface.php,,Db,,,,,Core
 Db/RuleRunFilter.php,,Db,,,,,Processes
 Db/RuleRunMapperInterface.php,,Db,,,,,Processes
