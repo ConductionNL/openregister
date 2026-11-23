@@ -124,17 +124,6 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	}//end getAlbumMapper()
 
 	/**
-	 * Active session UID, or throw if no user is logged in.
-	 *
-	 * @return string The user id.
-	 *
-	 * @throws Exception When there is no active user.
-	 */
-	private function requireUid(): string {
-		return $this->runtime->userSession()->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
-	}//end requireUid()
-
-	/**
 	 * Link an existing NC Photos album to an OR object.
 	 *
 	 * Idempotent: a duplicate link raises a 409 Exception. Album
@@ -151,7 +140,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the link-album contract is owned by the integration-photos capability.
 	 */
 	public function linkAlbum(LinkTarget $target, int $albumId): PhotoLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		if ($this->isPhotosAvailable() === false) {
 			throw new Exception('NC Photos is not available', 503);
@@ -214,7 +203,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link-album contract is owned by the integration-photos capability.
 	 */
 	public function createAndLinkAlbum(LinkTarget $target, string $name): PhotoLink {
-		$uid = $this->requireUid();
+		$uid = $this->runtime->requireUid();
 
 		$name = trim($name);
 		if ($name === '') {
@@ -263,7 +252,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-album contract is owned by the integration-photos capability.
 	 */
 	public function unlinkAlbum(string $objectUuid, int $albumId): void {
-		$this->requireUid();
+		$this->runtime->requireUid();
 
 		$deleted = $this->photoLinkMapper->deleteByObjectAndAlbum($objectUuid, $albumId);
 		if ($deleted === 0) {
