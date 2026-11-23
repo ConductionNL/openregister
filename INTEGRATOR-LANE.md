@@ -33,6 +33,12 @@ PRs on `main`. Decide everything yourself; never ask.
    `<UTC time> <RESULT> prs=<list> main=<sha>` and mark the commit with "integrator-cloud".
 At the end: `integrate.sh finish` (releases the lease).
 
+## gitleaks (needed by the checker floor)
+If `gitleaks version` fails, install it once per session from a package manager, first that works:
+`sudo apt-get install -y gitleaks` (or without sudo), then `go install github.com/zricethezav/gitleaks/v8@v8.30.0`
+(add `$(go env GOPATH)/bin` to PATH). If neither works, the checker floor stays NORESULT and the tree is not merged:
+report it in your final message and stop retrying that tree.
+
 ## Rules
 - You merge ONLY through `integrate.sh merge`, ONLY a GREEN tree, ONLY into openregister `main`. Never merge by hand,
   never with --admin outside the script, never another repo, never another base.
