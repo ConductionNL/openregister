@@ -430,3 +430,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a BLOCK that is a maintainer decision (e.g. #10641 stylelint-config-recommended-scss 18 needs stylelint 18; Nextcloud config caps at 17) gets the same question re-commented every run; #10641 has five copies.
 - Cause: each lane run re-checks the PR and asks again without reading its comments.
 - Fix: read the PR comments first; if the question is there and unanswered, leave the BLOCK and add nothing. Re-check only when a dependency released a version that changes the answer.
+## Trap: git mv then sed, then git checkout -- <file> reverts the class rename (or-fix-18)
+- Symptom: after moving a migration step to a new version, phpunit dies 'Cannot declare class <OldName>, because the name is already in use in <NewName>.php'; check-migration-version-bump counts one migration too many.
+- Cause: git mv stages the old content; a later git checkout -- <new file> (e.g. undoing a break-the-subject check) restores the staged pre-sed body with the old class name.
+- Fix: re-run the sed on the new file and git add it; undo a break check with the reverse sed, not checkout. Also inherited on main 223a653f2: AppHost/BootstrapTest::testSettingsPlaneRegistrationIsLazy (process-isolated, OCP prepend lost), FileVersioningHandlerGoldenTest (7 errors). #10518 moved to Version1Date20261114100018 (83d66ed4); #10499 now the only holder of ...100000.
