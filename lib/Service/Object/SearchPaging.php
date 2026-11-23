@@ -124,15 +124,14 @@ final class SearchPaging {
 	/**
 	 * The response skeleton: rows, totals and the pagination window.
 	 *
-	 * @param mixed $results      The rows
-	 * @param array $searchResult The search result
+	 * @param array $searchResult The search result, its `results` the rows to answer with
 	 * @param array $window       The pagination window
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 	 */
-	public function response(mixed $results, array $searchResult, array $window): array {
+	public function response(array $searchResult, array $window): array {
 		$total = $searchResult['total'];
 		$pages = 0;
 		if ($window['limit'] > 0) {
@@ -140,7 +139,7 @@ final class SearchPaging {
 		}
 
 		return [
-			'results' => $results,
+			'results' => $searchResult['results'],
 			'total'   => $total,
 			'page'    => $window['page'],
 			'pages'   => $pages,
