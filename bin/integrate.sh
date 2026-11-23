@@ -548,9 +548,9 @@ phase_merge() {
 		m=$(merged_now "$n")
 		for _ in 1 2 3; do
 			[ "$m" = true ] && break
-			msg=$(timeout 120 gh pr merge "$n" -R "$R" --admin --merge --match-head-commit "$head" 2>&1)
+			msg=$(timeout 120 gh pr merge "$n" -R "$R" --admin --merge --match-head-commit "$head" --subject "Merge pull request #$n [skip ci]" 2>&1)
 			m=$(merged_now "$n"); [ "$m" = true ] && break
-			msg=$(gh api -X PUT "repos/$R/pulls/$n/merge" -f merge_method=merge -f sha="$head" 2>&1)
+			msg=$(gh api -X PUT "repos/$R/pulls/$n/merge" -f merge_method=merge -f sha="$head" -f commit_title="Merge pull request #$n [skip ci]" 2>&1)
 			m=$(merged_now "$n"); [ "$m" = true ] && break
 			python3 -c "import time;time.sleep(20)"
 		done

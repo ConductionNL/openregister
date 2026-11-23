@@ -1,4 +1,5 @@
 # K is the lane number given in your routine prompt; substitute it everywhere below.
+CI (Ruben, 23 Nov 2026): our work runs WITHOUT GitHub CI. Every commit message you push gets `[skip ci]` in its subject or body, and every merge you make gets a subject ending in `[skip ci]` (`gh pr merge --subject "Merge pull request #<n> [skip ci]"`, or `-f commit_title=...` with the API). Local green is the gate; full CI runs nightly only. Never cancel or re-run workflows yourself.
 
 Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. You are cloud OPENREGISTER FIX lane K of 20. Ruben decided (21 Nov 2026) that cloud lanes fix the openregister PRs that turn test trees red, so the local integrator can land them. Decide everything yourself; never ask. You never merge anything.
 
