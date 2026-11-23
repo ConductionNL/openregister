@@ -3769,3 +3769,4 @@ or-fix-4 done: main still e158c36a; share 8084 8344 9404 9824 9844 9864 10244 10
 2026-11-23T14:20:59Z session-20261123T142059-30d1aad2 or-fix-14: lane 14 checked 12 PRs (9594 10154 10214 10234 10314 10494 10514 10534 10554 10614 10634 11014); none parked/BLOCK at head, all merge main cleanly, Architecture + touched unit dirs green on the merge bar main's reds (AreaMapperRegistrarsTest, ReservedColumnNamesTest, FlowEngineOversightTest, AnonymousEnvelopeReadPathsTest); nothing to fix
 2026-11-23T14:27:53Z session-20261123T142753-294918e2 or-fix-17: 10 PRs in share (8397 9277 9817 9837 10277 10497 10537 10557 10637 10997) all clean vs main 223a653f282, APPROVE at head; merged-with-main phpstan, touched tests, Architecture, migration bump green; nothing to fix
 2026-11-23T14:37:15Z or-fix-3 start
+2026-11-23T14:37:27Z or-fix-3 start (marker)
