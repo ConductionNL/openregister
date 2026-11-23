@@ -425,3 +425,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Fix: none on PR branches: inherited env artefact; compare against plain main before chasing it.
 ## Version1Date20261121170000 shared by #10314 and #10531 (or-fix-11)
 - Same clash as the 20261114100000 entry: two open PRs add different steps under one class name. #10531 moved to ...170011 (94e3905e); #10451 moved its 100000 step to ...100011 (2f378e57). Still clashing: #10314 none now; #10499 and #10518 still share 20261114100000 with each other.
+
+## Open product question already on the PR: do not ask again (or-fix-1)
+- Symptom: a BLOCK that is a maintainer decision (e.g. #10641 stylelint-config-recommended-scss 18 needs stylelint 18; Nextcloud config caps at 17) gets the same question re-commented every run; #10641 has five copies.
+- Cause: each lane run re-checks the PR and asks again without reading its comments.
+- Fix: read the PR comments first; if the question is there and unanswered, leave the BLOCK and add nothing. Re-check only when a dependency released a version that changes the answer.
