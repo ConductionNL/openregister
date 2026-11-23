@@ -3832,3 +3832,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-23T18:35:31Z session-20261123T183531-4967f674 or-fix-15 start
 2026-11-23T18:35:38Z session-20261123T183537-5feef015 or-fix-4 start
 2026-11-23T19:02:49Z integrator-20261123T185213-ed14d34e NORESULT tree b0776e3693: deps failed
+2026-11-23T19:05:59Z session-20261123T190559-905beabc or-fix-11: share #9131 8058b9a3, #10451 a2499fe7, #10491 6d52f2fd, #10531 4478e2f1 all merge clean with main ca0cfc43; Architecture, touched dirs, phpstan, version check green bar inherited (AreaMapperRegistrars, ReservedColumnNames x5, ExampleSetTalkStore order-dependent); no migration clashes across 120 open heads; nothing to fix
