@@ -31,10 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Mail\IMessage;
-use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,14 +64,14 @@ class EmailSender implements EmailSenderInterface {
 	 * @param IMailer $mailer The mailer.
 	 * @param LoggerInterface $logger Logger for handoff diagnostics.
 	 * @param NotificationChannelPolicy|null $channelPolicy The subsystem's per-channel kill switches; null means enabled.
-	 * @param OutboundMailLinkWriter|null $outboundLinks Writes the outbound link of a mail bound to an object; null writes none.
+	 * @param OutboundMailLinkRecorderInterface|null $outboundLinks Writes the outbound link of a mail bound to an object; null writes none.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IMailer $mailer,
 		private readonly LoggerInterface $logger,
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
-		private readonly ?OutboundMailLinkWriter $outboundLinks = null,
+		private readonly ?OutboundMailLinkRecorderInterface $outboundLinks = null,
 	) {
 	}//end __construct()
 

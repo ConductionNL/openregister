@@ -23,7 +23,8 @@ namespace OCA\OpenRegister\Notifications\Service;
 use DateTime;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding;
+use OCA\OpenRegister\Kernel\Contracts\MailObjectBinding;
+use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 
 /**
  * Writes an `outbound` link with the minted `Message-ID`, so a reply to the
@@ -34,7 +35,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding;
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
  */
-class OutboundMailLinkWriter {
+class OutboundMailLinkWriter implements OutboundMailLinkRecorderInterface {
 
 	/**
 	 * Constructor.
@@ -54,11 +55,11 @@ class OutboundMailLinkWriter {
 	 * @param string            $subject      The subject.
 	 * @param string            $recipient    The recipient's display name or address.
 	 *
-	 * @return EmailLink The stored link.
+	 * @return void
 	 *
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	public function record(MailObjectBinding $object, string $rfcMessageId, string $subject, string $recipient): EmailLink {
+	public function record(MailObjectBinding $object, string $rfcMessageId, string $subject, string $recipient): void {
 		$now = new DateTime();
 		$link = new EmailLink();
 		$link->setObjectUuid($object->objectUuid);
@@ -79,7 +80,5 @@ class OutboundMailLinkWriter {
 		$link->setLinkedAt($now);
 
 		$this->links->insert(entity: $link);
-
-		return $link;
 	}//end record()
 }//end class

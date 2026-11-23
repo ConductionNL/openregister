@@ -22,11 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding;
+use OCA\OpenRegister\Kernel\Contracts\MailObjectBinding;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding
+ * @covers \OCA\OpenRegister\Kernel\Contracts\MailObjectBinding
  */
 class MailObjectBindingTest extends TestCase {
 

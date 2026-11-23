@@ -31,6 +31,7 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInte
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
@@ -115,6 +117,7 @@ final class IntegrationWiring {
 		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
 		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
+		OutboundMailLinkRecorderInterface::class => OutboundMailLinkWriter::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,

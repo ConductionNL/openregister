@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\MailAddressee;
 use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
-use OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding;
+use OCA\OpenRegister\Kernel\Contracts\MailObjectBinding;
 use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
@@ -42,7 +42,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
- * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding
+ * @uses \OCA\OpenRegister\Kernel\Contracts\MailObjectBinding
  * @uses \OCA\OpenRegister\Db\EmailLink
  * @uses \OCA\OpenRegister\Db\EmailLink\EmailLinkFieldTypes
  */

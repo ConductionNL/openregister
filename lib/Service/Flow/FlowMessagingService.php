@@ -630,7 +630,7 @@ class FlowMessagingService {
 				subject: $item->title,
 				body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
 				unsubscribe: $unsubscribe,
-				object: \OCA\OpenRegister\Notifications\Service\Notification\MailObjectBinding::fromObjectJson(json: $item->json, linkedBy: $send->actor)
+				object: \OCA\OpenRegister\Kernel\Contracts\MailObjectBinding::fromObjectJson(json: $item->json, linkedBy: $send->actor)
 			)
 		);
 		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {

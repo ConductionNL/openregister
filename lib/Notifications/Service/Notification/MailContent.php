@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\MailObjectBinding;
+
 /**
  * What one transactional email says: its subject, its plain body and, for an
  * external recipient, the unsubscribe material its headers carry.
