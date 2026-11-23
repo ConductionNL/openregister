@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -146,8 +147,8 @@ final class D12InterfaceBindingsTest extends TestCase {
 		ConsistencyCheckService::class => [ConsistencyCheckServiceInterface::class, ContractBindings::class],
 		ConsistencyRepairService::class => [ConsistencyRepairServiceInterface::class, ContractBindings::class],
 		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
-		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, ContractBindings::class],
-		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, ContractBindings::class],
+		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, CoreServiceBindings::class],
+		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, CoreServiceBindings::class],
 		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
 		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
 		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
@@ -162,14 +163,14 @@ final class D12InterfaceBindingsTest extends TestCase {
 		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
 		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
-		PropertyVocabulary::class => [PropertyVocabularyInterface::class, ContractBindings::class],
+		PropertyVocabulary::class => [PropertyVocabularyInterface::class, CoreServiceBindings::class],
 		RuleEnablementService::class => [RuleEnablementServiceInterface::class, ContractBindings::class],
 		RuleInventoryService::class => [RuleInventoryServiceInterface::class, ContractBindings::class],
 		RuleReplayService::class => [RuleReplayServiceInterface::class, ContractBindings::class],
 		RuleRunRecorder::class => [RuleRunRecorderInterface::class, ContractBindings::class],
 		RuleTrialService::class => [RuleTrialServiceInterface::class, ContractBindings::class],
-		SchemaCacheHandler::class => [SchemaCacheHandlerInterface::class, ContractBindings::class],
-		SemanticRoleHandler::class => [SemanticRoleHandlerInterface::class, ContractBindings::class],
+		SchemaCacheHandler::class => [SchemaCacheHandlerInterface::class, CoreServiceBindings::class],
+		SemanticRoleHandler::class => [SemanticRoleHandlerInterface::class, CoreServiceBindings::class],
 		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
 		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
 		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
@@ -180,7 +181,7 @@ final class D12InterfaceBindingsTest extends TestCase {
 		TaskSubjectLocator::class => [TaskSubjectLocatorInterface::class, ContractBindings::class],
 		TaskVtodoWriteBackGate::class => [TaskVtodoWriteBackGateInterface::class, ContractBindings::class],
 		TriggerManualNode::class => [TriggerManualNodeInterface::class, ContractBindings::class],
-		UniqueConstraintEvaluator::class => [UniqueConstraintEvaluatorInterface::class, ContractBindings::class],
+		UniqueConstraintEvaluator::class => [UniqueConstraintEvaluatorInterface::class, CoreServiceBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
