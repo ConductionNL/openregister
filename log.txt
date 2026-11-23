@@ -3890,3 +3890,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-23T21:12:46Z integrator-20261123T185213-ed14d34e MERGED-TREE 30491b10de: 1 PRs, main now 74e57194ae = tested tree
 2026-11-23T21:29:34Z session-20261123T212934-35fa8dd2 or-fix-9 start (10 lanes)
+2026-11-23T22:01:34Z integrator-20261123T185213-ed14d34e RED tree ce4acf6932 prs 1 front=skip: Tests: 63612, Assertions: 223696, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
