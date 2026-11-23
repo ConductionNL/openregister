@@ -114,8 +114,13 @@ final class ConfigurationServiceRegistrar {
 		],
 		// Restores product-owned groups' rights at the end of every import (REQ-RAH-003).
 		'setGroupReconciler' => [
-			\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface::class,
+			\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class,
 			'GroupReconciler',
+		],
+		// Reads the rights an app gives its declared groups, recorded so the reconciler restores them (REQ-RAH-003).
+		'setDeclaredGroupRights' => [
+			\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class,
+			'DeclaredGroupRights',
 		],
 		// Classifies, versions and logs the schema changes an import makes (#4102).
 		'setSchemaVersioning' => [

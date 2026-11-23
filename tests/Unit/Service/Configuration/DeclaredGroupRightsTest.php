@@ -76,6 +76,7 @@ class DeclaredGroupRightsTest extends TestCase {
 		$provisioner = $this->createMock(GroupProvisioner::class);
 		$provisioner->method('provision')->willReturn(['created' => []]);
 		$handler->setGroupProvisioner($provisioner);
+		$handler->setDeclaredGroupRights(new DeclaredGroupRights(new RbacGroupCollector()));
 
 		(new ReflectionMethod(ImportHandler::class, 'provisionDeclaredGroups'))->invoke($handler, self::DOCUMENT, 'opencatalogi');
 

@@ -36,6 +36,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
@@ -311,9 +313,18 @@ class ImportHandler {
 	 * Optional reconciler run at the end of every import, so an upgrade
 	 * restores product-owned groups' rights (REQ-RAH-003). Null skips it.
 	 *
-	 * @var \OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface|null
+	 * @var DeclaredGroupsReconcileInterface|null
 	 */
-	private ?\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface $groupReconciler = null;
+	private ?DeclaredGroupsReconcileInterface $groupReconciler = null;
+
+	/**
+	 * Optional reader of the rights an app gives its declared groups; they are
+	 * recorded beside the group list so the reconciler can restore them (REQ-RAH-003).
+	 * Null records no rights.
+	 *
+	 * @var DeclaredGroupRightsInterface|null
+	 */
+	private ?DeclaredGroupRightsInterface $declaredGroupRights = null;
 
 	/**
 	 * Classifies a schema change an import makes, bumps its version and
@@ -586,15 +597,30 @@ class ImportHandler {
 	 *
 	 * Optional: when null, imports run exactly as before.
 	 *
-	 * @param \OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface|null $groupReconciler The reconciler.
+	 * @param DeclaredGroupsReconcileInterface|null $groupReconciler The reconciler.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-a-product-owned-groups-rights-are-restored-to-what-the-product-declares-req-rah-003
 	 */
-	public function setGroupReconciler(?\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface $groupReconciler): void {
+	public function setGroupReconciler(?DeclaredGroupsReconcileInterface $groupReconciler): void {
 		$this->groupReconciler = $groupReconciler;
 	}//end setGroupReconciler()
+
+	/**
+	 * Set the reader of the rights an app gives its declared groups.
+	 *
+	 * Optional: when null, only the declared group list is recorded.
+	 *
+	 * @param DeclaredGroupRightsInterface|null $declaredGroupRights The reader.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-a-product-owned-groups-rights-are-restored-to-what-the-product-declares-req-rah-003
+	 */
+	public function setDeclaredGroupRights(?DeclaredGroupRightsInterface $declaredGroupRights): void {
+		$this->declaredGroupRights = $declaredGroupRights;
+	}//end setDeclaredGroupRights()
 
 	/**
 	 * Set the schema versioning service.
@@ -722,11 +748,14 @@ class ImportHandler {
 			"declared_groups_{$appId}",
 			json_encode(array_values($declared))
 		);
-		$rights = new \OCA\OpenRegister\Service\Authorization\DeclaredGroupRights(collector: $this->rbacGroupCollector());
+		if ($this->declaredGroupRights === null) {
+			return;
+		}
+
 		$this->appConfig->setValueString(
 			'openregister',
-			\OCA\OpenRegister\Service\Authorization\DeclaredGroupRights::PREFIX . $appId,
-			json_encode($rights->fromDocument(document: $data))
+			DeclaredGroupRightsInterface::PREFIX . $appId,
+			json_encode($this->declaredGroupRights->fromDocument(document: $data))
 		);
 	}//end recordDeclaredGroups()
 

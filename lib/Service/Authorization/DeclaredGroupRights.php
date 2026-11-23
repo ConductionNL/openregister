@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
+use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface;
+
 /**
  * Reads, per register and schema slug, the authorization rules a configuration
  * document gives the groups it declares.
@@ -37,15 +39,7 @@ namespace OCA\OpenRegister\Service\Authorization;
  *
  * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-a-product-owned-groups-rights-are-restored-to-what-the-product-declares-req-rah-003
  */
-final class DeclaredGroupRights {
-
-	/**
-	 * App-config key prefix under which each app's declared rights are stored,
-	 * beside {@see GroupReconciler::DECLARED_GROUPS_PREFIX}.
-	 *
-	 * @var string
-	 */
-	public const PREFIX = 'declared_group_rights_';
+final class DeclaredGroupRights implements DeclaredGroupRightsInterface {
 
 	/**
 	 * The key of the role map in an authorization block; it assigns groups to roles, it grants no action itself.

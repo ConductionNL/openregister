@@ -373,6 +373,9 @@ final class CoreServiceBindings {
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
 		GroupReconcilerInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class
+			=> \OCA\OpenRegister\Service\Authorization\DeclaredGroupRights::class,
 		ConsentAnnotationValidatorInterface::class => ConsentAnnotationValidator::class,
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
