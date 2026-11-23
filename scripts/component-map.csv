@@ -4635,4 +4635,9 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
+Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
+Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
+Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
