@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -47,7 +47,7 @@ final class H01InterfaceBindingsTest extends TestCase {
 	 */
 	public static function bindings(): array {
 		return [
-			'deny enforcement' => [DenyEnforcementModeInterface::class, DenyEnforcementMode::class, ContractBindings::class],
+			'deny enforcement' => [DenyEnforcementModeInterface::class, DenyEnforcementMode::class, CoreServiceBindings::class],
 			'party search' => [PartySearchInterface::class, PartySearchService::class, FlowWiring::class],
 		];
 	}//end bindings()
@@ -74,7 +74,7 @@ final class H01InterfaceBindingsTest extends TestCase {
 	 */
 	public function testTheFallbacksBuildTheBoundClasses(): void {
 		$this->assertSame(
-			ContractBindings::BINDINGS[ObjectScopeResolverInterface::class],
+			CoreServiceBindings::BINDINGS[ObjectScopeResolverInterface::class],
 			get_class(RbacFallbacks::objectScope())
 		);
 		$this->assertInstanceOf(

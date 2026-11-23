@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\PlatformServiceBindings;
 use PHPUnit\Framework\TestCase;
@@ -33,16 +33,17 @@ use ReflectionMethod;
 use ReflectionNamedType;
 
 /**
- * The runner types the port; the shared language service answers it.
+ * The runner's presentation bundle types the port; the shared language service answers it.
  *
  * @covers \OCA\OpenRegister\Service\Aggregation\AggregationRunner
+ * @covers \OCA\OpenRegister\Service\Aggregation\AggregationPresentation
  * @covers \OCA\OpenRegister\Service\LanguageService
  */
 final class AggregationRunnerLanguagePortTest extends TestCase {
 
 	public function testTheRunnerTakesThePort(): void {
 		$parameter = null;
-		foreach ((new ReflectionMethod(AggregationRunner::class, '__construct'))->getParameters() as $candidate) {
+		foreach ((new ReflectionMethod(AggregationPresentation::class, '__construct'))->getParameters() as $candidate) {
 			if ($candidate->getName() === 'languageService') {
 				$parameter = $candidate;
 			}
@@ -56,7 +57,7 @@ final class AggregationRunnerLanguagePortTest extends TestCase {
 	}
 
 	public function testThePortResolvesToTheSharedLanguageService(): void {
-		$this->assertSame(LanguageService::class, ContractBindings::BINDINGS[RequestLanguagesInterface::class]);
+		$this->assertSame(LanguageService::class, CoreServiceBindings::BINDINGS[RequestLanguagesInterface::class]);
 		$this->assertArrayNotHasKey(RequestLanguagesInterface::class, PlatformServiceBindings::BINDINGS);
 	}
 
