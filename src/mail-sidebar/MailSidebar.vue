@@ -3,6 +3,7 @@
 		class="or-mail-sidebar-root"
 		:class="{
 			'or-mail-sidebar-root--connections-disabled': connectionsDisabled,
+			'or-mail-sidebar-root--idle': !isMessageView,
 		}">
 		<NcAppSidebar
 			v-if="!collapsed"
@@ -12,12 +13,6 @@
 			:compact="true"
 			class="or-mail-sidebar"
 			@close="toggleCollapsed">
-			<template #description>
-				<div v-if="!isMessageView" class="or-mail-sidebar__hint">
-					{{ t('openregister', 'Select an email to see its connections') }}
-				</div>
-			</template>
-
 			<NcAppSidebarTab
 				id="objects"
 				:name="t('openregister', 'Connections')"
@@ -259,13 +254,6 @@ export default {
 	writing-mode: vertical-rl;
 	text-orientation: mixed;
 	letter-spacing: 0.5px;
-}
-
-/* Hint text in description slot */
-.or-mail-sidebar__hint {
-	padding: 0 16px 8px;
-	color: var(--color-text-maxcontrast);
-	font-size: 13px;
 }
 
 /*
