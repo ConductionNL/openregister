@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
@@ -155,7 +155,7 @@ class DsarCaseController extends Controller {
 		IRequest $request,
 		DsarCaseControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->objectService = $services->cases->objectService;
 		$this->accessor = $services->cases->accessor;
 		$this->accessControl = $services->cases->accessControl;

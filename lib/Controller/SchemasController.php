@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
@@ -317,7 +317,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		SchemasControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;

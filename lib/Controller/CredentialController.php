@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use Closure;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\CredentialCaller;
 use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
@@ -123,7 +123,7 @@ class CredentialController extends Controller {
 		IRequest $request,
 		CredentialControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectService = $services->vault->objectService;
 	}//end __construct()

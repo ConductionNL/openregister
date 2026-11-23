@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
@@ -144,7 +144,7 @@ class RulesController extends Controller {
 		IRequest $request,
 		RulesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->inventory = $services->domain->inventory;
 		$this->runs = $services->mappers->runs;

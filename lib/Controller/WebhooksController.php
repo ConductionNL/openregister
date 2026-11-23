@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
@@ -445,7 +445,7 @@ class WebhooksController extends Controller {
 		IRequest $request,
 		WebhooksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->webhookMapper = $services->mappers->webhookMapper;
 		$this->webhookLogMapper = $services->mappers->webhookLogMapper;
 		$this->webhookService = $services->mappers->webhookService;
