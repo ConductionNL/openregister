@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A fragment links a mail to an organisation, once, and remove deletes the link.
  */
@@ -70,10 +72,10 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame(expected: [], actual: $this->emailLinks, message: 'the check writes no link');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertCount(expectedCount: 1, haystack: $this->emailLinks);
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
@@ -87,7 +89,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		$this->assertNotNull(actual: $link['registerId']);
 		$this->assertSame(expected: 'example-set:alpha/subsidie', actual: json_decode((string) $link['metadata'], true)['source']);
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(expectedCount: 1, haystack: $this->emailLinks, message: 'a kept link is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -105,7 +107,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		unset($row['messageId'], $row['linkedBy']);
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => $row]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
@@ -132,7 +134,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 		]);
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => $row]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$link = array_values($this->emailLinks)[0]->jsonSerialize();
@@ -161,15 +163,15 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	 */
 	public function testARefreshWritesTheLinkAgainFromTodaysDeclaration(): void {
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail(extra: ['mailboxName' => 'Woo-postvak'])]]);
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->organisationWithLinks(rows: [['key' => 'subsidie', 'data' => self::subsidyMail(extra: ['mailboxName' => 'het Woo-postvak'])]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$held = array_values($this->emailLinks)[0]->jsonSerialize();
 		$this->assertSame(expected: 'Woo-postvak', actual: $held['details']['mailboxName'], message: 'a plain install keeps the held link');
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()));
 
 		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
 		$this->assertSame(expected: ['alpha/subsidie' => 'refreshed'], actual: $report['emailLinks']);
@@ -190,7 +192,7 @@ class ExampleSetEmailLinksTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyLink(array $data, string $reason): void {
 		$this->organisationWithLinks(rows: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(expectedCount: 1, haystack: $refusals);
 		$this->assertStringContainsString(needle: $reason, haystack: $refusals[0]);

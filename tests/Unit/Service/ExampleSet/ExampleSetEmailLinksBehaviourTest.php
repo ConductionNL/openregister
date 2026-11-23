@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,12 +42,12 @@ class ExampleSetEmailLinksBehaviourTest extends TestCase {
 	/** @var EmailLinkMapperInterface&MockObject */
 	private EmailLinkMapperInterface $mapper;
 
-	/** @var PartyService&MockObject */
-	private PartyService $parties;
+	/** @var ObjectOperationsInterface&MockObject */
+	private ObjectOperationsInterface $objects;
 
 	protected function setUp(): void {
 		$this->mapper  = $this->createMock(EmailLinkMapperInterface::class);
-		$this->parties = $this->createMock(PartyService::class);
+		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 	}//end setUp()
 
 	private function links(): ExampleSetEmailLinks {
@@ -55,7 +55,7 @@ class ExampleSetEmailLinksBehaviourTest extends TestCase {
 		$container->method('get')->willReturnMap(
 			[
 				[EmailLinkMapperInterface::class, $this->mapper],
-				[PartyService::class, $this->parties],
+				[ObjectOperationsInterface::class, $this->objects],
 			]
 		);
 		return new ExampleSetEmailLinks($container);
@@ -66,7 +66,24 @@ class ExampleSetEmailLinksBehaviourTest extends TestCase {
 	}//end row()
 
 	public function testWriteIsRefusedWithoutTheObject(): void {
-		$this->parties->method('findUnscoped')->with('obj-1')->willReturn(null);
+		$this->objects->method('find')->with('obj-1', $this->anything(), false, false)->willReturn(null);
+		$this->mapper->expects($this->never())->method('insert');
+
+		$this->assertSame(['error' => 'no object "obj-1" to link the mail to', 'entry' => null], $this->links()->write(self::row()));
+	}
+
+	public function testABlankObjectIsNotRead(): void {
+		$this->objects->expects($this->never())->method('find');
+		$this->mapper->expects($this->never())->method('insert');
+		$row = new ExampleSetRow('app', 'mail-1', ['object' => '  ', 'subject' => 'Aanvraag', 'sender' => 'a@example.org']);
+
+		$this->assertSame(['error' => 'no object "  " to link the mail to', 'entry' => null], $this->links()->write($row));
+	}
+
+	public function testAFailedReadCountsAsNoObject(): void {
+		$this->objects->expects($this->once())->method('find')
+			->with('obj-1', $this->callback(static fn ($options): bool => $options->render === false && $options->audit === false), false, false)
+			->willThrowException(new \RuntimeException('not found'));
 		$this->mapper->expects($this->never())->method('insert');
 
 		$this->assertSame(['error' => 'no object "obj-1" to link the mail to', 'entry' => null], $this->links()->write(self::row()));
@@ -76,7 +93,7 @@ class ExampleSetEmailLinksBehaviourTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setRegister('1');
 		$object->setSchema('2');
-		$this->parties->method('findUnscoped')->willReturn($object);
+		$this->objects->method('find')->willReturn($object);
 		$this->mapper->method('insert')->willThrowException(new \RuntimeException('duplicate link'));
 
 		$this->assertSame(['error' => 'duplicate link', 'entry' => null], $this->links()->write(self::row()));
