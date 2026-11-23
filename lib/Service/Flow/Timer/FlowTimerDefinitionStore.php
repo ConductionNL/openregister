@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
@@ -150,8 +151,7 @@ class FlowTimerDefinitionStore {
 	private function fromRegister(string $schema): array {
 		try {
 			$result = $this->objects->searchObjectsBySlug(
-				registerSlug: self::REGISTER,
-				schemaSlug: $schema,
+				target: new RegisterSchemaSlugs(register: self::REGISTER, schema: $schema),
 				filters: [],
 				_rbac: false,
 				_multitenancy: false

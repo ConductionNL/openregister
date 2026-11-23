@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
@@ -145,7 +146,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			],
 		]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 	}
 
@@ -162,7 +163,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->store->ids(register: 'pub', schema: 'theme'));
 
 		$this->store->undeletable = [];
-		$report                   = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report                   = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$newTheme = $this->store->ids(register: 'pub', schema: 'theme')[0];
@@ -187,10 +188,10 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->remover->remove(set: 'demo');
 		$this->store->undeletable = [];
 		$plan                     = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$updates = $this->store->updates;
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($again['ok'], (string) json_encode($again));
 		$this->assertSame($updates, $this->store->updates, 'references that already hold their values are not written');
@@ -209,7 +210,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 	public function testAnUntouchedSecondInstallRefreshesNothing(): void {
 		$updates = $this->store->updates;
 
-		$again = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertTrue($again['ok']);
 		$this->assertSame($updates, $this->store->updates);
@@ -226,7 +227,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->store->rows['pub publication'][$publications[0]]['themes'] = ['an-unrelated-id'];
 		$updates = $this->store->updates;
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(['an-unrelated-id'], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
 		$this->assertSame($updates, $this->store->updates, 'nothing is written over the edit');
@@ -255,7 +256,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->remover->remove(set: 'demo');
 		$this->store->undeletable = [];
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertCount(2, $report['left']);
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
@@ -273,7 +274,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			['key' => 'pub-3', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Twee', 'theme' => '{{object:theme-2.id}}', 'second' => '{{object:theme-2.id}}']],
 		]]);
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$theme = $this->store->ids(register: 'pub', schema: 'theme');
 		$themeId = end($theme);
 		$all = $this->store->ids(register: 'pub', schema: 'publication');
@@ -285,7 +286,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			$record['objects']['beta/pub-3']['refs'][$field] = $stale;
 			$this->record->write(set: 'demo', record: $record);
 			$this->store->rows['pub publication'][$pubId][$field] = $stale;
-			$report = $this->installer->install(plan: $plan, today: $this->today());
+			$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 			$this->assertSame('refreshed', $report['changes']['beta/pub-3#references'], $field);
 			$this->assertSame($themeId, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $pubId))[$field]);
 		}
@@ -294,7 +295,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		sort($paths);
 		$this->assertSame(['second', 'theme'], $paths, 'both refreshes are in the record');
 
-		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$again = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertSame([], $again['left'], 'a field the install refreshed is not read as edited by somebody');
 	}
 }

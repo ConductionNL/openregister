@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -92,8 +93,7 @@ class DeclaredProviderApprovals {
 	private function read(string $identifier): array {
 		try {
 			$result = $this->objectService->searchObjectsBySlug(
-				registerSlug: CredentialBrokerService::REGISTER,
-				schemaSlug: self::SCHEMA,
+				target: new RegisterSchemaSlugs(register: CredentialBrokerService::REGISTER, schema: self::SCHEMA),
 				filters: ['providerIdentifier' => $identifier],
 				_rbac: false,
 				_multitenancy: false
