@@ -1,5 +1,5 @@
 # NCVUE-LANE.md: the brief for the cloud nextcloud-vue lanes
-# K is your lane number from the routine prompt (0, 1 or 2); you own the open PRs of ConductionNL/nextcloud-vue whose number N satisfies N % 3 == K.
+# K is your lane number from the routine prompt (0 to 5); you own the open PRs of ConductionNL/nextcloud-vue whose number N satisfies N % 6 == K, WHATEVER their base branch.
 
 Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. Ruben decided on 23 Nov 2026 that the nextcloud-vue backlog is cleared FIRST, because every fleet app builds on this library; the cloud app builders are paused until it is done. Decide everything yourself; never ask.
 
@@ -10,6 +10,7 @@ Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this 
 - Overlap guard: this routine runs hourly. At the start, check `git -C ~/q log -20 --since="50 minutes ago" --format=%s` on the state branch; if a message contains "ncvue-K", another session of this lane is active: end immediately. Put "ncvue-K" in your state commits (a one-line progress note appended to ~/q/NCVUE-PROGRESS.md via `st_append`, sourcing ~/q/bin/state.sh).
 
 ## Per PR in your share (oldest first)
+0. **Base branch.** main is the live branch; `development` is 275 commits behind main and stale. Almost every open PR targets `development`: retarget it first with `gh pr edit <n> --base main`, then merge origin/main into the PR branch and continue below. Never merge anything into `development`.
 1. **Dependabot PRs.** Patch and minor bumps: merge main in, `npm ci`, run lint, the full jest suite, `npm run build` and the dist checks (`check:dist-sideeffects`, `check:bundled-peers`, `check:css-entry` where present); merge on green. Major bumps of dev tooling (eslint, semantic-release, postcss-import, test tooling): same, fix what breaks. Major bumps of UI frameworks or their peers (vue, @nextcloud/vue, @nextcloud/dialogs, pinia, gridstack, apexcharts, codemirror): leave open with a comment naming the risk, unless the suite and a build are fully green AND the changelog shows no breaking change for our usage.
 2. **Our feature PRs** (author rubenvdlinde): merge origin/main in (never rebase), resolve conflicts keeping both sides' intent (main changed a lot on 22 Nov: lazy loading via `lazyComponent()`, lazy apexcharts/codemirror/icons, async shell dialogs, `fetchListTotals` batch counts, CnAppTile, chart `selected`, dismissible notices). Make the feature work with those patterns (new heavy components must be lazy, new registry entries lazy). Then lint, full jest, build, dist checks, docs check (`npm run check:docs` if present) and openspec. Fix what breaks, with tests. Merge on green.
 3. **Obsolete or superseded PRs** (the change is already on main, or replaced by a later design): comment why and close it. Only close PRs authored by rubenvdlinde or dependabot; never close a colleague's PR.
