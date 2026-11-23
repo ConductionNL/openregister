@@ -18,9 +18,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
-use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -29,7 +30,7 @@ use Psr\Log\LoggerInterface;
  *
  * LinkedEntityService::reverseLookup scans with RBAC and multitenancy off, so a caller who is
  * not an administrator gets it only through here: the Mail account must belong to the session
- * user before anything is scanned, and every object row is resolved through ObjectReadAccess
+ * user before anything is scanned, and every object row is checked through ObjectReadCheckInterface
  * (RBAC and multitenancy on) before it is returned. Register, schema and organisation rows are
  * left out.
  *
@@ -48,13 +49,13 @@ final class OwnMailReverseLookup {
 	 *
 	 * @param LinkedEntityServiceInterface $linkedEntityService The reverse lookup.
 	 * @param EmailLinkServiceInterface    $emailLinks          Answers whether a Mail account is the caller's.
-	 * @param ObjectReadAccessInterface    $readAccess          Resolves an object under the caller's RBAC and tenancy.
+	 * @param ObjectReadCheckInterface     $readAccess          Whether the caller may read an object, under RBAC and tenancy.
 	 * @param LoggerInterface              $logger              Logger.
 	 */
 	public function __construct(
 		private readonly LinkedEntityServiceInterface $linkedEntityService,
 		private readonly EmailLinkServiceInterface $emailLinks,
-		private readonly ObjectReadAccessInterface $readAccess,
+		private readonly ObjectReadCheckInterface $readAccess,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -143,12 +144,12 @@ final class OwnMailReverseLookup {
 				continue;
 			}
 
-			$found = $this->readAccess->readable(
+			$ref = new ObjectRef(
 				register: (string)($row['register'] ?? ''),
 				schema: (string)($row['schemaId'] ?? ''),
 				id: (string)($row['uuid'] ?? '')
 			);
-			if ($found !== null) {
+			if ($this->readAccess->isReadable(ref: $ref) === true) {
 				$readable[] = $row;
 			}
 		}

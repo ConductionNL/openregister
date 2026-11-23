@@ -1277,6 +1277,7 @@ Kernel/Contracts/ObjectImporterInterface.php,49,Kernel,Kernel,Kernel/Contracts/O
 Kernel/Contracts/ObjectMergerInterface.php,14,Kernel,Kernel,Kernel/Contracts/ObjectMergerInterface.php,0,,Kernel
 Kernel/Contracts/ObjectNameCacheInterface.php,10,Kernel,Kernel,Kernel/Contracts/ObjectNameCacheInterface.php,0,,Kernel
 Kernel/Contracts/ObjectOperationsInterface.php,105,Kernel,Kernel,Kernel/Contracts/ObjectOperationsInterface.php,0,,Kernel
+Kernel/Contracts/ObjectReadCheckInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RegisterInterface.php,25,Kernel,Kernel,Kernel/Contracts/RegisterInterface.php,1,,Kernel
 Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/ScheduledReportInterface.php,0,,Kernel
 Kernel/Contracts/ScheduledReportsInterface.php,15,Kernel,Kernel,Kernel/Contracts/ScheduledReportsInterface.php,0,,Kernel

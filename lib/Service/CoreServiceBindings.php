@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -422,6 +423,7 @@ final class CoreServiceBindings {
 		ObjectEventGateInterface::class => ObjectEventGate::class,
 		ObjectNameWriterInterface::class => CacheHandler::class,
 		ObjectReadAccessInterface::class => ObjectReadAccess::class,
+		ObjectReadCheckInterface::class => ObjectReadAccess::class,
 		ObjectReadersInterface::class => PermissionHandler::class,
 		ObjectSlugBackfillServiceInterface::class => ObjectSlugBackfillService::class,
 		ObjectValidatorInterface::class => ValidateObject::class,

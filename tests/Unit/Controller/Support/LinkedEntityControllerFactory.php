@@ -25,7 +25,7 @@ final class LinkedEntityControllerFactory {
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
 	 * @param EmailLinkServiceInterface|null $emailLinks Mail account ownership; null owns no account for anybody.
-	 * @param ObjectReadAccessInterface|null $readAccess Object read check; null reads nothing.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface|null $readAccess Object read check; null reads nothing.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -37,7 +37,7 @@ final class LinkedEntityControllerFactory {
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
 		?\OCA\OpenRegister\Service\EmailLinkServiceInterface $emailLinks = null,
-		?\OCA\OpenRegister\Service\Object\ObjectReadAccessInterface $readAccess = null,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface $readAccess = null,
 	): array {
 		return [
 			$request,

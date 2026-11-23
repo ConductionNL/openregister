@@ -14,10 +14,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\LinkedEntityController;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\LinkedEntityService;
-use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LinkedEntityControllerFactory;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -72,15 +72,11 @@ class LinkedEntityOwnMailReverseLookupTest extends TestCase {
 			}
 		);
 
-		$readAccess = $this->createMock(ObjectReadAccessInterface::class);
-		$readAccess->method('readable')->willReturnCallback(
-			function (string $register, string $schema, string $id): ?ObjectEntity {
-				$this->calls[] = ['readable', $register, $schema, $id];
-				if ($id !== 'abc-123') {
-					return null;
-				}
-
-				return new ObjectEntity();
+		$readAccess = $this->createMock(ObjectReadCheckInterface::class);
+		$readAccess->method('isReadable')->willReturnCallback(
+			function (ObjectRef $ref): bool {
+				$this->calls[] = ['readable', $ref->register, $ref->schema, $ref->id];
+				return $ref->id === 'abc-123';
 			}
 		);
 
