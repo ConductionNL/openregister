@@ -52,7 +52,7 @@ class ConfigurationsControllerTest extends TestCase {
 
 	public function testIndexSuccess(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->configurationMapper->method('findAll')->willReturn([]);
+		$this->configurationMapper->method('findListing')->willReturn([]);
 
 		$result = $this->controller->index();
 
