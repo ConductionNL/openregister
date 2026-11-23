@@ -74,6 +74,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Contract\ObjectPatch as PublishedObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -271,6 +272,28 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 	}//end testPatchObjectPreservesTheFieldsThePayloadDidNotSend()
 
 	/**
+	 * A patch built under the published name merges exactly like the old name.
+	 *
+	 * A consuming app moving to `Contract\ObjectPatch` passes the parent class;
+	 * every parameter between `patchObject()` and the save must accept it.
+	 *
+	 * @return void
+	 */
+	public function testAPatchBuiltUnderThePublishedNameMergesTheSame(): void {
+		$old = $this->payloadReachingTheSave(
+			fn () => $this->service->patchObject(patch: new ObjectPatch(objectId: 'u-1', data: self::PARTIAL))
+		);
+		$published = $this->payloadReachingTheSave(
+			fn () => $this->service->patchObject(patch: new PublishedObjectPatch(objectId: 'u-1', data: self::PARTIAL))
+		);
+
+		$this->assertSame($old, $published);
+		$this->assertSame('withdrawn', $published['status']);
+		$this->assertSame(self::STORED['title'], $published['title']);
+
+	}//end testAPatchBuiltUnderThePublishedNameMergesTheSame()
+
+	/**
 	 * The two methods disagree on the SAME payload, and that is the point.
 	 *
 	 * Asserting the difference directly means neither half can be quietly
@@ -382,9 +405,14 @@ class ObjectServiceUpdateVersusPatchTest extends TestCase {
 		);
 
 		$this->assertSame(
-			ObjectPatch::class,
+			PublishedObjectPatch::class,
 			(string) $published->getParameters()[0]->getType(),
-			'the contract takes the patch as one ObjectPatch'
+			'the contract takes the patch as one published ObjectPatch'
+		);
+		$this->assertSame(
+			PublishedObjectPatch::class,
+			(string) $implementation->getParameters()[0]->getType(),
+			'the implementation takes the published ObjectPatch too, so a patch built under that name is accepted'
 		);
 		$this->assertSame(
 			'?OCP\IUser',

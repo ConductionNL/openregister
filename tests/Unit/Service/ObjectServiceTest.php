@@ -57,8 +57,8 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
-use OCA\OpenRegister\Service\Object\SearchOptions;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -1466,8 +1466,7 @@ class ObjectServiceTest extends TestCase {
 			query: ['@self' => ['schema' => 'a-slug']],
 			_rbac: false,
 			_multitenancy: false,
-			ids: ['a'],
-			uses: 'u-1'
+			selection: new ObjectSelection(ids: ['a'], uses: 'u-1')
 		);
 
 		$this->assertSame(15, $result);
@@ -1889,7 +1888,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->searchObjectsPaginated(
 			query: [],
-			ids: ['uuid-1', 'uuid-2']
+			options: new SearchOptions(selection: new ObjectSelection(ids: ['uuid-1', 'uuid-2']))
 		);
 
 		$this->assertSame('database', $result['@self']['source']);
@@ -2394,8 +2393,6 @@ class ObjectServiceTest extends TestCase {
 				$this->anything(),
 				$this->anything(),
 				false, // effectiveMt should be false for public schema
-				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			)
 			->willReturn(['results' => [], 'total' => 0, '@self' => []]);
@@ -2435,7 +2432,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->searchObjectsPaginated(
 			query: [],
-			uses: 'uuid-123'
+			options: new SearchOptions(selection: new ObjectSelection(uses: 'uuid-123'))
 		);
 
 		$this->assertSame('database', $result['@self']['source']);
