@@ -473,3 +473,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Fix: grep -rl 'manifest.d/<file>' src tests; run those specs; admit the PR's widget in the spec's list/endpoint check and add its labels to nl.json + en.json beside the page's others (values from nl.js). Compare test:l10n:parity with main (#10483 694c3ecc).
 ## Version1Date20261121170000 still shared by #10277 and #10314 (or-fix-17)
 - Correction to the or-fix-11 entry: #10314 still adds its own ...170000 step. #10277 moved to Version1Date20261121170017 (d61aadea); #10314 is now the only holder. Before trusting a 'none now' note, diff --diff-filter=A lib/Migration across the open heads again.
+## Fix for the process-isolation OCP trap: PHP_INI_SCAN_DIR (or-fix-9)
+- Symptom: process-isolated tests (SftpTransportGoldenTest, TablesTableReader*Test, ClassAliasMap*Test, FlowEngineRegistrationListenerTest) error 'Class "OCP\EventDispatcher\Event" not found' under -d auto_prepend_file.
+- Cause: child processes do not get -d flags, but they do read ini files.
+- Fix: mkdir ~/w/ini; echo auto_prepend_file=<your OCP autoloader> > ~/w/ini/ocp.ini; run phpunit with PHP_INI_SCAN_DIR=":$HOME/w/ini" (keeps the system ini dir); those tests then run for real (green on #10509, #9029, #10549 merged with main 223a653f2).
