@@ -444,10 +444,11 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-connect
 	pointer-events: none;
 }
 
-/* Type and class outrank core's input rules. */
-.or-mail-sidebar input.or-action-input {
+/* Id, type and class outrank core's input rules; the theme's input height needs important. */
+#openregister-mail-sidebar input.or-action-input {
 	width: 100%;
-	height: 40px;
+	height: 40px !important;
+	min-height: 40px;
 	margin: 0;
 	padding: 0 12px 0 38px;
 	box-sizing: border-box;
@@ -458,7 +459,7 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-connect
 	font-size: 15px;
 }
 
-.or-mail-sidebar input.or-action-input:focus {
+#openregister-mail-sidebar input.or-action-input:focus {
 	border-color: var(--color-primary-element);
 	outline: 2px solid var(--color-primary-element-light);
 }
