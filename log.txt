@@ -3770,3 +3770,4 @@ or-fix-4 done: main still e158c36a; share 8084 8344 9404 9824 9844 9864 10244 10
 2026-11-23T14:27:53Z session-20261123T142753-294918e2 or-fix-17: 10 PRs in share (8397 9277 9817 9837 10277 10497 10537 10557 10637 10997) all clean vs main 223a653f282, APPROVE at head; merged-with-main phpstan, touched tests, Architecture, migration bump green; nothing to fix
 2026-11-23T14:37:15Z or-fix-3 start
 2026-11-23T14:37:27Z or-fix-3 start (marker)
+2026-11-23T14:38:13Z session-20261123T143813-b333812a or-fix-17: share 8397 9277 9817 9837 10277 10497 10537 10557 10637 10997 11017; main 223a653 unchanged since the 14:15 run, the ten approved heads unchanged and merge clean; new #11017 (frontend mail) already contains main, mail jest 195 green, eslint 0 errors, test:l10n same as main, parity red inherited from main (+10 new keys untranslated outside en/nl, and they were also added to backend en.json/nl.json); nothing to fix
