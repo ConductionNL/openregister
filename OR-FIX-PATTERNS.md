@@ -707,3 +707,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main, 4 snapshots in src/mail-sidebar/components/ObjectsTab.links.golden.spec.js fail with an extra ['objects', [...]] entry under 'emitted'.
 - Cause: main added the golden while the mail-panel PRs (#11021, #11022, stacked siblings) made ObjectsTab $emit('objects', ...) for MailSidebar.
 - Fix: npx jest <that spec> -u, check the snap diff is only the added 'objects' emissions, run jest src/mail-sidebar src/dialogs/mail (see #11021 88982e78).
+## hasPermission() named-argument call after main's PermissionAsk refactor (or-fix-9)
+- Symptom: phpstan argument.unknown / 'Missing parameter $ask' on PermissionCheckInterface::hasPermission(); at runtime an unknown-named-parameter Error; tests with ->with($schema, 'read', ...) fail 'Parameter count ... too low'.
+- Cause: main (475feecd, 198fb738) made hasPermission(PermissionAsk $ask, bool $_rbac = true); PRs still pass schema:/action:/userId:/object:/register:.
+- Fix: hasPermission(ask: (new PermissionAsk(schema: ..., action: ...))->askedBy(userId: ..., objectOwner: null)->about(object: ..., register: ...)); tests ->with(...PermissionAskArgs::with(<old positional args>)) (tests/Unit/Service/Object), with register null when an object is given (about() takes the object's). Fixed #10509, #10269.
