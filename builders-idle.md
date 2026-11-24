@@ -337,3 +337,5 @@
 2026-11-24T19:58Z help-opencatalogi-1 built theme-archive-hotspot 1.4/3.2 #2971 (merged; e2e written, runs in nightly); not archived: 1.3/2.2 live-only
 2026-11-24T20:01Z help-stackiq-1 skipped sharing-generated-api-docs: only open items are the Playwright run of tests/e2e/workflows/api-docs.spec.ts (written) and docs/images/api-documentation.png, both need a live instance; all 42 other stackiq changes already have a branch, nothing startable
 2026-11-24T20:02Z filinq helped learniq: week-timetable-grid T4 #2739 (planner's week strip with occupancy on Today); T3 (mentor-class model missing) and T5 (example data) left
+2026-11-24T20:02Z help-filinq-1 skipped learniq week-timetable-grid T5: vo.py story layer needs a new teacher (Sanne Kramer) with 20 lessons + 1 meeting incl. V4c, deterministic generator pinned by SecondarySchoolExampleSetTest/contract tests; training week-41 course days with capacity already in training.py's story
+2026-11-24T20:02Z help-filinq-1 run ends: filinq #2313 #2314 #2315 #2316, nextcloud-vue #2324, learniq #2737 #2739, openregister issue #11052
