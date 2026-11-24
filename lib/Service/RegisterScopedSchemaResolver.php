@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Service\Schema\FormerSlugs;
 use Throwable;
 
 /**
@@ -183,8 +184,42 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 			return $unique;
 		}
 
+		$renamed = $this->renamedSchemaWithin(registerSchemaIds: $registerSchemaIds, schemaRef: $schemaRef);
+		if ($renamed !== null) {
+			return $renamed;
+		}
+
 		throw $this->notInRegister(register: $register, schemaRef: $schemaRef);
 	}//end resolveSchemaWithin()
+
+	/**
+	 * The schema of the register that answered to this slug before it was renamed.
+	 *
+	 * Asked only after the register carries no schema with this CURRENT slug,
+	 * so a current slug always wins. The boundary holds: only the register's
+	 * own schemas are candidates, read without RBAC or tenancy like the rest of
+	 * this resolution (it decides WHICH schema is meant and grants nothing).
+	 *
+	 * @param array      $registerSchemaIds The ids of the schemas the register carries.
+	 * @param int|string $schemaRef         The schema reference.
+	 *
+	 * @return Schema|null The renamed schema, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#2.2
+	 */
+	private function renamedSchemaWithin(array $registerSchemaIds, int|string $schemaRef): ?Schema {
+		if ($this->isUniqueIdentifier(ref: $schemaRef) === true || $registerSchemaIds === []) {
+			return null;
+		}
+
+		try {
+			$schemas = $this->schemaMapper->findMultiple(ids: array_values($registerSchemaIds), _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+
+		return FormerSlugs::among(schemas: $schemas, slug: (string)$schemaRef);
+	}//end renamedSchemaWithin()
 
 	/**
 	 * A schema named by a unique identifier, resolved instance-wide.

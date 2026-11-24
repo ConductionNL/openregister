@@ -1259,10 +1259,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+			return $this->signalFormerSlug(response: $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService)));
 		}
 
-		return $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
+		return $this->signalFormerSlug(response: $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService)));
 	}//end index()
 
 	/**
@@ -3018,7 +3018,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$services = $this->showServices(objectService: $objectService);
 
-		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+		return $this->signalFormerSlug(response: $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services)));
 	}//end show()
 
 	/**

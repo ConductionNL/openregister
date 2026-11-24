@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Schema\FormerSlugs;
 use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -1395,6 +1396,11 @@ class ImportHandler {
 			return $existingSchema;
 		}
 
+		$renamed = $this->renamedSchemaInRegisterScope(slug: (string)$data['slug'], registerSchemaIds: $registerSchemaIds);
+		if ($renamed !== null) {
+			return $renamed;
+		}
+
 		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);
 		if ($orphan !== null) {
 			return $orphan;
@@ -1511,9 +1517,86 @@ class ImportHandler {
 			return $existingSchema;
 		}
 
+		$renamed = $this->renamedSchemaOfApplication(slug: (string)$data['slug'], appId: $appId);
+		if ($renamed !== null) {
+			return $renamed;
+		}
+
 		$this->warnIfSlugOwnedByAnotherApp(data: $data, appId: $appId);
 		return null;
 	}//end resolveSchemaByApplication()
+
+	/**
+	 * The register's schema that shipped under this slug and was renamed since.
+	 *
+	 * An app update still ships the slug the administrator renamed away from;
+	 * matching it through `formerSlugs` updates the renamed schema instead of
+	 * creating a second one under the old slug. Asked only after no schema of
+	 * the register carries the slug as its current slug, so a current slug wins.
+	 *
+	 * @param string $slug              The incoming schema slug.
+	 * @param array  $registerSchemaIds Pre-import schema ids of the target register(s).
+	 *
+	 * @return Schema|null The renamed schema, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	private function renamedSchemaInRegisterScope(string $slug, array $registerSchemaIds): ?Schema {
+		if ($slug === '' || $registerSchemaIds === []) {
+			return null;
+		}
+
+		try {
+			$schemas = $this->schemaMapper->findMultiple(ids: array_values($registerSchemaIds), _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return $this->notedRename(renamed: FormerSlugs::among(schemas: $schemas, slug: $slug), slug: $slug);
+	}//end renamedSchemaInRegisterScope()
+
+	/**
+	 * The importing app's schema that shipped under this slug and was renamed since.
+	 *
+	 * @param string $slug  The incoming schema slug.
+	 * @param string $appId The importing application id.
+	 *
+	 * @return Schema|null The renamed schema, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	private function renamedSchemaOfApplication(string $slug, string $appId): ?Schema {
+		if ($slug === '') {
+			return null;
+		}
+
+		try {
+			$schemas = $this->schemaMapper->findAll(filters: ['application' => $appId], _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return $this->notedRename(renamed: FormerSlugs::among(schemas: $schemas, slug: $slug), slug: $slug);
+	}//end renamedSchemaOfApplication()
+
+	/**
+	 * Log that an incoming slug matched a renamed schema, and pass the schema on.
+	 *
+	 * @param Schema|null $renamed The renamed schema, or null.
+	 * @param string      $slug    The incoming slug.
+	 *
+	 * @return Schema|null The same schema.
+	 */
+	private function notedRename(?Schema $renamed, string $slug): ?Schema {
+		if ($renamed !== null) {
+			$this->logger->info(
+				message: sprintf("[ImportHandler] Schema slug '%s' matched the renamed schema '%s' through its former slugs", $slug, (string)$renamed->getSlug()),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'schemaId' => $renamed->getId()]
+			);
+		}
+
+		return $renamed;
+	}//end notedRename()
 
 	/**
 	 * Visibility: if the importing app owns none but a DIFFERENT app already owns the slug,
@@ -1632,6 +1715,7 @@ class ImportHandler {
 			$existingSchema = $this->resolveExistingSchemaForImport(lookup: $lookup);
 
 			if ($existingSchema !== null) {
+				$data = self::keepingTheRenamedSlug(data: $data, existing: $existingSchema);
 				$update = new ImportedSchemaUpdate(data: $data, existing: $existingSchema);
 				return $this->withUnlinkableActionsAsWarnings(save: fn (): Schema => $this->updateImportedSchema(update: $update, options: $options));
 			}
@@ -1645,6 +1729,29 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * The incoming schema data, carrying the existing schema's slug when it matched through a former slug.
+	 *
+	 * An app update that still ships the old slug must update the renamed
+	 * schema, not rename it back: the administrator's rename stands, and the
+	 * old slug keeps answering through `formerSlugs`.
+	 *
+	 * @param array  $data     The incoming schema data.
+	 * @param Schema $existing The schema the import matched.
+	 *
+	 * @return array The data to update with.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#2.3
+	 */
+	private static function keepingTheRenamedSlug(array $data, Schema $existing): array {
+		$incoming = (string)($data['slug'] ?? '');
+		if (FormerSlugs::servedThrough(schemaRef: $incoming, schema: $existing) === true) {
+			$data['slug'] = $existing->getSlug();
+		}
+
+		return $data;
+	}//end keepingTheRenamedSlug()
 
 	/**
 	 * Run a schema write of the import with an unlinkable notification url action as a warning.
@@ -2760,6 +2867,28 @@ class ImportHandler {
 	}//end schemaComponent()
 
 	/**
+	 * Map an imported schema under its slug, and under the slug the descriptor named it by when that differs.
+	 *
+	 * A descriptor that still names a renamed schema by its former slug refers
+	 * to it by that slug elsewhere too (other schemas' `$ref`, its seed
+	 * objects), so the import's own lookups must find it under both.
+	 *
+	 * @param ImportComponent $component The schema component.
+	 * @param Schema          $schema    The stored schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#2.3
+	 */
+	private function rememberImportedSchema(ImportComponent $component, Schema $schema): void {
+		$this->schemasMap[$schema->getSlug()] = $schema;
+		$incoming = (string)($component->data['slug'] ?? $component->key);
+		if ($incoming !== '' && $incoming !== $schema->getSlug()) {
+			$this->schemasMap[$incoming] = $schema;
+		}
+	}//end rememberImportedSchema()
+
+	/**
 	 * Pass 1 for one schema: create it with the schema map blanked, so no $ref resolves yet.
 	 *
 	 * Blanking `schemasMap` is a TEMPORARY mutation of shared state, so it is
@@ -2794,7 +2923,7 @@ class ImportHandler {
 			return false;
 		}
 
-		$this->schemasMap[$schema->getSlug()] = $schema;
+		$this->rememberImportedSchema(component: $component, schema: $schema);
 		$run->result['schemas'][] = $schema;
 		$this->logger->debug(
 			message: '[ImportHandler] Successfully created schema (Pass 1)',
@@ -2889,7 +3018,7 @@ class ImportHandler {
 			);
 			$schema = $this->reimportSchemaComponent(run: $run, component: $component);
 			// Update in map with resolved version.
-			$this->schemasMap[$schema->getSlug()] = $schema;
+			$this->rememberImportedSchema(component: $component, schema: $schema);
 			$this->logger->debug(
 				message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug, 'schemaId' => $schema->getId()]
