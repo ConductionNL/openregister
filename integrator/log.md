@@ -28,3 +28,4 @@
 2026-11-23T22:43:21Z RED prs=9029,9798,9818,9841 main=6e870ca5e2 integrator-cloud
 2026-11-23T23:38:45Z GREEN prs=9029,9059,9818,9841 main=4401ff3862 integrator-cloud (first test NORESULT: deps race with prepare's background install; retried)
 2026-11-24T00:16:06Z GREEN prs=9053 main=85629dd492 integrator-cloud
+2026-11-24T01:09:32Z GREEN prs=9869 main=751c2764d2 integrator-cloud
