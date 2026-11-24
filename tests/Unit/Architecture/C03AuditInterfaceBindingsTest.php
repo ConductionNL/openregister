@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\PurposeRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
@@ -70,7 +71,7 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		PartyIndicatorGuard::class => [PartyIndicatorGuardInterface::class, ContractBindings::class],
+		PartyIndicatorGuard::class => [PartyIndicatorGuardInterface::class, ProcessesServiceBindings::class],
 		ProcessingLogMapper::class => [ProcessingLogMapperInterface::class, ComplianceMapperRegistrar::class],
 		ProcessingPurposeMapper::class => [ProcessingPurposeMapperInterface::class, ComplianceMapperRegistrar::class],
 		PurposeGuard::class => [PurposeGuardInterface::class, ContractBindings::class],
