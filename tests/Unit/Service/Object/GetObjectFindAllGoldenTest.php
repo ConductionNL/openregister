@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -53,7 +53,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
  * @uses \OCA\OpenRegister\Service\Object\GetObjectSources
  * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
- * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\ObjectSourceBinding
  * @uses \OCA\OpenRegister\Service\Object\ReadScope
  */

@@ -46,7 +46,6 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -63,7 +62,6 @@ class ExportServiceXmlTest extends TestCase {
 
 		$this->service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$this->objectService,
 			$this->createMock(CacheHandler::class),

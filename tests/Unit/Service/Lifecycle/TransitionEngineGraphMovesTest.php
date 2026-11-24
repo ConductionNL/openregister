@@ -43,6 +43,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -106,7 +107,7 @@ class TransitionEngineGraphMovesTest extends TestCase {
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$permission = $this->createMock(PermissionHandler::class);
 		$permission->method('hasPermission')->willReturnCallback(
-			fn (...$args): bool => in_array($args['action'] ?? $args[1], $this->grants, true)
+			fn (PermissionAsk $ask): bool => in_array($ask->action, $this->grants, true)
 		);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(

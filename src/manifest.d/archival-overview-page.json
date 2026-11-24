@@ -1,5 +1,5 @@
 {
-	"_note": "archival-overview-page (board openregister/OrArchivering). The archiving work on one page: destruction lists with their approval, the records under a legal hold, the e-Depot transfers and the selection list in force. Every widget reads GET /api/archival/overview; approve, reject and draw-up call the archival endpoints. Not drawn: the board's Download button (no export of the overview exists) and Import on the selection list card (an import takes a file and has no dialog yet).",
+	"_note": "archival-overview-page (board openregister/OrArchivering). The archiving work on one page: destruction lists with their approval, the records under a legal hold, the e-Depot transfers and the selection list in force. Every widget reads GET /api/archival/overview, except the held-back table (appraisal-inherited-from-a-parent REQ-AIP-003), which reads GET /api/archival/held-back, the same dry run as occ openregister:retention:dry-run; approve, reject and draw-up call the archival endpoints. Not drawn: the board's Download button (no export of the overview exists) and Import on the selection list card (an import takes a file and has no dialog yet).",
 	"pages": [
 		{
 			"id": "archival",
@@ -33,7 +33,7 @@
 						"content": {
 							"showActions": false,
 							"tabs": [
-								{ "id": "destruction-lists", "widgetIds": ["held-off-lists", "destruction-lists"], "label": "Destruction lists" },
+								{ "id": "destruction-lists", "widgetIds": ["held-off-lists", "destruction-lists", "held-back"], "label": "Destruction lists" },
 								{ "id": "legal-holds", "widgetId": "legal-holds", "label": "Legal holds" },
 								{ "id": "transfers", "widgetId": "transfers", "label": "Transfer to e-Depot" },
 								{ "id": "selection-list", "widgetId": "selection-list-versions", "label": "Selection list" }
@@ -75,6 +75,22 @@
 							],
 							"emptyText": "No destruction list has been drawn up yet",
 							"errorText": "The destruction lists could not be read"
+						}
+					},
+					{
+						"id": "held-back",
+						"title": "Held back by an inherited appraisal",
+						"type": "record-list",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/held-back", "responsePath": "results" },
+							"presentation": "table",
+							"limit": 50,
+							"columns": [
+								{ "label": "Record", "value": "{name}" },
+								{ "label": "Held by", "value": "{heldBy}" },
+								{ "label": "Reason", "value": "{reason}" }
+							],
+							"emptyText": "Nothing is held back by an inherited appraisal"
 						}
 					},
 					{

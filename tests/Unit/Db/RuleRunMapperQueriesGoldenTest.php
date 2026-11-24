@@ -51,8 +51,8 @@ final class RuleRunMapperQueriesGoldenTest extends TestCase {
 		foreach ([null, '', 'pass'] as $verdict) {
 			foreach (['open' => [null, null], 'since' => [$since, null], 'until' => [null, $until], 'both' => [$since, $until]] as $tag => [$from, $to]) {
 				$v = var_export($verdict, true);
-				$calls["findByRule $v $tag"] = fn (RuleRunMapper $m) => self::ids($m->findByRule('rule-1', $verdict, $from, $to));
-				$calls["countByRule $v $tag"] = fn (RuleRunMapper $m) => $m->countByRule('rule-1', $verdict, $from, $to);
+				$calls["findRuns $v $tag"] = fn (RuleRunMapper $m) => self::ids($m->findRuns(new \OCA\OpenRegister\Db\RuleRunSelection('rule-1', new \OCA\OpenRegister\Db\RuleRunFilter($verdict, $from, $to)), new \OCA\OpenRegister\Kernel\Contracts\ListQuery(RuleRunMapper::DEFAULT_LIMIT, 0)));
+				$calls["countRuns $v $tag"] = fn (RuleRunMapper $m) => $m->countRuns(new \OCA\OpenRegister\Db\RuleRunSelection('rule-1', new \OCA\OpenRegister\Db\RuleRunFilter($verdict, $from, $to)));
 				if ($verdict === null) {
 					$calls["findRecent $tag"] = fn (RuleRunMapper $m) => self::ids($m->findRecent($from));
 				}
@@ -60,7 +60,7 @@ final class RuleRunMapperQueriesGoldenTest extends TestCase {
 		}
 
 		foreach ([[0, -5], [1, 0], [50, 10], [501, 3], [-2, 7]] as [$limit, $offset]) {
-			$calls["findByRule paging $limit $offset"] = fn (RuleRunMapper $m) => self::ids($m->findByRule('rule-2', null, null, null, $limit, $offset));
+			$calls["findRuns paging $limit $offset"] = fn (RuleRunMapper $m) => self::ids($m->findRuns(new \OCA\OpenRegister\Db\RuleRunSelection('rule-2'), new \OCA\OpenRegister\Kernel\Contracts\ListQuery($limit, $offset)));
 			$calls["findRecent paging $limit"] = fn (RuleRunMapper $m) => self::ids($m->findRecent(null, $limit));
 		}
 
@@ -90,7 +90,7 @@ final class RuleRunMapperQueriesGoldenTest extends TestCase {
 			$this->builderCount = 0;
 			$this->parameterCount = 0;
 			$this->queuedRows = [[['id' => 4], ['id' => 9]]];
-			if (str_starts_with($name, 'countByRule') === true) {
+			if (str_starts_with($name, 'countRuns') === true) {
 				$this->queuedRows = [[['run_count' => '7']]];
 			}
 

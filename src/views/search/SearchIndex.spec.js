@@ -124,6 +124,13 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 		expect(computedCall('presentationType', ctx)).toBe('table')
 	})
 
+	it('presentationType reflects a tree view, and treeConfig its labelField and fields', () => {
+		const ctx = { activeView: { presentation: { viewType: 'tree', tree: { labelField: 'name', fields: ['code'] } } } }
+		expect(computedCall('presentationType', ctx)).toBe('tree')
+		expect(computedCall('treeConfig', ctx)).toEqual({ labelField: 'name', fields: ['code'] })
+		expect(computedCall('treeConfig', { activeView: null })).toEqual({})
+	})
+
 	it('presentationType reflects a kanban view', () => {
 		const ctx = {
 			activeView: {

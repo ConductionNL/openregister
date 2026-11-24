@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -290,8 +291,7 @@ class DecisionTableValidationListener implements IEventListener, DecisionTableVa
 	private function tablesWithKey(string $key): ?array {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
-				registerSlug: DecisionTableLocation::REGISTER,
-				schemaSlug: DecisionTableLocation::SCHEMA,
+				target: new RegisterSchemaSlugs(register: DecisionTableLocation::REGISTER, schema: DecisionTableLocation::SCHEMA),
 				filters: ['key' => $key],
 				_rbac: false,
 				_multitenancy: false

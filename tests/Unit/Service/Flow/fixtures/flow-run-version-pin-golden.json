@@ -199,7 +199,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             }
         ]
     },
@@ -221,7 +221,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -246,7 +246,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -274,7 +274,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -316,7 +316,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -364,7 +364,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -406,7 +406,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -448,7 +448,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -483,7 +483,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -542,7 +542,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
@@ -601,7 +601,7 @@
                 "definitions.graphFor": "hash-3"
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapperInterface"
             },
             {
                 "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"

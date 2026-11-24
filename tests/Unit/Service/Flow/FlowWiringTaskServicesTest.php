@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskSubstitution;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\FlowLinkService;
@@ -68,6 +69,37 @@ final class FlowWiringTaskServicesTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $context->factories[$name]($container), message: $name);
 		}
 	}//end testEachFactoryBuildsItsService()
+
+	/**
+	 * The task inbox is built with the substitution service, so inbox rows
+	 * carry assigneeAbsent and absentUntil.
+	 *
+	 * @return void
+	 */
+	public function testTheTaskInboxIsBuiltWithTheSubstitutionService(): void {
+		$context = new RecordingRegistrationContext();
+		FlowWiring::register(context: $context);
+
+		$asked     = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$asked) {
+				$asked[] = $id;
+				$class   = new ReflectionClass(objectOrClass: $id);
+				if ($class->isFinal() === true) {
+					return $class->newInstanceWithoutConstructor();
+				}
+
+				return $this->createMock(originalClassName: $id);
+			}
+		);
+
+		$inbox = $context->factories[TaskInboxService::class]($container);
+
+		$this->assertContains(needle: TaskSubstitution::class, haystack: $asked);
+		$property = new \ReflectionProperty(TaskInboxService::class, 'substitution');
+		$this->assertInstanceOf(expected: TaskSubstitution::class, actual: $property->getValue($inbox));
+	}//end testTheTaskInboxIsBuiltWithTheSubstitutionService()
 
 	/**
 	 * TaskService is still built when the container cannot build its write-back

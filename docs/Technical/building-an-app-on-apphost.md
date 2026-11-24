@@ -215,16 +215,21 @@ refuses redirects, sends the token only as a Bearer header and times out after
 
 A descriptor publishes only when it names two lists. `publishFields` says which
 properties may leave your server; the slug always travels. `publishGroups` says who
-may send them. Pass the groups your own action matrix holds for the publish action,
-so an administrator changes it in one place.
+may send them. Both live on the descriptor's `StoreSharing` part; where the store reads
+from lives on its `StoreListing` part. Pass the groups your own action matrix holds for
+the publish action, so an administrator changes it in one place.
 
 ```php
 $descriptor = new StoreDescriptor(
-    appId: 'petstore',
-    schema: 'shared-pet',
-    defaultRegister: 'petstore',
-    publishFields: ['title', 'description', 'species'],
-    publishGroups: $actionAuth->getAllowedGroups(action: 'pet.share')
+    listing: new StoreListing(
+        appId: 'petstore',
+        schema: 'shared-pet',
+        defaultRegister: 'petstore'
+    ),
+    sharing: new StoreSharing(
+        publishFields: ['title', 'description', 'species'],
+        publishGroups: $actionAuth->getAllowedGroups(action: 'pet.share')
+    )
 );
 
 if ($authorizer->canPublish(descriptor: $descriptor, user: $user) === false) {

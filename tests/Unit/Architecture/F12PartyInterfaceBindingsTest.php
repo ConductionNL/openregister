@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartySendRefusalInterface;
@@ -50,7 +50,7 @@ final class F12PartyInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		PartySendRefusalInterface::class   => [PartyIndicatorGuard::class, ContractBindings::class],
+		PartySendRefusalInterface::class   => [PartyIndicatorGuard::class, ProcessesServiceBindings::class],
 		PublicationRefusalInterface::class => [PartyIndicatorGuard::class, FlowWiring::class],
 	];
 

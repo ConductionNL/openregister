@@ -33,12 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Handles cryptographic hash chaining for audit trail entries.
@@ -67,6 +69,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods) Same breadth, counted per method: the
+ * class implements three interfaces over one hash chain, and most of its methods
+ * are small private steps of the seal and verify walks. The re-chain split named
+ * above is the refactor that brings this down.
  *
  * @phpstan-type ChainWalk array{
  *     from: int|null,
@@ -82,7 +88,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface {
+class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface {
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
@@ -327,7 +333,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
 	 *
-	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 * @throws RuntimeException When the seal lock cannot be taken.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
@@ -337,7 +343,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+			throw new RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
 		}
 
 		try {
@@ -834,7 +840,10 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		try {
-			$totals = $this->rechainEveryWindow(batchSize: $batchSize);
+			$totals = $this->rechainEveryWindow(
+				batchSize: $batchSize,
+				window: ['previousHash' => $this->getGenesisHash(), 'lastId' => 0]
+			);
 			$this->logRechainComplete(totals: $totals);
 
 			return $totals;
@@ -843,6 +852,53 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}//end try
 	}//end rechainAll()
 
+
+	/**
+	 * Re-seal the chain from one row to its end, after a lawful rewrite of that row.
+	 *
+	 * The narrow form of {@see rechainAll()}: a row whose stored content was
+	 * rewritten on purpose (the anonymisation's redacted diff) no longer hashes
+	 * to its stored link, and every row after it committed to that old link. So
+	 * the rewritten row and everything after it are re-derived, chained onto the
+	 * last sealed row before it; nothing before it is touched. Retention
+	 * tombstones are carried forward exactly as rechainAll() carries them.
+	 *
+	 * Unlike a seal pass this is not fail-soft. A caller that rewrote a row and
+	 * cannot re-seal has to know, because the chain is broken until it does.
+	 *
+	 * @param int $fromId The first row whose content changed.
+	 *
+	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
+	 *
+	 * @throws \InvalidArgumentException When the id is not a row id.
+	 * @throws \RuntimeException         When the seal lock cannot be taken; nothing is re-sealed then.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/gdpr-data-subject-rights/spec.md#requirement-the-trail-keeps-the-act-and-loses-the-values-req-aao-006
+	 */
+	public function resealFrom(int $fromId): array {
+		if ($fromId < 1) {
+			throw new \InvalidArgumentException(sprintf('Cannot re-seal the audit chain from row %d: it is not a row id.', $fromId));
+		}
+
+		if ($this->acquireSealLock() === false) {
+			throw new \RuntimeException(sprintf('The audit seal lock is unavailable; the chain was not re-sealed from row %d.', $fromId));
+		}
+
+		try {
+			$totals = $this->rechainEveryWindow(
+				batchSize: self::SWEEP_BATCH_SIZE,
+				window: ['previousHash' => ($this->getHashBefore(id: $fromId) ?? $this->getGenesisHash()), 'lastId' => ($fromId - 1)]
+			);
+			$this->logger->info(
+				message: sprintf('[AuditHashService] Re-sealed %d audit row(s) from row %d after a recorded rewrite.', $totals['rechained'], $fromId),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+			);
+
+			return $totals;
+		} finally {
+			$this->releaseSealLock();
+		}//end try
+	}//end resealFrom()
 
 	/**
 	 * Log, at warning level, that a full re-chain starts.
@@ -880,12 +936,12 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * The caller holds the seal lock.
 	 *
-	 * @param int $batchSize Rows re-chained per query window.
+	 * @param int                                         $batchSize Rows re-chained per query window.
+	 * @param array{previousHash: string, lastId: int}     $window    Where the walk starts: the link before it and the id it starts after.
 	 *
 	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
 	 */
-	private function rechainEveryWindow(int $batchSize): array {
-		$window = ['previousHash' => $this->getGenesisHash(), 'lastId' => 0];
+	private function rechainEveryWindow(int $batchSize, array $window): array {
 		$totals = ['rechained' => 0, 'tombstonesPreserved' => 0];
 
 		while (true) {

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Hinge;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -245,12 +246,10 @@ class LensResolver {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: $userId,
-			objectOwner: $referenced->getOwner(),
-			_rbac: true,
-			object: $referenced
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $userId, objectOwner: $referenced->getOwner())
+				->about(object: $referenced, register: null),
+			_rbac: true
 		);
 	}//end mayRead()
 

@@ -35,7 +35,6 @@ use DateTime;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -151,7 +150,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 			return ['error' => 'Deck is not installed', 'entry' => null];
 		}
 
-		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: (string) $data['object']);
+		$object = $this->objectOfRow(container: $this->container, uuid: (string) $data['object']);
 		if ($object === null) {
 			return ['error' => 'no object "'.(string) $data['object'].'" to put the card on', 'entry' => null];
 		}

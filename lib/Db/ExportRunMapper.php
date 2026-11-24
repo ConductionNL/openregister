@@ -62,6 +62,7 @@ class ExportRunMapper extends QBMapper {
 		'profile' => 'profile',
 		'source' => 'source',
 		'status' => 'status',
+		'format' => 'format',
 		'actor' => 'actor',
 	];
 

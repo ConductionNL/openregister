@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
+use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -77,6 +78,7 @@ final class DestructionListRun {
 	private const WITHHELD_DECISIONS = [
 		DestructionReviewServiceInterface::ANSWER_RETAIN,
 		DestructionReviewServiceInterface::ANSWER_TRANSFER,
+		DestructionReviewServiceInterface::ANSWER_ANONYMISE,
 	];
 
 	/**
@@ -296,15 +298,39 @@ final class DestructionListRun {
 	 */
 	private function isWithheld(array $objRef): bool {
 		$decision = $objRef['decision'] ?? null;
-		if (in_array($decision, self::WITHHELD_DECISIONS, true) === false) {
-			return false;
+		if (in_array($decision, self::WITHHELD_DECISIONS, true) === true) {
+			$this->count['withheld']++;
+			$message = '[DestructionExecutionJob] Refusing to destroy %s: review decision "%s"';
+			$this->logger->warning(sprintf($message, (string)$objRef['uuid'], (string)$decision));
+			return true;
 		}
 
-		$this->count['withheld']++;
-		$message = '[DestructionExecutionJob] Refusing to destroy %s: review decision "%s"';
-		$this->logger->warning(sprintf($message, (string)$objRef['uuid'], (string)$decision));
-		return true;
+		if (self::isNominatedToAnonymise(objRef: $objRef) === true) {
+			$this->count['withheld']++;
+			$this->logger->warning(sprintf('[DestructionExecutionJob] Refusing to destroy %s: nominated for anonymising', (string)$objRef['uuid']));
+			return true;
+		}
+
+		return false;
 	}//end isWithheld()
+
+	/**
+	 * Whether the list carries the entry for anonymising and no reviewer answered it destroy.
+	 *
+	 * The second lock on the anonymise action, as on the review answers: an
+	 * entry nominated for anonymising keeps its record (design D-1 of
+	 * anonymising-as-an-archival-outcome), so this job never destroys it.
+	 *
+	 * @param array<string, mixed> $objRef List entry
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	private static function isNominatedToAnonymise(array $objRef): bool {
+		return ($objRef['action'] ?? null) === AppraisalInterface::ANONYMISE
+			&& ($objRef['decision'] ?? null) !== DestructionReviewServiceInterface::ANSWER_DESTROY;
+	}//end isNominatedToAnonymise()
 
 	/**
 	 * Destroy the object of an entry, unless an active legal hold keeps it.

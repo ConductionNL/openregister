@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
+use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\AppHost\Store\StorePublishRules;
 use PHPUnit\Framework\TestCase;
 
@@ -48,11 +50,15 @@ class StorePublishRulesTest extends TestCase {
 	 */
 	private function descriptor(array $fields): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: 'learniq',
-			schema: 'shared-course-package',
-			defaultRegister: 'learniq',
-			publishFields: $fields,
-			publishGroups: ['instructors']
+			listing: new StoreListing(
+				appId: 'learniq',
+				schema: 'shared-course-package',
+				defaultRegister: 'learniq'
+			),
+			sharing: new StoreSharing(
+				publishFields: $fields,
+				publishGroups: ['instructors']
+			)
 		);
 	}
 

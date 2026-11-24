@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
@@ -151,7 +152,7 @@ class MigrationHandler {
 	private function loadSides(MigrationRun $run): void {
 		foreach ([$run->source, $run->target] as $side) {
 			$side->registerEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->register, type: 'register');
-			$side->schemaEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema');
+			$side->schemaEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema', register: $side->registerEntity);
 		}
 	}//end loadSides()
 
@@ -325,7 +326,7 @@ class MigrationHandler {
 	 */
 	private function recordMapping(ObjectEntity $before, ObjectEntity $after): void {
 		try {
-			$this->storage->auditTrail->createAuditTrail(old: $before, new: $after, action: 'update');
+			$this->storage->auditTrail->recordChange(change: new AuditedChange(old: $before, new: $after, action: 'update'));
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[MigrationHandler] the mapping of ' . (string)$after->getUuid() . ' could not be recorded: ' . $e->getMessage(),

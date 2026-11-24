@@ -25,7 +25,7 @@ use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\IUserSession;
 
 /**
- * The preference resolver, the schemas whose notifications a group may default, and the caller.
+ * The preference resolver, the schemas whose notifications a group may default, the caller, and who administers a group.
  */
 final readonly class NotificationGroupPreferencesControllerServices {
 	/**
@@ -34,11 +34,13 @@ final readonly class NotificationGroupPreferencesControllerServices {
 	 * @param NotificationPreferencesInterface $preferenceService The three-layer preference resolver.
 	 * @param SchemaMapperInterface            $schemaMapper      Enumerates the notifications a group may hold defaults for.
 	 * @param IUserSession                     $userSession       Current-user session.
+	 * @param GroupAdministration              $groups            The authorities on who administers a group.
 	 */
 	public function __construct(
 		public NotificationPreferencesInterface $preferenceService,
 		public SchemaMapperInterface $schemaMapper,
 		public IUserSession $userSession,
+		public GroupAdministration $groups,
 	) {
 	}//end __construct()
 }//end class

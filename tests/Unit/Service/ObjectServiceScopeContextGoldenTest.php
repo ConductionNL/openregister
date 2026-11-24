@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -48,7 +49,7 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Object\ObjectListRequest
- * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\ReadScope
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\StreamingSave
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
@@ -214,7 +215,7 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
             )
             ->willReturn([]);
 
-        $service->searchObjectsBySlug('r', 's', ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
+        $service->searchObjectsBySlug(new RegisterSchemaSlugs(register: 'r', schema: 's'), ['@self' => ['register' => 1, 'schema' => 2, 'owner' => 'kept']]);
     }
 
     public function testFindSilentDropsAPendingRefBeforeItSetsItsRegister(): void
@@ -264,5 +265,27 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
         $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
 
         $this->assertSame(['clear', 'stream'], $calls);
+    }
+
+    public function testStreamingSaveHandsItsDryRunModeToTheSaveHandler(): void
+    {
+        $modes  = [];
+        $save   = $this->createMock(SaveObject::class);
+        $status = (new ReflectionMethod(SaveObject::class, 'saveObjectsStreaming'))->getReturnType()->getName();
+        $save->expects($this->exactly(2))->method('saveObjectsStreaming')->willReturnCallback(
+            function (StreamingSave $handed) use (&$modes, $status) {
+                $modes[] = $handed->dryRun;
+                return $this->createMock($status);
+            }
+        );
+
+        $service = $this->serviceWith(
+            ['saveHandler' => $save, 'currentRegister' => null, 'currentSchema' => null, 'currentSchemaRef' => null]
+        );
+
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']], dryRun: true));
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
+
+        $this->assertSame([true, false], $modes);
     }
 }

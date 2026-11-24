@@ -74,7 +74,6 @@ final class IntegrationControllersWiring {
 		$context->registerService(
 			IntegrationsController::class,
 			static fn (ContainerInterface $container) => new IntegrationsController(
-				appName: 'openregister',
 				request: $container->get('OCP\IRequest'),
 				services: new IntegrationsControllerServices(
 					registry: $container->get(IntegrationCatalogueInterface::class),
