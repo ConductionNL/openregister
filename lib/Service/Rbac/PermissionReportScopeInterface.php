@@ -45,11 +45,12 @@ interface PermissionReportScopeInterface {
 	/**
 	 * The schemas the report covers.
 	 *
-	 * @param string|null $filter Optional schema filter (id|uuid|slug).
+	 * @param string|null   $filter Optional schema filter (id|uuid|slug).
+	 * @param Register|null $within The register the report is narrowed to; a slug filter is looked up inside it first.
 	 *
 	 * @return Schema[] The schemas, empty when the filter matches nothing.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function schemas(?string $filter): array;
+	public function schemas(?string $filter, ?Register $within = null): array;
 }//end interface
