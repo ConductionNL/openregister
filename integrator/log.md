@@ -62,3 +62,4 @@
 2026-11-24T16:00:16Z GREEN prs=10358 main=ab5b6ad1a5 integrator-cloud
 2026-11-24T16:04:51Z RED prs=10363 main=ab5b6ad1a5 integrator-cloud (solo=10363)
 2026-11-24T16:10:00Z RED prs=10300,10381,10395,10398,10427,10435,10450,10451 main=ab5b6ad1a5 integrator-cloud
+2026-11-24T16:10:11Z NOTE prs=10300,10381,10398,10427,10435 main=ab5b6ad1a5 integrator-cloud (corrects the RED line above: only these 5 were built; 10395,10450,10451 conflicted within the tree)
