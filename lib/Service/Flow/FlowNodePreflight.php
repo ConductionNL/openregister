@@ -135,6 +135,8 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 */
 	public const REASON_CONFIG_REJECTED = 'node-config-rejected';
 
+	public const REASON_RUNTIME_UNAVAILABLE = 'node-runtime-unavailable';
+
 	/**
 	 * The config carries a key the node never reads.
 	 *
@@ -227,6 +229,7 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 			. 'from the EDGE, beside "type". As written this step gets "%5$s"',
 		self::REASON_CONFIG_REJECTED => '"%1$s" (step %2$s) — the node exists but refuses this step\'s config: %6$s. '
 			. 'A config it cannot read makes the step a pass-through that reports success',
+		self::REASON_RUNTIME_UNAVAILABLE => '"%1$s" (step %2$s) — cannot run on this instance: %6$s',
 		self::REASON_PRE_INVERSION_SHAPE => '"%1$s" (step %2$s) — the step is on an EDGE. A node is the action that runs and an edge is '
 			. 'sequence, so nothing reads this step. The flow has not been migrated; run '
 			. 'or-flow-migrate-definitions',
@@ -594,9 +597,18 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	 * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
 	 *
 	 * @spec openspec/specs/flow-preflight/spec.md
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-without-the-runner-the-code-step-is-hidden-and-refused
 	 */
 	private function resolvedFindings(IFlowNode $node, FlowPreflightStep $step): array {
 		$report = self::EMPTY_REPORT;
+		$unavailable = $this->runtimeUnavailable(node: $node);
+		if ($unavailable !== null) {
+			// The runtime is the reason the step cannot run. Its config may well be
+			// right, so say only that, not "a config it cannot read".
+			$report['blocking'][] = $step->finding(reason: self::REASON_RUNTIME_UNAVAILABLE, detail: $unavailable);
+			return $this->mergeReports(first: $report, second: $this->dialectFindings(node: $node, step: $step));
+		}
+
 		$rejection = $this->configRejection(node: $node, step: $step);
 		if ($rejection !== null) {
 			$report['blocking'][] = $step->finding(reason: self::REASON_CONFIG_REJECTED, detail: $rejection);
@@ -604,6 +616,31 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 
 		return $this->mergeReports(first: $report, second: $this->dialectFindings(node: $node, step: $step));
 	}//end resolvedFindings()
+
+	/**
+	 * Why a step's runtime is missing here, or null when it answers or the node needs none.
+	 *
+	 * A node that cannot say is treated as available: an infrastructure fault while asking
+	 * must not block a save, and the step still fails loudly if it runs without its runtime.
+	 *
+	 * @param IFlowNode $node The resolved node.
+	 *
+	 * @return string|null The node's reason, or null.
+	 *
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-without-the-runner-the-code-step-is-hidden-and-refused
+	 */
+	private function runtimeUnavailable(IFlowNode $node): ?string {
+		if (($node instanceof IFlowNodeRuntime) === false) {
+			return null;
+		}
+
+		try {
+			return $node->unavailableReason();
+		} catch (Throwable $e) {
+			$this->logNodeFailure(message: '[FlowNodePreflight] Could not ask a node whether its runtime answers: ' . $e->getMessage(), node: $node);
+			return null;
+		}
+	}//end runtimeUnavailable()
 
 	/**
 	 * Why a step's type does not resolve, as a report.
