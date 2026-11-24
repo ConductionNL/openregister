@@ -11,6 +11,7 @@ use OCA\OpenRegister\Service\McpDiscoveryService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class McpControllerTest extends TestCase {
 	private McpController $controller;
@@ -51,8 +52,37 @@ class McpControllerTest extends TestCase {
 
 		$result = $this->controller->discover();
 
+		// The public catalog never returns the exception message.
 		$this->assertEquals(500, $result->getStatus());
-		$this->assertEquals('Service unavailable', $result->getData()['error']);
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
+	}
+
+	public function testAFailureIsLoggedWhenALoggerIsWired(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')->with(
+			$this->stringContains('Failed to list the grantable rights: index at db-host down'),
+			$this->arrayHasKey('exception')
+		);
+		$this->grantableRightsIndex->method('getIndex')->willThrowException(new \RuntimeException('index at db-host down'));
+		$controller = new McpController(
+			$this->request,
+			new McpControllerServices($this->mcpDiscoveryService, $this->grantableRightsIndex, $logger)
+		);
+
+		$result = $controller->grantableRights();
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
+	}
+
+	public function testATypedFailureKeepsItsStatus(): void {
+		$this->mcpDiscoveryService->method('getCapabilityDetail')
+			->willThrowException(new \InvalidArgumentException('Bad capability name'));
+
+		$result = $this->controller->discoverCapability('registers');
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['message' => 'Bad capability name', 'error' => 'invalid-argument'], $result->getData());
 	}
 
 	public function testDiscoverCapabilitySuccess(): void {
