@@ -78,6 +78,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
@@ -127,7 +128,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				new ItemLoopFlowNodes($this->node(MergeNodeInterface::class), $this->node(LoopNodeInterface::class)),
 				new HandOffFlowNodes($this->node(SubFlowNodeInterface::class), $this->node(RouterNodeInterface::class)),
 			), new ObjectFlowNodes(
-				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class)),
+				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class), $this->node(TagObjectNodeInterface::class)),
 				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class), $this->node(AuditTrailNodeInterface::class)),
 			)),
 		);

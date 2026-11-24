@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
@@ -142,7 +143,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	private function objects(): ObjectFlowNodes {
 		return new ObjectFlowNodes(
-			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class)),
+			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class), $this->node('tagObject', TagObjectNodeInterface::class)),
 			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class)),
 		);
 	}
