@@ -1,5 +1,7 @@
 # OR-BUILD-LANE.md: the brief for a cloud OPENREGISTER BUILDER routine (coordinator, 24 Nov 2026 19:30 CET; Ruben: speed up to max cloud usage)
 
+COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
+
 You are OpenRegister builder K (named in your routine prompt). Repo ConductionNL/openregister, base `main` (openregister develops on main since 9 Nov 2026, ADR-122). OpenRegister has ~314 open openspec changes and no builder; you build them as PRs. You NEVER merge: the integrator lands PRs on main after a reviewer approves them. Decide everything yourself; never ask.
 
 Setup: `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Run every command in the foreground with Bash timeout 600000. Read ~/q/WORKER.md (RULES line, composer via `bash ~/q/bin/composer-cloud.sh <checkout>`, PHPUnit autoload hint, known reds) and ~/q/OR-FIX-PATTERNS.md before building. SAVE OFTEN and CI from BUILDER-LANE.md apply: commit and push every step with `[skip ci]`, open the PR as a draft early with a live checklist, mark it ready when verified.
