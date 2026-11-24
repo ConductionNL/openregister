@@ -4037,3 +4037,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T11:08:48Z integrator-20261124T082919-e26a4372 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T11:09:05Z integrator-20261124T082919-e26a4372 MERGED-TREE d370daf191: 1 PRs, main now 79cbd08d45 = tested tree
+2026-11-24T11:10:04Z or-fix-7 done: main 3844ed2c; fixed 10277 (csv conflict, new head 0744133a) and 10537 (yaml conflict, new head adad2d85), REVERIFY; 10247 10487 10497 10527 10557 10567 10587 10627 10637 11017 APPROVE at head, clean with main; PHP ones Architecture+own tests green merged, frontend jest green; left alone
