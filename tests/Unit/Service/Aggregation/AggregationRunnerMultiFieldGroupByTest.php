@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
@@ -104,7 +105,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: self::STATE_FILTER,
-			groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			layout: new AggregationLayout(
+				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -134,7 +137,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$query = AggregationQuery::create(
 			metric: 'count',
 			filter: self::STATE_FILTER,
-			groupBy: ['vendorId', 'dueDateBucket']
+			layout: new AggregationLayout(
+				groupBy: ['vendorId', 'dueDateBucket']
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -157,7 +162,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: self::STATE_FILTER,
-			groupBy: ['field' => 'vendorId']
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'vendorId']
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -187,7 +194,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 				metric: 'sum',
 				field: 'amount',
 				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				layout: new AggregationLayout(
+					groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				)
 			)
 		);
 
@@ -198,7 +207,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 				metric: 'sum',
 				field: 'amount',
 				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				layout: new AggregationLayout(
+					groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				)
 			)
 		);
 
