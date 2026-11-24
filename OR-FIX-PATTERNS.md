@@ -882,3 +882,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a test 'red on plain main too', or a main-vs-PR dump showing no difference, while the PR clearly changes it.
 - Cause: composer's autoload_psr4 resolves $baseDir from vendor's real path, so a main worktree with vendor -> <pr>/vendor loads the PR's lib/.
 - Fix: cp -a the vendor into the main worktree (or run composer-cloud.sh there) before any baseline run.
+## Inherited phpstan red: TaskSequenceMapperInterface::update() (or-fix-6)
+- Symptom: phpstan method.notFound at Service/Task/TaskSequenceService.php (3x $this->services->sequences->update()) on any PR that touches that file.
+- Cause: main c557d73 narrowed the mapper to TaskSequenceMapperInterface (findByUuid, findNewestForAnchor, insert) without update(); main's own lines.
+- Fix: none in a PR (inherited); belongs in a main fix adding update(Entity): Entity to the interface. Seen on #11086.
