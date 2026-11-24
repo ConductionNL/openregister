@@ -693,3 +693,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: CONFLICT only in the repo-root components yaml; csv auto-merges.
 - Cause: #11024 dropped lib/Kernel/Contracts/Files/* and their csv rows, regenerating the yaml.
 - Fix: git checkout --theirs the yaml, python3 scripts/component-patterns.py; grep lib/tests for the removed Files interfaces (none in #10156/#10516/#10526). Architecture green after.
+
+## Main #9053 (85629dd4): hasPermission(PermissionAsk) - a PR's NEW callers fail silently (or-fix-6)
+- Symptom: after merging main, the PR's own tests fail with 'You may not change/read ...' refusals or empty lists; no 'Unknown named parameter' visible because the caller's try/catch(Throwable) returns false (fail closed). phpstan argument.unknown on the call.
+- Cause: PermissionCheckInterface/PermissionHandlerInterface::hasPermission(schema:, action:, userId:, objectOwner:, object:, register:) became hasPermission(PermissionAsk $ask, bool $_rbac=true).
+- Fix: grep the PR's diff for hasPermission; call with ask: (new PermissionAsk(schema: $s, action: 'update'))->askedBy(userId: $u, objectOwner: $owner)->about(object: $obj, register: null) (use OCA\OpenRegister\Service\Object\PermissionAsk); test closures take (PermissionAsk $ask) and read $ask->objectOwner etc.; ->with($schema, 'create') becomes $this->callback(fn (PermissionAsk $a) => $a->action === 'create'). Remember the use line in the test (#10156).
