@@ -41,6 +41,8 @@ components:
       - ".*/lib/Service/Object/BatchOperationStatusInterface[.]php"
       - ".*/lib/Service/Object/PermissionAsk[.]php"
       - ".*/lib/Service/Object/PermissionCheck[.]php"
+      - ".*/lib/Service/Retention/ExpiredObjectStoreInterface[.]php"
+      - ".*/lib/Service/Retention/ExpiryDeclaration[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
@@ -1084,6 +1086,8 @@ components:
       - ".*/lib/Service/Relation/[^/]*"
       - ".*/lib/Service/Resolver/[^/]*"
       - ".*/lib/Service/Resolver/Exception/[^/]*"
+      - ".*/lib/Service/Retention/ExpiredObjectSources[.]php"
+      - ".*/lib/Service/Retention/ExpiredObjectStore[.]php"
       - ".*/lib/Service/Rules/DependentValueDeclarationException[.]php"
       - ".*/lib/Service/Schema/[^/]*"
       - ".*/lib/Service/SchemaImport/[^/]*"
@@ -1945,7 +1949,7 @@ components:
   - name: Compliance
     include:
       - ".*/lib/Kernel/Contracts/Compliance/.*"
-      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ComplianceJobHandlesInterface|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExternalGrantLapseJob|LogCleanUpTask|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob)[.]php"
+      - ".*/lib/BackgroundJob/(AbstractTextExtractionJob|ArchivalRetentionTask|ArchivalRowExpiry|ArchivalSweep|AuditExportDelivery|AuditExportSource|AuditSealJob|AuditTrailExportJob|AvgRetentionJob|BlobGroup|BlobMigrationRun|BulkLegalHoldJob|ComplianceJobHandlesInterface|DestructionCheckJob|DestructionExecutionJob|DestructionExecutionJobInterface|DestructionListRun|DsarDpiaDetectionJob|DsarRetentionSweepJob|ExpiredObjectSweepJob|ExternalGrantLapseJob|LogCleanUpTask|ProcessingLogPrune|ProcessingLogRetentionJob|QualityAuditScheduleJob|RelatedRetentionRecalculationJob|ReviewReminderJob|SharerAccessSweepJob|SubjectExportJob|TransferAttemptRun|TransferCheckJob|TransferExecutionJob)[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/ArchivalRetentionSources[.]php"
       - ".*/lib/BackgroundJob/Support/BackfillCalendarLinksPlatform[.]php"
@@ -1962,7 +1966,7 @@ components:
       - ".*/lib/BackgroundJob/Support/TransferExecutionPlatform[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionRecords[.]php"
       - ".*/lib/BackgroundJob/Support/TransferExecutionTransports[.]php"
-      - ".*/lib/Command/(RechainAuditTrailCommand|RetentionDryRunCommand)[.]php"
+      - ".*/lib/Command/(ExpirySweepCommand|RechainAuditTrailCommand|RetentionDryRunCommand)[.]php"
       - ".*/lib/Controller/(AnonymisationBackendController|AnonymisationPipelineController|ArchivalController|ArchivalOverviewController|AuditQueryController|AuditSinkController|AuditTrailController|ContentReportController|CorrectionsController|DataSubjectRequestController|DsarCaseController|DsarController|ErasurePreviewController|HardeningController|HardeningStatementController|MergeController|ProcessingLogController|ProcessingPurposeController|QualityAuditController|QualityController|RetentionController|SearchTrailController|SelectielijstController|SelectielijstReferenceController|SubjectExportController|TmloController|TransferController|VerwerkingsactiviteitenController)[.]php"
       - ".*/lib/Controller/Support/AnonymisationBackendControllerServices[.]php"
       - ".*/lib/Controller/Support/ArchivalControllerServices[.]php"
@@ -2056,6 +2060,7 @@ components:
       - ".*/lib/Service/Quality/QualityAuditService[.]php"
       - ".*/lib/Service/Quality/QualityAuditStores[.]php"
       - ".*/lib/Service/Rbac/AuditRowWriter[.]php"
+      - ".*/lib/Service/Retention/ExpiredObjectSweeper[.]php"
       - ".*/lib/Service/Schemas/ArchivalDeclarationValidators[.]php"
       - ".*/lib/Service/Settings/ArchivalSettingsReaderInterface[.]php"
   - name: Integrations
