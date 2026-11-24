@@ -734,3 +734,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after a clean main merge, testNoComponentEdgeBeyondTheBaseline lists 'lib/Listener/Registrar/<Area>ListenerRegistrar.php -> lib/Listener/<New>Listener.php (Processes -> Core)'.
 - Cause: main moved registrations into per-area registrars; a listener of another component must go through that component's slot class (e.g. CoreListenerRegistrar::identityClaims).
 - Fix: add a public static slot to lib/Listener/CoreListenerRegistrar.php holding the PR's registerEventListener line, call it from the area registrar at the same position, add the slot row to tests/Unit/Listener/CoreListenerRegistrarTest::slots(); order golden unchanged (#10458 aa9653a1).
+
+## Inherited on main 85629dd4: modularity_check.py --check fails on PermissionAsk/PermissionCheck (or-fix-0)
+- Symptom: python3 tools/sig/modularity_check.py --check on a PR merged with main prints 'new in Kernel: lib/Service/Object/PermissionAsk.php', '.../PermissionCheck.php' and 'newly exposed ... PermissionCheck.php'.
+- Cause: #9053 added them on main without a baseline rewrite; plain main fails the same 3 lines.
+- Fix: none in a PR unless the PR owns tools/sig/modularity-baseline.json (then take main's json, --write-baseline on the merged tree, #11000 0ef5a9a6). Also still red on 85629dd4 main: AnonymousEnvelopeReadPathsTest (4 errors), AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce.
