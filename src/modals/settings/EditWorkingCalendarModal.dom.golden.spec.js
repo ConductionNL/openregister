@@ -28,6 +28,19 @@ jest.mock('vue-material-design-icons/Delete.vue', () => ({ __esModule: true, def
 jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: mockStub('Plus') }))
 jest.mock('../../components/shared/CloseCancelButton.vue', () => ({ __esModule: true, default: mockStub('CloseCancelButton') }))
 
+/*
+ * The zone list and the administrator's own zone come from the runtime;
+ * pinned here so the record does not depend on the machine's ICU or TZ.
+ */
+beforeEach(() => {
+	jest.spyOn(Intl, 'supportedValuesOf').mockReturnValue(['Europe/Amsterdam', 'Europe/London'])
+	jest.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: 'Europe/Amsterdam' })
+})
+
+afterEach(() => {
+	jest.restoreAllMocks()
+})
+
 const CALENDAR = {
 	'@self': { id: 'cal-1' },
 	slug: 'nl-municipal',

@@ -172,14 +172,16 @@
         "asked": [
             "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
-            "Psr\\Log\\LoggerInterface"
+            "Psr\\Log\\LoggerInterface",
+            "OCA\\OpenRegister\\Kernel\\Contracts\\DependencyBreakerInterface"
         ],
         "params": {
             "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
             "logger": "Psr\\Log\\LoggerInterface",
             "readScope": "(other)",
-            "queryGuard": "(other)"
+            "queryGuard": "(other)",
+            "breakers": "OCA\\OpenRegister\\Kernel\\Contracts\\DependencyBreakerInterface"
         }
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver": {
