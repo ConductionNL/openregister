@@ -117,7 +117,6 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 		});
 
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$request,
 			$this->webhookMapper($case),
 			$this->logMapper($case),
@@ -136,7 +135,6 @@ class WebhooksControllerRetryGoldenTest extends TestCase {
 		$logMapper = $this->createMock(WebhookLogMapper::class);
 		$logMapper->expects($this->never())->method('find');
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
 			$logMapper,
