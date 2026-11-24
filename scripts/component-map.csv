@@ -258,6 +258,7 @@ Controller/CospendLinksController.php,106,Controller,Integrations,Integrations/C
 Controller/CredentialController.php,506,Controller,Integrations,Integrations/Controller/CredentialController.php,0,,Integrations
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
 Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
+Controller/CredentialProviderApprovalController.php,63,Controller,Integrations,Integrations/Controller/CredentialProviderApprovalController.php,0,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations
@@ -1250,6 +1251,7 @@ Files/Service/UploadService.php,104,Files,Files,Files/Service/UploadService.php,
 Formats/BsnFormat.php,40,Formats,Formats,Formats/BsnFormat.php,2,,Kernel
 Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php,0,,Kernel
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
+Formats/TimeZoneFormat.php,61,Formats,Formats,Formats/TimeZoneFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
 Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
 Formats/IbanFormat.php,66,Formats,Formats,Formats/IbanFormat.php,0,,Kernel
@@ -1660,6 +1662,7 @@ Repair/BackfillFlowVersions.php,124,Repair,Flows,Flows/Repair/BackfillFlowVersio
 Repair/BackfillTaskSubjectLocation.php,92,Repair,Platform,Platform/Repair/BackfillTaskSubjectLocation.php,0,,Platform
 Repair/CheckFlowTimerInvariants.php,79,Repair,Platform,Platform/Repair/CheckFlowTimerInvariants.php,0,,Platform
 Repair/CreateMissingRegisterFolders.php,43,Repair,Platform,Platform/Repair/CreateMissingRegisterFolders.php,0,,Platform
+Repair/FillCalendarTimeZones.php,111,Repair,Flows,Flows/Repair/FillCalendarTimeZones.php,0,,Processes
 Repair/GrantExportWhereReadIsGranted.php,72,Repair,Platform,Platform/Repair/GrantExportWhereReadIsGranted.php,0,,Platform
 Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/ImportCredentialBrokerRegister.php,0,,Platform
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
@@ -2099,6 +2102,8 @@ Service/Credential/OutsideVaultConnection.php,35,Service,Integrations,Integratio
 Service/Credential/OutsideVaultReader.php,87,Service,Integrations,Integrations/Service/Credential/OutsideVaultReader.php,0,,Integrations
 Service/Credential/DeclarationValidator.php,212,Service,Integrations,Integrations/Service/Credential/DeclarationValidator.php,0,,Integrations
 Service/Credential/DeclaredProviderApprovals.php,47,Service,Integrations,Integrations/Service/Credential/DeclaredProviderApprovals.php,0,,Integrations
+Service/Credential/DeclaredProviderDecisionRefused.php,12,Service,Integrations,Integrations/Service/Credential/DeclaredProviderDecisionRefused.php,0,,Integrations
+Service/Credential/DeclaredProviderDecisions.php,102,Service,Integrations,Integrations/Service/Credential/DeclaredProviderDecisions.php,0,,Integrations
 Service/Credential/DeclaredProviderLoader.php,101,Service,Integrations,Integrations/Service/Credential/DeclaredProviderLoader.php,0,,Integrations
 Service/Credential/DeclaredProviderResolver.php,90,Service,Integrations,Integrations/Service/Credential/DeclaredProviderResolver.php,0,,Integrations
 Service/Credential/ProviderCatalogue.php,47,Service,Integrations,Integrations/Service/Credential/ProviderCatalogue.php,5,,Integrations
@@ -3171,6 +3176,7 @@ Service/Schema/SchemaMigrationService.php,252,Service,Service,Service/Schema/Sch
 Service/Schema/SchemaObjectReader.php,65,Service,Service,Service/Schema/SchemaObjectReader.php,0,,Core
 Service/Schema/SchemaRevalidationService.php,112,Service,Service,Service/Schema/SchemaRevalidationService.php,0,177,Core
 Service/Schema/SchemaRunPopulation.php,49,Service,Service,Service/Schema/SchemaRunPopulation.php,0,,Core
+Service/Schema/SchemaSlugRename.php,247,Service,Service,Service/Schema/SchemaSlugRename.php,0,,Core
 Service/Schema/SchemaVersioningService.php,124,Service,Service,Service/Schema/SchemaVersioningService.php,0,232,Core
 Service/SchemaApplicationMigrator.php,85,Service,Configuration,Configuration/Service/SchemaApplicationMigrator.php,4,,Configuration
 Service/SchemaDeletionService.php,403,Service,Compliance,Compliance/Service/SchemaDeletionService.php,19,54,Compliance
@@ -3525,6 +3531,7 @@ Service/File/UrlFileSource.php,,Service,,,,,Files
 Service/File/UrlStreamOpener.php,,Service,,,,,Files
 Service/Flow/,,Service,,,,,Processes
 Service/Form/,,Service,,,,,Processes
+Service/Form/PublicFormDefinition.php,,Service,,,,,Processes
 Service/Gdpr/,,Service,,,,,Compliance
 Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,249,Service,Compliance,Compliance/Service/Gdpr/Subject/SubjectDeclaredFieldIndex.php,0,,Compliance
 Service/Geo/,,Service,,,,,Core
@@ -4190,6 +4197,13 @@ Db/HydrationKey.php,,Db,,,,,Kernel
 Exception/DatabaseErrorChain.php,,Exception,,,,,Kernel
 Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
+Service/Retention/ExpiryDeclaration.php,,Service,,,,,Kernel
+Service/Retention/ExpiredObjectSources.php,,Service,,,,,Core
+Service/Retention/ExpiredObjectStore.php,,Service,,,,,Core
+Service/Retention/ExpiredObjectStoreInterface.php,,Service,,,,,Kernel
+Service/Retention/ExpiredObjectSweeper.php,,Service,,,,,Compliance
+BackgroundJob/ExpiredObjectSweepJob.php,,BackgroundJob,,,,,Compliance
+Command/ExpirySweepCommand.php,,Command,,,,,Compliance
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
 Service/Object/DeclaredErrorMessage.php,,Service,,,,,Core
@@ -4233,6 +4247,8 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Formats/EmailFormat.php,,Formats,,,,,Kernel
+Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
@@ -4256,6 +4272,7 @@ Service/Lifecycle/LifecycleActionRecorder.php,,Service,,,,,Processes
 Listener/LifecycleActionRecordListener.php,,Listener,,,,,Processes
 Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,Notifications
 Controller/AutomationRecordsController.php,,Controller,,,,,Processes
+Controller/PublicFormPageController.php,,Controller,,,,,Processes
 BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
 Service/Flow/FlowStepRetry.php,,Service,,,,,Processes
@@ -4388,6 +4405,7 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Migration/Version1Date20261114180000.php,64,Migration,,,,,Platform
 Service/Archival/AnonymisationDerivedCopies.php,22,Service,Compliance,Compliance/Service/Archival/AnonymisationDerivedCopies.php,0,,Compliance
 Service/Archival/ContentIndexAnonymisationTarget.php,21,Service,Compliance,Compliance/Service/Archival/ContentIndexAnonymisationTarget.php,0,,Compliance
 Service/Archival/StateHistoryAnonymisationTarget.php,19,Service,Compliance,Compliance/Service/Archival/StateHistoryAnonymisationTarget.php,0,,Compliance
@@ -4397,6 +4415,14 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Migration/Version1Date20261114103700.php,,Migration,,,,,Platform
+Exception/TaskMandateRefusedException.php,,Exception,Exception,Exception/TaskMandateRefusedException.php,0,,Kernel
+Service/Task/TaskMandateGuard.php,,Service,Work,Work/Service/Task/TaskMandateGuard.php,0,,Processes
+Service/Rbac/MandateEvidence.php,,Service,Access,Access/Service/Rbac/MandateEvidence.php,0,,Core
+Kernel/Contracts/MandateEvidenceInterface.php,,Kernel,Kernel,Kernel/Contracts/MandateEvidenceInterface.php,0,,Kernel
+Service/Task/TaskSubstitution.php,,Service,Work,Work/Service/Task/TaskSubstitution.php,0,,Processes
+BackgroundJob/TaskSubstitutionJob.php,,BackgroundJob,Work,Work/BackgroundJob/TaskSubstitutionJob.php,0,,Processes
+Listener/TaskAbsenceListener.php,,Listener,Flows,Flows/Listener/TaskAbsenceListener.php,0,,Processes
 Controller/BreakGlassController.php,58,Controller,Access,Access/Controller/BreakGlassController.php,0,,Core
 Service/Rbac/BreakGlassDeclaration.php,132,Service,Access,Access/Service/Rbac/BreakGlassDeclaration.php,0,,Core
 Service/Rbac/BreakGlassPolicy.php,45,Service,Access,Access/Service/Rbac/BreakGlassPolicy.php,0,,Core
@@ -4409,6 +4435,7 @@ Service/Import/ImportFailedRowsCsv.php,,Service,,,,,Configuration
 Service/Import/ImportRunRetention.php,,Service,,,,,Configuration
 BackgroundJob/ImportRunRetentionJob.php,,BackgroundJob,,,,,Configuration
 Migration/Version1Date20261114130000.php,,Migration,,,,,Platform
+Migration/Version1Date20261121180000.php,,Migration,,,,,Platform
 Db/QualityAudit.php,,Db,,,,,Compliance
 Db/QualityAuditRun.php,,Db,,,,,Compliance
 Db/QualityAuditFailure.php,,Db,,,,,Compliance
