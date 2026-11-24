@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\AvgComplianceService;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\DsarServiceInterface;
@@ -59,11 +60,11 @@ final class C01GdprInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AvgComplianceService::class => [AvgComplianceServiceInterface::class, ContractBindings::class],
-		DataSubjectRequestService::class => [DataSubjectRequestServiceInterface::class, ContractBindings::class],
-		DsarService::class => [DsarServiceInterface::class, ContractBindings::class],
-		ErasurePreviewService::class => [ErasurePreviewServiceInterface::class, ContractBindings::class],
-		ErasurePreviewStore::class => [ErasurePreviewStoreInterface::class, ContractBindings::class],
-		ErasureRunner::class => [ErasureRunnerInterface::class, ContractBindings::class],
+		DataSubjectRequestService::class => [DataSubjectRequestServiceInterface::class, ComplianceServiceBindings::class],
+		DsarService::class => [DsarServiceInterface::class, ComplianceServiceBindings::class],
+		ErasurePreviewService::class => [ErasurePreviewServiceInterface::class, ComplianceServiceBindings::class],
+		ErasurePreviewStore::class => [ErasurePreviewStoreInterface::class, ComplianceServiceBindings::class],
+		ErasureRunner::class => [ErasureRunnerInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**

@@ -39,6 +39,7 @@ exports[`EditWorkingCalendarModal.toDefinition builds the definition of a full f
       },
     ],
     "slug": "nl",
+    "timezone": "Europe/Amsterdam",
     "title": "Netherlands",
     "workingWeekdays": [
       1,
@@ -50,6 +51,7 @@ exports[`EditWorkingCalendarModal.toDefinition builds the definition of a full f
   "keys": [
     "slug",
     "title",
+    "timezone",
     "workingWeekdays",
     "hoursPerWorkingDay",
     "rules",
@@ -66,6 +68,7 @@ exports[`EditWorkingCalendarModal.toDefinition builds the definition of a minima
     "hoursPerWorkingDay": 0,
     "rules": [],
     "slug": "x",
+    "timezone": "UTC",
     "title": "X",
     "workingWeekdays": [],
   },
@@ -73,6 +76,7 @@ exports[`EditWorkingCalendarModal.toDefinition builds the definition of a minima
   "keys": [
     "slug",
     "title",
+    "timezone",
     "workingWeekdays",
     "hoursPerWorkingDay",
     "rules",
@@ -90,6 +94,7 @@ exports[`EditWorkingCalendarModal.toForm reads a bare calendar into the form 1`]
     "rules": [],
     "serviceHours": {},
     "slug": "x",
+    "timezone": "UTC",
     "title": "",
     "workingWeekdays": [
       1,
@@ -103,6 +108,7 @@ exports[`EditWorkingCalendarModal.toForm reads a bare calendar into the form 1`]
     "slug",
     "title",
     "organisation",
+    "timezone",
     "workingWeekdays",
     "hoursPerWorkingDay",
     "serviceHours",
@@ -167,6 +173,7 @@ exports[`EditWorkingCalendarModal.toForm reads a full calendar into the form 1`]
     ],
     "serviceHours": {},
     "slug": "nl",
+    "timezone": "Europe/Amsterdam",
     "title": "Netherlands",
     "workingWeekdays": [
       1,
@@ -181,6 +188,7 @@ exports[`EditWorkingCalendarModal.toForm reads a full calendar into the form 1`]
     "slug",
     "title",
     "organisation",
+    "timezone",
     "workingWeekdays",
     "hoursPerWorkingDay",
     "serviceHours",
@@ -199,6 +207,7 @@ exports[`EditWorkingCalendarModal.toForm reads a none calendar into the form 1`]
     "rules": [],
     "serviceHours": {},
     "slug": "",
+    "timezone": "Europe/Amsterdam",
     "title": "",
     "workingWeekdays": [
       1,
@@ -212,6 +221,7 @@ exports[`EditWorkingCalendarModal.toForm reads a none calendar into the form 1`]
     "slug",
     "title",
     "organisation",
+    "timezone",
     "workingWeekdays",
     "hoursPerWorkingDay",
     "serviceHours",
