@@ -4600,3 +4600,4 @@
 10450 a4a256e4b62c8cba85abe158cab46084f2d98a93 REVERIFY or-fix-0: merged main aa1f24b9 (listener golden conflict: 258 = main 257 + PlatformShareRoutingListener, hash recomputed); PR diff vs main 11 files as before; phpstan clean; Architecture 2385, Listener, Service/Rbac green; review needed
 10534 8929ec1af2a2febc91670a54201b9bc12b888d20 REVERIFY or-fix-4: merged main, fixed CoreServiceBindings conflict (both bindings kept); review needed
 10554 a04f45980ba3e9f2bca7476705d817c176ddc5a9 REVERIFY or-fix-4: merged main, fixed component-map.csv conflict (union rows, yaml regenerated); review needed
+10614 c0da325378ddd4f0d41ee5d61e0ceb0f00c5af51 REVERIFY or-fix-4: merged main, fixed components yaml conflict (regenerated); review needed
