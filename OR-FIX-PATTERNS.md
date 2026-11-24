@@ -848,3 +848,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: parked.txt 'auto-park: sbom: package-lock.json|composer.lock changed without sbom.cdx.json' (or 'does not match') although bash bin/regen-sbom.sh --check <checkout at the PR head> says current; sbom.out lists dozens of 'removed: pkg:composer/...'.
 - Cause: integrate.sh sbom_gate made its check tree with `git clone --shared` of the blobless $C, which cannot read the missing blobs, so regen-sbom ran on an empty tree; and it parked any untouched sbom by file name, unlike merge_gate.py.
 - Fix: fixed in bin/integrate.sh (worktree checkout; untouched sbom judged by --check alone). Refresh $SIG_WORK/bin from ~/q/bin, delete the PR's park line (and its RED line in queue/prechecked.txt) and precheck it again. Seen on #10627; #10395, #10634, #10640 carry the same park.
+
+## Precheck park on Service/Chat ResponseGeneration*Test (or-fix-6)
+- Symptom: precheck-red on ResponseGenerationBreakerTest (2) and/or ResponseGenerationGoldenTest (5 ollama sets) on a PR that does not touch Mcp/Service/Chat.
+- Cause: these tests start a php -S stub on 127.0.0.1 and call it over HTTP; in the cloud sandbox they fail identically on plain main (98ffe7ce, 24 Nov). Inherited, not a PR defect.
+- Fix: run tests/Unit/Service/Chat on origin/main to confirm, then merge main for a new head (only if main moved), diff check, push, REVERIFY (#10456 62ff015e).
