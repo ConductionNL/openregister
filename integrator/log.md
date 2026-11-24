@@ -47,3 +47,5 @@
 2026-11-24T11:09:09Z GREEN prs=10247 main=79cbd08d45 integrator-cloud
 2026-11-24T11:22:08Z GREEN prs=10343 main=9bd7e0b3c8 integrator-cloud
 2026-11-24T11:35:16Z GREEN prs=10366 main=58e8e45047 integrator-cloud
+2026-11-24T11:41:56Z RED prs=10154,10190,10232,10269,10277,10314 main=58e8e45047 integrator-cloud
+2026-11-24T11:47:25Z RED prs=10190 main=58e8e45047 integrator-cloud (solo=10190)
