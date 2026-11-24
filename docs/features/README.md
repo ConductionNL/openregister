@@ -46,6 +46,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Feature | Doc | Category | Status | Key Standards |
 |---------|-----|----------|--------|---------------|
 | Registers & Schemas | [registers-and-schemas.md](registers-and-schemas.md) | Core | Implemented | JSON Schema, Schema.org, GGM |
+| Custom Validation Messages | [validation-messages.md](validation-messages.md) | Core | Implemented (backend) | `x-error-messages` per property and rule, per language |
 | External Databases as Virtual Registers | [dbal-virtual-registers.md](dbal-virtual-registers.md) | Core | Implemented | Doctrine DBAL, JSON Schema, Common Ground (data at the source) |
 | Nextcloud Tables as Virtual Registers | [tables-virtual-register.md](tables-virtual-register.md) | Core | Implemented | Nextcloud Tables, JSON Schema, Common Ground (data at the source) |
 | Object Storage & Lifecycle | [object-storage.md](object-storage.md) | Core | Implemented | UUID, soft delete, versioning |
@@ -66,6 +67,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Record Templates | [record-templates.md](record-templates.md) | Data Modelling | Implemented | Named, shareable starting values for new records |
 | Flows (Workflow Automation) | [flows.md](flows.md) | Automation | Implemented | The built-in flow engine: triggers, steps, approvals, run history. External tools: see [workflow-automation.md](workflow-automation.md) |
 | Workflow Automation (external tools) | [workflow-automation.md](workflow-automation.md) | Integration | Implemented | Integration with external automation tools (n8n, Windmill), schema hooks. Built-in automation: see [flows.md](flows.md) |
+| Object Actions | [object-actions.md](object-actions.md) | Automation | Implemented | Declared verbs per schema: list, run, audit |
 | Archiving & Records Management | [archiving.md](archiving.md) | Compliance | Implemented | Archiefwet, MDTO, NEN 15489, e-Depot |
 | OpenAPI & GraphQL APIs | [api-generation.md](api-generation.md) | Integration | Implemented | OpenAPI 3.1.0, GraphQL, NL API Design Rules |
 | AI & MCP Integration | [ai-and-mcp.md](ai-and-mcp.md) | AI | Implemented | MCP, JSON-RPC 2.0, SSE |
@@ -83,6 +85,7 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 The foundational layer for defining, storing, and querying structured data.
 
 - [Registers & Schemas](registers-and-schemas.md) — JSON Schema-based data model definition, import from Schema.org and GGM
+- [Custom Validation Messages](validation-messages.md) — A property's own message per failed rule, in the request language, with plain-text placeholders
 - [Object Storage & Lifecycle](object-storage.md) — CRUD, soft delete, relations, file attachments, locking
 - [Search, Filtering & Faceting](search-and-faceting.md) — Full-text search, field filtering, faceted drill-down, multi-backend
 - [Computed Fields](computed-fields.md) — Server-side Twig expressions for derived properties
@@ -114,6 +117,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Record Templates](record-templates.md) — Named starting values per schema, shared like saved views, offered only to users who may create there
 - [Flows (Workflow Automation)](flows.md) — The built-in flow engine: canvas, triggers, steps, approvals, runs, kill switch, shipping flows
 - [Workflow Automation (external tools)](workflow-automation.md) — Schema hooks and integration with external tools (n8n, Windmill); for built-in automation see [Flows](flows.md)
+- [Object Actions](object-actions.md) — Declared verbs that run a transition, a flow or inline steps, listed per object with rights and preconditions
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
 - [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)
