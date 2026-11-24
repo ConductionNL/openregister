@@ -8,3 +8,4 @@ Before appending, merge main/development into that PR's branch if it conflicts (
 A product or access-control question that FINISH-ORDER.md DECISIONS does not answer: append it here as a question with 2-3 options and your recommendation, skip that task, carry on.
 
 ## Queue
+- 19:06Z help-opencatalogi-1 opencatalogi#2969 merge: publication-required-at-publish 1.3/1.4/2.1/2.2; local green (PHPUnit same failing set as development, l10n clean, static analysis clean on touched files), but hydra diff-check.sh was refused by the cloud permission check, so run it and merge
