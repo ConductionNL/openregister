@@ -4207,3 +4207,16 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:37:33Z integrator-20261124T145419-19cd7a29 GREEN tree bf652bacd5 on dev 807c5e84cb prs 1 front=ok: Tests: 64124, Assertions: 226359, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T17:37:42Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-24T17:37:53Z or-fix-9: lane 9 share 10499 10509 10519 10529 10539 10549 10569 10629 10639 10869 10979; fixed 10509 (27e0f059) and 10539 (406fad11): components yaml conflicts with main; rest APPROVE at head and clean with main (no churn). Note: with ~/q cloned --depth 1, st_sync's plain 'git fetch origin <branch>' hangs; wrap _g fetch with --depth=200.
+2026-11-24T17:38:03Z precheck-20261124T165103-4e59ef13 NORESULT tree dad159e336: checker floor not measured (exit 2)
+2026-11-24T17:38:19Z or-fix-8: fixed 5968 -> 136ff6b7 (merged main 807c5e84: info.xml version and ImportHandler use-block conflicts; phpstan, Architecture, Db, Migration, Service/Configuration, Service/Flow green beyond inherited reds; REVERIFY recorded). Rest of share (10458 10498 10508 10528 10608 10638 10978 11008 11028 APPROVE; 10518 10538 10568 REVERIFY awaiting review) merge clean, untouched. Idle precheck not run: setup command refused by the session permission check.
+2026-11-24T17:38:18Z integrator-20261124T145419-19cd7a29 MERGED-TREE bf652bacd5: 1 PRs, main now 3848cdb322 = tested tree
+2026-11-24T17:40:15Z precheck-20261124T172502-2ed5f179 NORESULT tree e00cde58b9: deps failed
+2026-11-24T17:41:52Z precheck-20261124T172502-2ed5f179 CONFLICT-DEV #10494 7acff4e7
+2026-11-24T17:42:16Z precheck-20261124T173105-a7ce1273 CONFLICT-DEV #10494 7acff4e7
+2026-11-24T17:43:06Z builder opencatalogi: merged #2957 (OpenRegister main SearchOptions drift: deleted:false dropped at 16 searchObjectsPaginated call sites, ids via SearchSelection::byIds, doubles take both signatures; 142 failing tests fixed, 0 new; remaining OR-main drift e.g. OOAPI getResource/find left)
+2026-11-24T17:43:20Z precheck-20261124T172404-62e8e890 GREEN tree fc73c646ab on dev 807c5e84cb prs 1 front=skip: Tests: 64130, Assertions: 226373, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T17:45:01Z precheck-20261124T170310-20773ea8 GREEN tree efcc405550 on dev 807c5e84cb prs 1 front=ok: Tests: 64156, Assertions: 226516, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T17:46:11Z session-20261124T174519-732fb2d2 cloud-or-reviewer-7: 0 reviewable; all 13 open non-draft main PRs with N%8==7 have an APPROVE or BLOCK verdict at their current head (10631 BLOCK stands); heads unchanged since last run
+2026-11-24T17:46:18Z builder opencatalogi: merged #2958 (tests/bootstrap.php loads Unit\Support doubles, seven info.xml tests parse from a string under NC; phpunit.xml on NC33+OR main: 254 failing vs 699, 0 new)
+2026-11-24T17:46:34Z session-20261124T170110-296ba546 or-fix-3: fixed 10283 10363 10513 10523 (REVERIFY); precheck not run: gitleaks install refused by a permission check in this session
