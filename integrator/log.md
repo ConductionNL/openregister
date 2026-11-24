@@ -71,3 +71,4 @@
 2026-11-24T17:05:40Z RED prs=10182,10395,10450,10483,10491,10493 main=29ee788b9b integrator-cloud
 2026-11-24T17:10:18Z RED prs=10182 main=29ee788b9b integrator-cloud (solo=10182)
 2026-11-24T17:15:47Z AUTOPARK prs=10395 main=29ee788b9b integrator-cloud (VERDICT-RC 5 AUTOPARK)
+2026-11-24T17:26:15Z MERGE-RC5 prs=10450 main=807c5e84cb integrator-cloud (green tree, merge exit 5)
