@@ -139,8 +139,9 @@ A node may retry itself before its failure counts:
 - `backoff` is `fixed` (the same wait before every try, the default) or
   `exponential` (the wait doubles per try, never above one hour).
 
-Saving refuses a `retry` over a cap, or with a value that is not a whole
-number, and the message names the setting and its cap.
+A `retry` over a cap, or with a value that is not a whole number, is refused
+when the flow is turned into a run, before any step runs, and the message names
+the node, the setting and its cap.
 
 A retry does not hold a worker while it waits. The run is suspended until the
 delay has passed, the attempt number is kept on the run's resume state, and
@@ -181,9 +182,9 @@ A step that handles items one by one sends only the items that failed down the
 branch; the others go on along the normal edges. A step that fails as a whole
 sends all of its input items.
 
-A node with `branch` and no edge from its `error` output is refused at save,
-naming the node: a branch to nowhere would lose the failed items without a
-trace.
+A node with `branch` and no edge from its `error` output is refused the same
+way, before any step runs, naming the node: a branch to nowhere would lose the
+failed items without a trace.
 
 ### Annotations
 
