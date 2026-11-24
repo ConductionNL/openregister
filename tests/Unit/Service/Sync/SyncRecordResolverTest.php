@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Sync\HarvestImportServices;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
@@ -180,7 +181,7 @@ class SyncRecordResolverTest extends TestCase {
 		$other->setOwner('bob');
 		$this->objects->method('find')->willReturnCallback(fn (string $id): ObjectEntity => ($id === 'obj-1') ? $this->local() : $other);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId=null, ?string $objectOwner=null): bool => $objectOwner === 'alice'
+			static fn (PermissionAsk $ask): bool => $ask->objectOwner === 'alice'
 		);
 
 		$rows = $this->resolver->queue($this->source(), 'conflict', isAdmin: false);
@@ -191,8 +192,11 @@ class SyncRecordResolverTest extends TestCase {
 	}
 
 	public function testKeepLocalShadowsAndAppendsTheResolution(): void {
-		$this->objects->method('find')->willReturn($this->local());
-		$this->permissions->method('hasPermission')->willReturn(true);
+		$local = $this->local();
+		$this->objects->method('find')->willReturn($local);
+		$this->permissions->expects($this->once())->method('hasPermission')
+			->with($this->callback(static fn (PermissionAsk $ask): bool => $ask->action === 'update' && $ask->object === $local && $ask->objectOwner === $local->getOwner()))
+			->willReturn(true);
 		$this->objects->expects($this->never())->method('saveObject');
 
 		$record = $this->resolver->resolve($this->source(), $this->conflict(), ['action' => 'keep-local'], 'alice');
@@ -315,7 +319,8 @@ class SyncRecordResolverTest extends TestCase {
 	public function testUseHarvestedOnADeletedObjectNeedsTheCreateRightAndCreates(): void {
 		$this->objects->method('find')->willThrowException(new DoesNotExistException('gone'));
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->isInstanceOf(Schema::class), 'create')->willReturn(true);
+			->with($this->callback(static fn (PermissionAsk $ask): bool => $ask->schema instanceof Schema && $ask->action === 'create' && $ask->object === null))
+			->willReturn(true);
 		$this->mapsTo(['title' => 'Harvested title']);
 		$created = new ObjectEntity();
 		$created->setUuid('obj-new');

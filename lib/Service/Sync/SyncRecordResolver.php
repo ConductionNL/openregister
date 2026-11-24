@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use Throwable;
 
@@ -371,14 +372,15 @@ class SyncRecordResolver {
 	private function mayChange(Source $source, ?ObjectEntity $local): bool {
 		try {
 			if ($local === null) {
-				return $this->permissions->hasPermission(schema: $this->schemas->find(id: (string)$source->getTargetSchema()), action: 'create');
+				return $this->permissions->hasPermission(
+					ask: new PermissionAsk(schema: $this->schemas->find(id: (string)$source->getTargetSchema()), action: 'create')
+				);
 			}
 
 			return $this->permissions->hasPermission(
-				schema: $this->schemas->find(id: (int)$local->getSchema()),
-				action: 'update',
-				objectOwner: $local->getOwner(),
-				object: $local
+				ask: (new PermissionAsk(schema: $this->schemas->find(id: (int)$local->getSchema()), action: 'update'))
+					->askedBy(userId: null, objectOwner: $local->getOwner())
+					->about(object: $local, register: null)
 			);
 		} catch (Throwable) {
 			return false;
