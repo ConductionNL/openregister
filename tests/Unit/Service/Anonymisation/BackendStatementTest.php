@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform
  * @uses   \OCA\OpenRegister\Service\Anonymisation\BackendState
- * @uses   \OCA\OpenRegister\Service\Anonymisation\CapacityPolicy
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\CapacityPolicy
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersion
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersionHistory
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader
