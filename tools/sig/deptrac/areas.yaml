@@ -2684,7 +2684,7 @@ deptrac:
         - type: directory
           value: 'lib/Search/FlowTasksProvider[.]php$'
         - type: directory
-          value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkActionRegistryInterface|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|OperationsConsoleJobs|OperationsConsoleRules|OperationsConsoleServiceInterface|SequenceScope|SequenceService|SequenceServiceInterface|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
+          value: 'lib/Service/(ApprovalChainAnnotationInstaller|AutomationRecordService|AutomationRecordWriter|BulkActionRegistry|BulkActionRegistryInterface|CommentsCollectionCatalog|ContactMatchQuery|ContactMatchingService|OperationsConsoleJobs|OperationsConsoleRules|OperationsConsoleServiceInterface|ProcessesServiceBindings|ProcessesServiceRegistrar|SequenceScope|SequenceService|SequenceServiceInterface|StoredTask|TaskService|TaskVtodoDocument)[.]php$'
         - type: directory
           value: 'lib/Service/BulkJob/BulkJobActionCall[.]php$'
         - type: directory
