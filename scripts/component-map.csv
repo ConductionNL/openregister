@@ -381,6 +381,7 @@ Controller/SettingsController.php,483,Controller,Search,Search/Controller/Settin
 Controller/SetupController.php,140,Controller,Configuration,Configuration/Controller/SetupController.php,0,,Configuration
 Controller/ShareLinksController.php,94,Controller,Integrations,Integrations/Controller/ShareLinksController.php,0,,Integrations
 Controller/ShippedBaselineController.php,36,Controller,Configuration,Configuration/Controller/ShippedBaselineController.php,0,,Configuration
+Controller/ShippedConflictController.php,,Controller,,,,,Configuration
 Controller/SourcesController.php,290,Controller,Service,Service/Controller/SourcesController.php,0,,Integrations
 Controller/SubjectExportController.php,67,Controller,Compliance,Compliance/Controller/SubjectExportController.php,0,,Compliance
 Controller/Support/AccessLinkControllerServices.php,10,Controller,Access,Access/Controller/Support/AccessLinkControllerServices.php,0,,Core
@@ -3340,8 +3341,11 @@ Service/ShippedBaseline/GuardedAnnotations.php,180,Service,Configuration,Configu
 Service/ShippedBaseline/GuardedDescriptorMerge.php,175,Service,Configuration,Configuration/Service/ShippedBaseline/GuardedDescriptorMerge.php,1,,Configuration
 Service/ShippedBaseline/LiveDescriptor.php,14,Service,Service,Service/ShippedBaseline/LiveDescriptor.php,0,,Configuration
 Service/ShippedBaseline/ShippedAuthorizationDecision.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedAuthorizationDecision.php,0,,Configuration
+Service/ShippedBaseline/SchemaPartWriter.php,28,Service,Configuration,Configuration/Service/ShippedBaseline/SchemaPartWriter.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineResetService.php,145,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineResetService.php,0,,Configuration
 Service/ShippedBaseline/ShippedBaselineStore.php,76,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedBaselineStore.php,2,,Configuration
+Service/ShippedBaseline/ShippedConflictService.php,87,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedConflictService.php,0,,Configuration
+Service/ShippedBaseline/ShippedConflictServiceInterface.php,5,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedConflictServiceInterface.php,0,,Configuration
 Service/ShippedBaseline/ShippedConfigurationGuard.php,329,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedConfigurationGuard.php,0,,Configuration
 Service/Survey/SurveyExportShaper.php,57,Service,Work,Work/Service/Survey/SurveyExportShaper.php,0,,Processes
 Service/Survey/SurveyRecords.php,90,Service,Work,Work/Service/Survey/SurveyRecords.php,0,,Processes
@@ -4409,6 +4413,7 @@ Service/Object/ObjectSaveChecks.php,26,Service,Service,Service/Object/ObjectSave
 Service/Object/SampleValidationErrors.php,48,Service,Service,Service/Object/SampleValidationErrors.php,0,,Core
 Service/Configuration/SeedReport.php,166,Service,Configuration,Configuration/Service/Configuration/SeedReport.php,0,,Configuration
 Service/Configuration/SeedDirectoryImporter.php,164,Service,Configuration,Configuration/Service/Configuration/SeedDirectoryImporter.php,0,,Configuration
+Service/Configuration/ShippedRegisterBaseline.php,,Service,,,,,Configuration
 Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirectory.php,0,,Platform
 BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
 Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
