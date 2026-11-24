@@ -628,7 +628,6 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$userSession,
 			$this->createMock(IGroupManager::class),

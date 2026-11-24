@@ -45,6 +45,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Classification refuses on the find path, ahead of every grant.
@@ -259,10 +260,10 @@ class PermissionHandlerClassificationTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'mila', groups: ['medewerkers']);
 		$schema = $this->schema(readers: ['medewerkers']);
 
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', userId: 'mila', object: $this->document('vertrouwelijk')));
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'mila', object: $this->document('intern')));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'mila', objectOwner: null)->about(object: $this->document('vertrouwelijk'), register: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'mila', objectOwner: null)->about(object: $this->document('intern'), register: null)));
 		// A question about the schema, not one object, is the list path's to answer.
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'mila'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'mila', objectOwner: null)));
 	}//end testAFindAboveTheClearanceIsRefusedDespiteTheSchemaGrant()
 
 	/**
@@ -273,8 +274,8 @@ class PermissionHandlerClassificationTest extends TestCase {
 	public function testAClearedCallerAndTheAdministratorRead(): void {
 		$schema = $this->schema(readers: ['medewerkers', 'juristen']);
 
-		$this->assertTrue($this->handlerFor(userId: 'jan', groups: ['medewerkers', 'juristen'])->hasPermission(schema: $schema, action: 'read', userId: 'jan', object: $this->document('geheim')));
-		$this->assertTrue($this->handlerFor(userId: 'beheer', groups: ['admin'])->hasPermission(schema: $schema, action: 'read', userId: 'beheer', object: $this->document('geheim')));
+		$this->assertTrue($this->handlerFor(userId: 'jan', groups: ['medewerkers', 'juristen'])->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)->about(object: $this->document('geheim'), register: null)));
+		$this->assertTrue($this->handlerFor(userId: 'beheer', groups: ['admin'])->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'beheer', objectOwner: null)->about(object: $this->document('geheim'), register: null)));
 	}//end testAClearedCallerAndTheAdministratorRead()
 
 	/**
@@ -286,9 +287,9 @@ class PermissionHandlerClassificationTest extends TestCase {
 		$handler = $this->handlerFor(userId: null);
 		$schema = $this->schema(readers: ['public']);
 
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', object: $this->document('openbaar')));
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', object: $this->document('vertrouwelijk')));
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', object: $this->document('geheim', ['read' => ['public']])));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->about(object: $this->document('openbaar'), register: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->about(object: $this->document('vertrouwelijk'), register: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->about(object: $this->document('geheim', ['read' => ['public']]), register: null)));
 	}//end testACeilingBeatsEveryGrantToItsScope()
 
 	/**
@@ -299,6 +300,6 @@ class PermissionHandlerClassificationTest extends TestCase {
 	public function testASchemaWithoutTheBlockIsUnchanged(): void {
 		$handler = $this->handlerFor(userId: 'mila', groups: ['medewerkers']);
 
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(readers: ['medewerkers'], classified: false), action: 'read', userId: 'mila', object: $this->document('geheim')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(readers: ['medewerkers'], classified: false), action: 'read'))->askedBy(userId: 'mila', objectOwner: null)->about(object: $this->document('geheim'), register: null)));
 	}//end testASchemaWithoutTheBlockIsUnchanged()
 }//end class
