@@ -11,11 +11,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use DateTime;
 use DateTimeImmutable;
+use DateTimeZone;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Controller\Support\DeletedAccess;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\DeletedStore;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
@@ -62,6 +66,7 @@ class DeletedControllerSyncFilterTest extends TestCase {
 	private RegisterMapper&MockObject $registers;
 	private SchemaMapper&MockObject $schemas;
 	private IGroupManager&MockObject $groups;
+	private AuditTrailMapper&MockObject $audit;
 
 	protected function setUp(): void {
 		$this->objects = $this->createMock(MagicMapper::class);
@@ -105,6 +110,7 @@ class DeletedControllerSyncFilterTest extends TestCase {
 		);
 
 		$this->groups = $this->createMock(IGroupManager::class);
+		$this->audit = $this->createMock(AuditTrailMapper::class);
 	}
 
 	/**
@@ -138,7 +144,7 @@ class DeletedControllerSyncFilterTest extends TestCase {
 				store: new DeletedStore(
 					objectEntityMapper: $this->objects,
 					registerMapper: $this->registers,
-					auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+					auditTrailMapper: $this->audit,
 					deletion: $deletion,
 					schemaMapper: $this->schemas,
 				),
@@ -235,5 +241,111 @@ class DeletedControllerSyncFilterTest extends TestCase {
 		$response = $this->controller(admin: false)->index();
 
 		$this->assertSame(404, $response->getStatus());
+	}
+
+	/**
+	 * REQ-SYNC-004 / task 4.2: a write committed while the list read runs is at or after the watermark.
+	 *
+	 * The listing stub writes an object mid-query and then keeps the query
+	 * running past the next second, so a watermark taken after the query
+	 * instead of before it would land later than that write.
+	 */
+	public function testTheWatermarkIsNotLaterThanAWriteDuringTheRead(): void {
+		$written = null;
+		$this->objects = $this->createMock(MagicMapper::class);
+		$this->objects->method('findDeletedAcrossAllMagicTables')->willReturnCallback(
+			static function () use (&$written): array {
+				$written = new DateTimeImmutable('now');
+				usleep(1100000);
+				return [];
+			}
+		);
+		$this->objects->method('countDeletedAcrossAllMagicTables')->willReturn(0);
+
+		$response = $this->controller()->index();
+
+		$watermark = $response->getData()['syncWatermark'];
+		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/', $watermark);
+		$this->assertLessThanOrEqual($written->getTimestamp(), (new DateTimeImmutable($watermark))->getTimestamp());
+	}
+
+	public function testARefusalCarriesNoWatermark(): void {
+		$this->params = ['deletedSince' => 'yesterday'];
+
+		$response = $this->controller()->index();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertArrayNotHasKey('syncWatermark', $response->getData());
+	}
+	public function testDestroyedTombstonesWithoutDeletedSinceAreRefusedByName(): void {
+		$this->params = ['_includeDestroyed' => 'true'];
+		$this->audit->expects($this->never())->method('findDestructions');
+
+		$response = $this->controller()->index();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('deletedSince', $response->getData()['parameter']);
+		$this->assertStringContainsString('deletedSince', $response->getData()['error']);
+		$this->assertSame([], $this->calls['list']);
+	}
+
+	public function testDestroyedTombstonesFollowTheBinRowsWithinTheCallersOwnRecords(): void {
+		$this->params = ['_includeDestroyed' => 'true', 'schema' => 'lesson', 'deletedSince' => '2026-10-02T00:00:00+00:00'];
+
+		$mine = new AuditTrail();
+		$mine->setObjectUuid('gone-1');
+		$mine->setRegister(3);
+		$mine->setSchema(7);
+		$mine->setUser('alice');
+		$mine->setCreated(new DateTime('2026-10-04 09:12:00', new DateTimeZone('UTC')));
+		$mine->setChanged(['name' => 'Jansen']);
+
+		$theirs = new AuditTrail();
+		$theirs->setObjectUuid('gone-2');
+		$theirs->setUser('bob');
+
+		$asked = [];
+		$this->audit->method('findDestructions')->willReturnCallback(
+			static function (DestructionQuery $query) use (&$asked, $mine, $theirs): array {
+				$asked[] = $query;
+				return [$mine, $theirs];
+			}
+		);
+		$this->audit->method('countDestructions')->willReturn(1);
+		$this->audit->method('oldestDestruction')->willReturn(new DateTimeImmutable('2026-09-01T00:00:00+00:00'));
+
+		$response = $this->controller(admin: false)->index();
+
+		$this->assertSame(200, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame(
+			[['id' => 'gone-1', 'register' => 3, 'schema' => 7, 'destroyedAt' => '2026-10-04T09:12:00+00:00', 'tombstone' => true]],
+			$data['results']
+		);
+		$this->assertSame(3, $data['total']);
+		$this->assertSame('2026-09-01T00:00:00+00:00', $data['destroyedCoverageFrom']);
+		$this->assertSame('alice', $asked[0]->actor);
+		$this->assertSame(7, $asked[0]->schemaId);
+		$this->assertEquals(new DateTimeImmutable('2026-10-02T00:00:00+00:00'), $asked[0]->since);
+	}
+
+	public function testAnAdministratorReadsEveryDestructionAndWithoutTheFlagNoneIsRead(): void {
+		$this->params = ['_includeDestroyed' => '1', 'deletedSince' => '2026-10-02T00:00:00+00:00'];
+		$asked = [];
+		$this->audit->method('findDestructions')->willReturnCallback(
+			static function (DestructionQuery $query) use (&$asked): array {
+				$asked[] = $query;
+				return [];
+			}
+		);
+
+		$this->controller()->index();
+		$this->assertCount(1, $asked);
+		$this->assertNull($asked[0]->actor);
+
+		$this->params = ['deletedSince' => '2026-10-02T00:00:00+00:00'];
+		$response = $this->controller()->index();
+		$this->assertCount(1, $asked);
+		$this->assertArrayNotHasKey('destroyedCoverageFrom', $response->getData());
 	}
 }
