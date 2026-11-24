@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The services of ObjectGrantsController, bundled so its constructor stays small.
@@ -38,11 +39,13 @@ final class ObjectGrantsControllerServices {
 	 * @param ObjectOperationsInterface   $objectService Names the register and schema the request resolved.
 	 * @param AccessReviewGateInterface   $gate          Resolves the object and decides who may ask.
 	 * @param ObjectGrantsReportInterface $report        Assembles the rows.
+	 * @param LoggerInterface             $logger        Records why the rows could not be assembled.
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly AccessReviewGateInterface $gate,
 		public readonly ObjectGrantsReportInterface $report,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class
