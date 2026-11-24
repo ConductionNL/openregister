@@ -434,11 +434,13 @@ sbom_gate() {
 		# As merge_gate.py: a dev-only lockfile change leaves the omit-dev SBOM unchanged, so a head that
 		# does not touch sbom.cdx.json is judged by regen-sbom.sh --check alone, not by the file list.
 		touched=no; grep -qx 'sbom.cdx.json' <<<"$names" && touched=yes
-		rm -rf "$tree"
-		git clone -q --shared --no-checkout "$C" "$tree" && git -C "$tree" checkout -q --detach "$head" \
+		# A worktree, not `clone --shared`: $C is a blobless clone, and a shared clone cannot fetch the
+		# missing blobs, so it checked out an empty tree and every lockfile PR read as a stale SBOM.
+		git -C "$C" worktree remove --force "$tree" 2>/dev/null; rm -rf "$tree"; git -C "$C" worktree prune
+		git -C "$C" worktree add -q --detach "$tree" "$head" \
 			|| { say "NORESULT tree $T10: cannot check out #$n for the SBOM check"; echo NORESULT > "$RUN/verdict"; exit 4; }
 		env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 bash "$BIN/regen-sbom.sh" --check "$tree" > "$RUN/sbom.out" 2>&1; rc=$?
-		rm -rf "$tree"
+		git -C "$C" worktree remove --force "$tree" 2>/dev/null; rm -rf "$tree"; git -C "$C" worktree prune
 		if [ "$rc" -eq 1 ]; then
 			[ "$touched" = yes ] || sbom_park "$n" "$head" "sbom: $locks changed without sbom.cdx.json"
 			sbom_park "$n" "$head" "sbom: sbom.cdx.json does not match $locks (run hydra scripts/regen-sbom.sh)"
