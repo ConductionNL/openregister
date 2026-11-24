@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Resilience;
 
+use OCA\OpenRegister\Kernel\Contracts\DependencyRefusalInterface;
 use RuntimeException;
 
 /**
@@ -33,7 +34,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
  */
-class DependencyUnavailableException extends RuntimeException {
+class DependencyUnavailableException extends RuntimeException implements DependencyRefusalInterface {
 
 	/**
 	 * Constructor.

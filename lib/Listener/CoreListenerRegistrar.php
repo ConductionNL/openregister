@@ -37,6 +37,7 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Share\Events\BeforeShareCreatedEvent;
 use OCP\User\Events\UserLoggedInEvent;
 
 /**
@@ -71,6 +72,20 @@ final class CoreListenerRegistrar {
 	public static function identityClaims(IRegistrationContext $context): void {
 		$context->registerEventListener(UserLoggedInEvent::class, IdentityClaimsLoginListener::class);
 	}//end identityClaims()
+
+	/**
+	 * A share made from the platform's own sharing surface on an object's folder
+	 * passes the schema's opt-in and the permission mapping.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function platformShareRouting(IRegistrationContext $context): void {
+		$context->registerEventListener(BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class);
+	}//end platformShareRouting()
 
 	/**
 	 * A grant to a slot follows whoever holds the role, so the change of

@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objet \"%1$s\" Iech zougewisen",
         "Audit trail export ready": "Den Export vum Audit-Protokoll ass fäerdeg",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ären Export vum Audit-Protokoll mat %1$s Aträg gouf an %2$s%3$s gespäichert.",
-        "Open Files": "Fichieren opmaachen"
+        "Open Files": "Fichieren opmaachen",
+        "Its ancestor %1$s has appraisal %2$s": "Säin iwwergeuerdent Objet %1$s huet d'Bewäertung %2$s",
+        "Its ancestor %s could not be read": "Säin iwwergeuerdent Objet %s konnt net gelies ginn"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
