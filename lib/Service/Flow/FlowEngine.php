@@ -503,7 +503,7 @@ class FlowEngine {
 	 */
 	private function failedSingleHop(FlowWalkHop $hop, Throwable $error): array|null {
 		$pass = $hop->pass;
-		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(pass: $pass));
+		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(hop: $hop));
 		$pass->log[] = $failure->entry;
 		if ($failure->outcome === FlowStepFailure::RETRYING && $failure->suspension !== null) {
 			return $hop->suspended(suspension: $failure->suspension);
@@ -521,24 +521,26 @@ class FlowEngine {
 	/**
 	 * The resume state a retry's attempts are counted on.
 	 *
-	 * The run service hands every walk the object; a single-stream walk
-	 * started without one gets one, so its count still travels with the
-	 * context it returns. A stream walk's context is fixed, so without the
-	 * object it cannot remember a retry and makes none.
+	 * The run service hands every walk the object. A single-stream walk
+	 * started without one gets one when the failed step declares `retry`, so
+	 * its count still travels with the context it returns; a step without
+	 * `retry` leaves the context as it was. A stream walk's context is fixed,
+	 * so without the object it cannot remember a retry and makes none.
 	 *
-	 * @param FlowWalkPass|FlowStreamPass $pass The pass.
+	 * @param FlowWalkHop|FlowStreamHop $hop The failed hop.
 	 *
-	 * @return FlowResumeState|null The state, or null when none can be kept.
+	 * @return FlowResumeState|null The state, or null when none is kept.
 	 *
 	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
 	 */
-	private function attemptState(FlowWalkPass|FlowStreamPass $pass): ?FlowResumeState {
+	private function attemptState(FlowWalkHop|FlowStreamHop $hop): ?FlowResumeState {
+		$pass = $hop->pass;
 		$state = ($pass->context[FlowResumeState::CONTEXT_KEY] ?? null);
 		if ($state instanceof FlowResumeState) {
 			return $state;
 		}
 
-		if ($pass instanceof FlowWalkPass) {
+		if ($pass instanceof FlowWalkPass && FlowStepRetry::for(step: $hop->step) !== null) {
 			$state = FlowResumeState::fromArray(stored: $state);
 			$pass->context[FlowResumeState::CONTEXT_KEY] = $state;
 			return $state;
@@ -776,7 +778,7 @@ class FlowEngine {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private function failOnStream(FlowStreamHop $hop, Throwable $error): ?array {
-		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(pass: $hop->pass));
+		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(hop: $hop));
 		$entry = $failure->entry;
 		if ($failure->outcome === FlowStepFailure::RETRYING && $failure->suspension !== null) {
 			$hop->pass->log[] = $hop->onStream(entry: $entry);

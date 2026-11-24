@@ -86,7 +86,7 @@ final class FlowErrorBranch {
 	 * @return array<string, mixed> The item.
 	 */
 	private function failedItem(mixed $item, Throwable $error): array {
-		$member = [FlowItems::JSON => []];
+		$member = [FlowItems::JSON => ['value' => $item]];
 		if (is_array($item) === true && array_key_exists(FlowItems::JSON, $item) === true) {
 			$member = $item;
 		} else if (is_array($item) === true) {
