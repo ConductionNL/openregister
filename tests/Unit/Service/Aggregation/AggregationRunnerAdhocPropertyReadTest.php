@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
 use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
@@ -155,7 +156,7 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 	 */
 	public static function withheldQueries(): array {
 		return [
-			'group by the withheld property' => [AggregationQuery::create(metric: 'count', groupBy: ['field' => 'salary'])],
+			'group by the withheld property' => [AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'salary']))],
 			'sum of the withheld property' => [AggregationQuery::create(metric: 'sum', field: 'salary')],
 			'max of the withheld property' => [AggregationQuery::create(metric: 'max', field: 'salary')],
 		];
@@ -174,7 +175,7 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 			$this->runner()->runAdhoc(
 				register: $this->register(),
 				schema: $this->schema(),
-				query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'department'])
+				query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'department']))
 			);
 		} catch (NotAuthorizedException $refused) {
 			$this->fail(message: 'a readable property was refused: ' . $refused->getMessage());

@@ -18,7 +18,6 @@ final class RulesControllerFactory {
 	/**
 	 * The constructor arguments of RulesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param SchemaMapper $schemaMapper Constructor argument.
 	 * @param RuleInventoryService $inventory Constructor argument.
@@ -32,7 +31,6 @@ final class RulesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
 		\OCA\OpenRegister\Service\Rules\RuleInventoryService $inventory,
@@ -44,7 +42,6 @@ final class RulesControllerFactory {
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\RulesControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RulesMappers(
