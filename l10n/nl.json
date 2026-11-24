@@ -3681,6 +3681,9 @@
         "Destruction list created": "Vernietigingslijst gemaakt",
         "Destruction lists": "Vernietigingslijsten",
         "Legal holds": "Juridische blokkades",
+        "Held back by an inherited appraisal": "Tegengehouden door een overgeërfde waardering",
+        "Held by": "Tegengehouden door",
+        "Nothing is held back by an inherited appraisal": "Niets wordt tegengehouden door een overgeërfde waardering",
         "Transfer to e-Depot": "Overbrengen naar e-Depot",
         "Selection list": "Selectielijst",
         "{value} records are under a legal hold and were left off the list.": "{value} records vallen onder een juridische blokkade en zijn van de lijst gehaald.",
@@ -3728,7 +3731,9 @@
         "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "Een brekende wijziging van schema \"%1$s\" is doorgevoerd als versie %2$s. Bekijk het wijzigingslogboek voor je volgende aanroep.",
         "Note from the administrator: %s": "Toelichting van de beheerder: %s",
         "Open changelog": "Wijzigingslogboek openen",
-        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Uw opgeslagen weergaven en de objecten die u volgt. De objecten zelf blijven bij uw organisatie."
+        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Uw opgeslagen weergaven en de objecten die u volgt. De objecten zelf blijven bij uw organisatie.",
+        "Its ancestor %1$s has appraisal %2$s": "Bovenliggend record %1$s heeft waardering %2$s",
+        "Its ancestor %s could not be read": "Bovenliggend record %s kon niet worden gelezen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

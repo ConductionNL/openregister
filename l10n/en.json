@@ -3448,6 +3448,9 @@
         "Destruction list created": "Destruction list created",
         "Destruction lists": "Destruction lists",
         "Legal holds": "Legal holds",
+        "Held back by an inherited appraisal": "Held back by an inherited appraisal",
+        "Held by": "Held by",
+        "Nothing is held back by an inherited appraisal": "Nothing is held back by an inherited appraisal",
         "Transfer to e-Depot": "Transfer to e-Depot",
         "Selection list": "Selection list",
         "{value} records are under a legal hold and were left off the list.": "{value} records are under a legal hold and were left off the list.",
@@ -3495,7 +3498,9 @@
         "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.": "A breaking change to schema \"%1$s\" was applied as version %2$s. Check the changelog before your next call.",
         "Note from the administrator: %s": "Note from the administrator: %s",
         "Open changelog": "Open changelog",
-        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Your saved views and the objects you watch. The objects themselves stay with your organisation."
+        "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Your saved views and the objects you watch. The objects themselves stay with your organisation.",
+        "Its ancestor %1$s has appraisal %2$s": "Its ancestor %1$s has appraisal %2$s",
+        "Its ancestor %s could not be read": "Its ancestor %s could not be read"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
