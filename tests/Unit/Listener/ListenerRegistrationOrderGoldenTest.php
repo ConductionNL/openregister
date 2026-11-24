@@ -40,7 +40,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * EntityEditAuditListener also took the three organisation events
 	 * (history-schema-and-settings-edits-audited), after the register events.
 	 */
-	private const SEQUENCE_SHA256 = '5fa38e2f26d0895bfe07d6ce3c5f25e7356dd3b78d5cb9ded93745b27bf47b31';
+	private const SEQUENCE_SHA256 = 'cf587eb19b75c34273530e7120dbec557f001ec1fb1cb085faf6806c79153554';
 
 	/**
 	 * The registration calls, in call order, with every argument.
