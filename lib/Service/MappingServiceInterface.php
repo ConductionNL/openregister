@@ -33,9 +33,10 @@ interface MappingServiceInterface {
 	/**
 	 * Maps (transforms) an array (input) to a different array (output).
 	 *
+	 * One item; {@see executeListMapping()} maps a list.
+	 *
 	 * @param Mapping $mapping The mapping object that forms the recipe for the mapping
 	 * @param array   $input   The array to map (transform)
-	 * @param bool    $list    Whether we want a list instead of a single item
 	 *
 	 * @return array The result (output) of the mapping process
 	 *
@@ -43,5 +44,19 @@ interface MappingServiceInterface {
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
-	public function executeMapping(Mapping $mapping, array $input, bool $list = false): array;
+	public function executeMapping(Mapping $mapping, array $input): array;
+
+	/**
+	 * Map every item of a list, passing the extra values of a `listInput` wrapper down to each item.
+	 *
+	 * @param Mapping $mapping The mapping recipe.
+	 * @param array   $input   The list, or a `listInput` wrapper with extra values.
+	 *
+	 * @return array The mapped items, keyed as in the list.
+	 *
+	 * @throws Exception When mapping an item fails
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	public function executeListMapping(Mapping $mapping, array $input): array;
 }//end interface

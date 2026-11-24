@@ -186,7 +186,6 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'contracts' => ['contracts'],
 			'uses' => ['uses'],
 			'used' => ['used'],
-			'downloadFiles' => ['downloadFiles'],
 			'referencedBy' => ['referencedBy'],
 			'geoFeatures' => ['geoFeatures'],
 			'move' => ['move'],
@@ -214,7 +213,6 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'uses' => $controller->uses('hello-world', 'zaken', 'persoon', $objectService),
 			'used' => $controller->used('hello-world', 'zaken', 'persoon', $objectService),
 			// Review finding r2routes-f5: the routes that used to answer 500 or 404.
-			'downloadFiles' => $controller->downloadFiles('hello-world', 'zaken', 'persoon', $objectService),
 			'referencedBy' => $controller->referencedBy('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(ReferencedByService::class)),
 			'geoFeatures' => $controller->geoFeatures('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(InheritedGeoCollector::class)),
 			'move' => $controller->move('zaken', 'persoon', 'hello-world'),

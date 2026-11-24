@@ -109,7 +109,6 @@ class SettingsServiceDeepTest extends TestCase {
 			$this->logger,
 			$this->db,
 			$this->container,
-			'openregister',
 			$this->validationOpsHandler,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,

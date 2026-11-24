@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
@@ -42,6 +43,14 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectFindTarget as PublishedObjectFindTarget;
+use OCA\OpenRegister\Contract\BulkSaveOptions as PublishedBulkSaveOptions;
+use OCA\OpenRegister\Contract\LockRequest as PublishedLockRequest;
+use OCA\OpenRegister\Contract\ObjectDeletion as PublishedObjectDeletion;
+use OCA\OpenRegister\Contract\ObjectFindOptions as PublishedObjectFindOptions;
+use OCA\OpenRegister\Contract\ObjectPatch as PublishedObjectPatch;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
+use OCA\OpenRegister\Contract\UnlockRequest as PublishedUnlockRequest;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Adbar\Dot;
 use DateTime;
@@ -85,7 +94,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict;
 use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
 use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
@@ -120,12 +128,11 @@ use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
-use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
-use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
@@ -158,12 +165,12 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
@@ -1572,14 +1579,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string             $id            The object ID or UUID.
-     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
-     *                                              (false when the caller performs its own single render,
-     *                                              e.g. ObjectsController::show(); permission checks and
-     *                                              read logging still run) and `audit` (false for
-     *                                              machine-to-machine reads inside one operation).
-     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param int|string                      $id            The object ID or UUID.
+     * @param PublishedObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                                       (false when the caller performs its own single render,
+     *                                                       e.g. ObjectsController::show(); permission checks and
+     *                                                       read logging still run) and `audit` (false for
+     *                                                       machine-to-machine reads inside one operation).
+     * @param bool                            $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                            $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
@@ -1594,7 +1601,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function find(
         int | string $id,
-        ?ObjectFindOptions $options=null,
+        ?PublishedObjectFindOptions $options=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ?ObjectEntity {
@@ -2056,10 +2063,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                 $id            The ID of the object to get.
-     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
-     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                          $id            The ID of the object to get.
+     * @param PublishedObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                            $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                            $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -2071,7 +2078,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function findSilent(
         string $id,
-        ?ObjectFindOptions $options=null,
+        ?PublishedObjectFindOptions $options=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
@@ -2404,15 +2411,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * @param array|ObjectEntity $object        The object data to save or ObjectEntity instance
-     * @param ObjectSaveOptions  $options       The register and schema (object or ID/UUID), the UUID of the
-     *                                          object to update, the properties to extend the result with,
-     *                                          the files uploaded from multipart/form-data, the save policy
-     *                                          (events and audit, validation, insert-only, duplicate
-     *                                          override) and the actor (explicit acting user, explicit or
-     *                                          SYSTEM owner of a new row). See SavePolicy and SaveActor.
-     * @param bool               $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool               $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param array|ObjectEntity         $object        The object data to save or ObjectEntity instance
+     * @param PublishedObjectSaveOptions $options       The register and schema (object or ID/UUID), the UUID of the
+     *                                                  object to update, the properties to extend the result with,
+     *                                                  the files uploaded from multipart/form-data, the save policy
+     *                                                  (events and audit, validation, insert-only, duplicate
+     *                                                  override) and the actor (explicit acting user, explicit or
+     *                                                  SYSTEM owner of a new row). See SavePolicy and SaveActor.
+     * @param bool                       $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool                       $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -2427,7 +2434,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function saveObject(
         array | ObjectEntity $object,
-        ObjectSaveOptions $options=new ObjectSaveOptions(),
+        PublishedObjectSaveOptions $options=new ObjectSaveOptions(),
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
@@ -4209,24 +4216,24 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * call sites so the storage layer can refuse cross-scope deletes by
      * construction.
      *
-     * @param ObjectDeletion $deletion        The UUID of the object to delete; the optional register and
-     *                                        schema scope (object, ID, UUID, or slug; when both are set
-     *                                        the lookup targets exactly that magic table); the explicit
-     *                                        acting user for the RBAC `delete` check (null resolves the
-     *                                        subject from `IUserSession`, today's behaviour for every
-     *                                        HTTP caller; a sessionless caller such as a flow run, cron
-     *                                        or import pipeline MUST set one, because anonymous is
-     *                                        default-deny); and `permanent`, which destroys the row
-     *                                        rather than tombstoning it. Soft delete stays the default;
-     *                                        reserve `permanent` for rows that are a CLAIM rather than a
-     *                                        record, see `DeleteObject::deleteObject()` and
-     *                                        openregister#2459.
-     * @param bool           $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool           $_multitenancy   Whether to apply multitenancy filtering (default: true).
-     * @param bool           $_retentionSweep Internal flag set by ArchivalRetentionTask
-     *                                        to bypass the archival-immutability gate.
-     *                                        Reachable only via PHP DI; no HTTP surface
-     *                                        exposes it. Defaults to false.
+     * @param PublishedObjectDeletion $deletion        The UUID of the object to delete; the optional register and
+     *                                                 schema scope (object, ID, UUID, or slug; when both are set
+     *                                                 the lookup targets exactly that magic table); the explicit
+     *                                                 acting user for the RBAC `delete` check (null resolves the
+     *                                                 subject from `IUserSession`, today's behaviour for every
+     *                                                 HTTP caller; a sessionless caller such as a flow run, cron
+     *                                                 or import pipeline MUST set one, because anonymous is
+     *                                                 default-deny); and `permanent`, which destroys the row
+     *                                                 rather than tombstoning it. Soft delete stays the default;
+     *                                                 reserve `permanent` for rows that are a CLAIM rather than a
+     *                                                 record, see `DeleteObject::deleteObject()` and
+     *                                                 openregister#2459.
+     * @param bool                    $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool                    $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool                    $_retentionSweep Internal flag set by ArchivalRetentionTask
+     *                                                 to bypass the archival-immutability gate.
+     *                                                 Reachable only via PHP DI; no HTTP surface
+     *                                                 exposes it. Defaults to false.
      *
      * @return bool Whether the deletion was successful
      *
@@ -4241,7 +4248,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
-        ObjectDeletion $deletion,
+        PublishedObjectDeletion $deletion,
         bool $_rbac=true,
         bool $_multitenancy=true,
         bool $_retentionSweep=false
@@ -5133,24 +5140,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end buildSearchQuery()
 
     /**
-     * Apply view filters to a query
-     *
-     * Converts view definitions into query parameters by merging view->query into the base query.
-     * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
-     *
-     * @param array $query   Base query parameters
-     * @param array $viewIds View IDs to apply
-     *
-     * @return array Query with view filters applied
-     *
-     * @psalm-return array<string, mixed>
-     */
-    private function applyViewsToQuery(array $query, array $viewIds): array
-    {
-        return $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $viewIds);
-    }//end applyViewsToQuery()
-
-    /**
      * Search objects using clean query structure
      *
      * This method provides a cleaner search interface that uses the searchObjects
@@ -5176,17 +5165,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                   _ids: Array of
      *                                   IDs/UUIDs to filter by - _count: Return count instead
      *                                   of objects (boolean)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null  $ids           Optional array of IDs to filter by
-     * @param string|null $uses          Optional filter by object usage
-     * @param array|null  $views         Optional view IDs to apply
-     * @param bool $_viewScopeRequired   Whether the view filter is this caller's ONLY bound.
-     *                                   A caller that switches `$_rbac` and `$_multitenancy`
-     *                                   off because it carries its own authorization (a
-     *                                   published access link naming one view) MUST set this:
-     *                                   it makes an unresolvable or non-narrowing view throw
-     *                                   instead of silently yielding an unbounded search.
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids, and whether the
+     *                                     view filter is this caller's ONLY bound. A caller that
+     *                                     switches `$_rbac` and `$_multitenancy` off because it
+     *                                     carries its own authorization (a published access link
+     *                                     naming one view) MUST set `viewScopeRequired`: it makes an
+     *                                     unresolvable or non-narrowing view throw instead of
+     *                                     silently yielding an unbounded search.
      *
      * @psalm-param array<string, mixed> $query
      *
@@ -5195,7 +5182,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int
      *
      * @throws \OCP\DB\Exception If a database error occurs
-     * @throws \Exception If `$_viewScopeRequired` is set and the view cannot be applied
+     * @throws \Exception If `viewScopeRequired` is set and the view cannot be applied
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
      *
@@ -5207,21 +5194,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null,
-        bool $_viewScopeRequired=false
+        SearchOptions $options=new SearchOptions()
     ): array|int {
         // ARCHITECTURAL DELEGATION: Delegate to QueryHandler for all search operations.
         return $this->queryHandler->searchObjects(
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            options: new SearchOptions(
-                selection: new ObjectSelection(ids: $ids, uses: $uses),
-                views: $views,
-                viewScopeRequired: $_viewScopeRequired
-            )
+            options: $options
         );
     }//end searchObjects()
 
@@ -5247,13 +5227,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * the caller's MUST throw `DoesNotExistException` (the mappers do
      * this via the standard organisation filter).
      *
-     * @param string $registerSlug  The register slug (must exist in caller's org).
-     * @param string $schemaSlug    The schema slug (must exist in caller's org).
-     * @param array  $filters       Additional filters merged into the @self block.
-     *                              Direct keys like 'status' are merged at the top
-     *                              level.
-     * @param bool   $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool   $_multitenancy Whether to apply multi-tenancy filter (default: true).
+     * @param RegisterSchemaSlugs $target        The register and schema slugs (both must exist in caller's org).
+     * @param array               $filters       Additional filters merged into the @self block.
+     *                                           Direct keys like 'status' are merged at the top
+     *                                           level.
+     * @param bool                $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                $_multitenancy Whether to apply multi-tenancy filter (default: true).
      *
      * @psalm-param array<string, mixed> $filters
      *
@@ -5273,21 +5252,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @spec exclude Slug-resolution bridge delegating to searchObjects(); search behavior owned by zoeken-filteren.
      */
     public function searchObjectsBySlug(
-        string $registerSlug,
-        string $schemaSlug,
+        RegisterSchemaSlugs $target,
         array $filters=[],
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array|int {
         $access   = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
-        $register = $this->registerForSlugSearch(slug: $registerSlug, access: $access);
-        $schema   = $this->schemaWithinRegister(slug: $schemaSlug, register: $register);
+        $register = $this->registerForSlugSearch(slug: (string) $target->register, access: $access);
+        $schema   = $this->schemaWithinRegister(slug: (string) $target->schema, register: $register);
 
         // Merge resolved numeric IDs into the @self block of the filters.
         // Direct keys (status, etc.) stay at the top level so they hit the
         // object JSON filter path, not the metadata filter path.
-        $target           = ['register' => $register->getId(), 'schema' => $schema->getId()];
-        $filters['@self'] = array_merge(($filters['@self'] ?? []), $target);
+        $resolved         = ['register' => $register->getId(), 'schema' => $schema->getId()];
+        $filters['@self'] = array_merge(($filters['@self'] ?? []), $resolved);
 
         // Delegate to the numeric-ID searchObjects on the documented fast path.
         return $this->searchObjects(query: $filters, _rbac: $_rbac, _multitenancy: $_multitenancy);
@@ -5376,8 +5354,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                            - _search: Full-text search term
      * @param bool                 $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param array|null           $ids           Optional array of object IDs to filter by
-     * @param string|null          $uses          Optional uses parameter for filtering
+     * @param ObjectSelection      $selection     The object ids and the uses filter the count is restricted to
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -5395,14 +5372,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        ?array $ids=null,
-        ?string $uses=null
+        ObjectSelection $selection=new ObjectSelection()
     ): int {
         return $this->queryHandler->countSearchObjects(
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            selection: new ObjectSelection(ids: $ids, uses: $uses)
+            selection: $selection
         );
     }//end countSearchObjects()
 
@@ -5555,12 +5531,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                   `ChunkMapper::searchByKeyword()`; absent/false is
      *                                   byte-identical to pre-change behaviour (see
      *                                   openspec/specs/zoeken-filteren/spec.md)
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool        $deleted       Whether to include deleted objects (default: false)
-     * @param array|null  $ids           Optional array of object IDs to filter by
-     * @param string|null $uses          Optional uses parameter for filtering
-     * @param array|null  $views         Optional array of view IDs to apply filters from
+     * @param bool          $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true)
+     * @param SearchOptions $options       The id and uses selection, the view ids whose filters
+     *                                     apply (refused when `viewScopeRequired` is set and no view
+     *                                     narrows the query) and the deleted flag echoed as
+     *                                     `@self.deleted`
      *
      * @psalm-param   array<string, mixed> $query
      * @phpstan-param array<string, mixed> $query
@@ -5590,10 +5566,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $deleted=false,
-        ?array $ids=null,
-        ?string $uses=null,
-        ?array $views=null
+        SearchOptions $options=new SearchOptions()
     ): array {
         // Object-source delegation: a schema served from an external source
         // (x-openregister-object-source) lists live from its provider, never the
@@ -5607,22 +5580,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // response time regardless of which backend (index/database) runs.
         $searchStartTime = microtime(true);
 
-        $query = $this->scopeSearchQuery(query: $query, views: $views);
+        $query = $this->scopeSearchQuery(query: $query, options: $options);
 
         $result = $this->queryHandler->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $this->searchMultitenancy(multitenancy: $_multitenancy),
-            deleted: $deleted,
-            ids: $ids,
-            uses: $uses
+            selection: $options->selection
         );
         // Preserve source from result (e.g., magic_mapper for multi-schema), only default to database if not set.
         $result['@self']['source']  = $result['@self']['source'] ?? 'database';
         $result['@self']['query']   = $query;
         $result['@self']['rbac']    = $_rbac;
         $result['@self']['multi']   = $_multitenancy;
-        $result['@self']['deleted'] = $deleted;
+        $result['@self']['deleted'] = $options->deleted;
 
         $result = $this->extendSearchResult(result: $result, query: $query);
 
@@ -5639,19 +5610,27 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Scope a paginated search query to the service context, apply views and drop `_source`.
      *
-     * @param array<string, mixed> $query The search query.
-     * @param array|null           $views View ids whose filters apply, or null.
+     * @param array<string, mixed> $query   The search query.
+     * @param SearchOptions        $options The view ids whose filters apply, and whether they must.
      *
      * @return array<string, mixed> The query the database search runs with.
      *
+     * @throws \Exception When `viewScopeRequired` is set and no view can scope the query.
+     *
      * @spec openspec/specs/zoeken-filteren/spec.md
      */
-    private function scopeSearchQuery(array $query, ?array $views): array
+    private function scopeSearchQuery(array $query, SearchOptions $options): array
     {
         $query = $this->scopeQueryToContext(query: $query);
 
-        if ($views !== null && empty($views) === false) {
-            $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
+        if (empty($options->views) === false) {
+            $query = $this->searchQueryHandler->applyViewsToQuery(
+                query: $query,
+                viewIds: $options->views,
+                _viewScopeRequired: $options->viewScopeRequired
+            );
+        } else if ($options->viewScopeRequired === true) {
+            throw new \Exception('Refusing a view-scoped search without a view to scope it by.');
         }
 
         // Strip deprecated _source parameter (silently ignore for backward compatibility).
@@ -6141,12 +6120,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Locks an object to prevent concurrent modifications.
      *
-     * @param LockRequest $request  The object, process, duration and flow run step of the lock. A
-     *                              run-scoped lock refuses every other caller including the run's
-     *                              own runAs user.
-     * @param bool        $advisory When true, treat the identifier as a synthetic
-     *                              pre-creation key and take the appConfig-backed
-     *                              advisory lock without scanning object tables
+     * @param PublishedLockRequest $request  The object, process, duration and flow run step of the lock. A
+     *                                       run-scoped lock refuses every other caller including the run's
+     *                                       own runAs user.
+     * @param bool                 $advisory When true, treat the identifier as a synthetic
+     *                                       pre-creation key and take the appConfig-backed
+     *                                       advisory lock without scanning object tables
      *
      * @return array Lock information
      *
@@ -6156,7 +6135,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lockObject(LockRequest $request, bool $advisory=false): array
+    public function lockObject(PublishedLockRequest $request, bool $advisory=false): array
     {
         return $this->lockHandler->lock(request: $request, advisory: $advisory);
     }//end lockObject()
@@ -6189,9 +6168,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * Removes the lock from an object, allowing other processes to modify it.
      *
-     * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a
-     *                               run-scoped lock. A request with `break` set is refused;
-     *                               breakObjectLock() breaks a lock.
+     * @param PublishedUnlockRequest $request The object, the advisory flag and the flow run releasing a
+     *                                        run-scoped lock. A request with `break` set is refused;
+     *                                        breakObjectLock() breaks a lock.
      *
      * @return bool True if unlocked successfully
      *
@@ -6200,7 +6179,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(UnlockRequest $request): bool
+    public function unlockObject(PublishedUnlockRequest $request): bool
     {
         if ($request->break === true) {
             throw new \InvalidArgumentException('unlockObject() does not break locks; use breakObjectLock().');
@@ -6264,14 +6243,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array           $objects       Array of objects in serialized format
-     * @param BulkSaveOptions $options       The register and schema for rows that name none (optional
-     *                                       filters for validation), whether to validate objects
-     *                                       against schema definitions, whether to dispatch object
-     *                                       lifecycle events, and whether to write audit trail rows
-     *                                       (bulk mirror of `silent`)
-     * @param bool            $_rbac         Whether to apply RBAC filtering
-     * @param bool            $_multitenancy Whether to apply multi-organization filtering
+     * @param array                    $objects       Array of objects in serialized format
+     * @param PublishedBulkSaveOptions $options       The register and schema for rows that name none (optional
+     *                                                filters for validation), whether to validate objects
+     *                                                against schema definitions, whether to dispatch object
+     *                                                lifecycle events, and whether to write audit trail rows
+     *                                                (bulk mirror of `silent`)
+     * @param bool                     $_rbac         Whether to apply RBAC filtering
+     * @param bool                     $_multitenancy Whether to apply multi-organization filtering
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -6287,7 +6266,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function saveObjects(
         array $objects,
-        BulkSaveOptions $options=new BulkSaveOptions(),
+        PublishedBulkSaveOptions $options=new BulkSaveOptions(),
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -6303,9 +6282,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * Runs one bulk save inside the context saveObjects() keeps.
      *
-     * @param array           $objects The objects to save.
-     * @param BulkSaveOptions $options The register, schema, validation, events and audit choices of the call.
-     * @param AccessFlags     $access  The caller's RBAC and multitenancy flags.
+     * @param array                    $objects The objects to save.
+     * @param PublishedBulkSaveOptions $options The register, schema, validation, events and audit choices of the call.
+     * @param AccessFlags              $access  The caller's RBAC and multitenancy flags.
      *
      * @phpstan-param array<int, array<string, mixed>> $objects
      * @psalm-param   array<int, array<string, mixed>> $objects
@@ -6314,7 +6293,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
      */
-    private function saveBulkWithinScope(array $objects, BulkSaveOptions $options, AccessFlags $access): array
+    private function saveBulkWithinScope(array $objects, PublishedBulkSaveOptions $options, AccessFlags $access): array
     {
         $this->openBulkSave(register: $options->defaults->register, schema: $options->defaults->schema);
 
@@ -6761,10 +6740,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $permitted = [];
         foreach ($this->objectMapper->findMultiple($readable) as $object) {
             $mayUpdate = $this->permissionHandler->hasPermission(
-                schema: $table->schema,
-                action: 'update',
-                objectOwner: $object->getOwner(),
-                object: $object
+                ask: (new PermissionAsk(schema: $table->schema, action: 'update'))
+                    ->askedBy(userId: null, objectOwner: $object->getOwner())
+                    ->about(object: $object, register: null)
             );
             if ($mayUpdate === true) {
                 $permitted[] = (string) $object->getUuid();
@@ -7776,8 +7754,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
      * data in full, so a stored property absent from `$data` is written away
-     * rather than left alone. There is no read of the existing object here, so a
-     * one-key payload stores a one-key object and reports success.
+     * rather than left alone. The stored object is read only for where it lives,
+     * never merged, so a one-key payload stores a one-key object and reports success.
      *
      * Callers holding a PARTIAL payload want `patchObject()`, which reads,
      * merges and then saves. Both are published on `ObjectServiceInterface`;
@@ -7795,6 +7773,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return ObjectEntity Replaced object entity
      *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If no object answers to the identifier
      * @throws \Exception If update fails
      *
      * @see self::patchObject() for the merging counterpart.
@@ -7807,8 +7786,19 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $data['id'] = $objectId;
-        return $this->saveObject(object: $data, _rbac: $_rbac, _multitenancy: $_multitenancy);
+        // The save is addressed at the stored row's own register and schema, so it
+        // neither inherits the service's last context nor turns into a create elsewhere.
+        $stored = $this->objectMapper->find(identifier: $objectId, _rbac: $_rbac, _multitenancy: $_multitenancy);
+
+        $data['id'] = ($stored->getUuid() ?? $objectId);
+        return $this->saveObject(
+            object: $data,
+            options: new ObjectSaveOptions(
+                target: new ObjectFindTarget(register: $stored->getRegister(), schema: $stored->getSchema())
+            ),
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
     }//end updateObject()
 
     /**
@@ -7837,13 +7827,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * audit trail and event dispatch all apply — a patch is a save of a
      * different shape, not a privileged shortcut around one.
      *
-     * @param ObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
-     *                                   optional register and schema scope, and the explicit acting
-     *                                   user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
-     *                                   runs, import pipelines) MUST set one to avoid the default-deny
-     *                                   fall-through.
-     * @param bool        $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param PublishedObjectPatch $patch         The object id, uuid or slug, the partial data to merge, the
+     *                                            optional register and schema scope, and the explicit acting
+     *                                            user forwarded to `saveObject()`. Non-HTTP callers (cron, flow
+     *                                            runs, import pipelines) MUST set one to avoid the default-deny
+     *                                            fall-through.
+     * @param bool                 $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                 $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity Patched object entity
      *
@@ -7851,7 +7841,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
-    public function patchObject(ObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
+    public function patchObject(PublishedObjectPatch $patch, bool $_rbac=true, bool $_multitenancy=true): ObjectEntity
     {
         $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
         return $this->preservingScope(operation: fn (): ObjectEntity => $this->patchWithinScope(patch: $patch, access: $access));
@@ -7864,8 +7854,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * to restores too, so without preservingScope() the only context left behind would be the
      * one this patch set itself. See restoreScopeContext().
      *
-     * @param ObjectPatch $patch  The object, the change, where to find it and who acts.
-     * @param AccessFlags $access The caller's RBAC and multitenancy flags.
+     * @param PublishedObjectPatch $patch  The object, the change, where to find it and who acts.
+     * @param AccessFlags          $access The caller's RBAC and multitenancy flags.
      *
      * @return ObjectEntity The saved object.
      *
@@ -7873,7 +7863,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function patchWithinScope(ObjectPatch $patch, AccessFlags $access): ObjectEntity
+    private function patchWithinScope(PublishedObjectPatch $patch, AccessFlags $access): ObjectEntity
     {
         // Resolve the caller's scope onto the service context first, so the
         // lookup below and the save that follows both see the same one.
@@ -7902,14 +7892,14 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * relies on. The identifier is passed through unchanged: casting a uuid to int
      * resolves to an unrelated row.
      *
-     * @param string           $objectId The identifier the caller holds.
-     * @param ObjectFindTarget $target   The register and schema the call names.
+     * @param string                    $objectId The identifier the caller holds.
+     * @param PublishedObjectFindTarget $target   The register and schema the call names.
      *
      * @return ObjectEntity The stored object.
      *
      * @spec exclude Private step of patchObject(); the rights are checked by the saveObject() it ends in.
      */
-    private function findPatchTarget(string $objectId, ObjectFindTarget $target): ObjectEntity
+    private function findPatchTarget(string $objectId, PublishedObjectFindTarget $target): ObjectEntity
     {
         $scopedRegister = null;
         $scopedSchema   = null;
@@ -7958,8 +7948,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return $restorer['converter']->restoreStringTypedValues(
             data: $merged,
-            properties: ($restorer['schema']->getProperties() ?? []),
-            suppliedKeys: array_keys($data)
+            properties: array_diff_key(($restorer['schema']->getProperties() ?? []), $data)
         );
     }//end patchedBody()
 

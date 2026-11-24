@@ -54,12 +54,12 @@ use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
-use OCA\OpenRegister\Service\TaskService;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -467,13 +467,13 @@ class ImportHandler {
 
 
 	/**
-	 * Inject the TaskService used by seed-related-items to create VTODO tasks.
+	 * Inject the calendar tasks used by seed-related-items to create VTODO tasks.
 	 *
-	 * @param TaskService|null $taskService Optional task service.
+	 * @param ObjectCalendarTasksInterface|null $taskService Optional calendar tasks (TaskService).
 	 *
 	 * @return void
 	 */
-	public function setTaskService(?TaskService $taskService): void {
+	public function setTaskService(?ObjectCalendarTasksInterface $taskService): void {
 		$this->relatedItems->useTaskService($taskService);
 	}//end setTaskService()
 

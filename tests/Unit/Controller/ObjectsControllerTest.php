@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
@@ -299,9 +301,9 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn ($schema, string $action) => ($action === 'update' && $mayUpdate) || ($action === 'delete' && $mayDelete)
-		);
+		));
 		$this->container->method('get')->willReturnCallback(
 			static fn (string $id) => $id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class ? $permissions : null
 		);
@@ -957,30 +959,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// --- downloadFiles() tests ---
-
-	public function testDownloadFilesReturns404WhenObjectNotFound(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(404, $result->getStatus());
-	}
-
-	public function testDownloadFilesReturns500OnGenericException(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new Exception('Zip failed'));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertSame(500, $result->getStatus());
-	}
 
 	// --- objects() tests ---
 
@@ -5300,115 +5278,6 @@ class ObjectsControllerTest extends TestCase {
 	// downloadFiles() — success path (mocked FileService)
 	// =========================================================================
 
-	public function testDownloadFilesReturnsZipOnSuccess(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		// Create a real temp file for the zip
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn([
-			'path' => $tempZip,
-			'filename' => 'test-files.zip',
-			'mimeType' => 'application/zip',
-		]);
-
-		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
-		$this->request->method('getParam')->willReturn(null);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
-		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
-
-		// Clean up if file still exists
-		if (file_exists($tempZip)) {
-			unlink($tempZip);
-		}
-	}
-
-	/**
-	 * A bulk download is audited as one entry naming every file, and the temporary ZIP goes.
-	 *
-	 * @return void
-	 */
-	public function testDownloadFilesAuditsOneEntryAndRemovesTheZip(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$first = $this->createMock(\OCP\Files\File::class);
-		$first->method('getId')->willReturn(11);
-		$first->method('getName')->willReturn('a.txt');
-		$second = $this->createMock(\OCP\Files\File::class);
-		$second->method('getId')->willReturn(12);
-		$second->method('getName')->willReturn('b.txt');
-
-		$audit = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileAuditHandler::class);
-		$audit->expects($this->once())->method('logBulkDownload')->with(
-			$objectEntity,
-			new \OCA\OpenRegister\Files\Service\File\BulkDownloadArchive(
-				fileIds: [11, 12],
-				fileNames: ['a.txt', 'b.txt'],
-				zipName: 'test-files.zip',
-				totalBytes: 16
-			)
-		);
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn(
-			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip', 'size' => 16]
-		);
-		$fileService->method('getFiles')->willReturn([$first, $second]);
-		$fileService->method('getAuditHandler')->willReturn($audit);
-		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertSame('fake-zip-content', $result->render());
-		$this->assertFileDoesNotExist($tempZip);
-	}
-
-	/**
-	 * A failing audit trail does not break the download.
-	 *
-	 * @return void
-	 */
-	public function testDownloadFilesSurvivesAFailingAudit(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'zip');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn(
-			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip']
-		);
-		$fileService->method('getFiles')->willThrowException(new \RuntimeException('no trail'));
-		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertMatchesRegularExpression('/filename=test-files\.zip$/', $result->getHeaders()['Content-Disposition']);
-		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
-	}
-
 	/**
 	 * Set up a move request for an existing object.
 	 *
@@ -5514,7 +5383,7 @@ class ObjectsControllerTest extends TestCase {
 			)
 		)->willReturn(['moved' => $moved]);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
+		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($schemas, $object): bool {
 				$this->assertSame(
 					$args[1] === 'update' ? [$schemas['b'], $object] : [$schemas['s'], null],
@@ -5522,7 +5391,7 @@ class ObjectsControllerTest extends TestCase {
 				);
 				return true;
 			}
-		);
+		));
 		$this->moveServices(mover: $mover, permissions: $permissions);
 
 		$result = $this->controller->move('a', 'b', 'uuid-123');
@@ -5780,87 +5649,13 @@ class ObjectsControllerTest extends TestCase {
 	// downloadFiles() — returns 404 when object not found (via DoesNotExist)
 	// =========================================================================
 
-	public function testDownloadFilesReturns404WhenObjectDoesNotExistViaException(): void {
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		$result = $this->controller->downloadFiles('nonexistent', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(404, $result->getStatus());
-	}
-
 	// =========================================================================
 	// downloadFiles() — custom filename parameter
 	// =========================================================================
 
-	public function testDownloadFilesUsesCustomFilename(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
-		file_put_contents($tempZip, 'fake-zip-content');
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')->willReturn([
-			'path' => $tempZip,
-			'filename' => 'custom-name.zip',
-			'mimeType' => 'application/zip',
-		]);
-
-		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
-		$this->request->method('getParam')->willReturn('custom-name');
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
-		$this->assertMatchesRegularExpression('/filename=custom-name\.zip$/', $result->getHeaders()['Content-Disposition']);
-		$this->assertSame('application/zip', $result->getHeaders()['Content-Type']);
-
-		if (file_exists($tempZip)) {
-			unlink($tempZip);
-		}
-	}
-
 	// =========================================================================
 	// downloadFiles() — returns 500 when ZIP creation fails
 	// =========================================================================
-
-	public function testDownloadFilesReturns500WhenZipCreationFails(): void {
-		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-		$objectEntity->setUuid('uuid-123');
-		$objectEntity->setRegister('1');
-		$objectEntity->setSchema('2');
-		$objectEntity->setObject(['title' => 'Test']);
-
-		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('setSchema')->willReturnSelf();
-		$this->objectService->method('find')->willReturn($objectEntity);
-
-		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
-		$fileService->method('createObjectFilesZip')
-			->willThrowException(new \Exception('Disk full'));
-
-		$this->container->method('get')->willReturn(new \OCA\OpenRegister\Service\File\ObjectFilesArchive($fileService));
-		$this->request->method('getParam')->willReturn(null);
-
-		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
-
-		$this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
-		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		// SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
-		$this->assertSame('Internal server error', $data['error']);
-	}
 
 	// =========================================================================
 	// stripEmptyValues() — via show() - preserves 0, false, "0"

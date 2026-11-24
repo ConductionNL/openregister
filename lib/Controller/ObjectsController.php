@@ -83,6 +83,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
@@ -105,7 +106,6 @@ use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFilesArchiveInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
@@ -129,7 +129,6 @@ use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -138,8 +137,8 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -1390,9 +1389,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing['magicMapper'] = $magicMapper;
 
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $registerEntity,
-			schema: $schemaEntity
+			table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity),
+			query: $query
 		);
 		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
 		$page = $this->paginateMagicResults(listing: $listing);
@@ -1820,9 +1818,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function magicFacets(array $listing): array {
 		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-			query: $listing['query'],
-			register: $listing['resolved']['registerEntity'],
-			schema: $listing['resolved']['schemaEntity']
+			table: new RegisterSchema(register: $listing['resolved']['registerEntity'], schema: $listing['resolved']['schemaEntity']),
+			query: $listing['query']
 		);
 	}//end magicFacets()
 
@@ -1859,7 +1856,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				query: $query,
 				_rbac: $listing['rbac'],
 				_multitenancy: $listing['multi'],
-				deleted: $listing['deleted']
+				options: new SearchOptions(deleted: $listing['deleted'])
 			);
 		} catch (NotAuthorizedException $exception) {
 			// RBAC denied the schema-level list read. Mirror show(): 404, not
@@ -2164,8 +2161,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
 				_rbac: $scope->rbac,
-				_multitenancy: $scope->multi,
-				deleted: false
+				_multitenancy: $scope->multi
 			);
 		} catch (NotAuthorizedException $exception) {
 			// Schema-level read denied (object-source parity check):
@@ -2723,9 +2719,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			schema: $table->resolved['schema']
 		);
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $table->resolved['registerEntity'],
-			schema: $table->resolved['schemaEntity']
+			table: new RegisterSchema(register: $table->resolved['registerEntity'], schema: $table->resolved['schemaEntity']),
+			query: $query
 		);
 		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 
@@ -3685,7 +3680,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function sampleRefusal(ObjectRef $ref, mixed $schemaEntity, bool $update): ?JSONResponse {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		if ($update === false) {
-			if ($permissions->hasPermission(schema: $schemaEntity, action: 'create') === true) {
+			if ($permissions->hasPermission(ask: new PermissionAsk(schema: $schemaEntity, action: 'create')) === true) {
 				return null;
 			}
 
@@ -3697,7 +3692,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $object;
 		}
 
-		if ($permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $object->getOwner(), object: $object) === true) {
+		if ($permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		) === true) {
 			return null;
 		}
 
@@ -5442,7 +5441,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+		if ($permissions->hasPermission(ask: new PermissionAsk(schema: $resolved['schemaEntity'], action: 'create')) === false) {
 			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
 		}
 
@@ -5636,8 +5635,12 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function mayMove(ObjectEntity $object, array $schemas): bool {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 
-		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
-			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+		return $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemas[0], action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		)
+			&& $permissions->hasPermission(ask: new PermissionAsk(schema: $schemas[1], action: 'create'));
 	}//end mayMove()
 
 	/**
@@ -6043,12 +6046,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayUpdateTarget = $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $target->getOwner())
+				->about(object: $target, register: null)
+		);
 		$mayDeleteSource = $permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'delete',
-			objectOwner: $sourceObject->getOwner(),
-			object: $sourceObject
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'delete'))
+				->askedBy(userId: null, objectOwner: $sourceObject->getOwner())
+				->about(object: $sourceObject, register: null)
 		);
 		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
 			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
@@ -6167,127 +6173,6 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return null;
 	}//end migrationRefusal()
-
-	/**
-	 * Download all files of an object as a ZIP archive
-	 *
-	 * This method creates a ZIP file containing all files associated with a specific object
-	 * and returns it as a downloadable file. The ZIP file includes all files stored in the
-	 * object's folder with their original names.
-	 *
-	 * @param string $id The identifier of the object to download files for
-	 * @param string $register The register (identifier or slug) to search within
-	 * @param string $schema The schema (identifier or slug) to search within
-	 * @param ObjectOperationsInterface $objectService The object service for handling object operations
-	 *
-	 * @return DataDownloadResponse|JSONResponse Download response or error.
-	 *
-	 * @throws ContainerExceptionInterface If there's an issue with dependency injection.
-	 * @throws NotFoundExceptionInterface If the file archive dependency is not found.
-	 *
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function downloadFiles(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse|DataDownloadResponse {
-		try {
-			// Set the context for the object service.
-			$objectService->setRegister(register: $register);
-			$objectService->setSchema(schema: $schema);
-
-			// Get the object to ensure it exists and we have access.
-			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-
-			// File storage builds the archive.
-			$archive = $this->container->get(ObjectFilesArchiveInterface::class);
-
-			// Optional: get custom filename from query parameters.
-			$customFilename = $this->request->getParam(key: 'filename');
-
-			// Create the ZIP archive.
-			$zipInfo = $archive->createZip(object: $object, zipName: $customFilename);
-
-			$zipContent = self::takeZipContent(path: $zipInfo['path']);
-
-			$this->auditBulkDownload(object: $object, zipInfo: $zipInfo);
-
-			// Return the ZIP file as a download response.
-			return new DataDownloadResponse(
-				$zipContent,
-				$zipInfo['filename'],
-				$zipInfo['mimeType']
-			);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
-	}//end downloadFiles()
-
-	/**
-	 * Read a temporary ZIP file and remove it.
-	 *
-	 * @param string $path The file path.
-	 *
-	 * @return string The content.
-	 *
-	 * @throws RuntimeException When the file cannot be read.
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private static function takeZipContent(string $path): string {
-		$zipContent = file_get_contents($path);
-		if (file_exists($path) === true) {
-			// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is the temporary zip this endpoint built itself.
-			unlink($path);
-		}
-
-		if ($zipContent === false) {
-			throw new RuntimeException('Failed to read ZIP file content');
-		}
-
-		return $zipContent;
-	}//end takeZipContent()
-
-	/**
-	 * Audit a bulk download as ONE entry tied to the parent object.
-	 *
-	 * Best-effort: an audit-trail failure must not break the download.
-	 *
-	 * @param ObjectEntity $object  The object whose files were downloaded.
-	 * @param array        $zipInfo The ZIP file's name and size.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
-		try {
-			$this->container->get(ObjectFilesArchiveInterface::class)->recordDownload(object: $object, zipInfo: $zipInfo);
-		} catch (\Throwable $auditError) {
-			// The audit trail must never break the download response.
-			$this->logger->warning(
-				message: '[ObjectsController] Bulk download audit entry not written',
-				context: [
-					'zipName' => $zipInfo['filename'],
-					'exception' => $auditError->getMessage(),
-				]
-			);
-		}
-	}//end auditBulkDownload()
 
 	/**
 	 * Start batch vectorization of objects
@@ -6651,8 +6536,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
-			properties: $patch->schema->getProperties(),
-			suppliedKeys: $patch->suppliedKeys
+			properties: array_diff_key($patch->schema->getProperties(), array_flip($patch->suppliedKeys))
 		);
 	}//end restoreStringTypedValues()
 

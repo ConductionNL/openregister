@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -209,7 +210,7 @@ class PermissionHandlerCacheTest extends TestCase {
 
 		for ($i = 0; $i < 5; $i++) {
 			$this->assertTrue(
-				$this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'),
+				$this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)),
 				'Repeated identical hasPermission() calls must return the cached verdict'
 			);
 		}
@@ -238,12 +239,12 @@ class PermissionHandlerCacheTest extends TestCase {
 		]);
 		$this->setupRegisterForSchema($this->createRegister(10));
 
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
-		$this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'delete', userId: 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'delete'))->askedBy(userId: 'jan', objectOwner: null)));
 
 		// Re-running both does NOT trigger more group lookups — verdicts are cached.
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
-		$this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'delete', userId: 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'delete'))->askedBy(userId: 'jan', objectOwner: null)));
 	}//end testDifferentActionsAreCachedSeparately()
 
 	/**
@@ -277,12 +278,12 @@ class PermissionHandlerCacheTest extends TestCase {
 		$schema = $this->createSchema(1, ['read' => ['behandelaars']]);
 		$this->setupRegisterForSchema($this->createRegister(10));
 
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
-		$this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'piet'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'piet', objectOwner: null)));
 
 		// Repeat — both verdicts cached, no extra group lookups.
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
-		$this->assertFalse($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'piet'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'piet', objectOwner: null)));
 	}//end testDifferentUsersAreCachedSeparately()
 
 	/**
@@ -316,44 +317,36 @@ class PermissionHandlerCacheTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $objectA
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $objectA, register: null),
+				_rbac: true
 			)
 		);
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $objectB
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $objectB, register: null),
+				_rbac: true
 			)
 		);
 
 		// Repeat the same UUIDs — still re-evaluated (match rules bypass cache).
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $objectA
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $objectA, register: null),
+				_rbac: true
 			)
 		);
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				userId: null,
-				objectOwner: null,
-				_rbac: true,
-				object: $objectB
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: null)
+					->about(object: $objectB, register: null),
+				_rbac: true
 			)
 		);
 	}//end testConditionalRulesEvaluatePerObjectUuid()
@@ -372,20 +365,16 @@ class PermissionHandlerCacheTest extends TestCase {
 		// Owner = 'jan' -> ownership bypass -> true.
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: 'jan',
-				objectOwner: 'jan'
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: 'jan', objectOwner: 'jan')
 			)
 		);
 
 		// Owner = someone else, jan is not admin and not in update authorization -> false.
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: 'jan',
-				objectOwner: 'piet'
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: 'jan', objectOwner: 'piet')
 			)
 		);
 	}//end testObjectOwnerIsPartOfCacheKey()
@@ -410,12 +399,12 @@ class PermissionHandlerCacheTest extends TestCase {
 		$schema = $this->createSchema(1, ['read' => ['behandelaars']]);
 		$this->setupRegisterForSchema($this->createRegister(10));
 
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
 
 		$this->handler->clearPermissionCache();
 
-		$this->assertTrue($this->handler->hasPermission(schema: $schema, action: 'read', userId: 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
 	}//end testClearPermissionCacheInvalidatesEntries()
 
 	/**
@@ -434,10 +423,8 @@ class PermissionHandlerCacheTest extends TestCase {
 		for ($i = 0; $i < 3; $i++) {
 			$this->assertTrue(
 				$this->handler->hasPermission(
-					schema: $schema,
-					action: 'read',
-					userId: 'jan',
-					objectOwner: null,
+					ask: (new PermissionAsk(schema: $schema, action: 'read'))
+						->askedBy(userId: 'jan', objectOwner: null),
 					_rbac: false
 				)
 			);
