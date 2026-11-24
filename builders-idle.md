@@ -336,3 +336,4 @@
 2026-11-24T19:56:26Z help-dossiq-4 idle: every other unstarted dossiq change (37 with 1-2 open tasks) has only live/:8080 checks or next-release removals left
 2026-11-24T19:58Z help-opencatalogi-1 built theme-archive-hotspot 1.4/3.2 #2971 (merged; e2e written, runs in nightly); not archived: 1.3/2.2 live-only
 2026-11-24T20:01Z help-stackiq-1 skipped sharing-generated-api-docs: only open items are the Playwright run of tests/e2e/workflows/api-docs.spec.ts (written) and docs/images/api-documentation.png, both need a live instance; all 42 other stackiq changes already have a branch, nothing startable
+2026-11-24T20:02Z filinq helped learniq: week-timetable-grid T4 #2739 (planner's week strip with occupancy on Today); T3 (mentor-class model missing) and T5 (example data) left
