@@ -4508,3 +4508,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T22:44:38Z integrator-20261124T184854-1c90b6ab GREEN tree 49f0aaf56f on dev b8bc4718b4 prs 2 front=ok: Tests: 65466, Assertions: 231605, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T22:45:01Z integrator-20261124T184854-1c90b6ab PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-24T22:45:17Z session-20261124T223624-441f7beb or-fix-2: fixed #11022 (merged main, l10n en/nl conflict) new head 3423c45e REVERIFY; skipped #11032 (BLOCK = open product question), #11082 (babel 8 BLOCK, queued question), #11062/#11072 clean with main; precheck setup refused by permission check (gitleaks install), precheck not run
