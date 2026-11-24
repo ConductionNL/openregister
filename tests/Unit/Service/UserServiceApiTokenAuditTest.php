@@ -18,6 +18,9 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\UserAccountStores;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -43,6 +46,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Audit\AuditEntryWriter
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry
  * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Service\User\UserAccountStores
+ * @uses   \OCA\OpenRegister\Service\User\UserPlatform
+ * @uses   \OCA\OpenRegister\Service\User\UserStorage
  */
 final class UserServiceApiTokenAuditTest extends TestCase {
 
@@ -132,20 +138,26 @@ final class UserServiceApiTokenAuditTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		return new UserService(
-			$this->createMock(IUserManager::class),
-			$session,
-			$config,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAccountManager::class),
-			$this->logger,
-			$this->createMock(OrganisationServiceInterface::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAvatarManager::class),
-			$mapper,
-			$random,
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class),
-			new AuditEntryWriter(mapper: $mapper)
+			directory: new UserAccountStores(
+				userManager: $this->createMock(IUserManager::class),
+				groupManager: $this->createMock(IGroupManager::class),
+				accountManager: $this->createMock(IAccountManager::class),
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $session,
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->logger
+			),
+			storage: new UserStorage(
+				config: $config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $mapper,
+				secureRandom: $random,
+				auditEntries: new AuditEntryWriter(mapper: $mapper)
+			),
+			organisationService: $this->createMock(OrganisationServiceInterface::class)
 		);
 	}//end service()
 
