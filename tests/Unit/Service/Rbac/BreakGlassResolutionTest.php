@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
 use OCA\OpenRegister\Service\Rbac\BreakGlassService;
@@ -278,11 +279,9 @@ class BreakGlassResolutionTest extends TestCase {
 	 */
 	private function may(string $action, ObjectEntity $object, bool $declares = true): bool {
 		return $this->handlerFor(userId: 'ana')->hasPermission(
-			schema: $this->schema(declares: $declares),
-			action: $action,
-			userId: 'ana',
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $this->schema(declares: $declares), action: $action))
+				->askedBy(userId: 'ana', objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end may()
 

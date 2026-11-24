@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -306,11 +307,9 @@ class SlotGrantResolutionTest extends TestCase {
 	 */
 	private function may(string $userId, ObjectEntity $object, string $action = 'update', array $groups = []): bool {
 		return $this->handlerFor(userId: $userId, groups: $groups)->hasPermission(
-			schema: $this->schema(),
-			action: $action,
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $this->schema(), action: $action))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end may()
 
@@ -387,10 +386,10 @@ class SlotGrantResolutionTest extends TestCase {
 		$schema = $this->schema();
 
 		$this->occupy(object: $case, userId: 'ana');
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'update', userId: 'ana', objectOwner: 'eigenaar', object: $case));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: 'eigenaar')->about(object: $case, register: null)));
 
 		$this->vacate(object: $case);
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'update', userId: 'ana', objectOwner: 'eigenaar', object: $case));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: 'eigenaar')->about(object: $case, register: null)));
 	}//end testOneHandlerSeesTheOccupantChangeWithinARequest()
 
 	/**
@@ -494,7 +493,7 @@ class SlotGrantResolutionTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', withSlots: false);
 
 		$this->assertFalse(
-			$handler->hasPermission(schema: $this->schema(), action: 'update', userId: 'ana', objectOwner: 'eigenaar', object: $case)
+			$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))->askedBy(userId: 'ana', objectOwner: 'eigenaar')->about(object: $case, register: null))
 		);
 	}//end testNoResolverGrantsNothing()
 
@@ -512,11 +511,9 @@ class SlotGrantResolutionTest extends TestCase {
 		$this->occupy(object: $case, userId: 'ana');
 
 		$granted = $this->handlerFor(userId: 'ana')->hasPermission(
-			schema: $this->schema(['read' => ['medewerkers'], 'update' => [['partyRole' => self::ROLE]]]),
-			action: 'update',
-			userId: 'ana',
-			objectOwner: 'eigenaar',
-			object: $case
+			ask: (new PermissionAsk(schema: $this->schema(['read' => ['medewerkers'], 'update' => [['partyRole' => self::ROLE]]]), action: 'update'))
+				->askedBy(userId: 'ana', objectOwner: 'eigenaar')
+				->about(object: $case, register: null)
 		);
 
 		$this->assertFalse($granted);
