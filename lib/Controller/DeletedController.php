@@ -28,6 +28,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use DateTimeImmutable;
 use JsonSerializable;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
@@ -111,18 +112,16 @@ class DeletedController extends Controller {
 	/**
 	 * Constructor for the DeletedController
 	 *
-	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param DeletedControllerServices $services The deleted controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		DeletedControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 	}//end __construct()
 
