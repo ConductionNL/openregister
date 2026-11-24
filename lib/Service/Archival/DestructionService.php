@@ -69,14 +69,17 @@ class DestructionService implements DestructionServiceInterface {
 	 * Taken from DestructionReviewService's own constants, not copied as
 	 * literals: the writer of the value and the reader of it must not be able to
 	 * drift apart, because the cost of drifting is destroying a record somebody
-	 * said to keep. The third answer, `destroy`, is the one that leaves the
-	 * entry where it is. Same namespace, so no import is needed.
+	 * said to keep. `anonymise` withholds too: an anonymised record stays, so
+	 * destroying it would be the opposite of the answer. `destroy` is the one
+	 * answer that leaves the entry where it is. Same namespace, so no import is
+	 * needed.
 	 *
 	 * @var string[]
 	 */
 	private const WITHHOLDING_DECISIONS = [
 		DestructionReviewService::ANSWER_RETAIN,
 		DestructionReviewService::ANSWER_TRANSFER,
+		DestructionReviewService::ANSWER_ANONYMISE,
 	];
 
 	/**
@@ -480,8 +483,7 @@ class DestructionService implements DestructionServiceInterface {
 	private function splitByDecision(array $destructionList, array $entries): array {
 		$split = ['kept' => [], 'withheld' => []];
 		foreach ($entries as $objectEntry) {
-			$decision = $this->decisionOf(objectEntry: $objectEntry);
-			if (in_array($decision, self::WITHHOLDING_DECISIONS, true) === false) {
+			if ($this->isWithheldFromDestruction(objectEntry: $objectEntry) === false) {
 				$split['kept'][] = $objectEntry;
 				continue;
 			}
@@ -491,6 +493,35 @@ class DestructionService implements DestructionServiceInterface {
 
 		return $split;
 	}//end splitByDecision()
+
+	/**
+	 * Whether an entry must not be destroyed: a withholding answer, or an anonymise nomination nobody answered destroy.
+	 *
+	 * An entry the list carries with `action: anonymise` is nominated for
+	 * anonymising, which keeps the record (design D-1). Approving the list
+	 * therefore takes it off, unless the reviewer answered it `destroy`: the
+	 * reviewer's answer is the authority on a list, here as for the other
+	 * answers.
+	 *
+	 * @param mixed $objectEntry The entry.
+	 *
+	 * @return bool True when it is withheld.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public static function isWithheldFromDestruction(mixed $objectEntry): bool {
+		if (is_array($objectEntry) === false) {
+			return false;
+		}
+
+		$decision = ($objectEntry['decision'] ?? null);
+		if (in_array($decision, self::WITHHOLDING_DECISIONS, true) === true) {
+			return true;
+		}
+
+		return ($objectEntry['action'] ?? null) === Appraisal::ANONYMISE
+			&& $decision !== DestructionReviewService::ANSWER_DESTROY;
+	}//end isWithheldFromDestruction()
 
 	/**
 	 * Mark one entry withheld by a recorded review decision.
@@ -506,21 +537,6 @@ class DestructionService implements DestructionServiceInterface {
 
 		return $objectEntry;
 	}//end withheldEntry()
-
-	/**
-	 * The review answer recorded on an entry, or null for an entry that is not an array.
-	 *
-	 * @param mixed $objectEntry The entry.
-	 *
-	 * @return mixed The recorded answer.
-	 */
-	private function decisionOf(mixed $objectEntry): mixed {
-		if (is_array($objectEntry) === false) {
-			return null;
-		}
-
-		return ($objectEntry['decision'] ?? null);
-	}//end decisionOf()
 
 	/**
 	 * Whether both approvals on a list came from the same archivist.
@@ -564,6 +580,10 @@ class DestructionService implements DestructionServiceInterface {
 	 */
 	private function withholdingReason(array $destructionList, array $objectEntry): string {
 		$decision = (string)($objectEntry['decision'] ?? '');
+		if ($decision === '') {
+			return 'Nominated for anonymising, not destruction: the record stays and is anonymised under its schema\'s profile.';
+		}
+
 		$reviewer = (string)($objectEntry['decidedBy'] ?? '');
 		$reason = $this->recordedReason(history: ($destructionList['decisions'] ?? []), objectEntry: $objectEntry);
 
