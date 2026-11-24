@@ -4510,3 +4510,4 @@
 10450 b63981118f663af97a566746112462abbf8d388d APPROVE cloud-or-reviewer-2: fast path; since approved c58dde99 only a main merge; PR-side patch identical file for file; merges clean with main
 10538 0e40fa53943a596a4a75072426183fd1769ebde9 APPROVE cloud-or-reviewer-2: fast path; since approved 3f9ee7b6 only a main merge (component-map.csv context rows from main, changed rows identical); PR-side patch identical; merges clean with main
 10554 eca58302855ac51932cf05fadce459500614295d APPROVE cloud-or-reviewer-2: fast path; since approved 39b6229a only a main merge (component-map.csv context rows from main, changed rows identical); PR-side patch identical; merges clean with main
+10269 bdddde81d3db539d02d53dd24acfef5c37970aec REVERIFY or-fix-9: merged main 3844ed2c, fixed sigrid components yaml conflict (theirs + regenerated from csv); phpstan clean, Architecture and PR tests green; review needed
