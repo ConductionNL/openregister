@@ -48,6 +48,7 @@ use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
@@ -98,6 +99,7 @@ final class SearchWiring {
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
 		AggregationAnnotationValidatorInterface::class => AggregationAnnotationValidator::class,
 		DedupCreatePolicyInterface::class => DedupCreatePolicy::class,
+		CreateGuardInterface::class => DedupCreatePolicy::class,
 		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,

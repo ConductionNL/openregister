@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigTypeInterface;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigTypeInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheckInterface;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheck;
@@ -62,14 +63,14 @@ final class C08InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AgentPrincipalResolver::class => [AgentPrincipalResolverInterface::class, ContractBindings::class],
+		AgentPrincipalResolver::class => [AgentPrincipalResolverInterface::class, ProcessesServiceBindings::class],
 		ConfigSetShareableConfigType::class => [ConfigSetShareableConfigTypeInterface::class, ContractBindings::class],
 		FlowShareableConfigType::class => [FlowShareableConfigTypeInterface::class, ContractBindings::class],
-		GroupPrincipalResolver::class => [GroupPrincipalResolverInterface::class, ContractBindings::class],
-		KillSwitchCheck::class => [KillSwitchCheckInterface::class, ContractBindings::class],
-		OrganisationHaltCheck::class => [OrganisationHaltCheckInterface::class, ContractBindings::class],
+		GroupPrincipalResolver::class => [GroupPrincipalResolverInterface::class, ProcessesServiceBindings::class],
+		KillSwitchCheck::class => [KillSwitchCheckInterface::class, ProcessesServiceBindings::class],
+		OrganisationHaltCheck::class => [OrganisationHaltCheckInterface::class, ProcessesServiceBindings::class],
 		RegisterSchemaShareableConfigType::class => [RegisterSchemaShareableConfigTypeInterface::class, ContractBindings::class],
-		UserPrincipalResolver::class => [UserPrincipalResolverInterface::class, ContractBindings::class],
+		UserPrincipalResolver::class => [UserPrincipalResolverInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

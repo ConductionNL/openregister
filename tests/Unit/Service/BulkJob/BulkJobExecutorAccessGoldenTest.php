@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -189,7 +190,7 @@ final class BulkJobExecutorAccessGoldenTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (
 				Schema $schema,
 				string $action,
@@ -202,7 +203,7 @@ final class BulkJobExecutorAccessGoldenTest extends TestCase {
 
 				return ($verdicts[(string)$object?->getUuid()] ?? false);
 			}
-		);
+		));
 
 		return new BulkJobExecutor(
 			new BulkJobExecutorStores(

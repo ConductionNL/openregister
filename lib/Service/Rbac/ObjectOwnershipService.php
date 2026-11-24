@@ -55,12 +55,14 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use Throwable;
 
@@ -695,10 +697,12 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			$this->guards->sharerAccess?->endViewOf(object: $object, uid: $record->previousOwner);
 		}
 
-		$this->writers->auditTrailMapper->createAuditTrail(
-			old: $before,
-			new: $object,
-			action: self::AUDIT_ACTION
+		$this->writers->auditTrailMapper->recordChange(
+			change: new AuditedChange(
+				old: $before,
+				new: $object,
+				action: self::AUDIT_ACTION
+			)
 		);
 
 		$this->notifyPreviousOwner(record: $record, newOwner: $handover->newOwner);
@@ -946,10 +950,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	private function mayEdit(Schema $schema, ObjectEntity $object): bool {
 		try {
 			return $this->guards->permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (Throwable $e) {
 			// Fail closed: a verdict that could not be reached is not a yes.
@@ -1092,10 +1095,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		try {
 			return $this->guards->permissions->hasPermission(
-				schema: $schema,
-				action: 'assign',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'assign'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (Throwable $e) {
 			// Fail closed: a verdict that could not be reached is not a yes.
