@@ -3938,3 +3938,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T03:20:29Z integrator-20261123T232305-69d0e3c5 MERGED-TREE 5d23d8499a: 1 PRs, main now 677fdcdc51 = tested tree
 2026-11-24T03:31:17Z or-fix-7 run (10 lanes): share 3847 10247 10277 10427 10487 10497 10527 10537 10547 10557 10567 10587 10627 10637 11017 vs main 677fdcdc51f (only #9131 twig sandbox lists since 6fbf58fb, verified at 03:09): all APPROVE at head, none parked/BLOCK, all merge clean, no PR touches the delta files or Twig sandbox code; component-patterns --check OK on the 6 csv-overlap merges; nothing to fix
+2026-11-24T04:08:43Z session-20261124T034646-79d40eae cloud-or-reviewer-4: 2 reviewed (9940 APPROVE, 11028 APPROVE); 10540 REVERIFY head conflicts with main (no verdict); all other N%8==4 open non-draft main PRs have a verdict at head
