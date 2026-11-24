@@ -26,7 +26,7 @@ class SchemaReadCheckTest extends TestCase {
 		$schema      = $this->createMock(Schema::class);
 		$permissions = $this->createMock(PermissionCheckInterface::class);
 		$permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'read', null, null, true, null, '4')->willReturn(true);
+			->with(...PermissionAskArgs::with($schema, 'read', null, null, true, null, '4'))->willReturn(true);
 
 		$this->assertTrue((new SchemaReadCheck(permissions: $permissions))->canReadSchema(schema: $schema, register: '4'));
 	}

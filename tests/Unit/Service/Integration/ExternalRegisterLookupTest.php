@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Integration\ExternalRegisterLookup;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Object\SchemaReadCheck;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\ICache;
@@ -104,7 +105,7 @@ final class ExternalRegisterLookupTest extends TestCase {
 
 	public function testARecordIsAnsweredWithItsFetchTimeAndSourceAndCachedForItsState(): void {
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'read', null, null, true, null, '4')->willReturn(true);
+			->with(...PermissionAskArgs::with($this->schema, 'read', null, null, true, null, '4'))->willReturn(true);
 		$this->sourced();
 		$this->http->expects($this->once())->method('lookup')->with(self::CONFIG, 'k')->willReturn(self::LOOKUP_OK);
 		$this->cache->method('get')->willReturn(null);

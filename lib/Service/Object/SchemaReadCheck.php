@@ -65,6 +65,8 @@ final class SchemaReadCheck implements SchemaReadCheckInterface {
 			return false;
 		}
 
-		return $this->permissions->hasPermission(schema: $schema, action: 'read', register: $register) === true;
+		return $this->permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))->about(object: null, register: $register)
+		) === true;
 	}//end canReadSchema()
 }//end class
