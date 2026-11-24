@@ -27,11 +27,10 @@ use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the interfaces of the Compliance area's services that a lower area
- * owns: the inbound-authentication ceiling Core's SecurityService reads and
- * the archival retention guard the referential-integrity cascade asks.
- * It is also the entry for the GDPR registrar, so Application reaches the
- * Compliance GDPR wiring here rather than through a Core class.
+ * Binds the interfaces of the Compliance area's services: the archival,
+ * audit, GDPR, e-Depot and hardening services, and the lower-area contracts
+ * those classes implement. It then runs the GDPR registrar, so Application
+ * reaches the Compliance wiring through this one entry.
  *
  * Application names this class only; the map lives in
  * ComplianceServiceBindings, inside the area.
@@ -48,7 +47,12 @@ final class ComplianceServiceRegistrar {
 	public const BINDINGS = ComplianceServiceBindings::BINDINGS;
 
 	/**
-	 * Register every binding with the app container.
+	 * Register every binding with the app container, then the GDPR services.
+	 *
+	 * The GDPR registrar (the DSAR signer and the shared DSAR registries with
+	 * their fail-closed defaults) registers only Compliance services, none of
+	 * which any other registrar binds, so it runs at the end of the area's
+	 * own binding.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -58,18 +62,6 @@ final class ComplianceServiceRegistrar {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		DbRegistrar::bind(context: $context, bindings: ComplianceServiceBindings::BINDINGS);
-	}//end register()
-
-	/**
-	 * Register the DSAR signer and the shared DSAR registries with their fail-closed defaults.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Container wiring; no behaviour of its own.
-	 */
-	public static function registerGdpr(IRegistrationContext $context): void {
 		GdprRegistrar::register(context: $context);
-	}//end registerGdpr()
+	}//end register()
 }//end class

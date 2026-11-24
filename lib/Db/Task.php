@@ -95,6 +95,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOnBehalfOf(?string $onBehalfOf)
  * @method string|null getMandate()
  * @method void setMandate(?string $mandate)
+ * @method string|null getRequiredMandate()
+ * @method void setRequiredMandate(?string $requiredMandate)
+ * @method array|null getMandateEvidence()
+ * @method void setMandateEvidence(?array $mandateEvidence)
  * @method string|null getRequester()
  * @method void setRequester(?string $requester)
  * @method array|null getWatchers()
@@ -471,6 +475,22 @@ class Task extends Entity implements JsonSerializable, TaskInterface {
 	 * @var string|null
 	 */
 	protected ?string $mandate = null;
+
+	/**
+	 * The verb a delegate must hold on the task's subject to receive it
+	 * (tasks-delegation-and-substitution). Null means the subject's read verb.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $requiredMandate = null;
+
+	/**
+	 * The authority a delegation was granted on: `{verb, source, rule, until}`,
+	 * recorded by TaskMandateGuard when the delegate was let through.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $mandateEvidence = null;
 
 	/**
 	 * Who asked for this work. Distinct from the performer.

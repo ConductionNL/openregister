@@ -30,8 +30,10 @@ namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -149,15 +151,18 @@ class DedupCreatePolicy implements DedupCreatePolicyInterface {
 	 * instead, because an override that left no trace is the thing an
 	 * administrator would want to know about.
 	 *
-	 * @param ObjectEntity $object The object that was created anyway.
+	 * The audit trail records rows of the stored entity, so an object of any
+	 * other shape leaves no audit row (the save path always passes one).
+	 *
+	 * @param ObjectEntityInterface $object The object that was created anyway.
 	 * @param array<int, array<string, mixed>> $matches The matches it was created over.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	public function recordOverride(ObjectEntity $object, array $matches): void {
-		if (count($matches) === 0) {
+	public function recordOverride(ObjectEntityInterface $object, array $matches): void {
+		if (count($matches) === 0 || $object instanceof ObjectEntity === false) {
 			return;
 		}
 

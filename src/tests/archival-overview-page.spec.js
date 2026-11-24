@@ -16,6 +16,7 @@ const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8')
 const readJson = (...parts) => JSON.parse(read(...parts))
 
 const OVERVIEW = '/apps/openregister/api/archival/overview'
+const HELD_BACK = '/apps/openregister/api/archival/held-back'
 
 const fragment = readJson('src', 'manifest.d', 'archival-overview-page.json')
 const menuLayout = readJson('src', 'menu-layout.json')
@@ -51,9 +52,10 @@ describe('the Archival page', () => {
 
 	it('reads every list and fact card from the overview endpoint', () => {
 		const readers = page.config.widgets.filter((w) => w.content.endpointSource)
-		expect(readers.map((w) => w.id).sort()).toEqual(['destruction-lists', 'edepot-facts', 'legal-holds', 'selection-list-facts', 'selection-list-versions', 'transfers'])
+		expect(readers.map((w) => w.id).sort()).toEqual(['destruction-lists', 'edepot-facts', 'held-back', 'legal-holds', 'selection-list-facts', 'selection-list-versions', 'transfers'])
 		for (const w of readers) {
-			expect(w.content.endpointSource.url).toBe(OVERVIEW)
+			// The held-back table reads the retention dry run (appraisal-inherited-from-a-parent REQ-AIP-003).
+			expect(w.content.endpointSource.url).toBe(w.id === 'held-back' ? HELD_BACK : OVERVIEW)
 		}
 		expect(widgets['held-off-lists'].content.visibleWhen.endpoint).toBe(OVERVIEW)
 	})

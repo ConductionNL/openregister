@@ -49,6 +49,10 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
@@ -57,6 +61,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -1306,7 +1311,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 			]
 		);
 
-		$this->permissionHandler->method('hasPermission')->willReturnCallback(
+		$this->permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (Schema $schema) use ($joinedSchemaListAllowed): bool {
 				if ((string)$schema->getSlug() === 'commitment-budget') {
 					return $joinedSchemaListAllowed;
@@ -1314,7 +1319,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 
 				return true;
 			}
-		);
+		));
 
 		$this->usePhpFallback();
 
@@ -1705,16 +1710,24 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 	 */
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: new PlaceholderResolver($this->userSession),
-			db: $this->db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db
+			),
 			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->translationHandler,
-			languageService: $this->languageService,
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: new PlaceholderResolver($this->userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->translationHandler,
+				languageService: $this->languageService
+			)
 		);
 	}//end makeRunner()
 

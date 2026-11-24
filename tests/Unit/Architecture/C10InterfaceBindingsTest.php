@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
@@ -58,7 +59,7 @@ final class C10InterfaceBindingsTest extends TestCase {
 		AuthenticationService::class => [AuthenticationTokenFetcherInterface::class, ContractBindings::class],
 		DoriathApplicationRegistrar::class => [DoriathApplicationRegistrarInterface::class, ContractBindings::class],
 		ObjectPreviewFormatter::class => [ObjectPreviewFormatterInterface::class, ContractBindings::class],
-		TaskMetricsProvider::class => [TaskMetricsProviderInterface::class, ContractBindings::class],
+		TaskMetricsProvider::class => [TaskMetricsProviderInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
