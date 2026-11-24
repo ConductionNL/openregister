@@ -40,8 +40,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -100,7 +105,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: self::STATE_FILTER,
-			groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			layout: new AggregationLayout(
+				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -130,7 +137,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$query = AggregationQuery::create(
 			metric: 'count',
 			filter: self::STATE_FILTER,
-			groupBy: ['vendorId', 'dueDateBucket']
+			layout: new AggregationLayout(
+				groupBy: ['vendorId', 'dueDateBucket']
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -153,7 +162,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 			metric: 'sum',
 			field: 'amount',
 			filter: self::STATE_FILTER,
-			groupBy: ['field' => 'vendorId']
+			layout: new AggregationLayout(
+				groupBy: ['field' => 'vendorId']
+			)
 		);
 
 		$result = $runner->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $query);
@@ -183,7 +194,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 				metric: 'sum',
 				field: 'amount',
 				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				layout: new AggregationLayout(
+					groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				)
 			)
 		);
 
@@ -194,7 +207,9 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 				metric: 'sum',
 				field: 'amount',
 				filter: self::STATE_FILTER,
-				groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				layout: new AggregationLayout(
+					groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+				)
 			)
 		);
 
@@ -375,16 +390,24 @@ class AggregationRunnerMultiFieldGroupByTest extends TestCase {
 		$languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
+				db: $db
+			),
 			cache: $cache,
-			permissionHandler: $permissionHandler,
-			userSession: $userSession,
-			organisationService: $organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $translationHandler,
-			languageService: $languageService,
+			access: new AggregationAccess(
+				permissionHandler: $permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $organisationService,
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translationHandler,
+				languageService: $languageService
+			)
 		);
 	}
 

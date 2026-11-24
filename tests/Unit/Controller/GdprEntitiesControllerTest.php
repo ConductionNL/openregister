@@ -60,7 +60,6 @@ class GdprEntitiesControllerTest extends TestCase {
 		$this->organisationService->method('getUserOrganisations')->willReturn([]);
 
 		$this->controller = GdprEntitiesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->entityMapper,
 			$this->entityRelationMapper,
@@ -932,7 +931,6 @@ class GdprEntitiesControllerTest extends TestCase {
 		$organisationService->method('getActiveOrganisation')->willReturn($orgs[0] ?? null);
 
 		return GdprEntitiesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->entityMapper,
 			$this->entityRelationMapper,
@@ -950,7 +948,6 @@ class GdprEntitiesControllerTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		$controller = GdprEntitiesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->entityMapper,
 			$this->entityRelationMapper,
