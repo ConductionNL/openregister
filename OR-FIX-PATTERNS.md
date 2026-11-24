@@ -868,3 +868,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan 'Array has 2 duplicate keys' in a *Wiring::BINDINGS after merging main; the wiring test may stay green because PHP keeps the first key position.
 - Cause: a build/<change>-2 PR landed part of the change (FQCN binding appended at the end); the -3 PR binds the same interface with a use import higher up.
 - Fix: drop the PR's binding, its now-unused use lines and its row in the wiring test's expected list; keep main's.
+
+## appinfo/info.xml version conflict: do not take one side's whole file (or-fix-6)
+- Symptom: CONFLICT in appinfo/info.xml on the <version> line only; 'git checkout --ours' resolves it but silently drops main's other new lines (e.g. <command>...EvaluateDetectorCommand</command>).
+- Fix: rebuild from main: git show origin/main:appinfo/info.xml, set the PR's <version> (must be > main's), re-add the PR's own <job>/<command>/<step> lines; check with git diff origin/main -- appinfo/info.xml (only the PR's lines) and php scripts/check-migration-version-bump.php --base=origin/main.
