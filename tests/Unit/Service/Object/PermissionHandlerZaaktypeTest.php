@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
@@ -112,10 +113,10 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		]);
 
 		// Delegated read is granted even though user is not in hr-team.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'extern-adviseur'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'extern-adviseur', objectOwner: null)));
 		// Only the explicitly granted action applies: no write/create.
-		$this->assertFalse($this->handler->hasPermission($schema, 'create', 'extern-adviseur'));
-		$this->assertFalse($this->handler->hasPermission($schema, 'update', 'extern-adviseur'));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'create'))->askedBy(userId: 'extern-adviseur', objectOwner: null)));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'extern-adviseur', objectOwner: null)));
 	}
 
 	public function testUserOverrideDoesNotLeakToOtherUsers(): void {
@@ -125,7 +126,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 			'read' => ['hr-team', 'user:extern-adviseur'],
 		]);
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read', 'random'));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'random', objectOwner: null)));
 	}
 
 	public function testUserOverrideWorksWithZeroGroups(): void {
@@ -136,7 +137,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 			'read' => ['hr-team', 'user:extern-adviseur'],
 		]);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'extern-adviseur'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'extern-adviseur', objectOwner: null)));
 	}
 
 	public function testUserOverrideNeverGrantsAnonymous(): void {
@@ -148,7 +149,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		]);
 
 		// Anonymous read against a restricted schema → denied.
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}
 
 	public function testGroupAccessUnaffectedByOverride(): void {
@@ -161,11 +162,11 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		]);
 
 		// Group read still works.
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)));
 		// Delegated update works.
-		$this->assertTrue($this->handler->hasPermission($schema, 'update', 'jan'));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'jan', objectOwner: null)));
 		// Delete remains denied — the override did not widen anything.
-		$this->assertFalse($this->handler->hasPermission($schema, 'delete', 'jan'));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'delete'))->askedBy(userId: 'jan', objectOwner: null)));
 	}
 
 	// === Complex form with match clause (expiry / conditional delegation) ===
@@ -187,7 +188,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		$object->setUuid('zaak-1');
 		$object->setObject(['_expires' => '2099-01-01']);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read', 'vervanger-1', null, true, $object));
+		$this->assertTrue($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'vervanger-1', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}
 
 	public function testUserOverrideWithMatchClauseDeniesWhenConditionFails(): void {
@@ -205,7 +206,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		$object->setObject(['_expires' => '2000-01-01']);
 
 		// Expired delegation → denied (fail closed).
-		$this->assertFalse($this->handler->hasPermission($schema, 'read', 'vervanger-1', null, true, $object));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'vervanger-1', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}
 
 	public function testUserOverrideComplexFormWrongUserDenied(): void {
@@ -219,7 +220,7 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		// Wrong user never reaches ConditionMatcher.
 		$this->conditionMatcher->expects($this->never())->method('objectMatchesConditions');
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read', 'someone-else'));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'someone-else', objectOwner: null)));
 	}
 
 	// === checkPermission throws 403 (no widening) ===
@@ -244,6 +245,6 @@ class PermissionHandlerZaaktypeTest extends TestCase {
 		]);
 
 		// Blank uid must never match (fail closed).
-		$this->assertFalse($this->handler->hasPermission($schema, 'read', ''));
+		$this->assertFalse($this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: '', objectOwner: null)));
 	}
 }
