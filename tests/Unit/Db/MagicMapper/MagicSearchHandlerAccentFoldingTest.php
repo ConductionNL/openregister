@@ -61,6 +61,36 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\DraftListRequest
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\LifecycleColumns
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\OrganisationBoundary
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ReadPosture
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchTermRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TableFilterRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses   \OCA\OpenRegister\Service\Object\DraftListing
+ * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListLens
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListing
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses   \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermLiteral
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermNode
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTermSqlCompiler
+ * @uses   \OCA\OpenRegister\Service\Search\SearchTokenStream
+ * @uses   \OCA\OpenRegister\Service\Search\TokenizeRun
  */
 class MagicSearchHandlerAccentFoldingTest extends TestCase {
 

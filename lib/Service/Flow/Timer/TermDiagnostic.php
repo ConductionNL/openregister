@@ -68,6 +68,13 @@ class TermDiagnostic implements TermDiagnosticInterface {
 	public const MAX_RUNGS = 20;
 
 	/**
+	 * The scope of a calendar definition handed to the diagnostic as is.
+	 *
+	 * @var string
+	 */
+	public const SCOPE_GIVEN = 'given';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SlaCalculatorInterface $calculator The engine the arm path uses.
@@ -134,8 +141,37 @@ class TermDiagnostic implements TermDiagnosticInterface {
 			// time, so two calendars can answer one term differently.
 			'serviceHours' => self::windowsOf(calendar: $calendar),
 			'serviceHoursApplied' => $normalised['unit'] === SlaCalculatorInterface::UNIT_HOURS && $calendar->getServiceHours()->areDeclared() === true,
-		];
+		] + self::resolutionOf(query: $query);
 	}//end explain()
+
+	/**
+	 * Which scope named the calendar and whether a person's pattern applied.
+	 *
+	 * A calendar definition handed in as is was resolved by nobody: its scope
+	 * reads `given`, and the calendar decided on its own.
+	 *
+	 * @param TermQuery $query The query.
+	 *
+	 * @return array{calendarScope: string, workingPattern: string, person: string|null, workingPatternSource: string|null}
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-working-calendar-resolves-per-record-type-unit-and-instance-req-wca-005
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-persons-working-pattern-is-read-from-the-app-that-owns-it-req-wca-006
+	 */
+	private static function resolutionOf(TermQuery $query): array {
+		if ($query->resolution === null) {
+			return [
+				'calendarScope' => self::SCOPE_GIVEN,
+				'workingPattern' => ResolvedWorkingCalendar::PATTERN_CALENDAR,
+				'person' => null,
+				'workingPatternSource' => null,
+			];
+		}
+
+		$described = $query->resolution->describe();
+		unset($described['calendar']);
+
+		return $described;
+	}//end resolutionOf()
 
 	/**
 	 * The calendar's service-hours windows by weekday name, as `HH:MM-HH:MM`; empty when it declares none.

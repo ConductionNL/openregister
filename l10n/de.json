@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" wurde Ihnen zugewiesen",
         "Audit trail export ready": "Export des Prüfprotokolls ist fertig",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ihr Export des Prüfprotokolls mit %1$s Einträgen wurde unter %2$s%3$s gespeichert.",
-        "Open Files": "Dateien öffnen"
+        "Open Files": "Dateien öffnen",
+        "Its ancestor %1$s has appraisal %2$s": "Das übergeordnete Objekt %1$s hat die Bewertung %2$s",
+        "Its ancestor %s could not be read": "Das übergeordnete Objekt %s konnte nicht gelesen werden"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
