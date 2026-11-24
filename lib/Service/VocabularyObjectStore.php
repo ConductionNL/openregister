@@ -55,6 +55,27 @@ class VocabularyObjectStore {
 	}//end __construct()
 
 	/**
+	 * Create the object for a uri only when none exists; an existing one is left exactly as it is.
+	 *
+	 * Unlike upsertByUri() nothing an administrator edited is overwritten, which is what a seed
+	 * that runs on every upgrade needs.
+	 *
+	 * @param array<string, mixed> $data The object data, with its `uri`.
+	 *
+	 * @return array{status: string, uuid: string} `created` or `present`, and the object's uuid.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/tasks.md#3-the-dictionary
+	 */
+	public function createIfMissing(array $data): array {
+		$existing = $this->findByUri(uri: (string)$data['uri']);
+		if ($existing !== null) {
+			return ['status' => 'present', 'uuid' => (string)$existing->getUuid()];
+		}
+
+		return ['status' => 'created', 'uuid' => (string)$this->save(data: $data, uuid: null)->getUuid()];
+	}//end createIfMissing()
+
+	/**
 	 * Create the object for `$data['uri']`, or update it when a compared key changed.
 	 *
 	 * @param array<string,mixed> $data The computed data, including `uri`.
