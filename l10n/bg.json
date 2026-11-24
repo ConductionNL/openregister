@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Обект \"%1$s\" е възложен на вас",
         "Audit trail export ready": "Експортът на одитната следа е готов",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Вашият експорт на одитната следа с %1$s записа е запазен в %2$s%3$s.",
-        "Open Files": "Отвори Файлове"
+        "Open Files": "Отвори Файлове",
+        "Its ancestor %1$s has appraisal %2$s": "Неговият предшественик %1$s има оценка %2$s",
+        "Its ancestor %s could not be read": "Неговият предшественик %s не можа да бъде прочетен"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

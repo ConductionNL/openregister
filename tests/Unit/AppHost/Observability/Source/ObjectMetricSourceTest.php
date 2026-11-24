@@ -137,6 +137,20 @@ class ObjectMetricSourceTest extends TestCase {
 		$this->assertSame([['labels' => [], 'value' => 12]], $result[0]->samples);
 	}
 
+	public function testASharedSchemaSlugResolvesInsideTheNamedRegister(): void {
+		$register = $this->registerWithId(3);
+		$register->setSchemas([36]);
+		$this->registers->expects($this->once())->method('find')->with('crm', false, false)->willReturn($register);
+		$this->schemas->expects($this->once())->method('findBySlugInIds')->with('ticket', [36])->willReturn($this->schemaWithId(36));
+		$this->schemas->expects($this->never())->method('find');
+		$this->objects->expects($this->once())->method('countSearchObjects')
+			->with(['@self' => ['schema' => 36, 'register' => 3]], false, false)->willReturn(4);
+
+		$descriptor = new MetricDescriptor('tickets', 'gauge', 'objectCount', ['register' => 'crm', 'schema' => 'ticket'], 'Tickets');
+
+		$this->assertSame([['labels' => [], 'value' => 4]], $this->source->collect('pipelinq', $descriptor)[0]->samples);
+	}
+
 	public function testEmptyRegisterSlugIsNotLookedUp(): void {
 		$this->schemas->method('find')->willReturn($this->schemaWithId(5));
 		$this->registers->expects($this->never())->method('find');
