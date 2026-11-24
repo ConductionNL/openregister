@@ -91,6 +91,7 @@ components:
       - ".*/lib/Controller/Support/ChatStreamChat[.]php"
       - ".*/lib/Controller/Support/ChatStreamControllerServices[.]php"
       - ".*/lib/Controller/Support/ChatStreamPlatform[.]php"
+      - ".*/lib/Controller/Support/CodedOptionPage[.]php"
       - ".*/lib/Controller/Support/CodedOptionsRequest[.]php"
       - ".*/lib/Controller/Support/ConfigurationAction[.]php"
       - ".*/lib/Controller/Support/ConfigurationSettingsControllerServices[.]php"
