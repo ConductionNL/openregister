@@ -716,3 +716,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError ...ControllerFactory::args(): Argument #1 ($request) must be of type OCP\IRequest, string given.
 - Cause: main (5ceb54df) made controllers take the app id from AppIdentity/Application::APP_ID, so tests/Unit/Controller/Support/*ControllerFactory::args() lost the $appName parameter.
 - Fix: drop the leading 'openregister' argument from the PR's new tests' Factory::create(...) calls (see #10543).
+
+## Controller factory refuses the app name after a main merge (or-fix-7)
+- Symptom: TypeError in a test: <X>ControllerFactory::args(): Argument #1 ($request) must be of type OCP\IRequest, string given.
+- Cause: main dropped the $appName constructor argument from controllers (cloud/wr-wr5-controller-app-id); tests/Unit/Controller/Support/*Factory::create() now starts at the request.
+- Fix: delete the leading 'openregister' argument from the PR's create()/new <X>Controller(...) calls; nothing else changes (#10587 cc99fda0).
