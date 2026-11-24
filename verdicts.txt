@@ -4533,3 +4533,4 @@
 10537 7e39daa92dd1e0ac2c9ec0c0b2d1d8b1f6e2f0f0 PLACEHOLDER
 10535 95489ccece3c9efbc6ce4aedabcfef786f3eb49a APPROVE cloud-or-reviewer-7: fast path; since approved a02052cf only main merges; PR-side lib/appinfo/tests/src patch identical, only component-map.csv/yaml context rows from main differ; merges clean with main
 10514 f5628ee73a4e85aa3789b9ccc8cacd76a0a1a6c9 REVERIFY or-fix-4: merged main 3844ed2c (components yaml conflict: main's taken, regenerated); no code change; phpstan only main's WebhooksController dead catch; Architecture, Rbac, Controller, Listener, Audit, Notification, BackgroundJob green, Middleware only inherited AnonymousEnvelopeReadPaths; review needed
+10554 08a1ddb54c6361c64de6bebde41bb56afac60bfd REVERIFY or-fix-4: merged main 3844ed2c (component-map.csv conflict: union of both sides' rows, yaml regenerated); no code change; phpstan clean; Architecture, Capabilities, Search, FilesRegistrarTest green; review needed
