@@ -572,6 +572,23 @@
             "deserialised": []
         }
     },
+    "install allowlisted unsigned allowed": {
+        "outcome": {
+            "installed": [
+                "x"
+            ]
+        },
+        "record": {
+            "broker": [],
+            "client": [],
+            "warnings": [],
+            "deserialised": [
+                {
+                    "type": "demo.type"
+                }
+            ]
+        }
+    },
     "install empty source with allowlist": {
         "outcome": {
             "thrown": "RuntimeException",
@@ -618,21 +635,16 @@
             ]
         }
     },
-    "install no allowlist unsigned allowed": {
+    "install no allowlist refused": {
         "outcome": {
-            "installed": [
-                "x"
-            ]
+            "thrown": "RuntimeException",
+            "message": "Source \"any/repo\" is not on this organisation's allowlist."
         },
         "record": {
             "broker": [],
             "client": [],
             "warnings": [],
-            "deserialised": [
-                {
-                    "type": "demo.type"
-                }
-            ]
+            "deserialised": []
         }
     },
     "install source exact": {

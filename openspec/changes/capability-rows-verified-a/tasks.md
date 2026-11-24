@@ -6,7 +6,7 @@
 
 ## 2. A public form creates a record
 
-- [ ] 2.1 Serve a form declared `access: anonymous` on a public page that needs no account, render it with `CnFormPage`, and submit it through the journey run API so a record is created in the target schema. Verify: a Playwright test opens the form link in a logged-out browser, submits it, and finds the record as an administrator.
+- [x] 2.1 Serve a form declared `access: anonymous` on a public page that needs no account, render it with `CnFormPage`, and submit it through the journey run API so a record is created in the target schema. Verify: a Playwright test opens the form link in a logged-out browser, submits it, and finds the record as an administrator.
 
 ## 3. Searches that found nothing
 

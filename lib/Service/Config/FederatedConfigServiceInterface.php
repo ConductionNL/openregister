@@ -174,8 +174,7 @@ interface FederatedConfigServiceInterface {
 	/**
 	 * Whether a source may be installed from.
 	 *
-	 * An empty allowlist is "not yet enforced" — an org opts into enforcement by
-	 * populating it — so this is safe to ship before every org curates sources.
+	 * An empty allowlist allows nothing, and an empty source is never allowed.
 	 *
 	 * @param string $source The source id (a repo, an org).
 	 *

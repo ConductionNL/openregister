@@ -31,6 +31,7 @@ jest.mock('./sections/EdepotHostKeyConfiguration.vue', () => ({ __esModule: true
 jest.mock('./sections/FileConfiguration.vue', () => ({ __esModule: true, default: { name: 'FileConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FlowConfiguration.vue', () => ({ __esModule: true, default: { name: 'FlowConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/LlmConfiguration.vue', () => ({ __esModule: true, default: { name: 'LlmConfiguration', props: ['pushStatus'], render: () => null } }))
+jest.mock('./sections/LoadSheddingConfiguration.vue', () => ({ __esModule: true, default: { name: 'LoadSheddingConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/LogIntegrity.vue', () => ({ __esModule: true, default: { name: 'LogIntegrity', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/MultitenancyConfiguration.vue', () => ({ __esModule: true, default: { name: 'MultitenancyConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/OrganisationConfiguration.vue', () => ({ __esModule: true, default: { name: 'OrganisationConfiguration', props: ['pushStatus'], render: () => null } }))

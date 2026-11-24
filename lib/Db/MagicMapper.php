@@ -6709,8 +6709,31 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$entity->setUuid(Uuid::v4()->toRfc4122());
 		}
 
-		return $entity->jsonSerialize();
+		return $this->withStoredExpiry(entity: $entity);
 	}//end insertableObject()
+
+	/**
+	 * The object as a single-object write stores it, with its expiry in `@self`.
+	 *
+	 * The rendered `@self` leaves out `expires`, but the row's `_expires` column
+	 * is written from `@self`: without this every single-object write stored
+	 * NULL there, so an expiry set on the entity never reached the table and
+	 * any expiry already in the row was cleared by the next save.
+	 *
+	 * @param ObjectEntity $entity The object being written.
+	 *
+	 * @return array The serialised object.
+	 *
+	 * @spec openspec/changes/expired-object-sweep/tasks.md#task-2.1
+	 */
+	private function withStoredExpiry(ObjectEntity $entity): array {
+		$objectData = $entity->jsonSerialize();
+		if (is_array($objectData['@self'] ?? null) === true) {
+			$objectData['@self']['expires'] = $entity->getExpires()?->format(DATE_ATOM);
+		}
+
+		return $objectData;
+	}//end withStoredExpiry()
 
 	/**
 	 * The `_id` of a row whose INSERT lost a uuid race and was applied as an update.
@@ -7013,7 +7036,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 
 		// Convert entity to array for table storage.
-		$objectArray = $entity->jsonSerialize();
+		$objectArray = $this->withStoredExpiry(entity: $entity);
 
 		// Update in table.
 		$this->saveObjectToRegisterSchemaTable(
@@ -7416,7 +7439,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$schema = $this->schemaMapper->find((int)$entity->getSchema(), _rbac: false, _multitenancy: false);
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 			$this->saveObjectToRegisterSchemaTable(
-				write: new MagicRowWrite(objectData: $entity->jsonSerialize(), register: $register, schema: $schema, tableName: $tableName)
+				write: new MagicRowWrite(objectData: $this->withStoredExpiry(entity: $entity), register: $register, schema: $schema, tableName: $tableName)
 			);
 			return true;
 		} catch (Exception $e) {

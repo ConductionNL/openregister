@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Tests\Unit\Db\DbBindingMaps;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -108,7 +110,7 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 	public function testEveryInterfaceIsImplementedAndBound(): void {
 		foreach (self::HUBS as $class => $interface) {
 			$this->assertTrue(is_subclass_of($class, $interface), $class . ' implements ' . $interface);
-			$bound = (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + DbBindingMaps::all() + FilesRegistrar::BINDINGS)[$interface] ?? null;
+			$bound = (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ComplianceServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS + DbBindingMaps::all() + FilesRegistrar::BINDINGS)[$interface] ?? null;
 			$this->assertSame(expected: $class, actual: $bound, message: $interface . ' is bound');
 		}
 	}//end testEveryInterfaceIsImplementedAndBound()

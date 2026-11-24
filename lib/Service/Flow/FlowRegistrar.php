@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Service\ProcessesServiceRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -29,7 +30,9 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
  * Registers the flow run guards, the shared run context, the loop step dispatcher,
  * the lifecycle request state and the task services that are built by hand.
  *
- * Application::register() calls register() once.
+ * Application::register() calls register() once; it also binds the Processes
+ * service contracts (ProcessesServiceRegistrar), so the bootstrap names no other
+ * Processes registrar.
  */
 final class FlowRegistrar {
 
@@ -51,5 +54,6 @@ final class FlowRegistrar {
 	 */
 	public static function register(IRegistrationContext $context): void {
 		FlowWiring::register(context: $context);
+		ProcessesServiceRegistrar::register(context: $context);
 	}//end register()
 }//end class
