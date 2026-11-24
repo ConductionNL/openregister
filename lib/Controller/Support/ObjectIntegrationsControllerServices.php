@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,6 +37,7 @@ final class ObjectIntegrationsControllerServices {
 	 * @param ObjectIntegrationsDomain $domain The registry and the object and schema services.
 	 * @param ObjectIntegrationsAccess $access The timeline visibility filter and the update right.
 	 * @param LoggerInterface          $logger Logger.
+	 * @param IntegrationCreateIdempotency $idempotency Runs a create once per Idempotency-Key; the default one has no store and runs every create.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-19
 	 */
@@ -43,6 +45,7 @@ final class ObjectIntegrationsControllerServices {
 		public readonly ObjectIntegrationsDomain $domain,
 		public readonly ObjectIntegrationsAccess $access,
 		public readonly LoggerInterface $logger,
+		public readonly IntegrationCreateIdempotency $idempotency = new IntegrationCreateIdempotency(),
 	) {
 	}//end __construct()
 }//end class

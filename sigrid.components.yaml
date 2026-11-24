@@ -1515,6 +1515,7 @@ components:
       - ".*/lib/Service/Form/FormWriteCompensation[.]php"
       - ".*/lib/Service/Form/FormWriteContext[.]php"
       - ".*/lib/Service/Form/FormWriteReferences[.]php"
+      - ".*/lib/Service/Form/IdempotentAnswerStore[.]php"
       - ".*/lib/Service/Form/IdempotentRequest[.]php"
       - ".*/lib/Service/Form/MappedField[.]php"
       - ".*/lib/Service/Form/NestedIdentityGuard[.]php"
