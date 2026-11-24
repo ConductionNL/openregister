@@ -92,6 +92,17 @@ final class ReportPeriod {
 	}//end previousYear()
 
 	/**
+	 * The day after the last day: the exclusive end a bucketed series takes.
+	 *
+	 * @return string `Y-m-d`.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
+	 */
+	public function exclusiveEnd(): string {
+		return (new DateTimeImmutable($this->to))->modify('+1 day')->format('Y-m-d');
+	}//end exclusiveEnd()
+
+	/**
 	 * The period's label: `2026` for a whole year, `Q1 2026`, `2026-01`, else `from/to`.
 	 *
 	 * @return string

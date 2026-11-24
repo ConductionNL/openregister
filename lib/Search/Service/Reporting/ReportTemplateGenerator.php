@@ -230,7 +230,7 @@ class ReportTemplateGenerator {
 	 */
 	private function seriesData(ReportSectionSource $source, array $section, ReportPeriod $period): array {
 		$gap = strtolower((string)($section['interval'] ?? 'month'));
-		$range = ['from' => $period->from, 'to' => $period->to];
+		$range = ['from' => $period->from, 'to' => $period->exclusiveEnd()];
 		$query = $this->validator->validate(
 			input: [
 				'field' => $source->dateField,
