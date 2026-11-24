@@ -457,11 +457,9 @@ class DraftService implements DraftPreviewInterface {
 		}
 
 		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $caller,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $caller, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end mayWrite()
 

@@ -59,6 +59,7 @@ use OCP\Notification\INotification;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Checked, recorded, announced handovers.
@@ -277,7 +278,7 @@ class ObjectOwnershipAssignVerbTest extends TestCase {
 	private function rules(array $verbs, ?array $authorization): void {
 		$this->permissions->method('resolveAuthorization')->willReturn($authorization);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action): bool => ($verbs[$action] ?? false)
+			static fn (PermissionAsk $ask): bool => ($verbs[$ask->action] ?? false)
 		);
 	}//end rules()
 
@@ -322,12 +323,13 @@ class ObjectOwnershipAssignVerbTest extends TestCase {
 		$this->permissions->method('resolveAuthorization')->willReturn(['assign' => ['coordinators']]);
 		$this->permissions->expects($this->once())->method('hasPermission')
 			->with(
-				$this->isInstanceOf(Schema::class),
-				'assign',
-				null,
-				'alice',
-				true,
-				$this->callback(static fn (ObjectEntity $o): bool => $o->getUuid() === 'uuid-1')
+				$this->callback(
+					static fn (PermissionAsk $ask): bool => $ask->schema instanceof Schema
+						&& $ask->action === 'assign'
+						&& $ask->userId === null
+						&& $ask->objectOwner === 'alice'
+						&& $ask->object?->getUuid() === 'uuid-1'
+				)
 			)
 			->willReturn(true);
 		$this->expectNotification();
@@ -471,14 +473,7 @@ class ObjectOwnershipAssignVerbTest extends TestCase {
 		$this->signIn('cora', ['coordinators']);
 		$this->permissions->method('resolveAuthorization')->willReturn(['assign' => ['coordinators']]);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (
-				Schema $schema,
-				string $action,
-				?string $userId = null,
-				?string $objectOwner = null,
-				bool $rbac = true,
-				?ObjectEntity $object = null
-			): bool => $action === 'assign' && $object?->getUuid() !== 'uuid-grandchild'
+			static fn (PermissionAsk $ask): bool => $ask->action === 'assign' && $ask->object?->getUuid() !== 'uuid-grandchild'
 		);
 		$this->relatedFamily();
 		$this->ownerWriter->expects($this->never())->method('writeOwner');
