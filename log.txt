@@ -4262,3 +4262,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T18:17:49Z precheck-20261124T175747-122d94ac CONFLICT-DEV #10260 240ce8e8
 2026-11-24T18:17:50Z precheck-20261124T172404-62e8e890 GREEN tree 7b8248b48d on dev cf0644219f prs 1 front=skip: Tests: 64235, Assertions: 226988, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T18:18:10Z precheck-20261124T175747-122d94ac CONFLICT-DEV #10300 1bb6bc1f
+2026-11-24T18:19:59Z builder opencatalogi: merged #2965 (PRODUCTION fix vs OR main: AggregationQuery::create lost groupBy, every bar/line dataset view answered 500; chart uses grouped() when present)
