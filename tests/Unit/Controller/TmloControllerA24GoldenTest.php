@@ -224,19 +224,33 @@ class TmloControllerA24GoldenTest extends TestCase {
 		$failed = $this->controller->exportSingle('zaken', 'zaak', 'u1');
 
 		$this->assertSame([422, ['error' => 'bad id']], [$invalid->getStatus(), $invalid->getData()]);
-		$this->assertSame([500, ['error' => 'MDTO export failed: db']], [$failed->getStatus(), $failed->getData()]);
+		// An untyped failure names the action only; its message is in the log.
+		$this->assertSame([500, ['error' => 'MDTO export failed']], [$failed->getStatus(), $failed->getData()]);
 	}
 
-	public function testBatchExportMapsFailureAndLetsInvalidArgumentBe500(): void {
+	public function testBatchExportAnswersATypedFailureWithItsOwnStatus(): void {
 		$this->scope();
 		$this->gate->method('refusalFor')->willReturn(null);
 		$this->request->method('getParams')->willReturn([]);
 		$this->objects->method('findAll')->willThrowException(new InvalidArgumentException('bad'));
-		$this->logger->expects($this->once())->method('error')->with('MDTO batch export failed: bad', $this->arrayHasKey('exception'));
+		$this->logger->expects($this->never())->method('error');
+		$this->logger->expects($this->once())->method('warning');
 
 		$response = $this->controller->exportBatch('zaken', 'zaak');
 
-		$this->assertSame([500, ['error' => 'MDTO batch export failed: bad']], [$response->getStatus(), $response->getData()]);
+		$this->assertSame([400, ['message' => 'bad', 'error' => 'invalid-argument']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testBatchExportAnswersAnUntypedFailureWithoutItsMessage(): void {
+		$this->scope();
+		$this->gate->method('refusalFor')->willReturn(null);
+		$this->request->method('getParams')->willReturn([]);
+		$this->objects->method('findAll')->willThrowException(new Exception('db at 10.0.0.5'));
+		$this->logger->expects($this->once())->method('error')->with('MDTO batch export failed: db at 10.0.0.5', $this->arrayHasKey('exception'));
+
+		$response = $this->controller->exportBatch('zaken', 'zaak');
+
+		$this->assertSame([500, ['error' => 'MDTO batch export failed']], [$response->getStatus(), $response->getData()]);
 	}
 
 	public function testSummaryRefusesWithoutTmloBeforeResolvingTheSchema(): void {
@@ -277,7 +291,7 @@ class TmloControllerA24GoldenTest extends TestCase {
 			],
 			$ok->getData()
 		);
-		$this->assertSame([500, ['error' => 'TMLO summary failed: count']], [$failed->getStatus(), $failed->getData()]);
+		$this->assertSame([500, ['error' => 'TMLO summary failed']], [$failed->getStatus(), $failed->getData()]);
 	}
 
 	public function testSummaryOfAnUnknownRegisterIs404(): void {
