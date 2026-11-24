@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -307,13 +308,10 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$schema->setAuthorization($ask['block']);
 		$object = $this->objectOf($ask['object']);
 		$call   = static fn (): bool => $handler->hasPermission(
-			schema: $schema,
-			action: $ask['action'],
-			userId: $ask['user'],
-			objectOwner: $ask['owner'],
-			_rbac: $ask['rbac'],
-			object: $object,
-			register: $ask['register']
+			ask: (new PermissionAsk(schema: $schema, action: $ask['action']))
+				->askedBy(userId: $ask['user'], objectOwner: $ask['owner'])
+				->about(object: $object, register: $ask['register']),
+			_rbac: $ask['rbac']
 		);
 
 		$answers = [$this->answer($call), $this->answer($call)];
@@ -475,6 +473,24 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 
 		return $cases;
 	}//end recordReaders()
+
+	/**
+	 * A read list of only the owner sentinel targets the owner alone; mixed with a group it adds that group.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerOnlyReadTargetsTheOwnerAlone(): void {
+		$object = $this->bulkObject('r', ['owner' => 'carol', 'schema' => '5']);
+
+		$ownerOnly = $this->newHandler(['block' => ['read' => ['@creator']]]);
+		$this->assertSame(['carol'], $ownerOnly->getReadableByUsers($object));
+
+		$withGroup = $this->newHandler(['block' => ['read' => ['@creator', 'editors']]]);
+		$this->assertSame(['alice', 'bob', 'carol'], $withGroup->getReadableByUsers($object));
+
+		$open = $this->newHandler(['block' => ['update' => ['editors']]]);
+		$this->assertSame([], $open->getReadableByUsers($object), 'no read rule is still no targeted list');
+	}//end testAnOwnerOnlyReadTargetsTheOwnerAlone()
 
 	/**
 	 * Every case.
