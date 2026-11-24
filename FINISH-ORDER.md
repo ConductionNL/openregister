@@ -15,3 +15,6 @@ Local lanes (when the laptop runs): steps 2, 4 and 5 for the FOCUS app, then mar
 
 DONE:
 (none yet)
+
+DECISIONS (Ruben, for builders and helpers; apply them, do not ask again):
+- 24 Nov 2026 19:10 CET, portaliq documents-grouped-per-record task 3 (media for the signed-in audience): no new audience field on `media`. Restricted media live in a schema with OpenRegister object permissions per group, and portaliq reads them through OpenRegister's own access checks (the resident's session, server-side), never by filtering in portaliq. Public media stay as they are.
