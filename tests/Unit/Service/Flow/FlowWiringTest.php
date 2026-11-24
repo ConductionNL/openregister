@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
@@ -436,6 +438,7 @@ final class FlowWiringTest extends TestCase {
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				TriggerCalendarNodeInterface::class        => TriggerCalendarNode::class,
 				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
+				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,

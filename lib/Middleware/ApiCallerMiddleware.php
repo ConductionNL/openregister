@@ -45,6 +45,7 @@ use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
 use OCA\OpenRegister\Middleware\Exception\CeilingBreach;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
+use OCA\OpenRegister\Service\ApiCaller\ApiClientName;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCP\AppFramework\Http\Response;
@@ -164,7 +165,12 @@ class ApiCallerMiddleware extends Middleware {
 		}
 
 		$this->services->recorder->recordCall(
-			call: new ApiCallObservation(path: $path, method: $this->request->getMethod(), apiVersion: $this->servedVersion)
+			call: new ApiCallObservation(
+				path: $path,
+				method: $this->request->getMethod(),
+				apiVersion: $this->servedVersion,
+				client: ApiClientName::fromUserAgent(userAgent: (string)$this->request->getHeader('User-Agent')),
+			)
 		);
 
 	}//end recordServedCall()

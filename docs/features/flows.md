@@ -414,6 +414,17 @@ step instead of asking a wider question.
 { "register": "zaken", "schema": "lock", "filters": { "status": "stale" }, "fanOut": true }
 ```
 
+**`openregister.audit-trail`** (Read audit trail). Puts an object's audit
+trail, or one entry of it, on each item. Keys: `object` (required, the object's
+uuid; placeholders allowed), `entry` (one audit-trail entry id), `output`
+(default `auditTrail`). The object is first read with the run's acting
+identity, so a run that may not read the object cannot read its history. An
+object or entry that does not resolve fails the step.
+
+```json
+{ "object": "{{ uuid }}", "output": "history" }
+```
+
 **`openregister.object-write`** (Write an object). Creates, updates, upserts or
 deletes one object per item. Keys: `register`, `schema`, `operation`, `fields`,
 `payloadFrom`, `match`, `replace`, `bulk`, `skipWhen`, `output`,
