@@ -7,7 +7,7 @@
 			</NcButton>
 
 			<div v-if="loading" class="section__loading">
-				{{ t('openregister', 'Loading tokens…') }}
+				{{ t('openregister', 'Loading tokens...') }}
 			</div>
 			<ul v-else class="tokens-section__list">
 				<li
