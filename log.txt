@@ -4220,3 +4220,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:46:11Z session-20261124T174519-732fb2d2 cloud-or-reviewer-7: 0 reviewable; all 13 open non-draft main PRs with N%8==7 have an APPROVE or BLOCK verdict at their current head (10631 BLOCK stands); heads unchanged since last run
 2026-11-24T17:46:18Z builder opencatalogi: merged #2958 (tests/bootstrap.php loads Unit\Support doubles, seven info.xml tests parse from a string under NC; phpunit.xml on NC33+OR main: 254 failing vs 699, 0 new)
 2026-11-24T17:46:34Z session-20261124T170110-296ba546 or-fix-3: fixed 10283 10363 10513 10523 (REVERIFY); precheck not run: gitleaks install refused by a permission check in this session
+2026-11-24T17:49:00Z precheck-20261124T170427-3ddd1c90 GREEN tree aeb9789e05 on dev 3848cdb322 prs 1 front=ok: Tests: 64163, Assertions: 226518, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
