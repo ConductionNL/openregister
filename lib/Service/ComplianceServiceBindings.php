@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
@@ -67,6 +68,8 @@ use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
@@ -175,6 +178,7 @@ final class ComplianceServiceBindings {
 		RecordArchivalReadingInterface::class          => RecordArchivalReading::class,
 		RegisterAccessChangeLogInterface::class        => AuthorizationAuditService::class,
 		SearchTrailRecorderInterface::class            => SearchTrailService::class,
+		SystemAuditLineInterface::class                => AuditEntryWriter::class,
 		AnonymisationBackendServiceInterface::class    => AnonymisationBackendService::class,
 		AnonymiserRequestInterface::class              => AnonymisationBackendService::class,
 		ArchivalNominationServiceInterface::class      => ArchivalNominationService::class,
@@ -184,6 +188,7 @@ final class ComplianceServiceBindings {
 		AuditSinkStatusInterface::class                => AuditSinkStatus::class,
 		AuditTrailPageServiceInterface::class          => AuditTrailPageService::class,
 		AuditHashServiceInterface::class               => AuditHashService::class,
+		AuditResealInterface::class                    => AuditHashService::class,
 		AuditQueryServiceInterface::class              => AuditQueryService::class,
 		DestructionListCreatorInterface::class         => DestructionListCreator::class,
 		DestructionServiceInterface::class             => DestructionService::class,

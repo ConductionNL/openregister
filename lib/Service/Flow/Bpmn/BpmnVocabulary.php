@@ -117,6 +117,11 @@ final class BpmnVocabulary {
 		'timerStartEvent' => 'openregister.trigger-schedule',
 		'conditionalStartEvent' => 'openregister.trigger-object',
 		'exclusiveGateway' => 'openregister.switch',
+		// A parallel gateway passes its items on unchanged: a merge in its default
+		// `append` mode. Its outgoing edges run side by side, and where two or
+		// more paths arrive the importer marks it `join: true` so it waits for
+		// all of them (flow-designer-parallel-paths-and-waits).
+		'parallelGateway' => 'openregister.merge',
 		'intermediateCatchEvent:message' => 'openregister.await-signal',
 		'intermediateCatchEvent:timer' => 'openregister.wait',
 		'callActivity' => 'openregister.sub-flow',

@@ -86,6 +86,8 @@ use OCP\IUserSession;
  * @method void setAuthorization(?array $authorization)
  * @method string|null getFolder()
  * @method void setFolder(?string $folder)
+ * @method DateTime|null getExpires()
+ * @method void setExpires(?DateTime $expires)
  * @method string|null getApplication()
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
@@ -712,6 +714,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $fieldRules = null;
 
 	/**
+	 * The properties the current reader may read but not update, derived at
+	 * render time from the property-level authorization. A hint a form disables;
+	 * the save path still refuses the write. Exposed in @self as
+	 * `readOnlyProperties`, and omitted when the reader may change every field.
+	 *
+	 * @var array<int, string>|null
+	 */
+	protected ?array $readOnlyProperties = null;
+
+	/**
 	 * The object's key under its schema's declared identity
 	 * (`modelling-composite-identity`): the identity values joined in
 	 * declared order, such as `0363:Z-2026-0042`.
@@ -822,6 +834,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var int|null
 	 */
 	protected ?int $childCount = null;
+
+	/**
+	 * The name of the attached file whose text matched a content search.
+	 *
+	 * Transient, set only on a row that entered a content search through a
+	 * file chunk. Exposed in @self as `matchedFile`; it carries the name only,
+	 * never text from the file.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $matchedFile = null;
 
 	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
@@ -1057,6 +1080,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setFieldRules()
 
 	/**
+	 * The properties the current reader may read but not update.
+	 *
+	 * @return array<int, string>|null The property names, or null when not derived.
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
+	 */
+	public function getReadOnlyProperties(): ?array {
+		return $this->readOnlyProperties;
+	}//end getReadOnlyProperties()
+
+	/**
+	 * Set the properties the current reader may read but not update.
+	 *
+	 * Surfaced in the @self envelope as `readOnlyProperties` by getObjectArray().
+	 *
+	 * @param array<int, string>|null $properties The property names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
+	 */
+	public function setReadOnlyProperties(?array $properties): void {
+		$this->readOnlyProperties = $properties;
+	}//end setReadOnlyProperties()
+
+	/**
 	 * Get the object's key under its schema's identity, when set by the render layer.
 	 *
 	 * @return string|null
@@ -1222,6 +1271,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setChildCount(?int $childCount): void {
 		$this->childCount = $childCount;
 	}//end setChildCount()
+
+	/**
+	 * Write the name of the file whose text matched a content search.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `matchedFile`.
+	 *
+	 * @param string|null $matchedFile The file name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tables-bulk-jobs-and-file-search/design.md
+	 */
+	public function setMatchedFile(?string $matchedFile): void {
+		$this->matchedFile = $matchedFile;
+	}//end setMatchedFile()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1780,6 +1845,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'fieldRules'              => $this->fieldRules,
 			'key'                     => $this->identityKey,
 			'confidentiality'         => $this->confidentiality,
+			'matchedFile'             => $this->matchedFile,
 		];
 	}//end renderedFields()
 
@@ -1798,6 +1864,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'viewedAt'                => $this->viewedAt,
 			'childCount'              => $this->childCount,
 			'can'                     => $this->can,
+			'readOnlyProperties'      => $this->readOnlyProperties,
 		];
 	}//end readerFields()
 
