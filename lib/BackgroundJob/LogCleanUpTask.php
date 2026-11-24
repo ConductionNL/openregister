@@ -24,8 +24,8 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
-use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -108,7 +108,7 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory           $time              The time factory for time operations
 	 * @param LogCleanUpTrails $trails Audit trail, search trail, state history and metrics to cut.
-	 * @param RetentionSettingsReaderInterface $retentionHandler  The retention settings handler
+	 * @param RetentionSettingsInterface $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 *
 	 * @return void
@@ -118,7 +118,7 @@ class LogCleanUpTask extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		LogCleanUpTrails $trails,
-		private readonly RetentionSettingsReaderInterface $retentionHandler,
+		private readonly RetentionSettingsInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->auditTrailMapper = $trails->auditTrailMapper;

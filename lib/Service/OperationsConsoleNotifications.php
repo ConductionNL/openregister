@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 
 /**
  * The notification dispatch history, the queue and the shipped templates the operations console reads.
@@ -37,14 +37,14 @@ final class OperationsConsoleNotifications {
 	 *
 	 * @param NotificationHistoryMapperInterface $dispatches The notification dispatch history.
 	 * @param QueuedNotificationMapperInterface  $queue      The notifications waiting to go out.
-	 * @param NotificationTemplateRegistry       $templates  The shipped notification texts.
+	 * @param NotificationTemplatesInterface     $templates  The shipped notification texts.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function __construct(
 		public readonly NotificationHistoryMapperInterface $dispatches,
 		public readonly QueuedNotificationMapperInterface $queue,
-		public readonly NotificationTemplateRegistry $templates,
+		public readonly NotificationTemplatesInterface $templates,
 	) {
 	}//end __construct()
 }//end class

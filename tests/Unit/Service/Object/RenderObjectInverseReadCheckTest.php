@@ -92,6 +92,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class RenderObjectInverseReadCheckTest extends TestCase {
 	private const PARENT = '11111111-1111-4111-8111-111111111111';
@@ -108,11 +110,11 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		parent::setUp();
 		$this->mapper = $this->createMock(MagicMapper::class);
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool {
 				return $rbac === false || ($action === 'read' && $object?->getUuid() !== self::CLOSED);
 			}
-		);
+		));
 	}
 
 	/**

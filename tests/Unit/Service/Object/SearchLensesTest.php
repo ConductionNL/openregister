@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Service\Object\SearchLenses;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -99,7 +99,7 @@ class SearchLensesTest extends TestCase {
 			query: ['_recent' => 'true', '_recentFor' => 'someone-else', '_recentViews' => ['x' => 1]]
 		);
 
-		self::assertSame(['available' => false, 'reason' => ReadHistoryService::REASON_UNAVAILABLE], $query['_recentLens']);
+		self::assertSame(['available' => false, 'reason' => ReadHistoryInterface::REASON_UNAVAILABLE], $query['_recentLens']);
 		self::assertSame(['__no-personal-lens-user__'], $query['_ids']);
 		self::assertArrayNotHasKey('_recentFor', $query);
 		self::assertArrayNotHasKey('_recentViews', $query);

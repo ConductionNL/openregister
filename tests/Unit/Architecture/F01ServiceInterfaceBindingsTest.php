@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyMarksInterface;
@@ -59,7 +60,7 @@ final class F01ServiceInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		ExampleSetCatalogue::class => [ExampleSetCatalogueInterface::class, ContractBindings::class],
 		ExampleSetDailyRefresh::class => [ExampleSetDailyMarksInterface::class, ContractBindings::class],
-		RegisterScopedSchemaResolver::class => [RegisterScopedSchemaResolverInterface::class, ContractBindings::class],
+		RegisterScopedSchemaResolver::class => [RegisterScopedSchemaResolverInterface::class, CoreServiceBindings::class],
 		ShippedBaselineResetService::class => [ShippedBaselineResetServiceInterface::class, ContractBindings::class],
 	];
 
@@ -139,7 +140,7 @@ final class F01ServiceInterfaceBindingsTest extends TestCase {
 	 * Classes outside callers now reach through a small entry class or a forwarding facade.
 	 *
 	 * Application registers the hand-wired services through ServiceBootstrap; RulesController reads its
-	 * run window through ExampleSetDateValue; outside callers build a scoped schema resolver through
+	 * run window itself; outside callers build a scoped schema resolver through
 	 * RegisterScopedSchemaResolvers.
 	 *
 	 * @var list<class-string>

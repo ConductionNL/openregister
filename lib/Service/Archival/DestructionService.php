@@ -69,14 +69,17 @@ class DestructionService implements DestructionServiceInterface {
 	 * Taken from DestructionReviewService's own constants, not copied as
 	 * literals: the writer of the value and the reader of it must not be able to
 	 * drift apart, because the cost of drifting is destroying a record somebody
-	 * said to keep. The third answer, `destroy`, is the one that leaves the
-	 * entry where it is. Same namespace, so no import is needed.
+	 * said to keep. `anonymise` withholds too: an anonymised record stays, so
+	 * destroying it would be the opposite of the answer. `destroy` is the one
+	 * answer that leaves the entry where it is. Same namespace, so no import is
+	 * needed.
 	 *
 	 * @var string[]
 	 */
 	private const WITHHOLDING_DECISIONS = [
 		DestructionReviewService::ANSWER_RETAIN,
 		DestructionReviewService::ANSWER_TRANSFER,
+		DestructionReviewService::ANSWER_ANONYMISE,
 	];
 
 	/**
@@ -166,11 +169,17 @@ class DestructionService implements DestructionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
 	 */
 	public function approveList(array $destructionList, ApprovalRequest $request): array {
 		$choice = $request->choice;
 		$userId = $this->getCurrentUserId();
-		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $choice->action];
+		$destructionList['approvals'][] = [
+			'userId' => $userId,
+			'approvedAt' => (new DateTime())->format('c'),
+			'action' => $choice->action,
+			'destroyedOverConflict' => self::destroyedOverConflict(destructionList: $destructionList),
+		];
 
 		if ($choice->excludesRecords() === true) {
 			$exclusion = new PartialExclusion(
@@ -189,6 +198,40 @@ class DestructionService implements DestructionServiceInterface {
 		$approval = new DestructionApproval(userId: $userId, action: $choice->action, listUuid: $request->listUuid);
 		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, approval: $approval));
 	}//end approveList()
+
+	/**
+	 * How many entries a reviewer answered `destroy` over an acknowledged link conflict.
+	 *
+	 * Counted from the decision history: the decisions that carry
+	 * `overriddenConflicts`, once per entry. An approver who signs a list
+	 * signs this number, so it is recorded on the approval (design D-5).
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list.
+	 *
+	 * @return int The number of entries.
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-destroying-over-a-conflict-needs-an-explicit-acknowledgement
+	 */
+	private static function destroyedOverConflict(array $destructionList): int {
+		$history = ($destructionList['decisions'] ?? []);
+		if (is_array($history) === false) {
+			return 0;
+		}
+
+		$entries = [];
+		foreach ($history as $decision) {
+			if (is_array($decision) === false || ($decision['answer'] ?? null) !== 'destroy') {
+				continue;
+			}
+
+			$overridden = ($decision['overriddenConflicts'] ?? []);
+			if (is_array($overridden) === true && $overridden !== []) {
+				$entries[(string) ($decision['entry'] ?? '')] = true;
+			}
+		}
+
+		return count($entries);
+	}//end destroyedOverConflict()
 
 	/**
 	 * The choice an archivist makes when approving a list.
@@ -440,8 +483,7 @@ class DestructionService implements DestructionServiceInterface {
 	private function splitByDecision(array $destructionList, array $entries): array {
 		$split = ['kept' => [], 'withheld' => []];
 		foreach ($entries as $objectEntry) {
-			$decision = $this->decisionOf(objectEntry: $objectEntry);
-			if (in_array($decision, self::WITHHOLDING_DECISIONS, true) === false) {
+			if ($this->isWithheldFromDestruction(objectEntry: $objectEntry) === false) {
 				$split['kept'][] = $objectEntry;
 				continue;
 			}
@@ -451,6 +493,35 @@ class DestructionService implements DestructionServiceInterface {
 
 		return $split;
 	}//end splitByDecision()
+
+	/**
+	 * Whether an entry must not be destroyed: a withholding answer, or an anonymise nomination nobody answered destroy.
+	 *
+	 * An entry the list carries with `action: anonymise` is nominated for
+	 * anonymising, which keeps the record (design D-1). Approving the list
+	 * therefore takes it off, unless the reviewer answered it `destroy`: the
+	 * reviewer's answer is the authority on a list, here as for the other
+	 * answers.
+	 *
+	 * @param mixed $objectEntry The entry.
+	 *
+	 * @return bool True when it is withheld.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public static function isWithheldFromDestruction(mixed $objectEntry): bool {
+		if (is_array($objectEntry) === false) {
+			return false;
+		}
+
+		$decision = ($objectEntry['decision'] ?? null);
+		if (in_array($decision, self::WITHHOLDING_DECISIONS, true) === true) {
+			return true;
+		}
+
+		return ($objectEntry['action'] ?? null) === Appraisal::ANONYMISE
+			&& $decision !== DestructionReviewService::ANSWER_DESTROY;
+	}//end isWithheldFromDestruction()
 
 	/**
 	 * Mark one entry withheld by a recorded review decision.
@@ -466,21 +537,6 @@ class DestructionService implements DestructionServiceInterface {
 
 		return $objectEntry;
 	}//end withheldEntry()
-
-	/**
-	 * The review answer recorded on an entry, or null for an entry that is not an array.
-	 *
-	 * @param mixed $objectEntry The entry.
-	 *
-	 * @return mixed The recorded answer.
-	 */
-	private function decisionOf(mixed $objectEntry): mixed {
-		if (is_array($objectEntry) === false) {
-			return null;
-		}
-
-		return ($objectEntry['decision'] ?? null);
-	}//end decisionOf()
 
 	/**
 	 * Whether both approvals on a list came from the same archivist.
@@ -524,6 +580,10 @@ class DestructionService implements DestructionServiceInterface {
 	 */
 	private function withholdingReason(array $destructionList, array $objectEntry): string {
 		$decision = (string)($objectEntry['decision'] ?? '');
+		if ($decision === '') {
+			return 'Nominated for anonymising, not destruction: the record stays and is anonymised under its schema\'s profile.';
+		}
+
 		$reviewer = (string)($objectEntry['decidedBy'] ?? '');
 		$reason = $this->recordedReason(history: ($destructionList['decisions'] ?? []), objectEntry: $objectEntry);
 

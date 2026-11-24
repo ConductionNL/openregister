@@ -2,8 +2,8 @@
 
 ## 1. File text
 
-- [ ] 1.1 `getFileText()` through the caller's folder and ordered chunks, with the two 404 sentences; remove the stub. Verify: `FileTextControllerTest` for a readable extracted file, a readable file without chunks, and a file of another user.
-      PARTLY ON MAIN: the stub is gone and the read is guarded (`lib/Files/Controller/FileTextController.php` `getFileText()`, the three cases in `tests/Unit/Controller/FileTextControllerTest.php`). Left: the answer is `{file_id, text, length}` rather than `{fileId, text, chunkCount, extractedAt}`, and the refusal reads "File not found or access denied" rather than "File not found.".
+- [x] 1.1 `getFileText()` through the caller's folder and ordered chunks, with the two 404 sentences; remove the stub. Verify: `FileTextControllerTest` for a readable extracted file, a readable file without chunks, and a file of another user.
+      (verified: lib/Files/Controller/FileTextController.php `getFileText()` answers `{fileId, text, chunkCount, extractedAt}` (plus the earlier `file_id` and `length`), refuses with "File not found." and answers "No text has been extracted from this file yet." without chunks; the count and time come from the new `TextExtractionService::readExtractedText()`. tests/Unit/Controller/FileTextControllerTest.php pins all three answers, tests/Unit/Service/TextExtractionReadBackTest.php the count and time, tests/Unit/Controller/FileAccessGuardGoldenTest.php the refusal.)
 
 ## 2. Read-rights filter
 
@@ -18,7 +18,7 @@
 ## 4. Proof and docs
 
 - [ ] 4.1 Newman: extract a PDF, read `GET /api/files/{id}/text` as its owner (200) and as another user (404).
-- [ ] 4.2 Document the text read and the facade in `docs/`, and close issue #4106 with the PR.
+- [x] 4.2 Document the text read and the facade in `docs/`, and close issue #4106 with the PR. (verified: docs/api/vector-search-api.md, sections "Reading a file's extracted text" and "Vector search facade"; the PR body closes #4106.)
 
 Acceptance:
 - No route or facade method returns text from a file or record the caller cannot open.

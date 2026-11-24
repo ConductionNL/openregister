@@ -32,8 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
 use Exception;
-use OCA\OpenRegister\Service\Oas\NlGovDocumentRules;
+use OCA\OpenRegister\Service\Oas\NlGovConformance;
 use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
 use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -336,6 +338,28 @@ class OasService implements OasServiceInterface {
 	];
 
 	/**
+	 * The condition tree of a collection operation: AND/OR groups of the same
+	 * filters the flat query parameters take, as URL-encoded JSON. A reserved
+	 * parameter, never a property filter.
+	 *
+	 * @var array<string, mixed>
+	 *
+	 * @spec openspec/changes/list-query-condition-groups/specs/zoeken-filteren/spec.md
+	 */
+	private const WHERE_QUERY_PARAMETER = [
+		'name' => '_where',
+		'in' => 'query',
+		'required' => false,
+		'description' => 'A condition tree as JSON: a group {"type": "AND"|"OR", "children": [...]} whose children are groups or '
+			. 'leaves {"field", "operator", "value"}. A leaf takes the operators of a flat filter (eq, ne, gt, gte, lt, lte, in, '
+			. 'notIn, isnull, like, inOrEmpty). At most 5 groups deep and 200 leaves. A malformed tree, or a leaf on an undeclared or '
+			. 'encrypted property, is refused with 400 and the JSON path of the node.',
+		'schema' => ['type' => 'string'],
+		'example' => '{"type":"OR","children":[{"field":"place","operator":"eq","value":"Zuiddrecht"},'
+			. '{"field":"industry","operator":"isnull","value":true}]}',
+	];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -457,6 +481,7 @@ class OasService implements OasServiceInterface {
 		$this->oas = OasExtendedTypes::withUsedComponents(oas: $this->oas);
 
 		$this->assertOasValid(strict: $strict);
+		$this->oas['x-nl-api-design-rules'] = (new NlGovConformance())->marker(report: $this->report);
 
 		return $this->oas;
 	}//end createOas()
@@ -848,8 +873,35 @@ class OasService implements OasServiceInterface {
 			$described['required'] = $required;
 		}
 
-		return $this->withWithheldCount(described: $described, withheld: $withheld);
+		return $this->withWithheldCount(described: self::withCatalogue(described: $described, schema: $schema), withheld: $withheld);
 	}//end enrichSchema()
+
+	/**
+	 * The described schema with its classification and catalogue block, when set.
+	 *
+	 * The OpenAPI document does not know its reader, and it is published to
+	 * anonymous readers too, so the catalogue's contact person is left out
+	 * here: it is read from the schema API by a signed-in caller.
+	 *
+	 * @param array<string, mixed> $described The described schema.
+	 * @param object               $schema    The schema.
+	 *
+	 * @return array<string, mixed> The described schema.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-catalogue-metadata-travels-with-the-register
+	 */
+	private static function withCatalogue(array $described, object $schema): array {
+		$serialised = SchemaCatalogue::withoutContact(schema: ['classification' => $schema->getClassification(), 'catalogue' => $schema->getCatalogue()]);
+		if ($serialised['classification'] !== null) {
+			$described['x-openregister-classification'] = $serialised['classification'];
+		}
+
+		if ($serialised['catalogue'] !== null) {
+			$described['x-openregister-catalogue'] = $serialised['catalogue'];
+		}
+
+		return $described;
+	}//end withCatalogue()
 
 	/**
 	 * The described schema, marked with how many properties were withheld from it, if any.
@@ -1114,7 +1166,7 @@ class OasService implements OasServiceInterface {
 			return self::COMMON_QUERY_PARAMETERS;
 		}
 
-		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER];
+		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER, self::WHERE_QUERY_PARAMETER];
 		if ($schema === null) {
 			return $parameters;
 		}
@@ -1461,11 +1513,11 @@ class OasService implements OasServiceInterface {
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function withUpsertOnKey(array $operation, object $schema): array {
-		if (method_exists($schema, 'getUpsertKeys') === false) {
+		if (method_exists($schema, 'getConfiguration') === false) {
 			return $operation;
 		}
 
-		$keys = $schema->getUpsertKeys();
+		$keys = (new UniqueConstraintEvaluator())->upsertKeys(configuration: $schema->getConfiguration());
 
 		if ($keys === []) {
 			return $operation;
@@ -1973,14 +2025,16 @@ class OasService implements OasServiceInterface {
 	 * - /core/http-response-code: only standard HTTP status codes on responses.
 	 * - /core/no-trailing-slash, /core/path-segments-kebab-case,
 	 *   /core/query-keys-camel-case and /core/uri-version, through
-	 *   {@see NlGovDocumentRules}.
+	 *   {@see \OCA\OpenRegister\Service\Oas\NlGovDocumentRules}.
+	 * - the date and time, error handling and document rules; all of them run
+	 *   through {@see NlGovConformance}.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
 	 */
 	private function validateNlGovRules(): void {
-		(new NlGovDocumentRules(report: $this->report))->check(oas: $this->oas);
+		(new NlGovConformance())->check(report: $this->report, oas: $this->oas);
 
 		$paths = ($this->oas['paths'] ?? null);
 		if (is_array($paths) === false) {

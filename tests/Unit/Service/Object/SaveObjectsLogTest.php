@@ -48,6 +48,7 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
  * @uses \OCA\OpenRegister\Service\Object\SaveObjects\IdentifiedRow
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 final class SaveObjectsLogTest extends TestCase {
 

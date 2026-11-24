@@ -21,7 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
-use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
 
 /**
@@ -34,6 +33,16 @@ use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
  * @spec openspec/changes/appraisal-inherited-from-a-parent/specs/archivering-vernietiging/spec.md
  */
 class RetentionAnnotationValidator {
+
+	/**
+	 * The key of the declared properties inside `x-openregister-retention`.
+	 *
+	 * The schema declaration is Core's vocabulary; the archival reader that
+	 * follows the declaration reads the same key.
+	 *
+	 * @var string
+	 */
+	public const KEY = 'inheritAppraisalFrom';
 
 	/**
 	 * Why a declaration is refused; none when it is sound or absent.
@@ -54,13 +63,13 @@ class RetentionAnnotationValidator {
 			return ['The annotation must be an object.'];
 		}
 
-		if (array_key_exists(InheritedAppraisal::KEY, $annotation) === false) {
+		if (array_key_exists(self::KEY, $annotation) === false) {
 			return [];
 		}
 
-		$declared = $annotation[InheritedAppraisal::KEY];
+		$declared = $annotation[self::KEY];
 		if (is_array($declared) === false || array_is_list($declared) === false) {
-			return [InheritedAppraisal::KEY.' must be a list of property names.'];
+			return [self::KEY.' must be a list of property names.'];
 		}
 
 		$errors = [];
@@ -81,15 +90,15 @@ class RetentionAnnotationValidator {
 	 */
 	private static function refusalsOf(mixed $name, array $properties): array {
 		if (is_string($name) === false || trim($name) === '') {
-			return [InheritedAppraisal::KEY.' must name properties by their non-empty name.'];
+			return [self::KEY.' must name properties by their non-empty name.'];
 		}
 
 		if (array_key_exists($name, $properties) === false) {
-			return [sprintf("%s names '%s', which is not a property of this schema.", InheritedAppraisal::KEY, $name)];
+			return [sprintf("%s names '%s', which is not a property of this schema.", self::KEY, $name)];
 		}
 
 		if (RelationAnnotationValidator::isReferenceProperty(property: $properties[$name]) === false) {
-			return [sprintf("%s names '%s', which does not reference other objects.", InheritedAppraisal::KEY, $name)];
+			return [sprintf("%s names '%s', which does not reference other objects.", self::KEY, $name)];
 		}
 
 		return [];

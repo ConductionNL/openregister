@@ -51,4 +51,19 @@ interface ChunkStoreInterface extends ChunkSourceReaderInterface {
 	 * @return Entity The stored chunk.
 	 */
 	public function update(Entity $entity): Entity;
+
+	/**
+	 * Delete the chunks of one source.
+	 *
+	 * @param string $sourceType Source type identifier.
+	 * @param int    $sourceId   Source identifier.
+	 *
+	 * @phpstan-param non-empty-string $sourceType
+	 * @psalm-param   non-empty-string $sourceType
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function deleteBySource(string $sourceType, int $sourceId): void;
 }//end interface

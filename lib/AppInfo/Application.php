@@ -33,9 +33,14 @@ use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCA\OpenRegister\BulkAction\BulkActionRegistrar;
 use OCA\OpenRegister\Capabilities\CapabilityRegistrar;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MapperRegistrar;
+use OCA\OpenRegister\Db\PlatformMapperRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
+use OCA\OpenRegister\Db\FilesMapperRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
@@ -54,6 +59,9 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
+use OCA\OpenRegister\Service\NotificationsServiceRegistrar;
+use OCA\OpenRegister\Service\PlatformServiceRegistrar;
+use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
 use OCA\OpenRegister\Service\ServiceBootstrap;
@@ -178,18 +186,26 @@ class Application extends App implements IBootstrap {
 				return new OutboundClientFactory(
 					clientService: \OCP\Server::get(\OCP\Http\Client\IClientService::class),
 					proxy: $container->get(\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class),
-					breakers: $container->get(\OCA\OpenRegister\Service\Resilience\BreakerRegistry::class),
+					breakers: $container->get(\OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface::class),
 				);
 			}
 		);
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		ServiceBootstrap::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
+		PlatformServiceRegistrar::register(context: $context);
+		NotificationsServiceRegistrar::register(context: $context);
+		ComplianceServiceRegistrar::register(context: $context);
 		DbRegistrar::register(context: $context);
+		PlatformMapperRegistrar::register(context: $context);
+		ConfigurationMapperRegistrar::register(context: $context);
+		ComplianceMapperRegistrar::register(context: $context);
+		FilesMapperRegistrar::register(context: $context);
+		IntegrationsMapperRegistrar::register(context: $context);
+		ProcessesMapperRegistrar::register(context: $context);
 
 		MiddlewareRegistrar::register(context: $context);
 		MapperRegistrar::register(context: $context);
@@ -252,6 +268,8 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);
+		// The external-register provider (Integrations) follows the built-in object sources.
+		IntegrationRegistrar::bootObjectSources(server: $server);
 		// Any object whose schema opts in may join a collaboration collection
 		// (platform-collaboration-resources, REQ-PCR-001).
 		$server->get(\OCP\Collaboration\Resources\IProviderManager::class)

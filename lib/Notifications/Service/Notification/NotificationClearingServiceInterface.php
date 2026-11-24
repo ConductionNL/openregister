@@ -22,43 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
+
 /**
  * Every public method of NotificationClearingService. Callers depend on this interface, not on the class.
+ *
+ * The two read-driven clearings are declared by the Core port it extends, so the
+ * object read-state API can ask for them without naming Notifications.
  */
-interface NotificationClearingServiceInterface {
-
-	/**
-	 * Opening an object clears every notice this user holds about it.
-	 *
-	 * Best-effort by design: a failure here must never take out the object read
-	 * that triggered it. The cost of the failure is a notice that stays in the
-	 * bell, which the user can still clear by hand.
-	 *
-	 * @param string $objectUuid The object that was opened.
-	 * @param string|null $userId The reader, or null for the caller.
-	 *
-	 * @return integer How many notices were cleared.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
-	 */
-	public function clearForObject(string $objectUuid, ?string $userId = null): int;
-
-	/**
-	 * Opening a sub-resource clears the notices about that sub-resource only.
-	 *
-	 * Narrower than `clearForObject()` on purpose: opening the documents tab
-	 * says nothing about the messages nobody has read.
-	 *
-	 * The notices cleared are the caller's own.
-	 *
-	 * @param string $objectUuid The object the sub-resource hangs off.
-	 * @param string $subjectId  The sub-resource's own id.
-	 *
-	 * @return integer How many notices were cleared.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
-	 */
-	public function clearForSubResource(string $objectUuid, string $subjectId): int;
+interface NotificationClearingServiceInterface extends ReadNoticeClearingInterface {
 
 	/**
 	 * Archive every notice about an object that has been deleted.

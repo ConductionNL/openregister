@@ -45,6 +45,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  */

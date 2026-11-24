@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Schema
  * @covers \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @covers \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  */
 final class PreservationStateTest extends TestCase {
 

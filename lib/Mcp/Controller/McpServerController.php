@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Mcp\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcCall;
 use OCA\OpenRegister\Mcp\Controller\Support\JsonRpcError;
 use OCA\OpenRegister\Mcp\Controller\Support\McpServerControllerServices;
@@ -159,7 +159,7 @@ class McpServerController extends Controller {
 		IRequest $request,
 		McpServerControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->protocolService = $services->domain->protocolService;
 		$this->toolsService = $services->domain->toolsService;
 		$this->resourcesService = $services->domain->resourcesService;

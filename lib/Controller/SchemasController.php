@@ -26,6 +26,13 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\EnvelopedDefinitionControllerInterface;
 use OCA\OpenRegister\Controller\Support\SchemaRemoval;
 use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
@@ -53,15 +60,11 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
-use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\AuthorizationChange;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
-use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
@@ -78,16 +81,17 @@ use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
+use OCA\OpenRegister\Service\Schemas\ApprovalChainDeclarations;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
+use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
-use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -132,7 +136,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/openapi-generation/spec.md
  */
-class SchemasController extends Controller {
+class SchemasController extends Controller implements EnvelopedDefinitionControllerInterface {
 
 	/**
 	 * The exceptions that answer 422 with the errors of the declaration.
@@ -148,7 +152,7 @@ class SchemasController extends Controller {
 		CalculationDeclarationException::class,
 		ConsentDeclarationException::class,
 		DependentValueDeclarationException::class,
-		NotificationDeclarationException::class,
+		DeclarationRefusalInterface::class,
 	];
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
@@ -304,19 +308,17 @@ class SchemasController extends Controller {
 	 * Initializes controller with required dependencies for schema operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param SchemasControllerServices $services The schemas controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SchemasControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;
@@ -366,11 +368,15 @@ class SchemasController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
-		$params = $this->request->getParams();
+		$params = $this->withClassificationFilter(params: $this->request->getParams());
+		if ($params instanceof JSONResponse) {
+			return $params;
+		}
+
 		$extend = $this->extendList(extend: ($params['_extend'] ?? []));
 
 		$schemas    = $this->visibleSchemas(schemas: $this->listSchemas(params: $params));
-		$schemasArr = $this->withExtendedBy(schemasArr: array_map(fn ($schema) => $schema->jsonSerialize(), $schemas));
+		$schemasArr = $this->withExtendedBy(schemasArr: array_map(fn ($schema) => $this->forCaller(schema: $schema->jsonSerialize()), $schemas));
 
 		// If '@self.stats' is requested, attach statistics to each schema.
 		if (in_array('@self.stats', $extend, true) === true) {
@@ -379,6 +385,62 @@ class SchemasController extends Controller {
 
 		return new JSONResponse(data: ['results' => $schemasArr]);
 	}//end index()
+
+	/**
+	 * Pass a `classification` filter to the list only when it is one of the vocabulary values.
+	 *
+	 * Read from `?classification=` or `?filters[classification]=`. An unknown
+	 * value is a 400 before it reaches the query; a known one is only a WHERE
+	 * clause on the same RBAC- and tenant-scoped list.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed>|JSONResponse The parameters, or a 400 naming the field.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-schemas-can-be-listed-by-classification
+	 */
+	private function withClassificationFilter(array $params): array|JSONResponse {
+		$filters = ($params['filters'] ?? []);
+		if (is_array($filters) === false) {
+			$filters = [];
+		}
+
+		$wanted = ($params['classification'] ?? $filters['classification'] ?? null);
+		unset($params['classification'], $filters['classification']);
+		if ($wanted !== null && SchemaCatalogue::isClassification(value: $wanted) === false) {
+			return new JSONResponse(
+				data: ['error' => 'classification must be one of: ' . implode(', ', SchemaCatalogue::CLASSIFICATIONS) . '.', 'field' => 'classification'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($wanted !== null) {
+			$filters['classification'] = $wanted;
+		}
+
+		if ($filters !== [] || array_key_exists('filters', $params) === true) {
+			$params['filters'] = $filters;
+		}
+
+		return $params;
+	}//end withClassificationFilter()
+
+	/**
+	 * A serialised schema as this caller may see it: an anonymous caller does not see the catalogue's contact person.
+	 *
+	 * @param array<string, mixed> $schema The serialised schema.
+	 *
+	 * @return array<string, mixed> The schema.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-catalogue-metadata
+	 */
+	private function forCaller(array $schema): array {
+		if ($this->isAnonymousRequest() === false) {
+			return $schema;
+		}
+
+		return SchemaCatalogue::withoutContact(schema: $schema);
+	}//end forCaller()
 
 	/**
 	 * An `_extend` value as a list: a single string becomes a one-entry list.
@@ -761,7 +823,7 @@ class SchemasController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		$schemaArr = $schema->jsonSerialize();
+		$schemaArr = $this->forCaller(schema: $schema->jsonSerialize());
 
 		// Add extendedBy property showing UUIDs of schemas that extend this schema.
 		$schemaArr['@self'] = $schemaArr['@self'] ?? [];
@@ -1165,7 +1227,11 @@ class SchemasController extends Controller {
 			// Drop the cached copy so a follow-up read in this worker sees the new schema.
 			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
 
-			return new JSONResponse(data: $schema, statusCode: 201);
+			// Advisory annotations the save ignored ride along; the save itself stands.
+			return new JSONResponse(
+				data: array_merge($schema->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()]),
+				statusCode: 201
+			);
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1226,7 +1292,8 @@ class SchemasController extends Controller {
 		return $this->validateJsonLdMapping(data: $data)
 			?? $this->validateSemanticRoles(data: $data)
 			?? $this->validateReferenceFilterOperands(data: $data)
-			?? $this->validateApprovalPositionForms(data: $data);
+			?? $this->validateApprovalPositionForms(data: $data)
+			?? self::validateCatalogue(data: $data);
 	}//end validateSchemaBody()
 
 	/**
@@ -1243,11 +1310,11 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
 	 */
 	private function validateApprovalPositionForms(array $data): ?JSONResponse {
-		if (ApprovalPositionFormGuard::declaresForms(data: $data) === false) {
+		if (ApprovalChainDeclarations::declaresForms(data: $data) === false) {
 			return null;
 		}
 
-		$errors = $this->container->get(ApprovalPositionFormGuard::class)->violations(data: $data);
+		$errors = $this->container->get(ApprovalPositionFormCheckInterface::class)->violations(data: $data);
 		if ($errors === []) {
 			return null;
 		}
@@ -1260,6 +1327,27 @@ class SchemasController extends Controller {
 			statusCode: 422
 		);
 	}//end validateApprovalPositionForms()
+
+	/**
+	 * Refuse an unknown classification or update frequency, or a malformed contact e-mail, naming the field.
+	 *
+	 * @param array<string, mixed> $data The schema body.
+	 *
+	 * @return JSONResponse|null A 400 naming the field, or null when the body is fine.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-a-data-classification
+	 */
+	private static function validateCatalogue(array $data): ?JSONResponse {
+		$violation = SchemaCatalogue::violation(data: $data);
+		if ($violation === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => $violation['message'], 'field' => $violation['field']],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end validateCatalogue()
 
 	/**
 	 * Resolve the register a new schema is created in.
@@ -1560,11 +1648,11 @@ class SchemasController extends Controller {
 	 * goes ahead without judging the published forms, and that must leave a trace
 	 * (an owning app's `refuse` setting is skipped with it).
 	 *
-	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
+	 * @return SchemaFormDependentsInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheckInterface {
+	private function formDependentsCheck(): ?SchemaFormDependentsInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheckInterface::class);
+			$check = $this->container->get(SchemaFormDependentsInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
@@ -1574,7 +1662,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheckInterface) {
+		if ($check instanceof SchemaFormDependentsInterface) {
 			return $check;
 		}
 
@@ -1910,6 +1998,8 @@ class SchemasController extends Controller {
 	 */
 	private function writeSchemaUpdate(array $update): JSONResponse {
 		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
+		// Read before anything else saves a schema: the list belongs to this save.
+		$warnings = $this->schemaMapper->discardedAnnotations();
 
 		$flowWarnings = [];
 		if ($update['changeSet'] !== null) {
@@ -1932,7 +2022,8 @@ class SchemasController extends Controller {
 
 		// A rename that leaves a published trigger watching the old name is a
 		// warning beside the saved schema, never a refusal.
-		$extra = [];
+		// The advisory annotations the save ignored are always listed, empty when none.
+		$extra = ['warnings' => $warnings];
 		if ($flowWarnings !== []) {
 			$extra['flowWarnings'] = $flowWarnings;
 		}
@@ -1947,11 +2038,7 @@ class SchemasController extends Controller {
 			);
 		}
 
-		if ($extra !== []) {
-			return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
-		}
-
-		return new JSONResponse(data: $updatedSchema);
+		return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
 	}//end writeSchemaUpdate()
 
 	/**
@@ -1966,8 +2053,8 @@ class SchemasController extends Controller {
 	 */
 	private function flowRenameWarnings(Schema $schema, SchemaChangeSet $changeSet): array {
 		try {
-			$check = $this->container->get(FlowTriggerRenameCheck::class);
-			if ($check instanceof FlowTriggerRenameCheck === false) {
+			$check = $this->container->get(SchemaRenameWarningsInterface::class);
+			if ($check instanceof SchemaRenameWarningsInterface === false) {
 				return [];
 			}
 
@@ -1992,7 +2079,7 @@ class SchemasController extends Controller {
 	 */
 	private function auditSchemaAuthorizationChange(Schema $schema, mixed $oldAuthorization): void {
 		try {
-			$auditService = $this->container->get(AuthorizationAuditService::class);
+			$auditService = $this->container->get(SchemaAccessChangeLogInterface::class);
 			$auditService->recordSchemaChange(
 				change: new AuthorizationChange(
 					entityId: $schema->getId(),
@@ -2082,19 +2169,32 @@ class SchemasController extends Controller {
 	/**
 	 * Clear the draft of a schema the publish wrote; any other response passes through.
 	 *
+	 * The answer keeps what the update listed beside the schema (warnings, flow warnings,
+	 * affected forms) and carries the warnings of the save that cleared the draft.
+	 *
 	 * @param JSONResponse $response The response of applying the draft.
 	 *
 	 * @return JSONResponse The stored schema without its draft, or the response as given.
 	 */
 	private function withDraftCleared(JSONResponse $response): JSONResponse {
-		$published = $response->getData();
-		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
+		$data = $response->getData();
+		if ($data instanceof Schema === true) {
+			$data = $data->jsonSerialize();
+		}
+
+		if ($response->getStatus() !== Http::STATUS_OK || is_array($data) === false || isset($data['id']) === false) {
 			return $response;
 		}
 
+		// The update answers with the schema's fields beside its warnings, so the
+		// stored schema is read back by id rather than taken from the body.
+		$published = $this->schemaMapper->find(id: (int)$data['id']);
 		$published->setDraft(null);
+		$stored = $this->schemaMapper->update(entity: $published);
 
-		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
+		return new JSONResponse(
+			data: array_merge($data, $stored->jsonSerialize(), ['warnings' => $this->schemaMapper->discardedAnnotations()])
+		);
 	}//end withDraftCleared()
 
 	/**

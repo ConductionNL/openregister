@@ -21,8 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
-use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\MasterDataAnnotationValidators;
 use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use Psr\Log\LoggerInterface;
@@ -41,37 +39,41 @@ final class AdvisoryAnnotationChecks {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Receives the warnings.
+	 * @param LoggerInterface           $logger    Receives the warnings.
+	 * @param DiscardedAnnotations|null $discarded Collects the ignored annotations for the save response.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ?DiscardedAnnotations $discarded = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * Validate the optional `x-openregister-aggregations` annotation.
+	 * Validate an advisory annotation whose rule another area contributes.
 	 *
-	 * The schema still stores objects; the aggregation simply won't be runnable.
+	 * The area that owns the annotation's meaning (Search for aggregations,
+	 * Processes for parties) supplies the key, the validation and what an ignored
+	 * block means; the warning and the save-response entry are this class's, the
+	 * same as for the annotations it validates itself.
 	 *
-	 * @param Schema $schema Schema to validate.
+	 * @param Schema                 $schema Schema to validate.
+	 * @param AdvisoryAnnotationRule $rule   The annotation and how to validate it.
 	 *
 	 * @return void
 	 *
-	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
+	 * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
 	 */
-	public function checkAggregations(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-aggregations');
+	public function checkContributed(Schema $schema, AdvisoryAnnotationRule $rule): void {
+		$annotation = new SchemaAnnotation(schema: $schema, key: $rule->key);
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				// The slug and title let the validator tell a `schema` key naming
-				// this schema from one naming a related schema.
-				errors: SearchAnnotationValidators::aggregation()->validate(
-					array_merge($annotation->shape(), ['slug' => $schema->getSlug(), 'title' => $schema->getTitle()])
-				),
-				text: $annotation->label() . ' is invalid and was ignored (aggregation not registered)'
+				family: $rule->key,
+				schema: $schema,
+				errors: ($rule->errors)($annotation, $schema),
+				text: $annotation->label() . ' is invalid and was ignored (' . $rule->consequence . ')'
 			);
 		}
-	}//end checkAggregations()
+	}//end checkContributed()
 
 	/**
 	 * Validate the optional `x-openregister-quality` annotation.
@@ -88,6 +90,8 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-quality');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
+				family: 'x-openregister-quality',
+				schema: $schema,
 				errors: MasterDataAnnotationValidators::quality()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (quality score not materialised)'
 			);
@@ -110,6 +114,8 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-dedup');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
+				family: 'x-openregister-dedup',
+				schema: $schema,
 				errors: MasterDataAnnotationValidators::dedup()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (declared match rules not used)'
 			);
@@ -139,6 +145,8 @@ final class AdvisoryAnnotationChecks {
 		}
 
 		$this->warn(
+			family: 'hinge',
+			schema: $schema,
 			errors: SchemaAnnotationValidators::hinge()->validate(['properties' => ($schema->getProperties() ?? [])] + $declared),
 			text: 'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are invalid and were ignored'
 		);
@@ -159,6 +167,8 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-survivorship');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
+				family: 'x-openregister-survivorship',
+				schema: $schema,
 				errors: SchemaAnnotationValidators::survivorship()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (golden record not materialised)'
 			);
@@ -181,6 +191,8 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-merge');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
+				family: 'x-openregister-merge',
+				schema: $schema,
 				errors: MasterDataAnnotationValidators::merge()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (merge falls back to defaults)'
 			);
@@ -188,41 +200,21 @@ final class AdvisoryAnnotationChecks {
 	}//end checkMerge()
 
 	/**
-	 * Validate the optional `x-openregister-party` annotation.
-	 *
-	 * It is warned about rather than dropped: the failure a dropped declaration
-	 * causes is a party schema that reads as an ordinary one, and the operator
-	 * needs the field name to fix it.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
-	 */
-	public function checkParty(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-party');
-		if ($annotation->isBlock() === true) {
-			$this->warn(
-				errors: (new PartyAnnotationValidator())->validate($annotation->shape()),
-				text: $annotation->label() . ' is invalid and was ignored (the schema is not treated as a party schema)'
-			);
-		}
-	}//end checkParty()
-
-	/**
 	 * Log the given text with the messages of the errors, if there are any.
 	 *
+	 * @param string                             $family The annotation family.
+	 * @param Schema                             $schema The schema being saved.
 	 * @param array<int, array{message: string}> $errors The validator's errors.
 	 * @param string                             $text   What the fault means for the schema.
 	 *
 	 * @return void
 	 */
-	private function warn(array $errors, string $text): void {
+	private function warn(string $family, Schema $schema, array $errors, string $text): void {
 		if (count($errors) > 0) {
 			$this->logger->warning(
 				$text . ': ' . implode(' ', array_map(static fn (array $err) => $err['message'], $errors))
 			);
+			$this->discarded?->record(family: $family, schema: $schema, errors: $errors);
 		}
 	}//end warn()
 }//end class

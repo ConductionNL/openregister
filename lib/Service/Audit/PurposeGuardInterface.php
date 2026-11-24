@@ -22,14 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 
 /**
  * The methods of PurposeGuard that callers outside its component use.
  * Callers depend on this interface, not on the class.
+ *
+ * The read checks enforce() and allows() come from the Core read port it extends.
  */
-interface PurposeGuardInterface {
+interface PurposeGuardInterface extends ReadPurposeGuardInterface {
 
 	/**
 	 * The audit action a refused read is recorded under.
@@ -38,37 +39,4 @@ interface PurposeGuardInterface {
 	 */
 	public const ACTION_REFUSED = 'purpose.query-refused';
 
-	/**
-	 * Enforce doelbinding on a read, and remember the purpose it ran under.
-	 *
-	 * Returns null when the read needs no purpose, which is every read on an
-	 * instance that has not turned doelbinding on. That null is the
-	 * backwards-compatibility promise, and it is the only path that existed
-	 * before this change.
-	 *
-	 * @param Register|null $register The register being read.
-	 * @param Schema|null   $schema   The schema being read.
-	 *
-	 * @return string|null The accepted purpose code, or null when none was needed.
-	 *
-	 * @throws PurposeRefusedException When a purpose is needed and none is usable.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function enforce(?Register $register, ?Schema $schema): ?string;
-
-	/**
-	 * Whether a read of this table may run, without recording a refusal.
-	 *
-	 * For a search that spans tables and leaves out the ones it may not read,
-	 * rather than refusing the whole search.
-	 *
-	 * @param Register|null $register The register being read.
-	 * @param Schema|null   $schema   The schema being read.
-	 *
-	 * @return bool True when no purpose is needed or the declared one is accepted.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	public function allows(?Register $register, ?Schema $schema): bool;
 }//end interface

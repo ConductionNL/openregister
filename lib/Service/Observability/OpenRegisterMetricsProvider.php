@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Observability;
 
 use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
-use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 
 /**
  * Joins the task and webhook gauges under OpenRegister's provider alias.
@@ -42,11 +42,11 @@ final class OpenRegisterMetricsProvider implements IMetricsProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskMetricsProviderInterface $tasks    The overdue-task gauge.
+	 * @param TaskGaugeInterface          $tasks    The overdue-task gauge.
 	 * @param WebhookRetryMetricsProvider  $webhooks The webhook retry queue gauge.
 	 */
 	public function __construct(
-		private readonly TaskMetricsProviderInterface $tasks,
+		private readonly TaskGaugeInterface $tasks,
 		private readonly WebhookRetryMetricsProvider $webhooks,
 	) {
 	}//end __construct()

@@ -22,7 +22,8 @@
  *  - IQueue is resolved lazily from the container (OCA\NotifyPush\Queue\IQueue).
  *    If notify_push is not installed the container throws — soft-fail at most once.
  *  - Registration site: ListenerRegistrar::register(), next to
- *    the GraphQLSubscriptionListener registrations.
+ *    the GraphQLSubscriptionListener registrations, through
+ *    ObjectWritePushInterface (aliased by PlatformListenerBindings).
  *  - IAppConfig key `openregister.push_available` is set to '1' on the first
  *    successful IQueue::push() call (consumed by OpenRegisterAdmin::getPushStatus()).
  *
@@ -51,6 +52,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Push\PushChannels;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
@@ -70,12 +72,13 @@ use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
  * the end of the import.
  *
  * @implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
+ * @implements ObjectWritePushInterface<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Listener must reference three event types
  *   (ObjectCreated/Updated/DeletedEvent), the slug resolver, a container, logger, appConfig,
  *   and PermissionHandlerInterface; each dependency is required for the push-routing.
  */
-class NotifyPushListener implements IEventListener, PresencePushInterface {
+class NotifyPushListener implements IEventListener, PresencePushInterface, ObjectWritePushInterface {
 
 	/**
 	 * Whether batch mode is active.

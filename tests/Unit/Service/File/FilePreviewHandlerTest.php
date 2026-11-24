@@ -7,6 +7,7 @@ namespace Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
+use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
 use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
@@ -100,6 +101,22 @@ class FilePreviewHandlerTest extends TestCase {
 			->with('[FilePreviewHandler] Generated preview for file photo.jpg (100x50)', $this->anything());
 
 		$this->assertSame($previewFile, $this->preview($file, 100, 50));
+	}
+
+	public function testGetPreviewTakesAnySizeThatGivesItsDimensions(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('photo.jpg');
+		$previewFile = $this->createMock(ISimpleFile::class);
+		$size = $this->createMock(PreviewDimensionsInterface::class);
+		$size->method('width')->willReturn(40);
+		$size->method('height')->willReturn(30);
+		$size->method('label')->willReturn('40x30');
+
+		$this->previewManager->method('isAvailable')->willReturn(true);
+		$this->previewManager->expects($this->once())->method('getPreview')
+			->with($file, 40, 30)->willReturn($previewFile);
+
+		$this->assertSame($previewFile, $this->handler->getPreview($file, $size));
 	}
 
 	public function testGetPreviewReportsAFailedGeneration(): void {

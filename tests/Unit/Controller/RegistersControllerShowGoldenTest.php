@@ -177,13 +177,17 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message, array $context): void {
 			unset($context['file'], $context['line']);
+			// The exception-translation trait logs the throwable itself; record its class.
+			if (($context['exception'] ?? null) instanceof \Throwable) {
+				$context['exception'] = $context['exception']::class;
+			}
+
 			$this->calls[] = ['error', $message, $context];
 		});
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->registerService(case: $case),
 			$objects,

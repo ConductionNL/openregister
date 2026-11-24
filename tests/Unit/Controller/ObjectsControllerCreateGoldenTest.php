@@ -22,6 +22,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -33,7 +34,8 @@ use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
@@ -78,6 +80,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Exception\LockedException
  * @uses   \OCA\OpenRegister\Exception\ObjectExistsException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses   \OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Exception\TranslationTargetConflictException
@@ -93,6 +96,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses \OCA\OpenRegister\Service\Object\UpsertOnKeyRequest
  * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses   \OCA\OpenRegister\Controller\Support\WriteFailureAnswer
+ * @uses   \OCA\OpenRegister\Exception\DatabaseErrorChain
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerCreateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-create-golden.json';
@@ -132,6 +139,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			'validation' => ['validation'],
 			'custom validation' => ['customValidation'],
 			'hook stopped' => ['hook'],
+			'property not authorized' => ['propertyAuth'],
 			'locked' => ['locked'],
 			'folder denied' => ['folder'],
 			'expression default' => ['expression'],
@@ -189,6 +197,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			'validation' => new ValidationException('bad'),
 			'customValidation' => new CustomValidationException('bad', ['a' => 'b']),
 			'hook' => new HookStoppedException('stopped', ['e' => 1]),
+			'propertyAuth' => new PropertyWriteNotAuthorizedException(['salaris', 'besluitdatum']),
 			'locked' => new LockedException('held'),
 			'folder' => new FolderAccessDeniedException('f1'),
 			'expression' => new ExpressionDefaultException('title', 'cannot derive'),
@@ -277,18 +286,18 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		);
 	}
 
-	private function webhooks(array $setup): ?WebhookService {
+	private function webhooks(array $setup): ?IEventDispatcher {
 		if (isset($setup['webhook']) === false) {
 			return null;
 		}
 
-		$service = $this->createMock(WebhookService::class);
+		$service = $this->createMock(originalClassName: IEventDispatcher::class);
 		if ($setup['webhook'] === 'fails') {
-			$service->method('interceptRequest')->willThrowException(new RuntimeException('no hook'));
+			$service->method('dispatchTyped')->willThrowException(new RuntimeException('no hook'));
 			return $service;
 		}
 
-		$service->method('interceptRequest')->willReturn($setup['webhook']);
+		$service->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($setup['webhook']));
 		return $service;
 	}
 

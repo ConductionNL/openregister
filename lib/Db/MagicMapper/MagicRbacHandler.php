@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -48,6 +49,9 @@ use OCA\OpenRegister\Service\Rbac\DenyRowTest;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
+use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
+use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
@@ -837,6 +841,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
+		// Classification is final: it narrows ahead of every grant and schema
+		// rule, and holds even where an undecidable posture leaves the rest open.
+		if ($this->applyClassification(call: $call) === false) {
+			return;
+		}
+
 		// The checks run in order, and each one that clamps the query ends it.
 		if ($this->resolveCallAuthorization(call: $call) === false || $this->applyDenyRules(call: $call) === false) {
 			return;
@@ -924,6 +934,63 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
 	}//end applyAnyOf()
+
+	/**
+	 * Narrow the query to the classification labels the caller may see.
+	 *
+	 * @param RbacFilterCall $call The filter application, its caller identified.
+	 *
+	 * @return bool False when no label is admitted and the query was clamped to no rows.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function applyClassification(RbacFilterCall $call): bool {
+		$term = $this->classificationTermSql(call: $call);
+		if ($term === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($term !== null) {
+			$call->qb->andWhere($call->qb->createFunction($term));
+		}
+
+		return true;
+	}//end applyClassification()
+
+	/**
+	 * The classification term every listed row must satisfy, as raw SQL.
+	 *
+	 * An `IN` over the declared labels at or below the caller's clearance, less
+	 * those a ceiling refuses an anonymous caller. Compiled by the same match
+	 * emitter as a `$in` rule, so the column and the quoting are the ones every
+	 * other rule term uses.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|false|null The term; false when no label is admitted; null when classification narrows nothing.
+	 *
+	 * @spec openspec/changes/classification-clearance-on-an-object/specs/classification-clearance/spec.md#requirement-read-above-a-callers-clearance-is-refused-on-both-layers
+	 */
+	private function classificationTermSql(RbacAccessCall $call): string|false|null {
+		$block = (new ClassificationListTerm(clearances: new ClearanceResolver(logger: $this->logger)))->matchBlock(
+			schema: $call->schema,
+			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action)
+		);
+		if ($block === null) {
+			return null;
+		}
+
+		if ((reset($block)['$in'] ?? []) === []) {
+			$this->logger->debug(
+				message: '[MagicRbacHandler] No classification level is admitted to the caller; the list returns nothing',
+				context: ['userId' => $call->userId, 'action' => $call->action]
+			);
+			return false;
+		}
+
+		return ($this->matchSql()->matchConditions(block: $block, columnPrefix: $call->columnPrefix) ?? false);
+	}//end classificationTermSql()
 
 	/**
 	 * Apply the schema's deny rules to the query.
@@ -2040,6 +2107,35 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
+		$classification = $this->classificationTermSql(call: $call);
+		if ($classification === false) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
+		$result = $this->unclassifiedAccessConditions(call: $call);
+		if ($classification === null) {
+			return $result;
+		}
+
+		// Classification is final: it narrows every condition, and an open
+		// result becomes the one condition that every row is classified low enough.
+		if ($result['bypass'] === true) {
+			return ['bypass' => false, 'conditions' => [$classification]];
+		}
+
+		return ['bypass' => false, 'conditions' => $this->withDenyTerm(conditions: $result['conditions'], denyTerm: $classification)];
+	}//end accessConditions()
+
+	/**
+	 * The bypass flag and the SQL conditions of one access call before classification; fails closed.
+	 *
+	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read, its caller identified.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The bypass flag and conditions.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function unclassifiedAccessConditions(RbacAccessCall $call): array {
 		// Fail-closed: an unresolvable authorization yields the deny-all result
 		// (`bypass => false` with no conditions) rather than the open bypass.
 		$unresolvable = $this->unresolvableAuthorization(call: $call);
@@ -2053,7 +2149,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
-	}//end accessConditions()
+	}//end unclassifiedAccessConditions()
 
 	/**
 	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.
@@ -2772,7 +2868,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+			// The same reading resolveAuthorization() applies, so the fallback
+			// does not treat `@creator` as a group or ignore `conditions`.
+			return (new AuthorizationBlock())->normalise(
+				authorization: RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())
+			);
 		}
 	}//end resolveSchemaAuthorization()
 

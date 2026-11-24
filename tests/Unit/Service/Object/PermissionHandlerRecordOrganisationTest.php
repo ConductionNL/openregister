@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -63,7 +64,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
  * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  * @uses   \OCA\OpenRegister\Service\ConditionUserResolvers
- * @uses   \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses   \OCA\OpenRegister\Contract\ObjectSelection
  * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices
  * @uses   \OCA\OpenRegister\Service\Object\Permission\PermissionDataServices
@@ -90,6 +91,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 
@@ -178,11 +181,9 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 	public function testTheRecordsDataDoesNotStandInForItsOrganisation(array $data): void {
 		$this->assertFalse(
 			condition: $this->handler->hasPermission(
-				schema: $this->schema(),
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record(organisation: 'org-b', data: $data)
+				ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(organisation: 'org-b', data: $data), register: null)
 			)
 		);
 
@@ -196,11 +197,9 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 	public function testTheRecordsOwnOrganisationAnswers(): void {
 		$this->assertTrue(
 			condition: $this->handler->hasPermission(
-				schema: $this->schema(),
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record(organisation: 'org-a', data: ['title' => 'x', '@self' => ['organisation' => 'org-b']])
+				ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(organisation: 'org-a', data: ['title' => 'x', '@self' => ['organisation' => 'org-b']]), register: null)
 			)
 		);
 
@@ -224,18 +223,16 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 
 		$this->assertFalse(
 			condition: $this->handler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['organisation' => 'org-a']])
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['organisation' => 'org-a']]), register: null)
 			)
 		);
 
 		$own = $this->record(organisation: 'org-a', data: ['title' => 'x']);
 		$own->setUuid('rec-3');
 		$this->assertTrue(
-			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'bob', object: $own)
+			condition: $this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $own, register: null))
 		);
 
 	}//end testAUserOverrideReadsTheRecordsOwnOrganisation()
@@ -259,22 +256,18 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 
 		$this->assertFalse(
 			condition: $this->handler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $this->record(organisation: 'org-a', data: ['title' => 'x', '@self' => ['organisation' => 'org-b']])
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $this->record(organisation: 'org-a', data: ['title' => 'x', '@self' => ['organisation' => 'org-b']]), register: null)
 			)
 		);
 		$other = $this->record(organisation: 'org-b', data: ['title' => 'x']);
 		$other->setUuid('rec-2');
 		$this->assertTrue(
 			condition: $this->handler->hasPermission(
-				schema: $schema,
-				action: 'update',
-				userId: 'alice',
-				objectOwner: 'bob',
-				object: $other
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: 'alice', objectOwner: 'bob')
+					->about(object: $other, register: null)
 			)
 		);
 
@@ -313,7 +306,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 		$record->setUuid('rec-meta-' . md5(serialize($data)));
 
 		$this->assertFalse(
-			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'bob', object: $record),
+			condition: $this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $record, register: null)),
 			message: 'the data answered ' . $field
 		);
 
@@ -337,7 +330,7 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 			}
 
 			$this->assertTrue(
-				condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'carol', object: $record),
+				condition: $this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'carol')->about(object: $record, register: null)),
 				message: 'the record did not answer ' . $field
 			);
 		}
@@ -362,13 +355,13 @@ class PermissionHandlerRecordOrganisationTest extends TestCase {
 		$own->setUuid('rec-four-eyes');
 		$own->setOwner('alice');
 		$this->assertFalse(
-			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'alice', object: $own)
+			condition: $this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'alice')->about(object: $own, register: null))
 		);
 
 		$other = $this->record(organisation: 'org-b', data: ['title' => 'x', '@self' => ['owner' => 'alice'], '_owner' => 'alice']);
 		$other->setUuid('rec-four-eyes-other');
 		$this->assertTrue(
-			condition: $this->handler->hasPermission(schema: $schema, action: 'update', userId: 'alice', objectOwner: 'bob', object: $other)
+			condition: $this->handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'alice', objectOwner: 'bob')->about(object: $other, register: null))
 		);
 
 	}//end testAConditionalDenyOnTheOwnerReadsTheRecordsOwner()

@@ -41,11 +41,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -65,12 +65,12 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 	 * Constructor.
 	 *
 	 * @param ArchivalRegisterMappers         $mappers         Resolve the configured register and schema; lists are register objects.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Says which register and schema they live in.
+	 * @param ArchivalSettingsInterface       $settingsHandler Says which register and schema they live in.
 	 * @param LoggerInterface                 $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
 		private readonly ArchivalRegisterMappers $mappers,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly ArchivalSettingsInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

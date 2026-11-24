@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
@@ -67,7 +67,7 @@ class ManagedFileOwnerLookupTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
 			mountCache: $this->createMock(IUserMountCache::class),
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
+			folderRecorder: $this->createMock(RegisterFolderRecordsInterface::class)
 		);
 	}//end setUp()
 

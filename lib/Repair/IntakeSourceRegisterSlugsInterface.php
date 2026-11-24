@@ -22,24 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\IntakeSourceRegisterAddressInterface;
+
 /**
  * The register and schema slugs the intake-source register is seeded under, for
  * callers outside Repair. SeedIntakeSourceRegister implements this, so its own
- * REGISTER_SLUG and SCHEMA_SLUG still resolve to the same values.
+ * REGISTER_SLUG and SCHEMA_SLUG still resolve to the same values. The values are
+ * the Core address the intake-source registry reads, inherited from
+ * IntakeSourceRegisterAddressInterface.
  */
-interface IntakeSourceRegisterSlugsInterface {
-
-	/**
-	 * The register slug this step materialises.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'intake-sources';
-
-	/**
-	 * The schema slug an intake source is an object of.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'intake-source';
+interface IntakeSourceRegisterSlugsInterface extends IntakeSourceRegisterAddressInterface {
 }//end interface

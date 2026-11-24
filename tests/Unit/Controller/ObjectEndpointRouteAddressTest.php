@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
@@ -158,7 +158,7 @@ final class ObjectEndpointRouteAddressTest extends TestCase {
 			request: $request,
 			services: new ObjectReadStateControllerServices(
 				readState: $this->createMock(ReadStateServiceInterface::class),
-				clearing: $this->createMock(NotificationClearingServiceInterface::class),
+				clearing: $this->createMock(ReadNoticeClearingInterface::class),
 				objectService: $this->objectService(),
 				logger: $logger
 			)

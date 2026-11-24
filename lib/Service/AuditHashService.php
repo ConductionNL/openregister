@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -82,7 +83,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface {
+class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface {
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
@@ -152,6 +153,13 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @var integer
 	 */
 	private const SWEEP_BATCH_SIZE = 500;
+
+	/**
+	 * Most ids in one IN list when a seal reads the payload of unsealed rows.
+	 *
+	 * @var integer
+	 */
+	private const PAYLOAD_CHUNK = 1000;
 
 	/**
 	 * Most rows one sweep will re-chain in a single pass.
@@ -827,7 +835,10 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		try {
-			$totals = $this->rechainEveryWindow(batchSize: $batchSize);
+			$totals = $this->rechainEveryWindow(
+				batchSize: $batchSize,
+				window: ['previousHash' => $this->getGenesisHash(), 'lastId' => 0]
+			);
 			$this->logRechainComplete(totals: $totals);
 
 			return $totals;
@@ -836,6 +847,53 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}//end try
 	}//end rechainAll()
 
+
+	/**
+	 * Re-seal the chain from one row to its end, after a lawful rewrite of that row.
+	 *
+	 * The narrow form of {@see rechainAll()}: a row whose stored content was
+	 * rewritten on purpose (the anonymisation's redacted diff) no longer hashes
+	 * to its stored link, and every row after it committed to that old link. So
+	 * the rewritten row and everything after it are re-derived, chained onto the
+	 * last sealed row before it; nothing before it is touched. Retention
+	 * tombstones are carried forward exactly as rechainAll() carries them.
+	 *
+	 * Unlike a seal pass this is not fail-soft. A caller that rewrote a row and
+	 * cannot re-seal has to know, because the chain is broken until it does.
+	 *
+	 * @param int $fromId The first row whose content changed.
+	 *
+	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
+	 *
+	 * @throws \InvalidArgumentException When the id is not a row id.
+	 * @throws \RuntimeException         When the seal lock cannot be taken; nothing is re-sealed then.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/gdpr-data-subject-rights/spec.md#requirement-the-trail-keeps-the-act-and-loses-the-values-req-aao-006
+	 */
+	public function resealFrom(int $fromId): array {
+		if ($fromId < 1) {
+			throw new \InvalidArgumentException(sprintf('Cannot re-seal the audit chain from row %d: it is not a row id.', $fromId));
+		}
+
+		if ($this->acquireSealLock() === false) {
+			throw new \RuntimeException(sprintf('The audit seal lock is unavailable; the chain was not re-sealed from row %d.', $fromId));
+		}
+
+		try {
+			$totals = $this->rechainEveryWindow(
+				batchSize: self::SWEEP_BATCH_SIZE,
+				window: ['previousHash' => ($this->getHashBefore(id: $fromId) ?? $this->getGenesisHash()), 'lastId' => ($fromId - 1)]
+			);
+			$this->logger->info(
+				message: sprintf('[AuditHashService] Re-sealed %d audit row(s) from row %d after a recorded rewrite.', $totals['rechained'], $fromId),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+			);
+
+			return $totals;
+		} finally {
+			$this->releaseSealLock();
+		}//end try
+	}//end resealFrom()
 
 	/**
 	 * Log, at warning level, that a full re-chain starts.
@@ -873,12 +931,12 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * The caller holds the seal lock.
 	 *
-	 * @param int $batchSize Rows re-chained per query window.
+	 * @param int                                         $batchSize Rows re-chained per query window.
+	 * @param array{previousHash: string, lastId: int}     $window    Where the walk starts: the link before it and the id it starts after.
 	 *
 	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
 	 */
-	private function rechainEveryWindow(int $batchSize): array {
-		$window = ['previousHash' => $this->getGenesisHash(), 'lastId' => 0];
+	private function rechainEveryWindow(int $batchSize, array $window): array {
 		$totals = ['rechained' => 0, 'tombstonesPreserved' => 0];
 
 		while (true) {
@@ -1048,9 +1106,12 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private function sealRowsLocked(array $ids): int {
 		$minId = min($ids);
 
-		// Fetch every row in the id range so interleaved foreign rows keep
-		// their place in the chain.
-		$rows = $this->rowsBetween(minId: $minId, maxId: max($ids));
+		// Walk every row in the id range so interleaved foreign rows keep
+		// their place in the chain. A sealed row contributes only its hash as
+		// a chain link, so the range is read as an `id, hash` skeleton and the
+		// full payload is fetched for the unsealed rows alone: bytes read stay
+		// proportional to what is sealed, not to the window's id span.
+		$rows = $this->withUnsealedPayloads(links: $this->linksBetween(minId: $minId, maxId: max($ids)));
 		if ($rows === []) {
 			return 0;
 		}
@@ -1068,16 +1129,18 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	}//end sealRowsLocked()
 
 	/**
-	 * Every row with an id in the inclusive range, oldest first.
+	 * The `id` and `hash` of every row in the inclusive range, oldest first.
 	 *
 	 * @param int $minId Inclusive lower bound.
 	 * @param int $maxId Inclusive upper bound.
 	 *
-	 * @return array<int, array<string, mixed>> The rows.
+	 * @return array<int, array<string, mixed>> The skeleton rows.
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md
 	 */
-	private function rowsBetween(int $minId, int $maxId): array {
+	private function linksBetween(int $minId, int $maxId): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
+		$qb->select('id', 'hash')
 			->from('openregister_audit_trails')
 			->where($qb->expr()->gte('id', $qb->createNamedParameter($minId, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->lte('id', $qb->createNamedParameter($maxId, IQueryBuilder::PARAM_INT)))
@@ -1088,7 +1151,87 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$result->closeCursor();
 
 		return $rows;
-	}//end rowsBetween()
+	}//end linksBetween()
+
+	/**
+	 * The skeleton with each unsealed row replaced by its full row, in the
+	 * skeleton's order. Sealed rows stay `id, hash` only. An unsealed row that
+	 * is gone by the time its payload is read is left out, as the full-range
+	 * read would have missed it too.
+	 *
+	 * @param array<int, array<string, mixed>> $links The skeleton, oldest first.
+	 *
+	 * @return array<int, array<string, mixed>> The rows to chain.
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md
+	 */
+	private function withUnsealedPayloads(array $links): array {
+		$unsealed = [];
+		foreach ($links as $link) {
+			if (self::isUnsealed(row: $link) === true) {
+				$unsealed[] = (int)$link['id'];
+			}
+		}
+
+		if ($unsealed === []) {
+			return $links;
+		}
+
+		$full = $this->rowsWithIds(ids: $unsealed);
+		$rows = [];
+		foreach ($links as $link) {
+			if (self::isUnsealed(row: $link) === false) {
+				$rows[] = $link;
+				continue;
+			}
+
+			if (isset($full[(int)$link['id']]) === true) {
+				$rows[] = $full[(int)$link['id']];
+			}
+		}
+
+		return $rows;
+	}//end withUnsealedPayloads()
+
+	/**
+	 * Whether a row carries no hash yet.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return bool
+	 */
+	private static function isUnsealed(array $row): bool {
+		$hash = ($row['hash'] ?? null);
+
+		return ($hash === null || $hash === '');
+	}//end isUnsealed()
+
+	/**
+	 * The full rows with the given ids, keyed by id. Read in chunks so the IN
+	 * list stays within every supported database's parameter limit.
+	 *
+	 * @param list<int> $ids The ids (non-empty).
+	 *
+	 * @return array<int, array<string, mixed>> The rows by id.
+	 */
+	private function rowsWithIds(array $ids): array {
+		$rows = [];
+		foreach (array_chunk($ids, self::PAYLOAD_CHUNK) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from('openregister_audit_trails')
+				->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+
+			$result = $qb->executeQuery();
+			foreach ($result->fetchAll() as $row) {
+				$rows[(int)$row['id']] = $row;
+			}
+
+			$result->closeCursor();
+		}
+
+		return $rows;
+	}//end rowsWithIds()
 
 	/**
 	 * The hash and predecessor of each unsealed row, walking the range in id order.

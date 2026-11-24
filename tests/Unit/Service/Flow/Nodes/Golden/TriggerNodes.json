@@ -260,7 +260,8 @@
         "configKeys": {
             "returned": [
                 "cron",
-                "runAs"
+                "runAs",
+                "timezone"
             ]
         },
         "configForm": {
@@ -278,6 +279,13 @@
                     "type": "text",
                     "help": "The account the scheduled runs act as. Nobody is present when a schedule fires, and the flow's author is never used in its place.",
                     "required": true
+                },
+                {
+                    "key": "timezone",
+                    "label": "Timezone",
+                    "type": "text",
+                    "help": "The timezone the schedule is read in, like \"Europe/Amsterdam\". Empty reads it in the server's timezone.",
+                    "required": false
                 }
             ]
         },

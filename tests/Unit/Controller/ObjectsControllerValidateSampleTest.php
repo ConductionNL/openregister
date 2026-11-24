@@ -39,10 +39,35 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectValidationVerdict
+ * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses   \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses   \OCA\OpenRegister\Controller\Support\LinkedDataServices
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectStore
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectTransfer
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses   \OCA\OpenRegister\Service\CauseFrame
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Middleware\Support\ApiPathAliases
+ * @uses   \OCA\OpenRegister\Middleware\Support\StandardProtocolPaths
  */
 class ObjectsControllerValidateSampleTest extends TestCase {
 
@@ -114,7 +139,7 @@ class ObjectsControllerValidateSampleTest extends TestCase {
 	}
 
 	public function testAValidSampleIsAnswered200Valid(): void {
-		$this->permissions->method('hasPermission')->willReturnCallback(static fn ($schema, string $action): bool => $action === 'create');
+		$this->permissions->method('hasPermission')->willReturnCallback(static fn (PermissionAsk $ask): bool => $ask->action === 'create');
 		$asked = null;
 
 		$response = $this->controller(['gemeente' => 'Utrecht', '_route' => 'x'])->validateSample('reg', 'sch', $this->service(new ObjectValidationVerdict(), $asked));
@@ -149,7 +174,15 @@ class ObjectsControllerValidateSampleTest extends TestCase {
 		$stored->setUuid('u-1');
 		$stored->setOwner('alice');
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'update', null, 'alice', true, $stored)
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema === $this->schema
+						&& $ask->action === 'update'
+						&& $ask->userId === null
+						&& $ask->objectOwner === 'alice'
+						&& $ask->object === $stored
+				)
+			)
 			->willReturn(true);
 		$asked = null;
 

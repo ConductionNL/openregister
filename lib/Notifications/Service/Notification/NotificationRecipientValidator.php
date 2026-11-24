@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ReferencedAddressLimits;
 
 /**
  * Validates the `recipients` of one `x-openregister-notifications` rule.
@@ -44,7 +44,7 @@ final class NotificationRecipientValidator {
 		'expression',
 		'watchers',
 		'parties',
-		ReferencedAddressNotifierInterface::KIND,
+		ReferencedAddressLimits::KIND,
 	];
 
 	/**
@@ -154,7 +154,7 @@ final class NotificationRecipientValidator {
 		return match ($kind) {
 			'groups', 'users' => $this->namedListErrors(entry: $entry, kind: $kind),
 			'field' => $this->fieldRecipientErrors(entry: $entry),
-			ReferencedAddressNotifierInterface::KIND => $this->emailRecipientErrors(entry: $entry),
+			ReferencedAddressLimits::KIND => $this->emailRecipientErrors(entry: $entry),
 			'object-acl' => $this->aclRecipientErrors(entry: $entry),
 			'role' => $this->roleRecipientErrors(entry: $entry),
 			'expression' => $this->expressionRecipientErrors(entry: $entry),
@@ -292,7 +292,7 @@ final class NotificationRecipientValidator {
 	 * goes through a reference that property must declare the `$ref` the
 	 * notifier compares the referenced object's schema with (without it the
 	 * rule would be saved and then never send); the path may follow at most
-	 * ReferencedAddressNotifier::MAX_HOPS references, and the rule must
+	 * ReferencedAddressLimits::MAX_HOPS references, and the rule must
 	 * send e-mail: an `email` entry on a rule without the email channel would
 	 * reach nobody, every time, in silence.
 	 *
@@ -408,11 +408,11 @@ final class NotificationRecipientValidator {
 	 * @return array<int, array{code: string, message: string}>
 	 */
 	private function emailDepthErrors(RecipientEntry $entry, array $segments): array {
-		if (count($segments) <= (ReferencedAddressNotifierInterface::MAX_HOPS + 1)) {
+		if (count($segments) <= (ReferencedAddressLimits::MAX_HOPS + 1)) {
 			return [];
 		}
 
-		$detail = sprintf('field "%s" follows more than %d references.', $this->emailPath(entry: $entry), ReferencedAddressNotifierInterface::MAX_HOPS);
+		$detail = sprintf('field "%s" follows more than %d references.', $this->emailPath(entry: $entry), ReferencedAddressLimits::MAX_HOPS);
 		return [$entry->error(code: 'notification-recipient-email-path-too-deep', detail: $detail)];
 	}//end emailDepthErrors()
 

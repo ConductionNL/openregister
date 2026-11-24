@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -63,6 +64,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 
@@ -183,10 +186,10 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$this->assertTrue($handler->hasPermission($schema, 'create'));
-		$this->assertTrue($handler->hasPermission($schema, 'update'));
-		$this->assertTrue($handler->hasPermission($schema, 'delete'));
-		$this->assertTrue($handler->hasPermission($schema, 'read'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}//end testFlagOffPreservesDefaultOpen()
 
 	public function testFlagOnRejectsWritesOnSchemaWithoutAuth(): void {
@@ -200,13 +203,13 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$this->assertFalse($handler->hasPermission($schema, 'create'));
-		$this->assertFalse($handler->hasPermission($schema, 'update'));
-		$this->assertFalse($handler->hasPermission($schema, 'delete'));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
 
 		// Reads stay default-open — @PublicPage is the OR-wide read model.
-		$this->assertTrue($handler->hasPermission($schema, 'read'));
-		$this->assertTrue($handler->hasPermission($schema, 'list'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'list')));
 	}//end testFlagOnRejectsWritesOnSchemaWithoutAuth()
 
 	public function testFlagOnWithPublicOptInGrantsWrites(): void {
@@ -219,9 +222,9 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$this->assertTrue($handler->hasPermission($schema, 'create'));
-		$this->assertTrue($handler->hasPermission($schema, 'update'));
-		$this->assertTrue($handler->hasPermission($schema, 'delete'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
 	}//end testFlagOnWithPublicOptInGrantsWrites()
 
 	public function testFlagOnRespectsExplicitAuthBlock(): void {
@@ -240,8 +243,8 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$this->assertTrue($handler->hasPermission($schema, 'create'));
-		$this->assertFalse($handler->hasPermission($schema, 'update'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
 	}//end testFlagOnRespectsExplicitAuthBlock()
 
 	public function testFlagOnAdminStillBypasses(): void {
@@ -254,9 +257,9 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$this->assertTrue($handler->hasPermission($schema, 'create'));
-		$this->assertTrue($handler->hasPermission($schema, 'update'));
-		$this->assertTrue($handler->hasPermission($schema, 'delete'));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'update')));
+		$this->assertTrue($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'delete')));
 	}//end testFlagOnAdminStillBypasses()
 
 	public function testFlagOffEmitsDeprecationWarning(): void {
@@ -277,7 +280,7 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$register = $this->createRegister(10, null);
 		$this->setupRegisterForSchema($register);
 
-		$handler->hasPermission($schema, 'create');
+		$handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'create'));
 	}//end testFlagOffEmitsDeprecationWarning()
 
 	// === Fix 5: per-object _authorization ===
@@ -302,10 +305,10 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$object->setUuid('00000000-0000-0000-0000-000000000001');
 		$object->setAuthorization(['update' => ['admin']]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'update', null, null, true, $object));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
 
 		// Actions NOT overridden by the object still inherit from the schema.
-		$this->assertTrue($handler->hasPermission($schema, 'read', null, null, true, $object));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}//end testPerObjectAuthorizationOverridesSchema()
 
 	public function testPerObjectAuthorizationGrantsWhenSchemaDenies(): void {
@@ -327,7 +330,7 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$object->setUuid('00000000-0000-0000-0000-000000000002');
 		$object->setAuthorization(['update' => ['users']]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'update', null, null, true, $object));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}//end testPerObjectAuthorizationGrantsWhenSchemaDenies()
 
 	public function testNoPerObjectAuthorizationFallsThroughToSchema(): void {
@@ -348,7 +351,7 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('00000000-0000-0000-0000-000000000003');
 		// No setAuthorization — column stays as the entity default ([]).
-		$this->assertTrue($handler->hasPermission($schema, 'update', null, null, true, $object));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}//end testNoPerObjectAuthorizationFallsThroughToSchema()
 
 	public function testPerObjectAuthorizationActionByActionMerge(): void {
@@ -374,8 +377,8 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		// Object seals only `delete`. Update + create stay schema-driven.
 		$object->setAuthorization(['delete' => ['admin']]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'create', null, null, true, $object));
-		$this->assertTrue($handler->hasPermission($schema, 'update', null, null, true, $object));
-		$this->assertFalse($handler->hasPermission($schema, 'delete', null, null, true, $object));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'create'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'delete'))->askedBy(userId: null, objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}//end testPerObjectAuthorizationActionByActionMerge()
 }//end class

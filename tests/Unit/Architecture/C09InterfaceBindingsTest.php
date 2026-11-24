@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
@@ -62,10 +64,10 @@ final class C09InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		DoriathCredentialStore::class => [DoriathCredentialKeys::class, ContractBindings::class],
-		FileVectorizationStrategy::class => [FileVectorizationStrategyInterface::class, ContractBindings::class],
-		FlowRunSubjects::class => [FlowRunSubjectsInterface::class, ContractBindings::class],
+		FileVectorizationStrategy::class => [FileVectorizationStrategyInterface::class, CoreServiceBindings::class],
+		FlowRunSubjects::class => [FlowRunSubjectsInterface::class, ProcessesServiceBindings::class],
 		MovedJobState::class => [MovedJobStateInterface::class, ContractBindings::class],
-		ObjectVectorizationStrategy::class => [ObjectVectorizationStrategyInterface::class, ContractBindings::class],
+		ObjectVectorizationStrategy::class => [ObjectVectorizationStrategyInterface::class, CoreServiceBindings::class],
 		OdtWriter::class => [OdtWriterInterface::class, ContractBindings::class],
 	];
 

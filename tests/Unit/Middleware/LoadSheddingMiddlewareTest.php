@@ -37,6 +37,9 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Middleware\LoadSheddingMiddleware
  * @covers \OCA\OpenRegister\Service\Resilience\DependencyUnavailableException
+ * @uses   \OCA\OpenRegister\Service\Oas\ProblemDescription
+ * @uses   \OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder
+ * @uses   \OCA\OpenRegister\Service\Oas\ProblemStatement
  */
 class LoadSheddingMiddlewareTest extends TestCase {
 

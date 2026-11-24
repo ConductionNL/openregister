@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportRightInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -184,16 +184,16 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 			return null;
 		}
 
-		if (isset($authorization[ExportRightService::ACTION]) === true) {
+		if (isset($authorization[ExportRightInterface::ACTION]) === true) {
 			return null;
 		}
 
-		$read = ($authorization[ExportRightService::FALLBACK_ACTION] ?? null);
+		$read = ($authorization[ExportRightInterface::FALLBACK_ACTION] ?? null);
 		if (is_array($read) === false) {
 			return null;
 		}
 
-		$authorization[ExportRightService::ACTION] = array_values($read);
+		$authorization[ExportRightInterface::ACTION] = array_values($read);
 
 		return $authorization;
 	}//end withExportGrant()

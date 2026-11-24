@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -41,7 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -165,7 +166,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->searches[] = ['route' => 'magicTable', 'rbac' => $query['_rbac'], 'multitenancy' => $query['_multitenancy'], 'explicit' => $query['_multitenancy_explicit']];
 				return [];
 			}
@@ -205,7 +206,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 

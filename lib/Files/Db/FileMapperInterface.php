@@ -24,13 +24,15 @@ namespace OCA\OpenRegister\Files\Db;
 
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 
 /**
  * Every public method of FileMapper. Callers depend on this interface, not on the class.
  *
  * @phpstan-import-type FilecacheRow from FileMapper
  */
-interface FileMapperInterface {
+interface FileMapperInterface extends FileSizeTotalsInterface, ObjectFileRecordsInterface {
 
 	/**
 	 * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
@@ -244,10 +246,7 @@ interface FileMapperInterface {
 	/**
 	 * Publish a file by creating a public share directly in the database.
 	 *
-	 * @param int $fileId The file ID to publish
-	 * @param string $sharedBy The user who is sharing the file
-	 * @param string $shareOwner The owner of the file
-	 * @param \DateTime|null $depublished When the share stops working, or null for no end date
+	 * @param PublicShareRequest $request The file, who shares it, who owns it, and when the link stops working.
 	 *
 	 * @return (int|string)[]
 	 *
@@ -255,15 +254,11 @@ interface FileMapperInterface {
 	 *
 	 * @throws \Exception If the share creation fails
 	 *
-	 * @phpstan-param int $fileId
-	 * @phpstan-param string $sharedBy
-	 * @phpstan-param string $shareOwner
-	 *
 	 * @phpstan-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 *
 	 * @psalm-return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
 	 */
-	public function publishFile(int $fileId, string $sharedBy, string $shareOwner, ?\DateTime $depublished = null): array;
+	public function publishFile(PublicShareRequest $request): array;
 
 	/**
 	 * Depublish a file by removing all public shares directly from the database.
@@ -312,20 +307,6 @@ interface FileMapperInterface {
 	 * @phpstan-return int
 	 */
 	public function getTotalFilesSize(): int;
-
-	/**
-	 * The summed size of the given files or folders.
-	 *
-	 * A folder's size in the file cache is the size of everything under it. A
-	 * negative size means the entry was never scanned and is left out.
-	 *
-	 * @param list<int> $fileIds The file cache ids.
-	 *
-	 * @return int The total size in bytes, 0 for no ids.
-	 *
-	 * @spec openspec/specs/organisation-usage-measured/spec.md
-	 */
-	public function sumSizesByFileIds(array $fileIds): int;
 
 	/**
 	 * Find files in Nextcloud that are not tracked in the extraction system yet

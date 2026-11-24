@@ -81,6 +81,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequests
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses   \OCA\OpenRegister\Service\Credential\BrokerTokenBinding
+ * @uses   \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialControllerTest extends TestCase {
 
@@ -201,7 +205,6 @@ class CredentialControllerTest extends TestCase {
 		);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$this->createMock(IGroupManager::class),
@@ -644,7 +647,6 @@ class CredentialControllerTest extends TestCase {
 		);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$this->createMock(IGroupManager::class),
@@ -783,7 +785,6 @@ class CredentialControllerTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(true);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$session,
 			$groups,

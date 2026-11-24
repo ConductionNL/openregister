@@ -44,9 +44,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
@@ -83,7 +84,7 @@ class AggregationController extends Controller {
 		IRequest $request,
 		private readonly AggregationControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -385,8 +386,10 @@ class AggregationController extends Controller {
 				metric: $primary['metric'],
 				field: $primary['field'],
 				filter: $run->filter,
-				groupBy: $groupBy,
-				metrics: $metrics
+				layout: new AggregationLayout(
+					groupBy: $groupBy,
+					metrics: $metrics
+				)
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);

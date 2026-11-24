@@ -34,7 +34,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
 use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
@@ -42,6 +41,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\EmailMessageRef;
@@ -93,7 +93,7 @@ class EmailLinksController extends Controller {
 		IRequest $request,
 		EmailLinksControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->emailLinkService = $services->emailLinkService;
 		$this->objectService = $services->objectService;
 		$this->permissions = $services->permissions;

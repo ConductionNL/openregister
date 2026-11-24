@@ -31,6 +31,8 @@ return array (
     'createdBy' => 'string',
     'created' => 'datetime',
     'updated' => 'datetime',
+    'causeRun' => 'string',
+    'rowsPrunedAt' => 'datetime',
   ),
   'empty' => 
   array (
@@ -64,6 +66,9 @@ return array (
     'createdBy' => NULL,
     'created' => NULL,
     'updated' => NULL,
+    'causeRun' => NULL,
+    'rowsPruned' => false,
+    'rowsPrunedAt' => NULL,
   ),
   'filled' => 
   array (
@@ -99,6 +104,9 @@ return array (
     'createdBy' => 'createdBy-v',
     'created' => '2026-01-02T03:04:05+00:00',
     'updated' => '2026-01-02T03:04:05+00:00',
+    'causeRun' => 'causeRun-v',
+    'rowsPruned' => true,
+    'rowsPrunedAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
   array (
@@ -126,6 +134,8 @@ return array (
     21 => 'createdBy',
     22 => 'created',
     23 => 'updated',
+    24 => 'causeRun',
+    25 => 'rowsPrunedAt',
   ),
   'refused' => 
   array (

@@ -29,8 +29,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
+use OCA\OpenRegister\Db\AuditProcessContext;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
@@ -51,6 +53,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses   \OCA\OpenRegister\Db\AuditProcessContext
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunFrame
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
@@ -70,7 +73,7 @@ class AuditTrailEntryFlowAttributionTest extends TestCase {
 	use RecordingQueryBuilderTrait;
 
 	/**
-	 * A mapper over a recording connection whose container yields this run context.
+	 * A mapper over a recording connection whose container yields this run context and the process context that reads it.
 	 *
 	 * @param FlowRunContext $context The ambient run context.
 	 *
@@ -83,9 +86,13 @@ class AuditTrailEntryFlowAttributionTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static function (string $id) use ($context): object {
+			static function (string $id) use ($context, $db, $container): object {
 				if ($id === FlowRunContextInterface::class) {
 					return $context;
+				}
+
+				if ($id === AuditProcessContextInterface::class) {
+					return new AuditProcessContext(db: $db, container: $container);
 				}
 
 				throw new RuntimeException('not wired in this test: ' . $id);

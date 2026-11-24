@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
+use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
@@ -47,6 +49,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnNameClaims
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
@@ -113,6 +117,7 @@ class MagicNumericPropertyKeyTest extends TestCase {
 
 	public function testTheFreeTextSearchMatchesTheColumn(): void {
 		$handler = (new ReflectionClass(MagicSearchHandler::class))->newInstanceWithoutConstructor();
+		(new ReflectionProperty(MagicSearchHandler::class, 'searchProfile'))->setValue($handler, new PropertySearchProfile());
 		$scope = new SearchLeafScope(schema: $this->schema(), isPostgres: true);
 		$scope->connection = new class {
 			public function quote(string $value): string {

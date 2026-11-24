@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -90,6 +91,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\ObjectExistsException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses   \OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Exception\TranslationTargetConflictException
@@ -109,6 +111,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
  * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses   \OCA\OpenRegister\Controller\Support\WriteFailureAnswer
+ * @uses   \OCA\OpenRegister\Exception\DatabaseErrorChain
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerUpdateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-update-golden.json';
@@ -146,6 +152,7 @@ class ObjectsControllerUpdateGoldenTest extends TestCase {
 			'validation' => ['validation'],
 			'custom validation' => ['customValidation'],
 			'hook stopped' => ['hook'],
+			'property not authorized' => ['propertyAuth'],
 			'locked' => ['locked'],
 			'folder denied' => ['folder'],
 			'append only' => ['appendOnly'],
@@ -228,6 +235,7 @@ class ObjectsControllerUpdateGoldenTest extends TestCase {
 			'validation' => new ValidationException('bad'),
 			'customValidation' => new CustomValidationException('bad', ['a' => 'b']),
 			'hook' => new HookStoppedException('stopped', ['e' => 1]),
+			'propertyAuth' => new PropertyWriteNotAuthorizedException(['salaris', 'besluitdatum']),
 			'locked' => new LockedException('held'),
 			'folder' => new FolderAccessDeniedException('f1'),
 			'expression' => new ExpressionDefaultException('title', 'cannot derive'),

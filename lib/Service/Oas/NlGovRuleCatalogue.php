@@ -198,4 +198,33 @@ final class NlGovRuleCatalogue {
 	public static function deviation(string $ruleId): ?string {
 		return (self::rule(ruleId: $ruleId)['deviation'] ?? null);
 	}//end deviation()
+
+	/**
+	 * Every rule, for a caller that holds the catalogue as an object.
+	 *
+	 * The same answer as {@see rules()}; the classes that read the catalogue
+	 * build it rather than reach it by name, so no static call sits in them.
+	 *
+	 * @return list<array{id: string, title: string, kind: string, deviation: string|null}> The rules.
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	public function all(): array {
+		return self::rules();
+	}//end all()
+
+	/**
+	 * The declared deviation of one rule, for a caller that holds the catalogue as an object.
+	 *
+	 * The same answer as {@see deviation()}.
+	 *
+	 * @param string $ruleId The rule id.
+	 *
+	 * @return string|null The reason, or null when the rule declares none or is unknown.
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	public function deviationOf(string $ruleId): ?string {
+		return self::deviation(ruleId: $ruleId);
+	}//end deviationOf()
 }//end class

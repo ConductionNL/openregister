@@ -25,6 +25,8 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 /**
  * Registers the listeners of the Configuration component on events no other component listens to.
  *
+ * ConfigurationServiceRegistrar, the Configuration area's own registrar, calls it.
+ *
  * An event with listeners from more than one component stays in
  * ListenerRegistrar, in one ordered list, because listeners of one event run
  * in registration order.

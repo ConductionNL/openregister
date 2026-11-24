@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredFileReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredFileWriterInterface;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
@@ -70,8 +72,8 @@ final class A19InterfaceBindingsTest extends TestCase {
 		ConfigurationServiceInterface::class => [ConfigurationTransferInterface::class],
 		ConfigurationTransferInterface::class => [AppConfigurationImporterInterface::class],
 		DeepLinkRegistryServiceInterface::class => [DeepLinkResolverInterface::class],
-		FileServiceInterface::class => [ObjectFilesInterface::class, FileFolderServiceInterface::class],
-		ObjectFilesInterface::class => [FileReaderInterface::class, FileWriterInterface::class],
+		FileServiceInterface::class => [ObjectFilesInterface::class, FileReaderInterface::class, FileWriterInterface::class, FileFolderServiceInterface::class],
+		ObjectFilesInterface::class => [StoredFileReaderInterface::class, StoredFileWriterInterface::class],
 		FileHandlerSupportInterface::class => [ObjectFilesInterface::class, FileFolderServiceInterface::class],
 	];
 

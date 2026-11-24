@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -54,6 +55,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
@@ -258,7 +261,8 @@ class MagicMapperSequentialValuesTest extends TestCase {
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query, Register $register, Schema $schema) use ($entities): array {
+			function (RegisterSchema $table, array $query) use ($entities): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$this->asked[] = $query['_order'] ?? null;
 				if ($schema->getId() === 1) {
 					return $entities;

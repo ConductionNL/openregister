@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaFollowerMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
+use OCA\OpenRegister\Service\ApiCaller\RouteCallers;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService;
 use OCP\BackgroundJob\IJobList;
@@ -44,10 +45,13 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\SchemaChangeNoticeService
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\ApiCaller\RouteCallers
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Core\RouteCallWindow
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\SchemaChangelog
  */
@@ -125,8 +129,7 @@ final class SchemaChangeNoticeServiceTest extends TestCase {
 
 	private function service(): SchemaChangeNoticeService {
 		return new SchemaChangeNoticeService(
-			$this->callers,
-			$this->recorder,
+			new RouteCallers(recorder: $this->recorder, records: $this->callers),
 			$this->followers,
 			$this->changelog,
 			$this->registers,
@@ -189,7 +192,7 @@ final class SchemaChangeNoticeServiceTest extends TestCase {
 		);
 		$this->followers->method('findUids')->with(12)->willReturn(['piet', 'jan']);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId): bool => $action === 'read' && $userId !== 'kees'
+			static fn (PermissionAsk $ask): bool => $ask->action === 'read' && $ask->userId !== 'kees'
 		);
 
 		$this->assertSame(['jan', 'piet'], $this->service()->recipients(self::melding()));

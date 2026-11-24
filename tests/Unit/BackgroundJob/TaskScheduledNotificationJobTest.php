@@ -30,6 +30,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\OverdueOpenTasks;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
@@ -82,7 +83,7 @@ class TaskScheduledNotificationJobTest extends TestCase {
 
 		return new TaskScheduledNotificationJob(
 			$time,
-			new TaskNotificationCandidates(new TaskNotificationRules(), $this->tasks, $inbox, new ScheduledFilterEvaluator()),
+			new TaskNotificationCandidates(new TaskNotificationRules(), new OverdueOpenTasks($this->tasks), $inbox, new ScheduledFilterEvaluator()),
 			new TaskNotificationDelivery($this->dedupe, $this->dispatcher, $this->appConfig, new NullLogger())
 		);
 	}

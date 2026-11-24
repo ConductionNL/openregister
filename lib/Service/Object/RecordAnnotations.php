@@ -25,10 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityRule;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use Psr\Log\LoggerInterface;
@@ -46,11 +48,15 @@ final class RecordAnnotations {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Logs a block that failed.
+	 * @param LoggerInterface                     $logger   Logs a block that failed.
+	 * @param RecordArchivalReadingInterface|null $archival The archival reading (Compliance); without it the two archival blocks are not attached.
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
-	public function __construct(private readonly LoggerInterface $logger) {
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly ?RecordArchivalReadingInterface $archival = null,
+	) {
 	}//end __construct()
 
 	/**
@@ -65,7 +71,7 @@ final class RecordAnnotations {
 	 */
 	public function attachRetention(ObjectEntity $entity, ?Schema $schema): void {
 		$annotation = (($schema?->getConfiguration() ?? [])['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false || $entity->getCreated() === null) {
+		if ($this->archival === null || is_array($annotation) === false || $entity->getCreated() === null) {
 			return;
 		}
 
@@ -86,17 +92,17 @@ final class RecordAnnotations {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	private function evaluateRetention(ObjectEntity $entity, array $annotation): void {
+		if ($this->archival === null) {
+			return;
+		}
+
 		$retention = ($entity->getRetention() ?? []);
-		$retention['annotation'] = (new RetentionEvaluator(logger: $this->logger))->evaluate(
-			annotation: $annotation,
-			row: self::objectOf(entity: $entity),
-			createdAt: $entity->getCreated()
-		);
+		$retention['annotation'] = $this->archival->retentionAnnotation(annotation: $annotation, entity: $entity);
 		$entity->setRetention($retention);
 	}//end evaluateRetention()
 
 	/**
-	 * Attach the archival decision, when there is one.
+	 * Attach the archival decision, when there is one (and an archival reading to ask).
 	 *
 	 * @param ObjectEntity $entity The entity being rendered.
 	 *
@@ -108,7 +114,7 @@ final class RecordAnnotations {
 		$this->guarded(
 			failure: 'archival decision resolve failed for ' . (string)$entity->getUuid(),
 			step: function () use ($entity): void {
-				$decision = (new ArchivalDecisionResolver())->resolve(entity: $entity);
+				$decision = $this->archival?->archivalDecision(entity: $entity);
 				if ($decision !== null) {
 					$entity->setArchivalRetention($decision);
 				}
@@ -211,6 +217,39 @@ final class RecordAnnotations {
 
 		return $objectData;
 	}//end withLinks()
+
+	/**
+	 * Attach the resolved classification under `@self.confidentiality`.
+	 *
+	 * Read from the stored object, before any caller projection or property
+	 * strip, so the mirror states the object's real tier, ground and release
+	 * to every caller who may read the object at all. A schema without the
+	 * annotation gets no key. A faulty annotation still gets the mirror, with
+	 * no tier and `released` false, matching the fail-closed rule.
+	 *
+	 * @param ObjectEntity      $entity The rendered object.
+	 * @param Schema|null       $schema Its schema.
+	 * @param array             $stored The stored object data.
+	 * @param DateTimeInterface $now    The moment a release is measured against.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-the-resolved-classification-must-be-exposed-on-render-as-selfconfidentiality
+	 */
+	public function attachConfidentiality(ObjectEntity $entity, ?Schema $schema, array $stored, DateTimeInterface $now): void {
+		$block = (($schema?->getConfiguration() ?? [])[ConfidentialityAnnotationValidator::ANNOTATION] ?? null);
+		if ($block === null) {
+			return;
+		}
+
+		$this->guarded(
+			failure: 'confidentiality mirror failed for ' . (string)$entity->getUuid(),
+			step: static function () use ($entity, $schema, $block, $stored, $now): void {
+				$rule = ConfidentialityRule::fromBlock(block: $block, properties: ($schema?->getProperties() ?? []));
+				$entity->setConfidentiality($rule->describe(object: $stored, now: $now));
+			}
+		);
+	}//end attachConfidentiality()
 
 	/**
 	 * The entity's data, always as an array.

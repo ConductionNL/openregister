@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
-class TranslationProjectionService implements TranslationProjectionServiceInterface {
+class TranslationProjectionService implements TranslationProjectionServiceInterface, SourceLanguagesInterface {
 
 	/**
 	 * Constructor.

@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\NullLogger;
 use Stringable;
+use OCA\OpenRegister\Service\Archival\AnnotatedRow;
 
 /**
  * Minimal in-test capturing logger.
@@ -59,7 +60,8 @@ final class RetentionEvaluatorTest extends TestCase {
 
 	public function testDeclaredFactsAreResolvedForTheRow(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => ['default' => 'P30D'],
 				'aggregationLevel' => 'Dossier',
 				'useRestriction' => ['type' => 'Overig', 'description' => 'Lopend bezwaar'],
@@ -69,8 +71,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					'endProperty' => 'einddatum',
 				],
 			],
-			row: ['startdatum' => '2021-01-01', 'einddatum' => '2021-12-31T23:59:59+00:00'],
-			createdAt: $this->created()
+				row: ['startdatum' => '2021-01-01', 'einddatum' => '2021-12-31T23:59:59+00:00'],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame('Dossier', $result['aggregationLevel']);
@@ -85,35 +88,60 @@ final class RetentionEvaluatorTest extends TestCase {
 
 	public function testDeclaredPartiesAreReadOffTheRow(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['default' => 'P30D'], 'parties' => 'aanvrager'],
-			row: ['aanvrager' => ['naam' => 'Gemeente Zuiddrecht', 'id' => 'org-1']],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'P30D'], 'parties' => 'aanvrager'],
+				row: ['aanvrager' => ['naam' => 'Gemeente Zuiddrecht', 'id' => 'org-1']],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame([['role' => 'aanvrager', 'name' => 'Gemeente Zuiddrecht', 'id' => 'org-1']], $result['parties']);
 	}//end testDeclaredPartiesAreReadOffTheRow()
 
+	/**
+	 * @spec openspec/changes/archival-conformance/tasks.md#task-1.3
+	 */
+	public function testDeclaredContainmentListsThePartsOffTheRow(): void {
+		$result = $this->makeEvaluator()->evaluate(
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'P30D'], 'containment' => 'onderdelen'],
+				row: ['onderdelen' => ['child-1', ['uuid' => 'child-2', 'naam' => 'Bijlage B']]],
+				createdAt: $this->created()
+			)
+		);
+
+		self::assertSame(
+			['property' => 'onderdelen', 'parts' => [['id' => 'child-1'], ['id' => 'child-2', 'name' => 'Bijlage B']]],
+			$result['containment']
+		);
+	}//end testDeclaredContainmentListsThePartsOffTheRow()
+
 	public function testAnUndeclaredFactIsAbsent(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['default' => 'P30D']],
-			row: [],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'P30D']],
+				row: [],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertArrayNotHasKey('aggregationLevel', $result);
 		self::assertArrayNotHasKey('useRestriction', $result);
 		self::assertArrayNotHasKey('temporalCoverage', $result);
 		self::assertArrayNotHasKey('parties', $result);
+		self::assertArrayNotHasKey('containment', $result);
 	}//end testAnUndeclaredFactIsAbsent()
 
 	public function testTemporalCoverageIsAbsentWhenTheRowDoesNotCarryTheProperty(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => ['default' => 'P30D'],
 				'temporalCoverage' => ['type' => 'Looptijd', 'startProperty' => 'startdatum'],
 			],
-			row: ['iets anders' => 'x'],
-			createdAt: $this->created()
+				row: ['iets anders' => 'x'],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertArrayNotHasKey('temporalCoverage', $result);
@@ -121,7 +149,8 @@ final class RetentionEvaluatorTest extends TestCase {
 
 	public function testTemporalCoverageDropsAnEndDateTheSchemaCannotUse(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => ['default' => 'P30D'],
 				'temporalCoverage' => [
 					'type' => 'Looptijd',
@@ -129,8 +158,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					'endProperty' => 'einddatum',
 				],
 			],
-			row: ['startdatum' => '2021', 'einddatum' => 'onbekend'],
-			createdAt: $this->created()
+				row: ['startdatum' => '2021', 'einddatum' => 'onbekend'],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame(['type' => 'Looptijd', 'start' => '2021'], $result['temporalCoverage']);
@@ -139,7 +169,8 @@ final class RetentionEvaluatorTest extends TestCase {
 	public function testFirstMatchingRuleWins(): void {
 		$evaluator = $this->makeEvaluator();
 		$result = $evaluator->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => [
 					'default' => 'P30D',
 					'rules' => [
@@ -148,8 +179,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					],
 				],
 			],
-			row: ['statusCode' => 200],
-			createdAt: $this->created()
+				row: ['statusCode' => 200],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame('PT1H', $result['effectiveRetention']);
@@ -160,7 +192,8 @@ final class RetentionEvaluatorTest extends TestCase {
 	public function testFallsBackToDefaultWhenNoRuleMatches(): void {
 		$evaluator = $this->makeEvaluator();
 		$result = $evaluator->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => [
 					'default' => 'P30D',
 					'rules' => [
@@ -168,8 +201,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					],
 				],
 			],
-			row: ['statusCode' => 500],
-			createdAt: $this->created()
+				row: ['statusCode' => 500],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame('P30D', $result['effectiveRetention']);
@@ -180,7 +214,8 @@ final class RetentionEvaluatorTest extends TestCase {
 	public function testSecondRuleMatchesWhenFirstDoesNot(): void {
 		$evaluator = $this->makeEvaluator();
 		$result = $evaluator->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => [
 					'default' => 'P30D',
 					'rules' => [
@@ -189,8 +224,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					],
 				],
 			],
-			row: ['statusCode' => 500],
-			createdAt: $this->created()
+				row: ['statusCode' => 500],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame('P7D', $result['effectiveRetention']);
@@ -202,7 +238,8 @@ final class RetentionEvaluatorTest extends TestCase {
 		$evaluator = $this->makeEvaluator($logger);
 
 		$result = $evaluator->evaluate(
-			annotation: [
+			subject: new AnnotatedRow(
+				annotation: [
 				'retention' => [
 					'default' => 'P30D',
 					'rules' => [
@@ -211,8 +248,9 @@ final class RetentionEvaluatorTest extends TestCase {
 					],
 				],
 			],
-			row: ['statusCode' => 200],
-			createdAt: $this->created()
+				row: ['statusCode' => 200],
+				createdAt: $this->created()
+			)
 		);
 
 		// Falls through to the second rule (which is well-formed and matches).
@@ -224,26 +262,32 @@ final class RetentionEvaluatorTest extends TestCase {
 	public function testAnnotationWithoutRetentionThrows(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->makeEvaluator()->evaluate(
-			annotation: [],
-			row: [],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: [],
+				row: [],
+				createdAt: $this->created()
+			)
 		);
 	}//end testAnnotationWithoutRetentionThrows()
 
 	public function testAnnotationWithoutDefaultThrows(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['rules' => []]],
-			row: [],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['rules' => []]],
+				row: [],
+				createdAt: $this->created()
+			)
 		);
 	}//end testAnnotationWithoutDefaultThrows()
 
 	public function testEmptyRulesFallsBackToDefault(): void {
 		$result = $this->makeEvaluator()->evaluate(
-			annotation: ['retention' => ['default' => 'PT1H']],
-			row: [],
-			createdAt: $this->created()
+			subject: new AnnotatedRow(
+				annotation: ['retention' => ['default' => 'PT1H']],
+				row: [],
+				createdAt: $this->created()
+			)
 		);
 
 		self::assertSame('PT1H', $result['effectiveRetention']);

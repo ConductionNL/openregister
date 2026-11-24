@@ -34,6 +34,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /*
  * Unit tests for SchemasController
@@ -77,11 +78,11 @@ class SchemasControllerTest extends TestCase {
 	/**
 	 * The rename check the container hands out, or null for none.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck|null
+	 * @var \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface|null
 	 */
-	private ?\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck $renameCheck = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface $renameCheck = null;
 
-	private ?\OCA\OpenRegister\Service\Form\FormDependentsCheck $formCheck = null;
+	private ?\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface $formCheck = null;
 
 	private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
 
@@ -144,7 +145,7 @@ class SchemasControllerTest extends TestCase {
 
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action): bool => in_array($action, $this->heldActions, true)
+			fn (PermissionAsk $ask): bool => in_array($ask->action, $this->heldActions, true)
 		);
 		$grantCeiling = new \OCA\OpenRegister\Service\Authorization\GrantCeiling(groups: $groupManager, permissions: $permissions);
 
@@ -167,11 +168,11 @@ class SchemasControllerTest extends TestCase {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class) {
 					return $this->formCheck;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class) {
 					return $this->renameCheck;
 				}
 
@@ -180,7 +181,6 @@ class SchemasControllerTest extends TestCase {
 		);
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->config,
 			$this->schemaMapper,
@@ -329,6 +329,26 @@ class SchemasControllerTest extends TestCase {
 
 		$this->assertSame(201, $result->getStatus());
 	}//end testCreateReturnsCreatedSchema()
+
+	/**
+	 * A create answers with the schema and the advisory annotations its save ignored.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testCreateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Meeting');
+		$discarded = [['family' => 'aggregations', 'schema' => 'meeting', 'messages' => ['Unknown filter field "x".']]];
+		$this->request->method('getParams')->willReturn(['title' => 'Meeting']);
+		$this->schemaMapper->method('createFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+
+		$result = $this->controller->create();
+
+		$this->assertSame(201, $result->getStatus());
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Meeting', $result->getData()['title']);
+		$this->assertSame(1, $result->getData()['id']);
+	}//end testCreateListsTheDiscardedAnnotations()
 
 	public function testCreateRemovesInternalParams(): void {
 		$schema = $this->createRealSchema(1, 'Test');
@@ -744,7 +764,7 @@ class SchemasControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
 		$assessment = ['refused' => true, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]];
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->expects($this->once())->method('assess')
 			->with($this->callback(static fn (Schema $proposed): bool => $proposed->getRequired() === ['title', 'priority'] && $proposed !== $schema))
 			->willReturn($assessment);
@@ -769,7 +789,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface::class);
 		$check->method('assess')->willReturn(['refused' => false, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]]);
 		$check->expects($this->once())->method('apply')->willReturn([['id' => 'form-a', 'outcome' => 'unpublished']]);
 		$this->formCheck = $check;
@@ -815,7 +835,7 @@ class SchemasControllerTest extends TestCase {
 		$changeSet = new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([['property' => 'summary', 'kind' => 'renamed', 'old' => 'summary', 'new' => 'description']], 'breaking', 'major');
 		$this->schemaVersioningService->method('classify')->willReturn($changeSet);
 		$warning = ['flow' => 'flow-a', 'step' => 'start', 'field' => 'summary', 'renamedTo' => 'description', 'message' => 'Flow "flow-a" step "start" watches "summary".'];
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->expects($this->once())->method('warningsFor')->with($schema, $changeSet)->willReturn([$warning]);
 		$this->renameCheck = $check;
 
@@ -837,15 +857,43 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
+		$check->method('warningsFor')->willReturn([]);
+		$this->renameCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		// The schema's fields as before, beside an empty list of ignored annotations.
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(array_merge($schema->jsonSerialize(), ['warnings' => []]), $result->getData());
+	}//end testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore()
+
+	/**
+	 * An update lists the advisory annotations its save ignored, read right after the save.
+	 *
+	 * @spec openspec/changes/aggregation-dialect-repair/specs/annotation-validation-surfacing/spec.md
+	 */
+	public function testAnUpdateListsTheDiscardedAnnotations(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$discarded = [
+			['family' => 'calculations', 'schema' => 'ticket', 'messages' => ['Unknown op.']],
+			['family' => 'quality', 'schema' => 'ticket', 'messages' => ['Bad weight.']],
+		];
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->schemaMapper->method('discardedAnnotations')->willReturn($discarded);
+		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->method('warningsFor')->willReturn([]);
 		$this->renameCheck = $check;
 
 		$result = $this->controller->update(1);
 
 		$this->assertSame(200, $result->getStatus());
-		$this->assertSame($schema, $result->getData());
-	}//end testAnUpdateWithoutFlowWarningsReturnsTheSchemaAsBefore()
+		$this->assertSame($discarded, $result->getData()['warnings']);
+		$this->assertSame('Ticket', $result->getData()['title']);
+	}//end testAnUpdateListsTheDiscardedAnnotations()
 
 	/**
 	 * A rename check that throws is logged and never fails the save.
@@ -858,7 +906,7 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
 		$this->request->method('getParams')->willReturn(['properties' => ['title' => ['type' => 'string']]]);
 		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
-		$check = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck::class);
+		$check = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface::class);
 		$check->method('warningsFor')->willThrowException(new \RuntimeException('flows unreadable'));
 		$this->renameCheck = $check;
 		$warnings = [];
@@ -2016,7 +2064,6 @@ class SchemasControllerTest extends TestCase {
 		);
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->config,
 			$schemaMapper,

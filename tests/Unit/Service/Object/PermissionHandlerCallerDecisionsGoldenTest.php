@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCP\IAppConfig;
@@ -66,6 +67,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Rbac\ProvenanceOptions
  * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
  * @uses \OCA\OpenRegister\Service\Rbac\StagedDenial
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 
@@ -227,7 +230,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 				)
 			);
 			$answers["allowed $action"] = $this->answer(
-				fn () => $this->newHandler($caller)->hasPermission(schema: $schema, action: $action, userId: $userId, object: $object)
+				fn () => $this->newHandler($caller)->hasPermission(ask: (new PermissionAsk(schema: $schema, action: $action))->askedBy(userId: $userId, objectOwner: null)->about(object: $object, register: null))
 			);
 		}
 

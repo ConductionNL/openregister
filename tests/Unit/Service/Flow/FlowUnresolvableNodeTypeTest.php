@@ -126,6 +126,10 @@ class UnresolvableNodeSubject {
  * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  * @uses \OCA\OpenRegister\Service\Flow\StepDispatch
+ * @uses \OCA\OpenRegister\Kernel\Compat\ImplementationForm
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeInvoker
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStateDelta
+ * @uses \OCA\OpenRegister\Service\Flow\FlowErrorPolicy
  */
 class FlowUnresolvableNodeTypeTest extends TestCase {
 

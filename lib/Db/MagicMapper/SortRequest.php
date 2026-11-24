@@ -57,6 +57,14 @@ final class SortRequest {
 	public array $sortLanguages = [];
 
 	/**
+	 * The accent folding of the search the order belongs to; null for the
+	 * historical comparison.
+	 *
+	 * @var SearchFolding|null
+	 */
+	public ?SearchFolding $folding = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * The search term, read history, date-time columns and language chain

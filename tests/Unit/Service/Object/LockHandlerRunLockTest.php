@@ -207,7 +207,7 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
 		$recorded = [];
-		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$this->audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$recorded) {
 				$recorded = ['action' => $action, 'context' => $context];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);

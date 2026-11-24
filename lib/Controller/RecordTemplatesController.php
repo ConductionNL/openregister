@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
@@ -87,7 +86,7 @@ class RecordTemplatesController extends Controller {
 		IRequest $request,
 		RecordTemplatesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->templates = $services->templates;
 		$this->viewers = $services->viewers;
 		$this->logger = $services->logger;
