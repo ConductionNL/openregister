@@ -112,6 +112,7 @@ final class IntegrationWiring {
 		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
 		CloudEventFormatterInterface::class => CloudEventFormatter::class,
 		ConnectionStatusReporterInterface::class => ConnectionReporter::class,
+		\OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface::class => ConnectionReporter::class,
 		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
