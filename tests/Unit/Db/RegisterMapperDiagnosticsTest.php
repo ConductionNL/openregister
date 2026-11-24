@@ -90,9 +90,10 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	 * @return RegisterMapper the mapper under test
 	 */
 	private function mapperFindingNothing(bool $rowExistsBeforeFilters = false): RegisterMapper {
-		// The first execution is the unfiltered existence probe, the second the
-		// filtered lookup: a row for the probe and none after the filters models
-		// "a filter removed the row".
+		// The filtered lookup runs first, one execution per identifier arm (three
+		// for the numeric '19' the tests use), and the unfiltered existence probe
+		// runs only after every arm missed: a row for the probe and none after the
+		// filters models "a filter removed the row".
 		$executions = 0;
 		$this->db->method('getQueryBuilder')->willReturnCallback(
 			function () use (&$executions, $rowExistsBeforeFilters) {
@@ -117,8 +118,9 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	}
 
 	/**
-	 * A query builder that yields zero rows, except that the first execution
-	 * (the unfiltered probe) yields `$probeRow` when one is given.
+	 * A query builder that yields zero rows, except that the fourth execution
+	 * (the unfiltered probe after the three filtered id, slug and uuid arms)
+	 * yields `$probeRow` when one is given.
 	 *
 	 * @param array|false $probeRow    The row the first execution returns, or false for none
 	 * @param int         $executions  Shared execution counter
@@ -156,7 +158,7 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 				// return false to prove uniqueness. Both reader names (`fetch()` up
 				// to NC 34, `fetchAssociative()` from NC 35) share one cursor.
 				$row = false;
-				if ($executions === 1) {
+				if ($executions === 4) {
 					$row = $probeRow;
 				}
 

@@ -759,6 +759,7 @@ Db/HydrateBySettersTrait.php,15,Db,Core,Core/Db/HydrateBySettersTrait.php,0,,Cor
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
+Db/IdentifierArms.php,112,Db,Db,Db/IdentifierArms.php,0,,Core
 Db/ImportPreview.php,94,Db,Configuration,Configuration/Db/ImportPreview.php,0,,Configuration
 Db/ImportPreviewMapper.php,61,Db,Configuration,Configuration/Db/ImportPreviewMapper.php,0,,Configuration
 Db/ImportPreviewRow.php,55,Db,Configuration,Configuration/Db/ImportPreviewRow.php,0,,Configuration
@@ -862,6 +863,7 @@ Db/RegisterMapperHelper.php,27,Db,Service,Service/Db/RegisterMapperHelper.php,0,
 Db/RegisterMapperInterface.php,26,Db,Service,Service/Db/RegisterMapperInterface.php,1,,Kernel
 Db/RegistrySubscription.php,62,Db,Service,Service/Db/RegistrySubscription.php,0,,Core
 Db/RegistrySubscriptionMapper.php,59,Db,Service,Service/Db/RegistrySubscriptionMapper.php,0,,Core
+Db/RequestIdentityMap.php,35,Db,Db,Db/RequestIdentityMap.php,0,,Core
 Db/RuleRun.php,45,Db,Flows,Flows/Db/RuleRun.php,0,399,Processes
 Db/RuleRunMapper.php,138,Db,Flows,Flows/Db/RuleRunMapper.php,0,205,Processes
 Db/RuleRunSummary.php,32,Db,Flows,Flows/Db/RuleRunSummary.php,0,,Processes
