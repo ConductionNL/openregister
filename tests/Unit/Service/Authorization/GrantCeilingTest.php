@@ -31,6 +31,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Unit tests for {@see GrantCeiling}.
@@ -80,12 +81,12 @@ class GrantCeilingTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId=null): bool {
+			function (PermissionAsk $ask): bool {
 				if ($this->broken === true) {
 					throw new RuntimeException('groups unavailable');
 				}
 
-				return $userId === 'functioneel-beheer' && in_array($action, $this->held, true);
+				return $ask->userId === 'functioneel-beheer' && in_array($ask->action, $this->held, true);
 			}
 		);
 
