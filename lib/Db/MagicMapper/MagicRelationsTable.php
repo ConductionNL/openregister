@@ -31,7 +31,8 @@ use OCP\IDBConnection;
  *
  * This is the inverse side of a relation: the object pointed at learns who
  * points at it. It changes no property of that object, so it writes no
- * version, audit-trail entry or object event, the same as the slug backfill.
+ * version; MagicMapper::appendRelation() dispatches the object's update event
+ * once this write changed the row.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */

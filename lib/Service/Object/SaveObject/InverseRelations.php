@@ -101,9 +101,10 @@ final class InverseRelations {
 	/**
 	 * Add the saved object to the one object a relation points at.
 	 *
-	 * Only the related object's `_relations` (and `_updated`) are written: no
-	 * read of the object and no full update, because none of its properties
-	 * change. A failure is logged and the next relation is processed.
+	 * Only the related object's `_relations` (and `_updated`) are written, with
+	 * no full update, because none of its properties change; the mapper still
+	 * dispatches the object's update event when the column changed. A failure
+	 * is logged and the next relation is processed.
 	 *
 	 * @param InverseRelationWrite $write The write, on one relation.
 	 *
