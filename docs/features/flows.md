@@ -444,6 +444,19 @@ Keys: `uuid` (default: the item's object), `duration` (default one hour),
 hour), `process`, `subjectRole`. A held lock parks the run and retries; when the
 wait runs out the step fails. It never breaks someone else's lock.
 
+**`openregister.tag-object`** (Tag an object). Adds or removes a Nextcloud
+tag on each item's object. Keys: `operation` (`add` or `remove`), `tag`
+(placeholders allowed), `color` (set on a tag it creates, or on an existing tag
+without one), `uuid` (default: the item's object), `createIfMissing`. The step
+acts as `runAs`, else whoever triggered the run, and the object must be one that
+identity may update; otherwise the step fails. Adding a tag the object already
+has, or removing one it lacks, changes nothing, so a flow triggered on a tag
+event does not start again because of its own step.
+
+```json
+{ "operation": "add", "tag": "urgent", "color": "#d10000" }
+```
+
 **`openregister.unlock-object`** (Unlock an object). Keys: `uuid`. Releases a
 lock this run holds. Optional: a run releases all its locks when it ends,
 however it ends. This step only releases sooner.

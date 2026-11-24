@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
 use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
@@ -832,7 +833,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
 		);
 		return new RelatedRowQueryApplier(
-			lookups: new RelatedRowLookups(schemaMapper: $this->schemaMapper, tableHandler: $this->tableHandler),
+			lookups: new RelatedRowLookups(schemaMapper: $this->schemaMapper, tableHandler: $this->tableHandler, registerMapper: $this->registerMapper),
 			db: $this->db,
 			logger: $this->logger,
 			access: $relatedRowAccess
@@ -10049,7 +10050,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function ultraFastBulkSaveSingleSchema(MagicBulkSaveGroup $group): array {
 		$self = ($group->insertObjects[0] ?? [])['@self'] ?? [];
 		$group->register ??= $this->findBulkRegister(id: $self['register'] ?? null);
-		$group->schema   ??= $this->findBulkSchema(id: $self['schema'] ?? null);
+		$group->schema   ??= $this->findBulkSchema(id: $self['schema'] ?? null, register: $group->register);
 
 		$register = $group->register;
 		$schema   = $group->schema;
@@ -10094,19 +10095,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * The schema a bulk save names in its first object, or null.
 	 *
-	 * @param mixed $id The schema id from `@self`, or null.
+	 * @param mixed         $id       The schema id from `@self`, or null.
+	 * @param Register|null $register The bulk save's register; a slug is looked up among its schemas first.
 	 *
 	 * @return Schema|null The schema, or null when absent or not found.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function findBulkSchema(mixed $id): ?Schema {
+	private function findBulkSchema(mixed $id, ?Register $register = null): ?Schema {
 		if ($id === null) {
 			return null;
 		}
 
 		try {
-			return $this->schemaMapper->find(id: $id, _multitenancy: false);
+			return (new SchemaRefInRegister(schemas: $this->schemaMapper))->find(schemaRef: $id, register: $register, _multitenancy: false);
 		} catch (\Exception $e) {
 			$this->logger->warning(message: '[MagicMapper] Failed to resolve schema', context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]);
 			return null;
@@ -10580,7 +10583,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				// Passed through as given, NOT cast: find() resolves an id, a uuid
 				// or a slug, and `(int)` turned every non-numeric identifier into 0.
 				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+				// Inside that register first: a slug two apps share names its schema.
+				$schema = (new SchemaRefInRegister(schemas: $this->schemaMapper))
+					->find(schemaRef: $schemaId, register: $register, _rbac: false, _multitenancy: false);
 
 				$query['_rbac'] = $_rbac;
 				$query['_multitenancy'] = $_multitenancy;
@@ -10780,7 +10785,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if ($registerId !== null && $schemaId !== null) {
 			try {
 				$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
-				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+				// Inside that register first: a slug two apps share names its schema.
+				$schema = (new SchemaRefInRegister(schemas: $this->schemaMapper))
+					->find(schemaRef: $schemaId, register: $register, _rbac: false, _multitenancy: false);
 
 				return $this->countObjectsInRegisterSchemaTable(
 					query: $query,

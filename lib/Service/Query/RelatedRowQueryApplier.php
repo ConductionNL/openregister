@@ -25,7 +25,9 @@ namespace OCA\OpenRegister\Service\Query;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Support\OrderParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -152,7 +154,10 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
 	public function apply(RelatedRowFilterTarget $target, array $query, ?Schema $schema = null): int {
-		$filters = array_merge($this->filtersIn(query: $query), $this->referenceFiltersIn(query: $query, schema: $schema));
+		$filters = array_merge(
+			$this->filtersIn(query: $query),
+			$this->referenceFiltersIn(query: $query, schema: $schema, register: $target->register)
+		);
 		if ($filters === []) {
 			return 0;
 		}
@@ -167,6 +172,98 @@ class RelatedRowQueryApplier {
 	}//end apply()
 
 	/**
+	 * Join the object a reference property points to, for a facet over one of its fields.
+	 *
+	 * `_facets[_ref][<property>][<field>]` counts the queried objects per value
+	 * of `<field>` on the object `<property>` points to. The referenced row is
+	 * INNER JOINed under the same join, soft-delete exclusion, access predicate
+	 * and organisation scope a `_ref` filter's EXISTS clause carries, so a
+	 * referenced object the caller may not read adds no bucket and no count.
+	 *
+	 * Refuses (HTTP 400) what the filter refuses. A reference property or field
+	 * the caller may not read returns null, and the facet is omitted, the way
+	 * a facet over an unreadable property of the queried schema is.
+	 *
+	 * @param RelatedRowFilterTarget $target   The outer query (aliased `t`), its register and scope resolver.
+	 * @param Schema                 $schema   The schema being queried.
+	 * @param string                 $property The reference property.
+	 * @param string                 $field    The field of the referenced schema.
+	 *
+	 * @return string|null The SQL expression of the referenced field to group by, or null to omit the facet.
+	 *
+	 * @throws InvalidArgumentException When the property or field is unusable.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function joinReferenceForFacet(RelatedRowFilterTarget $target, Schema $schema, string $property, string $field): ?string {
+		$parser     = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name));
+		$referenced = $parser->facetTarget(property: $property, field: $field, schema: $schema);
+		$filter     = $this->shapedForProperty(
+			schema: $schema,
+			filter: new RelatedRowFilter(
+				schema: (string)$referenced->getId(),
+				foreignKey: $property,
+				conditions: [['field' => $field, 'operator' => 'eq', 'value' => null]],
+				direction: RelatedRowFilter::DIRECTION_FORWARD
+			)
+		);
+
+		if ($this->mayReadProperty(schema: $schema, property: $property) === false
+			|| $this->mayFacetOn(filter: $filter, schema: $referenced) === false
+		) {
+			return null;
+		}
+
+		$engine   = (new RelatedRowExistsClause())->engineFor(db: $this->db, logger: $this->logger);
+		$run      = new RelatedRowApplyRun(
+			qb: $target->qb,
+			register: $target->register,
+			organisationScopeFor: $target->organisationScopeFor,
+			engine: $engine
+		);
+		$register = $this->registerFor(run: $run, filter: $filter);
+		if ($this->matchesNothing(run: $run, schema: $referenced, register: $register) === true) {
+			return 'NULL';
+		}
+
+		$source   = new RelatedRowSource(
+			schema: $referenced,
+			tableName: $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $referenced),
+			alias: 'rf0',
+			scope: ($run->organisationScopeFor)($referenced, $register->getId())
+		);
+		$subquery = $this->subquery(run: $run, source: $source);
+		$clause   = new RelatedRowExistsClause();
+		$on       = $clause->joinOn(filter: $filter, subquery: $subquery);
+		foreach ($on['parameters'] as $name => $value) {
+			$target->qb->setParameter($name, $value);
+		}
+
+		$target->qb->innerJoin(self::OUTER_ALIAS, $source->tableName, $source->alias, $on['sql']);
+
+		return $clause->innerFieldExpression(subquery: $subquery, field: $field);
+	}//end joinReferenceForFacet()
+
+	/**
+	 * Whether the caller may count the referenced objects by the filter's field.
+	 *
+	 * @param RelatedRowFilter $filter The forward filter naming the field.
+	 * @param Schema           $schema The referenced schema.
+	 *
+	 * @return bool
+	 */
+	private function mayFacetOn(RelatedRowFilter $filter, Schema $schema): bool {
+		try {
+			$this->access->assertReadable(filter: $filter, schema: $schema);
+		} catch (InvalidArgumentException $e) {
+			// ExplicitRevealQueryException is one too: a value shown only on request is not counted.
+			return false;
+		}
+
+		return true;
+	}//end mayFacetOn()
+
+	/**
 	 * Narrow the run's query by one block: no row at all when its table does not exist yet.
 	 *
 	 * @param RelatedRowApplyRun $run    The query, register, scope and engine, and the count so far.
@@ -179,16 +276,17 @@ class RelatedRowQueryApplier {
 	private function applyOne(RelatedRowApplyRun $run, RelatedRowFilter $filter): void {
 		$alias = sprintf('rel%d', $run->applied);
 		$run->applied++;
-		$schema       = $this->resolveSchema(name: $filter->schema);
-		$relatedTable = $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $run->register, schema: $schema);
+		$schema   = $this->resolveSchema(name: $filter->schema);
+		$register = $this->registerFor(run: $run, filter: $filter);
+		$relatedTable = $this->lookups->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
-		if ($this->matchesNothing(run: $run, schema: $schema) === true) {
+		if ($this->matchesNothing(run: $run, schema: $schema, register: $register) === true) {
 			return;
 		}
 
 		$this->access->assertReadable(filter: $filter, schema: $schema);
 
-		$scope  = ($run->organisationScopeFor)($schema, $run->register->getId());
+		$scope  = ($run->organisationScopeFor)($schema, $register->getId());
 		$source = new RelatedRowSource(schema: $schema, tableName: $relatedTable, alias: $alias, scope: $scope);
 		$rendered = (new RelatedRowExistsClause())->render(filter: $filter, subquery: $this->subquery(run: $run, source: $source));
 		$this->addClause(qb: $run->qb, rendered: $rendered);
@@ -200,13 +298,14 @@ class RelatedRowQueryApplier {
 	 * A schema that has never stored an object has no table yet, so no row can
 	 * match. Same answer the list path gives for a missing table.
 	 *
-	 * @param RelatedRowApplyRun $run    The query and register.
-	 * @param Schema             $schema The related schema.
+	 * @param RelatedRowApplyRun $run      The query.
+	 * @param Schema             $schema   The related schema.
+	 * @param Register           $register The register the related schema is read in.
 	 *
 	 * @return bool True when the query was narrowed to nothing.
 	 */
-	private function matchesNothing(RelatedRowApplyRun $run, Schema $schema): bool {
-		if ($this->lookups->tableHandler->existsTableForRegisterSchema(register: $run->register, schema: $schema) === true) {
+	private function matchesNothing(RelatedRowApplyRun $run, Schema $schema, Register $register): bool {
+		if ($this->lookups->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema) === true) {
 			return false;
 		}
 
@@ -273,8 +372,9 @@ class RelatedRowQueryApplier {
 	/**
 	 * Every `_ref` block in a query, read against the queried schema.
 	 *
-	 * @param array<mixed> $query  The request query.
-	 * @param Schema|null  $schema The schema being queried.
+	 * @param array<mixed>  $query    The request query.
+	 * @param Schema|null   $schema   The schema being queried.
+	 * @param Register|null $register The register the query runs in; a `$ref` slug resolves among its schemas first.
 	 *
 	 * @return array<int, RelatedRowFilter> The filters.
 	 *
@@ -282,7 +382,7 @@ class RelatedRowQueryApplier {
 	 *
 	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function referenceFiltersIn(array $query, ?Schema $schema): array {
+	private function referenceFiltersIn(array $query, ?Schema $schema, ?Register $register = null): array {
 		if (array_key_exists(ReferenceFilterParser::KEY, $query) === false) {
 			return [];
 		}
@@ -295,51 +395,112 @@ class RelatedRowQueryApplier {
 			);
 		}
 
-		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name));
+		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name, register: $register));
 		$filters = $parser->parse(query: $query, schema: $schema);
-		foreach ($filters as $filter) {
-			$this->refuseListReference(schema: $schema, property: $filter->foreignKey);
-		}
-
-		return $filters;
+		return array_map(
+			fn (RelatedRowFilter $filter): RelatedRowFilter => $this->shapedForProperty(schema: $schema, filter: $filter),
+			$filters
+		);
 	}//end referenceFiltersIn()
 
 	/**
-	 * Refuse a `_ref` block on a property that holds a list of references.
+	 * The filter shaped by its reference property: through the list, and in the register it names.
 	 *
-	 * The forward clause joins by equality on one uuid. Run against a list
-	 * column it would match nothing (or fail on the column type), answering a
-	 * narrow question with a wrong set, so the block is refused until the
-	 * clause joins through the list.
+	 * A property holding one uuid joins by equality; a property holding a list
+	 * joins by JSON containment, so the object matches when ANY referenced
+	 * object in its list satisfies every condition of the block. A property
+	 * naming a `register` reads the referenced schema there (D-4); without one
+	 * the referenced schema is read in the queried register.
 	 *
-	 * @param Schema $schema   The schema being queried.
-	 * @param string $property The reference property.
+	 * @param Schema           $schema The schema being queried.
+	 * @param RelatedRowFilter $filter The forward filter of one `_ref` block.
 	 *
-	 * @return void
+	 * @return RelatedRowFilter
 	 *
-	 * @throws InvalidArgumentException When the property holds a list.
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function refuseListReference(Schema $schema, string $property): void {
-		$config = (($schema->getProperties() ?? [])[$property] ?? []);
-		if (is_array($config) === true && ($config['type'] ?? null) === 'array') {
-			throw new InvalidArgumentException(
-				sprintf(
-					'%s[%s]: filtering through a list of references is not supported yet; only a property holding one reference can be filtered through.',
-					ReferenceFilterParser::KEY,
-					$property
-				)
+	private function shapedForProperty(Schema $schema, RelatedRowFilter $filter): RelatedRowFilter {
+		$config = (($schema->getProperties() ?? [])[$filter->foreignKey] ?? []);
+		if (is_array($config) === false) {
+			return $filter;
+		}
+
+		return new RelatedRowFilter(
+			schema: $filter->schema,
+			foreignKey: $filter->foreignKey,
+			conditions: $filter->conditions,
+			direction: $filter->direction,
+			throughList: (($config['type'] ?? null) === 'array'),
+			register: ReferenceFilterParser::registerOf(config: $config)
+		);
+	}//end shapedForProperty()
+
+	/**
+	 * The register a filter's related schema is read in: the one it names, else the queried one.
+	 *
+	 * 🔴 A REGISTER THAT CANNOT BE FOUND IS REFUSED, NOT REPLACED BY THE QUERIED
+	 * ONE. Reading the queried register instead would look the referenced
+	 * schema up in a table it does not live in and answer "nothing matches" to
+	 * a question that was never asked.
+	 *
+	 * @param RelatedRowApplyRun $run    The query and the queried register.
+	 * @param RelatedRowFilter   $filter The filter.
+	 *
+	 * @return Register The register.
+	 *
+	 * @throws InvalidArgumentException When the named register cannot be found.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	private function registerFor(RelatedRowApplyRun $run, RelatedRowFilter $filter): Register {
+		$named = $filter->register;
+		if ($named === null || $named === (string)$run->register->getId()) {
+			return $run->register;
+		}
+
+		$mapper = $this->lookups->registerMapper;
+		if ($mapper === null && ctype_digit($named) === true) {
+			$register = new Register();
+			$register->setId((int)$named);
+			return $register;
+		}
+
+		try {
+			if ($mapper !== null) {
+				return $mapper->find(id: $named);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[RelatedRowQueryApplier] The register a reference property names was not found',
+				context: ['register' => $named, 'error' => $e->getMessage()]
 			);
 		}
-	}//end refuseListReference()
+
+		throw new InvalidArgumentException(
+			sprintf('The register \'%s\' that property \'%s\' references cannot be found.', $named, $filter->foreignKey)
+		);
+	}//end registerFor()
 
 	/**
 	 * The schema a reference property's `$ref` names (slug, id or uuid), or null when none.
 	 *
-	 * @param string $name The identifier.
+	 * A slug is looked up among the register's own schemas first: slugs are
+	 * unique within a register, not across the instance, so the register the
+	 * query runs in answers before the instance-wide lookup does.
+	 *
+	 * @param string        $name     The identifier.
+	 * @param Register|null $register The register the query runs in.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function findSchema(string $name): ?Schema {
+	private function findSchema(string $name, ?Register $register = null): ?Schema {
+		$scoped = (new SchemaRefInRegister(schemas: $this->lookups->schemaMapper))->findInRegister(schemaRef: $name, register: $register);
+		if ($scoped !== null) {
+			return $scoped;
+		}
+
 		try {
 			return $this->resolveSchema(name: $name);
 		} catch (InvalidArgumentException $e) {
