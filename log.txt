@@ -4498,3 +4498,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T22:26:51Z precheck-20261124T220757-1d852745 GREEN tree f0b49b2426 on dev 85883fab13 prs 1 front=skip: Tests: 65295, Assertions: 230965, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T22:28:15Z integrator-20261124T184854-1c90b6ab AUTOPARK openregister#10635 df149781 sbom: package-lock.json changed without sbom.cdx.json (tree d7ab647880)
 2026-11-24T22:33:37Z integrator-20261124T184854-1c90b6ab AUTOPARK openregister#10640 ed7f06cd sbom: composer.lock changed without sbom.cdx.json (tree 0c6d374cc7)
+2026-11-24T22:34:42Z precheck-20261124T214901-798dd25c CONFLICT-DEV #10499 9fe2a349
