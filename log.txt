@@ -3991,3 +3991,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T09:12:24Z integrator-20261124T082919-e26a4372 MERGED-TREE ea126aecab: 8 PRs, main now cac830e00f = tested tree
 2026-11-24T09:18:36Z session-20261124T091836-84d6a7fe or-fix-1: lane 1 checked 10451 10491 10531 10541 10581 10621 10631 10641 10981 11021; all merge clean with main; approved ones green on Architecture+touched tests merged with main (only inherited reds: AreaMapperRegistrars, ReservedColumnNames, FlowEngineOversight, order-dependent ExampleSetTalkStore); 10631/10641 wait on maintainer decision already asked; nothing pushed
+2026-11-24T09:19:07Z integrator-20261124T082919-e26a4372 RED tree b31c1744c2 prs 6 front=red: Tests: 63898, Assertions: 225635, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PH; first failures: FAIL src/services/initial-data.golden.spec.js
