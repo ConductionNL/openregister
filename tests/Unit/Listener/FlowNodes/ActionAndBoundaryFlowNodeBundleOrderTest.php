@@ -76,6 +76,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
@@ -188,6 +189,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 			$this->node('triggerObject', TriggerObjectNodeInterface::class),
 			$this->node('triggerSchedule', TriggerScheduleNodeInterface::class),
 			$this->node('triggerManual', TriggerManualNodeInterface::class),
+			$this->node('triggerCalendar', TriggerCalendarNodeInterface::class),
 		);
 	}
 
@@ -213,7 +215,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	public function testTriggersListObjectScheduleManual(): void {
 		$nodes = $this->triggers()->nodes();
-		$this->assertSame($this->pick(['triggerObject', 'triggerSchedule', 'triggerManual']), $nodes);
+		$this->assertSame($this->pick(['triggerObject', 'triggerSchedule', 'triggerManual', 'triggerCalendar']), $nodes);
 	}
 
 	public function testActionsFlattenReshapingMessagingHumanThenLocks(): void {
@@ -237,7 +239,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 		$boundary = new BoundaryFlowNodes($this->cases(), $this->triggers());
 
 		$this->assertSame(
-			$this->pick(['caseOpen', 'caseAdvance', 'triggerObject', 'triggerSchedule', 'triggerManual']),
+			$this->pick(['caseOpen', 'caseAdvance', 'triggerObject', 'triggerSchedule', 'triggerManual', 'triggerCalendar']),
 			$boundary->nodes()
 		);
 	}

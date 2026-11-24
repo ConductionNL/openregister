@@ -53,11 +53,21 @@ final class FlowErrorPolicy {
 	public const DEAD_LETTER = 'dead_letter';
 
 	/**
+	 * Send the failed items down the node's `error` output and walk on.
+	 */
+	public const BRANCH = 'branch';
+
+	/**
+	 * The output a branching step's failed items leave through: edges with `fromExit: "error"`.
+	 */
+	public const ERROR_EXIT = 'error';
+
+	/**
 	 * Every policy the engine applies.
 	 *
 	 * @var list<string>
 	 */
-	public const KNOWN = [self::STOP, self::CONTINUE, self::DEAD_LETTER];
+	public const KNOWN = [self::STOP, self::CONTINUE, self::DEAD_LETTER, self::BRANCH];
 
 	/**
 	 * The policy a step's failure follows.
@@ -94,6 +104,19 @@ final class FlowErrorPolicy {
 
 		return self::STOP;
 	}//end declared()
+
+	/**
+	 * Whether a step's failure sends its items down the `error` output.
+	 *
+	 * @param array<string, mixed>|null $step The lowered step.
+	 *
+	 * @return bool True under `branch`.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	public static function branches(?array $step): bool {
+		return self::for(step: $step) === self::BRANCH;
+	}//end branches()
 
 	/**
 	 * Whether a step's failure lets the walk go on.
