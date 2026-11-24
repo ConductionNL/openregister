@@ -4981,3 +4981,8 @@
 10156 8d1245e720bc34d27bce81df97131d0eeccd2775 REVERIFY or-fix-6: merged main 5c72d55c (only component-map.csv / components yaml conflicted: rows unioned, yaml regenerated; ComponentDefinition/DependencyRules green); PR tests OK (274 tests, 1086 assertions), phpstan clean; review needed
 10514 1c75213bf3c3953a95c85a9f349e142b4e9d0f81 REVERIFY or-fix-4: merged main, fixed conflicts in CoreListenerRegistrar (both personalTokenGrantRevoked and main's serviceAccountLogin), component-map union + yaml regen, listener golden 260 + new hash; phpstan only main's dead catch, Architecture and PR tests green; review needed
 10543 c65a637e5d3d3f3c921ea0fd0eb91194d8449559 REVERIFY or-fix-3: merged main again (union of component-map rows, regenerated components yaml), Architecture/Integration/owned-webhook tests green; review needed
+10508 69f90b4f03f3794d14ccbc65cea5a761c135ce2a REVERIFY or-fix-8: merged main 037f95a8 again (components yaml only, regenerated); Architecture green; review needed
+10614 e3d98b47abd36d0c688d632ec974859cae78f63f REVERIFY or-fix-8: merged main 037f95a8 (components yaml only, regenerated); Architecture green; review needed
+10518 78a5d3deae2a819d7903e5ce903768459caa1a8d REVERIFY or-fix-8: merged main 037f95a8 (info.xml keeps PR dev.8 over main dev.7, bump check OK); Architecture green; review needed
+10568 2e920d60ef786a272b959ca4d563271bf1317734 REVERIFY or-fix-8: merged main 037f95a8 (csv union, yaml regenerated), info.xml dev.8 (main took dev.7); Architecture green, Db green bar inherited AreaMapperRegistrarsTest; review needed
+11078 ce17085f66e9aeedbc3cf003b1cc6720a56190e5 REVERIFY or-fix-8: merged main 037f95a8 (sbom conflict; regenerated from merged lockfiles, --check current); review needed
