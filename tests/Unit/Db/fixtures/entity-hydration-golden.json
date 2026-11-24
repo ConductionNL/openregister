@@ -1839,6 +1839,7 @@
             "allOf",
             "oneOf",
             "anyOf",
+            "catalogue",
             "authorization",
             "sharedWith",
             "configuration",
@@ -1851,7 +1852,8 @@
             "calendar",
             "talk",
             "deck",
-            "draft"
+            "draft",
+            "formerSlugs"
         ]
     },
     "Source": {
