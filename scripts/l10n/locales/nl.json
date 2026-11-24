@@ -125,6 +125,7 @@
 		"Markt": "The source string is already Dutch (market); a schema title in a Dutch municipal register.",
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
 		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
-		"Diagram": "The native word for a drawn diagram is spelled identically to English."
+		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
+		"link": "Dutch uses the English loanword \"link\" for a hyperlink (as in \"deel de link\"); \"koppeling\" here would read as a data connection."
 	}
 }
