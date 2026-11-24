@@ -225,4 +225,38 @@ class EmailLinkMapperQueriesTest extends TestCase {
 
 		$this->assertSame(0, $this->mapper->deleteByObjectAndId('obj-2', 8));
 	}//end testDeleteByObjectAndIdOfAnotherObjectReportsZero()
+
+	/**
+	 * findWithoutRfcMessageId() pages the Mail links without an id, by id after a cursor.
+	 *
+	 * @return void
+	 */
+	public function testFindWithoutRfcMessageIdPagesByIdAfterTheCursor(): void {
+		$this->results[] = [['id' => 9, 'mail_message_id' => 90]];
+
+		$links = $this->mapper->findWithoutRfcMessageId(afterId: 8, limit: 200);
+
+		$this->assertSame([9], array_map(static fn ($link) => $link->getId(), $links));
+		$this->assertSame(
+			'select(*) from(openregister_email_links) where(isNull(rfc_message_id)) andWhere(gt(mail_message_id, :p0)) andWhere(gt(id, :p1)) orderBy(id, ASC) setMaxResults(200) executeQuery()',
+			$this->sql()
+		);
+		$this->assertSame([8, IQueryBuilder::PARAM_INT], $this->params[':p1']);
+	}//end testFindWithoutRfcMessageIdPagesByIdAfterTheCursor()
+
+	/**
+	 * recordRfcMessageId() writes the id only where none is set.
+	 *
+	 * @return void
+	 */
+	public function testRecordRfcMessageIdWritesOnlyANullId(): void {
+		$this->affected = 1;
+
+		$this->assertSame(1, $this->mapper->recordRfcMessageId(linkId: 9, rfcMessageId: '<a1@x>'));
+		$this->assertSame(
+			'update(openregister_email_links) set(rfc_message_id, :p0) where(eq(id, :p1)) andWhere(isNull(rfc_message_id)) executeStatement()',
+			$this->sql()
+		);
+		$this->assertSame('<a1@x>', $this->bound(':p0'));
+	}//end testRecordRfcMessageIdWritesOnlyANullId()
 }//end class

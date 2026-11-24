@@ -147,7 +147,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Three
+A trigger is the node where a run begins. A flow may carry several. Four
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -155,6 +155,7 @@ trigger types ship:
 | `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
+| `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -221,6 +222,17 @@ schedule itself is picked up today.
 `next`, is a hint shown after the run (an `openregister.end` node can override
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
+
+**`openregister.trigger-calendar`** starts the flow at a moment counted from a
+date on each record: a contract's end date minus thirty days, a permit's expiry,
+an appointment plus a week. It names the `register` and `schema` whose records
+carry the date and the `dateProperty`, which must be a property of that schema
+with the format `date` or `date-time`. `offset` is an ISO 8601 duration from that
+date, optionally negative (`-P30D`, `P1W`, `P0D` for the date itself). The
+optional `workingCalendar` names a calendar by its slug to count the offset in
+working time. `runAs` is required and must be an existing account, as for a
+scheduled run. The record is the run's subject. Publishing refuses a trigger
+that could never fire as written.
 
 ### The event catalogue
 

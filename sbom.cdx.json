@@ -105,10 +105,10 @@
   },
   "components": [
     {
-      "bom-ref": "adbario/php-dot-notation-3.5.0.0",
+      "bom-ref": "adbario/php-dot-notation-3.6.0.0",
       "type": "library",
       "name": "php-dot-notation",
-      "version": "3.5.0",
+      "version": "3.6.0",
       "group": "adbario",
       "description": "PHP dot notation access to arrays",
       "author": "Riku Särkinen",
@@ -119,17 +119,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/adbario/php-dot-notation@3.5.0",
+      "purl": "pkg:composer/adbario/php-dot-notation@3.6.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0",
-          "comment": "dist reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/b59a609293b22fdb8a7d9fcb4b9b283176463d40",
+          "comment": "dist reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "vcs",
           "url": "https://github.com/adbario/php-dot-notation.git",
-          "comment": "source reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "comment": "source reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "website",
@@ -143,18 +143,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/adbario/php-dot-notation/tree/3.5.0",
+          "url": "https://github.com/adbario/php-dot-notation/tree/3.6.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:type",
@@ -1250,10 +1250,10 @@
       ]
     },
     {
-      "bom-ref": "opis/json-schema-2.6.1.0",
+      "bom-ref": "opis/json-schema-2.6.2.0",
       "type": "library",
       "name": "json-schema",
-      "version": "2.6.1",
+      "version": "2.6.2",
       "group": "opis",
       "description": "Json Schema Validator for PHP",
       "author": "Sorin Sarca, Marius Sarca",
@@ -1264,17 +1264,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/opis/json-schema@2.6.1",
+      "purl": "pkg:composer/opis/json-schema@2.6.2",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/opis/json-schema/zipball/7d8685a78db131eb6a1571cc7b4db8f4b59e8628",
-          "comment": "dist reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "url": "https://api.github.com/repos/opis/json-schema/zipball/b87b424da3fbeaab09567910fda48dc88d9dcbd8",
+          "comment": "dist reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "vcs",
           "url": "https://github.com/opis/json-schema.git",
-          "comment": "source reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "comment": "source reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "website",
@@ -1288,18 +1288,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/opis/json-schema/tree/2.6.1",
+          "url": "https://github.com/opis/json-schema/tree/2.6.2",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:type",
@@ -22089,6 +22089,39 @@
     },
     {
       "type": "library",
+      "name": "leaflet-draw",
+      "version": "1.0.4",
+      "bom-ref": "openregister@1.0.0|leaflet-draw@1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/leaflet-draw@1.0.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/leaflet-draw/-/leaflet-draw-1.0.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "aec43ab1a40ee524f9023e97445ca5af9cef6ab5a0cd69eb838eb3435304384207b29a5d0bff219cdf2a32816f002b0fbd38a802ecacc9afd356da20d79b7201"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/leaflet-draw"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "leaflet.markercluster",
       "version": "1.5.3",
       "bom-ref": "openregister@1.0.0|leaflet.markercluster@1.5.3",
@@ -32184,7 +32217,7 @@
   ],
   "dependencies": [
     {
-      "ref": "adbario/php-dot-notation-3.5.0.0"
+      "ref": "adbario/php-dot-notation-3.6.0.0"
     },
     {
       "ref": "brick/math-1.0.0.0"
@@ -32306,7 +32339,7 @@
       ]
     },
     {
-      "ref": "opis/json-schema-2.6.1.0",
+      "ref": "opis/json-schema-2.6.2.0",
       "dependsOn": [
         "opis/string-2.1.0.0",
         "opis/uri-1.1.0.0"
@@ -32551,14 +32584,14 @@
     {
       "ref": "conductionnl/openregister-1.0.0.0",
       "dependsOn": [
-        "adbario/php-dot-notation-3.5.0.0",
+        "adbario/php-dot-notation-3.6.0.0",
         "ddn/sapp-dev-feat/chained-filter-text-replace",
         "dragonmantank/cron-expression-3.6.1.0",
         "elasticsearch/elasticsearch-9.5.0.0",
         "guzzlehttp/guzzle-7.16.5.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
-        "opis/json-schema-2.6.1.0",
+        "opis/json-schema-2.6.2.0",
         "phpoffice/phpspreadsheet-5.11.0.0",
         "phpseclib/phpseclib-4.0.3.0",
         "react/async-4.3.0.0",
