@@ -276,3 +276,9 @@
 2026-11-24T19:16Z help-dossiq-4 run ends: every other dossiq change with no branch/lease has only live passes (decision 139), board work (DqSubsidie, DqTenant), delivery steps of merged code (woo-decision-records, woo-review-reports, woo-requester-notices), a Mail release (case-mail rfc-8058 1.2), cross-repo decidiq (migrate-committees, page-topology D2) or a data/access decision (admin-data-access, cases-are-archival 4.1). Note: an empty branch cloud/b-dossiq-help-tenant-quotas-enforced-and-billing-shown (= development 92cf0f94) stays on the remote; the delete was refused (HTTP 403)
 2026-11-24T19:16Z help-portaliq-3 helped portaliq: search-filter-by-kind #2686 (2.2 e2e written, runs in nightly; 3.1 live left, not archived)
 2026-11-24T19:16Z help-portaliq-1 helped portaliq: documents-grouped-per-record #2683 (tasks 1-4 merged: extraGroups read through OR PermissionHandler as the Nextcloud account per FINISH-ORDER decision, bundle via documents.bundle, extras lazy-loaded inside the site budget; task 5 learniq placement left, change not archived)
+2026-11-24T19:16Z help-filinq-1 decided signer-consent-notifications-to-email-leaf D-1.1/D-2.1 (#2316: send through OR's object-bound e-mail channel; waits on openregister send-at-on-the-messaging-leaf + reply-threading-by-headers 1.3, both OR-builder changes)
+2026-11-24T19:16Z help-filinq-1 skipped redaction-guarantees-from-the-engine: OR redaction-release-safeguards/redaction-policy-as-data not on main (OR builders)
+2026-11-24T19:16Z help-filinq-1 skipped work-content-search: only Playwright/screenshot left (specs written), OR #11044 with integrator
+2026-11-24T19:16Z help-filinq-1 skipped archiefwet-retention-engine: selectielijst codes = deleting-data decision (Ruben)
+2026-11-24T19:16Z help-filinq-1 skipped propose-grondslag-per-entity-type: 7.1 owned by OpenAnonymiser team, 7.2/7.3 follow it
+2026-11-24T19:16Z help-filinq-1 skipped document-editing-tools 3.3: needs a Euro-Office instance
