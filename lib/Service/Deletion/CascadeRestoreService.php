@@ -25,11 +25,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Deletion;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
@@ -236,7 +236,7 @@ class CascadeRestoreService {
 	/**
 	 * The objects the rows name, found in one batched lookup across the magic tables, keyed by uuid.
 	 *
-	 * @param list<AuditTrail> $rows     The cascade evidence.
+	 * @param list<AuditRecordInterface> $rows     The cascade evidence.
 	 * @param string           $rootUuid The root, which is not looked up again.
 	 *
 	 * @return array<string, ObjectEntity> The objects that still exist, deleted or not.
@@ -265,14 +265,14 @@ class CascadeRestoreService {
 	/**
 	 * The class of one object the delete acted on.
 	 *
-	 * @param AuditTrail        $row    The audit entry the delete wrote for it.
+	 * @param AuditRecordInterface        $row    The audit entry the delete wrote for it.
 	 * @param ObjectEntity|null $object The object as it is now, null when destroyed.
 	 * @param ObjectEntity      $root   The object being restored.
 	 * @param DateTimeImmutable $now    The moment windows are judged at.
 	 *
 	 * @return CascadeRestoreItem The classified item.
 	 */
-	private function classify(AuditTrail $row, ?ObjectEntity $object, ObjectEntity $root, DateTimeImmutable $now): CascadeRestoreItem {
+	private function classify(AuditRecordInterface $row, ?ObjectEntity $object, ObjectEntity $root, DateTimeImmutable $now): CascadeRestoreItem {
 		$uuid = (string)$row->getObjectUuid();
 		if ($object === null) {
 			return new CascadeRestoreItem(uuid: $uuid, class: self::CLASS_GONE, reason: 'destroyed', schema: self::schemaOfRow(row: $row));
@@ -320,12 +320,12 @@ class CascadeRestoreService {
 	 * where the field still holds what the delete wrote, and an array only
 	 * gains the uuid back when it is absent.
 	 *
-	 * @param AuditTrail   $row    The set_null or set_default entry.
+	 * @param AuditRecordInterface   $row    The set_null or set_default entry.
 	 * @param ObjectEntity $object The survivor as it is now.
 	 *
 	 * @return CascadeRestoreItem Relink, or why not.
 	 */
-	private function classifySurvivor(AuditTrail $row, ObjectEntity $object): CascadeRestoreItem {
+	private function classifySurvivor(AuditRecordInterface $row, ObjectEntity $object): CascadeRestoreItem {
 		$changed  = ($row->getChanged() ?? []);
 		$property = (string)($changed['property'] ?? '');
 		$previous = ($changed['previousValue'] ?? null);
@@ -511,11 +511,11 @@ class CascadeRestoreService {
 	/**
 	 * The schema of an object that no longer exists, as its audit entry names it.
 	 *
-	 * @param AuditTrail $row The entry.
+	 * @param AuditRecordInterface $row The entry.
 	 *
 	 * @return string|null The schema id, or null.
 	 */
-	private static function schemaOfRow(AuditTrail $row): ?string {
+	private static function schemaOfRow(AuditRecordInterface $row): ?string {
 		$schema = $row->getSchema();
 		if ($schema === null) {
 			return null;
