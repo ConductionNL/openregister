@@ -55,7 +55,7 @@ class MagicMapperTableListingTest extends TestCase {
 			->getMock();
 		(new ReflectionProperty(MagicMapper::class, 'logger'))->setValue($mapper, new NullLogger());
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->queries[] = $query;
 				$entity = new ObjectEntity();
 				return [$entity];
@@ -133,6 +133,6 @@ class MagicMapperTableListingTest extends TestCase {
 		$mapper = $this->mapper();
 		$mapper->method('saveObjectToRegisterSchemaTable')->willReturnOnConsecutiveCalls('u-1', 'u-2');
 
-		$this->assertSame(['u-1', 'u-2'], $mapper->saveObjectsToRegisterSchemaTable([['a' => 1], ['a' => 2]], $register, $schema));
+		$this->assertSame(['u-1', 'u-2'], $mapper->saveObjectsToRegisterSchemaTable(new RegisterSchema($register, $schema), [['a' => 1], ['a' => 2]]));
 	}//end testSaveObjectsSavesEachAndSkipsNone()
 }//end class
