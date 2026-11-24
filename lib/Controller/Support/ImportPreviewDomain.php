@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Import\BaseImportPlanner;
+
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 
@@ -36,12 +38,14 @@ final class ImportPreviewDomain {
 	 *
 	 * @param ImportPreviewServiceInterface $service The preview lifecycle.
 	 * @param SourceRowReaderInterface      $reader  The file reader, for hashing and staging.
+	 * @param BaseImportPlanner|null $basePlanner Plans the import of a whole base export.
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function __construct(
 		public readonly ImportPreviewServiceInterface $service,
 		public readonly SourceRowReaderInterface $reader,
+		public readonly ?BaseImportPlanner $basePlanner = null,
 	) {
 	}//end __construct()
 }//end class

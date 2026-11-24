@@ -27,6 +27,7 @@ final class ImportPreviewControllerFactory {
 	 * @param RegisterMapper $registerMapper Constructor argument.
 	 * @param IJobList $jobList Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
+	 * @param ?BaseImportPlanner $basePlanner Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
 	 *
 	 * @return array<int, mixed>
@@ -42,6 +43,7 @@ final class ImportPreviewControllerFactory {
 		\OCP\BackgroundJob\IJobList $jobList,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
+		?\OCA\OpenRegister\Service\Import\BaseImportPlanner $basePlanner = null,
 	): array {
 		return [
 			$request,
@@ -54,6 +56,7 @@ final class ImportPreviewControllerFactory {
 				domain: new \OCA\OpenRegister\Controller\Support\ImportPreviewDomain(
 					service: $service,
 					reader: $reader,
+					basePlanner: $basePlanner,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\ImportPreviewPlatform(
 					jobList: $jobList,
