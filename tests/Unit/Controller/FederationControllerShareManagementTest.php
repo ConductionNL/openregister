@@ -144,6 +144,7 @@ final class FederationControllerShareManagementTest extends TestCase {
 					'permissions' => 'read',
 					'sharedWith' => 'gemeente-b',
 					'remoteInstanceUrl' => 'https://b.example.org',
+					'crosses' => null,
 				]
 			)
 			->willReturn($share);
