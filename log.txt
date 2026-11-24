@@ -4412,3 +4412,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T20:36:34Z or-fix-4 active: fixing conflicting PRs 10494 (done fef09982), 10504, 10514, 10554, 10614
 2026-11-24T20:36:41Z precheck-20261124T175747-122d94ac GREEN tree 744e14fc88 on dev 110034ca45 prs 1 front=ok: Tests: 65006, Assertions: 229418, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T20:37:30Z precheck-20261124T190656-018eb955 GREEN tree 9bffe704f7 on dev 47afb4b69c prs 1 front=skip: Tests: 65024, Assertions: 229484, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T20:37:42Z or-fix-1 active: fixed #10451 (merged main), next #11021
