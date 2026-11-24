@@ -2802,7 +2802,7 @@ Service/Object/PageRender.php,10,Service,Service,Service/Object/PageRender.php,0
 Service/Object/PaginationLinks.php,31,Service,Service,Service/Object/PaginationLinks.php,0,,Core
 Service/Object/PerformanceHandler.php,87,Service,Service,Service/Object/PerformanceHandler.php,0,,Core
 Service/Object/PerformanceOptimizationHandler.php,38,Service,Service,Service/Object/PerformanceOptimizationHandler.php,0,,Core
-Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Core
+Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Kernel
 Service/Object/PermissionHandler.php,1872,Service,Access,Access/Service/Object/PermissionHandler.php,22,5,Core
 Service/Object/PinnedTable.php,10,Service,Service,Service/Object/PinnedTable.php,0,,Core
 Service/Object/PreservedListing.php,11,Service,Service,Service/Object/PreservedListing.php,0,,Core
@@ -3688,7 +3688,7 @@ Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
 Db/DecisionMapperInterface.php,,Db,,,,,Processes
 Db/DecisionMetadataChange.php,,Db,,,,,Files
-Db/DecisionMetadataEdit.php,,Db,,,,,Files
+Db/DecisionMetadataEdit.php,,Db,,,,,Core
 Db/DeckLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DelegationGrantMapperInterface.php,,Db,,,,,Core
 Db/EmailLinkMapperInterface.php,,Db,,,,,Integrations
@@ -4636,6 +4636,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Service/MappingRun.php,,Service,,,,,Integrations
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
@@ -4643,8 +4644,7 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
-Files/Service/File/ManagedFiles.php,,Files,,,,,Files
-Files/Service/FileSettingRules.php,,Files,,,,,Files
+Service/Object/PermissionAsk.php,,Service,,,,,Kernel
 Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
