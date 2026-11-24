@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 258;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -40,7 +40,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * share provider then appended one PlatformShareRoutingListener registration on
 	 * BeforeShareCreatedEvent in AccessListenerRegistrar.
 	 */
-	private const SEQUENCE_SHA256 = '9ef2d547c2205a4da902149faa190c02b013b35ba8f203155db6a2e9790374e4';
+	private const SEQUENCE_SHA256 = '2249aeed4a794d46102b448e6950af65fb359761a05ffb9e529a3d9e05e67fcb';
 
 	/**
 	 * The registration calls, in call order, with every argument.
