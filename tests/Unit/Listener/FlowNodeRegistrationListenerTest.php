@@ -202,7 +202,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(34, $registered, 'all thirty-four built-ins are registered');
+		$this->assertCount(35, $registered, 'all thirty-five built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");

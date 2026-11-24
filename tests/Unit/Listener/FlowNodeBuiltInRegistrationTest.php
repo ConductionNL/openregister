@@ -177,7 +177,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent($registry));
 
-		$this->assertCount(34, $registered);
+		$this->assertCount(35, $registered);
 		$this->assertSame($this->expected, $registered);
 	}
 
