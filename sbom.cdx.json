@@ -7,7 +7,7 @@
     "tools": [
       {
         "name": "composer",
-        "version": "2.10.2"
+        "version": "2.8.12"
       },
       {
         "vendor": "cyclonedx",
@@ -11270,8 +11270,8 @@
       "type": "library",
       "name": "node",
       "group": "@types",
-      "version": "26.6.4",
-      "bom-ref": "openregister@1.0.0|@types/node@26.6.4",
+      "version": "26.6.6",
+      "bom-ref": "openregister@1.0.0|@types/node@26.6.6",
       "licenses": [
         {
           "license": {
@@ -11279,15 +11279,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40types/node@26.6.4",
+      "purl": "pkg:npm/%40types/node@26.6.6",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@types/node/-/node-26.6.4.tgz",
+          "url": "https://registry.npmjs.org/@types/node/-/node-26.6.6.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "95d54f0c2ce3edfb1a199acb07436e1ee4ef25cb0d6accac040a8ca25aff720c6b2ddd716eac48af75c988f9c71c9502c63e6c345d6f9d18fd6969eb561e4972"
+              "content": "333423fbc2b1dd7238d0e994004e90a21e7c64c36cb4d34cc27da77dddea5ac7deee70cd4aa24dcdeb389e3873e801f0ad21ce7df48bc1753ac9be3be10e1aa2"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
