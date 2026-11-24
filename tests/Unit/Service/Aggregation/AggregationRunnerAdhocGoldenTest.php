@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
@@ -51,6 +52,7 @@ use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -209,10 +211,12 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 				metric: $q['metric'],
 				field: ($q['field'] ?? null),
 				filter: ($q['filter'] ?? []),
-				groupBy: ($q['groupBy'] ?? null),
-				dateBucket: ($q['dateBucket'] ?? null),
-				metrics: ($q['metrics'] ?? null),
-				cumulative: ($q['cumulative'] ?? false)
+				layout: new AggregationLayout(
+					groupBy: ($q['groupBy'] ?? null),
+					dateBucket: ($q['dateBucket'] ?? null),
+					metrics: ($q['metrics'] ?? null),
+					cumulative: ($q['cumulative'] ?? false)
+				)
 			);
 			$result = $runner->runAdhoc(register: $register, schema: $schema, query: $query, bypassRbac: $case['bypass']);
 			$outcome = ['result' => $result];
@@ -292,14 +296,14 @@ class AggregationRunnerAdhocGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($case): bool {
 				$action = ($args['action'] ?? $args[1] ?? null);
 				$userId = ($args['userId'] ?? $args[2] ?? null);
 				$this->calls[] = ['permission' => [$action, $userId]];
 				return $case['allow'];
 			}
-		);
+		));
 
 		$session = $this->createMock(IUserSession::class);
 		$user = null;
