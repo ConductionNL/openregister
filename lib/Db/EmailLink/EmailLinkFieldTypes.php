@@ -49,5 +49,6 @@ final class EmailLinkFieldTypes {
 		'linkedBy' => 'string',
 		'linkedAt' => 'datetime',
 		'rfcMessageId' => 'string',
+		'direction' => 'string',
 	];
 }//end class

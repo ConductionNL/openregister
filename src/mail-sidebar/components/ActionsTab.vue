@@ -25,7 +25,7 @@
 					<span>{{
 						creating[schema.id]
 							? t('openregister', 'Creating {name}…', {
-									name: schema.title,
+									name: sentenceName(schema.title),
 								})
 							: t('openregister', 'Connecting…')
 					}}</span>
@@ -76,7 +76,7 @@
 						<Plus :size="20" />
 						{{
 							t('openregister', 'New {name} from this mail', {
-								name: schema.title,
+								name: sentenceName(schema.title),
 							})
 						}}
 					</button>
@@ -107,6 +107,7 @@ import { NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
+import { sentenceName } from '../sentenceName.js'
 
 /**
  * Fetch the registers, to find the register of each schema.
@@ -170,6 +171,7 @@ export default {
 
 	methods: {
 		t,
+		sentenceName,
 		/**
 		 * A schema block is busy while it is creating a new record or
 		 * connecting an existing one — used to swap the search UI for a
@@ -522,7 +524,7 @@ export default {
 				const detail = err.response?.data?.error || err.response?.data || ''
 				showError(
 					t('openregister', 'Failed to create {name} from email', {
-						name: schema.title,
+						name: sentenceName(schema.title),
 					}),
 				)
 				console.error('[ActionsTab] Create from email failed:', detail, err)

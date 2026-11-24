@@ -117,6 +117,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  * @uses \OCA\OpenRegister\Service\Audit\PurposeReadScope
+ * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  */
 class ReadableAuditTrailListerTest extends TestCase {
 
