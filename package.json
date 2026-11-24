@@ -167,7 +167,7 @@
     "ts-jest": "^29.4.14",
     "ts-loader": "^9.5.1",
     "typescript": "^5.8.2",
-    "vue-eslint-parser": "^10.3.0",
+    "vue-eslint-parser": "^10.4.2",
     "vue-loader": "^17.4.2"
   },
   "peerDependencies": {
