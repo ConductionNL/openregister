@@ -7,9 +7,9 @@
 
 ## 2. Restore
 
-- [ ] 2.1 `CascadeRestoreService::preview()` with the six classes and the 5,000-row cap. Verify: `tests/Unit/Service/Deletion/CascadeRestoreServiceTest.php` for each class, including a dependant deleted again later (`already`) and a changed field (`changed`).
-- [ ] 2.2 `CascadeRestoreService::restore()` in one transaction with relink through the patch path. Verify: the same test class asserts rollback when one relink fails.
-- [ ] 2.3 `cascade` on `POST /api/deleted/{id}/restore`, `GET /api/deleted/{id}/restore-preview`, cascade in `restoreMultiple()`, audit entries. Verify: `DeletedControllerTest` for 200 with counts, 403 on a forbidden dependant, 409 over the cap, `cascade: false`.
+- [x] 2.1 `CascadeRestoreService::preview()` with the six classes and the 5,000-row cap. Verify: `tests/Unit/Service/Deletion/CascadeRestoreServiceTest.php` for each class, including a dependant deleted again later (`already`) and a changed field (`changed`).
+- [x] 2.2 `CascadeRestoreService::restore()` in one transaction with relink through the patch path. Verify: the same test class asserts rollback when one relink fails.
+- [x] 2.3 `cascade` on `POST /api/deleted/{id}/restore`, `GET /api/deleted/{id}/restore-preview`, cascade in `restoreMultiple()`, audit entries. Verify: `DeletedControllerTest` for 200 with counts, 403 on a forbidden dependant, 409 over the cap, `cascade: false`.
 
 ## 3. Page, tests and docs
 
