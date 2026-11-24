@@ -739,3 +739,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: python3 tools/sig/modularity_check.py --check on a PR merged with main prints 'new in Kernel: lib/Service/Object/PermissionAsk.php', '.../PermissionCheck.php' and 'newly exposed ... PermissionCheck.php'.
 - Cause: #9053 added them on main without a baseline rewrite; plain main fails the same 3 lines.
 - Fix: none in a PR unless the PR owns tools/sig/modularity-baseline.json (then take main's json, --write-baseline on the merged tree, #11000 0ef5a9a6). Also still red on 85629dd4 main: AnonymousEnvelopeReadPathsTest (4 errors), AreaMapperRegistrarsTest::testEachInterfaceIsBoundOnce.
+
+## AggregationQuery::create() takes one AggregationLayout (or-fix-1)
+- Symptom: phpstan 'Unknown parameter $groupBy in call to static method AggregationQuery::create()'; tests 'Error: Unknown named parameter $groupBy'.
+- Cause: main (a16b1e9d) folded groupBy, dateBucket, metrics and cumulative into Search\Service\Aggregation\AggregationLayout: create(metric, field, filter, layout).
+- Fix: wrap those arguments in layout: new AggregationLayout(groupBy: ..., metrics: ...); callers outside Search that only group use AggregationQuery::grouped(). See #10541 a0a55797.
