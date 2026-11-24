@@ -8,3 +8,4 @@ Before appending, merge main/development into that PR's branch if it conflicts (
 A product or access-control question that FINISH-ORDER.md DECISIONS does not answer: append it here as a question with 2-3 options and your recommendation, skip that task, carry on.
 
 ## Queue
+- 2026-11-24T19:00Z b-stackiq stackiq#2177 merge: tasks.md-only tick (shared-organisation 4.1 landed in OpenRegister main), mergeable, merge call refused by the session permission check
