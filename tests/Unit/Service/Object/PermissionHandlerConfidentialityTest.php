@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -263,10 +264,10 @@ class PermissionHandlerConfidentialityTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'pieter', groups: ['staff']);
 		$schema = $this->schema(readers: ['staff', 'raadsleden']);
 
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', userId: 'pieter', object: $this->besluit('confidential')));
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'pieter', object: $this->besluit('public')));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('confidential'), register: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('public'), register: null)));
 		// A question about the schema, not one object, is the list path's to answer.
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'pieter'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)));
 	}//end testReadBelowClearanceIsRefusedDespiteTheSchemaGrant()
 
 	/**
@@ -278,8 +279,8 @@ class PermissionHandlerConfidentialityTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'pieter', groups: ['staff']);
 		$schema = $this->schema(readers: ['staff']);
 
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'pieter', object: $this->besluit('confidential', '2020-01-01T00:00:00+00:00')));
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', userId: 'pieter', object: $this->besluit('confidential', '2099-01-01T00:00:00+00:00')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('confidential', '2020-01-01T00:00:00+00:00'), register: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('confidential', '2099-01-01T00:00:00+00:00'), register: null)));
 	}//end testAPastReleaseAdmitsAndAFutureOneDoesNot()
 
 	/**
@@ -290,9 +291,9 @@ class PermissionHandlerConfidentialityTest extends TestCase {
 	public function testClearanceOwnerAndAdministratorRead(): void {
 		$schema = $this->schema(readers: ['staff', 'raadsleden']);
 
-		$this->assertTrue($this->handlerFor(userId: 'jan', groups: ['raadsleden'])->hasPermission(schema: $schema, action: 'read', userId: 'jan', object: $this->besluit('confidential')));
-		$this->assertTrue($this->handlerFor(userId: 'pieter', groups: ['staff'])->hasPermission(schema: $schema, action: 'read', userId: 'pieter', object: $this->besluit('confidential', null, 'pieter')));
-		$this->assertTrue($this->handlerFor(userId: 'beheer', groups: ['admin'])->hasPermission(schema: $schema, action: 'read', userId: 'beheer', object: $this->besluit('confidential')));
+		$this->assertTrue($this->handlerFor(userId: 'jan', groups: ['raadsleden'])->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'jan', objectOwner: null)->about(object: $this->besluit('confidential'), register: null)));
+		$this->assertTrue($this->handlerFor(userId: 'pieter', groups: ['staff'])->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('confidential', null, 'pieter'), register: null)));
+		$this->assertTrue($this->handlerFor(userId: 'beheer', groups: ['admin'])->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'beheer', objectOwner: null)->about(object: $this->besluit('confidential'), register: null)));
 	}//end testClearanceOwnerAndAdministratorRead()
 
 	/**
@@ -303,7 +304,7 @@ class PermissionHandlerConfidentialityTest extends TestCase {
 	public function testClearanceDoesNotGrantWhatTheSchemaRefuses(): void {
 		$handler = $this->handlerFor(userId: 'jan', groups: ['raadsleden']);
 
-		$this->assertFalse($handler->hasPermission(schema: $this->schema(readers: ['staff']), action: 'read', userId: 'jan', object: $this->besluit('confidential')));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(readers: ['staff']), action: 'read'))->askedBy(userId: 'jan', objectOwner: null)->about(object: $this->besluit('confidential'), register: null)));
 	}//end testClearanceDoesNotGrantWhatTheSchemaRefuses()
 
 	/**
@@ -314,6 +315,6 @@ class PermissionHandlerConfidentialityTest extends TestCase {
 	public function testASchemaWithoutTheBlockIsUnchanged(): void {
 		$handler = $this->handlerFor(userId: 'pieter', groups: ['staff']);
 
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(readers: ['staff'], classified: false), action: 'read', userId: 'pieter', object: $this->besluit('confidential')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(readers: ['staff'], classified: false), action: 'read'))->askedBy(userId: 'pieter', objectOwner: null)->about(object: $this->besluit('confidential'), register: null)));
 	}//end testASchemaWithoutTheBlockIsUnchanged()
 }//end class
