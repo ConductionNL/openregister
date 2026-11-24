@@ -94,14 +94,33 @@ class ReportRenderService {
 		$this->assertSupportedFormat(format: $format);
 		$payload = $this->widgetPayload(dashboard: $dashboard);
 		$content = new ReportContent(dashboard: $payload, resolvedWidgets: $this->resolveWidgets(widgets: $payload['widgets']));
-		$filename = $this->filenameFor(payload: $payload, format: $format);
+
+		return $this->renderContent(content: $content, format: $format);
+	}//end render()
+
+	/**
+	 * Render widgets whose data the caller already resolved, such as the
+	 * sections of a report template.
+	 *
+	 * @param ReportContent $content The report payload and its resolved widgets.
+	 * @param string        $format  One of `FORMATS`.
+	 *
+	 * @return array{mime: string, filename: string, bytes: string}
+	 *
+	 * @throws InvalidArgumentException When the format is unsupported.
+	 * @throws \OCA\OpenRegister\Exception\OfficeServerRequiredException When a PDF is asked for and no office server converts it.
+	 *
+	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
+	 */
+	public function renderContent(ReportContent $content, string $format): array {
+		$this->assertSupportedFormat(format: $format);
 
 		return [
 			'mime' => $this->mimeFor(format: $format),
-			'filename' => $filename,
+			'filename' => $this->filenameFor(payload: $content->dashboard, format: $format),
 			'bytes' => $this->write(content: $content, format: $format),
 		];
-	}//end render()
+	}//end renderContent()
 
 	/**
 	 * Refuse a format outside `FORMATS`.
