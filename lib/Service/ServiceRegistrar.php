@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
-use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -38,7 +37,6 @@ use OCA\OpenRegister\Service\Object\CacheNameScopeSources;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
-use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -115,14 +113,6 @@ final class ServiceRegistrar {
 			ObjectFileReaderInterface::class,
 			function ($c) {
 				return $c->get(ObjectFileReader::class);
-			}
-		);
-
-		// The published read of the tasks on an object, for consuming apps.
-		$context->registerService(
-			ObjectTaskReaderInterface::class,
-			function ($c) {
-				return $c->get(ObjectTaskReader::class);
 			}
 		);
 	}//end registerRequestScoped()
