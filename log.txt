@@ -4335,3 +4335,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T19:27:19Z precheck-20261124T175747-122d94ac GREEN tree f8e4846393 on dev d202825e7b prs 1 front=ok: Tests: 64435, Assertions: 227687, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T19:28:11Z integrator-20261124T184854-1c90b6ab GREEN tree c09f558e4e on dev d202825e7b prs 6 front=ok: Tests: 64377, Assertions: 227535, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T19:28:21Z session-20261124T191954-a67799b5 cloud builder larpinq: opened #1177 (RCT 2.3 shillinq refund/credit handoff), local green, merge refused by session permission check; queued for coordinator
+2026-11-24T19:28:33Z integrator-20261124T184854-1c90b6ab PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
