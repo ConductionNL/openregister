@@ -218,6 +218,7 @@ Contract/ObjectEntityInterface.php,12,Contract,Contract,Contract/ObjectEntityInt
 Contract/ObjectServiceInterface.php,160,Contract,Contract,Contract/ObjectServiceInterface.php,2695,,Kernel
 Contract/RegisterSlugResolution.php,25,Contract,Contract,Contract/RegisterSlugResolution.php,46,,Kernel
 Contract/RegisterSlugResolverInterface.php,7,Contract,Contract,Contract/RegisterSlugResolverInterface.php,63,,Kernel
+Contract/ToolInvocationRecorderInterface.php,4,Contract,Contract,Contract/ToolInvocationRecorderInterface.php,1,,Kernel
 Controller/AccessLinkController.php,272,Controller,Access,Access/Controller/AccessLinkController.php,0,,Core
 Controller/AccessLinkPageController.php,29,Controller,Access,Access/Controller/AccessLinkPageController.php,0,,Core
 Controller/ActivityLinksController.php,118,Controller,Integrations,Integrations/Controller/ActivityLinksController.php,0,,Integrations
@@ -1422,6 +1423,7 @@ Mcp/BuiltIn/ObjectsToolProvider.php,128,Mcp,Mcp,Mcp/BuiltIn/ObjectsToolProvider.
 Mcp/BuiltIn/RegistersToolProvider.php,124,Mcp,Mcp,Mcp/BuiltIn/RegistersToolProvider.php,0,,Integrations
 Mcp/BuiltIn/SchemaDerivedToolProvider.php,516,Mcp,Mcp,Mcp/BuiltIn/SchemaDerivedToolProvider.php,0,,Integrations
 Mcp/BuiltIn/SchemasToolProvider.php,152,Mcp,Mcp,Mcp/BuiltIn/SchemasToolProvider.php,0,,Integrations
+Mcp/BuiltIn/ToolInvocationRecorder.php,30,Mcp,Mcp,Mcp/BuiltIn/ToolInvocationRecorder.php,0,,Integrations
 Mcp/Command/ContextChatReindexCommand.php,69,Mcp,Mcp,Mcp/Command/ContextChatReindexCommand.php,0,,Integrations
 Mcp/Controller/McpServerController.php,264,Mcp,Mcp,Mcp/Controller/McpServerController.php,0,,Integrations
 Mcp/Controller/Support/McpServerControllerServices.php,10,Mcp,Mcp,Mcp/Controller/Support/McpServerControllerServices.php,0,,Integrations
