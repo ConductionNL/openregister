@@ -18,7 +18,6 @@ final class DsarCaseControllerFactory {
 	/**
 	 * The constructor arguments of DsarCaseController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param CaseObjectAccessor $accessor Constructor argument.
@@ -35,7 +34,6 @@ final class DsarCaseControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		\OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor $accessor,
@@ -50,7 +48,6 @@ final class DsarCaseControllerFactory {
 		\OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry $regulatorRegistry,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DsarCaseControllerServices(
 				cases: new \OCA\OpenRegister\Controller\Support\DsarCaseCases(

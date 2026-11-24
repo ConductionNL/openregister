@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EmailLinksControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 class EmailLinksLinkGoldenTest extends TestCase {
 
@@ -50,7 +51,7 @@ class EmailLinksLinkGoldenTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action): bool => ($action === 'update' ? $this->mayUpdate : true)
+			fn (PermissionAsk $ask): bool => ($ask->action === 'update' ? $this->mayUpdate : true)
 		);
 
 		$service = $this->createMock(EmailLinkService::class);
