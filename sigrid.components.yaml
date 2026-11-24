@@ -2468,6 +2468,7 @@ components:
       - ".*/lib/Notifications/Controller/TimelineEntriesController[.]php"
       - ".*/lib/Notifications/Controller/WebPushController[.]php"
       - ".*/lib/Notifications/Controller/Support/AddressedObject[.]php"
+      - ".*/lib/Notifications/Controller/Support/GroupAdministration[.]php"
       - ".*/lib/Notifications/Controller/Support/NotePath[.]php"
       - ".*/lib/Notifications/Controller/Support/NoteStep[.]php"
       - ".*/lib/Notifications/Controller/Support/NoteUpdate[.]php"
