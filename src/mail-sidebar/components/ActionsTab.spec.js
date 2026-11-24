@@ -164,7 +164,7 @@ describe('ActionsTab schemas', () => {
 			{ _limit: 500, _page: 1 },
 			{ _limit: 500, _page: 2 },
 		])
-		expect(wrapper.vm.schemas).toEqual([NOTES])
+		expect(wrapper.vm.schemas).toEqual([expect.objectContaining(NOTES)])
 	})
 
 	it('ends up empty, not loading, when the schemas request fails', async () => {
@@ -324,7 +324,7 @@ describe('ActionsTab create from email', () => {
 		expect(axios.get).toHaveBeenCalledWith(BODY_URL, { timeout: 10000 })
 		const dialog = wrapper.findComponent({ name: 'CreateConnectedObjectDialog' })
 		expect(dialog.props('show')).toBe(true)
-		expect(dialog.props('schema')).toEqual(LEADS)
+		expect(dialog.props('schema')).toEqual(expect.objectContaining(LEADS))
 		expect(dialog.props('initialData')).toEqual({
 			title: 'Re: Offer',
 			from: 'Anna <a@b.nl>',
@@ -511,11 +511,11 @@ describe('ActionsTab create through an app\'s own dialog', () => {
 		expect(open).toHaveBeenCalledTimes(1)
 		const context = open.mock.calls[0][0]
 		expect(context.initialData.title).toBe('Re: Offer')
-		expect(context.schema).toEqual(LEADS)
+		expect(context.schema).toEqual(expect.objectContaining(LEADS))
 		expect(context.mail).toEqual(expect.objectContaining({ accountId: 1, messageId: 42 }))
 		expect(context.mail.values).toEqual(expect.objectContaining({ subject: 'Offer', sender: 'a@b.nl', senderName: 'Anna', mailRef: '1/42' }))
 		expect(wrapper.findComponent({ name: 'CreateConnectedObjectDialog' }).props('show')).toBe(false)
-		expect(link).toHaveBeenCalledWith(LEADS, { id: 'new-1', title: 'From the app' })
+		expect(link).toHaveBeenCalledWith(expect.objectContaining(LEADS), { id: 'new-1', title: 'From the app' })
 		expect(wrapper.vm.creating[LEADS.id]).toBe(false)
 	})
 

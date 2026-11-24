@@ -95,7 +95,10 @@ final class ConfigurationEntryRules {
 	// `autoPublish` is the retired name of `autoShare`. It is kept unvalidated
 	// and never acted on, so FilePropertyHandler can still log the
 	// deprecation warning that names `autoShare`.
+	// `mailBlocks` splits a schema into several Mail-panel blocks, each with
+	// its own title, item name, mail template and list filter.
 	private const CONFIG_PASS_THROUGH = [
+		'mailBlocks',
 		'autoPublish',
 		'unique',
 		'uniqueConstraints',

@@ -560,6 +560,15 @@ An app that owns a schema MAY replace the panel's generic "New … from this mai
 - **WHEN** the person presses "+ New … from this mail"
 - **THEN** the panel's generic create dialog MUST open as before
 
+### REQ-001c: Several blocks over one schema
+
+A schema MAY declare `configuration.mailBlocks`, a list of blocks the panel shows for it instead of one. Each entry MAY set a `key`, a `title`, a `name` (replaces `mailObjectName`), a `template` (replaces `mailObjectTemplate`), a `filter` (query parameters every list and search of the block adds) and `appDialog: false` (the generic create dialog opens even when the schema's app offers its own). A schema without `mailBlocks` keeps one block. `mailBlocks` is a kept configuration key.
+
+#### Scenario: A queue and the whole list over one schema
+- **GIVEN** a case schema with blocks `Case` and `Work queue`, where `Work queue` filters on `assignee: IS NULL` and its template leaves the assignee empty
+- **WHEN** the panel opens on a mail
+- **THEN** it MUST show both blocks, the `Work queue` block MUST list only unassigned cases, and creating from it MUST use its own template and name
+
 ---
 
 ### REQ-002: Path-based Mail-app URL routing (Mail 5.x+)
