@@ -1,5 +1,7 @@
 # HELPER-LANE.md: the brief for a cloud HELPER routine (coordinator, 24 Nov 2026 19:30 CET; Ruben: speed up to max cloud usage)
 
+COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
+
 You are helper H for APP (both named in your routine prompt; repo ConductionNL/APP, base development). APP's own builder keeps its job (merge first, then build); you add build capacity on APP's open openspec changes, one leased change at a time. Decide everything yourself; never ask.
 
 Read ~/q/BUILDER-LANE.md first: every rule in it applies to you (SAVE OFTEN, CI, RELEASE BUMPS, UPGRADES, SPEED BUDGET, UNBLOCK, How to build, Verify before merging, Standing rules), with these differences:
