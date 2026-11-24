@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Db;
 /**
  * The caller, route, method and contract version of one API call.
  *
- * These four columns carry the unique index of the record, so one key is one row.
+ * These five columns carry the unique index of the record, so one key is one row.
  *
  * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
  */
@@ -62,18 +62,29 @@ final class ApiCallKey {
 	public readonly string $apiVersion;
 
 	/**
+	 * The official client library and its version, or the empty string.
+	 *
+	 * @var string
+	 */
+	public readonly string $client;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $principal  The caller, or the empty string for anonymous.
 	 * @param string $route      The route pattern.
 	 * @param string $method     The HTTP method.
 	 * @param string $apiVersion The contract version that served the call.
+	 * @param string $client     The official client library and its version, or ''.
+	 *
+	 * @spec openspec/changes/api-client-libraries/specs/api-client-libraries/spec.md#requirement-the-caller-record-names-the-client-library
 	 */
-	public function __construct(string $principal, string $route, string $method, string $apiVersion) {
+	public function __construct(string $principal, string $route, string $method, string $apiVersion, string $client='') {
 		$this->principal  = $principal;
 		$this->route      = $route;
 		$this->method     = $method;
 		$this->apiVersion = $apiVersion;
+		$this->client     = $client;
 
 	}//end __construct()
 }//end class
