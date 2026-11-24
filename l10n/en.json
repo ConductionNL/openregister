@@ -3438,6 +3438,9 @@
         "Destruction list created": "Destruction list created",
         "Destruction lists": "Destruction lists",
         "Legal holds": "Legal holds",
+        "Held back by an inherited appraisal": "Held back by an inherited appraisal",
+        "Held by": "Held by",
+        "Nothing is held back by an inherited appraisal": "Nothing is held back by an inherited appraisal",
         "Transfer to e-Depot": "Transfer to e-Depot",
         "Selection list": "Selection list",
         "{value} records are under a legal hold and were left off the list.": "{value} records are under a legal hold and were left off the list.",
@@ -3496,7 +3499,9 @@
         "Fields marked * are required. The new {name} is connected to this mail.": "Fields marked * are required. The new {name} is connected to this mail.",
         "(optional)": "(optional)",
         "Create and connect": "Create and connect",
-        "No {name} matches “{term}”.": "No {name} matches “{term}”."
+        "No {name} matches “{term}”.": "No {name} matches “{term}”.",
+        "Its ancestor %1$s has appraisal %2$s": "Its ancestor %1$s has appraisal %2$s",
+        "Its ancestor %s could not be read": "Its ancestor %s could not be read"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
