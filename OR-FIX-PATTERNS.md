@@ -798,3 +798,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: several clean, approved migration PRs all sit at main's <version> after main moved to the value they picked; check-migration-version-bump.php exits 1 on each merged tree.
 - Cause: main absorbs one shared bump, leaving the others with migrations that never run.
 - Fix: merge main (a bump-only commit conflicts with main's info.xml hunk), then bump each PR to its own distinct value past main (this run: #10398 dev.5, #10568 dev.6, #5968 dev.7, #10518 dev.8), so the one that lands second only needs one re-bump.
+## Inherited phpstan on main: FlowStateMapperInterface::deleteByFlow() undefined (or-fix-3)
+- Symptom: phpstan on lib/Service/Flow/FlowService.php: 'Call to an undefined method OCA\OpenRegister\Db\FlowStateMapperInterface::deleteByFlow()' (method.notFound).
+- Cause: main c557d73ad93 narrowed the flow-state mapper to an interface without deleteByFlow; FlowStateMapper still has it, so it runs. Red on plain main aa1f24b9.
+- Fix: none in a PR that does not own the interface; inherited. Same for DeletedController array_map argument.type, WebhookMapper property.onlyWritten, GraphQLService/WebhooksController catch.neverThrown.
