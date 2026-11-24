@@ -773,3 +773,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after a main merge, CoreServiceBindingsTest::testEveryClassCountsToCore lists '<class> counts to Kernel' (or another area), and/or ComponentDependencyRulesTest names a new edge from the PR's file.
 - Cause: an earlier main merge on the PR changed a csv row's area (e.g. the RegisterScopedSchemaResolver trio to Kernel) to silence an edge; main later moved and bound that class in Core, and the union kept the PR's row.
 - Fix: diff scripts/component-map.csv vs origin/main for rows that are not the PR's own files and restore main's; rerun component-patterns.py. If the PR's file then crosses areas, reach it through a Kernel contract (here ObjectOperationsInterface setRegister/setSchema + getCurrent*Entity, as ObjectExportController does), never the baseline (see #10498 6b20d3ad).
+## Clean main merge, components yaml stale anyway (or-fix-3)
+- Symptom: on an APPROVED PR that merges clean, ComponentDefinitionTest says 'lib/Service/Audit/AuditResealInterface.php matches no component' and ComponentDependencyRulesTest shows new edges.
+- Cause: git auto-merges sigrid.components.yaml line by line, so main's new pattern lines drop out where the PR rewrote the same component's list.
+- Fix: the PR counts as red on main: merge main, run python3 scripts/component-patterns.py, commit the yaml with the merge (#10493). Run DbalObjectSource* tests serially: in parallel they share one sqlite file and fail with 'table already exists'.
