@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AnonymisationMethodsInterface;
+use OCA\OpenRegister\Kernel\Contracts\BackendStatement;
 use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
@@ -374,9 +376,41 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 
 		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
 		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+		if (array_key_exists(BackendStatement::SETTINGS_KEY, $settings) === true) {
+			$settings[BackendStatement::SETTINGS_KEY] = self::statedBackends(statements: $settings[BackendStatement::SETTINGS_KEY]);
+		}
 
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * The administrators' statements, per backend an administrator can state.
+	 *
+	 * The pattern backend is always the product's and is never stored. An
+	 * OpenAnonymiser statement is kept for when the source is external.
+	 *
+	 * @param mixed $statements The stored or submitted statements.
+	 *
+	 * @return array<string, array{trainingUse: string, retention: string}>
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+	 */
+	private static function statedBackends(mixed $statements): array {
+		if (is_array($statements) === false) {
+			return [];
+		}
+
+		$stated = [];
+		foreach (AnonymisationMethodsInterface::METHODS as $backend) {
+			if ($backend === AnonymisationMethodsInterface::METHOD_REGEX || array_key_exists($backend, $statements) === false) {
+				continue;
+			}
+
+			$stated[$backend] = BackendStatement::stated(stored: $statements[$backend])->toStored();
+		}
+
+		return $stated;
+	}//end statedBackends()
 
 	/**
 	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
@@ -449,9 +483,18 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$submitted += array_intersect_key(
+			$this->storedAnonymisation(),
+			['capacityPolicy' => true, 'officialsSource' => true, BackendStatement::SETTINGS_KEY => true]
+		);
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
+		// Training use and retention per backend (REQ-ADI-003): kept when a save
+		// does not name them; the product's own statements are never stored.
+		$submitted[BackendStatement::SETTINGS_KEY] = self::statedBackends(statements: ($submitted[BackendStatement::SETTINGS_KEY] ?? null));
+		if ($submitted[BackendStatement::SETTINGS_KEY] === []) {
+			unset($submitted[BackendStatement::SETTINGS_KEY]);
+		}
 
 		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
 			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');

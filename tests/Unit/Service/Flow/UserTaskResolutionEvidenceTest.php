@@ -116,6 +116,7 @@ class EvidenceRoster implements IPrincipalResolver {
  * @uses   \OCA\OpenRegister\Service\Task\TaskFormSources
  * @uses   \OCA\OpenRegister\Db\FlowRun
  * @uses   \OCA\OpenRegister\Service\Flow\RunSignal
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\UserTaskItemPerformers
  */
 final class UserTaskResolutionEvidenceTest extends TestCase {
 
