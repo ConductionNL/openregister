@@ -2,12 +2,12 @@
 
 ## 1. Tagging handler
 
-- [ ] 1.1 `hasObjectTag()`, colour on create through `updateTag()`, colour on an uncoloured existing tag only, and a no-op remove. Verify: a new `tests/Unit/Service/File/TaggingHandlerTest.php` for each case, including a tag an administrator already coloured.
+- [x] 1.1 `hasObjectTag()`, colour on create through `updateTag()`, colour on an uncoloured existing tag only, and a no-op remove. Verify: a new `tests/Unit/Service/File/TaggingHandlerTest.php` for each case, including a tag an administrator already coloured.
 
 ## 2. Node
 
-- [ ] 2.1 `TagObjectNode` with config validation, target resolution, the acting identity, the `update` check and idempotence. Verify: `tests/Unit/Service/Flow/Nodes/TagObjectNodeTest.php` for add, remove, no-op, missing identity, forbidden object, bad colour, `createIfMissing: false`.
-- [ ] 2.2 Register the node and its config form; it appears in `GET /api/flow/node-catalog` for administrators and users. Verify: `FlowNodeRegistryTest` asserts the node in both palettes.
+- [x] 2.1 `TagObjectNode` with config validation, target resolution, the acting identity, the `update` check and idempotence. Verify: `tests/Unit/Service/Flow/Nodes/TagObjectNodeTest.php` for add, remove, no-op, missing identity, forbidden object, bad colour, `createIfMissing: false`.
+- [x] 2.2 Register the node and its config form; it appears in `GET /api/flow/node-catalog` for administrators and users. Verify: `FlowNodeRegistryTest` asserts the node in both palettes.
 
 ## 3. Tests and docs
 

@@ -87,6 +87,37 @@ final class ShippedBaselineStoreRecordTest extends TestCase {
 	}//end testABaselineIsWrittenAtTheSubjectAddress()
 
 	/**
+	 * Kept-local conflicts are written beside the baseline, under their own key on the same subject.
+	 *
+	 * @return void
+	 */
+	public function testConflictsAreWrittenBesideTheBaseline(): void {
+		$created = [];
+		$mapper = $this->createMock(ConfigurationValueMapper::class);
+		$mapper->method('findAtAddress')->willReturn(null);
+		$mapper->expects($this->once())->method('createFromArray')->willReturnCallback(
+			function (array $row) use (&$created) {
+				$created = $row;
+				return new \OCA\OpenRegister\Db\ConfigurationValue();
+			}
+		);
+
+		$store = new ShippedBaselineStore(
+			new ConfigurationValueStore($mapper, $this->createMock(IAppConfig::class), 'openregister'),
+			$this->createMock(LoggerInterface::class)
+		);
+		$conflicts = ['conflicts' => [['path' => 'required', 'shipped' => ['a'], 'live' => ['b']]]];
+
+		$this->assertTrue($store->recordConflicts('zaak', new ShippedDefinition($conflicts, 'procest', '2.0.0')));
+
+		$this->assertSame('schema:zaak', $created['layerRef']);
+		$this->assertSame(ShippedBaselineStore::KEY_SCHEMA_CONFLICTS, $created['configKey']);
+		$this->assertNotSame(ShippedBaselineStore::KEY_SCHEMA, $created['configKey']);
+		$this->assertSame($conflicts, $created['configValue']['value']['definition']);
+		$this->assertSame('2.0.0', $created['configValue']['value']['appVersion']);
+	}//end testConflictsAreWrittenBesideTheBaseline()
+
+	/**
 	 * The config key names which baseline is kept.
 	 *
 	 * @return void
