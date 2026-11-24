@@ -4475,3 +4475,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T22:00:53Z precheck-20261124T211833-cd130a03 CONFLICT-DEV #10553 4f6566ab
 2026-11-24T22:06:15Z session-20261124T213526-381bd59b cloud-or-reviewer-2: APPROVE 10530 10554 10498 (fast path), 10514 (merge re-check, token ceiling narrowing kept), 11066 (full), 11074 (checkout v7, CI-only), 10634 (lock bump; corrects my stale-main BLOCK); BLOCK 11082 (babel traverse 8 under core 7 breaks jest); 10946 draft; lane 2 otherwise ledgered at head
 2026-11-24T22:07:45Z integrator-20261124T184854-1c90b6ab GREEN tree 49241ba3f0 on dev 58d3af3f40 prs 3 front=ok: Tests: 65292, Assertions: 230959, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T22:08:14Z integrator-20261124T184854-1c90b6ab PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
