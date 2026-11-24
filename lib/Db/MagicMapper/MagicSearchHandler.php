@@ -4574,10 +4574,10 @@ class MagicSearchHandler {
 
 		$bind = static function (mixed $value, bool $isList) use ($qb): string {
 			if ($isList === true) {
-				return $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY);
+				return (string)$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY);
 			}
 
-			return $qb->createNamedParameter($value);
+			return (string)$qb->createNamedParameter($value);
 		};
 
 		$qb->andWhere($qb->createFunction($lensFilter->condition(lens: $lens, outerUuid: 't._uuid', bind: $bind)));
