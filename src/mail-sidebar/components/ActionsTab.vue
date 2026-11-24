@@ -534,6 +534,28 @@ export default {
 		},
 
 		/**
+		 * Record the connection in the email link table as well, which the
+		 * object's own Email tab (the `email` integration) lists.
+		 *
+		 * @param {object} schema The schema of the object
+		 * @param {string} objectUuid The object's uuid
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
+		 */
+		async recordEmailLink(schema, objectUuid) {
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			await axios.post(
+				generateUrl(
+					'/apps/openregister/api/objects/{register}/{schema}/{uuid}/emails',
+					{ register: register.id, schema: schema.id, uuid: objectUuid },
+				),
+				{ mailAccountId: this.accountId, messageId: String(this.messageId) },
+			)
+		},
+
+		/**
 		 * @param {object} schema
 		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
@@ -552,6 +574,7 @@ export default {
 					},
 				)
 				await axios.post(url, { id: mailRef })
+				await this.recordEmailLink(schema, objectUuid)
 				showSuccess(
 					t('openregister', 'Connected to {name}', {
 						name: this.objectName(obj),

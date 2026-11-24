@@ -54,6 +54,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TransitionNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\CodeNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
@@ -124,6 +125,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'ObjectWriteNode' => ['serviceTask', 'objects'],
 			'LockObjectNode' => ['serviceTask', 'objects'],
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
+			'TagObjectNode' => ['serviceTask', 'objects'],
 			'LoopNode' => ['serviceTask', 'objects'],
 
 			// Logic. Branches and joins are gateways; reshaping is a scriptTask.
@@ -136,6 +138,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'MapNode' => ['scriptTask', 'logic'],
 			'SetFieldsNode' => ['scriptTask', 'logic'],
 			'FlowStateNode' => ['scriptTask', 'logic'],
+			'CodeNode' => ['scriptTask', 'logic'],
 			'WaitNode' => ['event', 'logic'],
 			'EndNode' => ['event', 'logic'],
 			'SubFlowNode' => ['subProcess', 'logic'],
