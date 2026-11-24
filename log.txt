@@ -4225,3 +4225,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:50:16Z integrator-20261124T145419-19cd7a29 GREEN tree f8d8da181c on dev 3848cdb322 prs 1 front=ok: Tests: 64130, Assertions: 226374, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T17:50:25Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-24T17:50:29Z or-fix-2-20261124T175029 or-fix-2: fixed #10182 (flows.md openregister.code doc, head 0deb4996) and #10532 (main conflict ObjectEntity, head 29152a80); #10982/#11032 BLOCK await product decisions on PR; #11042 REVERIFY awaits review; rest clean; precheck idle step not run: gitleaks install refused by permission check
