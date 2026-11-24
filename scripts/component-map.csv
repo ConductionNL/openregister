@@ -4801,3 +4801,7 @@ Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Audit/ReadRuleResolver.php,,Service,Compliance,Compliance/Service/Audit/ReadRuleResolver.php,0,,Compliance
+Service/Audit/ReadRuleMatch.php,,Service,Compliance,Compliance/Service/Audit/ReadRuleMatch.php,0,,Compliance
+Service/Audit/ReadRuleCaller.php,,Service,Compliance,Compliance/Service/Audit/ReadRuleCaller.php,0,,Compliance
+Migration/Version1Date20261124210000.php,,Migration,,,,,Compliance

@@ -48,10 +48,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Service\Audit\ReadRuleResolver;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -110,12 +112,14 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * @param SettingsServiceInterface    $settings    Reads `retention.auditTrailsEnabled`.
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
+	 * @param ReadRuleResolver|null $readRules Names the read rule that granted a read; null names none.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrails,
 		private readonly SettingsServiceInterface $settings,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ReadRuleResolver $readRules = null,
 	) {
 	}//end __construct()
 
@@ -156,13 +160,25 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the `audit` flag of GetObject::find()'s request.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function registerAuditRead(ObjectEntity $object, bool $audit = true): ?AuditTrail {
 		if ($audit === false || $this->isAuditTrailEnabled() === false) {
 			return null;
 		}
 
-		return $this->auditTrails->createAuditTrail(old: null, new: $object, action: self::READ_ACTION);
+		// The rule that let the reader see the object, digested by the one helper every
+		// read path shares; null when no rule mediated the read.
+		$rule = $this->readRules?->resolve(object: $object);
+
+		return $this->auditTrails->recordChange(
+			change: new AuditedChange(
+				new: $object,
+				action: self::READ_ACTION,
+				ruleDigest: $rule?->digest,
+				ruleVersion: $rule?->version
+			)
+		);
 
 	}//end registerAuditRead()
 

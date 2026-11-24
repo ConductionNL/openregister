@@ -1097,6 +1097,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function buildEntry(AuditedChange $change): AuditTrail {
 		$pair = ['old' => $change->old, 'new' => $change->new];
@@ -1117,6 +1118,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
+		// The rule that granted a read: set before the row is sealed, as the chain covers it.
+		$auditTrail->setRuleDigest($change->ruleDigest);
+		$auditTrail->setRuleVersion($change->ruleVersion);
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);

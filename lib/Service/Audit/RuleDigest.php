@@ -57,6 +57,26 @@ final class RuleDigest {
 	}//end of()
 
 	/**
+	 * The digest of one entry of a schema's rule list, as declared: a map or a bare group name.
+	 *
+	 * A bare string entry (`"behandelaars"`) is digested as its JSON string, so it can
+	 * never collide with the map form of the same group.
+	 *
+	 * @param array<mixed>|string $entry The rule entry that granted the read.
+	 *
+	 * @return string The 64-character lowercase hex digest.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public static function ofEntry(array|string $entry): string {
+		if (is_string($entry) === true) {
+			return hash('sha256', self::canonicalJson(value: $entry));
+		}
+
+		return self::of(rule: $entry);
+	}//end ofEntry()
+
+	/**
 	 * The canonical JSON of an already-sorted value, with the chain's flags.
 	 *
 	 * @param mixed $value The value to encode.
