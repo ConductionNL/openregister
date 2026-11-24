@@ -331,6 +331,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
 
 	/**
+	 * Cache key prefix of the table a uuid was last found in.
+	 */
+	private const LOCATION_KEY_PREFIX = 'loc:';
+
+	/**
+	 * Seconds a uuid's table is remembered.
+	 */
+	private const LOCATION_TTL = 3600;
+
+	/**
+	 * The uuid location cache: false until first asked, then the cache or null.
+	 *
+	 * @var \OCP\ICache|null|false
+	 */
+	private \OCP\ICache|null|false $locationCache = false;
+
+	/**
 	 * Rows the identifier lookup reads at most (key matches first, then id order).
 	 */
 	private const IDENTIFIER_MATCH_LIMIT = 50;
@@ -4992,8 +5009,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// table, so a row whose slug or uri merely equals another row's uuid can
 		// never answer for it, whichever chunk it sits in.
 		$candidates = $this->liveMagicTablesInScope(registerIdScope: $registerIdScope);
-		$passes     = [false];
-		if (Uuid::isValid((string)$identifier) === true) {
+		$isUuid     = Uuid::isValid((string)$identifier);
+		if ($isUuid === true) {
+			$hinted = $this->findAtRememberedTable(identifier: (string)$identifier, candidates: $candidates, template: $template);
+			if ($hinted !== null) {
+				return $hinted;
+			}
+		}
+
+		$passes = [false];
+		if ($isUuid === true) {
 			$passes = [true, false];
 		}
 
@@ -5001,6 +5026,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
 				$found = $this->findInMagicTableChunk(chunk: $chunk, template: $template, uuidOnly: $uuidOnly);
 				if ($found !== null) {
+					if ($isUuid === true) {
+						$this->rememberTableOf(identifier: (string)$identifier, found: $found);
+					}
+
 					return $found;
 				}
 			}
@@ -5009,6 +5038,81 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// Not found in any magic table.
 		throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
 	}//end findAcross()
+
+	/**
+	 * Look a uuid up in the one table it was last found in, or null to scan every table.
+	 *
+	 * A lookup by bare uuid is a UNION over every magic table in scope, which
+	 * costs about a second to plan on an instance with a few hundred tables.
+	 * The table a uuid was found in is remembered for an hour. The hint is
+	 * only a shortcut: its answer counts only when the row it returns carries
+	 * exactly that uuid, and a miss (moved, deleted, not readable) falls back
+	 * to the full scan.
+	 *
+	 * @param string                                                             $identifier The uuid.
+	 * @param array<string, array{registerId: int|string, schemaId: int|string}> $candidates The tables in scope.
+	 * @param MagicCrossTableHit                                                 $template   The identifier and flags of the lookup.
+	 *
+	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}|null The answer, or null.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function findAtRememberedTable(string $identifier, array $candidates, MagicCrossTableHit $template): ?array {
+		$table = $this->locationCache()?->get(self::LOCATION_KEY_PREFIX . $identifier);
+		if (is_string($table) === false || isset($candidates[$table]) === false) {
+			return null;
+		}
+
+		$found = $this->findInMagicTableChunk(chunk: [$table => $candidates[$table]], template: $template);
+		if (($found['object'] ?? null) instanceof ObjectEntity === false || $found['object']->getUuid() !== $identifier) {
+			return null;
+		}
+
+		return $found;
+	}//end findAtRememberedTable()
+
+	/**
+	 * Remember the table a uuid was found in.
+	 *
+	 * @param string $identifier The uuid.
+	 * @param array  $found      The scan's answer.
+	 *
+	 * @return void
+	 */
+	private function rememberTableOf(string $identifier, array $found): void {
+		$object   = ($found['object'] ?? null);
+		$register = ($found['register'] ?? null);
+		$schema   = ($found['schema'] ?? null);
+		if ($object instanceof ObjectEntity === false || $object->getUuid() !== $identifier
+			|| $register instanceof Register === false || $schema instanceof Schema === false
+		) {
+			return;
+		}
+
+		$table = self::TABLE_PREFIX . (int)$register->getId() . '_' . (int)$schema->getId();
+		$this->locationCache()?->set(self::LOCATION_KEY_PREFIX . $identifier, $table, self::LOCATION_TTL);
+	}//end rememberTableOf()
+
+	/**
+	 * The distributed cache of uuid locations, or null when none can be made.
+	 *
+	 * @return \OCP\ICache|null The cache.
+	 */
+	private function locationCache(): ?\OCP\ICache {
+		if ($this->locationCache === false) {
+			$this->locationCache = null;
+			try {
+				$factory = $this->container->get(ICacheFactory::class);
+				if ($factory instanceof ICacheFactory === true && $factory->isAvailable() === true) {
+					$this->locationCache = $factory->createDistributed('openregister_magic_location');
+				}
+			} catch (\Throwable $e) {
+				$this->locationCache = null;
+			}
+		}
+
+		return $this->locationCache;
+	}//end locationCache()
 
 	/**
 	 * The live (non-orphaned) magic tables, keyed by unprefixed table name, narrowed to one register when named.
