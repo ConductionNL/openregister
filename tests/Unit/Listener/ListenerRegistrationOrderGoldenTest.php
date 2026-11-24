@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 260;
+	private const LISTENER_COUNT = 261;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -38,10 +38,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * listeners; every other registration is unchanged and in the same order. Then two
 	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
 	 * share provider then appended one PlatformShareRoutingListener registration on
-	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then two JourneyValidationListener
-	 * registrations (ObjectCreatingEvent, ObjectUpdatingEvent).
+	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
+	 * (PostLoginEvent) was added (count 258 -> 259). Then two JourneyValidationListener
+	 * registrations (ObjectCreatingEvent, ObjectUpdatingEvent) (count 259 -> 261).
 	 */
-	private const SEQUENCE_SHA256 = 'f068637561621fd5aa38bb47ba18f5568c31990a7dcafd96a9723384c0d6d85e';
+	private const SEQUENCE_SHA256 = '6eeb79c1c4b577b19eb590107e2377860b52db7d4bc34c5cb21a708a4b46f828';
 
 	/**
 	 * The registration calls, in call order, with every argument.

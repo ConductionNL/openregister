@@ -38,13 +38,16 @@ final class RowsTable {
 	 * @param string                           $title   The heading above the table.
 	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
 	 * @param array<int, array<string, mixed>> $rows    The rows, each keyed by column key.
+	 * @param bool                             $wholeCells True to print every cell whole instead of cut to the object export's length.
 	 *
 	 * @spec openspec/specs/export-pdf-format/spec.md
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
 	 */
 	public function __construct(
 		public readonly string $title,
 		public readonly array $columns,
 		public readonly array $rows,
+		public readonly bool $wholeCells = false,
 	) {
 	}//end __construct()
 
