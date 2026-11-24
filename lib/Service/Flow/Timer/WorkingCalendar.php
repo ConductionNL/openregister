@@ -98,6 +98,27 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	}//end fromArray()
 
 	/**
+	 * This calendar with a person's working days laid over it.
+	 *
+	 * Its zone, rules, closure days, service hours and blackouts stay; the
+	 * weekdays and hours the person gives replace the calendar's, and their
+	 * absences are non-working days on top of the closure days.
+	 *
+	 * @param array<int, int>|null                          $weekdays The person's working weekdays, or null to keep the calendar's.
+	 * @param float|null                                    $hours    The person's hours per working day, or null to keep the calendar's.
+	 * @param array<int, array{date: string, name: string}> $absences The person's days off.
+	 *
+	 * @return self The overlaid calendar, under the same slug.
+	 *
+	 * @throws FlowTimerValidationException When the replaced weekdays or hours are refused.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-persons-working-pattern-is-read-from-the-app-that-owns-it-req-wca-006
+	 */
+	public function withPersonalDays(?array $weekdays, ?float $hours, array $absences): self {
+		return new self(definition: $this->definition->withPersonalDays(weekdays: $weekdays, hours: $hours, absences: $absences));
+	}//end withPersonalDays()
+
+	/**
 	 * The hours of the day this calendar's clock runs, per weekday.
 	 *
 	 * Empty on a calendar that declares none, and every caller has to ask
