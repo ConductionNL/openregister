@@ -22,11 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
+use Throwable;
 
 /**
  * Builds the helpers the audit-trail mapper runs on every row it writes.
@@ -89,16 +91,23 @@ final class AuditTrailCollaborators {
 	}//end aggregation()
 
 	/**
-	 * The elevation attribution of the open object-action frame, if it used this register, schema and verb.
+	 * The elevation attribution of the open object-action frame, if it used the row's register, schema and verb.
 	 *
-	 * @param string|int|null $registerId The register of the audited object.
-	 * @param string|int|null $schemaId   The schema of the audited object.
-	 * @param string          $verb       The audited action.
+	 * Asked through the container like the other ambient frames the mapper
+	 * reads: an action run (Processes) answers the Compliance-owned port. When
+	 * nothing answers, no elevation is stamped.
+	 *
+	 * @param ContainerInterface $container The DI container.
+	 * @param AuditTrail         $row       The audit row being written.
 	 *
 	 * @return array{elevatedBy: string, triggeredBy: string|null, runAs: string}|null The attribution.
 	 */
-	public static function elevationAttribution(string|int|null $registerId, string|int|null $schemaId, string $verb): ?array {
-		return ObjectActionElevationScope::attributionFor(registerId: $registerId, schemaId: $schemaId, verb: $verb);
+	public static function elevationAttribution(ContainerInterface $container, AuditTrail $row): ?array {
+		try {
+			return $container->get(ElevationAttributionInterface::class)->attributionFor(row: $row);
+		} catch (Throwable) {
+			return null;
+		}
 	}//end elevationAttribution()
 
 	/**

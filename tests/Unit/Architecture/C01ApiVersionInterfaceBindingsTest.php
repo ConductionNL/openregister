@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -56,9 +56,9 @@ final class C01ApiVersionInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ApiCallRecordMapper::class => [ApiCallRecordMapperInterface::class, IntegrationsMapperRegistrar::class],
-		ApiCapabilitiesService::class => [ApiCapabilitiesServiceInterface::class, ContractBindings::class],
-		ApiContractService::class => [ApiContractServiceInterface::class, ContractBindings::class],
-		ApiVersionCatalogue::class => [ApiVersionCatalogueInterface::class, ContractBindings::class],
+		ApiCapabilitiesService::class => [ApiCapabilitiesServiceInterface::class, CoreServiceBindings::class],
+		ApiContractService::class => [ApiContractServiceInterface::class, CoreServiceBindings::class],
+		ApiVersionCatalogue::class => [ApiVersionCatalogueInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

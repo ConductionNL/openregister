@@ -98,11 +98,11 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\CalendarEventObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Service\\CalendarEventService",
+            "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\UserCalendarEventsInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\OptionalAppBridge"
         ],
         "params": {
-            "calendarEventService": "OCA\\OpenRegister\\Service\\CalendarEventService",
+            "calendarEventService": "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\UserCalendarEventsInterface",
             "app": "(no property)"
         }
     },

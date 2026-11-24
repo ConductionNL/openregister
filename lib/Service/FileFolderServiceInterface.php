@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\EntityFolderInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
@@ -31,43 +32,10 @@ use OCP\Files\Node;
 
 /**
  * Creating, resolving, listing, re-validating and removing the folder behind a register or object.
+ *
+ * Creating an entity's folder and removing a register's folder are declared on the Core port it extends.
  */
-interface FileFolderServiceInterface extends ObjectFolderLookupInterface, ObjectFolderAccessInterface {
-
-	/**
-	 * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
-	 *
-	 * This unified method creates folders and stores the folder ID as an integer
-	 * in the entity's folder property instead of using unstable path mapping.
-	 * For ObjectEntity, it ensures the folder is nested under the register folder.
-	 *
-	 * @param Register|ObjectEntity $entity The entity to create a folder for
-	 *
-	 * @return Node|null The created folder Node or null if creation fails
-	 *
-	 * @throws \Exception If folder creation fails or entities not found
-	 * @throws \OCP\Files\NotPermittedException If folder creation is not permitted
-	 * @throws \OCP\Files\NotFoundException If parent folders do not exist
-	 *
-	 * @phpstan-return Node|null
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
-	 *   (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
-	 */
-	public function createEntityFolder(Register|ObjectEntity $entity): ?Node;
-
-	/**
-	 * Remove the folder of a register whose row was just deleted.
-	 *
-	 * @param Register $register The deleted register.
-	 *
-	 * @return bool True when the folder was removed.
-	 *
-	 * @throws \OCP\Files\NotPermittedException When Nextcloud refuses to delete the folder.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function deleteRegisterFolder(Register $register): bool;
+interface FileFolderServiceInterface extends EntityFolderInterface, ObjectFolderLookupInterface, ObjectFolderAccessInterface {
 
 	/**
 	 * Get files for either a Register or ObjectEntity.

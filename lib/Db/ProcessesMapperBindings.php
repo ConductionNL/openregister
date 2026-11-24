@@ -67,6 +67,7 @@ final class ProcessesMapperBindings {
 		RuleRunMapperInterface::class             => RuleRunMapper::class,
 		RuleRunSummaryMapperInterface::class      => RuleRunSummaryMapper::class,
 		RunObjectLockMapperInterface::class       => RunObjectLockMapper::class,
+		SequenceMapperInterface::class            => SequenceMapper::class,
 		TaskAuditMapperInterface::class           => TaskAuditMapper::class,
 		TaskBlockerMapperInterface::class         => TaskBlockerMapper::class,
 		TaskCandidateMapperInterface::class       => TaskCandidateMapper::class,

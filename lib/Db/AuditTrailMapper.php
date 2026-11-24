@@ -261,16 +261,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @SuppressWarnings(PHPMD.StaticAccess) The collaborator asks the elevation port the action run binds.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
 	private function applyElevation(AuditTrail $auditTrail): void {
-		$elevation = AuditTrailCollaborators::elevationAttribution(
-			registerId: $auditTrail->getRegister(),
-			schemaId: $auditTrail->getSchema(),
-			verb: (string)$auditTrail->getAction()
-		);
+		$elevation = AuditTrailCollaborators::elevationAttribution(container: $this->container, row: $auditTrail);
 		if ($elevation === null) {
 			return;
 		}
