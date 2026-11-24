@@ -1344,7 +1344,7 @@ components:
       - ".*/lib/Mcp/BuiltIn/FlowBuiltInToolProviders[.]php"
       - ".*/lib/Mcp/BuiltIn/FlowMcpToolProvider[.]php"
       - ".*/lib/Mcp/BuiltIn/FlowToolServices[.]php"
-      - ".*/lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php"
+      - ".*/lib/Repair/(BackfillFlowSemanticVersions|BackfillFlowTriggerIndex|BackfillFlowVersions|FillCalendarTimeZones|FlowNodeTypeRewrite|FlowTimerRegisterPathInterface|FlowVersionBackfillTally|FlowVersionNumbering|MigrateApprovalChainsToTasks|MigrateRenamedFlowNodeTypes|PerformerField|PerformerTyping|PhantomFlowPurgeRun|ReportUnpublishedSchedules|SeedCaseFixtures|SeedFlowRunTriggerSubject|SeedTaskFixtures|TaskSubjectLocationBackfill)[.]php"
       - ".*/lib/Repair/Support/ApprovalTaskStores[.]php"
       - ".*/lib/Repair/Support/ChainMigrationRun[.]php"
       - ".*/lib/Repair/Support/EveryFlow[.]php"

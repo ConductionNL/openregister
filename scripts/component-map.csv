@@ -1251,6 +1251,7 @@ Files/Service/UploadService.php,104,Files,Files,Files/Service/UploadService.php,
 Formats/BsnFormat.php,40,Formats,Formats,Formats/BsnFormat.php,2,,Kernel
 Formats/CalendarRangeValue.php,60,Formats,Formats,Formats/CalendarRangeValue.php,0,,Kernel
 Formats/CronFormat.php,78,Formats,Formats,Formats/CronFormat.php,0,,Kernel
+Formats/TimeZoneFormat.php,61,Formats,Formats,Formats/TimeZoneFormat.php,0,,Kernel
 Formats/ExtendedFieldTypeValidator.php,93,Formats,Formats,Formats/ExtendedFieldTypeValidator.php,0,,Kernel
 Formats/ImageUrlValue.php,55,Formats,Formats,Formats/ImageUrlValue.php,0,,Kernel
 Formats/IbanFormat.php,66,Formats,Formats,Formats/IbanFormat.php,0,,Kernel
@@ -1660,6 +1661,7 @@ Repair/BackfillFlowVersions.php,124,Repair,Flows,Flows/Repair/BackfillFlowVersio
 Repair/BackfillTaskSubjectLocation.php,92,Repair,Platform,Platform/Repair/BackfillTaskSubjectLocation.php,0,,Platform
 Repair/CheckFlowTimerInvariants.php,79,Repair,Platform,Platform/Repair/CheckFlowTimerInvariants.php,0,,Platform
 Repair/CreateMissingRegisterFolders.php,43,Repair,Platform,Platform/Repair/CreateMissingRegisterFolders.php,0,,Platform
+Repair/FillCalendarTimeZones.php,111,Repair,Flows,Flows/Repair/FillCalendarTimeZones.php,0,,Processes
 Repair/GrantExportWhereReadIsGranted.php,72,Repair,Platform,Platform/Repair/GrantExportWhereReadIsGranted.php,0,,Platform
 Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/ImportCredentialBrokerRegister.php,0,,Platform
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
@@ -4392,6 +4394,7 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Migration/Version1Date20261114180000.php,64,Migration,,,,,Platform
 Service/Archival/AnonymisationDerivedCopies.php,22,Service,Compliance,Compliance/Service/Archival/AnonymisationDerivedCopies.php,0,,Compliance
 Service/Archival/ContentIndexAnonymisationTarget.php,21,Service,Compliance,Compliance/Service/Archival/ContentIndexAnonymisationTarget.php,0,,Compliance
 Service/Archival/StateHistoryAnonymisationTarget.php,19,Service,Compliance,Compliance/Service/Archival/StateHistoryAnonymisationTarget.php,0,,Compliance
