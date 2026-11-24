@@ -182,7 +182,7 @@ class SurveyResultsTest extends TestCase {
 		$this->assertSame('After closing', $table->title);
 		$this->assertSame(
 			['surveyVersion', 'submittedAt', 'subjectObject', 'respondent', 'How satisfied are you?', 'Why?'],
-			array_values($table->labels())
+			$table->columns
 		);
 		$this->assertCount(2, $table->rows);
 		$this->assertSame('person2@example.org', $table->rows[1]['respondent']);
@@ -201,7 +201,7 @@ class SurveyResultsTest extends TestCase {
 
 		$table = $this->results->exportTable(register: 'surveys', survey: ['id' => 's-1', 'anonymity' => 'anonymous', 'minimumResponses' => 5]);
 
-		$this->assertNotContains('respondent', array_values($table->labels()));
+		$this->assertNotContains('respondent', $table->columns);
 		foreach ($table->rows as $row) {
 			$this->assertArrayNotHasKey('respondent', $row);
 		}

@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Export\RowsTable;
+use OCA\OpenRegister\Service\Survey\SurveyAnswerTable;
 use OCA\OpenRegister\Service\Survey\SurveyResults;
 use OCA\OpenRegister\Service\Survey\SurveyResultsWithheldException;
 use OCP\AppFramework\Controller;
@@ -156,17 +156,16 @@ class SurveyResultsController extends Controller {
 	/**
 	 * A table as CSV, its column labels as the header row.
 	 *
-	 * @param RowsTable $table The table.
+	 * @param SurveyAnswerTable $table The table.
 	 *
 	 * @return string The CSV.
 	 */
-	private static function csvOf(RowsTable $table): string {
-		$labels = $table->labels();
+	private static function csvOf(SurveyAnswerTable $table): string {
 		$handle = fopen('php://temp', 'r+');
-		fputcsv($handle, array_values($labels), ',', '"', '');
+		fputcsv($handle, $table->columns, ',', '"', '');
 		foreach ($table->rows as $row) {
 			$line = [];
-			foreach (array_keys($labels) as $key) {
+			foreach ($table->columns as $key) {
 				$line[] = self::cell(value: ($row[$key] ?? null));
 			}
 

@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Survey;
 
-use OCA\OpenRegister\Service\Export\RowsTable;
-
 /**
  * Reads a survey's answer sets and applies the survey's own rules to them.
  *
@@ -129,13 +127,13 @@ class SurveyResults {
 	 * @param string               $register The register id, uuid or slug.
 	 * @param array<string, mixed> $survey   The survey, as survey() returned it.
 	 *
-	 * @return RowsTable The table; an anonymous survey's has no respondent column.
+	 * @return SurveyAnswerTable The table; an anonymous survey's has no respondent column.
 	 *
 	 * @throws SurveyResultsWithheldException When an anonymous survey is below its minimum.
 	 *
 	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-006-answers-export-as-rows
 	 */
-	public function exportTable(string $register, array $survey): RowsTable {
+	public function exportTable(string $register, array $survey): SurveyAnswerTable {
 		$answerSets = $this->answerSetsOf(register: $register, survey: $survey);
 		$disclosure = $this->rules->disclosure(survey: $survey, responseCount: count($answerSets));
 		if ($disclosure['withheld'] === true) {
@@ -147,9 +145,9 @@ class SurveyResults {
 			surveyUuid: (string)($survey['id'] ?? '')
 		);
 
-		return new RowsTable(
+		return new SurveyAnswerTable(
 			title: (string)($survey['title'] ?? ''),
-			columns: $this->shaper->headers(survey: $survey, questions: $questions),
+			columns: array_values($this->shaper->headers(survey: $survey, questions: $questions)),
 			rows: $this->shaper->rows(export: new SurveyExport(survey: $survey, questions: $questions, answerSets: $answerSets))
 		);
 	}//end exportTable()

@@ -16,7 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SurveyResultsController;
-use OCA\OpenRegister\Service\Export\RowsTable;
+use OCA\OpenRegister\Service\Survey\SurveyAnswerTable;
 use OCA\OpenRegister\Service\Survey\SurveyResults;
 use OCA\OpenRegister\Service\Survey\SurveyResultsWithheldException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -186,7 +186,7 @@ class SurveyResultsControllerTest extends TestCase {
 		$this->results->method('survey')->willReturn(['id' => 's-1']);
 		$this->results->method('mayRead')->willReturn(true);
 		$this->results->method('exportTable')->willReturn(
-			new RowsTable(
+			new SurveyAnswerTable(
 				title: 'After closing',
 				columns: ['surveyVersion', 'respondent', 'Why, then?'],
 				rows: [

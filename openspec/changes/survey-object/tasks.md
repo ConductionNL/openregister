@@ -40,7 +40,7 @@
 ## 6. The export
 
 - [x] 6.1 Export answer sets as rows with questions as columns, through the existing export path.
-  - `GET /api/surveys/{register}/{survey}/export` (CSV): SurveyExportShaper rows in the export path's RowsTable
+  - `GET /api/surveys/{register}/{survey}/export` (CSV): the existing SurveyExportShaper headers and rows, one column per question
 - [x] 6.2 Omit the respondent column entirely on an anonymous survey, and refuse below the minimum.
   - refused with 403, the count and the reason
 - [x] 6.3 PHPUnit on both export shapes.
