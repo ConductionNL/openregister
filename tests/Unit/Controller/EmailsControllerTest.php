@@ -22,6 +22,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
@@ -49,12 +50,12 @@ class EmailsControllerTest extends TestCase {
 		$this->emailLinkService = $this->createMock(EmailLinkService::class);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $this->mayUpdate : true;
 			}
-		);
+		));
 
 		$this->controller = new EmailsController(
 			$this->request,
