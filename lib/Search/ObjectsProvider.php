@@ -136,7 +136,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @param SearchScopeCatalog|null   $scopeCatalog  The searchable schemas described the way a scope names them;
 	 *                                                 null describes them without the apps that claim them
 	 * @param SearchProviderIdentities|null $identities The provider identity per claiming app;
-	 *                                                 null knows only the OpenRegister identity
+	 *                                                 null reads them from the scope catalog's claims
 	 *
 	 * @return void
 	 *
@@ -150,7 +150,7 @@ class ObjectsProvider implements IFilteringProvider {
 		?SearchProviderIdentities $identities = null,
 	) {
 		$this->scopeCatalog = ($scopeCatalog ?? new SearchScopeCatalog(catalog: $catalog, logger: $output->logger));
-		$this->identities   = ($identities ?? new SearchProviderIdentities(l10n: $output->l10n, logger: $output->logger));
+		$this->identities   = ($identities ?? new SearchProviderIdentities(l10n: $output->l10n, logger: $output->logger, claims: $this->scopeCatalog));
 	}//end __construct()
 
 	/**

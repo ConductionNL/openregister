@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
@@ -61,9 +60,9 @@ class SearchProviderIdentities {
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N                                 $l10n     Names the OpenRegister identity.
-	 * @param LoggerInterface                       $logger   Where an unreadable registry is reported.
-	 * @param DeepLinkRegistryServiceInterface|null $deepLink The claims; null means no app claimed anything.
+	 * @param IL10N                   $l10n   Names the OpenRegister identity.
+	 * @param LoggerInterface         $logger Where an unreadable registry is reported.
+	 * @param SearchScopeCatalog|null $claims Reads the deep link claims; null means no app claimed anything.
 	 *
 	 * @return void
 	 *
@@ -72,7 +71,7 @@ class SearchProviderIdentities {
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
-		private readonly ?DeepLinkRegistryServiceInterface $deepLink = null,
+		private readonly ?SearchScopeCatalog $claims = null,
 	) {
 	}//end __construct()
 
@@ -164,12 +163,12 @@ class SearchProviderIdentities {
 	 * @return array<string, array{name: string, pairs: array<int, string>}> The claims by app id.
 	 */
 	private function claimsByApp(): array {
-		if ($this->deepLink === null) {
+		if ($this->claims === null) {
 			return [];
 		}
 
 		try {
-			$registrations = $this->deepLink->registrations();
+			$registrations = $this->claims->registrations();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'[SearchProviderIdentities] Failed to read the deep-link registry; only the OpenRegister identity is offered: {error}',

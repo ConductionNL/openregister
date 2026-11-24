@@ -13,9 +13,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Search\SearchProviderIdentities;
 use OCA\OpenRegister\Search\SearchProviderIdentity;
+use OCA\OpenRegister\Search\SearchScopeCatalog;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
@@ -27,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Search\SearchProviderIdentities
  * @covers \OCA\OpenRegister\Search\SearchProviderIdentity
  * @uses   \OCA\OpenRegister\Dto\DeepLinkRegistration
+ * @uses   \OCA\OpenRegister\Search\SearchScopeCatalog
  */
 class SearchProviderIdentitiesTest extends TestCase {
 
@@ -39,6 +42,21 @@ class SearchProviderIdentitiesTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		return $l10n;
+	}
+
+	/**
+	 * The scope catalog the claims are read through.
+	 *
+	 * @param DeepLinkRegistryServiceInterface $deepLink The registry.
+	 *
+	 * @return SearchScopeCatalog The catalog.
+	 */
+	private function claims(DeepLinkRegistryServiceInterface $deepLink): SearchScopeCatalog {
+		return new SearchScopeCatalog(
+			catalog: $this->createMock(SchemaCatalogInterface::class),
+			logger: $this->createMock(LoggerInterface::class),
+			deepLink: $deepLink
+		);
 	}
 
 	/**
@@ -56,7 +74,7 @@ class SearchProviderIdentitiesTest extends TestCase {
 		return new SearchProviderIdentities(
 			l10n: $this->l10n(),
 			logger: ($logger ?? $this->createMock(LoggerInterface::class)),
-			deepLink: $deepLink
+			claims: $this->claims($deepLink)
 		);
 	}
 
@@ -164,7 +182,7 @@ class SearchProviderIdentitiesTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects(self::once())->method('error')->with(self::stringContains('Failed to read the deep-link registry'));
 
-		$broken = new SearchProviderIdentities(l10n: $this->l10n(), logger: $logger, deepLink: $deepLink);
+		$broken = new SearchProviderIdentities(l10n: $this->l10n(), logger: $logger, claims: $this->claims($deepLink));
 
 		self::assertSame(['openregister'], array_map(static fn (SearchProviderIdentity $i): string => $i->id, $broken->all()));
 		self::assertSame('openregister', $broken->forPair(registerSlug: 'zaken', schemaSlug: 'case')->id);
@@ -180,7 +198,7 @@ class SearchProviderIdentitiesTest extends TestCase {
 		$deepLink->expects(self::once())->method('registrations')->willReturn(
 			[new DeepLinkRegistration(appId: 'dossiq', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c')]
 		);
-		$identities = new SearchProviderIdentities(l10n: $this->l10n(), logger: $this->createMock(LoggerInterface::class), deepLink: $deepLink);
+		$identities = new SearchProviderIdentities(l10n: $this->l10n(), logger: $this->createMock(LoggerInterface::class), claims: $this->claims($deepLink));
 
 		$identities->all();
 		$identities->byId(id: 'dossiq');

@@ -41,6 +41,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Dto\DeepLinkRegistration
+ * @uses \OCA\OpenRegister\Search\SearchProviderIdentities
+ * @uses \OCA\OpenRegister\Search\SearchProviderIdentity
  *
  * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md
  */
@@ -199,5 +201,78 @@ final class SearchScopeCatalogTest extends TestCase {
 			->with(self::stringContains('Failed to describe searchable schemas'), self::anything());
 
 		self::assertSame([], (new SearchScopeCatalog(catalog: $this->catalog, logger: $this->logger))->describe());
+	}
+
+	/**
+	 * A catalog with the given claims and a translator that returns the text.
+	 *
+	 * @param array<int, DeepLinkRegistration> $registrations The claims.
+	 *
+	 * @return SearchScopeCatalog The catalog.
+	 */
+	private function claiming(array $registrations): SearchScopeCatalog {
+		$deepLink = $this->createMock(DeepLinkRegistryServiceInterface::class);
+		$deepLink->method('registrations')->willReturn($registrations);
+		$l10n = $this->createMock(\OCP\IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+
+		return new SearchScopeCatalog(catalog: $this->catalog, logger: $this->logger, deepLink: $deepLink, l10n: $l10n);
+	}
+
+	/**
+	 * 🔴 The identities offered are those owning one of the given rows, in their order; an unclaimed row is OpenRegister's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testProvidersAreTheIdentitiesOwningTheGivenRows(): void {
+		$catalog = $this->claiming(
+			[
+				new DeepLinkRegistration(appId: 'keepiq', registerSlug: 'vault', schemaSlug: 'secret', urlTemplate: '/k'),
+				new DeepLinkRegistration(appId: 'procest', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c', displayName: 'Zaken'),
+				new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'crm', schemaSlug: 'contact', urlTemplate: '/p'),
+			]
+		);
+
+		$rows = [
+			['id' => 2, 'register' => 'crm', 'slug' => 'contact'],
+			['id' => 1, 'register' => 'Zaken', 'slug' => 'Case'],
+			['id' => 4, 'register' => 'archive', 'slug' => 'case'],
+		];
+
+		self::assertSame(
+			[
+				['id' => 'openregister', 'name' => 'Open Register Objects', 'order' => 10],
+				['id' => 'procest', 'name' => 'Zaken', 'order' => 12],
+				['id' => 'pipelinq', 'name' => 'pipelinq', 'order' => 13],
+			],
+			$catalog->providers(rows: $rows),
+			'keepiq owns none of the rows; archive::case keeps OpenRegister'
+		);
+		self::assertSame(
+			[['id' => 'procest', 'name' => 'Zaken', 'order' => 12]],
+			$catalog->providers(rows: [['id' => 1, 'register' => 'zaken', 'slug' => 'case']]),
+			'OpenRegister is offered only when it owns a row too'
+		);
+	}
+
+	/**
+	 * No rows, or no translator, offers no identity; the claims are the registry's registrations.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testNoRowsOrNoTranslatorOffersNoIdentity(): void {
+		$claim = new DeepLinkRegistration(appId: 'procest', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c');
+		$catalog = $this->claiming([$claim]);
+
+		self::assertSame([], $catalog->providers(rows: []));
+		self::assertSame([$claim], $catalog->registrations());
+
+		$untranslated = new SearchScopeCatalog(catalog: $this->catalog, logger: $this->logger);
+		self::assertSame([], $untranslated->providers(rows: [['id' => 1, 'register' => 'zaken', 'slug' => 'case']]));
+		self::assertSame([], $untranslated->registrations(), 'no registry, no claims');
 	}
 }

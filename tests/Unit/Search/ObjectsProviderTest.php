@@ -1132,8 +1132,7 @@ class ObjectsProviderTest extends TestCase {
 			$objectService,
 			$catalog,
 			$output,
-			new \OCA\OpenRegister\Search\SearchScopeCatalog(catalog: $catalog, logger: $this->logger, deepLink: $deepLink),
-			new \OCA\OpenRegister\Search\SearchProviderIdentities(l10n: $this->l10n, logger: $this->logger, deepLink: $deepLink)
+			new \OCA\OpenRegister\Search\SearchScopeCatalog(catalog: $catalog, logger: $this->logger, deepLink: $deepLink)
 		);
 	}
 

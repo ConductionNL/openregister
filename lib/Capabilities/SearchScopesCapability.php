@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Capabilities;
 
-use OCA\OpenRegister\Search\SearchProviderIdentities;
 use OCA\OpenRegister\Search\SearchScopeCatalog;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\Capabilities\ICapability;
@@ -91,7 +90,6 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * @param PermissionCheckInterface $permissions Whether the current user may read a schema.
 	 * @param IUserSession             $userSession The current user; nobody signed in is offered nothing.
 	 * @param LoggerInterface          $logger      Where a permission check that fails is reported.
-	 * @param SearchProviderIdentities|null $identities The provider identity per claiming app; null offers none.
 	 *
 	 * @return void
 	 */
@@ -100,7 +98,6 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 		private readonly PermissionCheckInterface $permissions,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ?SearchProviderIdentities $identities = null,
 	) {
 	}//end __construct()
 
@@ -128,7 +125,9 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 					'filter' => self::FILTER,
 					'scopes' => $this->availableScopes(rows: $readable),
 					'providerFilter' => self::PROVIDER_FILTER,
-					'providers' => $this->availableProviders(rows: $readable),
+					// The identities owning a schema the reader may read, for the
+					// same reason an app scope is offered only then.
+					'providers' => $this->scopes->providers(rows: $readable),
 				],
 			],
 		];
@@ -154,39 +153,6 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 
 		return $readable;
 	}//end readableRows()
-
-	/**
-	 * The provider identities that own at least one schema the current user may read, in their order.
-	 *
-	 * An identity whose every pair is unreadable is not offered, for the same
-	 * reason an app scope is not: it would answer an empty page and its name
-	 * alone says the data exists.
-	 *
-	 * @param array<int, array<string, mixed>> $rows The readable rows.
-	 *
-	 * @return array<int, array{id: string, name: string, order: int}> The identities.
-	 *
-	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
-	 */
-	private function availableProviders(array $rows): array {
-		if ($this->identities === null) {
-			return [];
-		}
-
-		$owning = [];
-		foreach ($rows as $row) {
-			$owning[$this->identities->forPair(registerSlug: (string)$row['register'], schemaSlug: (string)$row['slug'])->id] = true;
-		}
-
-		$providers = [];
-		foreach ($this->identities->all() as $identity) {
-			if (isset($owning[$identity->id]) === true) {
-				$providers[] = $identity->jsonSerialize();
-			}
-		}
-
-		return $providers;
-	}//end availableProviders()
 
 	/**
 	 * The scopes of the schemas the current user may read: apps, then registers, then schemas.

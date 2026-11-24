@@ -37,9 +37,6 @@ use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Capabilities\SearchScopesCapability
- * @uses   \OCA\OpenRegister\Search\SearchProviderIdentities
- * @uses   \OCA\OpenRegister\Search\SearchProviderIdentity
- * @uses   \OCA\OpenRegister\Dto\DeepLinkRegistration
  * @uses \OCA\OpenRegister\Db\Schema
  *
  * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md
@@ -250,13 +247,13 @@ final class SearchScopesCapabilityTest extends TestCase {
 	}
 
 	/**
-	 * 🔴 The provider identities offered are those owning a readable schema, in their order.
+	 * 🔴 The provider identities are asked for over the readable schemas only, sharing their read checks.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
 	 */
-	public function testOffersTheProviderIdentitiesOwningAReadableSchema(): void {
+	public function testOffersTheProviderIdentitiesOfTheReadableSchemas(): void {
 		$this->signIn('alice');
 		$asked = 0;
 		$this->permissions->method('hasPermission')->willReturnCallback(
@@ -265,55 +262,34 @@ final class SearchScopesCapabilityTest extends TestCase {
 				return $ask->schema->getId() !== 3;
 			}
 		);
-
-		$deepLink = $this->createMock(\OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface::class);
-		$deepLink->method('registrations')->willReturn(
-			[
-				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'keepiq', registerSlug: 'vault', schemaSlug: 'secret', urlTemplate: '/k'),
-				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'procest', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c', displayName: 'Zaken'),
-				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'crm', schemaSlug: 'contact', urlTemplate: '/p'),
-			]
-		);
-		$l10n = $this->createMock(\OCP\IL10N::class);
-		$l10n->method('t')->willReturnArgument(0);
-
-		$capability = new SearchScopesCapability(
-			scopes: $this->catalog,
-			permissions: $this->permissions,
-			userSession: $this->userSession,
-			logger: $this->logger,
-			identities: new \OCA\OpenRegister\Search\SearchProviderIdentities(l10n: $l10n, logger: $this->logger, deepLink: $deepLink)
+		$given = null;
+		$this->catalog->method('providers')->willReturnCallback(
+			function (array $rows) use (&$given): array {
+				$given = array_map(static fn (array $row): int => $row['id'], $rows);
+				return [['id' => 'procest', 'name' => 'Zaken', 'order' => 11]];
+			}
 		);
 
-		$search = $capability->getCapabilities()['openregister']['search'];
+		$search = $this->capability()->getCapabilities()['openregister']['search'];
 
+		self::assertSame([1, 2, 4], $given, 'the vault schema the reader may not read is not handed over');
 		self::assertSame('provider', $search['providerFilter']);
-		self::assertSame(
-			[
-				['id' => 'openregister', 'name' => 'Open Register Objects', 'order' => 10],
-				['id' => 'procest', 'name' => 'Zaken', 'order' => 12],
-				['id' => 'pipelinq', 'name' => 'pipelinq', 'order' => 13],
-			],
-			$search['providers'],
-			'keepiq owns only the unreadable vault schema and is not offered; archive::case keeps OpenRegister'
-		);
+		self::assertSame([['id' => 'procest', 'name' => 'Zaken', 'order' => 11]], $search['providers']);
 		self::assertSame(4, $asked, 'one read check per schema, shared by the scopes and the identities');
 		self::assertContains('app:procest', self::ids(['openregister' => ['search' => $search]]), 'the scopes are unchanged');
 	}
 
 	/**
-	 * Without identities, or without a signed-in user, no provider identity is offered.
+	 * Nobody signed in is asked about no schema and offered no identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
 	 */
-	public function testOffersNoProviderIdentityWithoutIdentitiesOrUser(): void {
-		$this->permissions->method('hasPermission')->willReturn(true);
+	public function testOffersNoProviderIdentityWithoutAUser(): void {
+		$this->permissions->expects(self::never())->method('hasPermission');
+		$this->catalog->method('providers')->willReturnCallback(static fn (array $rows): array => $rows);
 
-		self::assertSame([], $this->capability()->getCapabilities()['openregister']['search']['providers'], 'no user');
-
-		$this->signIn('alice');
-		self::assertSame([], $this->capability()->getCapabilities()['openregister']['search']['providers'], 'no identities');
+		self::assertSame([], $this->capability()->getCapabilities()['openregister']['search']['providers']);
 	}
 }

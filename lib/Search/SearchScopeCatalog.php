@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Search;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCP\IL10N;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,6 +49,7 @@ class SearchScopeCatalog {
 	 * @param SchemaCatalogInterface                $catalog  Schemas (the searchable flag) and registers (ownership).
 	 * @param LoggerInterface                       $logger   Where a description that cannot be built is reported.
 	 * @param DeepLinkRegistryServiceInterface|null $deepLink The (register, schema) pairs each app claims; null claims none.
+	 * @param IL10N|null                            $l10n     Names the OpenRegister provider identity; null offers no identities.
 	 *
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md
 	 */
@@ -55,8 +57,64 @@ class SearchScopeCatalog {
 		private readonly SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 		private readonly ?DeepLinkRegistryServiceInterface $deepLink = null,
+		private readonly ?IL10N $l10n = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The deep link claims: one registration per claimed (register, schema) pair.
+	 *
+	 * The registry keeps the first claim of a pair. Each registration carries
+	 * `appId`, `registerSlug`, `schemaSlug` and an optional `displayName`. A
+	 * registry that cannot be read throws; the caller decides what that means.
+	 *
+	 * @return array<int, object> The registrations; empty without a registry.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function registrations(): array {
+		if ($this->deepLink === null) {
+			return [];
+		}
+
+		return $this->deepLink->registrations();
+	}//end registrations()
+
+	/**
+	 * The provider identities that own at least one of the given described schemas, in their order.
+	 *
+	 * A described row's pair belongs to the app that claimed it, else to the
+	 * OpenRegister identity. An identity owning none of the rows is left out,
+	 * so a list built from the rows a reader may read names no identity whose
+	 * every schema the reader is refused.
+	 *
+	 * @param array<int, array<string, mixed>> $rows Described schemas, as describe() returns them.
+	 *
+	 * @return array<int, array{id: string, name: string, order: int}> The identities; empty without a translator.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function providers(array $rows): array {
+		if ($this->l10n === null || empty($rows) === true) {
+			return [];
+		}
+
+		$identities = new SearchProviderIdentities(l10n: $this->l10n, logger: $this->logger, claims: $this);
+
+		$owning = [];
+		foreach ($rows as $row) {
+			$owning[$identities->forPair(registerSlug: (string)$row['register'], schemaSlug: (string)$row['slug'])->id] = true;
+		}
+
+		$providers = [];
+		foreach ($identities->all() as $identity) {
+			if (isset($owning[$identity->id]) === true) {
+				$providers[] = $identity->jsonSerialize();
+			}
+		}
+
+		return $providers;
+	}//end providers()
 
 	/**
 	 * The searchable schemas with the names a scope uses for them.
