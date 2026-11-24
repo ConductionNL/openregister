@@ -97,21 +97,47 @@ GET /api/objects/{register}/aanvragen?_ref[aanvrager][woonplaats][in][]=Zuiddrec
 - The operators are `eq` (the default), `ne`, `gt`, `gte`, `lt`, `lte` and `in`.
 - Several fields in one block must hold on the same referenced object. A second
   block with a suffix, `_ref[aanvrager:2][...]`, asks for an independent one.
+- A property holding a list of references (`betrokkenen`) is filtered through
+  the list: the object matches when at least one referenced object in its list
+  satisfies the whole block.
 - Only referenced objects the caller may read count: the referenced schema's
   own access rules and organisation boundary apply inside the filter, so a
   hidden object never makes a row match.
 - The filter runs inside the query, so totals and paging count only matching
   objects.
+- A reference property that names a `register` (on the property, or on its
+  `items` for a list) reads the referenced schema in that register; without one
+  the queried register is used. A register that cannot be found is refused
+  rather than replaced by the queried one.
 - Refused with HTTP 400, naming the part: an unknown property, a property that
   is not a reference, a field the referenced schema lacks, an unknown operator,
-  a chain through a second reference, a property holding a list of references
-  (not supported yet), and `_ref` on a search across several schemas.
+  a chain through a second reference, and `_ref` on a search across several
+  schemas.
 
 **Direction.** `_ref` follows a reference *out* of the queried object (where
 this object points). `_related[<schema>][<property>]` runs the other way: it
 keeps objects that rows of another schema point *to*. `_referenced[<schema>][<property>]`
 is the same direction as `_ref` but names the referenced schema itself; `_ref`
 reads it from the property.
+
+**Facets through a reference.** The same names count the queried objects per
+value of a field on the referenced object, so an index page can offer the
+applicant's place as chips:
+
+```
+GET /api/objects/{register}/aanvragen?_facets[_ref][aanvrager][woonplaats][type]=terms
+GET /api/objects/{register}/aanvragen?_facets[_ref][aanvrager][]=woonplaats
+```
+
+The result sits under `facets._ref.aanvrager.woonplaats`, a terms facet with
+buckets and a missing count. It honours the request's filters, counts each
+object once per value (also through a list of references), and counts only
+referenced objects the caller may read. A field the caller may not read is left
+out. Only `terms` is supported; another type, a malformed block, the refusals
+above, and `_facets[_ref]` on a facet request across several schemas give HTTP 400.
+
+**Search backend.** Every `_ref` filter and facet runs on the database; there
+is no separate search index to translate it for.
 
 ## Faceting
 

@@ -19,6 +19,7 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import RecordsTreeView from './RecordsTreeView.vue'
 import {
 	cardSize,
 	galleryCardFields,
@@ -35,6 +36,7 @@ import {
 	viewsStore,
 } from '../../store/store.js'
 import { inheritedProperties } from './inheritedProperties.js'
+import { lensSearchParams, TABLE_LENSES } from './personalLensQuery.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -105,6 +107,7 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		EditableCell,
+		RecordsTreeView,
 	},
 
 	data() {
@@ -112,6 +115,8 @@ export default {
 			objectStore,
 			navigationStore,
 			viewsStore,
+			// Following, Recent and Unread quick filters (record-star-follow-and-unread-on-screen).
+			personalLenses: TABLE_LENSES,
 			isAddingNewObject: false,
 			// Kanban board state (REQ-VIEW-KANBAN-02): the pre-built `columns`
 			// shape from GET /api/views/{id}/kanban, refetched wholesale on
@@ -291,6 +296,27 @@ export default {
 		 */
 		calendarConfig() {
 			return this.activeView?.presentation?.calendar || {}
+		},
+
+		/**
+		 * The active view's tree config (`labelField`/`fields`).
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {object}
+		 */
+		treeConfig() {
+			return this.activeView?.presentation?.tree || {}
+		},
+
+		/**
+		 * The register the tree lists from.
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {string|number}
+		 */
+		treeRegister() {
+			const register = objectStore.searchRegister
+			return register?.id ?? register?.slug ?? register ?? ''
 		},
 
 		/**
@@ -503,6 +529,19 @@ export default {
 		 */
 		handleSort({ key, order }) {
 			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * Apply a personal lens (Following, Recent, Unread) from the quick
+		 * filters and re-run the search from the first page.
+		 *
+		 * @param {number} index The quick-filter tab CnIndexPage reports
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {void}
+		 */
+		handleLensChange(index) {
+			objectStore.updateSearchParams(lensSearchParams(index, this.personalLenses))
 			objectStore.refetchSearchCollection()
 		},
 
@@ -860,7 +899,10 @@ export default {
 			showMassDelete
 			massActionNameField="title"
 			emptyText="No objects found. Select registers and schemas in the sidebar, then search."
+			:personalLenses="personalLenses"
+			showUnreadRows
 			@add="handleAddObject"
+			@quickFilterChange="handleLensChange"
 			@refresh="handleRefresh"
 			@massDelete="handleMassDelete"
 			@massCopy="handleMassCopy"
@@ -965,6 +1007,15 @@ export default {
 			rowKey="id"
 			@rangeChange="handleCalendarRangeChange"
 			@objectClick="handleRowClick" />
+
+		<RecordsTreeView
+			v-else-if="presentationType === 'tree'"
+			:key="`tree-${activeViewId}`"
+			:register="treeRegister"
+			:schema="normalizedSchema"
+			:config="treeConfig"
+			:viewKey="String(activeViewId || '')"
+			@open="handleRowClick" />
 
 		<div
 			v-else-if="presentationType === 'gallery'"
