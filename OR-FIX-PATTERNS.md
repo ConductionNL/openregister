@@ -788,3 +788,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Cause: the checkout is shallow (.git/shallow exists, e.g. the session's preinstalled repo); merge-base resolution is wrong without full history.
 - Fix: use a full-history blobless clone (`git clone --filter=blob:none`) for merge-tree and merges; never resolve conflicts seen only in a shallow repo.
 - Also: tests with @runInSeparateProcess fatal on 'OCP\EventDispatcher\Event not found' when auto_prepend is passed with -d; put it in an ini under PHP_INI_SCAN_DIR (see entry above).
+
+## tests/Unit/Architecture exceeds the 600 s Bash timeout (or-fix-5)
+- Symptom: one phpunit call over tests/Unit/Architecture is killed at the timeout; no failure printed.
+- Cause: every *InterfaceBindingsTest::testNoOutsideFileNamesTheClass case walks all of lib/ (~1 s each); phpunit 10.5 has no --exclude-filter.
+- Fix: run each Architecture test file as its own process in parallel (ls tests/Unit/Architecture/*Test.php | xargs -P $(nproc) ...), resumable; all 201 files finish in ~9 min on 4 cores.
