@@ -263,6 +263,7 @@ exports[`initial component data golden FileConfiguration starts from the recorde
     "openAnonymiserSource": "internal",
     "openAnonymiserUsername": "",
     "presidioApiEndpoint": "",
+    "requireReview": null,
     "textExtractor": {
       "id": "llphant",
       "label": "LLPhant",
