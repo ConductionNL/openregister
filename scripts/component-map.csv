@@ -4450,6 +4450,9 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core
+Service/Import/RecordImport/ImportProgress.php,,Service,,,,,Core
+Controller/RecordImportController.php,,Controller,,,,,Core
 Migration/Version1Date20261114180000.php,64,Migration,,,,,Platform
 Service/Archival/AnonymisationDerivedCopies.php,22,Service,Compliance,Compliance/Service/Archival/AnonymisationDerivedCopies.php,0,,Compliance
 Service/Archival/ContentIndexAnonymisationTarget.php,21,Service,Compliance,Compliance/Service/Archival/ContentIndexAnonymisationTarget.php,0,,Compliance
