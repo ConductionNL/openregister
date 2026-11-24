@@ -88,6 +88,39 @@ class SeedVocabularyRegister implements IRepairStep {
 	];
 
 	/**
+	 * The synonym scheme uri; the same value as SearchDictionaryProvider::SYNONYM_SCHEME
+	 * (restated: Repair is Platform and may not name the Core provider, ADR-013).
+	 *
+	 * @var string
+	 */
+	private const SYNONYM_SCHEME = 'https://openregister.app/vocabularies/search-synonyms';
+
+	/**
+	 * The stopword scheme uri; the same value as SearchDictionaryProvider::STOPWORD_SCHEME.
+	 *
+	 * @var string
+	 */
+	private const STOPWORD_SCHEME = 'https://openregister.app/vocabularies/search-stopwords';
+
+	/**
+	 * The search dictionary's concept schemes, seeded empty (see SearchDictionaryProvider).
+	 *
+	 * @var array<int, array{uri: string, title: string, description: string}>
+	 */
+	private const DICTIONARY_SCHEMES = [
+		[
+			'uri'         => self::SYNONYM_SCHEME,
+			'title'       => 'Search synonyms',
+			'description' => 'Synonym groups for search: a concept\'s prefLabel and its altLabel entries find each other.',
+		],
+		[
+			'uri'         => self::STOPWORD_SCHEME,
+			'title'       => 'Search stopwords',
+			'description' => 'Words search drops: a concept\'s prefLabel is the word to drop.',
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterDescriptorImport $descriptors Importer, app path and log for the descriptor.
@@ -126,7 +159,44 @@ class SeedVocabularyRegister implements IRepairStep {
 	public function run(IOutput $output): void {
 		$this->importRegisterDescriptor(output: $output);
 		$this->seedTooiFixtures(output: $output);
+		$this->seedDictionarySchemes(output: $output);
 	}//end run()
+
+	/**
+	 * Make sure the search dictionary's two concept schemes exist, empty, so an
+	 * administrator has somewhere to write synonym groups and stopwords.
+	 *
+	 * Created only when missing and never through the importer: an import of an
+	 * empty scheme deprecates every concept it does not list, which on every
+	 * upgrade would undo the administrator's dictionary. No synonym or stopword
+	 * is seeded; which words mean the same is each organisation's own decision.
+	 *
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/tasks.md#3-the-dictionary
+	 */
+	private function seedDictionarySchemes(IOutput $output): void {
+		foreach (self::DICTIONARY_SCHEMES as $scheme) {
+			try {
+				// Same trusted scope as seedFixture(): repair steps run without a user
+				// session and the vocabulary schemas' writes are admin-gated.
+				// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+				$result = SystemOperationContext::run(
+					fn (): array => $this->importService->ensureScheme(schemeMeta: $scheme)
+				);
+			} catch (Throwable $e) {
+				$this->descriptors->logger->warning('[SeedVocabularyRegister] dictionary scheme not seeded (' . $scheme['uri'] . '): ' . $e->getMessage());
+				$output->warning('Search dictionary scheme skipped (' . $scheme['uri'] . '): ' . $e->getMessage());
+				continue;
+			}
+
+			if (($result['status'] ?? '') === 'created') {
+				$output->info('Created empty search dictionary scheme ' . $result['scheme']);
+			}
+		}
+	}//end seedDictionarySchemes()
 
 	/**
 	 * Import the `vocabulary_register.json` descriptor (conceptScheme + concept schemas).
