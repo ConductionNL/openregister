@@ -81,6 +81,7 @@ final class ArchivalDeclarationChecksListener implements IEventListener {
 			SchemaDeclarationOrder::MDTO_MAPPING => static fn (Schema $schema) => $refusals->checkMdtoMapping(schema: $schema),
 			SchemaDeclarationOrder::ARCHIVAL => static function (Schema $schema) use ($refusals): void {
 				$refusals->checkArchival(schema: $schema);
+				$refusals->checkAnonymisationProfile(schema: $schema);
 				$refusals->checkExpiry(schema: $schema);
 			},
 			SchemaDeclarationOrder::RETENTION => static fn (Schema $schema) => $refusals->checkRetention(schema: $schema),

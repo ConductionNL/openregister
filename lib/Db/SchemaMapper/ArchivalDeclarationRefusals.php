@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
+use OCA\OpenRegister\Service\Archival\AnonymisationProfile;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
@@ -32,7 +34,8 @@ use Psr\Log\LoggerInterface;
  * Save-time checks of the MDTO element mapping, the archival annotation, the expiry block and the retention declaration.
  *
  * Compliance contributes them to the schema save through
- * SchemaDeclarationChecksEvent, in the MDTO_MAPPING, ARCHIVAL (with the expiry block) and RETENTION slots.
+ * SchemaDeclarationChecksEvent, in the MDTO_MAPPING, ARCHIVAL (with the expiry block) and RETENTION slots;
+ * the anonymisation profile is checked in the ARCHIVAL slot, after the archival annotation.
  *
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
@@ -162,4 +165,58 @@ final class ArchivalDeclarationRefusals {
 			);
 		}
 	}//end checkRetention()
+
+	/**
+	 * Refuse an anonymisation profile that names an undeclared property, or one
+	 * declared in both the `x-openregister-archival` block and the `archive`
+	 * block (design D-6).
+	 *
+	 * A profile may sit under `x-openregister-archival.anonymisation` (the block
+	 * that also carries `retention`) or under `archive.anonymisation`, for a
+	 * schema that archives through the `archive` block and has no `retention`
+	 * object to give. Either way the profile may only name properties the schema
+	 * declares, because it would otherwise silently anonymise nothing; and it may
+	 * sit in only one place, so there is never a question which one wins.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception When the profile names an undeclared property or is declared twice.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
+	 */
+	public function checkAnonymisationProfile(Schema $schema): void {
+		$archival = (array) (($schema->getConfiguration() ?? [])['x-openregister-archival'] ?? []);
+		$archive  = $schema->getArchive();
+
+		$inArchival = (($archival[AnonymisationProfile::ANNOTATION_KEY] ?? null) !== null);
+		$inArchive  = (($archive[AnonymisationProfile::ANNOTATION_KEY] ?? null) !== null);
+
+		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-archival');
+		if ($inArchival === true && $inArchive === true) {
+			$annotation->faults()->refuseWith(
+				messages: [
+					'The anonymisation profile is declared in both x-openregister-archival.anonymisation and '
+					.'archive.anonymisation; declare it in one place only.',
+				]
+			);
+		}
+
+		if ($inArchival === false && $inArchive === false) {
+			return;
+		}
+
+		$block = $archive;
+		if ($inArchival === true) {
+			$block = $archival;
+		}
+
+		$annotation->faults()->refuseWith(
+			messages: (new AnonymisationPlanner())->refusals(
+				annotation: $block,
+				declaredProperties: array_keys($schema->getProperties())
+			)
+		);
+	}//end checkAnonymisationProfile()
 }//end class
