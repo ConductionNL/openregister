@@ -84,6 +84,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -415,6 +417,7 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				TagObjectNodeInterface::class              => TagObjectNode::class,
 				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
