@@ -4211,3 +4211,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:38:03Z precheck-20261124T165103-4e59ef13 NORESULT tree dad159e336: checker floor not measured (exit 2)
 2026-11-24T17:38:19Z or-fix-8: fixed 5968 -> 136ff6b7 (merged main 807c5e84: info.xml version and ImportHandler use-block conflicts; phpstan, Architecture, Db, Migration, Service/Configuration, Service/Flow green beyond inherited reds; REVERIFY recorded). Rest of share (10458 10498 10508 10528 10608 10638 10978 11008 11028 APPROVE; 10518 10538 10568 REVERIFY awaiting review) merge clean, untouched. Idle precheck not run: setup command refused by the session permission check.
 2026-11-24T17:38:18Z integrator-20261124T145419-19cd7a29 MERGED-TREE bf652bacd5: 1 PRs, main now 3848cdb322 = tested tree
+2026-11-24T17:40:15Z precheck-20261124T172502-2ed5f179 NORESULT tree e00cde58b9: deps failed
