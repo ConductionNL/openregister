@@ -3916,7 +3916,8 @@ class MagicSearchHandler {
 	private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void {
 		[$filters, $paths] = $this->nestedPaths->split(filters: $filters, properties: self::METADATA_PATH_ROOTS);
 		$bind = static fn (string $text): string => (string)$qb->createNamedParameter($text);
-		$isPostgres = $this->isPostgresPlatform();
+		// The platform is read only when a path filter needs it: a plain `@self` filter never asks.
+		$isPostgres = $paths !== [] && $this->isPostgresPlatform();
 		foreach ($paths as $path) {
 			$column = "t._{$path['root']}";
 			$this->andWhereEach(qb: $qb, conditions: $this->metadataPathConditions(path: $path, column: $column, bind: $bind, isPostgres: $isPostgres));
