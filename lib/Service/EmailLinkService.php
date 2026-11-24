@@ -278,6 +278,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		$link->setMailAccountId($message->mailAccountId);
 		$link->setMailMessageId($message->messageNumber());
 		$link->setMailMessageUid($message->uidForMatch());
+		$link->setDirection(EmailLink::DIRECTION_INBOUND);
 
 		return $link;
 	}//end buildNewLink()

@@ -61,6 +61,7 @@ interface ObjectEntityCacheInterface {
 	 *
 	 * @param array $identifiers Array of object IDs/UUIDs to preload
 	 * @param int|null $registerId The register to look in first, or null for every table.
+	 * @param list<int>|null $schemaIds The schemas the objects belong to, looked in before the register; null when unknown.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -74,5 +75,5 @@ interface ObjectEntityCacheInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function preloadObjects(array $identifiers, ?int $registerId = null): array;
+	public function preloadObjects(array $identifiers, ?int $registerId = null, ?array $schemaIds = null): array;
 }//end interface

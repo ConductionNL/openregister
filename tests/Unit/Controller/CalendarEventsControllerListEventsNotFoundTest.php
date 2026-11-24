@@ -4,7 +4,7 @@
  * CalendarEventsControllerListEventsNotFoundTest
  *
  * Listing the events of a calendar the user does not have answers 404, and
- * any other failure still answers 500.
+ * any other failure answers a generic 500, the detail in the server log.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -102,6 +102,48 @@ class CalendarEventsControllerListEventsNotFoundTest extends TestCase {
 		$response = $this->controller->listCalendarEvents('personal');
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'CalDAV backend down'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}//end testOtherFailureIsServerError()
+
+	/**
+	 * The detail of an untyped failure goes to the log, not to the caller.
+	 *
+	 * @return void
+	 */
+	public function testOtherFailureIsLoggedWithItsDetail(): void {
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('error')->with($this->stringContains('CalDAV backend down'), $this->anything());
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn([]);
+		$controller = CalendarEventsControllerFactory::create(
+			'openregister',
+			$request,
+			$this->createMock(CalendarEventService::class),
+			$this->calendarLinkService,
+			$this->createMock(ObjectService::class),
+			$this->createMock(PermissionHandler::class),
+			$logger,
+		);
+		$this->calendarLinkService->method('getAvailableCalendars')
+			->willThrowException(new Exception('CalDAV backend down'));
+
+		$response = $controller->listCalendars();
+
+		$this->assertSame([500, ['error' => 'Internal server error']], [$response->getStatus(), $response->getData()]);
+	}//end testOtherFailureIsLoggedWithItsDetail()
+
+	/**
+	 * A typed failure keeps its own status and message.
+	 *
+	 * @return void
+	 */
+	public function testTypedFailureKeepsItsStatus(): void {
+		$this->calendarLinkService->method('getEventsForCalendar')
+			->willThrowException(new \InvalidArgumentException('Limit must be positive'));
+
+		$response = $this->controller->listCalendarEvents('personal');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['message' => 'Limit must be positive', 'error' => 'invalid-argument'], $response->getData());
+	}//end testTypedFailureKeepsItsStatus()
 }//end class

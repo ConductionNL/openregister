@@ -66,8 +66,13 @@
       only the declared types `FederatedStoreCatalog::ownedTypes()` finds in the registry, for
       both the filter kinds and the searched types. Unit-tested on the controller and the
       catalogue; the live Store-page check with thematiq on and off is not done here.
-- [ ] Org source-allowlist / trusted-keys **admin** UI (config keys exist; no UI yet).
-- [ ] "How to share a config" end-user docs.
+- [x] Org source-allowlist / trusted-keys **admin** UI (config keys exist; no UI yet).
+      Done: `FederatedTrustConfiguration` section in the admin settings — allowed sources,
+      trusted publisher keys, the unsigned-bundle switch, publish/install groups and this
+      instance's public key with a copy button, over the existing trust API. Unit-tested;
+      not browser-checked here.
+- [x] "How to share a config" end-user docs. Done: `docs/tutorials/user/09-share-a-configuration.md`,
+      linked from `docs/federated-configuration.md`.
 
 ## Verified against REAL GitHub (2026-07-26)
 - [x] publish → repo created + topic set + Ed25519-signed bundle (201) → fetch (with

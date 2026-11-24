@@ -54,6 +54,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TransitionNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\CodeNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
@@ -77,6 +78,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
@@ -105,6 +107,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			// Ways in. An `event` is what BPMN calls a start, whatever fires it.
 			'TriggerObjectNode' => ['event', 'triggers'],
 			'TriggerManualNode' => ['event', 'triggers'],
+			'TriggerCalendarNode' => ['event', 'triggers'],
 			'TriggerScheduleNode' => ['event', 'triggers'],
 
 			// People. `await-signal` is a receiveTask by kind and `human` by
@@ -137,6 +140,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'MapNode' => ['scriptTask', 'logic'],
 			'SetFieldsNode' => ['scriptTask', 'logic'],
 			'FlowStateNode' => ['scriptTask', 'logic'],
+			'CodeNode' => ['scriptTask', 'logic'],
 			'WaitNode' => ['event', 'logic'],
 			'EndNode' => ['event', 'logic'],
 			'SubFlowNode' => ['subProcess', 'logic'],

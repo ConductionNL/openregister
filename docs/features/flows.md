@@ -147,7 +147,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Three
+A trigger is the node where a run begins. A flow may carry several. Four
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -155,6 +155,7 @@ trigger types ship:
 | `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
+| `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -221,6 +222,17 @@ schedule itself is picked up today.
 `next`, is a hint shown after the run (an `openregister.end` node can override
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
+
+**`openregister.trigger-calendar`** starts the flow at a moment counted from a
+date on each record: a contract's end date minus thirty days, a permit's expiry,
+an appointment plus a week. It names the `register` and `schema` whose records
+carry the date and the `dateProperty`, which must be a property of that schema
+with the format `date` or `date-time`. `offset` is an ISO 8601 duration from that
+date, optionally negative (`-P30D`, `P1W`, `P0D` for the date itself). The
+optional `workingCalendar` names a calendar by its slug to count the offset in
+working time. `runAs` is required and must be an existing account, as for a
+scheduled run. The record is the run's subject. Publishing refuses a trigger
+that could never fire as written.
 
 ### The event catalogue
 
@@ -337,6 +349,18 @@ flow holds.
 ```json
 { "operation": "set", "key": "lastSyncedAt", "from": "updated" }
 ```
+
+**`openregister.code`** (Run code). Runs authored JavaScript on the items. The
+code never runs inside Nextcloud: the step sends it, the items and its limits
+to the `flow-code-runner` ExApp and takes the items it returns. Keys: `source`
+(required), `language` (only `javascript`), `mode` (`perItem`, the default, or
+`allItems`), `timeoutMs` (default 5000), `memoryMb` (default 64), `egress` (a
+list of public host names the code may call; none by default). A limit above
+the instance's ceiling (`flow_code_max_timeout_ms`, default 30000;
+`flow_code_max_memory_mb`, default 256) is refused. Without the runner the step
+is not offered, and a flow that holds one is refused at save, publish and run.
+A failing run fails the step, so its `onError` decides. In `perItem` mode each
+output keeps its input's place, so provenance survives the step.
 
 ### Branching and ending
 
