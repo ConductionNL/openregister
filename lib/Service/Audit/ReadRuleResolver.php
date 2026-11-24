@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ReadRuleMatch;
@@ -78,13 +79,13 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 	 *
 	 * Fail-soft: a schema that cannot be loaded names no rule rather than failing the read.
 	 *
-	 * @param ObjectEntity $object The object that was read.
+	 * @param ObjectEntityInterface $object The object that was read.
 	 *
 	 * @return ReadRuleMatch|null The rule, or null.
 	 *
 	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
-	public function resolve(ObjectEntity $object): ?ReadRuleMatch {
+	public function resolve(ObjectEntityInterface $object): ?ReadRuleMatch {
 		$schemaId = $object->getSchema();
 		if ($schemaId === null || $schemaId === '') {
 			return null;
@@ -120,14 +121,14 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 	 *
 	 * @param array<string, mixed>|null $authorization The schema's authorization block.
 	 * @param string|null               $version       The schema version.
-	 * @param ObjectEntity              $object        The object read.
+	 * @param ObjectEntityInterface     $object        The object read.
 	 * @param ReadRuleCaller            $caller        The reader and their groups.
 	 *
 	 * @return ReadRuleMatch|null The rule, or null when none mediated the read.
 	 *
 	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
-	public function matchFor(?array $authorization, ?string $version, ObjectEntity $object, ReadRuleCaller $caller): ?ReadRuleMatch {
+	public function matchFor(?array $authorization, ?string $version, ObjectEntityInterface $object, ReadRuleCaller $caller): ?ReadRuleMatch {
 		if ($this->bypassesRules(object: $object, caller: $caller) === true) {
 			return null;
 		}
@@ -154,12 +155,12 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 	/**
 	 * Whether the caller reads without a rule: an administrator, or the object's owner.
 	 *
-	 * @param ObjectEntity   $object The object read.
+	 * @param ObjectEntityInterface $object The object read.
 	 * @param ReadRuleCaller $caller The reader.
 	 *
 	 * @return bool True for a bypass.
 	 */
-	private function bypassesRules(ObjectEntity $object, ReadRuleCaller $caller): bool {
+	private function bypassesRules(ObjectEntityInterface $object, ReadRuleCaller $caller): bool {
 		if ($caller->userId === null) {
 			return false;
 		}
@@ -173,17 +174,17 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 	 * @param GroupRuleEntries     $matcher       The per-entry matcher.
 	 * @param array<mixed>|string  $entry         The rule entry.
 	 * @param array<string, mixed> $authorization The block the entry belongs to.
-	 * @param ObjectEntity         $object        The object read.
+	 * @param ObjectEntityInterface $object        The object read.
 	 * @param ReadRuleCaller       $caller        The reader.
 	 *
 	 * @return bool True when the entry admits the caller.
 	 */
-	private function entryAdmits(GroupRuleEntries $matcher, array|string $entry, array $authorization, ObjectEntity $object, ReadRuleCaller $caller): bool {
+	private function entryAdmits(GroupRuleEntries $matcher, array|string $entry, array $authorization, ObjectEntityInterface $object, ReadRuleCaller $caller): bool {
 		foreach ($caller->principals() as $principal) {
 			$request = (new GroupRuleRequest(authorization: $authorization, action: self::ACTION))
 				->forGroup(groupId: $principal, userGroup: null)
 				->forUser(userId: $caller->userId, objectOwner: $object->getOwner())
-				->onObject(data: $object->getMatchEnvelope(), organisation: $object->getOrganisation());
+				->onObject(data: self::matchEnvelope(object: $object), organisation: $object->getOrganisation());
 			if ($matcher->grants(entry: $entry, request: $request) === true) {
 				return true;
 			}
@@ -191,4 +192,19 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 
 		return false;
 	}//end entryAdmits()
+
+	/**
+	 * The data a `match` clause reads: the entity's own envelope, as the permission check builds it.
+	 *
+	 * @param ObjectEntityInterface $object The object read.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function matchEnvelope(ObjectEntityInterface $object): array {
+		if ($object instanceof ObjectEntity) {
+			return $object->getMatchEnvelope();
+		}
+
+		return $object->getObject();
+	}//end matchEnvelope()
 }//end class

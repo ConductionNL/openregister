@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 
 /**
  * The read rule behind a read that was already allowed; it never grants or refuses.
@@ -34,11 +34,11 @@ interface ReadRuleResolverInterface {
 	/**
 	 * The rule that let the signed-in caller read the object, or null when no rule mediated it.
 	 *
-	 * @param ObjectEntity $object The object that was read.
+	 * @param ObjectEntityInterface $object The object that was read.
 	 *
 	 * @return ReadRuleMatch|null The rule, or null for an administrator, the owner, or a schema without read rules.
 	 *
 	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
-	public function resolve(ObjectEntity $object): ?ReadRuleMatch;
+	public function resolve(ObjectEntityInterface $object): ?ReadRuleMatch;
 }//end interface
