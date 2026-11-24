@@ -329,3 +329,14 @@
 2026-11-24T19:52Z help-dossiq-2 skipped woo-request-takes-over-from-opencatalogi 6.1: portaliq delivers Woo forms to opencatalogi only (decision-179 architect change); 4.4/6.2 live
 2026-11-24T19:52Z help-dossiq-2 skipped the 1-task changes (task-list-*, party-*, organisation-*, contacts-*, example-set-*, portal-*, termijn-notices-send, etc.): every open task is a live check (decision 139) or 'one release later'
 2026-11-24T19:52Z help-dossiq-2 run done: merged decidiq#2436, dossiq#6880, #6888, #6891
+2026-11-24T19:56:26Z help-dossiq-4 skipped woo-request-takes-over-from-opencatalogi: 4.4/6.1/6.2 e2e written, live pass only (decision 139); 7.x are delivery steps of merged work
+2026-11-24T19:56:26Z help-dossiq-4 skipped beschikking-chain-on-the-case, woo-case-screens-and-objections 1.1: UI waits for board (decision 162), identity.conduction.nl unreachable
+2026-11-24T19:56:26Z help-dossiq-4 skipped case-mail-through-the-mail-account-with-rfc-8058: waits on an upstream nextcloud/mail header option, not ours to build
+2026-11-24T19:56:26Z help-dossiq-4 skipped dossiq-duplication-to-abstractions, migrate-committees-to-decidiq T4, hermiq-ai-tooling 5.x, page-topology-cleanup: umbrella/decisions, deferred retirement or live-only
+2026-11-24T19:56:26Z help-dossiq-4 idle: every other unstarted dossiq change (37 with 1-2 open tasks) has only live/:8080 checks or next-release removals left
+2026-11-24T19:58Z help-opencatalogi-1 built theme-archive-hotspot 1.4/3.2 #2971 (merged; e2e written, runs in nightly); not archived: 1.3/2.2 live-only
+2026-11-24T20:01Z help-stackiq-1 skipped sharing-generated-api-docs: only open items are the Playwright run of tests/e2e/workflows/api-docs.spec.ts (written) and docs/images/api-documentation.png, both need a live instance; all 42 other stackiq changes already have a branch, nothing startable
+2026-11-24T20:02Z filinq helped learniq: week-timetable-grid T4 #2739 (planner's week strip with occupancy on Today); T3 (mentor-class model missing) and T5 (example data) left
+2026-11-24T20:02Z help-filinq-1 skipped learniq week-timetable-grid T5: vo.py story layer needs a new teacher (Sanne Kramer) with 20 lessons + 1 meeting incl. V4c, deterministic generator pinned by SecondarySchoolExampleSetTest/contract tests; training week-41 course days with capacity already in training.py's story
+2026-11-24T20:02Z help-filinq-1 run ends: filinq #2313 #2314 #2315 #2316, nextcloud-vue #2324, learniq #2737 #2739, openregister issue #11052
+2026-11-24T20:02Z help-opencatalogi-1 built subjects-as-first-class-records 4.1 #2972 (merged; e2e written); left 3.2 live, 5.1 needs portaliq issue links (other repo)
