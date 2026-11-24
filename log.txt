@@ -4107,3 +4107,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T15:32:47Z integrator-20261124T145419-19cd7a29 MERGED-TREE 9b2d84f694: 1 PRs, main now 68b89c9394 = tested tree
 2026-11-24T15:34:12Z session-20261124T152252-b1ec063f learniq builder: merged #2701 (archived report-card-pdf-to-guardians) and #2703 (archived assessment-course-evaluation-answer-page, governance-four-eyes-on-approved-data; e2e written, runs in nightly); development 18b281c2; run continues
 2026-11-24T15:34:11Z session-20261124T153411-2f5cae49 or-fix-5 start: targets #10515 (conflict), #10535 (conflict)
+2026-11-24T15:37:45Z integrator-20261124T145419-19cd7a29 RED tree 32f3457177 prs 1 front=skip: Tests: 64046, Assertions: 226130, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: Unit\Middleware\MaintenanceModeMiddlewareTest::testEveryOperationsRouteStaysReachable
