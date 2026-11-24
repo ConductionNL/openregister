@@ -4524,3 +4524,7 @@
 10549 0b29460e94f966f244e7dbab2d105c5301c57de1 APPROVE cloud-or-reviewer-5: since approved 0243d6d7 only a main merge; PR-side diff identical in all 21 files; merges clean with main
 10494 cde51434c5d04a201eeddc114246cae40b9ba390 APPROVE cloud-or-reviewer-6: fast path; since approved 2a8cb480 only a main merge (base cac830e0); every PR-side +/- line identical per file, same file set; merges clean with main
 10542 183536fb6b8db0aa26e6266a5613260d6e60f0ec APPROVE cloud-or-reviewer-6: fast path; since approved 88d76eac only a main merge (base cac830e0); every PR-side +/- line identical per file, same file set; merges clean with main
+10260 3f424a5bc4f8a32ccb62f538850638a989f28372 APPROVE cloud-or-reviewer-4: since approved b1fbd09b only a main merge; PR-side lib/tests/csv diff identical (61 files), components yaml regenerated; merges clean with main
+10300 3fe4fcb58d01b8573cd78eee9c25419a00630caa APPROVE cloud-or-reviewer-4: since approved f1590d69 only main merges; PR-side diff identical (20 files, csv and yaml rows same); merges clean with main
+10508 feae846410b8de6aefcc3b8e8db604ed62242885 APPROVE cloud-or-reviewer-4: since approved e13ab849 only a main merge; PR-side lib/tests/csv diff identical (7 files), components yaml regenerated; merges clean with main
+10540 bbbafe5c0ad8642127aca9a95a4889849eda63c0 APPROVE cloud-or-reviewer-4: since approved ac822eb5 only main merges; PR-side diff identical (32 files, csv rows same); merges clean with main
