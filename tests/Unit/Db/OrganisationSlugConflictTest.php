@@ -227,12 +227,12 @@ class OrganisationSlugConflictTest extends TestCase {
 	}//end testSavingAnExistingOrganisationUpdatesIt()
 
 	/**
-	 * Creating the default organisation when its slug is taken uses that organisation
-	 * as it is: its uuid and owner stay.
+	 * Creating the default organisation when its slug is taken by an organisation no
+	 * user owns uses that organisation as it is: its uuid and owner stay.
 	 */
 	public function testTheDefaultOrganisationAdoptsTheRowHoldingItsSlug(): void {
 		$this->database->nameTheIndexInUniqueErrors();
-		$existing = $this->newOrganisation(slug: 'default-organisation', owner: 'alice');
+		$existing = $this->newOrganisation(slug: 'default-organisation', owner: '');
 		$existing->setName('Default Organisation');
 		$existing->setUuid(self::FIRST_UUID);
 		$this->mapper->save($existing);
@@ -241,9 +241,30 @@ class OrganisationSlugConflictTest extends TestCase {
 
 		$this->assertSame(self::FIRST_UUID, $default->getUuid());
 		$this->assertSame([self::FIRST_UUID], $this->column(name: 'uuid'));
-		$this->assertSame(['alice'], $this->column(name: 'owner'));
+		$this->assertSame([''], array_map(static fn ($owner): string => (string) $owner, $this->column(name: 'owner')));
 		$this->assertSame(self::FIRST_UUID, ($this->appValues['defaultOrganisation'] ?? ''));
 	}//end testTheDefaultOrganisationAdoptsTheRowHoldingItsSlug()
+
+	/**
+	 * An organisation a user created under the default organisation's slug is not
+	 * adopted: the default is created under the next reserved name, and the user's
+	 * organisation is left as it is.
+	 */
+	public function testTheDefaultOrganisationPassesOverAUserOwnedRowHoldingItsSlug(): void {
+		$this->database->nameTheIndexInUniqueErrors();
+		$existing = $this->newOrganisation(slug: 'default-organisation', owner: 'alice');
+		$existing->setName('Default Organisation');
+		$existing->setUuid(self::FIRST_UUID);
+		$this->mapper->save($existing);
+
+		$default = $this->service()->ensureDefaultOrganisation();
+
+		$this->assertNotSame(self::FIRST_UUID, $default->getUuid());
+		$this->assertNotSame('default-organisation', $default->getSlug());
+		$this->assertCount(2, $this->column(name: 'uuid'));
+		$this->assertContains('alice', $this->column(name: 'owner'));
+		$this->assertSame($default->getUuid(), ($this->appValues['defaultOrganisation'] ?? ''));
+	}//end testTheDefaultOrganisationPassesOverAUserOwnedRowHoldingItsSlug()
 
 	/**
 	 * Creating through the organisation projection is refused the same way, so the
