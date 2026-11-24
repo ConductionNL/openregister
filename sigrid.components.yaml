@@ -1602,6 +1602,8 @@ components:
       - ".*/lib/Service/Lifecycle/TransitionRun[.]php"
       - ".*/lib/Service/Lifecycle/TransitionSubjects[.]php"
       - ".*/lib/Service/Lifecycle/TransitionSubmission[.]php"
+      - ".*/lib/Service/Object/FacetWeekLabels[.]php"
+      - ".*/lib/Service/Object/FacetWeekNumbering[.]php"
       - ".*/lib/Service/ObjectAction/[^/]*"
       - ".*/lib/Service/Party/[^/]*"
       - ".*/lib/Service/Portal/[^/]*"
