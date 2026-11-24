@@ -858,3 +858,13 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a dozen conflicts in lib/Db/SchemaMapper.php, RegisterMapper.php, SchemaLookup.php and their goldens on a build PR (e.g. #10568 object-write-sub-500ms vs main's #10520 object-write-at-instance-floor, both splitting the id/uuid/slug lookup into arms).
 - Cause: two openspec changes implemented the same step; main's landed first.
 - Fix: take main's side for the duplicated part (git checkout --theirs on those files and goldens), re-apply only the PR's own additions onto main's structure, adapt the PR's tests to main's behaviour (e.g. IdentifierArms order: slug before uuid for a non-uuid id), re-record goldens and check the fixture diff is only the PR's addition, note it in the change's tasks.md, and rerun check-migration-version-bump.php.
+
+## Lock-only dependabot PR auto-parked 'composer.lock changed without sbom.cdx.json' (or-fix-9)
+- Symptom: parked.txt auto-park on a dependabot composer PR, even dev-only bumps; regen-sbom --check says stale.
+- Cause: main's committed sbom.cdx.json is stale on the npm side (@conduction/nextcloud-vue 2.180.0 recorded, 2.203.0 locked; seen 24 Nov at main 0bdacec6+), so every lock PR's head fails the check.
+- Fix: merge main, bash ~/q/bin/regen-sbom.sh <checkout>, commit sbom.cdx.json with [skip ci], --check current, push, REVERIFY (#11079). A main PR regenerating the SBOM once would end it.
+
+## Duplicate wiring binding after an earlier build PR of the same change landed (or-fix-3)
+- Symptom: phpstan 'Array has 2 duplicate keys' in a *Wiring::BINDINGS after merging main; the wiring test may stay green because PHP keeps the first key position.
+- Cause: a build/<change>-2 PR landed part of the change (FQCN binding appended at the end); the -3 PR binds the same interface with a use import higher up.
+- Fix: drop the PR's binding, its now-unused use lines and its row in the wiring test's expected list; keep main's.
