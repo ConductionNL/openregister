@@ -3500,7 +3500,14 @@
         "Open changelog": "Open changelog",
         "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Your saved views and the objects you watch. The objects themselves stay with your organisation.",
         "Its ancestor %1$s has appraisal %2$s": "Its ancestor %1$s has appraisal %2$s",
-        "Its ancestor %s could not be read": "Its ancestor %s could not be read"
+        "Its ancestor %s could not be read": "Its ancestor %s could not be read",
+        "Close connections": "Close connections",
+        "Found in this mail": "Found in this mail",
+        "Names, addresses and numbers": "Names, addresses and numbers",
+        "Connected to": "Connected to",
+        "Drop an attachment here to add it": "Drop an attachment here to add it",
+        "Number or words": "Number or words",
+        "New {name} from this mail": "New {name} from this mail"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

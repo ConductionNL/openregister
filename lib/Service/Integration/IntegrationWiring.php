@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
 use OCA\OpenRegister\Service\Observability\RequestMetricsRecorder;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
+use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
@@ -58,6 +60,7 @@ use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
+use OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
@@ -118,6 +121,7 @@ final class IntegrationWiring {
 		EmailServiceInterface::class => EmailService::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
+		ExternalRegisterLookupInterface::class => ExternalRegisterLookup::class,
 		KvkLookupInterface::class => KvkProvider::class,
 		LeafRegistryInterface::class => LeafRegistry::class,
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
@@ -126,6 +130,7 @@ final class IntegrationWiring {
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
 		ScheduledMessageDeliveryInterface::class => ScheduledMessageDelivery::class,
 		ObjectTimelineLinksInterface::class => ObjectRelationCleanupService::class,
+		ToolInvocationRecorderInterface::class => ToolInvocationRecorder::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 		RequestMetricsInterface::class => RequestMetricsRecorder::class,
@@ -150,6 +155,8 @@ final class IntegrationWiring {
 		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
 		KvkProvider::class,
 		OpenCorporatesProvider::class,
+		// @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+		ExternalRegisterProvider::class,
 		// Leaves: NC-native, backend-shipped (wrap existing OR services).
 		// @spec openspec/specs/integration-calendar/spec.md (canonical spec).
 		CalendarProvider::class,

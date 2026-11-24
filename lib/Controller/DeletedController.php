@@ -33,7 +33,9 @@ use DateTimeImmutable;
 use JsonSerializable;
 use OCA\OpenRegister\Controller\Support\BatchOutcome;
 use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
+use OCA\OpenRegister\Controller\Support\DestroyedTombstones;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
+use OCA\OpenRegister\Controller\Support\SyncWatermark;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -264,16 +266,21 @@ class DeletedController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @psalm-return JSONResponse<200|500,
-	 *     array{error?: string,
+	 * @psalm-return JSONResponse<200|400|404|500,
+	 *     array{error?: string, parameter?: string,
 	 *     results?: list<array<string, mixed>>, total?: int,
-	 *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
+	 *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null,
+	 *     destroyedCoverageFrom?: string|null},
 	 *     array<never, never>>
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-list-responses-carry-a-server-side-sync-watermark-req-sync-004
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
 	 */
 	public function index(): JSONResponse {
-		$params = $this->extractRequestParameters();
+		// REQ-SYNC-004: taken before the query, so a write during the read is in the next run.
+		$watermark = new SyncWatermark();
+		$params    = $this->extractRequestParameters();
 
 		// Read-scoped for a non-admin, as the object list is (openregister#4078).
 		$scoped = ($this->services->access->authorizer->isCurrentUserAdmin() === false);
@@ -283,6 +290,15 @@ class DeletedController extends Controller {
 		$filter = $this->deletedFilter(scoped: $scoped);
 		if ($filter instanceof JSONResponse) {
 			return $filter;
+		}
+
+		// REQ-SYNC-003: an unbounded scan of every destruction is not a sync read.
+		$includeDestroyed = $this->includeDestroyed();
+		if ($includeDestroyed === true && $filter->deletedSince === null) {
+			return new JSONResponse(
+				data: ['error' => '_includeDestroyed needs deletedSince, an ISO 8601 date-time such as 2026-10-05T00:00:00+00:00', 'parameter' => 'deletedSince'],
+				statusCode: 400
+			);
 		}
 
 		try {
@@ -307,22 +323,35 @@ class DeletedController extends Controller {
 			$deletedObjects = array_values($deletedObjects);
 			$this->services->access->renderObject->redactWriteOnlyFromRows(rows: $deletedObjects, _rbac: $scoped);
 
+			$results   = $this->withWindows(objects: $deletedObjects);
+			$destroyed = null;
+			if ($includeDestroyed === true) {
+				$destroyed = $this->destroyedListing(filter: $filter, scoped: $scoped, deletedTotal: $total, params: $params);
+				$results   = array_merge($results, $destroyed['results']);
+				$total    += $destroyed['total'];
+			}
+
 			// Calculate pagination.
 			$pages = 1;
 			if (($params['limit'] ?? null) !== null && ($params['limit'] > 0) === true) {
 				$pages = ceil($total / $params['limit']);
 			}
 
-			return new JSONResponse(
-				data: [
-					'results' => $this->withWindows(objects: $deletedObjects),
-					'total' => $total,
-					'page' => $params['page'] ?? 1,
-					'pages' => $pages,
-					'limit' => $params['limit'],
-					'offset' => $params['offset'],
-				]
-			);
+			$data = [
+				'results' => $results,
+				'total' => $total,
+				'page' => $params['page'] ?? 1,
+				'pages' => $pages,
+				'limit' => $params['limit'],
+				'offset' => $params['offset'],
+			];
+			if ($destroyed !== null) {
+				$data['destroyedCoverageFrom'] = $destroyed['destroyedCoverageFrom'];
+			}
+
+			$response = new JSONResponse(data: $data);
+
+			return $watermark->stamp(response: $response);
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: [
@@ -332,6 +361,55 @@ class DeletedController extends Controller {
 			);
 		}//end try
 	}//end index()
+
+	/**
+	 * Whether the caller asked for tombstones of destroyed objects (`_includeDestroyed=true`).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	private function includeDestroyed(): bool {
+		$raw = $this->request->getParam('_includeDestroyed');
+
+		return ($raw === true || $raw === 1 || (is_string($raw) === true && in_array(strtolower($raw), ['true', '1'], true) === true));
+	}//end includeDestroyed()
+
+	/**
+	 * The tombstones of destroyed objects that follow the bin rows on this page.
+	 *
+	 * @param DeletedFilter        $filter       The deleted list's filters, with `deletedSince`.
+	 * @param bool                 $scoped       Whether the caller is read-scoped (not an administrator).
+	 * @param int                  $deletedTotal How many bin rows the filter matches.
+	 * @param array<string, mixed> $params       The page parameters.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, total: int, destroyedCoverageFrom: string|null}
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	private function destroyedListing(DeletedFilter $filter, bool $scoped, int $deletedTotal, array $params): array {
+		$actor = null;
+		if ($scoped === true) {
+			$actor = (string)$this->services->access->userSession->getUser()?->getUID();
+		}
+
+		$tombstones = new DestroyedTombstones(
+			auditTrailMapper: $this->services->store->auditTrailMapper,
+			authorizer: $this->services->access->authorizer
+		);
+
+		$query = $tombstones->queryFor(filter: $filter, actor: $actor);
+		if ($query === null) {
+			return ['results' => [], 'total' => 0, 'destroyedCoverageFrom' => null];
+		}
+
+		return $tombstones->listing(
+			query: $query,
+			deletedTotal: $deletedTotal,
+			limit: (int)($params['limit'] ?? 0),
+			offset: (int)($params['offset'] ?? 0)
+		);
+	}//end destroyedListing()
 
 	/**
 	 * The `register`, `schema` and `deletedSince` filters of the deleted list, or the refusal.
