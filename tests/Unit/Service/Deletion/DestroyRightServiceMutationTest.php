@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -138,7 +139,7 @@ final class DestroyRightServiceMutationTest extends TestCase {
 		$this->permissions->method('resolveAuthorization')->willReturn(['destroy' => ['archivaris']]);
 		$this->permissions->expects($this->once())
 			->method('hasPermission')
-			->with($schema, 'destroy', 'behandelaar-2', 'behandelaar-1', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'destroy', 'behandelaar-2', 'behandelaar-1', true, $object))
 			->willReturn(true);
 
 		$this->assertNull($this->service()->refusalFor($object, $schema));
