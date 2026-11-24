@@ -35,7 +35,11 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AdhocAggregationRun;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\JoinedValueLookup;
 use OCA\OpenRegister\Service\Aggregation\RequestedNarrowing;
 use OCA\OpenRegister\Service\LanguageService;
@@ -79,18 +83,26 @@ class AggregationRunnerHelperCharacterisationTest extends TestCase {
 	private function runner(?DbalObjectSourceProvider $dbal = null): AggregationRunner {
 		$session = $this->createMock(IUserSession::class);
 		return new AggregationRunner(
-			catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
-			placeholders: new PlaceholderResolver($session),
-			db: $this->createMock(IDBConnection::class),
+			sources: new AggregationSources(
+				catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+				db: $this->createMock(IDBConnection::class),
+				dbalSourceProvider: $dbal
+			),
 			cache: $this->createMock(AggregationCache::class),
-			permissionHandler: $this->createMock(PermissionHandler::class),
-			userSession: $session,
-			organisationService: $this->createMock(OrganisationService::class),
-			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
-			logger: $this->logger,
-			dbalSourceProvider: $dbal
+			access: new AggregationAccess(
+				permissionHandler: $this->createMock(PermissionHandler::class),
+				organizationHandler: $this->createMock(MagicOrganizationHandler::class)
+			),
+			caller: new AggregationCaller(
+				userSession: $session,
+				organisationService: $this->createMock(OrganisationService::class),
+				placeholders: new PlaceholderResolver($session)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class),
+				logger: $this->logger
+			)
 		);
 	}
 

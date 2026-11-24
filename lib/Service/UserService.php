@@ -30,9 +30,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\Rbac\AuditEntryRecorder;
 use OCA\OpenRegister\Service\User\AccountPropertyChange;
 use OCA\OpenRegister\Service\User\ActivityQuery;
@@ -40,20 +38,14 @@ use OCA\OpenRegister\Service\User\ApiTokenAuditRow;
 use OCA\OpenRegister\Service\User\ApiTokenRequest;
 use OCA\OpenRegister\Service\User\AvatarUpload;
 use OCA\OpenRegister\Service\User\PasswordChange;
+use OCA\OpenRegister\Service\User\UserAccountStores;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\PropertyDoesNotExistException;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAvatarManager;
 use OCP\IConfig;
-use OCP\IDBConnection;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use OCP\L10N\IFactory;
-use OCP\Security\ISecureRandom;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -146,38 +138,16 @@ class UserService implements UserServiceInterface {
 	/**
 	 * UserService constructor
 	 *
-	 * @param IUserManager $userManager The user manager service
-	 * @param IUserSession $userSession The user session service
-	 * @param IConfig $config The configuration service
-	 * @param IGroupManager $groupManager The group manager service
-	 * @param IAccountManager $accountManager The account manager service
-	 * @param LoggerInterface $logger The logger interface
-	 * @param OrganisationServiceInterface $organisationService The organisation service
-	 * @param IEventDispatcher $eventDispatcher The event dispatcher service
-	 * @param IAvatarManager $avatarManager The avatar manager service
-	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
-	 * @param ISecureRandom $secureRandom Secure random generator
-	 * @param IDBConnection $db Database connection for direct queries
-	 * @param IFactory $l10nFactory L10N factory for language detection
-	 * @param AuditEntryWriterInterface $auditEntries The audit trail, which seals the API token entries it stores
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Service requires many Nextcloud dependencies
+	 * @param UserAccountStores                $directory           The user, group, account and avatar stores.
+	 * @param UserPlatform                 $platform            The session, event dispatcher, language factory and logger.
+	 * @param UserStorage                  $storage             The config, database, audit trail and secure random.
+	 * @param OrganisationServiceInterface $organisationService The organisation service.
 	 */
 	public function __construct(
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly IConfig $config,
-		private readonly IGroupManager $groupManager,
-		private readonly IAccountManager $accountManager,
-		private readonly LoggerInterface $logger,
+		private readonly UserAccountStores $directory,
+		private readonly UserPlatform $platform,
+		private readonly UserStorage $storage,
 		private readonly OrganisationServiceInterface $organisationService,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IAvatarManager $avatarManager,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly ISecureRandom $secureRandom,
-		private readonly IDBConnection $db,
-		private readonly IFactory $l10nFactory,
-		private readonly AuditEntryWriterInterface $auditEntries,
 	) {
 	}//end __construct()
 
@@ -187,7 +157,7 @@ class UserService implements UserServiceInterface {
 	 * @return IUser|null The current user or null if not authenticated
 	 */
 	public function getCurrentUser(): ?IUser {
-		return $this->userSession->getUser();
+		return $this->platform->userSession->getUser();
 	}//end getCurrentUser()
 
 	/**
@@ -200,7 +170,7 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
 	 */
 	public function buildUserDataArray(IUser $user): array {
-		$userGroups = $this->groupManager->getUserGroups($user);
+		$userGroups = $this->directory->groupManager->getUserGroups($user);
 		$groupNames = array_values(array_map(fn ($group) => $group->getGID(), $userGroups));
 
 		$quota = $this->buildQuotaInformation(user: $user);
@@ -307,7 +277,7 @@ class UserService implements UserServiceInterface {
 		try {
 			$organisationStats = $this->organisationService->getUserOrganisationStats();
 		} catch (\Exception $e) {
-			$this->logger->warning('Failed to get user organisation stats: ' . $e->getMessage());
+			$this->platform->logger->warning('Failed to get user organisation stats: ' . $e->getMessage());
 			$organisationStats = ['total' => 0, 'active' => null, 'results' => []];
 		}
 
@@ -406,9 +376,9 @@ class UserService implements UserServiceInterface {
 				newData: $newData,
 				changes: $changes
 			);
-			$this->eventDispatcher->dispatchTyped($event);
+			$this->platform->eventDispatcher->dispatchTyped($event);
 
-			$this->logger->debug(
+			$this->platform->logger->debug(
 				message: '[UserService] UserService: Dispatched UserProfileUpdatedEvent',
 				context: [
 					'file' => __FILE__,
@@ -479,17 +449,17 @@ class UserService implements UserServiceInterface {
 	public function getCustomNameFields(IUser $user): array {
 		$userId = $user->getUID();
 
-		$firstName = $this->config->getUserValue($userId, 'core', 'firstName', '');
+		$firstName = $this->storage->config->getUserValue($userId, 'core', 'firstName', '');
 		if ($firstName === '') {
 			$firstName = null;
 		}
 
-		$lastName = $this->config->getUserValue($userId, 'core', 'lastName', '');
+		$lastName = $this->storage->config->getUserValue($userId, 'core', 'lastName', '');
 		if ($lastName === '') {
 			$lastName = null;
 		}
 
-		$middleName = $this->config->getUserValue($userId, 'core', 'middleName', '');
+		$middleName = $this->storage->config->getUserValue($userId, 'core', 'middleName', '');
 		if ($middleName === '') {
 			$middleName = null;
 		}
@@ -518,7 +488,7 @@ class UserService implements UserServiceInterface {
 		foreach ($allowedFields as $field) {
 			if (isset($nameFields[$field]) === true) {
 				$value = (string)$nameFields[$field];
-				$this->config->setUserValue($userId, 'core', $field, $value);
+				$this->storage->config->setUserValue($userId, 'core', $field, $value);
 			}
 		}
 	}//end setCustomNameFields()
@@ -546,7 +516,7 @@ class UserService implements UserServiceInterface {
 				'relative' => $this->relativeQuotaUsage(userQuota: $userQuota, usedSpace: $usedSpace),
 			];
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[UserService] Failed to build quota information for user: ' . $user->getUID(),
 				context: [
 					'file' => __FILE__,
@@ -582,7 +552,7 @@ class UserService implements UserServiceInterface {
 
 			return $usedSpace;
 		} catch (\Exception $quotaException) {
-			$this->logger->debug(
+			$this->platform->logger->debug(
 				message: '[UserService] User quota calculation failed for user: ' . $userId,
 				context: [
 					'file' => __FILE__,
@@ -628,7 +598,7 @@ class UserService implements UserServiceInterface {
 			$currentMemoryUsage = memory_get_usage(true);
 
 			if ($currentMemoryUsage > 128 * 1024 * 1024) {
-				$this->logger->warning(
+				$this->platform->logger->warning(
 					message: '[UserService] Memory usage too high for quota calculation',
 					context: [
 						'file' => __FILE__,
@@ -645,7 +615,7 @@ class UserService implements UserServiceInterface {
 				return $size;
 			}
 
-			$this->logger->info(
+			$this->platform->logger->info(
 				message: '[UserService] Using fallback quota calculation for user: ' . $userId,
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -656,7 +626,7 @@ class UserService implements UserServiceInterface {
 			// rather than propagate — the contract is "the used space, or 0 if it cannot
 			// be determined safely". Catching \Throwable (not just \Exception) keeps a
 			// stray \Error from escaping into the caller and turning a quota lookup into a 500.
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[UserService] Memory-safe quota calculation failed for user: ' . $userId,
 				context: [
 					'file' => __FILE__,
@@ -676,7 +646,7 @@ class UserService implements UserServiceInterface {
 	 * @return int|null The size in bytes, or null when no numeric size is stored
 	 */
 	private function fetchHomeStorageRootSize(string $userId): ?int {
-		$query = $this->db->getQueryBuilder();
+		$query = $this->storage->db->getQueryBuilder();
 
 		// Used space lives in oc_filecache.size for the storage root (path = ''),
 		// NOT in oc_storages (which has no size column). Join the file cache to the
@@ -737,7 +707,7 @@ class UserService implements UserServiceInterface {
 
 		$language = $user->getLanguage();
 		if (empty($language) === true) {
-			$language = $this->l10nFactory->findLanguage();
+			$language = $this->platform->l10nFactory->findLanguage();
 		}
 
 		return $language;
@@ -787,7 +757,7 @@ class UserService implements UserServiceInterface {
 		$additionalInfo = array_merge($additionalInfo, $customNameFields);
 
 		$userId = $user->getUID();
-		$organizationUuid = $this->config->getUserValue($userId, 'core', 'organisation', '');
+		$organizationUuid = $this->storage->config->getUserValue($userId, 'core', 'organisation', '');
 		if (empty($organizationUuid) === false) {
 			$additionalInfo['organisation'] = $organizationUuid;
 		}
@@ -812,7 +782,7 @@ class UserService implements UserServiceInterface {
 	 * @return array The non-empty phone, website and twitter values
 	 */
 	private function getSettingsProfileInfo(IUser $user, \Exception $exception): array {
-		$this->logger->warning(
+		$this->platform->logger->warning(
 			message: '[UserService] AccountManager failed for user: ' . $user->getUID(),
 			context: [
 				'file' => __FILE__,
@@ -825,7 +795,7 @@ class UserService implements UserServiceInterface {
 
 		$additionalInfo = [];
 		foreach (['phone', 'website', 'twitter'] as $field) {
-			$value = $this->config->getUserValue($userId, 'settings', $field, '');
+			$value = $this->storage->config->getUserValue($userId, 'settings', $field, '');
 			if (empty($value) === false) {
 				$additionalInfo[$field] = $value;
 			}
@@ -848,9 +818,9 @@ class UserService implements UserServiceInterface {
 	 * @return mixed The stored role, or ''
 	 */
 	private function getStoredRole(string $userId): mixed {
-		$role = $this->config->getUserValue($userId, 'core', 'role', '');
+		$role = $this->storage->config->getUserValue($userId, 'core', 'role', '');
 		if (empty($role) === true) {
-			$role = $this->config->getUserValue($userId, 'core', 'functie', '');
+			$role = $this->storage->config->getUserValue($userId, 'core', 'functie', '');
 		}
 
 		return $role;
@@ -868,7 +838,7 @@ class UserService implements UserServiceInterface {
 	private function getAccountManagerPropertiesSelectively(IUser $user): array {
 		$additionalInfo = [];
 
-		$account = $this->accountManager->getAccount($user);
+		$account = $this->directory->accountManager->getAccount($user);
 
 		$neededProperties = [
 			IAccountManager::PROPERTY_PHONE => 'phone',
@@ -891,7 +861,7 @@ class UserService implements UserServiceInterface {
 					$additionalInfo[$apiField] = $value;
 				}
 			} catch (\Exception $e) {
-				$this->logger->debug(
+				$this->platform->logger->debug(
 					message: '[UserService] Failed to load account property: ' . $propertyName,
 					context: [
 						'file' => __FILE__,
@@ -1000,7 +970,7 @@ class UserService implements UserServiceInterface {
 		try {
 			$this->updateAccountProperties(user: $user, data: $data);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[UserService] Failed to update AccountManager properties for user: ' . $user->getUID(),
 				context: [
 					'file' => __FILE__,
@@ -1017,7 +987,7 @@ class UserService implements UserServiceInterface {
 
 		// Store 'role' in user config as fallback for the /me endpoint.
 		if (isset($data['role']) === true) {
-			$this->config->setUserValue($user->getUID(), 'core', 'role', (string)$data['role']);
+			$this->storage->config->setUserValue($user->getUID(), 'core', 'role', (string)$data['role']);
 		}
 	}//end updateProfileProperties()
 
@@ -1030,7 +1000,7 @@ class UserService implements UserServiceInterface {
 	 * @return void
 	 */
 	private function updateAccountProperties(IUser $user, array $data): void {
-		$account = $this->accountManager->getAccount($user);
+		$account = $this->directory->accountManager->getAccount($user);
 		$accountUpdated = false;
 
 		$standardFields = [
@@ -1058,7 +1028,7 @@ class UserService implements UserServiceInterface {
 		}
 
 		if ($accountUpdated === true) {
-			$this->accountManager->updateAccount($account);
+			$this->directory->accountManager->updateAccount($account);
 		}
 	}//end updateAccountProperties()
 
@@ -1169,7 +1139,7 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Verify current password.
-		$verifiedUser = $this->userManager->checkPassword($user->getUID(), $change->currentPassword);
+		$verifiedUser = $this->directory->userManager->checkPassword($user->getUID(), $change->currentPassword);
 		if ($verifiedUser === false) {
 			throw new RuntimeException('Current password is incorrect', 403);
 		}
@@ -1224,7 +1194,7 @@ class UserService implements UserServiceInterface {
 		}
 
 		$userId = $user->getUID();
-		$avatar = $this->avatarManager->getAvatar($userId);
+		$avatar = $this->directory->avatarManager->getAvatar($userId);
 		$avatar->set($upload->data);
 
 		return [
@@ -1255,7 +1225,7 @@ class UserService implements UserServiceInterface {
 			);
 		}
 
-		$avatar = $this->avatarManager->getAvatar($user->getUID());
+		$avatar = $this->directory->avatarManager->getAvatar($user->getUID());
 		$avatar->remove();
 
 		return [
@@ -1282,7 +1252,7 @@ class UserService implements UserServiceInterface {
 		$userId = $user->getUID();
 
 		// Check rate limit.
-		$lastExport = $this->config->getUserValue($userId, self::APP_NAME, 'last_export_time', '0');
+		$lastExport = $this->storage->config->getUserValue($userId, self::APP_NAME, 'last_export_time', '0');
 		$timeSinceExport = time() - (int)$lastExport;
 
 		if ($timeSinceExport < self::EXPORT_RATE_LIMIT) {
@@ -1299,13 +1269,13 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Record export time.
-		$this->config->setUserValue($userId, self::APP_NAME, 'last_export_time', (string)time());
+		$this->storage->config->setUserValue($userId, self::APP_NAME, 'last_export_time', (string)time());
 
 		// Build profile data.
 		$profile = $this->buildUserDataArray(user: $user);
 
 		// Get audit trail entries.
-		$auditData = $this->auditTrailMapper->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: 1000));
+		$auditData = $this->storage->auditTrailMapper->findActorTrail(query: new ActorTrailQuery(userId: $userId, limit: 1000));
 		$auditTrail = array_map(
 			function ($entry) {
 				return $entry->jsonSerialize();
@@ -1338,7 +1308,7 @@ class UserService implements UserServiceInterface {
 		$prefs = [];
 
 		foreach (self::DEFAULT_NOTIFICATION_PREFS as $key => $defaultValue) {
-			$stored = $this->config->getUserValue($userId, self::APP_NAME, 'notification_' . $key, '');
+			$stored = $this->storage->config->getUserValue($userId, self::APP_NAME, 'notification_' . $key, '');
 			$prefs[$key] = $this->preferenceFromStored(stored: $stored, defaultValue: $defaultValue);
 		}
 
@@ -1387,7 +1357,7 @@ class UserService implements UserServiceInterface {
 		// Store provided preferences.
 		foreach ($prefs as $key => $value) {
 			if (array_key_exists($key, self::DEFAULT_NOTIFICATION_PREFS) === true) {
-				$this->config->setUserValue($userId, self::APP_NAME, 'notification_' . $key, $this->preferenceToStore(value: $value));
+				$this->storage->config->setUserValue($userId, self::APP_NAME, 'notification_' . $key, $this->preferenceToStore(value: $value));
 			}
 		}
 
@@ -1447,7 +1417,7 @@ class UserService implements UserServiceInterface {
 	 */
 	public function activity(IUser $user, ActivityQuery $query): array {
 		$window = new ActionWindow(action: $query->type, from: $query->period->from, to: $query->period->to);
-		$data = $this->auditTrailMapper->findActorTrail(
+		$data = $this->storage->auditTrailMapper->findActorTrail(
 			query: new ActorTrailQuery(userId: $user->getUID(), limit: $query->limit, offset: $query->offset, window: $window)
 		);
 
@@ -1494,8 +1464,8 @@ class UserService implements UserServiceInterface {
 		$tokens = $this->tokensWithRoom(userId: $userId);
 
 		// Generate a secure token.
-		$tokenValue = $this->secureRandom->generate(64);
-		$tokenId = $this->secureRandom->generate(16);
+		$tokenValue = $this->storage->secureRandom->generate(64);
+		$tokenId = $this->storage->secureRandom->generate(16);
 		$expires = $this->requestedExpiry(expiresIn: $request->expiresIn);
 		$now = date('c');
 
@@ -1652,8 +1622,8 @@ class UserService implements UserServiceInterface {
 	 * @spec openspec/changes/capability-rows-verified-c/specs/enhanced-audit-trail/spec.md#requirement-changes-to-authorisation-rules-api-tokens-and-record-types-are-on-the-audit-trail
 	 */
 	private function auditToken(string $action, array $token, string $ownerId): void {
-		(new AuditEntryRecorder(trail: $this->auditEntries, logger: $this->logger))->record(
-			entries: [(new ApiTokenAuditRow())->row(action: $action, token: $token, ownerId: $ownerId, actor: $this->userSession->getUser())],
+		(new AuditEntryRecorder(trail: $this->storage->auditEntries, logger: $this->platform->logger))->record(
+			entries: [(new ApiTokenAuditRow())->row(action: $action, token: $token, ownerId: $ownerId, actor: $this->platform->userSession->getUser())],
 			failure: '[UserService] Could not record an API token change; the token change itself was stored'
 		);
 	}//end auditToken()
@@ -1676,7 +1646,7 @@ class UserService implements UserServiceInterface {
 		$userId = $user->getUID();
 
 		// Check for existing request.
-		$existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+		$existing = $this->storage->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
 		if ($existing !== '') {
 			$existingData = json_decode($existing, true);
 			throw new RuntimeException(
@@ -1697,7 +1667,7 @@ class UserService implements UserServiceInterface {
 			'requestedAt' => $now,
 		];
 
-		$this->config->setUserValue($userId, self::APP_NAME, 'deactivation_request', json_encode($requestData));
+		$this->storage->config->setUserValue($userId, self::APP_NAME, 'deactivation_request', json_encode($requestData));
 
 		return [
 			'success' => true,
@@ -1718,7 +1688,7 @@ class UserService implements UserServiceInterface {
 	 */
 	public function getDeactivationStatus(IUser $user): array {
 		$userId = $user->getUID();
-		$existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+		$existing = $this->storage->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
 
 		if ($existing === '') {
 			return [
@@ -1747,13 +1717,13 @@ class UserService implements UserServiceInterface {
 	 */
 	public function cancelDeactivation(IUser $user): array {
 		$userId = $user->getUID();
-		$existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+		$existing = $this->storage->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
 
 		if ($existing === '') {
 			throw new RuntimeException('No pending deactivation request', 404);
 		}
 
-		$this->config->deleteUserValue($userId, self::APP_NAME, 'deactivation_request');
+		$this->storage->config->deleteUserValue($userId, self::APP_NAME, 'deactivation_request');
 
 		return [
 			'success' => true,
@@ -1770,7 +1740,7 @@ class UserService implements UserServiceInterface {
 	 * @return array The stored tokens
 	 */
 	private function getStoredTokens(string $userId): array {
-		$stored = $this->config->getUserValue($userId, self::APP_NAME, 'api_tokens', '');
+		$stored = $this->storage->config->getUserValue($userId, self::APP_NAME, 'api_tokens', '');
 		if ($stored === '') {
 			return [];
 		}
@@ -1787,7 +1757,7 @@ class UserService implements UserServiceInterface {
 	 * @return void
 	 */
 	private function storeTokens(string $userId, array $tokens): void {
-		$this->config->setUserValue($userId, self::APP_NAME, 'api_tokens', json_encode($tokens));
+		$this->storage->config->setUserValue($userId, self::APP_NAME, 'api_tokens', json_encode($tokens));
 	}//end storeTokens()
 
 	/**
