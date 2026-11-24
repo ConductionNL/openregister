@@ -798,8 +798,10 @@ class AggregationController extends Controller {
 				metric: $primary['metric'],
 				field: $primary['field'],
 				filter: $run->filter,
-				groupBy: $this->groupSpec(groupFields: $columns),
-				metrics: $metrics
+				layout: new AggregationLayout(
+					groupBy: $this->groupSpec(groupFields: $columns),
+					metrics: $metrics
+				)
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
