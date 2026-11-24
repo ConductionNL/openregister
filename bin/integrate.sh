@@ -139,14 +139,14 @@ phase_select() {
 	prs=""
 	while :; do
 		chunk=$(gh api "repos/$R/pulls?state=open&base=main&per_page=100&page=$page" \
-			-q '.[]|select(.head.ref|startswith("cloud/"))|select(.head.repo.full_name=="'"$R"'")|select(.draft|not)|[.number,.head.sha,.head.ref,.title]|@tsv' 2>&1) \
+			-q '.[]|select(.user.login=="rubenvdlinde" or .user.login=="dependabot[bot]")|select(.head.repo.full_name=="'"$R"'")|select(.draft|not)|select([.number]|inside([9880,10464,10466,10280,10281])|not)|select(.title|test("mail-mime-parser";"i")|not)|[.number,.head.sha,.head.ref,.title]|@tsv' 2>&1) \
 			|| { say "SELECT-APIERR ${chunk:0:120}"; exit 6; }
 		[ "$(gh api "repos/$R/pulls?state=open&base=main&per_page=100&page=$page" -q length 2>/dev/null)" = 0 ] && break
 		[ -n "$chunk" ] && prs+="$chunk"$'\n'
 		page=$((page + 1)); [ "$page" -gt 10 ] && break
 	done
 	prs=$(sed '/^$/d' <<<"$prs")
-	grep -qE $'^[0-9]+\t[0-9a-f]{40}\t' <<<"$prs" || { [ -z "$prs" ] && { say "SELECT-NONE no open cloud PRs"; : > "$W/cand.tsv"; exit 1; }; say "SELECT-APIERR ${prs:0:120}"; exit 6; }
+	grep -qE $'^[0-9]+\t[0-9a-f]{40}\t' <<<"$prs" || { [ -z "$prs" ] && { say "SELECT-NONE no open PRs to integrate"; : > "$W/cand.tsv"; exit 1; }; say "SELECT-APIERR ${prs:0:120}"; exit 6; }
 	refs=$(awk -F'\t' '{printf "pull/%s/head:refs/remotes/pr/%s ", $1, $1}' <<<"$prs")
 	git -C "$C" fetch -q origin main $refs || { say "SELECT-FETCHERR"; exit 6; }
 	: > "$W/cand.tsv"; q=$W/needs-review.tsv; printf '# pr\thead\tlast_approved\treason\n' > "$q"
