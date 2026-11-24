@@ -4588,3 +4588,4 @@
 10499 2f8e2cdf1cdc1083ba97355d2153fb60d382d863 REVERIFY or-fix-9: merged main (component-map csv + generated yaml conflict, regenerated), bumped info.xml to 2.2.0-dev.5 (PR and main both at dev.4, migrations would not run); phpstan clean, Architecture and PR-touched tests green; l10n parity red identical to main; review needed
 10494 d691ac3a3501e8909a1fd660194811180a841c90 REVERIFY or-fix-4: merged main, fixed component-map.csv/components yaml conflict (union rows, regenerated); review needed
 10509 e3aee8080f56b17bf8584deb2c0aafaa97a80e0e REVERIFY or-fix-9: merged main (component-map csv conflict, yaml regenerated), no code change; phpstan clean, Architecture and PR-touched tests green; review needed
+10514 29b09e96bafbf89d1e230e69d93fac9e88515687 REVERIFY or-fix-4: merged main, fixed CoreServiceBindings (both bindings kept), component-map.csv/yaml conflict, ListenerRegistrationOrderGoldenTest count 258 + new sha; review needed
