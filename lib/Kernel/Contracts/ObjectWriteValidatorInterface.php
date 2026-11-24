@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Kernel
- * @package  OCA\OpenRegister\Kernel\Contracts\Processes
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts\Processes;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;

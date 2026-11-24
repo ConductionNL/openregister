@@ -44,7 +44,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
-use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteValidatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\Registrar\ComplianceListenerRegistrar;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;

@@ -13,7 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Event\DraftDeletedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
-use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteValidatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\DetectionPatternValidationListener;

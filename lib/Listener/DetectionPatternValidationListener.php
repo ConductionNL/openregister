@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteValidatorInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Service\RedactionPolicy\DetectionPatternValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
