@@ -347,7 +347,13 @@ class CascadeRestoreService {
 			return $this->item(object: $object, class: self::CLASS_CHANGED, reason: 'the field was changed since the delete', property: $property);
 		}
 
-		$item = $this->item(object: $object, class: self::CLASS_RELINK, reason: 'the field still holds what the delete wrote', property: $property, relinkTo: $relinkTo);
+		$item = $this->item(
+			object: $object,
+			class: self::CLASS_RELINK,
+			reason: 'the field still holds what the delete wrote',
+			property: $property,
+			relinkTo: $relinkTo
+		);
 
 		return $this->writable(item: $item, object: $object);
 	}//end classifySurvivor()
@@ -412,6 +418,8 @@ class CascadeRestoreService {
 	 * @param ObjectEntity $root   The object being restored.
 	 *
 	 * @return bool True when both deletions belong to one act; true as well when either moment is unrecorded.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
 	 */
 	public static function deletedWith(ObjectEntity $object, ObjectEntity $root): bool {
 		$dependantAt = self::deletedAt(object: $object);

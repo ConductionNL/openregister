@@ -691,7 +691,12 @@ class DeletedController extends Controller {
 		// this the trail shows an object deleted and then, without
 		// explanation, present again.
 		$this->recordRestore(object: $object, window: $window, extra: $this->restoreCounts(result: $result));
-		foreach (($result === null ? [] : $result->dependants) as $dependant) {
+		$dependants = [];
+		if ($result !== null) {
+			$dependants = $result->dependants;
+		}
+
+		foreach ($dependants as $dependant) {
 			$this->recordRestore(object: $dependant, window: null, extra: ['restoredWith' => (string)$object->getUuid()]);
 		}
 

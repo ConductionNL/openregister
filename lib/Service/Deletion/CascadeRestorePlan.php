@@ -98,14 +98,24 @@ final class CascadeRestorePlan {
 	public function skipped(): array {
 		$skipped = [];
 		foreach (CascadeRestoreService::SKIPPED_CLASSES as $class) {
-			$skipped[$class] = array_map(
-				static fn (CascadeRestoreItem $item): array => $item->toArray(),
-				$this->ofClass(class: $class)
-			);
+			$skipped[$class] = $this->publicItems(class: $class);
 		}
 
 		return $skipped;
 	}//end skipped()
+
+	/**
+	 * The items of one class in their public shape.
+	 *
+	 * @param string $class One of {@see CascadeRestoreService::CLASSES}.
+	 *
+	 * @return list<array<string, mixed>> The items as the responses show them.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function publicItems(string $class): array {
+		return array_map(static fn (CascadeRestoreItem $item): array => $item->toArray(), $this->ofClass(class: $class));
+	}//end publicItems()
 
 	/**
 	 * The plan as the preview endpoint returns it.
@@ -118,8 +128,8 @@ final class CascadeRestorePlan {
 		$plan = [
 			'root'         => $this->root,
 			'cascadeKnown' => $this->cascadeKnown,
-			'restore'      => array_map(static fn (CascadeRestoreItem $item): array => $item->toArray(), $this->ofClass(class: CascadeRestoreService::CLASS_RESTORE)),
-			'relink'       => array_map(static fn (CascadeRestoreItem $item): array => $item->toArray(), $this->ofClass(class: CascadeRestoreService::CLASS_RELINK)),
+			'restore'      => $this->publicItems(class: CascadeRestoreService::CLASS_RESTORE),
+			'relink'       => $this->publicItems(class: CascadeRestoreService::CLASS_RELINK),
 		];
 
 		return $plan + $this->skipped() + ['forbidden' => $this->forbiddenSummary()];
