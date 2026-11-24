@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -121,7 +122,8 @@ final class IntegrationControllersWiring {
 				visibility: $container->get(TimelineVisibilityServiceInterface::class),
 				permissions: $container->get(PermissionHandlerInterface::class)
 			),
-			logger: $container->get('Psr\Log\LoggerInterface')
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			idempotency: $container->get(IntegrationCreateIdempotency::class)
 		);
 	}//end buildObjectIntegrationsServices()
 }//end class
