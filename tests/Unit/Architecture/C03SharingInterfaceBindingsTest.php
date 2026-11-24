@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
@@ -55,8 +56,8 @@ final class C03SharingInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		BrpPersonProvider::class => [BrpPersonProviderInterface::class, ContractBindings::class],
-		PortalSubjectAssertion::class => [PortalSubjectAssertionInterface::class, ContractBindings::class],
-		PortalTaskDeliveryService::class => [PortalTaskDeliveryServiceInterface::class, ContractBindings::class],
+		PortalSubjectAssertion::class => [PortalSubjectAssertionInterface::class, ProcessesServiceBindings::class],
+		PortalTaskDeliveryService::class => [PortalTaskDeliveryServiceInterface::class, ProcessesServiceBindings::class],
 		ShareLinkService::class => [ShareLinkServiceInterface::class, ContractBindings::class],
 	];
 
