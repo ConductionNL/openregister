@@ -31,7 +31,17 @@ use OCA\OpenRegister\Db\Schema;
 final class ConfigurationEntryRules {
 	// `objectSlugField` was missing here, so every save and import dropped it
 	// and object slugs could not be switched on outside the database (#4037).
-	private const CONFIG_STRING_FIELDS = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
+	// `workingCalendar` is read by RecordTypeCalendars (working-calendar-admin
+	// REQ-WCA-005): the calendar slug the schema's terms and week numbers follow.
+	// Off this list it was dropped on save, so no record type could name one.
+	private const CONFIG_STRING_FIELDS = [
+		'objectNameField',
+		'objectDescriptionField',
+		'objectSummaryField',
+		'objectImageField',
+		'objectSlugField',
+		'workingCalendar',
+	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu
 	// on an index page (or#4103). Off the allowlist it was dropped without
 	// a log line, so `allowExport: true` on every app page was a no-op.

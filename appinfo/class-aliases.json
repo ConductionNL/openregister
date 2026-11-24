@@ -1011,6 +1011,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\CrossRegisterReportController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\CrossRegisterReportController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\ContactSearchController": {
 			"class": "OCA\\OpenRegister\\Search\\Controller\\ContactSearchController",
 			"eager": false,

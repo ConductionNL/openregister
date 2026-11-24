@@ -33,6 +33,7 @@ import { navigationStore } from '../store/store.js'
 	<ViewObject />
 	<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 	<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
+	<RecordImportDialog v-if="navigationStore.dialog === 'recordImport'" />
 	<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 	<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
 	<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
@@ -55,6 +56,7 @@ import { navigationStore } from '../store/store.js'
 </template>
 
 <script>
+import RecordImportDialog from '../dialogs/recordImport/RecordImportDialog.vue'
 import EditApplication from './application/EditApplication.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import EditConfiguration from './configuration/EditConfiguration.vue'
@@ -130,6 +132,7 @@ export default {
 		CopyObject,
 		SaveRecordTemplate,
 		UploadObject,
+		RecordImportDialog,
 		ViewObjectAuditTrail,
 		LockObject,
 		ViewObject,
