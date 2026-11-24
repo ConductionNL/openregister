@@ -802,3 +802,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan on lib/Service/Flow/FlowService.php: 'Call to an undefined method OCA\OpenRegister\Db\FlowStateMapperInterface::deleteByFlow()' (method.notFound).
 - Cause: main c557d73ad93 narrowed the flow-state mapper to an interface without deleteByFlow; FlowStateMapper still has it, so it runs. Red on plain main aa1f24b9.
 - Fix: none in a PR that does not own the interface; inherited. Same for DeletedController array_map argument.type, WebhookMapper property.onlyWritten, GraphQLService/WebhooksController catch.neverThrown.
+
+## Second checkout with a symlinked vendor tests the other checkout (or-fix-0)
+- Symptom: a golden or test reproduces main's (or another PR's) result exactly after a merge, as if the PR's code were missing.
+- Cause: composer's autoload_psr4 resolves OCA\\OpenRegister\\ relative to the real vendor dir, so a git worktree with vendor symlinked to another checkout loads that checkout's lib/.
+- Fix: cp -r the vendor into each worktree (or run composer-cloud.sh there), never symlink it.
