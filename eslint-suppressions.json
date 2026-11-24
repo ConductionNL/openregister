@@ -37,12 +37,12 @@
   },
   "src/components/object-relations/ContactsTab.vue": {
     "vue/custom-event-name-casing": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/object-relations/DeckTab.vue": {
     "vue/custom-event-name-casing": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/object-relations/EmailsTab.vue": {
@@ -52,7 +52,7 @@
   },
   "src/components/object-relations/EventsTab.vue": {
     "vue/custom-event-name-casing": {
-      "count": 3
+      "count": 2
     }
   },
   "src/components/shared/VersionInfoCard.vue": {
@@ -190,7 +190,7 @@
   },
   "src/files-sidebar.js": {
     "@nextcloud/no-removed-globals": {
-      "count": 5
+      "count": 4
     }
   },
   "src/integrations/builtin/bookmarks.js": {
@@ -258,7 +258,7 @@
   },
   "src/modals/application/EditApplication.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
+      "count": 1
     },
     "no-console": {
       "count": 1
@@ -270,9 +270,6 @@
   "src/modals/configuration/EditConfiguration.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 16
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 8
     },
     "no-console": {
       "count": 1
@@ -288,7 +285,7 @@
   },
   "src/modals/configuration/ImportConfiguration.vue": {
     "no-console": {
-      "count": 2
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -338,16 +335,13 @@
     }
   },
   "src/modals/logs/AuditTrailChanges.vue": {
-    "no-console": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
   },
   "src/modals/logs/AuditTrailDetails.vue": {
     "no-console": {
-      "count": 2
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -418,7 +412,7 @@
       "count": 2
     },
     "no-console": {
-      "count": 4
+      "count": 3
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -464,7 +458,7 @@
   },
   "src/modals/organisation/EditOrganisation.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 3
+      "count": 2
     },
     "jsdoc/require-param-type": {
       "count": 2
@@ -553,9 +547,6 @@
     }
   },
   "src/modals/schema/EditSchemaProperty.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
-    },
     "no-console": {
       "count": 1
     },
@@ -636,11 +627,6 @@
       "count": 1
     }
   },
-  "src/modals/settings/vectorization/VectorizationSaveActions.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    }
-  },
   "src/modals/settings/vectorization/objectVectorizationApi.js": {
     "no-console": {
       "count": 1
@@ -668,10 +654,10 @@
   },
   "src/modals/view/EditView.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 7
+      "count": 6
     },
     "@nextcloud/no-deprecated-library-props": {
-      "count": 2
+      "count": 1
     },
     "no-console": {
       "count": 3
@@ -701,9 +687,6 @@
     }
   },
   "src/sidebars/dashboard/DashboardSideBar.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -741,9 +724,6 @@
     }
   },
   "src/sidebars/register/RegistersSideBar.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -937,16 +917,13 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     },
-    "no-console": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
   },
   "src/views/dashboard/DashboardIndex.vue": {
     "no-console": {
-      "count": 5
+      "count": 4
     },
     "vue/match-component-import-name": {
       "count": 1
@@ -1014,9 +991,6 @@
     }
   },
   "src/views/object/ObjectsList.vue": {
-    "no-console": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -1114,9 +1088,6 @@
     }
   },
   "src/views/settings/sections/FileConfiguration.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
       "count": 11
     }
@@ -1127,11 +1098,8 @@
     }
   },
   "src/views/settings/sections/LlmConfiguration.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 2
-    },
     "no-console": {
-      "count": 7
+      "count": 6
     }
   },
   "src/views/settings/sections/LogIntegrity.vue": {
