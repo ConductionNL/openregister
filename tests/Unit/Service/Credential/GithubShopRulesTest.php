@@ -51,6 +51,14 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @covers \OCA\OpenRegister\Service\Credential\ProviderCatalogue
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialOutbound
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class GithubShopRulesTest extends TestCase {
 	private const PLACEHOLDER_TOKEN = 'YOUR_API_KEY_HERE';
