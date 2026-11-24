@@ -86,6 +86,8 @@ use OCP\IUserSession;
  * @method void setAuthorization(?array $authorization)
  * @method string|null getFolder()
  * @method void setFolder(?string $folder)
+ * @method DateTime|null getExpires()
+ * @method void setExpires(?DateTime $expires)
  * @method string|null getApplication()
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
