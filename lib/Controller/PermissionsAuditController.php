@@ -56,9 +56,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
+use OCA\OpenRegister\Controller\Support\PermissionsAuditMatrix;
+use OCA\OpenRegister\Controller\Support\StreamedTextResponse;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Authorization\PermissionMatrixExport;
+use OCA\OpenRegister\Service\Authorization\PermissionMatrixProvenance;
+use OCA\OpenRegister\Service\Authorization\PermissionMatrixRequest;
+use OCA\OpenRegister\Service\Authorization\PermissionMatrixSubject;
 use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -69,7 +75,9 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
+use OCP\Log\Audit\CriticalActionPerformedEvent;
 
 /**
  * Admin-only reports over the authorization model.
@@ -126,6 +134,13 @@ class PermissionsAuditController extends Controller {
 	private readonly AdminGateInterface $adminGate;
 
 	/**
+	 * The matrix export's services, or null where a test built the controller without them.
+	 *
+	 * @var PermissionsAuditMatrix|null
+	 */
+	private readonly ?PermissionsAuditMatrix $matrix;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest       $request        Active HTTP request.
@@ -142,6 +157,7 @@ class PermissionsAuditController extends Controller {
 		$this->scope = $services->rules->scope;
 		$this->audit = $services->scope->audit;
 		$this->adminGate = $services->scope->adminGate;
+		$this->matrix = $services->matrix;
 
 	}//end __construct()
 
@@ -263,6 +279,123 @@ class PermissionsAuditController extends Controller {
 
 		return new JSONResponse(['register' => $register] + $this->comparison(wanted: $wanted, definitions: $definitions));
 	}//end compareRoles()
+
+	/**
+	 * The full authorisation matrix, as CSV or JSON, with its provenance (REQ-RAH-001).
+	 *
+	 * Every group (`level=group`) or every user with their groups
+	 * (`level=user`), against every register, schema and catalogue verb, with
+	 * the rule that decided it. The rows are sealed with a count and a SHA-256
+	 * before the first byte is sent, the seal is written as an administrative
+	 * audit row, and the body is streamed.
+	 *
+	 * Administrator only twice over: the route carries no `#[NoAdminRequired]`,
+	 * so the framework refuses everybody else first, and the gate below answers
+	 * the same 403 shape as the other reports here should the attribute ever be
+	 * added.
+	 *
+	 * @param string $format `csv` (default) or `json`.
+	 * @param string $level  `group` (default) or `user`.
+	 *
+	 * @return Response The streamed export, or a JSON refusal.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-an-administrator-exports-the-full-authorisation-matrix-with-provenance-req-rah-001
+	 */
+	#[NoCSRFRequired]
+	public function matrix(string $format = PermissionMatrixExport::FORMAT_CSV, string $level = PermissionMatrixSubject::TYPE_GROUP): Response {
+		if ($this->adminGate->isAdmin() === false) {
+			return $this->adminGate->refusal(doing: 'export the authorisation matrix');
+		}
+
+		if (in_array($format, [PermissionMatrixExport::FORMAT_CSV, PermissionMatrixExport::FORMAT_JSON], true) === false
+			|| in_array($level, [PermissionMatrixSubject::TYPE_GROUP, PermissionMatrixSubject::TYPE_USER], true) === false
+		) {
+			return new JSONResponse(['error' => 'format must be csv or json, and level group or user'], 400);
+		}
+
+		if ($this->matrix === null) {
+			return new JSONResponse(['error' => 'The matrix export is not available.'], 503);
+		}
+
+		$export = $this->matrix->exporter->export(
+			request: new PermissionMatrixRequest(
+				registers: $this->scope->registers(filter: null),
+				schemas: $this->scope->schemas(filter: null),
+				subjects: $this->matrix->subjects->of(level: $level),
+				denyEnforcing: $this->enforcement->enforces()
+			),
+			provenance: $this->provenance(matrix: $this->matrix, level: $level)
+		);
+		$this->auditExport(matrix: $this->matrix, export: $export, format: $format);
+
+		return new StreamedTextResponse(chunks: $export->chunks(format: $format), headers: $this->downloadHeaders(export: $export, format: $format));
+	}//end matrix()
+
+	/**
+	 * Who asked, when, on which instance, at which level and under which deny mode.
+	 *
+	 * @param PermissionsAuditMatrix $matrix The matrix export's services.
+	 * @param string                 $level  `group` or `user`.
+	 *
+	 * @return PermissionMatrixProvenance The provenance.
+	 */
+	private function provenance(PermissionsAuditMatrix $matrix, string $level): PermissionMatrixProvenance {
+		return new PermissionMatrixProvenance(
+			generatedAt: $matrix->time->getDateTime()->format(DATE_ATOM),
+			generatedBy: (string)$matrix->userSession->getUser()?->getUID(),
+			instanceId: $matrix->config->getSystemValueString('instanceid', ''),
+			level: $level,
+			denyEnforcement: $this->enforcement->current()
+		);
+	}//end provenance()
+
+	/**
+	 * Write the administrative audit row naming the export's hash.
+	 *
+	 * @param PermissionsAuditMatrix $matrix The matrix export's services.
+	 * @param PermissionMatrixExport $export The sealed export.
+	 * @param string                 $format The format sent.
+	 *
+	 * @return void
+	 */
+	private function auditExport(PermissionsAuditMatrix $matrix, PermissionMatrixExport $export, string $format): void {
+		$matrix->dispatcher->dispatchTyped(
+			new CriticalActionPerformedEvent(
+				'Authorisation matrix exported by "%s": level %s, format %s, %s rows, sha256 %s',
+				[
+					'user' => $export->provenance->generatedBy,
+					'level' => $export->provenance->level,
+					'format' => $format,
+					'rows' => $export->rowCount(),
+					'sha256' => $export->sha256(),
+				]
+			)
+		);
+	}//end auditExport()
+
+	/**
+	 * The content type and download name of an export, and its hash for a client that checks it.
+	 *
+	 * @param PermissionMatrixExport $export The sealed export.
+	 * @param string                 $format The format sent.
+	 *
+	 * @return array<string, string> The headers.
+	 */
+	private function downloadHeaders(PermissionMatrixExport $export, string $format): array {
+		$type = 'text/csv; charset=utf-8';
+		if ($format === PermissionMatrixExport::FORMAT_JSON) {
+			$type = 'application/json; charset=utf-8';
+		}
+
+		$name = sprintf('permission-matrix-%s-%s.%s', $export->provenance->level, substr($export->sha256(), 0, 12), $format);
+
+		return [
+			'Content-Type' => $type,
+			'Content-Disposition' => 'attachment; filename="'.$name.'"',
+			'X-Matrix-Sha256' => $export->sha256(),
+			'X-Matrix-Rows' => (string)$export->rowCount(),
+		];
+	}//end downloadHeaders()
 
 	/**
 	 * The comparison of the wanted roles against what the register declares.
