@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
@@ -37,6 +36,7 @@ use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -148,7 +148,7 @@ class FileExtractionController extends Controller {
 		IRequest $request,
 		FileExtractionControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->textExtractor = $services->domain->textExtractor;
 		$this->vectorizationService = $services->domain->vectorizationService;
 		$this->chunkMapper = $services->mappers->chunkMapper;

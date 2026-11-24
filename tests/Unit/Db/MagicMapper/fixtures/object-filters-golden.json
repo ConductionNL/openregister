@@ -87,6 +87,15 @@
     "pg array list": [
         "composite(COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2] | COALESCE(t.tags, '[]')::jsonb @> :p2[\"[\\\"y\\\"]\",2])"
     ],
+    "pg array contains": [
+        "COALESCE(t.tags, '[]')::jsonb @> :p1[\"[{\\\"system\\\":\\\"decos\\\",\\\"identifier\\\":\\\"Z-1\\\",\\\"public\\\":true}]\",2]::jsonb"
+    ],
+    "pg array contains list": [
+        "1 = 0"
+    ],
+    "pg array contains nested": [
+        "1 = 0"
+    ],
     "pg object": [
         "(t.owner::text = :p1[\"abc\",2] OR t.owner::text LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2])"
     ],
@@ -189,6 +198,15 @@
     ],
     "mysql array list": [
         "composite(COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2] | COALESCE(t.tags, '[]')::jsonb @> :p2[\"[\\\"y\\\"]\",2])"
+    ],
+    "mysql array contains": [
+        "JSON_CONTAINS(COALESCE(t.tags, '[]'), :p1[\"[{\\\"system\\\":\\\"decos\\\",\\\"identifier\\\":\\\"Z-1\\\",\\\"public\\\":true}]\",2])"
+    ],
+    "mysql array contains list": [
+        "1 = 0"
+    ],
+    "mysql array contains nested": [
+        "1 = 0"
     ],
     "mysql object": [
         "(CAST(t.owner AS CHAR) = :p1[\"abc\",2] OR CAST(t.owner AS CHAR) LIKE :p2[\"%\\\"value\\\": \\\"abc\\\"%\",2])"

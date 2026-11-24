@@ -40,14 +40,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the export profile table and let a schedule name a profile.
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class Version1Date20260915203000 extends SimpleMigrationStep {
+class Version1Date20260915203000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -59,7 +58,7 @@ class Version1Date20260915203000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -70,7 +69,7 @@ class Version1Date20260915203000 extends SimpleMigrationStep {
 		$this->scheduleProfileLink(schema: $schema);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * The export profile table.

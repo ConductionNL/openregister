@@ -78,7 +78,9 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Install Newman
-        run: npm install -g newman@6.2.3
+        run: |
+          npm ci --prefix tests/integration --ignore-scripts --no-audit --no-fund
+          echo "$PWD/tests/integration/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Boot CI stack (db + Nextcloud)
         run: docker compose -f .github/docker-compose.ci.yml up -d

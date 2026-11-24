@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
-use DateTimeInterface;
 use InvalidArgumentException;
 
 /**
@@ -49,7 +48,18 @@ interface DestructionReviewServiceInterface {
 	public const ANSWER_TRANSFER = 'transfer';
 
 	/**
-	 * The three answers a reviewer may give, and no others.
+	 * Anonymise the record rather than destroy it: it stays, without what identifies a person.
+	 *
+	 * The same value as Appraisal::ANONYMISE, the archival action it answers with.
+	 * The entry is withheld from destruction; the anonymisation itself runs
+	 * through the schema's declared profile, never as a destruction.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
+	 */
+	public const ANSWER_ANONYMISE = 'anonymise';
+
+	/**
+	 * The four answers a reviewer may give, and no others.
 	 *
 	 * @var string[]
 	 */
@@ -57,6 +67,7 @@ interface DestructionReviewServiceInterface {
 		self::ANSWER_DESTROY,
 		self::ANSWER_RETAIN,
 		self::ANSWER_TRANSFER,
+		self::ANSWER_ANONYMISE,
 	];
 
 	/**
@@ -69,9 +80,7 @@ interface DestructionReviewServiceInterface {
 	 * when an entry is handed to a second reviewer.
 	 *
 	 * @param array<string, mixed> $listData   The destruction list's own data.
-	 * @param string               $entryUuid  The uuid of the object the entry is about.
-	 * @param string|null          $reviewer   The reviewer's user id, or null to unassign.
-	 * @param DateTimeInterface|null $assignedAt The moment of assignment; now when omitted.
+	 * @param ReviewerAssignment   $assignment The entry's object uuid, the reviewer's user id (null to unassign) and the moment.
 	 *
 	 * @return array<string, mixed> The list data, with the entry assigned.
 	 *
@@ -79,7 +88,7 @@ interface DestructionReviewServiceInterface {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function assignReviewer(array $listData, string $entryUuid, ?string $reviewer, ?DateTimeInterface $assignedAt = null): array;
+	public function assignReviewer(array $listData, ReviewerAssignment $assignment): array;
 
 	/**
 	 * The entries of a destruction list, as a list.
@@ -107,16 +116,15 @@ interface DestructionReviewServiceInterface {
 	/**
 	 * The entries still waiting on somebody.
 	 *
-	 * @param array<string, mixed>   $listData     The destruction list's own data.
-	 * @param string                 $listUuid     The uuid of the list, carried onto each entry.
-	 * @param string|null            $reviewer     Only this reviewer's entries, or every assigned entry when null.
-	 * @param DateTimeInterface|null $waitingSince Only entries assigned at or before this moment.
+	 * @param array<string, mixed> $listData The destruction list's own data.
+	 * @param PendingReviewQuery   $query    The list's uuid, carried onto each entry, the reviewer (every assigned entry when
+	 *                                       null) and how long an entry must have waited.
 	 *
 	 * @return array<int, array<string, mixed>> The pending entries, each naming its list.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function pendingEntries(array $listData, string $listUuid, ?string $reviewer = null, ?DateTimeInterface $waitingSince = null): array;
+	public function pendingEntries(array $listData, PendingReviewQuery $query): array;
 
 	/**
 	 * Record one reviewer's answer, in the one decision history.

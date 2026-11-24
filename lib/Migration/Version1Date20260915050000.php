@@ -38,14 +38,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the import preview and import preview row tables.
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class Version1Date20260915050000 extends SimpleMigrationStep {
+class Version1Date20260915050000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -57,7 +56,7 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -129,5 +128,5 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 		}//end if
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

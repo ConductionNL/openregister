@@ -104,6 +104,7 @@ final class MagicTableIndexer {
 			$this->createPlatformIndexes(run: $run);
 			$this->createSchemaIndexes(run: $run, schema: $schema);
 			$run->identityIndex = (new MagicTableIdentityIndex(db: $this->db, logger: $this->logger))->create(run: $run, schema: $schema);
+			$this->createCompositeIndexes(run: $run, schema: $schema);
 			$this->logCreated(run: $run);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -147,12 +148,29 @@ final class MagicTableIndexer {
 		$table = $run->tableName;
 		$full = $run->fullTableName;
 
-		$this->db->executeStatement("CREATE UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx ON {$full} (_uuid)");
-		$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_register_schema_idx ON {$full} (_register, _schema)");
-
 		// Organisation for multitenancy, owner for RBAC, then the frequently filtered fields.
+		$indexes = ["UNIQUE INDEX IF NOT EXISTS {$table}_uuid_idx" => '_uuid', "INDEX IF NOT EXISTS {$table}_register_schema_idx" => '_register, _schema'];
 		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
-			$this->db->executeStatement("CREATE INDEX IF NOT EXISTS {$table}_{$field}_idx ON {$full} (_{$field})");
+			$indexes["INDEX IF NOT EXISTS {$table}_{$field}_idx"] = "_{$field}";
+		}
+
+		// Each index statement is a DDL transaction of its own on MariaDB: ten of
+		// them took 0.4 s a table, 206 of the 270 s it took to install an app with
+		// 538 schemas, where one statement adding all ten takes 0.04 s (#9945).
+		// Only for a table created just now: on an older one a missing column
+		// would refuse the whole statement instead of the one index.
+		if ($run->indexesAtOnce === true) {
+			$additions = [];
+			foreach ($indexes as $index => $columns) {
+				$additions[] = "ADD {$index} ({$columns})";
+			}
+
+			$this->db->executeStatement("ALTER TABLE {$full} " . implode(', ', $additions));
+			return;
+		}
+
+		foreach ($indexes as $index => $columns) {
+			$this->db->executeStatement("CREATE {$index} ON {$full} ({$columns})");
 		}
 	}//end createBaseIndexes()
 
@@ -195,6 +213,80 @@ final class MagicTableIndexer {
 			$this->createPropertyIndexes(run: $run, propertyConfig: $propertyConfig);
 		}
 	}//end createSchemaIndexes()
+
+	/**
+	 * Create the composite indexes a schema declares in `x-openregister-indexes`.
+	 *
+	 * Each entry is a list of property names, such as `["postcode", "huisnummer"]`,
+	 * indexed together in that order. An entry naming a property the schema
+	 * does not define, or fewer than two, is skipped: it has no columns to
+	 * index together. A failing statement (an index that already exists on
+	 * MySQL, a column type the index does not support) is logged and the next
+	 * entry is still made.
+	 *
+	 * @param MagicTableIndexRun $run    The index-creation pass.
+	 * @param Schema             $schema The schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-address-lookup-by-postcode/specs/bag-address-lookup/spec.md#requirement-an-address-is-found-by-postcode-and-house-number-req-bag-002
+	 */
+	private function createCompositeIndexes(MagicTableIndexRun $run, Schema $schema): void {
+		$sql = new MagicColumnSql(isPostgres: $run->isPostgres);
+		foreach (self::compositeIndexColumns(schema: $schema) as $properties) {
+			$columns = array_map(fn (string $name): string => $this->sanitizeColumnName(name: $name), $properties);
+			$name    = $run->tableName . '_' . substr(md5(implode(',', $columns)), 0, 12) . '_cmp_idx';
+			$quoted  = implode(', ', array_map(static fn (string $column): string => $sql->quote(name: $column), $columns));
+			$exists  = 'IF NOT EXISTS ';
+			if ($run->isPostgres === false) {
+				$exists = '';
+			}
+
+			try {
+				$this->db->executeStatement("CREATE INDEX {$exists}{$name} ON {$run->fullTableName} ({$quoted})");
+				$run->compositeIndexes[] = implode('+', $columns);
+			} catch (Exception $e) {
+				$this->logger->debug(
+					message: '[MagicMapper] Skipped composite index (already present or incompatible column)',
+					context: ['tableName' => $run->tableName, 'columns' => $columns, 'error' => $e->getMessage()]
+				);
+			}
+		}
+	}//end createCompositeIndexes()
+
+	/**
+	 * The property lists of the composite indexes a schema declares, each naming at least two defined properties.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return list<list<string>> The property names of each index, in order.
+	 *
+	 * @spec openspec/changes/bag-address-lookup-by-postcode/specs/bag-address-lookup/spec.md#requirement-an-address-is-found-by-postcode-and-house-number-req-bag-002
+	 */
+	public static function compositeIndexColumns(Schema $schema): array {
+		$declared   = (($schema->getConfiguration() ?? [])[Schema::INDEXES_ANNOTATION] ?? []);
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$indexes = [];
+		foreach ($declared as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$defined = static fn (mixed $name): bool => is_string($name) === true && is_array($properties[$name] ?? null) === true;
+			$names   = array_values(array_unique(array_filter($entry, $defined)));
+			if (count($names) < 2 || count($names) !== count($entry)) {
+				continue;
+			}
+
+			$indexes[] = $names;
+		}
+
+		return $indexes;
+	}//end compositeIndexColumns()
 
 	/**
 	 * Create the PostgreSQL-only indexes: the GIN index on `_relations` for

@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
-use OCA\OpenRegister\Service\Resilience\BreakerRegistry;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\OutboundBreakerInterface;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 
@@ -53,14 +53,14 @@ class OutboundClientFactory implements IClientService {
 	 *
 	 * @param IClientService $clientService Nextcloud's own client factory.
 	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
-	 * @param BreakerRegistry|null $breakers The dependency breakers handed to every client; null leaves calls unguarded.
+	 * @param OutboundBreakerInterface|null $breakers The dependency breakers handed to every client; null leaves calls unguarded.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClientService $clientService,
 		private readonly ProxySettingsInterface $proxy,
-		private readonly ?BreakerRegistry $breakers = null,
+		private readonly ?OutboundBreakerInterface $breakers = null,
 	) {
 
 	}//end __construct()

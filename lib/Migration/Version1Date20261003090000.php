@@ -33,14 +33,13 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the (object_uuid, created) index to the audit trail.
  *
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-history-of-one-object-is-read-through-an-index
  */
-class Version1Date20261003090000 extends SimpleMigrationStep {
+class Version1Date20261003090000 extends TargetedMigrationStep {
 
 	/**
 	 * The audit trail table.
@@ -70,7 +69,7 @@ class Version1Date20261003090000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-history-of-one-object-is-read-through-an-index
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
 			return $schema;
@@ -91,5 +90,5 @@ class Version1Date20261003090000 extends SimpleMigrationStep {
 		$output->info('Added index '.self::INDEX.' on '.self::TABLE.' (object_uuid, created)');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

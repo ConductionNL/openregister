@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -36,7 +37,7 @@ final class ApplicationsControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param ApplicationServiceInterface $applicationService Application service for business logic
-	 * @param ApplicationMapperInterface $applicationMapper Application mapper for database operations
+	 * @param ApplicationMapperInterface<Application> $applicationMapper Application mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md

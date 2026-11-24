@@ -1,0 +1,7 @@
+# Known vulnerabilities that have no fix this project can take yet. Each entry
+# says why, and expires so it is looked at again.
+
+[[IgnoredVulns]]
+id = "GHSA-238p-pmpm-9mq7"
+ignoreUntil = 2027-05-20
+reason = "katex comes in through mermaid 11, which requires katex ^0.16; the fix is in 0.18.2. The documentation site renders only our own markdown at build time, and the advisory needs an existing prototype pollution to be exploitable. Remove when mermaid allows katex 0.18."

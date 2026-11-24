@@ -22,7 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowTimerFireMapper;
 use OCA\OpenRegister\Db\FlowTimerFireMapperInterface;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
@@ -50,8 +51,8 @@ final class F06DbLookupsInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		FlowTimerFireMapper::class => [FlowTimerFireMapperInterface::class, DbRegistrar::class],
-		RecordTemplateMapper::class => [RecordTemplateMapperInterface::class, DbRegistrar::class],
+		FlowTimerFireMapper::class => [FlowTimerFireMapperInterface::class, ProcessesMapperRegistrar::class],
+		RecordTemplateMapper::class => [RecordTemplateMapperInterface::class, ConfigurationMapperRegistrar::class],
 	];
 
 	/**

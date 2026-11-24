@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EmailLinksControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -103,12 +104,12 @@ class EmailLinksControllerTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn($object);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $this->mayUpdate : true;
 			}
-		);
+		));
 
 		$this->controller = EmailLinksControllerFactory::create(
 			'openregister',

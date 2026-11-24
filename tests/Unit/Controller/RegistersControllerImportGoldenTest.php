@@ -21,7 +21,9 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleStatesKeeper;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
@@ -284,7 +286,11 @@ class RegistersControllerImportGoldenTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id) => $id === IGroupManager::class ? $groupManager : null
+			static fn (string $id) => match ($id) {
+				IGroupManager::class => $groupManager,
+				LifecycleStatesKeeperInterface::class => new LifecycleStatesKeeper(),
+				default => null,
+			}
 		);
 
 		$register = $this->register(id: 1, case: $case);
@@ -382,7 +388,6 @@ class RegistersControllerImportGoldenTest extends TestCase {
 		}
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$registerService,
 			$this->createMock(MagicMapper::class),

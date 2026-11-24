@@ -26,7 +26,8 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -117,8 +118,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 		// With no interception webhook configured, the real service hands the
 		// request's own parameters back unchanged.
-		$webhooks = $this->createMock(WebhookService::class);
-		$webhooks->method('interceptRequest')->willReturnCallback(fn (): array => $this->params);
+		$webhooks = $this->createMock(originalClassName: IEventDispatcher::class);
+		$webhooks->method('dispatchTyped')->willReturnCallback(fn (ObjectWriteRequestEvent $event) => $event->setBody($this->params));
 
 		$this->controller = ObjectsControllerFactory::create(
 			'openregister',

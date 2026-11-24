@@ -37,14 +37,13 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -2354,6 +2353,7 @@ class RenderObject implements RenderObjectInterface {
 		// the strip because the two must agree: what was just removed is what
 		// `hidden` names. StateFieldRuleListener still enforces them on save.
 		$this->attachFieldRules(run: $run, stored: $unprojectedData);
+		$this->attachReadOnlyProperties(run: $run, stored: $unprojectedData);
 
 		$run->data = $this->decryptRenderedProperties(schema: $run->schema, objectData: $run->data);
 
@@ -2794,10 +2794,9 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			return $this->runtime->container->get(PermissionHandlerInterface::class)->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: $owner,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'read'))
+					->askedBy(userId: null, objectOwner: $owner)
+					->about(object: $object, register: null)
 			);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'inverse read check failed for '.(string) $object->getUuid(), error: $e);
@@ -3258,7 +3257,7 @@ class RenderObject implements RenderObjectInterface {
 		$this->applyWatcherMarkers(entity: $run->entity);
 		$this->applyReadStateMarkers(entity: $run->entity);
 		$this->applyUpdateRightMarker(run: $run);
-		$annotations = new RecordAnnotations(logger: $this->runtime->logger);
+		$annotations = new RecordAnnotations(logger: $this->runtime->logger, archival: $this->runtime->extensions->archivalReading);
 		$annotations->attachRetention(entity: $run->entity, schema: $run->schema);
 		$annotations->attachDecision(entity: $run->entity);
 		$this->applyRetentionClocks(entity: $run->entity);
@@ -3439,6 +3438,47 @@ class RenderObject implements RenderObjectInterface {
 	}//end attachFieldRules()
 
 	/**
+	 * Publish `@self.readOnlyProperties`: the properties this reader may read
+	 * but not change, from the property-level authorization the API enforces.
+	 *
+	 * A hint for a form to disable those inputs; the save path refuses the same
+	 * write either way. Only on an RBAC read, and only when there is something
+	 * to list, so an admin and a schema without property authorization carry
+	 * nothing. A failure is logged and swallowed, as the field-rules hint is.
+	 *
+	 * @param RenderRun $run    The render, with the resolved schema.
+	 * @param array     $stored The object data before caller projection, for a rule's `match` condition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+	 */
+	private function attachReadOnlyProperties(RenderRun $run, array $stored): void {
+		if ($run->schema === null || $run->context->rbac === false) {
+			return;
+		}
+
+		try {
+			$readOnly = $this->propertyRbacHandler->readOnlyProperties(schema: $run->schema, object: $stored);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug(
+				sprintf(
+					'[RenderObject] read-only properties could not be resolved for %s: %s',
+					(string)$run->entity->getUuid(),
+					$e->getMessage()
+				)
+			);
+			return;
+		}
+
+		if ($readOnly === []) {
+			return;
+		}
+
+		$run->entity->setReadOnlyProperties($readOnly);
+	}//end attachReadOnlyProperties()
+
+	/**
 	 * Attach `@self._clocks`: the AVG date and the Archiefwet date, each with
 	 * its rule.
 	 *
@@ -3536,7 +3576,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function setWatcherMarkers(ObjectEntity $entity, string $uuid): void {
-		$watchers = $this->runtime->container->get(WatcherService::class);
+		$watchers = $this->runtime->container->get(ObjectWatchMarkersInterface::class);
 
 		// Anonymous reads get no marker at all: there is no "you" to answer
 		// for, and a hard false would read as "you do not follow this",
@@ -3593,7 +3633,7 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		try {
-			$readState = $this->runtime->container->get(ReadStateService::class);
+			$readState = $this->runtime->container->get(ObjectUnreadMarkerInterface::class);
 
 			// Anonymous reads get no marker at all: there is no "you" to answer
 			// for, and a hard false would read as "you have seen this", which is
@@ -3680,12 +3720,11 @@ class RenderObject implements RenderObjectInterface {
 			$owner = null;
 		}
 
-		$can = $this->runtime->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+		$can = $this->runtime->container->get(RunnableActionsInterface::class)->canRun(object: $entity, schema: $schema);
 		$can['update'] = $permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			objectOwner: $owner,
-			object: $entity
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: null, objectOwner: $owner)
+				->about(object: $entity, register: null)
 		);
 		$can['manage'] = $this->mayManage(entity: $entity, owner: $owner);
 		$entity->setCan($can);
@@ -3848,34 +3887,17 @@ class RenderObject implements RenderObjectInterface {
 			}
 
 			try {
-				$row = $this->enrichers->translations->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']));
+				$slot   = new TranslationSlot(objectUuid: $uuid, property: $property, language: $entry['served']);
+				$status = $this->enrichers->translations->translationMapper->rowStatus(slot: $slot);
 			} catch (\Throwable $e) {
-				$row = null;
+				$status = null;
 			}
 
-			$languageMeta[$property]['status'] = $this->translationRowStatus(row: $row);
+			$languageMeta[$property]['status'] = $status ?? 'missing';
 		}
 
 		return $languageMeta;
 	}//end withSidecarStatus()
-
-	/**
-	 * The workflow status of a sidecar translation row: its status (draft when
-	 * unset), or 'missing' without a row.
-	 *
-	 * @param Translation|null $row The sidecar row
-	 *
-	 * @return string The status
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function translationRowStatus(?Translation $row): string {
-		if ($row === null) {
-			return 'missing';
-		}
-
-		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
-	}//end translationRowStatus()
 
 	/**
 	 * Resolve the source language for a single property from object override

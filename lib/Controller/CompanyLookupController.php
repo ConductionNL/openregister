@@ -40,8 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CompanyLookupControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
 use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
@@ -87,7 +87,7 @@ class CompanyLookupController extends Controller {
 		IRequest $request,
 		CompanyLookupControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->kvkProvider = $services->kvkProvider;
 		$this->openCorporatesProvider = $services->openCorporatesProvider;
 		$this->searches = $services->searches;

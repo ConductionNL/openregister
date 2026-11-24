@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
@@ -53,7 +53,7 @@ class TranslationProjectionJob extends ActorForwardedJob {
 	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param ActorForwardingServices $actor The identity plumbing the parent job runs the work as.
 	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
-	 * @param TranslationProjectionServiceInterface $projection Projection service doing the real work.
+	 * @param TranslationProjectionInterface        $projection The Processes projection port, bound by Configuration.
 	 *
 	 * @return void
 	 */
@@ -61,7 +61,7 @@ class TranslationProjectionJob extends ActorForwardedJob {
 		ITimeFactory $time,
 		ActorForwardingServices $actor,
 		private readonly DeferredEntryObjectResolverInterface $resolver,
-		private readonly TranslationProjectionServiceInterface $projection,
+		private readonly TranslationProjectionInterface $projection,
 	) {
 		parent::__construct(
 			time: $time,

@@ -1,0 +1,27 @@
+# Python dependencies of the Dolphin image: requirements.txt of
+# bytedance/Dolphin at the commit in Dockerfile (DOLPHIN_COMMIT), plus the
+# API server.
+# Regenerate requirements.lock after a change:
+#   uv pip compile requirements.in --generate-hashes --python-version 3.10 \
+#     --python-platform x86_64-manylinux_2_28 --no-header -o requirements.lock
+datasets==3.6.0
+torch==2.6.0
+torchvision==0.21.0
+transformers==4.51.0
+deepspeed==0.16.4
+triton==3.2.0
+accelerate==1.4.0
+torchcodec==0.2
+decord==0.6.0
+Levenshtein==0.27.1
+qwen_vl_utils
+matplotlib
+jieba
+opencv-python
+bs4
+albumentations==1.4.0
+pymupdf==1.26
+flask
+flask-cors
+pdf2image
+huggingface_hub

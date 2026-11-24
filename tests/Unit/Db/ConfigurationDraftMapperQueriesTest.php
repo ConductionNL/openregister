@@ -69,10 +69,10 @@ class ConfigurationDraftMapperQueriesTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testFindAtAddressWithoutLayerRefMatchesNull(): void {
+	public function testFindAtWithoutLayerRefMatchesNull(): void {
 		$this->results[] = [['id' => 3, 'layer' => 'app']];
 
-		$draft = $this->mapper->findAtAddress('set-1', 'app', null, 'theme');
+		$draft = $this->mapper->findAt('set-1', new \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress(layer: 'app', layerRef: null, configKey: 'theme'));
 
 		$this->assertSame(3, $draft?->getId());
 		$this->assertSame(
@@ -80,19 +80,19 @@ class ConfigurationDraftMapperQueriesTest extends TestCase {
 			$this->sql()
 		);
 		$this->assertSame(['set-1', 'app', 'theme'], $this->boundValues());
-	}//end testFindAtAddressWithoutLayerRefMatchesNull()
+	}//end testFindAtWithoutLayerRefMatchesNull()
 
 	/**
 	 * A layer ref is bound, and no match answers null.
 	 *
 	 * @return void
 	 */
-	public function testFindAtAddressWithLayerRefBindsIt(): void {
-		$this->assertNull($this->mapper->findAtAddress('set-1', 'register', 'reg-7', 'title'));
+	public function testFindAtWithLayerRefBindsIt(): void {
+		$this->assertNull($this->mapper->findAt('set-1', new \OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress(layer: 'register', layerRef: 'reg-7', configKey: 'title')));
 		$this->assertStringContainsString('andWhere(eq(layer_ref, :p3))', $this->sql());
 		$this->assertStringNotContainsString('isNull(layer_ref)', $this->sql());
 		$this->assertSame('reg-7', $this->bound(':p3'));
-	}//end testFindAtAddressWithLayerRefBindsIt()
+	}//end testFindAtWithLayerRefBindsIt()
 
 	/**
 	 * findAt() reads one address object and builds the same query.

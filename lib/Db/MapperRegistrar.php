@@ -33,7 +33,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 final class MapperRegistrar {
 
 	/**
-	 * Register the schema, register, webhook, magic and entity-relation mappers.
+	 * Register the schema, register, magic and entity-relation mappers.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *

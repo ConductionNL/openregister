@@ -42,6 +42,13 @@ final class ExampleSetCheckRun {
 	public array $refusals = [];
 
 	/**
+	 * Optional objects left out because their lookup found nothing, with why.
+	 *
+	 * @var array<int, string>
+	 */
+	public array $skipped = [];
+
+	/**
 	 * Objects checked, per register and schema.
 	 *
 	 * @var array<string, int>

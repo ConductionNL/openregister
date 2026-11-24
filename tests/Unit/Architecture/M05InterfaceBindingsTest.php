@@ -19,8 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -58,7 +57,7 @@ final class M05InterfaceBindingsTest extends TestCase {
 	}//end testTheClassImplementsTheInterface()
 
 	/**
-	 * The flow bindings map the interface to the class, and the alias is registered.
+	 * FlowWiring maps the interface to the class, and the alias is registered.
 	 *
 	 * @param class-string $contract The interface.
 	 * @param class-string $service  The class.
@@ -67,10 +66,10 @@ final class M05InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('bindings')]
 	public function testTheBindingIsPresent(string $contract, string $service): void {
-		$this->assertSame($service, FlowBindings::BINDINGS[$contract] ?? null);
+		$this->assertSame($service, FlowWiring::BINDINGS[$contract] ?? null);
 
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		FlowWiring::register(context: $context);
 		$aliases = array_column($context->aliases, 'target', 'alias');
 		$this->assertSame($service, $aliases[$contract] ?? null);
 	}//end testTheBindingIsPresent()

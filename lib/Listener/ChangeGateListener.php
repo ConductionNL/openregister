@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -66,14 +67,14 @@ class ChangeGateListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const CODE_PENDING = 'change-pending';
+	public const CODE_PENDING = HeldChangeCodes::PENDING;
 
 	/**
 	 * The refusal code of a gated write while a pending change is open.
 	 *
 	 * @var string
 	 */
-	public const CODE_OPEN = 'change-pending-open';
+	public const CODE_OPEN = HeldChangeCodes::PENDING_OPEN;
 
 	/**
 	 * The refusal code of a change gate that is declared but cannot be read.

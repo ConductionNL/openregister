@@ -40,14 +40,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the API caller record table.
  *
  * @spec openspec/specs/api-surface-governance/spec.md
  */
-class Version1Date20260916070000 extends SimpleMigrationStep {
+class Version1Date20260916070000 extends TargetedMigrationStep {
 
 	/**
 	 * Change the database schema.
@@ -60,7 +59,7 @@ class Version1Date20260916070000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -106,5 +105,5 @@ class Version1Date20260916070000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

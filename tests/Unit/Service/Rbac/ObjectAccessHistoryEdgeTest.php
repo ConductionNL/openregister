@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use PHPUnit\Framework\TestCase;
 
@@ -74,11 +76,11 @@ class ObjectAccessHistoryEdgeTest extends TestCase {
 	 */
 	public function testMalformedChangesAreSkippedAndBlocksNormalised(): void {
 		$history = (new ObjectAccessHistory())->forEntries(
-			entries: [
+			entries: $this->trailOf([
 				$this->entry(changed: ['authorization' => 'not-a-diff'], at: '2026-03-01T00:00:00+00:00'),
 				$this->entry(changed: null, at: '2026-03-01T00:00:00+00:00'),
 				$this->entry(changed: ['authorization' => ['old' => '{broken', 'new' => '']], at: '2026-02-01T00:00:00+00:00'),
-			]
+			])
 		);
 
 		$this->assertCount(1, $history['changes']);
@@ -96,8 +98,8 @@ class ObjectAccessHistoryEdgeTest extends TestCase {
 	public function testUnreadableMomentGivesNoAnswer(): void {
 		$entries = [$this->entry(changed: ['authorization' => ['old' => null, 'new' => ['read' => ['a']]]], at: '2026-01-01T00:00:00+00:00')];
 
-		$this->assertNull((new ObjectAccessHistory())->forEntries(entries: $entries, moment: '  ')['asOf']);
-		$this->assertNull((new ObjectAccessHistory())->forEntries(entries: $entries, moment: 'not a moment at all')['asOf']);
+		$this->assertNull((new ObjectAccessHistory())->forEntries(entries: $this->trailOf($entries), moment: '  ')['asOf']);
+		$this->assertNull((new ObjectAccessHistory())->forEntries(entries: $this->trailOf($entries), moment: 'not a moment at all')['asOf']);
 	}//end testUnreadableMomentGivesNoAnswer()
 
 	/**
@@ -108,10 +110,10 @@ class ObjectAccessHistoryEdgeTest extends TestCase {
 	 */
 	public function testUndatedChangeIsPassedOver(): void {
 		$history = (new ObjectAccessHistory())->forEntries(
-			entries: [
+			entries: $this->trailOf([
 				$this->entry(changed: ['authorization' => ['old' => ['read' => ['a']], 'new' => ['read' => ['b']]]], at: null),
 				$this->entry(changed: ['authorization' => ['old' => null, 'new' => ['read' => ['a']]]], at: '2026-01-01T00:00:00+00:00'),
-			],
+			]),
 			moment: '2026-06-01T00:00:00+00:00'
 		);
 
@@ -119,4 +121,18 @@ class ObjectAccessHistoryEdgeTest extends TestCase {
 		$this->assertSame('admin', $history['asOf']['setBy']);
 		$this->assertSame(['at' => null, 'by' => 'admin', 'to' => ['read' => ['b']]], $history['asOf']['changedAfterwardsBy']);
 	}//end testUndatedChangeIsPassedOver()
+
+	/**
+	 * The rows as the trail reader hands them to the history: the fields, newest first.
+	 *
+	 * @param array<int, AuditTrail> $rows The rows.
+	 *
+	 * @return list<array<string, mixed>> The entries.
+	 */
+	private function trailOf(array $rows): array {
+		$mapper = $this->createMock(AuditTrailMapperInterface::class);
+		$mapper->method('findObjectActions')->willReturn($rows);
+
+		return (new ObjectTrailReader(mapper: $mapper))->objectTrail(objectUuid: 'object-1', limit: 50);
+	}//end trailOf()
 }//end class

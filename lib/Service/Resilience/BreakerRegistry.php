@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Resilience;
 
+use OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\ICacheFactory;
@@ -52,6 +53,33 @@ class BreakerRegistry {
 	private const CONFIG_GROUP = 'load_shedding';
 
 	/**
+	 * The connection keys the admin connections page declares (ConnectionReporter::KEYS).
+	 *
+	 * Restated here so load shedding (Platform) does not name the reporter
+	 * (Integrations); BreakerRegistryTest keeps the two lists equal.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CONNECTION_KEYS = [
+		'llm',
+		'anonymiser',
+		'translation',
+		'dsar-identity',
+		'dsar-regulator',
+		'edepot',
+		'github',
+		'gitlab',
+		'brp',
+		'kvk',
+		'opencorporates',
+		'openproject',
+		'xwiki',
+		'message-dispatch',
+		'pdok',
+		'office-converter',
+	];
+
+	/**
 	 * The shared breaker, built once per request.
 	 *
 	 * @var CircuitBreaker|null
@@ -65,6 +93,7 @@ class BreakerRegistry {
 	 * @param IAppConfig      $appConfig    The thresholds source.
 	 * @param ITimeFactory    $clock        The clock.
 	 * @param LoggerInterface $logger       The logger.
+	 * @param ConnectionStatusReportInterface|null $connections Told when a breaker on a declared connection opens or closes.
 	 *
 	 * @return void
 	 */
@@ -73,8 +102,63 @@ class BreakerRegistry {
 		private readonly IAppConfig $appConfig,
 		private readonly ITimeFactory $clock,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionStatusReportInterface $connections = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The declared connection a breaker key stands for, or null.
+	 *
+	 * `llm` is the `llm` connection; `outbound:{name}` is connection `{name}`
+	 * when a call site named a declared connection with the
+	 * `openregister_dependency` option (for example `brp`). Hosts, sources and
+	 * webhook receivers are not connections.
+	 *
+	 * @param string $key The breaker key.
+	 *
+	 * @return string|null The connection key.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	public static function connectionOf(string $key): ?string {
+		$name = $key;
+		if (str_starts_with($key, 'outbound:') === true) {
+			$name = substr($key, strlen('outbound:'));
+		}
+
+		if ($name === $key && $key !== self::llmKey()) {
+			return null;
+		}
+
+		if (in_array($name, self::CONNECTION_KEYS, true) === false) {
+			return null;
+		}
+
+		return $name;
+	}//end connectionOf()
+
+	/**
+	 * Report a transition of a breaker on a declared connection (design D-7).
+	 *
+	 * @param string $key      The breaker key.
+	 * @param bool   $open     True when it opened.
+	 * @param int    $coolDown The cool-down it opened for.
+	 *
+	 * @return void
+	 */
+	private function reportTransition(string $key, bool $open, int $coolDown): void {
+		$connection = self::connectionOf(key: $key);
+		if ($connection === null || $this->connections === null) {
+			return;
+		}
+
+		if ($open === true) {
+			$this->connections->report($connection, 'unavailable', sprintf('Not answering; Open Register tries again in %d seconds.', $coolDown));
+			return;
+		}
+
+		$this->connections->report($connection, 'configured', 'Answering again.');
+	}//end reportTransition()
 
 	/**
 	 * The breaker key for an outbound HTTP host, or a call site's named dependency.
@@ -141,7 +225,10 @@ class BreakerRegistry {
 				thresholds: $this->thresholds(),
 				clock: $this->clock,
 				logger: $this->logger,
-				shared: $shared
+				shared: $shared,
+				onChange: function (string $key, bool $open, int $coolDown): void {
+					$this->reportTransition(key: $key, open: $open, coolDown: $coolDown);
+				}
 			);
 		}
 

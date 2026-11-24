@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Kernel\Contracts\Core\TransferredRecordStatesInterface;
 use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -99,7 +99,11 @@ class OrphanDeletionGuard {
 	private function callerMayDelete(ObjectEntity $row, RegisterSchema $table): bool {
 		return $this->objectMapper->callerOrganisationsHold(row: $row) === true
 			&& $this->mayWriteSharedData(table: $table) === true
-			&& $this->permissionHandler->hasPermission(schema: $table->schema, action: 'delete', objectOwner: $row->getOwner(), object: $row) === true
+			&& $this->permissionHandler->hasPermission(
+				ask: (new PermissionAsk(schema: $table->schema, action: 'delete'))
+					->askedBy(userId: null, objectOwner: $row->getOwner())
+					->about(object: $row, register: null)
+			) === true
 			&& $this->passesDeleteChecks(row: $row) === true;
 	}//end callerMayDelete()
 
@@ -115,7 +119,7 @@ class OrphanDeletionGuard {
 		return $schema->isAppendOnly() === true
 			|| $schema->getObjectSource() !== null
 			|| $schema->hasArchivalAnnotation() === true
-			|| in_array(($row->getRetention()['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true;
+			|| in_array(($row->getRetention()['archiefstatus'] ?? ''), TransferredRecordStatesInterface::TRANSFERRED_ALIASES, true) === true;
 	}//end isProtected()
 
 	/**

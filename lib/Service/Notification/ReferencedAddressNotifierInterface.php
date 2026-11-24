@@ -22,23 +22,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ReferencedAddressLimits;
+
 /**
  * Notifies the address an object references, and names the recipient kind it answers to.
  *
  * Declares only what callers outside the component use; the rest of the
- * class stays its own.
+ * class stays its own. The recipient kind it sends (KIND) and the most
+ * references one path may follow (MAX_HOPS) come from ReferencedAddressLimits.
  */
-interface ReferencedAddressNotifierInterface {
-
-	/**
-	 * The recipient kind this unit sends.
-	 */
-	public const KIND = 'email';
-
-	/**
-	 * The most references one path may follow.
-	 */
-	public const MAX_HOPS = 3;
+interface ReferencedAddressNotifierInterface extends ReferencedAddressLimits {
 
 	/**
 	 * Mail every `email` entry of a request that resolves to an address.

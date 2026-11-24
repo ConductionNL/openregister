@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -87,6 +88,7 @@ class FacetHandler {
 	 * @param FacetLookups $lookups The object and schema lookups facets are computed from.
 	 * @param FacetResponseCache $responseCache The response cache in front of facet computation.
 	 * @param LoggerInterface $logger Logger for debugging and monitoring.
+	 * @param PropertySearchProfileInterface $searchProfile What a property declares about being searched.
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
@@ -99,6 +101,7 @@ class FacetHandler {
 		FacetLookups $lookups,
 		private readonly FacetResponseCache $responseCache,
 		private readonly LoggerInterface $logger,
+		private readonly PropertySearchProfileInterface $searchProfile,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
@@ -351,7 +354,8 @@ class FacetHandler {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
 	private function getFacetableFieldsFromSchemas(array $schemas): array {
-		return (new FacetableFieldDiscovery(logger: $this->logger, propertyRbac: $this->propertyRbac))->fieldsOf(schemas: $schemas);
+		$discovery = new FacetableFieldDiscovery(logger: $this->logger, searchProfile: $this->searchProfile, propertyRbac: $this->propertyRbac);
+		return $discovery->fieldsOf(schemas: $schemas);
 	}//end getFacetableFieldsFromSchemas()
 
 }//end class

@@ -2,6 +2,14 @@
 	"OCA\\Files\\Event\\LoadAdditionalScriptsEvent": [
 		"OCA\\OpenRegister\\Listener\\FilesSidebarListener"
 	],
+	"OCA\\OpenRegister\\Db\\SchemaMapper\\SchemaDeclarationChecksEvent": [
+		"OCA\\OpenRegister\\Listener\\SchemaDeclarationChecksListener",
+		"OCA\\OpenRegister\\Listener\\ArchivalDeclarationChecksListener",
+		"OCA\\OpenRegister\\Listener\\HandoffDeclarationChecksListener",
+		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDeclarationCheckListener",
+		"OCA\\OpenRegister\\Mcp\\Listener\\McpDeclarationChecksListener",
+		"OCA\\OpenRegister\\Search\\Listener\\SearchDeclarationChecksListener"
+	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
 	],
@@ -61,14 +69,14 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
-		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWriteCacheFollowerInterface",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
-		"OCA\\OpenRegister\\Listener\\NotifyPushListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWritePushInterface",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectCreatingEvent": [
@@ -100,7 +108,7 @@
 		"OCA\\OpenRegister\\Listener\\ContentReportRemovalListener",
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
-		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWriteCacheFollowerInterface",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupePruneListener",
@@ -109,7 +117,7 @@
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
-		"OCA\\OpenRegister\\Listener\\NotifyPushListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWritePushInterface",
 		"OCA\\OpenRegister\\Listener\\ObjectCleanupListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener"
 	],
@@ -162,7 +170,7 @@
 		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
-		"OCA\\OpenRegister\\Listener\\RedactionPolicyCacheListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWriteCacheFollowerInterface",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
 		"OCA\\OpenRegister\\Listener\\AssigneeFollowListener",
@@ -170,7 +178,7 @@
 		"OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
-		"OCA\\OpenRegister\\Listener\\NotifyPushListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\Processes\\ObjectWritePushInterface",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\LifecycleActionRecordListener"
 	],
@@ -349,6 +357,9 @@
 	"OCP\\OCM\\Events\\ResourceTypeRegisterEvent": [
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
+	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
@@ -363,6 +374,12 @@
 	],
 	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeEndedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
 	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

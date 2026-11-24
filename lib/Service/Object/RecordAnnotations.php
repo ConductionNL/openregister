@@ -28,8 +28,7 @@ use Closure;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Confidentiality\ConfidentialityRule;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
@@ -49,11 +48,15 @@ final class RecordAnnotations {
 	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger Logs a block that failed.
+	 * @param LoggerInterface                     $logger   Logs a block that failed.
+	 * @param RecordArchivalReadingInterface|null $archival The archival reading (Compliance); without it the two archival blocks are not attached.
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
-	public function __construct(private readonly LoggerInterface $logger) {
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly ?RecordArchivalReadingInterface $archival = null,
+	) {
 	}//end __construct()
 
 	/**
@@ -68,7 +71,7 @@ final class RecordAnnotations {
 	 */
 	public function attachRetention(ObjectEntity $entity, ?Schema $schema): void {
 		$annotation = (($schema?->getConfiguration() ?? [])['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false || $entity->getCreated() === null) {
+		if ($this->archival === null || is_array($annotation) === false || $entity->getCreated() === null) {
 			return;
 		}
 
@@ -89,17 +92,17 @@ final class RecordAnnotations {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	private function evaluateRetention(ObjectEntity $entity, array $annotation): void {
+		if ($this->archival === null) {
+			return;
+		}
+
 		$retention = ($entity->getRetention() ?? []);
-		$retention['annotation'] = (new RetentionEvaluator(logger: $this->logger))->evaluate(
-			annotation: $annotation,
-			row: self::objectOf(entity: $entity),
-			createdAt: $entity->getCreated()
-		);
+		$retention['annotation'] = $this->archival->retentionAnnotation(annotation: $annotation, entity: $entity);
 		$entity->setRetention($retention);
 	}//end evaluateRetention()
 
 	/**
-	 * Attach the archival decision, when there is one.
+	 * Attach the archival decision, when there is one (and an archival reading to ask).
 	 *
 	 * @param ObjectEntity $entity The entity being rendered.
 	 *
@@ -111,7 +114,7 @@ final class RecordAnnotations {
 		$this->guarded(
 			failure: 'archival decision resolve failed for ' . (string)$entity->getUuid(),
 			step: function () use ($entity): void {
-				$decision = (new ArchivalDecisionResolver())->resolve(entity: $entity);
+				$decision = $this->archival?->archivalDecision(entity: $entity);
 				if ($decision !== null) {
 					$entity->setArchivalRetention($decision);
 				}

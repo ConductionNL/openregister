@@ -260,7 +260,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 	 */
 	private function audit(): AuditTrailMapper {
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null, ?string $ipAddress = null): AuditTrail {
 				$this->calls[] = ['audit' => $action, 'object' => [$object->getUuid(), $object->getRegister(), $object->getSchema()], 'context' => $context, 'actorId' => $actorId, 'actorName' => $actorName, 'ip' => $ipAddress];
 				if (($this->setup['auditFails'] ?? false) === true) {

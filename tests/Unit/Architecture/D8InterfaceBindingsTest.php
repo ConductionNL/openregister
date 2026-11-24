@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -110,7 +112,7 @@ final class D8InterfaceBindingsTest extends TestCase {
 	#[DataProvider('classes')]
 	public function testInterfaceIsBound(string $class): void {
 		$interface = $this->interfaceOf(class: $class);
-		$this->assertSame($class, ContractBindings::BINDINGS[$interface] ?? null, $interface . ' is bound in ContractBindings::BINDINGS');
+		$this->assertSame($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS)[$interface] ?? null, $interface . ' is bound in its area map');
 	}//end testInterfaceIsBound()
 
 	/**

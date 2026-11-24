@@ -53,6 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
+ * @implements SourceMapperInterface<Source>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */

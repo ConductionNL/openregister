@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCA\OpenRegister\Service\Portal\PortalTaskReminderInterface;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
@@ -44,9 +46,9 @@ final class E17EndpointInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		PortalTaskReminderInterface::class => [PortalTaskDeliveryService::class, ContractBindings::class],
+		PortalTaskReminderInterface::class => [PortalTaskDeliveryService::class, ProcessesServiceBindings::class],
 		RecordTemplateStoreInterface::class => [RecordTemplateService::class, ContractBindings::class],
-		RegistrySubscriptionLifecycleInterface::class => [RegistrySubscriptionService::class, ContractBindings::class],
+		RegistrySubscriptionLifecycleInterface::class => [RegistrySubscriptionService::class, CoreServiceBindings::class],
 	];
 
 	/**

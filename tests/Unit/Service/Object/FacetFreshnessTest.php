@@ -146,7 +146,8 @@ final class FacetFreshnessTest extends TestCase {
 				facetCacheVersion: $this->versions,
 				logger: $logger
 			),
-			$logger
+			$logger,
+			new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile()
 		);
 	}//end setUp()
 

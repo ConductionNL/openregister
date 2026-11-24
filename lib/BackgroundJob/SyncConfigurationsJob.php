@@ -29,6 +29,7 @@ use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
@@ -55,6 +56,16 @@ class SyncConfigurationsJob extends TimedJob {
 	 * @var int
 	 */
 	private const SYNC_CHECK_INTERVAL = 3600;
+
+	/**
+	 * The schema configuration key that declares object actions.
+	 *
+	 * Restated from ObjectActionDefinition::ACTION_BLOCK, which lives in the
+	 * Processes component; this job is Configuration and may not name it.
+	 *
+	 * @var string
+	 */
+	private const ACTION_BLOCK = 'x-openregister-action';
 
 	/**
 	 * Configuration mapper.
@@ -372,6 +383,8 @@ class SyncConfigurationsJob extends TimedJob {
 	 * @return void
 	 */
 	private function importFetched(Configuration $configuration, array $configData): void {
+		$this->refuseElevation(configData: $configData);
+
 		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
 		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
@@ -383,6 +396,59 @@ class SyncConfigurationsJob extends TimedJob {
 		);
 		$this->markSynced(configuration: $configuration);
 	}//end importFetched()
+
+	/**
+	 * Refuse a fetched document whose schemas declare an action with `elevate`.
+	 *
+	 * The job runs without a signed-in user, so the schema validator cannot ask
+	 * whether an administrator chose the elevation; a document from a remote
+	 * source must be imported by an administrator by hand instead.
+	 *
+	 * @param array $configData Decoded configuration document
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a schema declares `elevate`.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private function refuseElevation(array $configData): void {
+		$schemas = ($configData['components']['schemas'] ?? []);
+		if (is_array($schemas) === false) {
+			return;
+		}
+
+		foreach ($schemas as $slug => $schema) {
+			if (is_array($schema) === false) {
+				continue;
+			}
+
+			if (is_string($schema['configuration'] ?? null) === true) {
+				$schema['configuration'] = json_decode($schema['configuration'], true);
+			}
+
+			// Read the configuration the way Schema::hydrate() will store it: top-level
+			// `x-openregister-*` blocks fold into `configuration` on import.
+			$folded = (new TopLevelAnnotationFold())->folded(object: $schema);
+			$schemaConfiguration = ($folded['configuration'] ?? []);
+			if (is_array($schemaConfiguration) === false) {
+				continue;
+			}
+
+			$declared = ($schemaConfiguration[self::ACTION_BLOCK] ?? null);
+			if (is_array($declared) === false) {
+				continue;
+			}
+
+			foreach ($declared as $key => $definition) {
+				if (is_array($definition) === true && array_key_exists('elevate', $definition) === true) {
+					throw new Exception(
+						sprintf('Schema "%s", action "%s" declares "elevate"; a synced configuration may not, import it as an administrator.', $slug, $key)
+					);
+				}
+			}
+		}
+	}//end refuseElevation()
 
 	/**
 	 * Record a successful sync of a configuration now.

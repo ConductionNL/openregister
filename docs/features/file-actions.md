@@ -37,7 +37,7 @@ All endpoints are scoped under `/api/objects/{register}/{schema}/{id}/files` unl
 | POST | `.../files/{fileId}/publish` | `files#publish` | Publish a file | Yes |
 | POST | `.../files/{fileId}/depublish` | `files#depublish` | Depublish a file | Yes |
 | GET | `/api/files/{fileId}/download` | `files#downloadById` | Download file by ID | Yes |
-| GET | `.../files/download` | `objects#downloadFiles` | Download all files as ZIP | Yes |
+| GET | `.../files/download` | `objectFilesArchive#downloadFiles` | Download all files as ZIP | Yes |
 | POST | `.../files/{fileId}/rename` | `files#rename` | Rename a file | No (method only) |
 | POST | `.../files/{fileId}/copy` | `files#copy` | Copy a file | No (method only) |
 | POST | `.../files/{fileId}/move` | `files#move` | Move a file | No (method only) |

@@ -24,14 +24,14 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -55,10 +55,10 @@ final class C01ApiVersionInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ApiCallRecordMapper::class => [ApiCallRecordMapperInterface::class, DbRegistrar::class],
-		ApiCapabilitiesService::class => [ApiCapabilitiesServiceInterface::class, ContractBindings::class],
-		ApiContractService::class => [ApiContractServiceInterface::class, ContractBindings::class],
-		ApiVersionCatalogue::class => [ApiVersionCatalogueInterface::class, ContractBindings::class],
+		ApiCallRecordMapper::class => [ApiCallRecordMapperInterface::class, IntegrationsMapperRegistrar::class],
+		ApiCapabilitiesService::class => [ApiCapabilitiesServiceInterface::class, CoreServiceBindings::class],
+		ApiContractService::class => [ApiContractServiceInterface::class, CoreServiceBindings::class],
+		ApiVersionCatalogue::class => [ApiVersionCatalogueInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

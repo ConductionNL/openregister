@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Federation;
 
-use OCA\OpenRegister\Db\FederatedShare;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCP\IUserSession;
@@ -82,13 +82,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	/**
 	 * Why the caller may not grant this share, or null when they hold every right it hands out.
 	 *
-	 * @param FederatedShare $share The share to grant, or one already granted.
+	 * @param FederatedShareInterface $share The share to grant, or one already granted.
 	 *
 	 * @return string|null The refusal, naming the right that is missing.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function refusal(FederatedShare $share): ?string {
+	public function refusal(FederatedShareInterface $share): ?string {
 		if ($this->userId() === null) {
 			return 'Sharing needs a signed-in user';
 		}
@@ -99,13 +99,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	/**
 	 * Why a signed-in caller may not grant this share, by the share's scope.
 	 *
-	 * @param FederatedShare $share The share to grant, or one already granted.
+	 * @param FederatedShareInterface $share The share to grant, or one already granted.
 	 *
 	 * @return string|null The refusal, naming the right that is missing.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	private function scopeRefusal(FederatedShare $share): ?string {
+	private function scopeRefusal(FederatedShareInterface $share): ?string {
 		if ($share->getScope() === 'register') {
 			return $this->registerRefusal(share: $share);
 		}
@@ -122,13 +122,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	 *
 	 * A schema share and an object share that writes both need it.
 	 *
-	 * @param FederatedShare $share The share to grant, or one already granted.
+	 * @param FederatedShareInterface $share The share to grant, or one already granted.
 	 *
 	 * @return string|null The refusal, or null when the caller manages the schema.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	private function schemaRefusal(FederatedShare $share): ?string {
+	private function schemaRefusal(FederatedShareInterface $share): ?string {
 		$schema = $this->targets->schema(share: $share);
 		if ($schema === null || $this->manageGate->mayManage(schema: $schema) === false) {
 			return 'This share needs the right to manage its schema';
@@ -144,13 +144,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	 * nothing is not federatable. Asked when a share is created, so an existing
 	 * share keeps serving. A register share names no schema and is not judged here.
 	 *
-	 * @param FederatedShare $share The share to create.
+	 * @param FederatedShareInterface $share The share to create.
 	 *
 	 * @return string|null The refusal.
 	 *
 	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
 	 */
-	public function federationRefusal(FederatedShare $share): ?string {
+	public function federationRefusal(FederatedShareInterface $share): ?string {
 		if ($share->getScope() === 'register') {
 			return null;
 		}
@@ -168,13 +168,13 @@ class ShareGrantor implements ShareGrantorInterface {
 	 *
 	 * An administrator always may, so a share whose register or schema has since gone can still be revoked.
 	 *
-	 * @param FederatedShare $share The stored share.
+	 * @param FederatedShareInterface $share The stored share.
 	 *
 	 * @return string|null The refusal.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function changeRefusal(FederatedShare $share): ?string {
+	public function changeRefusal(FederatedShareInterface $share): ?string {
 		if ($this->manageGate->callerIsAdministrator() === true) {
 			return null;
 		}
@@ -185,11 +185,11 @@ class ShareGrantor implements ShareGrantorInterface {
 	/**
 	 * Why the caller may not share a whole register, or null when they manage it.
 	 *
-	 * @param FederatedShare $share The register share.
+	 * @param FederatedShareInterface $share The register share.
 	 *
 	 * @return string|null The refusal.
 	 */
-	private function registerRefusal(FederatedShare $share): ?string {
+	private function registerRefusal(FederatedShareInterface $share): ?string {
 		$register = $this->targets->register(share: $share);
 		if ($register === null || $this->manageGate->mayManageRegister(register: $register) === false) {
 			return 'Sharing a whole register needs the right to manage that register';
@@ -201,11 +201,11 @@ class ShareGrantor implements ShareGrantorInterface {
 	/**
 	 * Why the caller may not share one object for reading, or null when they read it.
 	 *
-	 * @param FederatedShare $share The object read share.
+	 * @param FederatedShareInterface $share The object read share.
 	 *
 	 * @return string|null The refusal.
 	 */
-	private function objectReadRefusal(FederatedShare $share): ?string {
+	private function objectReadRefusal(FederatedShareInterface $share): ?string {
 		if ($this->targets->callerReadsObject(share: $share) === false) {
 			return 'Sharing an object needs your own read of that object';
 		}

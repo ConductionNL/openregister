@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds a nullable `owner` (user id) to openregister_webhooks.
@@ -39,7 +38,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
  */
-class Version1Date20261113120200 extends SimpleMigrationStep {
+class Version1Date20261113120200 extends TargetedMigrationStep {
 	/**
 	 * Add the owner column and its index.
 	 *
@@ -51,7 +50,7 @@ class Version1Date20261113120200 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		// @var ISchemaWrapper $schema
 		$schema = $schemaClosure();
 
@@ -68,5 +67,5 @@ class Version1Date20261113120200 extends SimpleMigrationStep {
 		$table->addIndex(['owner'], 'idx_or_webhooks_owner');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

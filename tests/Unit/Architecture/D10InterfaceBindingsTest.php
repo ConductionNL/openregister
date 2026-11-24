@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -108,8 +110,8 @@ final class D10InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsBound(string $class, string $contract): void {
-		$this->assertArrayHasKey($contract, ContractBindings::BINDINGS);
-		$this->assertSame($class, ContractBindings::BINDINGS[$contract]);
+		$this->assertArrayHasKey($contract, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS));
+		$this->assertSame($class, (ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS)[$contract]);
 	}//end testTheInterfaceIsBound()
 
 	/**

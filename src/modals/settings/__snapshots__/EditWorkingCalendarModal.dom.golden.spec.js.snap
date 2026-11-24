@@ -24,6 +24,7 @@ exports[`EditWorkingCalendarModal form renders a new calendar 1`] = `
         <x-nctextfield modelvalue="" disabled="false" label="Slug" helpertext="The stable name a timer refers to. It cannot change once deadlines point at it." data-testid="working-calendar-slug" data-on="onUpdate:modelValue"></x-nctextfield>
         <x-nctextfield modelvalue="" label="Title" data-testid="working-calendar-title" data-on="onUpdate:modelValue"></x-nctextfield>
         <x-nctextfield modelvalue="" label="Organisation" helpertext="Leave empty for a calendar every organisation may use." data-testid="working-calendar-organisation" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-ncselect modelvalue="Europe/Amsterdam" options="UTC,Europe/Amsterdam,Europe/London" inputlabel="Time zone" clearable="false" data-testid="working-calendar-timezone" data-on="onUpdate:modelValue"></x-ncselect>
       </section>
       <section class="calendar-form__block">
         <h4>Working week</h4>
@@ -164,6 +165,7 @@ exports[`EditWorkingCalendarModal form renders an existing calendar 1`] = `
         <x-nctextfield modelvalue="nl-municipal" disabled="true" label="Slug" helpertext="The stable name a timer refers to. It cannot change once deadlines point at it." data-testid="working-calendar-slug" data-on="onUpdate:modelValue"></x-nctextfield>
         <x-nctextfield modelvalue="" label="Title" data-testid="working-calendar-title" data-on="onUpdate:modelValue"></x-nctextfield>
         <x-nctextfield modelvalue="" label="Organisation" helpertext="Leave empty for a calendar every organisation may use." data-testid="working-calendar-organisation" data-on="onUpdate:modelValue"></x-nctextfield>
+        <x-ncselect modelvalue="Europe/Amsterdam" options="UTC,Europe/Amsterdam,Europe/London" inputlabel="Time zone" clearable="false" data-testid="working-calendar-timezone" data-on="onUpdate:modelValue"></x-ncselect>
       </section>
       <section class="calendar-form__block">
         <h4>Working week</h4>

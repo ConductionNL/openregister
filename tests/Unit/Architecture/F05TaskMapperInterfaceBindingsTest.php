@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\TaskAuditMapper;
@@ -55,10 +55,10 @@ final class F05TaskMapperInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		FlowRunStepMapper::class => [FlowRunStepMapperInterface::class, DbRegistrar::class],
-		TaskAuditMapper::class => [TaskAuditMapperInterface::class, DbRegistrar::class],
-		TaskCandidateMapper::class => [TaskCandidateMapperInterface::class, DbRegistrar::class],
-		TaskRelationMapper::class => [TaskRelationMapperInterface::class, DbRegistrar::class],
+		FlowRunStepMapper::class => [FlowRunStepMapperInterface::class, ProcessesMapperRegistrar::class],
+		TaskAuditMapper::class => [TaskAuditMapperInterface::class, ProcessesMapperRegistrar::class],
+		TaskCandidateMapper::class => [TaskCandidateMapperInterface::class, ProcessesMapperRegistrar::class],
+		TaskRelationMapper::class => [TaskRelationMapperInterface::class, ProcessesMapperRegistrar::class],
 	];
 
 	/**

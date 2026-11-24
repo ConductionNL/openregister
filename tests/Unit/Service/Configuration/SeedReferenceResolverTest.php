@@ -139,18 +139,42 @@ final class SeedReferenceResolverTest extends TestCase {
 	}//end testAnUnknownSlugIsKeptWithAWarning()
 
 	/**
-	 * A property whose `$ref` is empty or not a string is not a reference.
+	 * A stored schema carries its `$ref` as the target schema's id; that id is the target.
+	 *
+	 * @return void
+	 */
+	public function testAStoredSchemaIdRefIsAReference(): void {
+		$resolver = new SeedReferenceResolver(
+			lookup: function (string $target, string $slug): ?string {
+				$this->asked[] = $target . ':' . $slug;
+				return $target === '90' && $slug === 'anna' ? self::ANNA : null;
+			},
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		$data = $resolver->resolve(
+			data: ['chair' => 'anna', 'members' => ['anna']],
+			properties: ['chair' => ['type' => 'string', '$ref' => 90], 'members' => ['type' => 'array', 'items' => ['$ref' => 90]]],
+			schemaSlug: 'committee'
+		);
+
+		self::assertSame(['chair' => self::ANNA, 'members' => [self::ANNA]], $data);
+		self::assertSame(['90:anna', '90:anna'], $this->asked);
+	}//end testAStoredSchemaIdRefIsAReference()
+
+	/**
+	 * A property whose `$ref` is empty or not a string or id is not a reference.
 	 *
 	 * @return void
 	 */
 	public function testAPropertyWithoutAUsableRefIsNotAReference(): void {
 		$data = $this->resolver()->resolve(
-			data: ['a' => 'anna', 'b' => 'anna', 'c' => ['anna']],
-			properties: ['a' => ['$ref' => ''], 'b' => ['$ref' => ['person']], 'c' => ['type' => 'array', 'items' => 'person']],
+			data: ['a' => 'anna', 'b' => 'anna', 'c' => ['anna'], 'd' => 'anna'],
+			properties: ['a' => ['$ref' => ''], 'b' => ['$ref' => ['person']], 'd' => ['$ref' => 0], 'c' => ['type' => 'array', 'items' => 'person']],
 			schemaSlug: 'committee'
 		);
 
-		self::assertSame(['a' => 'anna', 'b' => 'anna', 'c' => ['anna']], $data);
+		self::assertSame(['a' => 'anna', 'b' => 'anna', 'c' => ['anna'], 'd' => 'anna'], $data);
 		self::assertSame([], $this->asked);
 	}//end testAPropertyWithoutAUsableRefIsNotAReference()
 }//end class
