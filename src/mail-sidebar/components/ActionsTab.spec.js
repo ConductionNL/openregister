@@ -135,7 +135,7 @@ describe('ActionsTab schemas', () => {
 		const wrapper = await mountTab()
 		const buttons = wrapper.findAll('.or-action-create')
 		expect(buttons).toHaveLength(1)
-		expect(buttons[0].text()).toBe('New Leads from this mail')
+		expect(buttons[0].text()).toBe('New leads from this mail')
 	})
 
 	it('says there is nothing to connect to when no schema links to mail', async () => {
@@ -421,7 +421,7 @@ describe('ActionsTab create from email', () => {
 		await wrapper.vm.openCreate(LEADS)
 		axios.post.mockRejectedValue({ response: { data: { error: 'bad' } } })
 		await wrapper.vm.submitCreate({ title: 'T' })
-		expect(showError).toHaveBeenCalledWith('Failed to create Leads from email')
+		expect(showError).toHaveBeenCalledWith('Failed to create leads from email')
 		expect(wrapper.vm.createDialog.show).toBe(true)
 		expect(wrapper.vm.createSaving).toBe(false)
 	})

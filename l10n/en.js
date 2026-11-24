@@ -4024,7 +4024,10 @@ OC.L10N.register(
     "Connected to" : "Connected to",
     "Drop an attachment here to add it" : "Drop an attachment here to add it",
     "Number or words" : "Number or words",
-    "New {name} from this mail" : "New {name} from this mail"
+    "New {name} from this mail" : "New {name} from this mail",
+    "Fields marked * are required. The new {name} is connected to this mail." : "Fields marked * are required. The new {name} is connected to this mail.",
+    "(optional)" : "(optional)",
+    "Create and connect" : "Create and connect"
 },
 "nplurals=2; plural=(n != 1);"
 );
