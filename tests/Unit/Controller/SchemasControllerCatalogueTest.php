@@ -84,7 +84,6 @@ final class SchemasControllerCatalogueTest extends TestCase {
 		);
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemas,
