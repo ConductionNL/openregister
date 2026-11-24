@@ -7,7 +7,7 @@ Budget (ADR-124): API <= 100 ms, page usable <= 300 ms warm. Every page is still
 - [ ] openregister #11032-#11035 (audit read row once per request, register lookup, organisation parent chain, SchemaMapper::findInIds cache): OR fix lanes run the diff check and check:strict, mark ready; the integrator lands them.
 
 ## launchpad
-- [ ] Fill the dashboard store from the initial state PageController already computes (visible + active dashboards); the store fetches both again (~250 ms).
+- [x] Fill the dashboard store from the initial state PageController already computes (visible + active dashboards); the store fetches both again (~250 ms). (launchpad #1739, merged 2026-11-24)
 
 ## dossiq
 - [ ] Cases list: type and status labels load in a second wave after the list (5 request levels). Load them with the list or from initial state.
