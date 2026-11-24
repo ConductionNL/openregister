@@ -82,6 +82,7 @@ BackgroundJob/AuditTrailExportJob.php,77,BackgroundJob,Compliance,Compliance/Bac
 BackgroundJob/AutoTransitionJob.php,104,BackgroundJob,Flows,Flows/BackgroundJob/AutoTransitionJob.php,0,,Processes
 BackgroundJob/AvgRetentionJob.php,72,BackgroundJob,Compliance,Compliance/BackgroundJob/AvgRetentionJob.php,0,,Compliance
 BackgroundJob/BackfillCalendarLinksJob.php,125,BackgroundJob,Configuration,Configuration/BackgroundJob/BackfillCalendarLinksJob.php,0,,Configuration
+BackgroundJob/BagRefreshJob.php,42,BackgroundJob,Integrations,Integrations/BackgroundJob/BagRefreshJob.php,0,,Integrations
 BackgroundJob/BlobGroup.php,15,BackgroundJob,Compliance,Compliance/BackgroundJob/BlobGroup.php,0,,Compliance
 BackgroundJob/BlobMigrationJob.php,203,BackgroundJob,Configuration,Configuration/BackgroundJob/BlobMigrationJob.php,0,,Configuration
 BackgroundJob/BlobMigrationRun.php,37,BackgroundJob,Compliance,Compliance/BackgroundJob/BlobMigrationRun.php,0,,Compliance
@@ -176,6 +177,8 @@ Command/AdoptionRun.php,,Command,,,,,Core
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
 Command/BackfillSystemOwnerCommand.php,146,Command,Configuration,Configuration/Command/BackfillSystemOwnerCommand.php,0,,Configuration
+Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Integrations
+Command/BagLoadCommand.php,55,Command,Integrations,Integrations/Command/BagLoadCommand.php,0,,Integrations
 Command/BackfillTranslationSourceLanguageCommand.php,83,Command,Integrations,Integrations/Command/BackfillTranslationSourceLanguageCommand.php,0,,Configuration
 Command/DeclaredGroupsCommand.php,71,Command,Access,Access/Command/DeclaredGroupsCommand.php,0,,Core
 Command/DedupCollidedSchemasCommand.php,214,Command,Service,Service/Command/DedupCollidedSchemasCommand.php,0,,Core
@@ -230,6 +233,7 @@ Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
+Controller/BagAddressController.php,55,Controller,Integrations,Integrations/Controller/BagAddressController.php,0,,Integrations
 Controller/BookmarkLinksController.php,138,Controller,Integrations,Integrations/Controller/BookmarkLinksController.php,0,,Integrations
 Controller/BulkController.php,536,Controller,Access,Access/Controller/BulkController.php,0,,Core
 Controller/BulkJobsController.php,329,Controller,Flows,Flows/Controller/BulkJobsController.php,0,,Processes
@@ -1911,12 +1915,18 @@ Service/AuthenticationService.php,288,Service,Integrations,Integrations/Service/
 Service/Authorization/DeclaredGroupInventoryService.php,47,Service,Access,Access/Service/Authorization/DeclaredGroupInventoryService.php,0,,Core
 Service/Authorization/GrantableRightsIndex.php,125,Service,Access,Access/Service/Authorization/GrantableRightsIndex.php,0,,Core
 Service/Authorization/GroupProvisioner.php,76,Service,Access,Access/Service/Authorization/GroupProvisioner.php,0,317,Core
+Service/Authorization/DeclaredGroupRights.php,,Service,,,,,Core
 Service/Authorization/GroupReconciler.php,92,Service,Access,Access/Service/Authorization/GroupReconciler.php,0,,Core
+Service/Authorization/GroupRightsReconciler.php,,Service,,,,,Core
 Service/Authorization/RbacGroupCollector.php,126,Service,Access,Access/Service/Authorization/RbacGroupCollector.php,0,236,Core
 Service/AuthorizationAuditService.php,112,Service,Compliance,Compliance/Service/AuthorizationAuditService.php,0,254,Compliance
 Service/AuthorizationService.php,198,Service,Integrations,Integrations/Service/AuthorizationService.php,8,,Integrations
 Service/AvgComplianceService.php,175,Service,Compliance,Compliance/Service/AvgComplianceService.php,0,,Compliance
 Service/AvgRetentionService.php,237,Service,Compliance,Compliance/Service/AvgRetentionService.php,0,,Compliance
+Service/Bag/BagAddressLookup.php,129,Service,Integrations,Integrations/Service/Bag/BagAddressLookup.php,0,,Integrations
+Service/Bag/BagBulkLoader.php,206,Service,Integrations,Integrations/Service/Bag/BagBulkLoader.php,0,,Integrations
+Service/Bag/BagExtractReader.php,142,Service,Integrations,Integrations/Service/Bag/BagExtractReader.php,0,,Integrations
+Service/Bag/BagExtractSource.php,46,Service,Integrations,Integrations/Service/Bag/BagExtractSource.php,0,,Integrations
 Service/BookmarkDraft.php,24,Service,Integrations,Integrations/Service/BookmarkDraft.php,0,,Integrations
 Service/BookmarkLinkService.php,293,Service,Integrations,Integrations/Service/BookmarkLinkService.php,0,,Integrations
 Service/BulkActionRegistry.php,75,Service,Flows,Flows/Service/BulkActionRegistry.php,0,328,Processes
@@ -2421,6 +2431,8 @@ Service/Flow/MacroActionResolver.php,74,Service,Flows,Flows/Service/Flow/MacroAc
 Service/Flow/MacroActionValidator.php,100,Service,Flows,Flows/Service/Flow/MacroActionValidator.php,0,,Processes
 Service/Flow/MacroRunChanges.php,50,Service,Flows,Flows/Service/Flow/MacroRunChanges.php,0,,Processes
 Service/Flow/Nodes/ActionInputsNode.php,58,Service,Flows,Flows/Service/Flow/Nodes/ActionInputsNode.php,0,,Processes
+Service/Flow/Nodes/AuditTrailNode.php,155,Service,Flows,Flows/Service/Flow/Nodes/AuditTrailNode.php,0,,Processes
+Service/Flow/Nodes/AuditTrailNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/AuditTrailNodeInterface.php,0,,Processes
 Service/Flow/Nodes/AwaitSignalNode.php,191,Service,Flows,Flows/Service/Flow/Nodes/AwaitSignalNode.php,0,,Processes
 Service/Flow/Nodes/DecisionTableNode.php,284,Service,Flows,Flows/Service/Flow/Nodes/DecisionTableNode.php,0,,Processes
 Service/Flow/Nodes/EndNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/EndNode.php,0,,Processes
@@ -4204,6 +4216,7 @@ BackgroundJob/ExpiredObjectSweepJob.php,,BackgroundJob,,,,,Compliance
 Command/ExpirySweepCommand.php,,Command,,,,,Compliance
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Migration/Version1Date20261121170017.php,,Migration,,,,,Compliance
 Service/Object/DeclaredErrorMessage.php,,Service,,,,,Core
 Service/Schemas/ErrorMessagesDeclaration.php,,Service,,,,,Core
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
@@ -4245,6 +4258,7 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
@@ -4333,6 +4347,7 @@ Repair/SeedFromDirectory.php,37,Repair,Platform,Platform/Repair/SeedFromDirector
 BackgroundJob/SeedDirectoryJob.php,19,BackgroundJob,Configuration,Configuration/BackgroundJob/SeedDirectoryJob.php,0,,Configuration
 Command/SeedImportCommand.php,58,Command,Configuration,Configuration/Command/SeedImportCommand.php,0,,Configuration
 Controller/Settings/SeedReportController.php,19,Controller,Configuration,Configuration/Controller/Settings/SeedReportController.php,0,,Configuration
+Service/ApiCaller/ApiClientName.php,22,Service,Platform,Platform/Service/ApiCaller/ApiClientName.php,0,,Platform
 Service/Sharing/PlatformShareGate.php,116,Service,Access,Access/Service/Sharing/PlatformShareGate.php,0,,Core
 Service/Sharing/PlatformSharePermissions.php,117,Service,Access,Access/Service/Sharing/PlatformSharePermissions.php,0,,Core
 Calendar/DeclaredDateCalendars.php,184,Calendar,Platform,Platform/Calendar/DeclaredDateCalendars.php,0,,Integrations
@@ -4344,6 +4359,8 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Capabilities/AuthorizationCapability.php,,Capabilities,,,,,Platform
+Service/Authorization/AuthorizationBlock.php,,Service,,,,,Core
 Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
 Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
 Listener/SchemaDeclarationChecksListener.php,53,Listener,,,0,,Processes
@@ -4557,6 +4574,7 @@ Kernel/Contracts/CaseItemInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DecisionInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppEventWebhookListenerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdminSettingDelegation.php,,Kernel,,,,,Kernel
+Kernel/Contracts/SystemAuditLineInterface.php,,Kernel,,,,,Kernel
 Controller/Support/SearchTrailControllerServices.php,,Controller,,,,,Compliance
 Controller/Support/XwikiLinksControllerServices.php,,Controller,,,,,Integrations
 Service/Configuration/AppSettingsAccess.php,,Service,,,,,Core
@@ -4681,6 +4699,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Migration/Version1Date20261121170000.php,36,Migration,,,,,Platform
 Command/UniqueUuidIndexCommand.php,,Command,,,,,Core
 Repair/AddUniqueUuidIndex.php,,Repair,,,,,Core
 Service/Object/UniqueUuidIndex.php,,Service,,,,,Core
@@ -4706,3 +4725,5 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
+Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel

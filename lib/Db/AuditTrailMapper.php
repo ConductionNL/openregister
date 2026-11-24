@@ -1112,6 +1112,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
@@ -1262,6 +1263,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $removed;
 	}//end removedFields()
+
+	/**
+	 * The uuid of the object a cascade acted for, as the indexed `trigger_object` column holds it.
+	 *
+	 * A projection of the cascade context that {@see self::foldCascadeContext()}
+	 * writes into the sealed `changed` payload, so the column adds no fact the
+	 * chain does not already cover.
+	 *
+	 * @param array|null $cascadeContext The cascade context, if any.
+	 *
+	 * @return string|null The triggering object's uuid, or null when the entry is not part of a cascade.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function triggerObjectOf(?array $cascadeContext): ?string {
+		$trigger = ($cascadeContext['triggerObject'] ?? null);
+		if (is_string($trigger) === false || trim($trigger) === '') {
+			return null;
+		}
+
+		return $trigger;
+	}//end triggerObjectOf()
 
 	/**
 	 * Fold a referential-integrity cascade context into the change set.
@@ -1529,6 +1552,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail {
 		$auditTrail = self::integrityRow(entry: $entry);
 		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $entry->object);
+		self::keepUntil(auditTrail: $auditTrail, until: $entry->expiresNoEarlierThan);
 		$this->insert(entity: $auditTrail);
 
 		return $auditTrail;
@@ -1549,6 +1573,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($entry->objectUuid);
 		$auditTrail->setAction($entry->action);
 		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $entry->changed));
 		$auditTrail->setUser($entry->userId);
 		$auditTrail->setCreated(new DateTime());
 		if ($entry->schemaId !== null) {
@@ -1561,6 +1586,32 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrail;
 	}//end integrityRow()
+
+	/**
+	 * Push a finite expiry out to the given moment, so the evidence of a cleared
+	 * reference outlives the recovery window of the delete that cleared it.
+	 *
+	 * An entry retained indefinitely (null expiry) stays so, and an expiry
+	 * already later than the floor is left as it is: the floor only lengthens.
+	 * Set before the row is sealed, as every expiry is.
+	 *
+	 * @param AuditTrail              $auditTrail The entry being written.
+	 * @param \DateTimeImmutable|null $until      The earliest expiry, or null for no floor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function keepUntil(AuditTrail $auditTrail, ?\DateTimeImmutable $until): void {
+		$expires = $auditTrail->getExpires();
+		if ($until === null || $expires === null) {
+			return;
+		}
+
+		if ($expires->getTimestamp() < $until->getTimestamp()) {
+			$auditTrail->setExpires(DateTime::createFromImmutable($until));
+		}
+	}//end keepUntil()
 
 	/**
 	 * Resolve the audit row's expiry from the object's retention policy.
