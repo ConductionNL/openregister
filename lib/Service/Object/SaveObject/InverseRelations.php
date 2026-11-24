@@ -22,10 +22,10 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Formats\UuidFormat;
@@ -101,7 +101,10 @@ final class InverseRelations {
 	/**
 	 * Add the saved object to the one object a relation points at.
 	 *
-	 * A failure is logged and the next relation is processed.
+	 * Only the related object's `_relations` (and `_updated`) are written, with
+	 * no full update, because none of its properties change; the mapper still
+	 * dispatches the object's update event when the column changed. A failure
+	 * is logged and the next relation is processed.
 	 *
 	 * @param InverseRelationWrite $write The write, on one relation.
 	 *
@@ -111,7 +114,7 @@ final class InverseRelations {
 		try {
 			$targetSchema = $this->targetSchema(write: $write);
 			if ($targetSchema !== null) {
-				$this->append(write: $write, related: $this->relatedObject(write: $write, schema: $targetSchema));
+				$this->append(write: $write, schema: $targetSchema);
 			}
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -120,25 +123,6 @@ final class InverseRelations {
 			);
 		}
 	}//end writeOne()
-
-	/**
-	 * The object a relation points at, read without the caller's access limits.
-	 *
-	 * @param InverseRelationWrite $write  The write, on one relation.
-	 * @param Schema               $schema The target schema.
-	 *
-	 * @return ObjectEntity The object.
-	 */
-	private function relatedObject(InverseRelationWrite $write, Schema $schema): ObjectEntity {
-		return $this->objects->find(
-			identifier: $write->relatedUuid,
-			register: $write->register,
-			schema: $schema,
-			includeDeleted: false,
-			_rbac: false,
-			_multitenancy: false
-		);
-	}//end relatedObject()
 
 	/**
 	 * The schema a relation's property points at, or null when it is no resolvable relation.
@@ -230,24 +214,21 @@ final class InverseRelations {
 	/**
 	 * Add the saved object's UUID to a related object's relations, unless it is already there.
 	 *
-	 * @param InverseRelationWrite $write   The write, on one relation.
-	 * @param ObjectEntity         $related The object the relation points at.
+	 * @param InverseRelationWrite $write  The write, on one relation.
+	 * @param Schema               $schema The related object's schema.
 	 *
 	 * @return void
 	 */
-	private function append(InverseRelationWrite $write, ObjectEntity $related): void {
-		$context = ['savedUuid' => $write->savedUuid, 'relatedUuid' => $write->relatedUuid];
-		$relations = ($related->getRelations() ?? []);
-		if (in_array($write->savedUuid, $relations, true) === true) {
-			$this->logger->debug(message: '[SaveObject] Object already in related object\'s relations', context: $context);
-			return;
-		}
+	private function append(InverseRelationWrite $write, Schema $schema): void {
+		$updated = $this->objects->appendRelation(
+			table: new RegisterSchema(register: $write->register, schema: $schema),
+			uuid: $write->relatedUuid,
+			relatedUuid: $write->savedUuid
+		);
 
-		$relations[] = $write->savedUuid;
-		$related->setRelations($relations);
-		$related->setUpdated(new DateTime());
-		$this->objects->update($related);
-
-		$this->logger->debug(message: '[SaveObject] Updated inverse relation', context: $context + ['newRelationsCount' => count($relations)]);
+		$this->logger->debug(
+			message: '[SaveObject] Inverse relation written',
+			context: ['savedUuid' => $write->savedUuid, 'relatedUuid' => $write->relatedUuid, 'rowsUpdated' => $updated]
+		);
 	}//end append()
 }//end class
