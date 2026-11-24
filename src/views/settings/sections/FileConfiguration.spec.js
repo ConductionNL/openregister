@@ -1,119 +1,182 @@
 /**
- * The file configuration page states the text extraction ceiling: the stored
- * `textExtraction.maxBytes` is shown in MB and saved back in bytes.
+ * The file configuration page's disclosure per detection backend
+ * (anonymisation-discloses-itself, tasks 2.3 and 3.2): measured figures for
+ * the current detector version or "not measured", and the training use and
+ * retention an administrator states for an external backend.
  *
- * @spec openspec/changes/large-file-handling/tasks.md#task-1-5
+ * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
+ * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
-import { flushPromises, mount } from '@vue/test-utils'
 import FileConfiguration from './FileConfiguration.vue'
+import { accuracyOf, detectorLabel, isRetention, percent, statementsPayload } from './anonymisationDisclosure.js'
 
-jest.mock('@nextcloud/axios', () => ({
-	__esModule: true,
-	default: {
-		get: jest.fn(() => Promise.reject(new Error('offline'))),
-		put: jest.fn(() => Promise.reject(new Error('offline'))),
-		post: jest.fn(() => Promise.reject(new Error('offline'))),
-	},
-}))
-jest.mock('@nextcloud/router', () => ({ __esModule: true, generateUrl: (path) => `/index.php${path}` }))
+jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: {} }))
+jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({}))
+jest.mock('vue-material-design-icons/Check.vue', () => ({}))
+jest.mock('vue-material-design-icons/DotsVertical.vue', () => ({}))
+jest.mock('vue-material-design-icons/FileDocument.vue', () => ({}))
+jest.mock('vue-material-design-icons/Information.vue', () => ({}))
+jest.mock('vue-material-design-icons/Key.vue', () => ({}))
+jest.mock('vue-material-design-icons/Magnify.vue', () => ({}))
+jest.mock('vue-material-design-icons/Refresh.vue', () => ({}))
 jest.mock('@nextcloud/dialogs', () => ({ __esModule: true, showError: jest.fn(), showSuccess: jest.fn() }))
-jest.mock('@nextcloud/l10n', () => ({
-	__esModule: true,
-	translate: (app, text) => text,
-	t: (app, text) => text,
-	n: (app, one, many) => many,
-}))
-jest.mock('@nextcloud/vue', () => require('../../__mocks__/goldenDom.js').library())
-jest.mock('vue-material-design-icons/AlertCircle.vue', () => require('../../__mocks__/goldenDom.js').stubModule('AlertCircle'))
-jest.mock('vue-material-design-icons/Check.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Check'))
-jest.mock('vue-material-design-icons/DotsVertical.vue', () => require('../../__mocks__/goldenDom.js').stubModule('DotsVertical'))
-jest.mock('vue-material-design-icons/FileDocument.vue', () => require('../../__mocks__/goldenDom.js').stubModule('FileDocument'))
-jest.mock('vue-material-design-icons/Information.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Information'))
-jest.mock('vue-material-design-icons/Key.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Key'))
-jest.mock('vue-material-design-icons/Magnify.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Magnify'))
-jest.mock('vue-material-design-icons/Refresh.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Refresh'))
-jest.mock('../../../components/shared/SettingsCard.vue', () => require('../../__mocks__/goldenDom.js').stubModule('SettingsCard'))
-jest.mock('../../../components/shared/SettingsSection.vue', () => require('../../__mocks__/goldenDom.js').stubModule('SettingsSection'))
+jest.mock('../../../components/shared/SettingsCard.vue', () => ({}))
+jest.mock('../../../components/shared/SettingsSection.vue', () => ({}))
+jest.mock('@nextcloud/vue', () => ({}))
+jest.mock('@nextcloud/l10n', () => ({ __esModule: true, translate: (app, text) => `[${text}]` }))
 
-// The store the section reads, replaced per test.
-let mockStore = {}
-jest.mock('../../../store/settings.js', () => ({
-	useSettingsStore: Object.assign(() => mockStore, { $id: 'settings' }),
-}))
+const { computed, methods } = FileConfiguration
+
+const REGEX_1 = { engine: 'regex', engineVersion: 'unknown', model: 'unknown', modelVersion: 'unknown', patternSetVersion: '1.0.0' }
+const REGEX_2 = { ...REGEX_1, patternSetVersion: '2.0.0' }
+const MEASURED = {
+	corpus: 'nl-woo-synthetic',
+	corpusVersion: '1',
+	detector: REGEX_1,
+	measuredAt: '2026-11-14T10:00:00+00:00',
+	current: true,
+	types: { EMAIL: { precision: 0.8, recall: 1.0, support: 8 }, PERSON: { precision: null, recall: 0.0, support: 14 } },
+}
 
 /**
- * A settings store answering the given file settings; every other call resolves empty.
+ * A backend-state with the regex backend (product-declared) and a configured Presidio.
  *
- * @param {object} fileSettings The stored file settings
- * @return {object} The store
+ * @param {object} regex Overrides for the regex backend.
+ * @param {object} presidio Overrides for the Presidio backend.
+ * @return {object}
  */
-function storeWith(fileSettings) {
+function backendState(regex = {}, presidio = {}) {
 	return {
-		getFileSettings: jest.fn().mockResolvedValue(fileSettings),
-		saveFileSettings: jest.fn().mockImplementation((payload) => Promise.resolve(payload)),
-		getObjectSettings: jest.fn().mockResolvedValue({}),
-		getExtractionStats: jest.fn().mockResolvedValue({}),
-		getAnonymisationBackendState: jest.fn().mockResolvedValue({}),
-		loadSettings: jest.fn().mockResolvedValue({}),
+		activeMethod: 'regex',
+		effectiveMethod: 'regex',
+		backends: {
+			regex: { name: 'regex', configured: true, detector: REGEX_1, statement: { trainingUse: 'excluded', retention: 'none', declaredBy: 'product' }, ...regex },
+			presidio: { name: 'presidio', configured: true, detector: { engine: 'presidio', model: 'nl_core_news_lg', modelVersion: '3.7' }, statement: { trainingUse: 'unknown', retention: 'unknown', declaredBy: 'administrator' }, ...presidio },
+			llm: { name: 'llm', configured: false, statement: { trainingUse: 'unknown', retention: 'unknown', declaredBy: 'administrator' } },
+			hybrid: { name: 'hybrid', configured: true, statement: { trainingUse: 'unknown', retention: 'unknown', declaredBy: 'administrator' } },
+		},
 	}
 }
 
 /**
- * The section mounted over a store, its settings loaded.
+ * A section instance with its methods and disclosure computeds bound to it.
  *
- * @param {object} store The settings store
- * @return {Promise<object>} The wrapper
+ * @param {object} state The backend state.
+ * @param {object} store The settings store.
+ * @return {object} The instance
  */
-async function mounted(store) {
-	mockStore = store
-	const wrapper = mount(FileConfiguration, {
-		global: { config: { globalProperties: { t: (app, text) => text, n: (app, one, many) => many } } },
-	})
-	await flushPromises()
-	return wrapper
+function section(state, store = {}) {
+	const vm = { ...FileConfiguration.data(), settingsStore: store, backendState: state }
+	for (const [name, fn] of Object.entries(methods)) vm[name] = fn.bind(vm)
+	for (const name of ['disclosureRows', 'trainingUses']) {
+		Object.defineProperty(vm, name, { get: computed[name].bind(vm) })
+	}
+	return vm
 }
 
-beforeEach(() => {
-	// The stand-in store answers only what the ceiling needs; the rest of the section logs.
-	jest.spyOn(console, 'error').mockImplementation(() => {})
-	jest.spyOn(console, 'warn').mockImplementation(() => {})
-})
+describe('FileConfiguration measured accuracy', () => {
+	it('shows the figures of the current detector version with the corpus and the date', () => {
+		const [regex] = section(backendState({ evaluation: MEASURED })).disclosureRows
 
-afterEach(() => {
-	jest.restoreAllMocks()
-})
-
-describe('FileConfiguration extraction ceiling', () => {
-	it('renders the stored ceiling in MB', async () => {
-		const wrapper = await mounted(storeWith({ textExtraction: { maxBytes: 52428800 } }))
-
-		expect(wrapper.find('#max-file-size').element.value).toBe('50')
-		expect(wrapper.find('label[for="max-file-size"]').text()).toBe('Text Extraction Ceiling (MB)')
+		expect(regex.accuracy).toEqual({
+			state: 'measured',
+			corpus: 'nl-woo-synthetic',
+			corpusVersion: '1',
+			detector: 'regex 1.0.0',
+			measuredAt: '2026-11-14',
+			types: [
+				{ type: 'EMAIL', precision: '80%', recall: '100%', support: 8 },
+				{ type: 'PERSON', precision: '—', recall: '0%', support: 14 },
+			],
+		})
 	})
 
-	it.each([
-		['the default ceiling', { textExtraction: { maxBytes: 104857600 } }, 100],
-		['a legacy ceiling in MB', { maxFileSizeMB: 25 }, 25],
-		['no ceiling at all', {}, 100],
-		['an unusable ceiling', { textExtraction: { maxBytes: 0 } }, 100],
-	])('shows %s', async (label, settings, megabytes) => {
-		const wrapper = await mounted(storeWith(settings))
+	it('says the current version is not measured instead of showing old figures', () => {
+		const stale = { ...MEASURED, current: false, types: undefined }
+		const [regex] = section(backendState({ detector: REGEX_2, evaluation: stale })).disclosureRows
 
-		expect(wrapper.vm.fileSettings.maxFileSize).toBe(megabytes)
+		expect(regex.accuracy).toEqual({ state: 'notMeasured', detector: 'regex 2.0.0' })
 	})
 
-	it('saves the ceiling in bytes and no legacy key', async () => {
-		const store = storeWith({ textExtraction: { maxBytes: 104857600 } })
-		const wrapper = await mounted(store)
+	it('says a backend that was never measured is not measured', () => {
+		expect(accuracyOf({ detector: { engine: 'presidio', model: 'nl_core_news_lg', modelVersion: '3.7' } })).toEqual({ state: 'notMeasured', detector: 'nl_core_news_lg 3.7' })
+	})
 
-		wrapper.vm.fileSettings.maxFileSize = 20
-		await wrapper.vm.saveSettings()
+	it('describes the configured or active backends, never the composed hybrid one', () => {
+		expect(section(backendState()).disclosureRows.map((row) => [row.name, row.editable])).toEqual([['regex', false], ['presidio', true]])
+	})
+})
 
-		const payload = store.saveFileSettings.mock.calls[0][0]
-		expect(payload.textExtraction).toEqual({ maxBytes: 20971520 })
-		expect(payload).not.toHaveProperty('maxFileSize')
-		expect(payload).not.toHaveProperty('maxFileSizeMB')
+describe('FileConfiguration training use and retention', () => {
+	it('shows an external backend as unknown until someone states it, and lets it be set', () => {
+		const [, presidio] = section(backendState()).disclosureRows
+
+		expect(presidio.statement).toEqual({ trainingUse: 'unknown', retention: 'unknown' })
+		expect(presidio.editable).toBe(true)
+	})
+
+	it('saves the stated values with the other administrator statements and reloads the state', async () => {
+		const store = { saveFileSettings: jest.fn().mockResolvedValue({}), getAnonymisationBackendState: jest.fn().mockResolvedValue(backendState()) }
+		const vm = section(backendState({}, {}), store)
+		const [, presidio] = vm.disclosureRows
+
+		vm.setStatementDraft(presidio, 'trainingUse', 'excluded')
+		vm.setStatementDraft(presidio, 'retention', ' P30D ')
+		await vm.saveStatement(presidio)
+
+		const sent = store.saveFileSettings.mock.calls[0][0]
+		expect(sent.anonymisation).toEqual({
+			statements: {
+				presidio: { trainingUse: 'excluded', retention: 'P30D' },
+				llm: { trainingUse: 'unknown', retention: 'unknown' },
+			},
+		})
+		expect(store.getAnonymisationBackendState).toHaveBeenCalled()
+		expect(vm.statementDrafts).toEqual({})
+		expect(vm.statementErrors.presidio).toBe('')
+	})
+
+	it('refuses a retention the server would not keep and sends nothing', async () => {
+		const store = { saveFileSettings: jest.fn() }
+		const vm = section(backendState(), store)
+		const [, presidio] = vm.disclosureRows
+
+		vm.setStatementDraft(presidio, 'retention', 'thirty days')
+		await vm.saveStatement(presidio)
+
+		expect(store.saveFileSettings).not.toHaveBeenCalled()
+		expect(vm.statementErrors.presidio).toBe('[Retention is none, unknown or an ISO 8601 duration such as P30D.]')
+	})
+
+	it('names a failed save', async () => {
+		const store = { saveFileSettings: jest.fn().mockRejectedValue(new Error('500')) }
+		const vm = section(backendState(), store)
+		const [, presidio] = vm.disclosureRows
+
+		await vm.saveStatement(presidio)
+
+		expect(vm.statementErrors.presidio).toBe('[The statement could not be saved.]')
+		expect(vm.savingStatement).toBeNull()
+	})
+})
+
+describe('anonymisationDisclosure helpers', () => {
+	it('reads the retention values the server keeps', () => {
+		expect(['none', 'unknown', 'P30D', 'P1Y6M', 'PT12H'].every(isRetention)).toBe(true)
+		expect(['', 'P', 'thirty days', 'P1H'].some(isRetention)).toBe(false)
+	})
+
+	it('names the detector by its pattern set, its model, or its engine', () => {
+		expect(detectorLabel(REGEX_1)).toBe('regex 1.0.0')
+		expect(detectorLabel({ engine: 'openanonymiser', engineVersion: '0.9', model: 'unknown' })).toBe('openanonymiser 0.9')
+		expect(detectorLabel(null)).toBe('unknown')
+		expect(percent(0.456)).toBe('46%')
+		expect(percent(null)).toBe('—')
+	})
+
+	it('never sends the product\'s own statements', () => {
+		expect(Object.keys(statementsPayload(backendState(), 'presidio', { trainingUse: 'permitted', retention: 'none' }))).toEqual(['presidio', 'llm'])
 	})
 })

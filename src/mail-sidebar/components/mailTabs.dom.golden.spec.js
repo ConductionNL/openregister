@@ -154,7 +154,7 @@ describe('EntitiesTab golden', () => {
 })
 
 describe('ObjectsTab golden', () => {
-	it('renders the empty state and counts zero without an account', async () => {
+	it('renders nothing and counts zero without an account', async () => {
 		const wrapper = mount(ObjectsTab, { props: { messageId: 7 } })
 		await flushPromises()
 		expect(axios.get).not.toHaveBeenCalled()
