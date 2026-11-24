@@ -5,7 +5,7 @@
  *
  * Each class listed here had more than ten lib files naming it. It now has a
  * narrow interface beside it; callers type against that interface and
- * ContractBindings aliases it to the class. A missing alias is a runtime 500
+ * ProcessesServiceBindings aliases it to the class. A missing alias is a runtime 500
  * that no other unit test sees, so this test pins the binding as well as the
  * implementation and the callers.
  *
@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
@@ -57,14 +57,14 @@ final class A10InterfaceBindingsTest extends TestCase {
 	/**
 	 * Lib files (under lib/) besides the class itself still allowed to name it, and why.
 	 *
-	 * ContractBindings binds the interface to the class. RegisterFlowNodesEvent
+	 * ProcessesServiceBindings binds the interface to the class. RegisterFlowNodesEvent
 	 * is the public event other apps receive; its constructor stays as it is.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		FlowNodeRegistry::class => ['Service/ContractBindings.php', 'Service/Flow/RegisterFlowNodesEvent.php'],
-		SlaCalculator::class => ['Service/ContractBindings.php'],
+		FlowNodeRegistry::class => ['Service/Flow/RegisterFlowNodesEvent.php', 'Service/ProcessesServiceBindings.php'],
+		SlaCalculator::class => ['Service/ProcessesServiceBindings.php'],
 	];
 
 	/**
@@ -96,7 +96,7 @@ final class A10InterfaceBindingsTest extends TestCase {
 	}//end testTheClassImplementsItsInterface()
 
 	/**
-	 * ContractBindings aliases the interface to the class.
+	 * ProcessesServiceBindings aliases the interface to the class.
 	 *
 	 * @param class-string $class The class.
 	 *
@@ -104,7 +104,7 @@ final class A10InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsBound(string $class): void {
-		$bindings = constant(ContractBindings::class . '::BINDINGS');
+		$bindings = ProcessesServiceBindings::BINDINGS;
 		$this->assertArrayHasKey(self::CLASSES[$class], $bindings);
 		$this->assertSame($class, $bindings[self::CLASSES[$class]]);
 	}//end testTheInterfaceIsBound()
