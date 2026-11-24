@@ -180,7 +180,11 @@ class MappingRuntime implements RuntimeExtensionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list = false): array {
-		return $this->mappingService->executeMapping(mapping: $this->resolveMapping(mapping: $mapping), input: $input, list: $list);
+		if ($list === true) {
+			return $this->mappingService->executeListMapping(mapping: $this->resolveMapping(mapping: $mapping), input: $input);
+		}
+
+		return $this->mappingService->executeMapping(mapping: $this->resolveMapping(mapping: $mapping), input: $input);
 	}//end executeMapping()
 
 	/**
