@@ -339,4 +339,29 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 
 		return true;
 	}//end auditNoteMove()
+
+	/**
+	 * Record another timeline event (e.g. an entry's withdrawal) on the object's audit trail.
+	 *
+	 * A failed write is logged and answers false; it never throws, so losing the trail
+	 * entry never loses the change it records.
+	 *
+	 * @param ObjectEntity         $object  The object the entry hangs on.
+	 * @param string               $action  The audit action.
+	 * @param array<string, mixed> $context The audit context.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function auditTimelineEvent(ObjectEntity $object, string $action, array $context): bool {
+		try {
+			$this->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: $action, context: $context));
+		} catch (Throwable $e) {
+			$this->platform->logger->warning('[TimelineVisibilityService] The timeline event ' . $action . ' could not be audited', ['exception' => $e]);
+			return false;
+		}
+
+		return true;
+	}//end auditTimelineEvent()
 }//end class

@@ -1915,7 +1915,9 @@ Service/AuthenticationService.php,288,Service,Integrations,Integrations/Service/
 Service/Authorization/DeclaredGroupInventoryService.php,47,Service,Access,Access/Service/Authorization/DeclaredGroupInventoryService.php,0,,Core
 Service/Authorization/GrantableRightsIndex.php,125,Service,Access,Access/Service/Authorization/GrantableRightsIndex.php,0,,Core
 Service/Authorization/GroupProvisioner.php,76,Service,Access,Access/Service/Authorization/GroupProvisioner.php,0,317,Core
+Service/Authorization/DeclaredGroupRights.php,,Service,,,,,Core
 Service/Authorization/GroupReconciler.php,92,Service,Access,Access/Service/Authorization/GroupReconciler.php,0,,Core
+Service/Authorization/GroupRightsReconciler.php,,Service,,,,,Core
 Service/Authorization/RbacGroupCollector.php,126,Service,Access,Access/Service/Authorization/RbacGroupCollector.php,0,236,Core
 Service/AuthorizationAuditService.php,112,Service,Compliance,Compliance/Service/AuthorizationAuditService.php,0,254,Compliance
 Service/AuthorizationService.php,198,Service,Integrations,Integrations/Service/AuthorizationService.php,8,,Integrations
@@ -4265,6 +4267,7 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
@@ -4365,6 +4368,8 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Capabilities/AuthorizationCapability.php,,Capabilities,,,,,Platform
+Service/Authorization/AuthorizationBlock.php,,Service,,,,,Core
 Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
 Listener/RedactionPolicyCacheListener.php,,Listener,,,,,Configuration
 Listener/SchemaDeclarationChecksListener.php,53,Listener,,,0,,Processes
@@ -4725,3 +4730,5 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
+Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
