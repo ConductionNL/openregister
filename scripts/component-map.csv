@@ -1300,6 +1300,7 @@ Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/
 Kernel/Contracts/ScheduledReportsInterface.php,15,Kernel,Kernel,Kernel/Contracts/ScheduledReportsInterface.php,0,,Kernel
 Kernel/Contracts/SchemaExplorationInterface.php,7,Kernel,Kernel,Kernel/Contracts/SchemaExplorationInterface.php,0,,Kernel
 Kernel/Contracts/SchemaInterface.php,75,Kernel,Kernel,Kernel/Contracts/SchemaInterface.php,1,,Kernel
+Kernel/Contracts/TablePdfRendererInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/TaskInterface.php,23,Kernel,Kernel,Kernel/Contracts/TaskInterface.php,7,,Kernel
 Kernel/Contracts/TaskManagerInterface.php,20,Kernel,Kernel,Kernel/Contracts/TaskManagerInterface.php,0,,Kernel
 Kernel/Contracts/VocabularyImporterInterface.php,10,Kernel,Kernel,Kernel/Contracts/VocabularyImporterInterface.php,0,,Kernel
@@ -1491,6 +1492,7 @@ Middleware/TenantQuotaExceededException.php,23,Middleware,Access,Access/Middlewa
 Middleware/TenantQuotaMiddleware.php,177,Middleware,Access,Access/Middleware/TenantQuotaMiddleware.php,0,,Platform
 Middleware/TenantStatusException.php,16,Middleware,Access,Access/Middleware/TenantStatusException.php,0,,Platform
 Middleware/UnknownMetadataFieldMiddleware.php,38,Middleware,Platform,Platform/Middleware/UnknownMetadataFieldMiddleware.php,0,,Platform
+Migration/Version1Date20261114113000.php,21,Migration,,,,,Platform
 Notification/AnnotationNotifier.php,172,Notification,Platform,Platform/Notification/AnnotationNotifier.php,0,,Notifications
 Notification/Notifier.php,427,Notification,Platform,Platform/Notification/Notifier.php,0,,Notifications
 Notification/NotifierRegistrar.php,10,Notification,Platform,Platform/Notification/NotifierRegistrar.php,0,,Notifications
@@ -1841,6 +1843,11 @@ Service/AnalyticsSeriesService.php,111,Service,Integrations,Integrations/Service
 Service/Anonymisation/AnonymisationBackendService.php,388,Service,Compliance,Compliance/Service/Anonymisation/AnonymisationBackendService.php,4,55,Compliance
 Service/Anonymisation/BackendInfo.php,23,Service,Compliance,Compliance/Service/Anonymisation/BackendInfo.php,2,,Compliance
 Service/Anonymisation/BackendState.php,38,Service,Compliance,Compliance/Service/Anonymisation/BackendState.php,13,415,Compliance
+Kernel/Contracts/DetectorRecordInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/TextEntityDetectorInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AnonymisationMethodsInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/BackendStatement.php,,Kernel,,,,,Kernel
+Service/Anonymisation/DetectorRecord.php,,Service,,,,,Compliance
 Service/Anonymisation/ProbeResult.php,41,Service,Compliance,Compliance/Service/Anonymisation/ProbeResult.php,0,,Compliance
 Service/Anonymisation/ProbeResultCache.php,64,Service,Compliance,Compliance/Service/Anonymisation/ProbeResultCache.php,0,,Compliance
 Service/AnonymousEvaluationContext.php,19,Service,Service,Service/AnonymousEvaluationContext.php,0,,Core
@@ -4272,6 +4279,7 @@ Command/FederationSharesExpiringCommand.php,,Command,,,,,Integrations
 Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
+Listener/ServiceAccountLoginListener.php,,Listener,,,,,Core
 Listener/PlatformShareRoutingListener.php,,Listener,,,,,Core
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
@@ -4330,6 +4338,13 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Controller/OperationsQueryController.php,,Controller,,,,,Core
+Search/Service/GraphQL/BoundedRun.php,,Search,,,,,Search
+Service/GraphQL/AdminQueryRunner.php,,Service,,,,,Search
+Service/GraphQL/AdminQueryAudit.php,,Service,,,,,Core
+Service/GraphQL/AdminQueryExport.php,,Service,,,,,Core
+Exception/ReadOnlyQueryException.php,,Exception,,,,,Kernel
+Exception/NoTabularResultException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
@@ -4339,6 +4354,8 @@ Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
 Service/Authorization/AddedGrants.php,,Service,,,,,Core
 Service/Authorization/GrantCeiling.php,,Service,,,,,Core
 Service/Authorization/GrantedRight.php,,Service,,,,,Core
+Service/Authorization/MachineCredentialService.php,,Service,,,,,Core
+Service/Authorization/ServiceAccountRequest.php,,Service,,,,,Core
 Service/Anonymisation/TextDisclosureSource.php,,Service,,,,,Compliance
 Service/Anonymisation/TextDisclosureRecorder.php,,Service,,,,,Compliance
 Service/Anonymisation/PipelineSteps.php,,Service,,,,,Compliance
@@ -4348,7 +4365,7 @@ Controller/FileDisclosuresController.php,,Controller,,,,,Files
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
 Files/Db/TextDisclosure.php,,Files,,,,,Compliance
 Files/Db/TextDisclosureMapper.php,,Files,,,,,Compliance
-Service/Mail/MailThreadAssembler.php,,Service,,,,,Notifications
+Service/Mail/MailThreadAssembler.php,,Service,,,,,Files
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
@@ -4439,6 +4456,8 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Service/Flow/Nodes/TriggerCalendarNode.php,280,Service,Flows,Flows/Service/Flow/Nodes/TriggerCalendarNode.php,0,,Processes
+Service/Flow/Nodes/TriggerCalendarNodeInterface.php,35,Service,Flows,Flows/Service/Flow/Nodes/TriggerCalendarNodeInterface.php,0,,Processes
 Capabilities/AuthorizationCapability.php,,Capabilities,,,,,Platform
 Service/Authorization/AuthorizationBlock.php,,Service,,,,,Core
 Service/RedactionPolicy/ObjectTermRuleSource.php,,Service,,,,,Configuration
@@ -4502,6 +4521,11 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Anonymisation/DetectorEvaluation.php,233,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluation.php,0,,Compliance
+Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationService.php,0,,Compliance
+Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
+Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
+Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance
 Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core
 Service/Import/RecordImport/ImportProgress.php,,Service,,,,,Core
 Controller/RecordImportController.php,,Controller,,,,,Core
@@ -4515,6 +4539,12 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Migration/Version1Date20261121190000.php,,Migration,,,,,Platform
+BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Integrations
+Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Integrations
+Notifications/Service/OutboundMailLinkWriter.php,,Notifications,,,,,Integrations
+Contract/ReplyThreadResolutionInterface.php,,Contract,,,,,Kernel
+Service/Mail/MailThreadService.php,,Service,,,,,Files
 Migration/Version1Date20261114103700.php,,Migration,,,,,Platform
 Exception/TaskMandateRefusedException.php,,Exception,Exception,Exception/TaskMandateRefusedException.php,0,,Kernel
 Service/Task/TaskMandateGuard.php,,Service,Work,Work/Service/Task/TaskMandateGuard.php,0,,Processes
@@ -4798,10 +4828,14 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/MailObjectBinding.php,,Kernel,,,,,Kernel
+Kernel/Contracts/OutboundMailLinkRecorderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/BoundedQueryRunInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AdminQueryRunnerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DependencyBreakerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DependencyRefusalInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/ConnectionStatusReportInterface.php,,Kernel,,,,,Kernel
