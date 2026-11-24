@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
@@ -55,7 +55,7 @@ final class C08ValidationInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		CodedValueGuard::class => [CodedValueGuardInterface::class, CoreServiceBindings::class],
 		ConceptShapeGuard::class => [ConceptShapeGuardInterface::class, CoreServiceBindings::class],
-		DecisionTableValidator::class => [DecisionTableValidatorInterface::class, ContractBindings::class],
+		DecisionTableValidator::class => [DecisionTableValidatorInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
