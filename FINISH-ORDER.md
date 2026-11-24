@@ -10,7 +10,7 @@ An app is DONE only when all five hold, each with evidence in its PR or here:
 4. Every screen matches its drawn board on identity.conduction.nl/screens (pixel pass).
 5. The app is inside the speed budget (ADR-124: API <= 100 ms, page usable <= 300 ms warm), gate 124 green.
 
-Cloud lanes: the FOCUS app's builder does steps 1 and 3 and writes the tests for 2; it never marks an app DONE. Other builders keep working their own app, but when their app has nothing buildable left they help the FOCUS app with work that does not collide (openspec changes not yet started, one change per builder, branch cloud/b-<focus>-help-<change>).
+Cloud lanes: the FOCUS app's builder does steps 1 and 3 and writes the tests for 2; it never marks an app DONE. Other builders keep working their own app, but when their app has nothing buildable left they help, one leased change at a time, the first of dossiq, pipelinq, portaliq that still has an openspec change nobody started (Ruben, 24 Nov 2026 18:25 CET; the exact steps are SPARE CAPACITY in BUILDER-LANE.md).
 Local lanes (when the laptop runs): steps 2, 4 and 5 for the FOCUS app, then mark it DONE here with the date and the evidence links.
 
 DONE:
