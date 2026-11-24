@@ -95,6 +95,22 @@ final class ShippedBaselineStoreReadGoldenTest extends TestCase {
 		$this->assertSame([], $this->warnings);
 	}//end testARecordedBaselineIsReadWhole()
 
+	public function testConflictsAreReadFromTheirOwnKeyOnTheSchemaSubject(): void {
+		$values = $this->createMock(ConfigurationValueStore::class);
+		$values->expects($this->once())->method('read')->with(ConfigurationLayer::SUBJECT, 'schema:zaak', ShippedBaselineStore::KEY_SCHEMA_CONFLICTS)->willReturn(
+			new ConfigurationSnapshot(
+				address: new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: 'schema:zaak', configKey: ShippedBaselineStore::KEY_SCHEMA_CONFLICTS),
+				value: ['definition' => ['conflicts' => []], 'app' => 'procest', 'appVersion' => '2.0.0', 'recordedAt' => 'x'],
+				present: true
+			)
+		);
+
+		$this->assertSame(
+			['definition' => ['conflicts' => []], 'app' => 'procest', 'appVersion' => '2.0.0', 'recordedAt' => 'x'],
+			(new ShippedBaselineStore($values, $this->createMock(LoggerInterface::class)))->readConflicts(slug: 'zaak')
+		);
+	}//end testConflictsAreReadFromTheirOwnKeyOnTheSchemaSubject()
+
 	public function testAbsentMalformedAndUnreadableBaselinesAreNone(): void {
 		$absent = ConfigurationSnapshot::absent(address: new ConfigurationAddress(layer: ConfigurationLayer::SUBJECT, layerRef: 'schema:zaak', configKey: 'baseline-key'));
 		$this->assertNull($this->store($absent)->read(subject: 'schema:zaak', configKey: 'baseline-key'));

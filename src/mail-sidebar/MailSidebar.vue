@@ -2,55 +2,64 @@
 	<div
 		class="or-mail-sidebar-root"
 		:class="{
-			'or-mail-sidebar-root--connections-disabled': connectionsDisabled,
 			'or-mail-sidebar-root--idle': !isMessageView,
 		}">
-		<NcAppSidebar
+		<aside
 			v-if="!collapsed"
-			v-model:active="activeTab"
-			:name="sidebarTitle"
-			:subname="sidebarSubname"
-			:compact="true"
 			class="or-mail-sidebar"
-			@close="toggleCollapsed">
-			<NcAppSidebarTab
-				id="objects"
-				:name="t('openregister', 'Connections')"
-				:order="1">
-				<template #icon>
-					<LinkVariant :size="20" />
-				</template>
+			:aria-label="t('openregister', 'Connections')">
+			<div class="or-mail-panel__head">
+				<h2 class="or-mail-panel__caption">
+					{{ t('openregister', 'Connections') }}
+				</h2>
+				<NcButton
+					variant="tertiary"
+					:aria-label="t('openregister', 'Close connections')"
+					@click="toggleCollapsed">
+					<template #icon>
+						<Close :size="20" />
+					</template>
+				</NcButton>
+			</div>
+
+			<div class="or-mail-panel__body">
+				<h3 v-if="subject" class="or-mail-panel__subject">
+					{{ subject }}
+				</h3>
+
 				<ObjectsTab
 					ref="objectsTab"
 					:accountId="accountId"
-					:messageId="messageId"
-					@count="onObjectsCount"
-					@switchTab="switchTab" />
-			</NcAppSidebarTab>
+					:messageId="messageId" />
 
-			<NcAppSidebarTab
-				id="actions"
-				:name="t('openregister', 'Connect')"
-				:order="2">
-				<template #icon>
-					<Plus :size="20" />
-				</template>
 				<ActionsTab
 					:accountId="accountId"
 					:messageId="messageId"
 					@linked="onLinked" />
-			</NcAppSidebarTab>
 
-			<NcAppSidebarTab
-				id="entities"
-				:name="t('openregister', 'Entities')"
-				:order="3">
-				<template #icon>
-					<AccountMultiple :size="20" />
-				</template>
-				<EntitiesTab :accountId="accountId" :messageId="messageId" />
-			</NcAppSidebarTab>
-		</NcAppSidebar>
+				<div class="or-mail-panel__found">
+					<button
+						type="button"
+						class="or-mail-panel__found-toggle"
+						:aria-expanded="String(foundOpen)"
+						aria-controls="or-mail-panel-found"
+						@click="foundOpen = !foundOpen">
+						<TextSearch :size="20" class="or-mail-panel__found-icon" />
+						<span class="or-mail-panel__found-label">{{
+							t('openregister', 'Found in this mail')
+						}}</span>
+						<span class="or-mail-panel__found-hint">{{
+							t('openregister', 'Names, addresses and numbers')
+						}}</span>
+						<ChevronDown v-if="foundOpen" :size="20" />
+						<ChevronRight v-else :size="20" />
+					</button>
+					<div v-if="foundOpen" id="or-mail-panel-found">
+						<EntitiesTab :accountId="accountId" :messageId="messageId" />
+					</div>
+				</div>
+			</div>
+		</aside>
 
 		<button
 			v-else
@@ -68,14 +77,23 @@
 
 <script>
 /**
+ * The connections panel beside an open mail: a caption head with a close
+ * button, the mail's subject, the items it is connected to (drop targets for
+ * attachments), a search and a "New ... from this mail" row per kind of item,
+ * and a fold-out of what was found in the mail.
+ *
  * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
  * @spec openspec/specs/mail-sidebar/spec.md
  */
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
-import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
+import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import TextSearch from 'vue-material-design-icons/TextSearch.vue'
 import ActionsTab from './components/ActionsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
@@ -87,14 +105,15 @@ const COLLAPSED_STORAGE_KEY = 'openregister-mail-sidebar-collapsed'
 export default {
 	name: 'MailSidebar',
 	components: {
-		NcAppSidebar,
-		NcAppSidebarTab,
+		NcButton,
 		ActionsTab,
 		ObjectsTab,
 		EntitiesTab,
+		ChevronDown,
+		ChevronRight,
+		Close,
 		LinkVariant,
-		Plus,
-		AccountMultiple,
+		TextSearch,
 	},
 
 	/**
@@ -109,49 +128,23 @@ export default {
 	data() {
 		return {
 			collapsed: false,
-			activeTab: 'objects',
-			// null until the Connections tab reports its first count for the
-			// current message; drives the empty-state auto-select + disabling.
-			objectsCount: null,
-			// true while we still owe an auto-select decision for the current
-			// message (set on every message change, cleared once acted on).
-			autoSelectPending: true,
+			foundOpen: false,
+			subject: '',
 		}
 	},
 
-	computed: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		sidebarTitle() {
-			return t('openregister', 'Connections')
-		},
-
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		sidebarSubname() {
-			return ''
-		},
-
-		/**
-		 * The Connections tab is disabled once we know this email has no
-		 * connections yet — there is nothing to show, so we steer the user
-		 * to the Connect tab instead.
-		 */
-		connectionsDisabled() {
-			return this.objectsCount === 0
-		},
-	},
-
 	watch: {
-		/**
-		 * A new email is selected: forget the previous count and re-arm the
-		 * auto-select so the next count decides which tab to open.
-		 */
-		messageId() {
-			this.objectsCount = null
-			this.autoSelectPending = true
+		messageId: {
+			immediate: true,
+			/**
+			 * A new email: fold in what was found and read its subject.
+			 *
+			 * @spec openspec/specs/mail-sidebar/spec.md
+			 */
+			handler() {
+				this.foundOpen = false
+				this.loadSubject()
+			},
 		},
 	},
 
@@ -176,31 +169,27 @@ export default {
 		},
 
 		/**
-		 * @param {string} tabId
+		 * Read the open mail's subject from Mail, for the panel's title. A
+		 * failed read leaves the title out.
+		 *
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		switchTab(tabId) {
-			this.activeTab = tabId
-		},
-
-		/**
-		 * The Connections tab reports how many connections the current email
-		 * has. On a freshly-selected email we auto-open the Connect tab when
-		 * there are none (and the Connections tab is disabled), or the
-		 * Connections tab when there are some. After that first decision we
-		 * leave the user's tab choice alone — only the enabled/disabled state
-		 * keeps tracking the count.
-		 *
-		 * @param {number} count
-		 */
-		onObjectsCount(count) {
-			this.objectsCount = count
-			if (this.autoSelectPending) {
-				this.activeTab = count > 0 ? 'objects' : 'actions'
-				this.autoSelectPending = false
-			} else if (count === 0 && this.activeTab === 'objects') {
-				// Connections were all removed while viewing them.
-				this.activeTab = 'actions'
+		async loadSubject() {
+			const messageId = this.messageId
+			this.subject = ''
+			if (!messageId) {
+				return
+			}
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/mail/api/messages/{id}', { id: messageId }),
+					{ timeout: 10000 },
+				)
+				if (this.messageId === messageId) {
+					this.subject = response.data?.subject || ''
+				}
+			} catch {
+				// The title is left out; the rest of the panel does not need it.
 			}
 		},
 
@@ -215,56 +204,3 @@ export default {
 	},
 }
 </script>
-
-<style scoped>
-/* Collapsed state toggle button */
-.or-mail-sidebar__collapsed-toggle {
-	position: fixed;
-	right: 0;
-	top: 50%;
-	transform: translateY(-50%);
-	z-index: 1500;
-	width: 32px;
-	padding: 12px 4px;
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-right: none;
-	border-radius: var(--border-radius) 0 0 var(--border-radius);
-	cursor: pointer;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
-	color: var(--color-main-text);
-	box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
-}
-
-.or-mail-sidebar__collapsed-toggle:hover {
-	background: var(--color-background-hover);
-}
-
-.or-mail-sidebar__collapsed-toggle:focus-visible {
-	outline: 2px solid var(--color-primary-element);
-	outline-offset: -2px;
-}
-
-.or-mail-sidebar__collapsed-label {
-	font-size: 10px;
-	font-weight: 700;
-	writing-mode: vertical-rl;
-	text-orientation: mixed;
-	letter-spacing: 0.5px;
-}
-
-/*
- * When the current email has no connections yet, dim and disable the
- * Connections tab header so the user is steered to the Connect tab. The
- * tab button is rendered by NcAppSidebar as a NcCheckboxRadioSwitch whose
- * wrapper carries the id `tab-button-<tabId>`.
- */
-.or-mail-sidebar-root--connections-disabled :deep(#tab-button-objects) {
-	opacity: 0.4;
-	pointer-events: none;
-	cursor: not-allowed;
-}
-</style>
