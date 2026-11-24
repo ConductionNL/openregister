@@ -872,3 +872,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## appinfo/info.xml version conflict: do not take one side's whole file (or-fix-6)
 - Symptom: CONFLICT in appinfo/info.xml on the <version> line only; 'git checkout --ours' resolves it but silently drops main's other new lines (e.g. <command>...EvaluateDetectorCommand</command>).
 - Fix: rebuild from main: git show origin/main:appinfo/info.xml, set the PR's <version> (must be > main's), re-add the PR's own <job>/<command>/<step> lines; check with git diff origin/main -- appinfo/info.xml (only the PR's lines) and php scripts/check-migration-version-bump.php --base=origin/main.
+
+## Main's new test names a class the PR moved (or-fix-9)
+- Symptom: after the main merge, Error: Class "OCA\OpenRegister\<old ns>\X" not found in a test that came from main (e.g. OfficialsSourceTest, CapacityPolicy).
+- Cause: the PR moved X (e.g. Service/Anonymisation/CapacityPolicy -> Kernel/Contracts); main added tests or @uses with the old name after the PR branched.
+- Fix: grep -rn the old FQCN in lib/ tests/ (use lines and @uses docblocks), point them at the new name, rerun the dir (#10499).
