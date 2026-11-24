@@ -41,7 +41,8 @@ use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -67,16 +68,16 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AuditHashService::class => [AuditHashServiceInterface::class, ContractBindings::class],
-		AuditQueryService::class => [AuditQueryServiceInterface::class, ContractBindings::class],
-		AuditSink::class => [AuditSinkInterface::class, ContractBindings::class],
-		AuditSinkStatus::class => [AuditSinkStatusInterface::class, ContractBindings::class],
-		AuditTrailPageService::class => [AuditTrailPageServiceInterface::class, ContractBindings::class],
+		AuditHashService::class => [AuditHashServiceInterface::class, ComplianceServiceBindings::class],
+		AuditQueryService::class => [AuditQueryServiceInterface::class, ComplianceServiceBindings::class],
+		AuditSink::class => [AuditSinkInterface::class, ComplianceServiceBindings::class],
+		AuditSinkStatus::class => [AuditSinkStatusInterface::class, ComplianceServiceBindings::class],
+		AuditTrailPageService::class => [AuditTrailPageServiceInterface::class, ComplianceServiceBindings::class],
 		ContentReportMapper::class => [ContentReportMapperInterface::class, ComplianceMapperRegistrar::class],
-		ContentReportService::class => [ContentReportServiceInterface::class, ContractBindings::class],
-		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
-		ObjectHistoryForReaders::class => [ObjectHistoryForReadersInterface::class, ContractBindings::class],
-		ReadableAuditTrailLister::class => [ReadableAuditTrailListerInterface::class, ContractBindings::class],
+		ContentReportService::class => [ContentReportServiceInterface::class, ComplianceServiceBindings::class],
+		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, CoreServiceBindings::class],
+		ObjectHistoryForReaders::class => [ObjectHistoryForReadersInterface::class, ComplianceServiceBindings::class],
+		ReadableAuditTrailLister::class => [ReadableAuditTrailListerInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**

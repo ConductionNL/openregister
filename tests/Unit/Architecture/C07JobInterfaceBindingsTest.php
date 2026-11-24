@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Db\SchemaRunStoreInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface;
 use OCA\OpenRegister\Service\History\StateHistoryRebuild;
@@ -69,11 +70,11 @@ final class C07JobInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		ExampleSetDailyRefresh::class => [ExampleSetDailyRefreshInterface::class, ContractBindings::class],
 		ImportPreviewMapper::class => [ImportPreviewFinderInterface::class, ConfigurationMapperRegistrar::class],
-		MasterRecomputeService::class => [MasterRecomputeInterface::class, ContractBindings::class],
-		SchemaMigrationService::class => [SchemaBatchMigratorInterface::class, ContractBindings::class],
+		MasterRecomputeService::class => [MasterRecomputeInterface::class, CoreServiceBindings::class],
+		SchemaMigrationService::class => [SchemaBatchMigratorInterface::class, CoreServiceBindings::class],
 		SchemaRunMapper::class => [SchemaRunStoreInterface::class, DbRegistrar::class],
 		SourceFetcherRegistry::class => [SourceFetcherLookupInterface::class, ContractBindings::class],
-		StateHistoryRebuild::class => [StateHistoryRebuildInterface::class, ContractBindings::class],
+		StateHistoryRebuild::class => [StateHistoryRebuildInterface::class, CoreServiceBindings::class],
 		SyncScheduleService::class => [SyncScheduleInterface::class, ContractBindings::class],
 	];
 

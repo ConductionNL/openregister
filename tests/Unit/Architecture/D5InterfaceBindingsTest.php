@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,15 +54,15 @@ final class D5InterfaceBindingsTest extends TestCase {
 		'OCA\OpenRegister\Service\PollLinkService' => ['OCA\OpenRegister\Service\PollLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairService' => [
 			'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface',
-			ContractBindings::class,
+			CoreServiceBindings::class,
 		],
-		'OCA\OpenRegister\Service\RegisterService' => ['OCA\OpenRegister\Service\RegisterServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\RegisterService' => ['OCA\OpenRegister\Service\RegisterServiceInterface', CoreServiceBindings::class],
 		'OCA\OpenRegister\Service\SchemaApplicationMigrator' => [
 			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
 			ContractBindings::class,
 		],
-		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ContractBindings::class],
-		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ComplianceServiceBindings::class],
+		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', CoreServiceBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', FlowWiring::class],
 		'OCA\OpenRegister\Service\SharedSchemaDedupeService' => [
 			'OCA\OpenRegister\Service\SharedSchemaDedupeServiceInterface',

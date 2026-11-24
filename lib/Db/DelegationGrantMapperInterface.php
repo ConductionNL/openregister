@@ -125,15 +125,14 @@ interface DelegationGrantMapperInterface {
 	 * Keyed on the delegation itself, one request represents the whole backlog and
 	 * one answer drains it.
 	 *
-	 * @param string $principal The uid that would act.
-	 * @param string $actingAs  The uid whose rights would be used.
-	 * @param array  $scope     The scope being asked for.
+	 * @param DelegationGrant $wanted The delegation being asked for: the uid that would act, the uid whose
+	 *                                rights would be used and the scope (a missing scope is empty).
 	 *
 	 * @return DelegationGrant|null The outstanding request, or null.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function findOutstandingRequest(string $principal, string $actingAs, array $scope): ?DelegationGrant;
+	public function findOutstandingRequest(DelegationGrant $wanted): ?DelegationGrant;
 
 	/**
 	 * Insert a new grant (QBMapper).

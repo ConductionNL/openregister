@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
@@ -92,30 +92,30 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
-		AwaitSignalNode::class => [AwaitSignalNodeInterface::class, ContractBindings::class],
-		DecisionTableNode::class => [DecisionTableNodeInterface::class, ContractBindings::class],
-		ExplodeNode::class => [ExplodeNodeInterface::class, ContractBindings::class],
-		FilterNode::class => [FilterNodeInterface::class, ContractBindings::class],
-		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ContractBindings::class],
-		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
-		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
-		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
-		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
-		IterateNode::class => [IterateNodeInterface::class, ContractBindings::class],
-		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
-		MapNode::class => [MapNodeInterface::class, ContractBindings::class],
-		MergeNode::class => [MergeNodeInterface::class, ContractBindings::class],
-		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
-		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
-		PortalTaskNode::class => [PortalTaskNodeInterface::class, ContractBindings::class],
-		RouterNode::class => [RouterNodeInterface::class, ContractBindings::class],
-		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
-		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
-		TransitionNode::class => [TransitionNodeInterface::class, ContractBindings::class],
-		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ContractBindings::class],
-		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ContractBindings::class],
-		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
-		WaitNode::class => [WaitNodeInterface::class, ContractBindings::class],
+		AwaitSignalNode::class => [AwaitSignalNodeInterface::class, ProcessesServiceBindings::class],
+		DecisionTableNode::class => [DecisionTableNodeInterface::class, ProcessesServiceBindings::class],
+		ExplodeNode::class => [ExplodeNodeInterface::class, ProcessesServiceBindings::class],
+		FilterNode::class => [FilterNodeInterface::class, ProcessesServiceBindings::class],
+		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ProcessesServiceBindings::class],
+		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ProcessesServiceBindings::class],
+		FlowStateNode::class => [FlowStateNodeInterface::class, ProcessesServiceBindings::class],
+		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ProcessesServiceBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ProcessesServiceBindings::class],
+		IterateNode::class => [IterateNodeInterface::class, ProcessesServiceBindings::class],
+		LinkObjectNode::class => [LinkObjectNodeInterface::class, ProcessesServiceBindings::class],
+		MapNode::class => [MapNodeInterface::class, ProcessesServiceBindings::class],
+		MergeNode::class => [MergeNodeInterface::class, ProcessesServiceBindings::class],
+		ObjectReadNode::class => [ObjectReadNodeInterface::class, ProcessesServiceBindings::class],
+		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ProcessesServiceBindings::class],
+		PortalTaskNode::class => [PortalTaskNodeInterface::class, ProcessesServiceBindings::class],
+		RouterNode::class => [RouterNodeInterface::class, ProcessesServiceBindings::class],
+		SetFieldsNode::class => [SetFieldsNodeInterface::class, ProcessesServiceBindings::class],
+		SubFlowNode::class => [SubFlowNodeInterface::class, ProcessesServiceBindings::class],
+		TransitionNode::class => [TransitionNodeInterface::class, ProcessesServiceBindings::class],
+		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ProcessesServiceBindings::class],
+		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ProcessesServiceBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ProcessesServiceBindings::class],
+		WaitNode::class => [WaitNodeInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

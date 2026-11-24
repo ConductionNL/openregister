@@ -7,7 +7,7 @@
  * below had more than ten dependants; its callers now type against its
  * interface, so only construction (`new`), the container binding and the
  * callers listed as left on purpose name the class itself. For each class: it
- * implements its interface, ContractBindings binds that interface to it (a
+ * implements its interface, CoreServiceBindings binds that interface to it (a
  * missing binding is a runtime 500 that no other unit test catches), and at
  * most ten lib/ files name it.
  *
@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -88,7 +88,7 @@ final class A11InterfaceBindingsTest extends TestCase {
 	}//end testClassImplementsItsInterface()
 
 	/**
-	 * ContractBindings binds the interface to the class.
+	 * CoreServiceBindings binds the interface to the class.
 	 *
 	 * @param class-string $class     The hub class.
 	 * @param class-string $interface Its interface.
@@ -96,9 +96,9 @@ final class A11InterfaceBindingsTest extends TestCase {
 	 * @return void
 	 */
 	#[DataProvider('hubs')]
-	public function testContractBindingsBindsTheInterface(string $class, string $interface): void {
-		$this->assertSame($class, (ContractBindings::BINDINGS[$interface] ?? null), 'ContractBindings::BINDINGS binds ' . $interface);
-	}//end testContractBindingsBindsTheInterface()
+	public function testCoreServiceBindingsBindsTheInterface(string $class, string $interface): void {
+		$this->assertSame($class, (CoreServiceBindings::BINDINGS[$interface] ?? null), 'CoreServiceBindings::BINDINGS binds ' . $interface);
+	}//end testCoreServiceBindingsBindsTheInterface()
 
 	/**
 	 * Every public method of the class is on its interface, so a caller never needs the class.

@@ -1,0 +1,98 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TokensSection.createToken creates a token with an expiry, reveals it and reloads the list 1`] = `
+{
+  "calls": [
+    [
+      "post",
+      "/gen/apps/openregister/api/user/me/tokens",
+      {
+        "expiresIn": "30d",
+        "name": "CI",
+      },
+    ],
+    [
+      "loadTokens",
+    ],
+  ],
+  "section": {
+    "createdToken": "secret-1",
+    "isError": false,
+    "message": "",
+    "newTokenExpires": "",
+    "newTokenName": "",
+    "showCreateModal": false,
+  },
+}
+`;
+
+exports[`TokensSection.createToken creates a token without an expiry, reveals it and reloads the list 1`] = `
+{
+  "calls": [
+    [
+      "post",
+      "/gen/apps/openregister/api/user/me/tokens",
+      {
+        "name": "CI",
+      },
+    ],
+    [
+      "loadTokens",
+    ],
+  ],
+  "section": {
+    "createdToken": "secret-1",
+    "isError": false,
+    "message": "",
+    "newTokenExpires": "",
+    "newTokenName": "",
+    "showCreateModal": false,
+  },
+}
+`;
+
+exports[`TokensSection.createToken keeps the form open and reports the API error 1`] = `
+{
+  "calls": [
+    [
+      "post",
+      "/gen/apps/openregister/api/user/me/tokens",
+      {
+        "expiresIn": "7d",
+        "name": "CI",
+      },
+    ],
+  ],
+  "section": {
+    "createdToken": null,
+    "isError": true,
+    "message": "Too many tokens",
+    "newTokenExpires": "7d",
+    "newTokenName": "CI",
+    "showCreateModal": true,
+  },
+}
+`;
+
+exports[`TokensSection.createToken keeps the form open and reports the fallback 1`] = `
+{
+  "calls": [
+    [
+      "post",
+      "/gen/apps/openregister/api/user/me/tokens",
+      {
+        "expiresIn": "7d",
+        "name": "CI",
+      },
+    ],
+  ],
+  "section": {
+    "createdToken": null,
+    "isError": true,
+    "message": "t:Failed to create token",
+    "newTokenExpires": "7d",
+    "newTokenName": "CI",
+    "showCreateModal": true,
+  },
+}
+`;
