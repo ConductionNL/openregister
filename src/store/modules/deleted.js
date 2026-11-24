@@ -3,6 +3,7 @@ import {
 	getRequest,
 	listPageQuery,
 	listPagination,
+	requestJson,
 	storeRequest,
 	withoutIds,
 } from '../../services/listPage.js'
@@ -188,6 +189,24 @@ export const useDeletedStore = defineStore('deleted', {
 				keep: () => {
 					this.deletedList = withoutIds(this.deletedList, [id])
 				},
+			})
+		},
+
+		/**
+		 * Preview what restoring a deleted object with its related records would do
+		 *
+		 * Writes nothing: the server answers which related records would come
+		 * back, which references would be put back, and which would be left
+		 * alone and why.
+		 *
+		 * @param {string|number} id - The ID of the deleted object
+		 * @return {Promise<object>} The restore plan
+		 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+		 */
+		async previewRestore(id) {
+			return requestJson(`${apiUrl}/deleted/${id}/restore-preview`, {
+				method: 'GET',
+				failure: 'Failed to load the restore preview',
 			})
 		},
 
