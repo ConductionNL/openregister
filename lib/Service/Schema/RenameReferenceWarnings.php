@@ -146,7 +146,11 @@ class RenameReferenceWarnings {
 		}
 
 		if (is_string($value) === true) {
-			return self::textNames(text: $value, name: $name) === true ? [$path] : [];
+			if (self::textNames(text: $value, name: $name) === true) {
+				return [$path];
+			}
+
+			return [];
 		}
 
 		if (is_array($value) === false) {
