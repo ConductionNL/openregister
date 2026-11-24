@@ -51,6 +51,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
@@ -431,14 +432,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * read path by {@see \OCA\OpenRegister\Service\Object\RenderObject::renderEntity()}.
 	 * This handler owns object/schema-level RBAC only.
 	 *
-	 * @param Schema $schema The schema to check permissions for.
-	 * @param string $action The CRUD action (create, read, update, delete).
-	 * @param string|null $userId Optional user ID (defaults to current user).
-	 * @param string|null $objectOwner Optional object owner for ownership check.
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object (a create, a delete by id).
-	 *                              Only a declared action's elevation reads it.
+	 * @param PermissionAsk $ask   The question: the schema and the CRUD action (create, read, update, delete);
+	 *                            the user (null for the current user) and the object owner for the ownership
+	 *                            check; the object for conditional authorization matching, or, for a check that
+	 *                            names no object (a create, a delete by id), the register written to, which only
+	 *                            a declared action's elevation reads.
+	 * @param bool          $_rbac Whether to apply RBAC checks (default: true).
 	 *
 	 * @return bool True if user has permission, false otherwise
 	 *
@@ -448,19 +447,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
-		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
-	): bool {
-		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
-
+	public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool {
 		return $this->permits(ask: $ask, _rbac: $_rbac);
 	}//end hasPermission()
 
@@ -2222,7 +2209,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$schema = $this->data->schemaMapper->find($schemaId);
 
 			return $caller->keptFromDraft(object: $object, schema: $schema) === false
-				&& $this->hasPermission(schema: $schema, action: 'delete', userId: $caller->userId, objectOwner: $object->getOwner());
+				&& $this->hasPermission(
+					ask: (new PermissionAsk(schema: $schema, action: 'delete'))
+						->askedBy(userId: $caller->userId, objectOwner: $object->getOwner())
+				);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return false;
 		}
@@ -2684,6 +2674,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
+			if ($this->readIsOwnerOnly(schema: $schema) === true) {
+				// `read: ["@creator"]` normalises to an empty read list, which alone would read as open.
+				return [];
+			}
+
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {
 			$this->data->logger->error(
@@ -2693,6 +2688,30 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end readerGroupIds()
+
+	/**
+	 * Whether the schema limits read to the record's owner: its read list names the owner
+	 * sentinel and nothing that survives normalisation.
+	 *
+	 * The owner is added by getReadableByUsers() itself, so such a schema has no reader groups
+	 * at all, which is not the same as having no read rule.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when only the owner may read.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved.
+	 *
+	 * @spec openspec/changes/access-owner-and-condition-scopes/specs/authorization-rbac/spec.md#requirement-the-owner-sentinel-limits-an-action-to-the-records-owner
+	 */
+	private function readIsOwnerOnly(Schema $schema): bool {
+		$declared = ($this->resolveAuthorizationRaw(schema: $schema)['read'] ?? null);
+		if (is_array($declared) === false || in_array(AuthorizationBlock::CREATOR, $declared, true) === false) {
+			return false;
+		}
+
+		return (($this->resolveAuthorization(schema: $schema)['read'] ?? null) === []);
+	}//end readIsOwnerOnly()
 
 	/**
 	 * Resolve the list of authorised group IDs from an authorization block.
@@ -2861,6 +2880,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$authorization = self::stripMcpScope(
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
+
+		// THE OWNER SENTINEL AND THE CONDITION SCOPES ARE READ HERE, for the same
+		// reason as the matrix below: every path resolves through this method, so
+		// list queries, single reads and writes all see `@creator` and
+		// `conditions` the same way (access-owner-and-condition-scopes D-1).
+		$authorization = (new AuthorizationBlock())->normalise(authorization: $authorization);
 
 		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
 		// B13). This method is the one step every path takes — the object read,

@@ -60,8 +60,10 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
@@ -2577,9 +2579,10 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception When the incoming data touches an unauthorized property.
+	 * @throws PropertyWriteNotAuthorizedException When the incoming data touches a property the caller may not modify.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
 	 */
 	private function refuseUnauthorizedProperties(ObjectSaveCall $call): void {
 		$isCreate = ($call->uuid === null);
@@ -2597,9 +2600,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if (empty($unauthorizedProps) === false) {
-			throw new Exception(
-				'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
-			);
+			throw new PropertyWriteNotAuthorizedException(properties: array_values($unauthorizedProps));
 		}
 	}//end refuseUnauthorizedProperties()
 
@@ -3653,7 +3654,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
-		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+		$log = $this->auditTrailMapper->recordChange(change: new AuditedChange(old: null, new: $savedEntity, action: $action));
 
 		$savedEntity->setLastLog($log->jsonSerialize());
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
@@ -3691,6 +3692,8 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, submission: new SelfSubmission(selfData: $selfData, actingUser: $flags->currentUser));
+		// An opted-in schema stores `@self.expires` (expired-object-sweep); this save already runs behind the update check.
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $objectEntity, selfData: $selfData);
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -3897,6 +3900,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, submission: new SelfSubmission(selfData: $selfData, actingUser: $currentUser));
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $existingObject, selfData: $selfData);
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
@@ -5162,10 +5166,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
-		if ($run->origin === null && $run->marks === []) {
-			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
-		}
-
 		return $this->auditTrailMapper->recordChange(
 			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
 		);
@@ -5311,7 +5311,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
+			$this->auditTrailMapper->recordChange(change: new AuditedChange(old: $change->old, new: $change->new, action: $change->action));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
@@ -85,6 +86,7 @@ use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
+use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
@@ -306,19 +308,17 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * Initializes controller with required dependencies for schema operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param SchemasControllerServices $services The schemas controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SchemasControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;
@@ -368,11 +368,15 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
-		$params = $this->request->getParams();
+		$params = $this->withClassificationFilter(params: $this->request->getParams());
+		if ($params instanceof JSONResponse) {
+			return $params;
+		}
+
 		$extend = $this->extendList(extend: ($params['_extend'] ?? []));
 
 		$schemas    = $this->visibleSchemas(schemas: $this->listSchemas(params: $params));
-		$schemasArr = $this->withExtendedBy(schemasArr: array_map(fn ($schema) => $schema->jsonSerialize(), $schemas));
+		$schemasArr = $this->withExtendedBy(schemasArr: array_map(fn ($schema) => $this->forCaller(schema: $schema->jsonSerialize()), $schemas));
 
 		// If '@self.stats' is requested, attach statistics to each schema.
 		if (in_array('@self.stats', $extend, true) === true) {
@@ -381,6 +385,62 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 
 		return new JSONResponse(data: ['results' => $schemasArr]);
 	}//end index()
+
+	/**
+	 * Pass a `classification` filter to the list only when it is one of the vocabulary values.
+	 *
+	 * Read from `?classification=` or `?filters[classification]=`. An unknown
+	 * value is a 400 before it reaches the query; a known one is only a WHERE
+	 * clause on the same RBAC- and tenant-scoped list.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed>|JSONResponse The parameters, or a 400 naming the field.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-schemas-can-be-listed-by-classification
+	 */
+	private function withClassificationFilter(array $params): array|JSONResponse {
+		$filters = ($params['filters'] ?? []);
+		if (is_array($filters) === false) {
+			$filters = [];
+		}
+
+		$wanted = ($params['classification'] ?? $filters['classification'] ?? null);
+		unset($params['classification'], $filters['classification']);
+		if ($wanted !== null && SchemaCatalogue::isClassification(value: $wanted) === false) {
+			return new JSONResponse(
+				data: ['error' => 'classification must be one of: ' . implode(', ', SchemaCatalogue::CLASSIFICATIONS) . '.', 'field' => 'classification'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($wanted !== null) {
+			$filters['classification'] = $wanted;
+		}
+
+		if ($filters !== [] || array_key_exists('filters', $params) === true) {
+			$params['filters'] = $filters;
+		}
+
+		return $params;
+	}//end withClassificationFilter()
+
+	/**
+	 * A serialised schema as this caller may see it: an anonymous caller does not see the catalogue's contact person.
+	 *
+	 * @param array<string, mixed> $schema The serialised schema.
+	 *
+	 * @return array<string, mixed> The schema.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-catalogue-metadata
+	 */
+	private function forCaller(array $schema): array {
+		if ($this->isAnonymousRequest() === false) {
+			return $schema;
+		}
+
+		return SchemaCatalogue::withoutContact(schema: $schema);
+	}//end forCaller()
 
 	/**
 	 * An `_extend` value as a list: a single string becomes a one-entry list.
@@ -763,7 +823,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		$schemaArr = $schema->jsonSerialize();
+		$schemaArr = $this->forCaller(schema: $schema->jsonSerialize());
 
 		// Add extendedBy property showing UUIDs of schemas that extend this schema.
 		$schemaArr['@self'] = $schemaArr['@self'] ?? [];
@@ -1232,7 +1292,8 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		return $this->validateJsonLdMapping(data: $data)
 			?? $this->validateSemanticRoles(data: $data)
 			?? $this->validateReferenceFilterOperands(data: $data)
-			?? $this->validateApprovalPositionForms(data: $data);
+			?? $this->validateApprovalPositionForms(data: $data)
+			?? self::validateCatalogue(data: $data);
 	}//end validateSchemaBody()
 
 	/**
@@ -1266,6 +1327,27 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			statusCode: 422
 		);
 	}//end validateApprovalPositionForms()
+
+	/**
+	 * Refuse an unknown classification or update frequency, or a malformed contact e-mail, naming the field.
+	 *
+	 * @param array<string, mixed> $data The schema body.
+	 *
+	 * @return JSONResponse|null A 400 naming the field, or null when the body is fine.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-a-data-classification
+	 */
+	private static function validateCatalogue(array $data): ?JSONResponse {
+		$violation = SchemaCatalogue::violation(data: $data);
+		if ($violation === null) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => $violation['message'], 'field' => $violation['field']],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end validateCatalogue()
 
 	/**
 	 * Resolve the register a new schema is created in.
