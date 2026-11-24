@@ -778,3 +778,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Cause: vendor/ symlinked from another checkout: its composer autoloader maps OCA\\OpenRegister\\ to that checkout's lib/, so ReflectionClass::getFileName points outside the tree under test. Not a PR or main defect.
 - Fix: give every checkout its own vendor (bash ~/q/bin/composer-cloud.sh <checkout>, which copies the cached vendor quickly). Architecture in one phpunit run can pass 600 s here: run it as 4 parallel shards of symlinked test files (~3 min).
 - Also: test:l10n:parity is red on main for every non-nl locale (179 missing at cac830e0); a PR adding en+nl only is the inherited state, not a new red. Compare per-locale missing counts with main, not the raw diff.
+## Clean main merge, components yaml stale anyway (or-fix-3)
+- Symptom: on an APPROVED PR that merges clean, ComponentDefinitionTest says 'lib/Service/Audit/AuditResealInterface.php matches no component' and ComponentDependencyRulesTest shows new edges.
+- Cause: git auto-merges sigrid.components.yaml line by line, so main's new pattern lines drop out where the PR rewrote the same component's list.
+- Fix: the PR counts as red on main: merge main, run python3 scripts/component-patterns.py, commit the yaml with the merge (#10493). Run DbalObjectSource* tests serially: in parallel they share one sqlite file and fail with 'table already exists'.
