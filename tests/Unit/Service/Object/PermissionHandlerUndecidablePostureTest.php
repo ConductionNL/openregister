@@ -47,6 +47,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
 use Stringable;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
@@ -209,7 +210,7 @@ final class PermissionHandlerUndecidablePostureTest extends TestCase {
 	}//end schema()
 
 	private function asks(PermissionHandler $handler, Schema $schema, string $action): bool {
-		return $handler->hasPermission(schema: $schema, action: $action, userId: 'ana', objectOwner: 'bea', object: self::object());
+		return $handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: $action))->askedBy(userId: 'ana', objectOwner: 'bea')->about(object: self::object(), register: null));
 	}//end asks()
 
 	private static function object(): ObjectEntity {

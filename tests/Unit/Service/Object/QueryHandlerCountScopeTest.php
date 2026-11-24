@@ -9,7 +9,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Service\Object\ObjectSelection;
+use OCA\OpenRegister\Contract\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -24,7 +24,7 @@ use ReflectionParameter;
  * @uses \OCA\OpenRegister\Service\Object\SearchPaging
  * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
  * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
- * @uses \OCA\OpenRegister\Service\Object\ObjectSelection
+ * @uses \OCA\OpenRegister\Contract\ObjectSelection
  * @uses \OCA\OpenRegister\Service\Object\QueryHandlers
  * @uses \OCA\OpenRegister\Service\Object\QueryPlatform
  * @uses \OCA\OpenRegister\Service\Object\QueryRefinements

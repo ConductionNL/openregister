@@ -31,7 +31,7 @@ use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluatorInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -57,8 +57,8 @@ final class F09ArchivalInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		DependantRetentionIndex::class => [DependantRetentionIndexInterface::class, ContractBindings::class],
-		RetentionEvaluator::class => [RetentionEvaluatorInterface::class, ContractBindings::class],
+		DependantRetentionIndex::class => [DependantRetentionIndexInterface::class, ComplianceServiceBindings::class],
+		RetentionEvaluator::class => [RetentionEvaluatorInterface::class, ComplianceServiceBindings::class],
 		RecordState::class => [RecordStateInterface::class, null],
 		Appraisal::class => [AppraisalInterface::class, null],
 	];
