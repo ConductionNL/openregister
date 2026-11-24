@@ -2921,7 +2921,7 @@ class MagicSearchHandler {
 		$conditions = [];
 		foreach ($paths as $path) {
 			$column     = $this->quoteIdentifier(name: '_' . $path['root'], isPostgres: $run->isPostgres);
-			$conditions = array_merge($conditions, $this->metadataPathConditions(path: $path, column: $column, bind: $quote));
+			$conditions = array_merge($conditions, $this->metadataPathConditions(path: $path, column: $column, bind: $quote, isPostgres: $run->isPostgres));
 		}
 
 		foreach ($metadataFilters as $field => $value) {
@@ -3719,7 +3719,7 @@ class MagicSearchHandler {
 		[$filters, $paths] = $this->nestedPaths->split(filters: $filters, properties: self::METADATA_PATH_ROOTS);
 		$bind = static fn (string $text): string => (string)$qb->createNamedParameter($text);
 		foreach ($paths as $path) {
-			$this->andWhereEach(qb: $qb, conditions: $this->metadataPathConditions(path: $path, column: "t._{$path['root']}", bind: $bind));
+			$this->andWhereEach(qb: $qb, conditions: $this->metadataPathConditions(path: $path, column: "t._{$path['root']}", bind: $bind, isPostgres: $this->isPostgresPlatform()));
 		}
 
 		foreach ($filters as $field => $value) {
@@ -3956,16 +3956,16 @@ class MagicSearchHandler {
 	 * value becomes a named parameter or a quoted literal. A path that is not a
 	 * plain name matches nothing.
 	 *
-	 * @param array<string, mixed> $path   The path filter: `root`, `path` and `value`.
-	 * @param string               $column The column as the query writes it (qualified or quoted).
-	 * @param callable             $bind   Value to SQL: fn(string $value): string.
+	 * @param array<string, mixed> $path       The path filter: `root`, `path` and `value`.
+	 * @param string               $column     The column as the query writes it (qualified or quoted).
+	 * @param callable             $bind       Value to SQL: fn(string $value): string.
+	 * @param bool                 $isPostgres Whether the platform is PostgreSQL.
 	 *
 	 * @return list<string|\Stringable> The conditions
 	 *
 	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
 	 */
-	private function metadataPathConditions(array $path, string $column, callable $bind): array {
-		$isPostgres = $this->isPostgresPlatform();
+	private function metadataPathConditions(array $path, string $column, callable $bind, bool $isPostgres): array {
 		$root       = new NestedPathTarget(expression: $column, bind: $bind, isPostgres: $isPostgres);
 		$expression = $this->nestedPaths->expression(column: $root, path: $path['path']);
 		if ($expression === null) {

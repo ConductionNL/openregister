@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -162,6 +163,15 @@ class MagicSearchHandlerMetadataJsonPathTest extends TestCase {
 	}//end onPostgres()
 
 	/**
+	 * Make the connection report MySQL.
+	 *
+	 * @return void
+	 */
+	private function onMysql(): void {
+		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(MySQLPlatform::class));
+	}//end onMysql()
+
+	/**
 	 * The nested spelling a request arrives as (`@self_retention_archiefactiedatum[lt]`) reads the same path.
 	 *
 	 * @return void
@@ -179,6 +189,7 @@ class MagicSearchHandlerMetadataJsonPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheWholeColumnIsStillAddressable(): void {
+		$this->onMysql();
 		$captured = $this->invokeApply(['retention' => 'IS NOT NULL']);
 
 		$this->assertSame(['isNotNull(t._retention)'], $captured);
@@ -214,6 +225,7 @@ class MagicSearchHandlerMetadataJsonPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSameFilterReadsThePathWithJsonExtractElsewhere(): void {
+		$this->onMysql();
 		$captured = $this->invokeApply(['retention.archiefnominatie' => 'vernietigen']);
 
 		$this->assertSame(["JSON_UNQUOTE(JSON_EXTRACT(t._retention, '$.archiefnominatie')) = vernietigen"], $captured);
@@ -237,6 +249,7 @@ class MagicSearchHandlerMetadataJsonPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testASegmentThatIsNotAPlainNameMatchesNothing(): void {
+		$this->onMysql();
 		$captured = $this->invokeApply(["retention.a'b" => '1']);
 
 		$this->assertSame(['1 = 0'], $captured);
@@ -271,6 +284,7 @@ class MagicSearchHandlerMetadataJsonPathTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPathIntoAnAccessColumnIsStillRefused(): void {
+		$this->onMysql();
 		$this->expectException(UnknownMetadataFieldException::class);
 
 		$this->invokeApply(['authorization.read' => 'x']);
