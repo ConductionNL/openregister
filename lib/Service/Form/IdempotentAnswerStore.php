@@ -35,6 +35,8 @@ class IdempotentAnswerStore implements IdempotentAnswerStoreInterface {
 	 * Constructor.
 	 *
 	 * @param FormIdempotencyStore $store The form submits' Idempotency-Key store.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function __construct(
 		private readonly FormIdempotencyStore $store,
@@ -42,14 +44,28 @@ class IdempotentAnswerStore implements IdempotentAnswerStoreInterface {
 	}//end __construct()
 
 	/**
-	 * {@inheritDoc}
+	 * The binding of an answer to who asked and what they sent.
+	 *
+	 * @param string               $subject Who asks (a user marker).
+	 * @param array<string, mixed> $payload What they sent.
+	 *
+	 * @return string The binding.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function bindingFor(string $subject, array $payload): string {
 		return $this->store->bindingFor(subject: $subject, payload: $payload);
 	}//end bindingFor()
 
 	/**
-	 * {@inheritDoc}
+	 * Reserve the key for one running request.
+	 *
+	 * @param string $scope What the key is scoped to.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return bool False when a request with this key is still running.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function tryReserve(string $scope, string $key): bool {
 		try {
@@ -62,14 +78,29 @@ class IdempotentAnswerStore implements IdempotentAnswerStoreInterface {
 	}//end tryReserve()
 
 	/**
-	 * {@inheritDoc}
+	 * Release a reservation.
+	 *
+	 * @param string $scope What the key is scoped to.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function release(string $scope, string $key): void {
 		$this->store->release(scope: $scope, key: $key);
 	}//end release()
 
 	/**
-	 * {@inheritDoc}
+	 * The remembered answer under a key, for this binding.
+	 *
+	 * @param string $scope   What the key is scoped to.
+	 * @param string $key     The Idempotency-Key.
+	 * @param string $binding The asker's binding.
+	 *
+	 * @return array{state: string, answer: array<mixed>|null} REMEMBERED with the answer, NONE, or TAKEN.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function remembered(string $scope, string $key, string $binding): array {
 		try {
@@ -86,7 +117,16 @@ class IdempotentAnswerStore implements IdempotentAnswerStoreInterface {
 	}//end remembered()
 
 	/**
-	 * {@inheritDoc}
+	 * Remember an answer under a key for 24 hours.
+	 *
+	 * @param string       $scope   What the key is scoped to.
+	 * @param string       $key     The Idempotency-Key.
+	 * @param string       $binding The asker's binding.
+	 * @param array<mixed> $answer  The answer to repeat.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function remember(string $scope, string $key, string $binding, array $answer): void {
 		$this->store->keep(request: new IdempotentRequest(scope: $scope, key: $key, binding: $binding), response: $answer);

@@ -54,6 +54,8 @@ interface IdempotentAnswerStoreInterface {
 	 * @param array<string, mixed> $payload What they sent.
 	 *
 	 * @return string The binding.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function bindingFor(string $subject, array $payload): string;
 
@@ -64,6 +66,8 @@ interface IdempotentAnswerStoreInterface {
 	 * @param string $key   The Idempotency-Key.
 	 *
 	 * @return bool False when a request with this key is still running.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function tryReserve(string $scope, string $key): bool;
 
@@ -74,6 +78,8 @@ interface IdempotentAnswerStoreInterface {
 	 * @param string $key   The Idempotency-Key.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function release(string $scope, string $key): void;
 
@@ -85,6 +91,8 @@ interface IdempotentAnswerStoreInterface {
 	 * @param string $binding The asker's binding (see bindingFor()).
 	 *
 	 * @return array{state: string, answer: array<mixed>|null} state is REMEMBERED, NONE or TAKEN; answer only with REMEMBERED.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function remembered(string $scope, string $key, string $binding): array;
 
@@ -97,6 +105,8 @@ interface IdempotentAnswerStoreInterface {
 	 * @param array<mixed> $answer  The answer to repeat.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function remember(string $scope, string $key, string $binding, array $answer): void;
 }//end interface
