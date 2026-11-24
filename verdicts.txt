@@ -4610,3 +4610,4 @@
 10518 31d9eb62239c0d12c76ef834fda227ccfeb79277 APPROVE cloud-or-reviewer-6: fast path; since approved cc864e7c only a main merge and info.xml bumped 2.2.0-dev.4 -> dev.8 for its migration (check-migration-version-bump OK); same 74 files, other PR-side lines identical; merges clean with main
 10534 8929ec1af2a2febc91670a54201b9bc12b888d20 APPROVE cloud-or-reviewer-6: fast path; PR-side diff identical to approved 491512af (same 22 files, every +/- line), only a main merge in between; merges clean with main
 10614 c0da325378ddd4f0d41ee5d61e0ceb0f00c5af51 APPROVE cloud-or-reviewer-6: fast path; PR-side diff identical to approved 7afb9482 (same 6 files, every +/- line), only a main merge in between; merges clean with main
+10554 a04f45980ba3e9f2bca7476705d817c176ddc5a9 APPROVE cloud-or-reviewer-2: fast path; PR-side diff identical to approved eca58302 (only main merged in, component-map/yaml conflict resolved); earlier verdict stands
