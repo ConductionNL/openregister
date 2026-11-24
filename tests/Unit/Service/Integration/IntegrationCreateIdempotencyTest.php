@@ -200,6 +200,21 @@ class IntegrationCreateIdempotencyTest extends TestCase {
 		$this->assertSame(3, $created);
 	}//end testTheSameKeyOnAnotherObjectOrIntegrationIsItsOwnCreate()
 
+	public function testARunnerWithoutAStoreRunsEveryCreate(): void {
+		$service = new IntegrationCreateIdempotency();
+		$created = 0;
+		$create = function () use (&$created): array {
+			$created++;
+			return ['id' => 'entry-' . $created];
+		};
+
+		$service->run('k-1', 'time-tracker', $this->object(), [], $create);
+		$result = $service->run('k-1', 'time-tracker', $this->object(), [], $create);
+
+		$this->assertSame(2, $created);
+		$this->assertSame(['answer' => ['id' => 'entry-2'], 'replayed' => false], $result);
+	}//end testARunnerWithoutAStoreRunsEveryCreate()
+
 	public function testAFailedCreateRemembersNothingAndReleasesTheKey(): void {
 		$service = $this->service();
 		try {

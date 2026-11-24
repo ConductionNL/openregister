@@ -163,7 +163,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
 		?\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility = null,
 		?\OCA\OpenRegister\Service\Object\PermissionHandler $permissions = null,
-		?\OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency $idempotency = null,
+		\OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency $idempotency = new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(),
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
@@ -555,7 +555,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 
 		$this->assertSame(1, $provider->creates);
 		$this->assertSame(Http::STATUS_CREATED, $first->getStatus());
-		$this->assertArrayNotHasKey('Idempotent-Replayed', $first->getHeaders());
+		$this->assertSame('false', $first->getHeaders()['Idempotent-Replayed']);
 		$this->assertSame(Http::STATUS_CREATED, $second->getStatus());
 		$this->assertSame(['id' => 'entry-1'], $second->getData());
 		$this->assertSame('true', $second->getHeaders()['Idempotent-Replayed']);

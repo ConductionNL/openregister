@@ -44,25 +44,27 @@ use OCP\IUserSession;
  *
  * @spec openspec/specs/integration-registry/spec.md
  */
-final class IntegrationCreateIdempotency {
+class IntegrationCreateIdempotency {
 	/**
 	 * Constructor.
 	 *
-	 * @param FormIdempotencyStore $store       Reserves keys and remembers answers for 24 hours.
-	 * @param IUserSession         $userSession Who sends the create; a stored answer is bound to them.
+	 * Without a store every create runs, key or not (a controller built outside the container).
+	 *
+	 * @param FormIdempotencyStore|null $store       Reserves keys and remembers answers for 24 hours.
+	 * @param IUserSession|null         $userSession Who sends the create; a stored answer is bound to them.
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function __construct(
-		private readonly FormIdempotencyStore $store,
-		private readonly IUserSession $userSession,
+		private readonly ?FormIdempotencyStore $store = null,
+		private readonly ?IUserSession $userSession = null,
 	) {
 	}//end __construct()
 
 	/**
 	 * Run the create once per key: a remembered answer is repeated, a fresh one remembered.
 	 *
-	 * An empty key runs the create without any idempotency handling.
+	 * An empty key, or a runner without a store, runs the create without any idempotency handling.
 	 *
 	 * @param string                       $key           The Idempotency-Key header, as sent.
 	 * @param string                       $integrationId The integration the create is for.
@@ -78,7 +80,7 @@ final class IntegrationCreateIdempotency {
 	 */
 	public function run(string $key, string $integrationId, ObjectRef $object, array $payload, callable $create): array {
 		$key = trim($key);
-		if ($key === '') {
+		if ($key === '' || $this->store === null) {
 			return ['answer' => $create(), 'replayed' => false];
 		}
 
@@ -134,7 +136,7 @@ final class IntegrationCreateIdempotency {
 	 * @return string The subject.
 	 */
 	private function subject(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->userSession?->getUser();
 		if ($user === null) {
 			return 'anonymous';
 		}

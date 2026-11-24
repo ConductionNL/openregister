@@ -124,11 +124,11 @@ class ObjectIntegrationsController extends Controller {
 	private RelationsObjectLookup $lookup;
 
 	/**
-	 * Runs a create once per Idempotency-Key; null handles no key.
+	 * Runs a create once per Idempotency-Key.
 	 *
-	 * @var IntegrationCreateIdempotency|null
+	 * @var IntegrationCreateIdempotency
 	 */
-	private ?IntegrationCreateIdempotency $idempotency;
+	private IntegrationCreateIdempotency $idempotency;
 
 	/**
 	 * Constructor.
@@ -436,7 +436,7 @@ class ObjectIntegrationsController extends Controller {
 	 *
 	 * Creates a new linked thing for the object. A create sent again under
 	 * the same `Idempotency-Key` header gets the first answer and creates
-	 * nothing (header `Idempotent-Replayed: true`); a key that is taken by a
+	 * nothing (header `Idempotent-Replayed: true`, else `false`); a key that is taken by a
 	 * running create, another user or another payload answers 409.
 	 *
 	 * @param string $register Register slug or numeric id.
@@ -466,7 +466,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param string    $integrationId Integration id.
 	 * @param ObjectRef $object        The object the linked thing is created on.
 	 *
-	 * @return JSONResponse 201 with the answer (marked when replayed), 409 for a taken key, or the failure's status.
+	 * @return JSONResponse 201 with the answer (`Idempotent-Replayed` says whether it was remembered), 409 for a taken key, or the failure's status.
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
@@ -477,17 +477,12 @@ class ObjectIntegrationsController extends Controller {
 			response: $this->dispatch(
 				integrationId: $integrationId,
 				callback: function ($provider) use ($integrationId, $object, $payload, &$replayed): array {
-					$create = fn (): array => (new IntegrationProviderInvoker())->create($provider, $object, $payload);
-					if ($this->idempotency === null) {
-						return $create();
-					}
-
 					$result = $this->idempotency->run(
 						key: (string)$this->request->getHeader('Idempotency-Key'),
 						integrationId: $integrationId,
 						object: $object,
 						payload: $payload,
-						create: $create
+						create: fn (): array => (new IntegrationProviderInvoker())->create($provider, $object, $payload)
 					);
 					$replayed = $result['replayed'];
 
@@ -496,9 +491,7 @@ class ObjectIntegrationsController extends Controller {
 			)
 		);
 
-		if ($replayed === true) {
-			$response->addHeader('Idempotent-Replayed', 'true');
-		}
+		$response->addHeader('Idempotent-Replayed', json_encode($replayed));
 
 		return $response;
 	}//end createOnce()
