@@ -877,3 +877,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after the main merge, Error: Class "OCA\OpenRegister\<old ns>\X" not found in a test that came from main (e.g. OfficialsSourceTest, CapacityPolicy).
 - Cause: the PR moved X (e.g. Service/Anonymisation/CapacityPolicy -> Kernel/Contracts); main added tests or @uses with the old name after the PR branched.
 - Fix: grep -rn the old FQCN in lib/ tests/ (use lines and @uses docblocks), point them at the new name, rerun the dir (#10499).
+
+## Main baseline in a worktree must not symlink the PR checkout's vendor (or-fix-6)
+- Symptom: a test 'red on plain main too', or a main-vs-PR dump showing no difference, while the PR clearly changes it.
+- Cause: composer's autoload_psr4 resolves $baseDir from vendor's real path, so a main worktree with vendor -> <pr>/vendor loads the PR's lib/.
+- Fix: cp -a the vendor into the main worktree (or run composer-cloud.sh there) before any baseline run.
