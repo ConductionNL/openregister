@@ -125,6 +125,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'ObjectWriteNode' => ['serviceTask', 'objects'],
 			'LockObjectNode' => ['serviceTask', 'objects'],
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
+			'TagObjectNode' => ['serviceTask', 'objects'],
 			'LoopNode' => ['serviceTask', 'objects'],
 
 			// Logic. Branches and joins are gateways; reshaping is a scriptTask.
