@@ -468,4 +468,49 @@ class CalendarRecomputeTest extends TestCase {
 			'a projection that disagrees with the one that stores the result moves the wrong timers'
 		);
 	}//end testTheProjectionIsTheEnginesOwnFormula()
+
+	/**
+	 * 🔑 The supersede action is handed a reason naming the calendar VERSION,
+	 * so the ledger row says which edit of which calendar moved the deadline,
+	 * and the reason still starts with `calendar-changed`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md#requirement-a-calendar-change-re-projects-the-timers-that-depend-on-it
+	 */
+	public function testTheSupersedeReasonCarriesTheCalendarVersion(): void {
+		$spanning = $this->timer(uuid: 'a', start: '2027-05-03T09:00:00+02:00', budget: 5.0, calendar: $this->calendar);
+
+		$reasons = [];
+		$this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
+			slug: 'nl-national',
+			version: '7',
+			timers: [$spanning],
+			supersede: static function (FlowTimer $timer, string $reason) use (&$reasons): void {
+				$reasons[] = $reason;
+			}
+		));
+
+		$this->assertSame(['calendar-changed: nl-national version 7'], $reasons);
+		$this->assertStringStartsWith(CalendarRecompute::REASON, $reasons[0], 'a reader matching the reason keeps matching');
+	}//end testTheSupersedeReasonCarriesTheCalendarVersion()
+
+	/**
+	 * Two versions of one calendar give two different reasons: the version is
+	 * what tells a second edit of the day apart from the first.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md#requirement-a-calendar-change-re-projects-the-timers-that-depend-on-it
+	 */
+	public function testTheBatchReasonDiffersPerVersion(): void {
+		$noop = static function (FlowTimer $timer, string $reason): void {
+		};
+
+		$seven = new CalendarBatch(slug: 'nl-national', version: '7', timers: [], supersede: $noop);
+		$eight = new CalendarBatch(slug: 'nl-national', version: '8', timers: [], supersede: $noop);
+
+		$this->assertSame('calendar-changed: nl-national version 7', $seven->reason());
+		$this->assertNotSame($seven->reason(), $eight->reason());
+	}//end testTheBatchReasonDiffersPerVersion()
 }//end class
