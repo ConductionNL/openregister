@@ -104,6 +104,13 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	public const REASON_UNAVAILABLE = ReadHistoryInterface::REASON_UNAVAILABLE;
 
 	/**
+	 * The read rows written in this request, by object uuid and version.
+	 *
+	 * @var array<string, AuditTrail>
+	 */
+	private array $auditedReads = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface   $auditTrails The audit trail, which holds the read rows.
@@ -111,13 +118,6 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
 	 */
-	/**
-	 * The read rows written in this request, by object uuid and version.
-	 *
-	 * @var array<string, AuditTrail>
-	 */
-	private array $auditedReads = [];
-
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrails,
 		private readonly SettingsServiceInterface $settings,
