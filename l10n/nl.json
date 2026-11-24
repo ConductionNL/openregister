@@ -3723,7 +3723,14 @@
         "Open changelog": "Wijzigingslogboek openen",
         "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Uw opgeslagen weergaven en de objecten die u volgt. De objecten zelf blijven bij uw organisatie.",
         "Its ancestor %1$s has appraisal %2$s": "Bovenliggend record %1$s heeft waardering %2$s",
-        "Its ancestor %s could not be read": "Bovenliggend record %s kon niet worden gelezen"
+        "Its ancestor %s could not be read": "Bovenliggend record %s kon niet worden gelezen",
+        "Close connections": "Koppelingen sluiten",
+        "Found in this mail": "Gevonden in deze e-mail",
+        "Names, addresses and numbers": "Namen, adressen en nummers",
+        "Connected to": "Gekoppeld aan",
+        "Drop an attachment here to add it": "Sleep een bijlage hierheen om die toe te voegen",
+        "Number or words": "Nummer of woorden",
+        "New {name} from this mail": "Nieuwe {name} vanuit deze e-mail"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
