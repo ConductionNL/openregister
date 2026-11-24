@@ -69,3 +69,5 @@
 2026-11-24T16:47:35Z GREEN prs=10427 main=58479c0d04 integrator-cloud
 2026-11-24T16:58:25Z GREEN prs=10435 main=29ee788b9b integrator-cloud
 2026-11-24T17:05:40Z RED prs=10182,10395,10450,10483,10491,10493 main=29ee788b9b integrator-cloud
+2026-11-24T17:10:18Z RED prs=10182 main=29ee788b9b integrator-cloud (solo=10182)
+2026-11-24T17:15:47Z AUTOPARK prs=10395 main=29ee788b9b integrator-cloud (VERDICT-RC 5 AUTOPARK)
