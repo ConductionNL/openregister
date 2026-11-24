@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use OCA\OpenRegister\Kernel\Contracts\Files\CallerFileRightsInterface;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 
@@ -34,7 +33,7 @@ use OCP\IUserSession;
  * no node — preventing IDOR where a caller extracts/inspects arbitrary
  * file IDs they do not own.
  */
-final class CallerFileAccess implements CallerFileRightsInterface {
+final class CallerFileAccess {
 
 	/**
 	 * Constructor.
