@@ -92,7 +92,6 @@ final class RegistersControllerSchemaSlugScopeTest extends TestCase {
 		);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(RegisterService::class),
 			$this->createMock(MagicMapper::class),
