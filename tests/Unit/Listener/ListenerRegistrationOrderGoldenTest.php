@@ -28,18 +28,19 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 258;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
 	 * Last changed when Search started contributing the widget declaration check: one
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
-	 * listeners; every other registration is unchanged and in the same order. Then
+	 * listeners; every other registration is unchanged and in the same order. Then two
+	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). Then
 	 * EntityEditAuditListener also took the three organisation events
 	 * (history-schema-and-settings-edits-audited), after the register events.
 	 */
-	private const SEQUENCE_SHA256 = '887df846c54b16fe63aefe769f779a363ca2e91acbf1aad091954921edfc8e3d';
+	private const SEQUENCE_SHA256 = '5fa38e2f26d0895bfe07d6ce3c5f25e7356dd3b78d5cb9ded93745b27bf47b31';
 
 	/**
 	 * The registration calls, in call order, with every argument.
