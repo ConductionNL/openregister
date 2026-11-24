@@ -94,6 +94,7 @@ final class DbRegistrar {
 		SchemaMapperInterface::class => SchemaMapper::class,
 		\OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 		StateHistoryMapperInterface::class => StateHistoryMapper::class,
+		\OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface::class => StateHistoryMapper::class,
 		TenantUsageMapperInterface::class => TenantUsageMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
 		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,

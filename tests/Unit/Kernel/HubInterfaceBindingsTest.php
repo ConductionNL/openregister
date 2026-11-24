@@ -23,6 +23,7 @@ use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceRegistrar;
 use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
@@ -45,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * that type-hints the class get the same object.
  *
  * @covers \OCA\OpenRegister\Service\ContractBindings
+ * @covers \OCA\OpenRegister\Service\ProcessesServiceRegistrar
  * @covers \OCA\OpenRegister\Service\ServiceRegistrar
  * @uses   \OCA\OpenRegister\Notifications\NotificationsRegistrar
  * @uses   \OCA\OpenRegister\Search\SearchRegistrar
@@ -85,6 +87,7 @@ class HubInterfaceBindingsTest extends TestCase {
 	public function testTheInterfaceResolvesToItsImplementation(string $interface, string $implementation): void {
 		$context = new RecordingRegistrationContext();
 		ContractBindings::register(context: $context);
+		ProcessesServiceRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
 		NotificationsRegistrar::register(context: $context);
 		SearchRegistrar::register(context: $context);
