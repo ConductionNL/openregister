@@ -373,3 +373,10 @@
 2026-11-24T20:59Z planninq: openregister#11041 merged (20:59Z) and planninq #1331 merged earlier; next planninq run can tick projects-public-share 3.1 (per tasks.md note) and archive the change
 2026-11-24T21:00Z filinq: openregister#11044 (ScopedContentSearchService, item 1 of #11037) merged into OR main by the integrator; work-content-search 2.1-2.3 can be live-checked once an OR release carries it
 2026-11-24T21:01:18Z helper dossiq 2 helped dossiq: catalogue-object-types #6905 (1.4 was built under screens-round15; archived)
+2026-11-24T21:02:15Z help-dossiq-2 skipped migrate-committees-to-decidiq: task 4 (retire the local schema) is deferred until the fallback is measured unreachable on live installs
+2026-11-24T21:02:15Z help-dossiq-2 skipped beschikking-chain-on-the-case: 1.1/2.1/2.2 wait for board DqZaakBesluiten chain (decision 162), 2.3 live pass
+2026-11-24T21:02:15Z help-dossiq-2 skipped case-mail-through-the-mail-account-with-rfc-8058: 1.1 needs Ruben's upstream Mail issue, 1.2/1.3b/1.4 need a Nextcloud Mail release with the header option, 1.5 live
+2026-11-24T21:02:15Z help-dossiq-2 skipped woo-case-screens-and-objections: 1.1 section waits for its board (decision 162); the rest live checks and PR process of merged work
+2026-11-24T21:02:15Z help-dossiq-2 skipped dossiq-duplication-to-abstractions: 1.4 needs an OpenRegister single-node run endpoint plus four open decisions (documents-on-the-case 3.3); rest live or multi-change clusters
+2026-11-24T21:02:15Z help-dossiq-2 skipped page-topology-cleanup, hermiq-ai-tooling, woo-review-reports, woo-request-takes-over-from-opencatalogi, woo-decision-records-what-was-withheld, woo-requester-notices-really-go-out, woo-term-is-computed-and-reported-right, portal-*: only live passes, e2e runs and PR-process items of merged code remain
+2026-11-24T21:02:15Z help-dossiq-2 skipped every other open dossiq change: only live/board/measurement tasks remain or a branch already exists
