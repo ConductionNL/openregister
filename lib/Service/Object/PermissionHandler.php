@@ -53,6 +53,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
@@ -2735,6 +2736,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
+			if ($this->readIsOwnerOnly(schema: $schema) === true) {
+				// `read: ["@creator"]` normalises to an empty read list, which alone would read as open.
+				return [];
+			}
+
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {
 			$this->data->logger->error(
@@ -2744,6 +2750,30 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end readerGroupIds()
+
+	/**
+	 * Whether the schema limits read to the record's owner: its read list names the owner
+	 * sentinel and nothing that survives normalisation.
+	 *
+	 * The owner is added by getReadableByUsers() itself, so such a schema has no reader groups
+	 * at all, which is not the same as having no read rule.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when only the owner may read.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved.
+	 *
+	 * @spec openspec/changes/access-owner-and-condition-scopes/specs/authorization-rbac/spec.md#requirement-the-owner-sentinel-limits-an-action-to-the-records-owner
+	 */
+	private function readIsOwnerOnly(Schema $schema): bool {
+		$declared = ($this->resolveAuthorizationRaw(schema: $schema)['read'] ?? null);
+		if (is_array($declared) === false || in_array(AuthorizationBlock::CREATOR, $declared, true) === false) {
+			return false;
+		}
+
+		return (($this->resolveAuthorization(schema: $schema)['read'] ?? null) === []);
+	}//end readIsOwnerOnly()
 
 	/**
 	 * Resolve the list of authorised group IDs from an authorization block.
@@ -2912,6 +2942,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$authorization = self::stripMcpScope(
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
+
+		// THE OWNER SENTINEL AND THE CONDITION SCOPES ARE READ HERE, for the same
+		// reason as the matrix below: every path resolves through this method, so
+		// list queries, single reads and writes all see `@creator` and
+		// `conditions` the same way (access-owner-and-condition-scopes D-1).
+		$authorization = (new AuthorizationBlock())->normalise(authorization: $authorization);
 
 		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
 		// B13). This method is the one step every path takes — the object read,

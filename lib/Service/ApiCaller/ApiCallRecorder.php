@@ -175,6 +175,7 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 			route: self::routeOf(path: $call->path),
 			method: strtoupper(substr($call->method, 0, 10)),
 			apiVersion: $call->apiVersion,
+			client: ApiClientName::fromUserAgent(userAgent: $call->client),
 		);
 
 	}//end callKey()
