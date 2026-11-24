@@ -162,6 +162,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 	 */
 	private function getSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
+		// Stays global: the MCP tool's input carries no register to scope a slug by.
 		$schema = $this->schemaMapper->find($arguments['id']);
 		return $schema->jsonSerialize();
 	}//end getSchema()
@@ -299,6 +300,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 	 * @throws RuntimeException When the user may not manage it
 	 */
 	private function manageableSchema(mixed $id): Schema {
+		// Stays global: the MCP update/delete input carries no register to scope a slug by.
 		$schema = $this->schemaMapper->find($id);
 		if ($this->rights->mayManage(authorization: $schema->getAuthorization()) === false) {
 			throw new RuntimeException('User does not have permission to manage this schema');
