@@ -289,7 +289,8 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 		$this->assertSame([422, ['error' => 'No register contains this schema']], $this->pair($controller->previewMigration(3)));
 
 		$this->migration->method('previewSample')->with(new MigrationRequest(3, 9, [['op' => 'x']]), 4)->willReturn([['before' => 1]]);
-		$this->assertSame([200, ['results' => [['before' => 1]]]], $this->pair($controller->previewMigration(3)));
+		// No rename warnings service wired: the preview still answers, with no warnings.
+		$this->assertSame([200, ['results' => [['before' => 1]], 'warnings' => []]], $this->pair($controller->previewMigration(3)));
 	}
 
 	public function testMigrateOutcomes(): void {
