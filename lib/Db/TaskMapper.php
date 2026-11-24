@@ -37,11 +37,12 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
 /**
@@ -102,16 +103,16 @@ class TaskMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
-	 * @param EntityEventsInterface|null $entityEvents Publishes task terminality
-	 *                                                (TaskTerminalEvent) so
-	 *                                          business timers are cancelled in
-	 *                                          the same operation. Nullable so
-	 *                                          the mapper stays constructible
-	 *                                          without a container.
+	 * @param IEventDispatcher|null $dispatcher Dispatches task terminality
+	 *                                          (TaskTerminalEvent) so business
+	 *                                          timers are cancelled in the same
+	 *                                          operation. Nullable so the mapper
+	 *                                          stays constructible without a
+	 *                                          container.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly ?EntityEventsInterface $entityEvents = null,
+		private readonly ?IEventDispatcher $dispatcher = null,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_tasks', entityClass: Task::class);
 
@@ -177,11 +178,11 @@ class TaskMapper extends QBMapper {
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	private function announceTerminality(Task $task): void {
-		if ($this->entityEvents === null || $task->isInTerminalState() === false) {
+		if ($this->dispatcher === null || $task->isInTerminalState() === false) {
 			return;
 		}
 
-		$this->entityEvents->taskTerminal(task: $task, committed: false);
+		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: $task, committed: false));
 	}//end announceTerminality()
 
 	/**
@@ -479,6 +480,33 @@ class TaskMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findOpenByRunUuid()
+
+	/**
+	 * One page of a person's open tasks, in id order after a watermark.
+	 *
+	 * Reads the `(assignee, is_terminal, due_at)` index; the substitution job
+	 * pages through a person's work with it, a bounded number per run.
+	 *
+	 * @param string $uid     The assignee.
+	 * @param int    $afterId Only tasks with a larger id (0 for the first page).
+	 * @param int    $limit   The page size.
+	 *
+	 * @return array<int, Task> The open tasks, ascending by id.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function findOpenAssignedTo(string $uid, int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('assignee', $qb->createNamedParameter($uid)))
+			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findOpenAssignedTo()
 
 	/**
 	 * Open-task counts per assignee, for the `least-loaded` strategy.
