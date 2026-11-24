@@ -21,7 +21,7 @@
 			</template>
 			<template #no-options>
 				<span v-if="loading">{{
-					t('openregister', 'Loading groups...')
+					t('openregister', 'Loading groups…')
 				}}</span>
 				<span v-else>{{ emptyText }}</span>
 			</template>

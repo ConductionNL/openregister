@@ -15,7 +15,7 @@
 
 		<div v-if="state.loadingUsers" class="loading-users">
 			<NcLoadingIcon :size="20" />
-			<span>{{ t('openregister', 'Loading users...') }}</span>
+			<span>{{ t('openregister', 'Loading users…') }}</span>
 		</div>
 
 		<div v-else-if="members.length > 0" class="users-list">

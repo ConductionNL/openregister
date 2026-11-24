@@ -33,7 +33,7 @@
 							label="name"
 							trackBy="id"
 							:multiple="true"
-							:placeholder="t('openregister', 'Select groups...')"
+							:placeholder="t('openregister', 'Select groups…')"
 							@update:modelValue="
 								$emit('update', { right: row.right, groups: $event })
 							" />

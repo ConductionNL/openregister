@@ -9,8 +9,8 @@ import DeletedSideBar from '../deleted/DeletedSideBar.vue'
  * @copyright 2026 Conduction B.V.
  */
 import AuditTrailSideBar from './AuditTrailSideBar.vue'
-import { queriesEqual } from '../../services/routeQuery.js'
 import SearchTrailSideBar from './SearchTrailSideBar.vue'
+import { queriesEqual } from '../../services/routeQuery.js'
 import {
 	auditTrailStore,
 	registerStore,

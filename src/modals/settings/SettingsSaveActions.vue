@@ -9,7 +9,7 @@
 		</template>
 		{{
 			saving
-				? t('openregister', 'Saving...')
+				? t('openregister', 'Saving…')
 				: t('openregister', 'Save Configuration')
 		}}
 	</NcButton>
