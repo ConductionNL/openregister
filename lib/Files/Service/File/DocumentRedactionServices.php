@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DetectorRecordInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
@@ -46,9 +47,12 @@ final class DocumentRedactionServices {
 	 *                                                              is refused, never sent down the text path.
 	 * @param RedactionVerdictStore|null    $verdicts               Keeps the written copy's irreversibility verdict on the copy;
 	 *                                                              null verifies without keeping the verdict on the file.
+	 * @param DetectorRecordInterface|null $detectors  The detector version record each run stores;
+	 *                                                              null stores none.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
 	 */
 	public function __construct(
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
@@ -57,6 +61,7 @@ final class DocumentRedactionServices {
 		public readonly ?RedactionSettingsInterface $fileSettings = null,
 		public readonly ?ImageRedactionService $images = null,
 		public readonly ?RedactionVerdictStore $verdicts = null,
+		public readonly ?DetectorRecordInterface $detectors = null,
 	) {
 	}//end __construct()
 }//end class

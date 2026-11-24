@@ -1,0 +1,9 @@
+{
+	"app": "openregister",
+	"pages": [
+		{ "name": "Dashboard", "path": "/index.php/apps/openregister/" },
+		{ "name": "Registers", "path": "/index.php/apps/openregister/registers" },
+		{ "name": "Schemas", "path": "/index.php/apps/openregister/schemas" },
+		{ "name": "Objects", "path": "/index.php/apps/openregister/objects" }
+	]
+}

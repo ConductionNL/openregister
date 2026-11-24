@@ -629,6 +629,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\DraftsExpiredCommand</command>
 		<command>OCA\OpenRegister\Command\ExpirySweepCommand</command>
 		<command>OCA\OpenRegister\Command\RetentionDryRunCommand</command>
+		<command>OCA\OpenRegister\Command\EvaluateDetectorCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Notifications\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->

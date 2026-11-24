@@ -70,6 +70,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSteps(?string $steps)
  * @method string|null getVerification()
  * @method void setVerification(?string $verification)
+ * @method string|null getDetector()
+ * @method void setDetector(?string $detector)
  * @method DateTime getCreated()
  * @method void setCreated(DateTime $created)
  *
@@ -186,6 +188,13 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	protected ?string $verification = null;
 
 	/**
+	 * The version record of the detection backend that ran, as JSON (REQ-ADI-001).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $detector = null;
+
+	/**
 	 * Created timestamp.
 	 *
 	 * @var DateTime
@@ -211,6 +220,7 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'durationMs', type: 'integer');
 		$this->addType(fieldName: 'steps', type: 'string');
 		$this->addType(fieldName: 'verification', type: 'string');
+		$this->addType(fieldName: 'detector', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 		$this->created = new DateTime();
@@ -275,11 +285,36 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getVerificationArray()
 
 	/**
-	 * The serialised sanitization report, step outcomes and verdict, decoded.
+	 * Decode the detector version record of the run.
 	 *
-	 * @return array{sanitization: array|null, steps: array|null, verification: array|null}
+	 * @return array<string, mixed>|null The record, or null when absent.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-every-detection-backend-reports-what-it-is-built-from-req-adi-001
+	 */
+	public function getDetectorArray(): ?array {
+		if ($this->detector === null) {
+			return null;
+		}
+
+		$decoded = json_decode($this->detector, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end getDetectorArray()
+
+	/**
+	 * The serialised sanitization report, step outcomes, verdict and detector record, decoded.
+	 *
+	 * @return array{sanitization: array|null, steps: array|null, verification: array|null, detector: array|null}
 	 */
 	protected function jsonOverrides(): array {
-		return ['sanitization' => $this->getSanitizationArray(), 'steps' => $this->getStepsArray(), 'verification' => $this->getVerificationArray()];
+		return [
+			'sanitization' => $this->getSanitizationArray(),
+			'steps' => $this->getStepsArray(),
+			'verification' => $this->getVerificationArray(),
+			'detector' => $this->getDetectorArray(),
+		];
 	}//end jsonOverrides()
 }//end class
