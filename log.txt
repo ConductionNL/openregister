@@ -4444,3 +4444,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T21:17:37Z integrator-20261124T184854-1c90b6ab MERGED-TREE a5b0a59109: 5 PRs, main now b3424e04f4 = tested tree
 2026-11-24T21:18:18Z precheck-20261124T204459-ebb04a25 RED tree 2f87186995 prs 1 front=skip: Tests: 65142, Assertions: 229919, Errors: 11, Failures: 6, Warnings: 1, Deprecations: 4, P; first failures: OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAClosedBreakerLetsTheChatThroughAn;OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAGoodProbeAfterTheCoolDownClosesTh
+2026-11-24T21:24:56Z precheck-20261124T211330-6f02c25d GREEN tree 9e8f7e3fb2 on dev d920224aed prs 1 front=skip: Tests: 65165, Assertions: 230043, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
