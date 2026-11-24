@@ -836,6 +836,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?int $childCount = null;
 
 	/**
+	 * Whether this object's parent is one the reader may not read.
+	 *
+	 * Transient, set only on a `_roots=true` page of a schema that declares
+	 * `x-openregister-hierarchy` (records-tree-view): such an object would sit
+	 * under no node the reader can open, so the root page carries it, marked.
+	 * Exposed in @self as `parentHidden`, and absent on every other read.
+	 *
+	 * @var bool|null
+	 */
+	protected ?bool $parentHidden = null;
+
+	/**
 	 * The name of the attached file whose text matched a content search.
 	 *
 	 * Transient, set only on a row that entered a content search through a
@@ -1271,6 +1283,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setChildCount(?int $childCount): void {
 		$this->childCount = $childCount;
 	}//end setChildCount()
+
+	/**
+	 * Mark that the reader may not read this object's parent.
+	 *
+	 * Write-only, like setChildCount(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `parentHidden`.
+	 *
+	 * @param bool|null $parentHidden True when the parent is hidden from the reader.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-record-under-an-unreadable-parent-stays-visible
+	 */
+	public function setParentHidden(?bool $parentHidden): void {
+		$this->parentHidden = $parentHidden;
+	}//end setParentHidden()
 
 	/**
 	 * Write the name of the file whose text matched a content search.
@@ -1809,6 +1837,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   release, so a client that still reads the star keeps working.
 		// - viewedAt: when the reader last opened this object, on a
 		//   `_recent=true` page only (`read-history-on-audit-trail`).
+		// - parentHidden: true on a `_roots=true` page for an object whose
+		//   parent the reader may not read (`records-tree-view`).
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1863,6 +1893,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
 			'childCount'              => $this->childCount,
+			'parentHidden'            => $this->parentHidden,
 			'can'                     => $this->can,
 			'readOnlyProperties'      => $this->readOnlyProperties,
 		];

@@ -22,7 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowItemShape;
 use OCA\OpenRegister\Service\Flow\FlowValueRenderer;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskItemPerformers;
@@ -35,6 +37,8 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversClass(UserTaskItemPerformers::class)]
 #[UsesClass(FlowItems::class)]
+#[UsesClass(FlowItemOptions::class)]
+#[UsesClass(FlowItemShape::class)]
 #[UsesClass(FlowValueTemplate::class)]
 #[UsesClass(FlowValueRenderer::class)]
 class UserTaskItemPerformersTest extends TestCase {

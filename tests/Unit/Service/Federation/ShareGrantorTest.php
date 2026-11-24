@@ -256,11 +256,45 @@ class ShareGrantorTest extends TestCase {
 		$this->assertNull($this->grantorFor($schema)->federationRefusal(share: $this->share('object', 'read-write')));
 	}
 
-	public function testARegisterShareIsNotJudgedBySchema(): void {
+	/**
+	 * A grantor whose register share resolves to these schemas.
+	 *
+	 * @param array<int, Schema>|null $schemas The register's schemas, null when they do not resolve.
+	 *
+	 * @return ShareGrantor
+	 */
+	private function grantorForRegister(?array $schemas): ShareGrantor {
 		$targets = $this->createMock(ShareTargets::class);
 		$targets->expects($this->never())->method('schema');
-		$grantor = new ShareGrantor($this->session, $this->organisations, $this->gate, $targets);
+		$targets->method('registerSchemas')->willReturn($schemas);
 
-		$this->assertNull($grantor->federationRefusal(share: $this->share('register', 'read')));
+		return new ShareGrantor($this->session, $this->organisations, $this->gate, $targets);
+	}
+
+	private function federatable(bool $declared): Schema {
+		$schema = new Schema();
+		$schema->setConfiguration(['federatable' => $declared]);
+		return $schema;
+	}
+
+	public function testARegisterShareNeedsEverySchemaToDeclareIt(): void {
+		$this->assertNull(
+			$this->grantorForRegister([$this->federatable(true), $this->federatable(true)])->federationRefusal(share: $this->share('register', 'read'))
+		);
+		$this->assertNull($this->grantorForRegister([])->federationRefusal(share: $this->share('register', 'read')));
+	}
+
+	public function testARegisterHoldingAnUndeclaredSchemaIsNotFederatable(): void {
+		$this->assertSame(
+			'This register holds a schema that does not allow its objects to be shared with another instance',
+			$this->grantorForRegister([$this->federatable(true), new Schema()])->federationRefusal(share: $this->share('register', 'read'))
+		);
+	}
+
+	public function testARegisterThatDoesNotResolveIsNotFederatable(): void {
+		$this->assertSame(
+			'This register cannot be shared with another instance: it or one of its schemas could not be found',
+			$this->grantorForRegister(null)->federationRefusal(share: $this->share('register', 'read'))
+		);
 	}
 }

@@ -127,7 +127,7 @@ describe('ActionsTab schemas', () => {
 	it('offers only schemas that link to mail, one block each', async () => {
 		const wrapper = await mountTab()
 		const labels = wrapper.findAll('.or-action-label').map((l) => l.text())
-		expect(labels).toEqual(['Connect to Leads', 'Connect to Notes'])
+		expect(labels).toEqual(['Leads', 'Notes'])
 		expect(wrapper.find('.or-tab-loading').exists()).toBe(false)
 	})
 
@@ -135,7 +135,7 @@ describe('ActionsTab schemas', () => {
 		const wrapper = await mountTab()
 		const buttons = wrapper.findAll('.or-action-create')
 		expect(buttons).toHaveLength(1)
-		expect(buttons[0].text()).toBe('New Leads from this email')
+		expect(buttons[0].text()).toBe('New leads from this mail')
 	})
 
 	it('says there is nothing to connect to when no schema links to mail', async () => {
@@ -272,6 +272,10 @@ describe('ActionsTab connect', () => {
 			'/index.php/apps/openregister/api/objects/u1/_linked/mail',
 			{ id: '1/42' },
 		)
+		expect(axios.post).toHaveBeenCalledWith(
+			'/index.php/apps/openregister/api/objects/2/5/u1/emails',
+			{ mailAccountId: 1, messageId: '42' },
+		)
 		expect(showSuccess).toHaveBeenCalledWith('Connected to Acme')
 		expect(wrapper.emitted('linked')).toHaveLength(1)
 		expect(wrapper.vm.visibleResults[5]).toBe(false)
@@ -288,6 +292,8 @@ describe('ActionsTab connect', () => {
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.or-action-connecting').text()).toBe('Connecting…')
 		expect(wrapper.find('.or-action-block--busy').exists()).toBe(true)
+		release({})
+		await flushPromises()
 		release({})
 		await pending
 	})
@@ -415,7 +421,7 @@ describe('ActionsTab create from email', () => {
 		await wrapper.vm.openCreate(LEADS)
 		axios.post.mockRejectedValue({ response: { data: { error: 'bad' } } })
 		await wrapper.vm.submitCreate({ title: 'T' })
-		expect(showError).toHaveBeenCalledWith('Failed to create Leads from email')
+		expect(showError).toHaveBeenCalledWith('Failed to create leads from email')
 		expect(wrapper.vm.createDialog.show).toBe(true)
 		expect(wrapper.vm.createSaving).toBe(false)
 	})
