@@ -4433,3 +4433,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T20:58:46Z precheck-20261124T204459-ebb04a25 NORESULT tree 6ce10fe3f2: deps failed
 2026-11-24T20:58:48Z session-20261124T203429-58c3807e cloud-or-reviewer-1: APPROVE 10521 11017 10529 (fast path, only main merges), 11049 11057 (full); BLOCK 10513 (main merge drops ImportExternalRegisterRegister repair steps from info.xml); skipped 10537 10553 (conflict with main), 10281 (never land); 7721 10625 10633 10641 11025 11033 11041 have a verdict at head
+2026-11-24T21:00:22Z integrator-20261124T184854-1c90b6ab MERGED-TREE e33437ab22: 8 PRs, main now 98ffe7cec3 = tested tree
