@@ -211,7 +211,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$user->method('getUID')->willReturn('daan');
 		$session = $this->createMock(\OCP\IUserSession::class);
 		$session->method('getUser')->willReturn($user);
-		return new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency($store, $session);
+		return new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(new \OCA\OpenRegister\Service\Form\IdempotentAnswerStore($store), $session);
 	}//end idempotency()
 
 	/**
@@ -594,7 +594,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry->addProvider(new _ControllerStubProvider('stub'));
 		$store = $this->createMock(\OCA\OpenRegister\Service\Form\FormIdempotencyStore::class);
 		$store->expects($this->never())->method('reserve');
-		$idempotency = new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency($store, $this->createMock(\OCP\IUserSession::class));
+		$idempotency = new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(new \OCA\OpenRegister\Service\Form\IdempotentAnswerStore($store), $this->createMock(\OCP\IUserSession::class));
 
 		$response = $this->buildController(
 			$registry,

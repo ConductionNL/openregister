@@ -33,10 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
-use OCA\OpenRegister\Exception\FormSubmitRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\IdempotentAnswerStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
-use OCA\OpenRegister\Service\Form\IdempotentRequest;
 use OCP\IUserSession;
 
 /**
@@ -50,13 +48,13 @@ class IntegrationCreateIdempotency {
 	 *
 	 * Without a store every create runs, key or not (a controller built outside the container).
 	 *
-	 * @param FormIdempotencyStore|null $store       Reserves keys and remembers answers for 24 hours.
-	 * @param IUserSession|null         $userSession Who sends the create; a stored answer is bound to them.
+	 * @param IdempotentAnswerStoreInterface|null $store       Reserves keys and remembers answers for 24 hours.
+	 * @param IUserSession|null                   $userSession Who sends the create; a stored answer is bound to them.
 	 *
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public function __construct(
-		private readonly ?FormIdempotencyStore $store = null,
+		private readonly ?IdempotentAnswerStoreInterface $store = null,
 		private readonly ?IUserSession $userSession = null,
 	) {
 	}//end __construct()
@@ -84,48 +82,45 @@ class IntegrationCreateIdempotency {
 			return ['answer' => $create(), 'replayed' => false];
 		}
 
-		$request = new IdempotentRequest(
-			scope: 'integration:' . $integrationId . ':' . $object->register . '/' . $object->schema . '/' . $object->id,
-			key: $key,
-			binding: $this->store->bindingFor(subject: $this->subject(), payload: $payload)
-		);
+		$scope   = 'integration:' . $integrationId . ':' . $object->register . '/' . $object->schema . '/' . $object->id;
+		$binding = $this->store->bindingFor(subject: $this->subject(), payload: $payload);
 
-		try {
-			$this->store->reserve(scope: $request->scope, key: $request->key);
-		} catch (FormSubmitRefusedException) {
+		if ($this->store->tryReserve(scope: $scope, key: $key) === false) {
 			throw new IdempotencyConflictException(message: 'A create with this Idempotency-Key is still running.');
 		}
 
 		try {
-			return $this->answerOnce(request: $request, create: $create);
+			return $this->answerOnce(store: $this->store, scope: $scope, key: $key, binding: $binding, create: $create);
 		} finally {
-			$this->store->release(scope: $request->scope, key: $request->key);
+			$this->store->release(scope: $scope, key: $key);
 		}
 	}//end run()
 
 	/**
 	 * The remembered answer of a reserved key, or the answer of a fresh create, remembered.
 	 *
-	 * @param IdempotentRequest        $request The scope, key and binding of this create.
-	 * @param callable(): array<mixed> $create  Runs the create and returns its answer.
+	 * @param IdempotentAnswerStoreInterface $store   The store the key is reserved in.
+	 * @param string                         $scope   What the key is scoped to.
+	 * @param string                         $key     The Idempotency-Key.
+	 * @param string                         $binding Who sent what.
+	 * @param callable(): array<mixed>       $create  Runs the create and returns its answer.
 	 *
 	 * @return array{answer: array<mixed>, replayed: bool} The answer, and whether it was a remembered one.
 	 *
 	 * @throws IdempotencyConflictException When the key was used by another user or for another payload.
 	 */
-	private function answerOnce(IdempotentRequest $request, callable $create): array {
-		try {
-			$remembered = $this->store->answerFor(request: $request);
-		} catch (FormSubmitRefusedException) {
+	private function answerOnce(IdempotentAnswerStoreInterface $store, string $scope, string $key, string $binding, callable $create): array {
+		$remembered = $store->remembered(scope: $scope, key: $key, binding: $binding);
+		if ($remembered['state'] === IdempotentAnswerStoreInterface::TAKEN) {
 			throw new IdempotencyConflictException(message: 'This Idempotency-Key was already used for another create.');
 		}
 
-		if ($remembered !== null) {
-			return ['answer' => $remembered, 'replayed' => true];
+		if ($remembered['state'] === IdempotentAnswerStoreInterface::REMEMBERED && $remembered['answer'] !== null) {
+			return ['answer' => $remembered['answer'], 'replayed' => true];
 		}
 
 		$answer = $create();
-		$this->store->keep(request: $request, response: $answer);
+		$store->remember(scope: $scope, key: $key, binding: $binding, answer: $answer);
 
 		return ['answer' => $answer, 'replayed' => false];
 	}//end answerOnce()

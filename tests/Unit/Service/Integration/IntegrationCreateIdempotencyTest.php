@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\IdempotentAnswerStore;
 use OCA\OpenRegister\Service\Form\IdempotentRequest;
 use OCA\OpenRegister\Service\Integration\IdempotencyConflictException;
 use OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency;
@@ -109,7 +110,7 @@ class IntegrationCreateIdempotencyTest extends TestCase {
 				return $user;
 			}
 		);
-		return new IntegrationCreateIdempotency($this->store(), $session);
+		return new IntegrationCreateIdempotency(new IdempotentAnswerStore($this->store()), $session);
 	}//end service()
 
 	private function object(string $id = 'obj-1'): ObjectRef {
