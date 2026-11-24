@@ -4376,3 +4376,6 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T20:00:37Z integrator-20261124T184854-1c90b6ab MERGED-TREE 8d55b0c4f1: 7 PRs, main now dfcbe075ef = tested tree
 2026-11-24T20:00:52Z precheck-20261124T170310-20773ea8 GREEN tree 9bd3cdad62 on dev 5037a3463f prs 1 front=skip: Tests: 64565, Assertions: 228153, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T20:02:03Z precheck-20261124T184211-3233ebc5 NORESULT tree 7dc9ceeea4: checker floor not measured (exit 2)
+2026-11-24T20:02:54Z or-fix-4 or-fix-4: fixed #10494 (info.xml dev.6 bump, 42a33b77) and #10514 (main merge, 8a656431); #10624 left (stylelint 18 peers); precheck blocked: gitleaks install refused by the session permission check, so the floor cannot measure secretscanning (#11054 NORESULT). Note: depth-1 state clones refetch full history on first st_sync (~15 min).
+2026-11-24T20:03:18Z precheck-20261124T190656-018eb955 GREEN tree 37b44ecf53 on dev 5037a3463f prs 1 front=ok: Tests: 64553, Assertions: 228115, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
