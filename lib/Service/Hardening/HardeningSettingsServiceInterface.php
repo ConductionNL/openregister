@@ -61,6 +61,22 @@ interface HardeningSettingsServiceInterface {
 	public function setAllowedOrigins(array $origins): array;
 
 	/**
+	 * Replace the address allowlist of one surface.
+	 *
+	 * @param string             $surface          `admin` or `api`.
+	 * @param array<int, mixed>  $entries          Addresses and CIDR ranges; an empty list unbinds the surface.
+	 * @param string             $requesterAddress The address the change comes from.
+	 *
+	 * @return array<int, string> The allowlist now in force.
+	 *
+	 * @throws InvalidArgumentException When the surface is unknown, an entry is not an address or range,
+	 *                                  or the list would refuse the address the change comes from.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function setAddressAllowlist(string $surface, array $entries, string $requesterAddress): array;
+
+	/**
 	 * Declare a floor for one control.
 	 *
 	 * @param string $control The control identifier.

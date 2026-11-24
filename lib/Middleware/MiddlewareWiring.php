@@ -47,6 +47,12 @@ final class MiddlewareWiring {
 		// sees the final response of every other middleware.
 		$context->registerMiddleware(ProblemDetailsMiddleware::class);
 
+		// Register the AddressAllowlistMiddleware (instance-hardening-controls
+		// REQ-IHC-003): a request to the administration surface or the API from
+		// an address outside that surface's administered allowlist is refused
+		// with a bare 403 before any controller runs. An empty list is unbound.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\AddressAllowlistMiddleware::class);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 
