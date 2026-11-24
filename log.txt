@@ -4120,3 +4120,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T15:49:29Z session-20261124T153206-11b3d487 humaniq builder: merged #1250 (time-entry-approval-state e2e + archived), #1252 (payroll live-check specs, payroll-period-edge-cases archived; special-regimes/reservation-payouts 5.2 open: nl-2026 tables unverified); #1248 draft waits for nc-vue 2.204 on npm
 2026-11-24T15:49:29Z integrator-20261124T145419-19cd7a29 MERGED-TREE 4b9bf4c390: 1 PRs, main now 322d1734d6 = tested tree
+2026-11-24T15:49:43Z session-20261124T154845-12f9b8db cloud-or-reviewer-5: 0 reviewable; all 20 open non-draft main PRs with N%8==5 have an APPROVE or BLOCK verdict at their current head (10533's later REVERIFY is at the already-approved head 91ab5d1a; 10005 BLOCK stands)
