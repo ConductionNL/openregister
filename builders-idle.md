@@ -467,3 +467,4 @@
 2026-11-24T22:53Z help-learniq-1 built enrolment-sync-classes-from-student-administration 3.1 (groups list sync line): nextcloud-vue#2338 (index header note from an endpoint, 2.218.0) and learniq #2753 (merged); open there: 5.1 live check, 5.2 waits on integriq#3888
 2026-11-24T22:53Z help-learniq-1 run ends: learniq #2741 #2742 #2746 #2748 #2749 #2750 #2753, integriq #3882 (+ issues #3888 #3889), nextcloud-vue #2335 #2336 #2338
 2026-11-24T23:04Z help-opencatalogi-1 helped opencatalogi: publication-withdrawal-aftercare 5.1-5.4 verified #2989 (merged; fixed 3 stale tests the change left); left 3.5 live
+2026-11-24T23:06Z help-opencatalogi-1 helped opencatalogi: theme-archive-hotspot 5.1-5.4 verified #2990 (merged); left 1.3/2.2 live
