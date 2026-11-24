@@ -133,11 +133,13 @@ class ScheduledMessageStoreTest extends TestCase {
 		$rows = $this->store(1, [[
 			'id' => 7, 'state' => 'claimed', 'attempts' => '2', 'send_at' => '2026-11-16T08:00:00+00:00', 'claimed_at' => '2026-11-16T08:00:05+00:00',
 			'source' => 'twilio-sms', 'path' => 'Messages.json', 'body' => '{"Body":"Hi"}', 'headers' => 'not json', 'message_id' => null,
+			'channel' => 'sms', 'object_uuid' => 'obj-1',
 		]])->open(50);
 
 		$this->assertSame([[
 			'id' => '7', 'state' => 'claimed', 'attempts' => 2, 'sendAt' => '2026-11-16T08:00:00+00:00', 'claimedAt' => '2026-11-16T08:00:05+00:00',
 			'source' => 'twilio-sms', 'path' => 'Messages.json', 'body' => ['Body' => 'Hi'], 'headers' => [], 'messageId' => '',
+			'channel' => 'sms', 'objectUuid' => 'obj-1',
 		]], $rows);
 		$this->assertSame(['state in pending|claimed'], $this->where);
 	}

@@ -41,6 +41,16 @@ use RuntimeException;
  * the context for every read after it.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicReadTable
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\TableSearch
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\RegisterSchema
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\DateTimeNormalizer
+ * @uses   \OCA\OpenRegister\Service\OrganisationContext
+ * @uses   \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
+ * @uses   \OCA\OpenRegister\Support\QueryLimit
  */
 class MagicSearchHandlerOrganisationlessCountTest extends TestCase {
 

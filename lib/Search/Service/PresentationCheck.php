@@ -64,4 +64,15 @@ final class PresentationCheck {
 	public function schemaRef(): mixed {
 		return $this->query['schemas'][0] ?? null;
 	}//end schemaRef()
+
+	/**
+	 * The view's first register reference, the context its schema slug is read in.
+	 *
+	 * @return mixed The id, uuid or slug, or null.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	public function registerRef(): mixed {
+		return $this->query['registers'][0] ?? null;
+	}//end registerRef()
 }//end class

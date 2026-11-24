@@ -134,6 +134,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					<ShieldAccount :size="16" />
 					{{ t('openregister', 'Rights') }}
 				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'indexes' }]"
+					@click="activeTab = 'indexes'">
+					<TableKey :size="16" />
+					{{ t('openregister', 'Indexes') }}
+				</button>
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -154,6 +161,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 			<!-- Rights Tab: the department by role matrix and its per-user preview -->
 			<SchemaRightsTab
 				v-if="activeTab === 'rights'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Indexes Tab: the database indexes on the schema's tables and the field setting behind each -->
+			<SchemaIndexesTab
+				v-if="activeTab === 'indexes'"
 				:schema="schemaStore.schemaItem" />
 
 			<!-- Dashboard Tab (original content) -->
@@ -253,12 +265,14 @@ import Gavel from 'vue-material-design-icons/Gavel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import ShieldAccount from 'vue-material-design-icons/ShieldAccount.vue'
+import TableKey from 'vue-material-design-icons/TableKey.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
 import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
+import SchemaIndexesTab from './SchemaIndexesTab.vue'
 import SchemaRightsTab from './SchemaRightsTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
 import {
@@ -289,10 +303,12 @@ export default {
 		Cog,
 		Gavel,
 		ShieldAccount,
+		TableKey,
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 		SchemaRulesTab,
 		SchemaRightsTab,
+		SchemaIndexesTab,
 		SchemaDraftBar,
 	},
 
