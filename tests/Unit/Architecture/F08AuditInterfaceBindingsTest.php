@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -77,7 +78,7 @@ final class F08AuditInterfaceBindingsTest extends TestCase {
 	 */
 	public function testEveryInterfaceIsBound(): void {
 		foreach (self::CLASSES as $class => $entry) {
-			$this->assertSame(expected: $class, actual: ContractBindings::BINDINGS[$entry[0]] ?? null, message: $entry[0] . ' is bound');
+			$this->assertSame(expected: $class, actual: (ContractBindings::BINDINGS + ComplianceServiceBindings::BINDINGS)[$entry[0]] ?? null, message: $entry[0] . ' is bound');
 		}
 	}//end testEveryInterfaceIsBound()
 
