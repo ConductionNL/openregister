@@ -40,6 +40,7 @@ use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Handles cryptographic hash chaining for audit trail entries.
@@ -68,6 +69,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods) Same breadth, counted per method: the
+ * class implements three interfaces over one hash chain, and most of its methods
+ * are small private steps of the seal and verify walks. The re-chain split named
+ * above is the refactor that brings this down.
  *
  * @phpstan-type ChainWalk array{
  *     from: int|null,
@@ -328,7 +333,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
 	 *
-	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 * @throws RuntimeException When the seal lock cannot be taken.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
@@ -338,7 +343,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+			throw new RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
 		}
 
 		try {
