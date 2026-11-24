@@ -55,9 +55,9 @@ class RegisterMapperSchemaIndexTest extends TestCase {
 	 * @return RegisterMapper
 	 */
 	private function mapper(): RegisterMapper {
-		$db = $this->createMock(IDBConnection::class);
+		$db = $this->createMock(originalClassName: IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(function (): IQueryBuilder {
-			$qb = $this->createMock(IQueryBuilder::class);
+			$qb = $this->createMock(originalClassName: IQueryBuilder::class);
 			$qb->method('select')->willReturn($qb);
 			$qb->method('from')->willReturn($qb);
 			$qb->method('executeQuery')->willReturnCallback(function (): IResult {
@@ -67,8 +67,8 @@ class RegisterMapperSchemaIndexTest extends TestCase {
 					['id' => 1, 'schemas' => '["7",9]'],
 					['id' => 2, 'schemas' => '[7,7]'],
 				];
-				$result = $this->createMock(IResult::class);
-				$this->stubRowReader($result, static function () use (&$rows) {
+				$result = $this->createMock(originalClassName: IResult::class);
+				$this->stubRowReader(result: $result, next: static function () use (&$rows) {
 					return (array_shift($rows) ?? false);
 				});
 				$result->method('closeCursor')->willReturn(true);
@@ -79,13 +79,17 @@ class RegisterMapperSchemaIndexTest extends TestCase {
 
 		return new RegisterMapper(
 			db: $db,
-			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
-			appConfig: $this->createMock(IAppConfig::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(originalClassName: OrganisationMapper::class),
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class)
+			),
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
 			services: new RegisterMapperServices(
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				container: $this->createMock(ContainerInterface::class),
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $this->createMock(LoggerInterface::class)
+				schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+				container: $this->createMock(originalClassName: ContainerInterface::class),
+				eventDispatcher: $this->createMock(originalClassName: IEventDispatcher::class),
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
 			)
 		);
 	}//end mapper()
@@ -98,12 +102,12 @@ class RegisterMapperSchemaIndexTest extends TestCase {
 	public function testEverySchemaIsAnsweredFromOneRead(): void {
 		$mapper = $this->mapper();
 
-		$this->assertSame([1, 2, 3], $mapper->getAllRegisterIdsWithSchema(schemaId: 7));
-		$this->assertSame([3], $mapper->getAllRegisterIdsWithSchema(schemaId: 5));
-		$this->assertSame(1, $mapper->getFirstRegisterWithSchema(schemaId: 9));
-		$this->assertSame([], $mapper->getAllRegisterIdsWithSchema(schemaId: 4));
-		$this->assertNull($mapper->getFirstRegisterWithSchema(schemaId: 4));
+		$this->assertSame(expected: [1, 2, 3], actual: $mapper->getAllRegisterIdsWithSchema(schemaId: 7));
+		$this->assertSame(expected: [3], actual: $mapper->getAllRegisterIdsWithSchema(schemaId: 5));
+		$this->assertSame(expected: 1, actual: $mapper->getFirstRegisterWithSchema(schemaId: 9));
+		$this->assertSame(expected: [], actual: $mapper->getAllRegisterIdsWithSchema(schemaId: 4));
+		$this->assertNull(actual: $mapper->getFirstRegisterWithSchema(schemaId: 4));
 
-		$this->assertSame(1, $this->reads);
+		$this->assertSame(expected: 1, actual: $this->reads);
 	}//end testEverySchemaIsAnsweredFromOneRead()
 }//end class
