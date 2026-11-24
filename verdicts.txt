@@ -4589,3 +4589,4 @@
 10494 d691ac3a3501e8909a1fd660194811180a841c90 REVERIFY or-fix-4: merged main, fixed component-map.csv/components yaml conflict (union rows, regenerated); review needed
 10509 e3aee8080f56b17bf8584deb2c0aafaa97a80e0e REVERIFY or-fix-9: merged main (component-map csv conflict, yaml regenerated), no code change; phpstan clean, Architecture and PR-touched tests green; review needed
 10514 29b09e96bafbf89d1e230e69d93fac9e88515687 REVERIFY or-fix-4: merged main, fixed CoreServiceBindings (both bindings kept), component-map.csv/yaml conflict, ListenerRegistrationOrderGoldenTest count 258 + new sha; review needed
+10537 96983b619cefa884d7029b14bf4d42d4fdccdb7e REVERIFY or-fix-7: merged main aa1f24b9, resolved component-map.csv conflict (both rows kept, yaml regenerated, --check ok); phpstan clean on 46 lib files, Architecture all green, touched unit dirs green except inherited AreaMapperRegistrars/AnonymousEnvelopeReadPaths/ReservedColumnNames(net); review needed
