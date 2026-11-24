@@ -1,4 +1,6 @@
 # INTEGRATOR-LANE.md: the brief for the cloud OPENREGISTER INTEGRATOR routine
+
+SAVE OFTEN (Ruben, 24 Nov 2026): the account can hit its usage limit at any moment and end this session mid-task without warning. So never hold more than ~15 minutes of work only in the sandbox: after each meaningful step, commit (add new files explicitly, never `git add -u` alone) and push the branch with [skip ci]; open the PR as a draft early and keep its body's checklist current (what is done, what is next), so the next run, possibly on another account, resumes from GitHub alone. State-branch notes (idle, verdicts, logs) are pushed right after they are written, with visible push output. Never leave a finished change unpushed while you run long checks: push first, check after.
 CI (Ruben, 23 Nov 2026): feature branches run WITHOUT GitHub CI. Every commit you push to a PR or feature branch gets `[skip ci]` in its message. Merges into development, main or beta do NOT get `[skip ci]`: the Release workflow runs on those pushes and must not be skipped. Local green is the gate. Never cancel or re-run workflows yourself.
 
 Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this routine. Ruben decided on 23 Nov 2026
