@@ -33,6 +33,9 @@ final class ConfigurationEntryRules {
 	// and object slugs could not be switched on outside the database (#4037).
 	// `mailObjectName` is what one item is called in the Mail panel's sentences
 	// ("New work queue item from this mail"), when the schema title names the collection.
+	// `workingCalendar` is read by RecordTypeCalendars (working-calendar-admin
+	// REQ-WCA-005): the calendar slug the schema's terms and week numbers follow.
+	// Off this list it was dropped on save, so no record type could name one.
 	private const CONFIG_STRING_FIELDS = [
 		'objectNameField',
 		'objectDescriptionField',
@@ -40,6 +43,7 @@ final class ConfigurationEntryRules {
 		'objectImageField',
 		'objectSlugField',
 		'mailObjectName',
+		'workingCalendar',
 	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu
 	// on an index page (or#4103). Off the allowlist it was dropped without

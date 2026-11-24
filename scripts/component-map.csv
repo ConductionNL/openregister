@@ -1272,11 +1272,14 @@ Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
+Kernel/Contracts/RegisterSchemaPairsInterface.php,38,Kernel,Kernel,Kernel/Contracts/RegisterSchemaPairsInterface.php,0,,Kernel
 Kernel/Contracts/AppSettingsInterface.php,42,Kernel,Kernel,Kernel/Contracts/AppSettingsInterface.php,0,,Kernel
 Kernel/Contracts/ContactMatcherInterface.php,11,Kernel,Kernel,Kernel/Contracts/ContactMatcherInterface.php,0,,Kernel
 Kernel/Contracts/EmbeddingGeneratorInterface.php,6,Kernel,Kernel,Kernel/Contracts/EmbeddingGeneratorInterface.php,0,,Kernel
 Kernel/Contracts/ExampleSetInstallerInterface.php,8,Kernel,Kernel,Kernel/Contracts/ExampleSetInstallerInterface.php,0,,Kernel
 Kernel/Contracts/FlowTimerControlInterface.php,21,Kernel,Kernel,Kernel/Contracts/FlowTimerControlInterface.php,0,,Kernel
+Kernel/Contracts/FacetWeekNumberingInterface.php,9,Kernel,Kernel,Kernel/Contracts/FacetWeekNumberingInterface.php,0,,Kernel
+Kernel/Contracts/FacetWeekRelabelInterface.php,10,Kernel,Kernel,Kernel/Contracts/FacetWeekRelabelInterface.php,0,,Kernel
 Kernel/Contracts/FlowTimerInterface.php,10,Kernel,Kernel,Kernel/Contracts/FlowTimerInterface.php,0,,Kernel
 Kernel/Contracts/GitHubClientInterface.php,41,Kernel,Kernel,Kernel/Contracts/GitHubClientInterface.php,0,,Kernel
 Kernel/Contracts/McpCatalogueInterface.php,8,Kernel,Kernel,Kernel/Contracts/McpCatalogueInterface.php,0,,Kernel
@@ -1722,6 +1725,7 @@ Search/BackgroundJob/ReportRenderJob.php,251,Search,Search,Search/BackgroundJob/
 Search/BackgroundJob/SearchIndexRebuildJob.php,32,Search,Search,Search/BackgroundJob/SearchIndexRebuildJob.php,0,436,Search
 Search/Command/SearchIndexCommand.php,149,Search,Search,Search/Command/SearchIndexCommand.php,0,,Search
 Search/Controller/AggregationController.php,268,Search,Search,Search/Controller/AggregationController.php,0,,Search
+Search/Controller/CrossRegisterReportController.php,79,Search,Search,Search/Controller/CrossRegisterReportController.php,0,,Search
 Search/Controller/ContactSearchController.php,40,Search,Search,Search/Controller/ContactSearchController.php,0,,Search
 Search/Controller/DashboardController.php,217,Search,Search,Search/Controller/DashboardController.php,0,,Search
 Search/Controller/DuplicateController.php,209,Search,Search,Search/Controller/DuplicateController.php,0,,Search
@@ -1743,6 +1747,10 @@ Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
 Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
+Search/Service/Aggregation/AggregateChartData.php,167,Search,Search,Search/Service/Aggregation/AggregateChartData.php,0,,Search
+Search/Service/Aggregation/AggregateReportEnvelope.php,143,Search,Search,Search/Service/Aggregation/AggregateReportEnvelope.php,0,,Search
+Search/Service/Aggregation/AggregateReportPeriods.php,180,Search,Search,Search/Service/Aggregation/AggregateReportPeriods.php,0,,Search
+Search/Service/Aggregation/CrossRegisterReport.php,111,Search,Search,Search/Service/Aggregation/CrossRegisterReport.php,0,,Search
 Search/Service/Aggregation/AggregationAnnotationValidator.php,233,Search,Search,Search/Service/Aggregation/AggregationAnnotationValidator.php,0,91,Search
 Search/Service/Aggregation/AggregationCache.php,156,Search,Search,Search/Service/Aggregation/AggregationCache.php,0,175,Search
 Search/Service/Aggregation/AggregationCacheInterface.php,12,Search,Search,Search/Service/Aggregation/AggregationCacheInterface.php,0,,Search
@@ -2535,6 +2543,12 @@ Service/Flow/Timer/WorkingCalendar.php,313,Service,Flows,Flows/Service/Flow/Time
 Service/Flow/Timer/WorkingCalendarService.php,56,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarService.php,8,362,Processes
 Service/Flow/Timer/WorkingCalendarWriteGuard.php,52,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarWriteGuard.php,0,,Processes
 Service/Flow/Timer/WorkingDayRoll.php,50,Service,Flows,Flows/Service/Flow/Timer/WorkingDayRoll.php,0,,Processes
+Service/Flow/Timer/ResolvedWorkingCalendar.php,24,Service,Flows,Flows/Service/Flow/Timer/ResolvedWorkingCalendar.php,0,,Processes
+Service/Flow/Timer/RecordTypeCalendars.php,35,Service,Flows,Flows/Service/Flow/Timer/RecordTypeCalendars.php,0,,Processes
+Service/Flow/Timer/RegisterWorkingPatternProvidersEvent.php,14,Service,Flows,Flows/Service/Flow/Timer/RegisterWorkingPatternProvidersEvent.php,0,,Processes
+Service/Flow/Timer/WorkingCalendarScope.php,40,Service,Flows,Flows/Service/Flow/Timer/WorkingCalendarScope.php,0,,Processes
+Service/Flow/Timer/WorkingPatternProviderInterface.php,7,Service,Flows,Flows/Service/Flow/Timer/WorkingPatternProviderInterface.php,0,,Processes
+Service/Flow/Timer/WorkingPatternProviders.php,114,Service,Flows,Flows/Service/Flow/Timer/WorkingPatternProviders.php,0,,Processes
 Service/FlowLinkService.php,174,Service,Flows,Flows/Service/FlowLinkService.php,0,151,Integrations
 Service/Form/AppDataFolder.php,17,Service,Work,Work/Service/Form/AppDataFolder.php,0,,Processes
 Service/Form/FormDefinitionResolver.php,56,Service,Work,Work/Service/Form/FormDefinitionResolver.php,0,,Processes
@@ -2814,6 +2828,8 @@ Service/Object/FacetHandler.php,105,Service,Service,Service/Object/FacetHandler.
 Service/Object/FacetListing.php,160,Service,Service,Service/Object/FacetListing.php,0,,Core
 Service/Object/FacetResponseCache.php,132,Service,Service,Service/Object/FacetResponseCache.php,0,,Core
 Service/Object/FacetRun.php,13,Service,Service,Service/Object/FacetRun.php,0,,Core
+Service/Object/FacetWeekLabels.php,56,Service,Service,Service/Object/FacetWeekLabels.php,0,,Processes
+Service/Object/FacetWeekNumbering.php,49,Service,Service,Service/Object/FacetWeekNumbering.php,0,,Processes
 Service/Object/FacetableFieldDiscovery.php,120,Service,Service,Service/Object/FacetableFieldDiscovery.php,0,,Core
 Service/Object/FileWriteGuard.php,22,Service,Service,Service/Object/FileWriteGuard.php,0,465,Core
 Service/Object/GetObject.php,183,Service,Service,Service/Object/GetObject.php,0,,Core

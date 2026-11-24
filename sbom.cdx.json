@@ -7,7 +7,7 @@
     "tools": [
       {
         "name": "composer",
-        "version": "2.10.2"
+        "version": "2.8.12"
       },
       {
         "vendor": "cyclonedx",
@@ -6378,10 +6378,10 @@
     },
     {
       "type": "library",
-      "name": "plugin-doc-explorer",
+      "name": "plugin-collections",
       "group": "@graphiql",
-      "version": "0.4.4",
-      "bom-ref": "openregister@1.0.0|@graphiql/plugin-doc-explorer@0.4.4",
+      "version": "1.0.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-collections@1.0.1",
       "licenses": [
         {
           "license": {
@@ -6389,15 +6389,49 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40graphiql/plugin-doc-explorer@0.4.4",
+      "purl": "pkg:npm/%40graphiql/plugin-collections@1.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@graphiql/plugin-doc-explorer/-/plugin-doc-explorer-0.4.4.tgz",
+          "url": "https://registry.npmjs.org/@graphiql/plugin-collections/-/plugin-collections-1.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "37e0158782858d7f28a195178f78c13e6cfcaec85733490897ebd5e938b2420319b464a93e88489f635d49873cba44666447cccd84fd82a2f0e38e3a497cf597"
+              "content": "47f87d522b4c05f701a45c386514bfdb7da628d17ffac8e5e14d075858f1f4d4a01a2109956751c465d6897b4f82eb1c588bfd1b1fab207c3106fde742240980"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/plugin-collections"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plugin-doc-explorer",
+      "group": "@graphiql",
+      "version": "1.0.0",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-doc-explorer@1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/plugin-doc-explorer@1.0.0",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/plugin-doc-explorer/-/plugin-doc-explorer-1.0.0.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "0ca39d18306916d819d27dfee881511a9514f484c458b2aac0c77cc78f13d2446bfaf078b198ca64d665b6dad4fbd2a4d4c18f4476d084626c48e4b3bd7f14e3"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -6414,8 +6448,8 @@
       "type": "library",
       "name": "plugin-history",
       "group": "@graphiql",
-      "version": "0.4.4",
-      "bom-ref": "openregister@1.0.0|@graphiql/plugin-history@0.4.4",
+      "version": "1.0.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-history@1.0.1",
       "licenses": [
         {
           "license": {
@@ -6423,15 +6457,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40graphiql/plugin-history@0.4.4",
+      "purl": "pkg:npm/%40graphiql/plugin-history@1.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@graphiql/plugin-history/-/plugin-history-0.4.4.tgz",
+          "url": "https://registry.npmjs.org/@graphiql/plugin-history/-/plugin-history-1.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "bdb52af262a652c12784bba963e9987ab59b452ec5a02b058d18924fe426266206cd1e959ac22b99e176bcb2adc31fb3b4e0aa7051988d9df5a084ce44193e68"
+              "content": "3f1cd0c968b2604fcff875d50958f4aac12750a7fd10e702c4c45a9f54169042afe9145439b3c1c47a208b19f1cedc55c39f349d427a2c5a8567b0150d1cbbb8"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -6446,10 +6480,10 @@
     },
     {
       "type": "library",
-      "name": "react",
+      "name": "plugin-query-builder",
       "group": "@graphiql",
-      "version": "0.39.1",
-      "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1",
+      "version": "1.0.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/plugin-query-builder@1.0.1",
       "licenses": [
         {
           "license": {
@@ -6457,15 +6491,49 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40graphiql/react@0.39.1",
+      "purl": "pkg:npm/%40graphiql/plugin-query-builder@1.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@graphiql/react/-/react-0.39.1.tgz",
+          "url": "https://registry.npmjs.org/@graphiql/plugin-query-builder/-/plugin-query-builder-1.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "86d0f7596f3e1215de1447d4701b18fadf944f401ba9edd5e00a80faa480152c4bd80707dfb21dd56c20b7450b143611c2f95fefbc4d8610eb5b08de6de4a248"
+              "content": "1fd494b1391354663ab819489101156f030eff816bbbfa4640c3a5c9811bd4a4ede6791e4423dfc214fd7d04aed56362070cb6fe50f812f9a01aaeda2a810459"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@graphiql/plugin-query-builder"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "group": "@graphiql",
+      "version": "1.0.2",
+      "bom-ref": "openregister@1.0.0|@graphiql/react@1.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40graphiql/react@1.0.2",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@graphiql/react/-/react-1.0.2.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "d2185cc8c7a33620b4b21bc800e6987e1119f9bea052802b4afaccf951740a353d06b6d9e7001d95b85e2ed523b3e19094b14f72a3d09e895d8aa63657411278"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -6482,7 +6550,7 @@
           "type": "library",
           "name": "jsonc-parser",
           "version": "3.3.1",
-          "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1|jsonc-parser@3.3.1",
+          "bom-ref": "openregister@1.0.0|@graphiql/react@1.0.2|jsonc-parser@3.3.1",
           "licenses": [
             {
               "license": {
@@ -6510,39 +6578,6 @@
               "value": "node_modules/@graphiql/react/node_modules/jsonc-parser"
             }
           ]
-        },
-        {
-          "type": "library",
-          "name": "react-compiler-runtime",
-          "version": "19.1.0-rc.3",
-          "bom-ref": "openregister@1.0.0|@graphiql/react@0.39.1|react-compiler-runtime@19.1.0-rc.3",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/react-compiler-runtime@19.1.0-rc.3",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/react-compiler-runtime/-/react-compiler-runtime-19.1.0-rc.3.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "0acb28832b365d9bba4aac51757db177c71001fe7b041bc56cb1019486bbef5eb59678a76ca527fc4a9b79c09eed6ddea8341f837ac8a0ec33131ce00a1ee1fe"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@graphiql/react/node_modules/react-compiler-runtime"
-            }
-          ]
         }
       ]
     },
@@ -6550,8 +6585,8 @@
       "type": "library",
       "name": "toolkit",
       "group": "@graphiql",
-      "version": "0.12.1",
-      "bom-ref": "openregister@1.0.0|@graphiql/toolkit@0.12.1",
+      "version": "1.0.1",
+      "bom-ref": "openregister@1.0.0|@graphiql/toolkit@1.0.1",
       "licenses": [
         {
           "license": {
@@ -6559,15 +6594,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40graphiql/toolkit@0.12.1",
+      "purl": "pkg:npm/%40graphiql/toolkit@1.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@graphiql/toolkit/-/toolkit-0.12.1.tgz",
+          "url": "https://registry.npmjs.org/@graphiql/toolkit/-/toolkit-1.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "3ae1d5508bcf2fb9f3dee01d1bd7b2679719c7cec91fe5cc38789782fddfa1865604f5bc14d30653215f9713fbd2386fedb5fd50fc98991b13209f864a52b43d"
+              "content": "082bdde48608056ae05578a68398941b7d2d268fd59c50e1fbdee27fd11efc509fce864803d8819fd051639cdfab543f32a0a91aa0c0d03a188e9749adaa9593"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -11270,8 +11305,8 @@
       "type": "library",
       "name": "node",
       "group": "@types",
-      "version": "26.6.4",
-      "bom-ref": "openregister@1.0.0|@types/node@26.6.4",
+      "version": "26.6.6",
+      "bom-ref": "openregister@1.0.0|@types/node@26.6.6",
       "licenses": [
         {
           "license": {
@@ -11279,15 +11314,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40types/node@26.6.4",
+      "purl": "pkg:npm/%40types/node@26.6.6",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@types/node/-/node-26.6.4.tgz",
+          "url": "https://registry.npmjs.org/@types/node/-/node-26.6.6.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "95d54f0c2ce3edfb1a199acb07436e1ee4ef25cb0d6accac040a8ca25aff720c6b2ddd716eac48af75c988f9c71c9502c63e6c345d6f9d18fd6969eb561e4972"
+              "content": "333423fbc2b1dd7238d0e994004e90a21e7c64c36cb4d34cc27da77dddea5ac7deee70cd4aa24dcdeb389e3873e801f0ad21ce7df48bc1753ac9be3be10e1aa2"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -15040,8 +15075,8 @@
     {
       "type": "library",
       "name": "clsx",
-      "version": "1.2.1",
-      "bom-ref": "openregister@1.0.0|clsx@1.2.1",
+      "version": "2.1.1",
+      "bom-ref": "openregister@1.0.0|clsx@2.1.1",
       "licenses": [
         {
           "license": {
@@ -15049,15 +15084,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/clsx@1.2.1",
+      "purl": "pkg:npm/clsx@2.1.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/clsx/-/clsx-1.2.1.tgz",
+          "url": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "11c47aaf96bc6e3ea9bb7c9cb1afc4fdc2951ae4e064965db325181ce92c1bf50722229f8f1cd1c58269c9507061a41e3af8216a5f5f71ce0f89d960cee80042"
+              "content": "7989b441606d52b0566561b4777f3a386030d7a67df793e2395a3607b6e35926c779d1a5e5ed1959aabae6438681448d7ac1080e407d2126d383f24af5d84264"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -18607,8 +18642,8 @@
     {
       "type": "library",
       "name": "framer-motion",
-      "version": "13.5.1",
-      "bom-ref": "openregister@1.0.0|framer-motion@13.5.1",
+      "version": "14.14.0",
+      "bom-ref": "openregister@1.0.0|framer-motion@14.14.0",
       "licenses": [
         {
           "license": {
@@ -18616,15 +18651,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/framer-motion@13.5.1",
+      "purl": "pkg:npm/framer-motion@14.14.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/framer-motion/-/framer-motion-13.5.1.tgz",
+          "url": "https://registry.npmjs.org/framer-motion/-/framer-motion-14.14.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1de58e69e1c3de4c9348810c4fafa7c3b7c19f8b1a21fc7169b6720084dbc9c025e31af5933189288bc6b7f3968214a5bc803da939d9d734c67a51c07ba4bc0c"
+              "content": "7e27515f4573919740f4ea2f162052cc9b6df7f8cb709a676bbf19f8a0aa4106485a8229377b4e8445c0861030fc539b51487ea37635f32c7517804fd26549f1"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19133,8 +19168,8 @@
     {
       "type": "library",
       "name": "graphiql",
-      "version": "5.4.0",
-      "bom-ref": "openregister@1.0.0|graphiql@5.4.0",
+      "version": "6.0.1",
+      "bom-ref": "openregister@1.0.0|graphiql@6.0.1",
       "licenses": [
         {
           "license": {
@@ -19142,15 +19177,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/graphiql@5.4.0",
+      "purl": "pkg:npm/graphiql@6.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/graphiql/-/graphiql-5.4.0.tgz",
+          "url": "https://registry.npmjs.org/graphiql/-/graphiql-6.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "f309aff13d4aaaf2969bbef0b378649dc8a8fdd4a45a582bb2579ee8606088dda1ff1d0b40d0e7e23806d8e18f5a2b2cfc6979187c87ef891f7aa0e37025d646"
+              "content": "348ef8d06bcbe9db715ec3c3ea190e183dd37c9514d358d691676d48519c57d1a6305a2c6d007a1369bb898895361a9ac57916b3883604671a01e0ee05b8dd27"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19166,8 +19201,8 @@
     {
       "type": "library",
       "name": "graphql-language-service",
-      "version": "5.7.0",
-      "bom-ref": "openregister@1.0.0|graphql-language-service@5.7.0",
+      "version": "6.0.1",
+      "bom-ref": "openregister@1.0.0|graphql-language-service@6.0.1",
       "licenses": [
         {
           "license": {
@@ -19175,15 +19210,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/graphql-language-service@5.7.0",
+      "purl": "pkg:npm/graphql-language-service@6.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/graphql-language-service/-/graphql-language-service-5.7.0.tgz",
+          "url": "https://registry.npmjs.org/graphql-language-service/-/graphql-language-service-6.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e66c036fd1f21f131c3bd4422cb89e83aac2d6ef57289296845baf6991498b76eba10643cf57dc14d966f7a50232b22023a312b1bf51c30a8a2a9dac64e67d1b"
+              "content": "7fefe473112bb0696fff06e69b53db68d5842fa9d337250ca6465f7d0a624968acb83d3b014190284ffab771ad62e3e107f99b6d64ee6895e4c84d33bfea879d"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23523,8 +23558,8 @@
     {
       "type": "library",
       "name": "monaco-editor",
-      "version": "0.52.2",
-      "bom-ref": "openregister@1.0.0|monaco-editor@0.52.2",
+      "version": "0.57.0",
+      "bom-ref": "openregister@1.0.0|monaco-editor@0.57.0",
       "licenses": [
         {
           "license": {
@@ -23532,15 +23567,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/monaco-editor@0.52.2",
+      "purl": "pkg:npm/monaco-editor@0.57.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.52.2.tgz",
+          "url": "https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.57.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "18441611999f90e18b75ddd72bcaf2adf5b3dc020ff18ca655788f1c475ec2b52aee6874aab2ab7c72cd09771b07ab139cc2e7399df3b5288a71c885524209c1"
+              "content": "e41908f4a1a8aab36f04651ed79fd0959ab73a8a19f162e0d40c53a5aa874423f71cda733cf64a136103cfc33b73e551982794c3506ba78731fcf5a6de423fe4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23551,13 +23586,48 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/monaco-editor"
         }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "marked",
+          "version": "14.0.0",
+          "bom-ref": "openregister@1.0.0|monaco-editor@0.57.0|marked@14.0.0",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/marked@14.0.0",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/marked/-/marked-14.0.0.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "b888f8f9f690f8c807830516d65d8fb0f82564b38b393d6e12bb74e9d00fb71da48ed78b0246ec77fd0589883f3064be8bb64a2dbef0d960a5c4793338ebabc9"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/monaco-editor/node_modules/marked"
+            }
+          ]
+        }
       ]
     },
     {
       "type": "library",
       "name": "monaco-graphql",
-      "version": "1.9.0",
-      "bom-ref": "openregister@1.0.0|monaco-graphql@1.9.0",
+      "version": "2.0.1",
+      "bom-ref": "openregister@1.0.0|monaco-graphql@2.0.1",
       "licenses": [
         {
           "license": {
@@ -23565,15 +23635,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/monaco-graphql@1.9.0",
+      "purl": "pkg:npm/monaco-graphql@2.0.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/monaco-graphql/-/monaco-graphql-1.9.0.tgz",
+          "url": "https://registry.npmjs.org/monaco-graphql/-/monaco-graphql-2.0.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cc82b801b83b2a927a1349e2b3be7092da50eaf8034ca384330b6ba9ada6308bfb0fe4369f8d9cafbe4b0ae59f3b5e38c6a6d38f1c9abfb31b236562232eaadf"
+              "content": "136d97dfbfbeb53435fb143829a63786cb76efec2dc8ef0e2e7ca5ec5aec86fbf7d459ace5fbcee6a2e4be8bcc7cffd7476c68a0a9728e1e5ad2cf4a1f7c2361"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23589,8 +23659,8 @@
     {
       "type": "library",
       "name": "motion-dom",
-      "version": "13.5.1",
-      "bom-ref": "openregister@1.0.0|motion-dom@13.5.1",
+      "version": "14.14.0",
+      "bom-ref": "openregister@1.0.0|motion-dom@14.14.0",
       "licenses": [
         {
           "license": {
@@ -23598,15 +23668,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/motion-dom@13.5.1",
+      "purl": "pkg:npm/motion-dom@14.14.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/motion-dom/-/motion-dom-13.5.1.tgz",
+          "url": "https://registry.npmjs.org/motion-dom/-/motion-dom-14.14.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ffb095083db4333d4aa1b92da2ba5d82fa30574578d49ed4c6a13ea964b71a4489aab46be5fb7ed91968398b442affb0bc1a7725a48505c961c6de236bca2f1e"
+              "content": "200c5c2a1624b900365b44e5c7502f5602267ea128177feddc8a2f6cf40995891e7e61ac9ab5e39fdebb94c208e5598598ba5011a6f8f99907a3f8a327812c8a"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23622,8 +23692,8 @@
     {
       "type": "library",
       "name": "motion-utils",
-      "version": "13.5.0",
-      "bom-ref": "openregister@1.0.0|motion-utils@13.5.0",
+      "version": "14.7.0",
+      "bom-ref": "openregister@1.0.0|motion-utils@14.7.0",
       "licenses": [
         {
           "license": {
@@ -23631,15 +23701,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/motion-utils@13.5.0",
+      "purl": "pkg:npm/motion-utils@14.7.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/motion-utils/-/motion-utils-13.5.0.tgz",
+          "url": "https://registry.npmjs.org/motion-utils/-/motion-utils-14.7.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1ea7bfb2a8c82a588f660f2c56358091dc920cf24d21e287f9eb95903386f2b8b70d4514ed98e77661ec1aa10fcf6887a62c95695e48db68a0b8230753685ef9"
+              "content": "c283b4fcd6fbcacef97fde1f8ef422ffa95e8871af65462478750f119defc6c57ef4ea44561931a74d71f0c951c17d33b77d44aa05ec28302806824b0b5e3c4f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -24032,39 +24102,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/nth-check"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "nullthrows",
-      "version": "1.1.1",
-      "bom-ref": "openregister@1.0.0|nullthrows@1.1.1",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/nullthrows@1.1.1",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/nullthrows/-/nullthrows-1.1.1.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "daf3cf122f99ed6a8c2f68d961d74321fcb90ea6f4af67f37b6cd3c4d3649d9685a551d4de6141dd1f8359e256195c7479cbedb521a525323e586fbc6787035b"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/nullthrows"
         }
       ]
     },
@@ -24657,39 +24694,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/picocolors"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "picomatch-browser",
-      "version": "2.2.6",
-      "bom-ref": "openregister@1.0.0|picomatch-browser@2.2.6",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/picomatch-browser@2.2.6",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/picomatch-browser/-/picomatch-browser-2.2.6.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "d32a6c390b7d0f87b7873895f0ee1e943f6e374cff8ed5047f1551b4d68002d5c8c94c7d9bf4b394ed36d22f1834bd9a2ff13a6e53afbc741c8a7e87665172ff"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/picomatch-browser"
         }
       ]
     },
@@ -25807,48 +25811,13 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/react-aria"
         }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "clsx",
-          "version": "2.1.1",
-          "bom-ref": "openregister@1.0.0|react-aria@3.53.1|clsx@2.1.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/clsx@2.1.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "7989b441606d52b0566561b4777f3a386030d7a67df793e2395a3607b6e35926c779d1a5e5ed1959aabae6438681448d7ac1080e407d2126d383f24af5d84264"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/react-aria/node_modules/clsx"
-            }
-          ]
-        }
       ]
     },
     {
       "type": "library",
       "name": "react-compiler-runtime",
-      "version": "19.1.0-rc.1",
-      "bom-ref": "openregister@1.0.0|react-compiler-runtime@19.1.0-rc.1",
+      "version": "1.0.0",
+      "bom-ref": "openregister@1.0.0|react-compiler-runtime@1.0.0",
       "licenses": [
         {
           "license": {
@@ -25856,15 +25825,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/react-compiler-runtime@19.1.0-rc.1",
+      "purl": "pkg:npm/react-compiler-runtime@1.0.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/react-compiler-runtime/-/react-compiler-runtime-19.1.0-rc.1.tgz",
+          "url": "https://registry.npmjs.org/react-compiler-runtime/-/react-compiler-runtime-1.0.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c02b7a83e71187c837d904f5f3ff5b95f407cb01a362efb816511cdc25b59b1de93f1633659975cbe56dab14609ca2810852c8194631a20e23e2bb39612f3a87"
+              "content": "ad17e362feba1e51bcf3deb23d40ce3602b31b9071643d6757d53aae49beed50aebd073dd370b8323728651e333f0e7720a48e5fdc0c415a40d4801b46dcd0ef"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -30104,8 +30073,8 @@
     {
       "type": "library",
       "name": "vue-eslint-parser",
-      "version": "10.4.1",
-      "bom-ref": "openregister@1.0.0|vue-eslint-parser@10.4.1",
+      "version": "10.4.2",
+      "bom-ref": "openregister@1.0.0|vue-eslint-parser@10.4.2",
       "licenses": [
         {
           "license": {
@@ -30113,15 +30082,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-eslint-parser@10.4.1",
+      "purl": "pkg:npm/vue-eslint-parser@10.4.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-eslint-parser/-/vue-eslint-parser-10.4.1.tgz",
+          "url": "https://registry.npmjs.org/vue-eslint-parser/-/vue-eslint-parser-10.4.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1a4ea04438f49ff7e445adc2de5d1b0617a805c914abf46cd05fd3bcc5884ba9f3cf1ebb6a601588c7bd0a4360b0fdad5f240e36f1a21d01121f016d6776980c"
+              "content": "58ca73ba56f9d246fab27821ce81b34befbadb070eb33024fe9898727bf3752b4cf169e2fc19a881896da68385bf678af610db5f1bf0150827c191a902851fa4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -30142,7 +30111,7 @@
           "type": "library",
           "name": "semver",
           "version": "7.8.5",
-          "bom-ref": "openregister@1.0.0|vue-eslint-parser@10.4.1|semver@7.8.5",
+          "bom-ref": "openregister@1.0.0|vue-eslint-parser@10.4.2|semver@7.8.5",
           "licenses": [
             {
               "license": {
