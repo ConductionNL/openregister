@@ -4637,6 +4637,7 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Db/SchemaMapper/SchemaRowCache.php,,Db,,,,,Core
+Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
 Service/MappingRun.php,,Service,,,,,Integrations
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
