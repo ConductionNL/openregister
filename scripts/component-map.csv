@@ -3425,6 +3425,7 @@ Controller/Support/OrganisationScopeFilter.php,18,Controller,Flows,Flows/Control
 Controller/Support/PartyObjectAccess.php,69,Controller,Work,Work/Controller/Support/PartyObjectAccess.php,0,,Processes
 Controller/Support/RuleReplayRequest.php,12,Controller,Flows,Flows/Controller/Support/RuleReplayRequest.php,0,,Processes
 Controller/Support/SchemaRule.php,11,Controller,Flows,Flows/Controller/Support/SchemaRule.php,0,,Processes
+Controller/Support/SyncWatermark.php,38,Controller,Service,Service/Controller/Support/SyncWatermark.php,0,,Core
 Controller/Support/TaskCompletionCommand.php,12,Controller,Work,Work/Controller/Support/TaskCompletionCommand.php,0,,Processes
 Controller/Support/TaskInboxRequest.php,36,Controller,Work,Work/Controller/Support/TaskInboxRequest.php,0,,Processes
 Controller/Support/TaskLeafGuard.php,43,Controller,Work,Work/Controller/Support/TaskLeafGuard.php,0,,Processes
@@ -4406,6 +4407,8 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
+Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core

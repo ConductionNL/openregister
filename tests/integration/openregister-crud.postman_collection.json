@@ -3818,6 +3818,229 @@
       }
     },
     {
+      "name": "18a4. Changed-Since Read Returns An Object Deleted After The Cut-Off",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// incremental-sync-for-api-consumers REQ-SYNC-001: a soft delete moves updated, so a changed-since read finds it.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('The object deleted after the cut-off is in the result', function () {",
+              "        var ids = (jsonData.results || []).map(function (o) { return o.id || (o['@self'] && o['@self'].id); });",
+              "        pm.expect(ids).to.include(pm.collectionVariables.get('object2_uuid'));",
+              "    });",
+              "    pm.test('The response carries a sync watermark', function () {",
+              "        pm.expect(jsonData.syncWatermark).to.be.a('string');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}?@self[updated][gte]=2000-01-01T00:00:00Z&_includeDeleted=true&_limit=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ],
+          "query": [
+            {
+              "key": "@self[updated][gte]",
+              "value": "2000-01-01T00:00:00Z"
+            },
+            {
+              "key": "_includeDeleted",
+              "value": "true"
+            },
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18a5. Changed-Since Read Leaves Out An Object Deleted Before The Cut-Off",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// incremental-sync-for-api-consumers REQ-SYNC-001: a deletion before the cut-off is not a change since it.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('The object deleted before the cut-off is not in the result', function () {",
+              "        var ids = (jsonData.results || []).map(function (o) { return o.id || (o['@self'] && o['@self'].id); });",
+              "        pm.expect(ids).to.not.include(pm.collectionVariables.get('object2_uuid'));",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_slug}}/{{schema_slug}}?@self[updated][gte]=2999-01-01T00:00:00Z&_includeDeleted=true&_limit=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{register_slug}}",
+            "{{schema_slug}}"
+          ],
+          "query": [
+            {
+              "key": "@self[updated][gte]",
+              "value": "2999-01-01T00:00:00Z"
+            },
+            {
+              "key": "_includeDeleted",
+              "value": "true"
+            },
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18a6. Destroyed Tombstones Without deletedSince Are Refused",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// incremental-sync-for-api-consumers REQ-SYNC-003: an unbounded destroyed scan is refused naming deletedSince.",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('The refusal names deletedSince', function () {",
+              "    pm.expect(pm.response.json().parameter).to.eql('deletedSince');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted?_includeDestroyed=true",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted"
+          ],
+          "query": [
+            {
+              "key": "_includeDestroyed",
+              "value": "true"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "18a7. Deleted List With Destroyed Tombstones",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// incremental-sync-for-api-consumers REQ-SYNC-003: tombstones carry identity and moment only, and the coverage is stated.",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.test('The envelope states the destroyed coverage', function () {",
+              "        pm.expect(jsonData).to.have.property('destroyedCoverageFrom');",
+              "    });",
+              "    pm.test('A tombstone carries no object data', function () {",
+              "        (jsonData.results || []).filter(function (r) { return r.tombstone === true; }).forEach(function (t) {",
+              "            pm.expect(Object.keys(t).sort()).to.eql(['destroyedAt', 'id', 'register', 'schema', 'tombstone']);",
+              "        });",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/deleted?deletedSince=2000-01-01T00:00:00Z&_includeDestroyed=true&_limit=100",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "deleted"
+          ],
+          "query": [
+            {
+              "key": "deletedSince",
+              "value": "2000-01-01T00:00:00Z"
+            },
+            {
+              "key": "_includeDestroyed",
+              "value": "true"
+            },
+            {
+              "key": "_limit",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "18b. Restore Deleted Object",
       "event": [
         {
