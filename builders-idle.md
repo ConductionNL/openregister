@@ -269,3 +269,4 @@
 2026-11-24T19:09:02Z help-learniq-1 skipped notification-quiet-hours-through-openregister 2.3/2.4: live check on the dev instance, then archive (code merged #2733)
 2026-11-24T19:12Z help-filinq-1 built template-engine-renders-through-a-vendor 3.1 (#2314, live Newman collection + runner, not run here); 3.2 live dossiq check left, change not archived
 2026-11-24T19:13Z help-portaliq-3 helped portaliq: portal-traffic-zero-result-searches #2685 (3.1 e2e written, runs in nightly; 3.2 live check left, not archived)
+2026-11-24T19:14Z help-filinq-1 built competitor-parity-2026-09 12 (#2315, told openregister#11052 that cluster 43 is theirs under D7); 1/10 wait on those changes' archive, 11 is a standing rule
