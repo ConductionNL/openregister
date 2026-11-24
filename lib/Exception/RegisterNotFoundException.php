@@ -69,6 +69,28 @@ class RegisterNotFoundException extends Exception {
 	}//end __construct()
 
 	/**
+	 * The two remedies an import names when its target register is missing.
+	 *
+	 * @var string
+	 */
+	public const IMPORT_REMEDIES = 'Create the register first, or supply a full register bundle '
+		. '(a register definition together with its schemas) to auto-create it.';
+
+	/**
+	 * The refusal for an import whose register does not exist and cannot be created
+	 * from the payload: names the register and both remedies, answers 404.
+	 *
+	 * @param string $registerSlugOrId The register slug or ID the import asked for.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
+	 */
+	public static function forImport(string $registerSlugOrId): self {
+		return new self(registerSlugOrId: $registerSlugOrId, code: 404, remedies: self::IMPORT_REMEDIES);
+	}//end forImport()
+
+	/**
 	 * The message naming the register, with the remedies appended when given.
 	 *
 	 * @param string      $registerSlugOrId The register slug or ID that was not found.
