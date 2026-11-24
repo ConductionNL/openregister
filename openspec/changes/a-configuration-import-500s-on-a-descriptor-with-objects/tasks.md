@@ -19,6 +19,18 @@
 
 ## 3. Not in this change
 
-- [ ] 3.1 `ImportHandler`'s inconsistent return shape (two append sites push
+- [x] 3.1 `ImportHandler`'s inconsistent return shape (two append sites push
       entities, two push ids). Normalising it there is the better fix; other
       callers read the same array and would have to move with it.
+      > Done: both seed sites (`storeSeedObject()` for an already stored seed,
+      > `insertSeedObject()` for a new one) now record the entity, so
+      > `$result['objects']` holds `ObjectEntity` at all four sites. Readers
+      > checked: the configuration id lists (`ConfigurationService::mergeIds()`,
+      > `AppConfigurationRecord`) kept only entities and so silently dropped the
+      > seed objects; they now link them. `RegistersController`'s import summary
+      > typed its entries `object` and would have thrown on an id. The counting
+      > readers (`SeedReport`, `RegisterDescriptorService`, the controllers) count
+      > the same. `ConfigurationsController::idsOf()` keeps taking either shape.
+      > Tests: `ImportHandlerTest` (six seed cases assert the entity itself, two
+      > assert the list holds only entities), `ImportHandlerSeedDataGoldenTest`
+      > (golden re-recorded: same ids in the same order, now tagged as entities).

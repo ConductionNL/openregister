@@ -218,6 +218,9 @@ class ImportHandlerSeedDataGoldenTest extends TestCase {
 			$this->calls[] = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}
 
+		// The result lists the stored ENTITIES; record each as its id, tagged, so
+		// the golden pins both the shape and which objects were recorded.
+		$result['objects'] = array_map(static fn ($object) => ($object instanceof ObjectEntity) ? ['entity' => $object->getId()] : $object, $result['objects']);
 		$this->calls[] = ['result' => $result];
 		return $this->withoutGeneratedUuids(value: $this->calls);
 	}//end runCase()
