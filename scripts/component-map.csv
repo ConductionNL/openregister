@@ -4190,6 +4190,8 @@ Repair/ReportReferenceLoopSchemas.php,,Repair,,,,,Platform
 Repair/WithholdRevealValuesFromRelations.php,,Repair,,,,,Platform
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Service/Object/DeclaredErrorMessage.php,,Service,,,,,Core
+Service/Schemas/ErrorMessagesDeclaration.php,,Service,,,,,Core
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
 Listener/IdentityGuardListener.php,,Listener,,,,,Core
 Service/Object/ObjectKeyResolver.php,,Service,,,,,Core
