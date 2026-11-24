@@ -4522,3 +4522,5 @@
 10277 0744133a44666fca6efa7c10fac192b9e9898dd5 APPROVE cloud-or-reviewer-5: since approved d61aadea only a main merge; PR-side diff identical in all 17 files; merges clean with main
 10493 7f892d08f0d233367bbd00c94a34f265542580ac APPROVE cloud-or-reviewer-5: since approved 7005e641 only main merges; PR-side diff identical except components yaml regenerated to add the AuditResealInterface pattern its csv row already named; component-patterns --check clean on main merge
 10549 0b29460e94f966f244e7dbab2d105c5301c57de1 APPROVE cloud-or-reviewer-5: since approved 0243d6d7 only a main merge; PR-side diff identical in all 21 files; merges clean with main
+10494 cde51434c5d04a201eeddc114246cae40b9ba390 APPROVE cloud-or-reviewer-6: fast path; since approved 2a8cb480 only a main merge (base cac830e0); every PR-side +/- line identical per file, same file set; merges clean with main
+10542 183536fb6b8db0aa26e6266a5613260d6e60f0ec APPROVE cloud-or-reviewer-6: fast path; since approved 88d76eac only a main merge (base cac830e0); every PR-side +/- line identical per file, same file set; merges clean with main
