@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsDependenciesController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
@@ -110,7 +111,7 @@ final class F09ControllerBoundaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOperationsConsoleStaysAlwaysReachable(): void {
-		foreach ([OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class] as $class) {
+		foreach ([OperationsConsoleController::class, OperationsMaintenanceController::class, OperationsConsistencyController::class, OperationsDependenciesController::class] as $class) {
 			$this->assertTrue(condition: is_subclass_of($class, MaintenanceReachableInterface::class), message: $class.' must carry the maintenance-reachable marker.');
 		}
 	}//end testTheOperationsConsoleStaysAlwaysReachable()
