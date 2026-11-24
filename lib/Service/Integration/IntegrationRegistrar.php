@@ -87,6 +87,21 @@ final class IntegrationRegistrar {
 	}//end boot()
 
 	/**
+	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
+	 *
+	 * Application::boot() calls it once, after ObjectSourceRegistrar::boot().
+	 *
+	 * @param mixed $server Server container (passed in from boot()).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public static function bootObjectSources($server): void {
+		IntegrationWiring::bootObjectSources(server: $server);
+	}//end bootObjectSources()
+
+	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.
 	 *
 	 * The loader is a closure that reads the LeafRegistry catalogue, which

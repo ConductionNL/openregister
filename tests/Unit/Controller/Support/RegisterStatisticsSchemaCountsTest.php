@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\ObjectTransfer;
 use OCA\OpenRegister\Controller\Support\RegisterIntegrations;
 use OCA\OpenRegister\Controller\Support\RegisterMappers;
@@ -33,12 +34,14 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
-use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterBundlesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\MigrationPackDefinitionsInterface;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -75,6 +78,11 @@ class RegisterStatisticsSchemaCountsTest extends TestCase {
 
 		return new RegisterStatistics(
 			new RegistersControllerServices(
+				session: new ControllerSession(
+					userSession: $this->createMock(IUserSession::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					logger: $this->createMock(LoggerInterface::class),
+				),
 				mappers: new RegisterMappers(
 					catalog: new SchemaCatalog(
 						registers: $this->createMock(RegisterMapper::class),
@@ -87,10 +95,10 @@ class RegisterStatisticsSchemaCountsTest extends TestCase {
 					registerService: $this->registerService,
 					registerCacheHandler: $this->createMock(RegisterCacheHandler::class),
 					registerSerializer: new RegisterSerializer($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)),
-					migrationPackService: $this->createMock(MigrationPackService::class),
+					migrationPacks: $this->createMock(MigrationPackDefinitionsInterface::class),
 				),
 				integrations: new RegisterIntegrations(
-					configurationService: $this->createMock(ConfigurationService::class),
+					bundles: $this->createMock(RegisterBundlesInterface::class),
 					githubService: $this->createMock(GitHubClientInterface::class),
 					oasService: $this->createMock(OasService::class),
 					container: $this->createMock(ContainerInterface::class),

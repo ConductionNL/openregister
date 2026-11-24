@@ -24,11 +24,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Kernel\Contracts\TaskSequenceInterface;
 use OCP\EventDispatcher\Event;
 
 /**
  * An event about a task sequence: the sequence as persisted.
+ *
+ * The base carries the Kernel sequence contract, so it names no area above
+ * Kernel. Each concrete event keeps its own `getSequence(): TaskSequence`,
+ * so what its listeners read does not change.
  *
  * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
  */
@@ -36,21 +40,21 @@ abstract class AbstractTaskSequenceEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequence $sequence The sequence as persisted.
+	 * @param TaskSequenceInterface $sequence The sequence as persisted.
 	 */
-	public function __construct(private readonly TaskSequence $sequence) {
+	public function __construct(private readonly TaskSequenceInterface $sequence) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * The sequence the event is about.
 	 *
-	 * @return TaskSequence The sequence as persisted.
+	 * @return TaskSequenceInterface The sequence as persisted.
 	 *
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
 	 */
-	public function getSequence(): TaskSequence {
+	public function getSequence(): TaskSequenceInterface {
 		return $this->sequence;
 	}//end getSequence()
 }//end class

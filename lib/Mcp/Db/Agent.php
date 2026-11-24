@@ -31,7 +31,7 @@ use JsonSerializable;
 use OCA\OpenRegister\Kernel\Contracts\AgentInterface;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Search\Db\View;
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 use OCA\OpenRegister\Db\Organisation;
 
 /**
@@ -193,9 +193,12 @@ class Agent extends Entity implements JsonSerializable, AgentInterface {
 	/**
 	 * Configuration that manages this agent (transient, not stored in DB)
 	 *
-	 * @var Configuration|null
+	 * Typed against the Kernel read contract, so the agent does not name the
+	 * Configuration entity; only its id, uuid and title are read.
+	 *
+	 * @var ConfigurationInterface|null
 	 */
-	protected ?Configuration $managedByConfig = null;
+	protected ?ConfigurationInterface $managedByConfig = null;
 
 	/**
 	 * Owner user ID

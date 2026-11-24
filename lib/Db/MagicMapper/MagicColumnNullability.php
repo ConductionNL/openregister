@@ -80,10 +80,14 @@ final class MagicColumnNullability {
 			message: $change->announcement(),
 			context: ['tableName' => $change->sync->tableName, 'columnName' => $columnName]
 		);
-		$sql = new MagicColumnSql(isPostgres: $change->sync->isPostgres);
+		$sql = $change->sync->columnSql();
 
 		return $this->ddl->attempt(
-			sql: $change->statement(columnName: $columnName, sqlType: $sql->type(type: $columnDef['type'], column: $columnDef)),
+			sql: $change->statement(
+				columnName: $columnName,
+				sqlType: $sql->type(type: $columnDef['type'], column: $columnDef),
+				check: $sql->check(type: $columnDef['type'], name: $columnName)
+			),
 			failure: new MagicDdlFailure(message: $change->failureMessage(), context: ['columnName' => $columnName])
 		);
 	}//end changeColumn()

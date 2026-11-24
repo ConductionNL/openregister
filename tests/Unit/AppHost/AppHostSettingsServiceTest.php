@@ -19,7 +19,9 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -170,7 +172,7 @@ class AppHostSettingsServiceTest extends TestCase {
 		$appManager->method('getAppPath')->with('myapp')->willReturn($appPath);
 		$appManager->method('getAppVersion')->with('myapp')->willReturn('9.9.9');
 
-		$configurationService = $this->createMock(ConfigurationServiceInterface::class);
+		$configurationService = $this->createMock(AppConfigurationImporterInterface::class);
 		$configurationService->expects($this->once())
 			->method('importFromApp')
 			->with(
@@ -183,7 +185,7 @@ class AppHostSettingsServiceTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')
-			->with('OCA\OpenRegister\Service\ConfigurationServiceInterface')
+			->with('OCA\OpenRegister\Service\AppConfigurationImporterInterface')
 			->willReturn($configurationService);
 
 		$result = $this->service(
@@ -219,7 +221,7 @@ class AppHostSettingsServiceTest extends TestCase {
 
 		$capturedVersion = null;
 		$capturedData = null;
-		$configurationService = $this->createMock(ConfigurationServiceInterface::class);
+		$configurationService = $this->createMock(AppConfigurationImporterInterface::class);
 		$configurationService->expects($this->once())
 			->method('importFromApp')
 			->willReturnCallback(function ($appId, $data, $version, $force) use (&$capturedVersion, &$capturedData) {
@@ -267,4 +269,17 @@ class AppHostSettingsServiceTest extends TestCase {
 		$this->assertFalse($result['success']);
 		$this->assertStringContainsString('myapp_register.json', $result['message']);
 	}//end testLoadConfigurationReturnsFailureWhenRegisterJsonMissing()
+
+	/**
+	 * The import contract the settings service resolves is bound to the same
+	 * ConfigurationService the full configuration contract is, so the import
+	 * runs on the very service it ran on before.
+	 */
+	public function testTheImportContractResolvesToTheConfigurationService(): void {
+		$this->assertArrayHasKey(AppConfigurationImporterInterface::class, ContractBindings::BINDINGS);
+		$this->assertSame(
+			ContractBindings::BINDINGS[ConfigurationServiceInterface::class],
+			ContractBindings::BINDINGS[AppConfigurationImporterInterface::class]
+		);
+	}//end testTheImportContractResolvesToTheConfigurationService()
 }//end class

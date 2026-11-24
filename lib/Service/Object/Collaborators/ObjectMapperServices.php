@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister ObjectService mapper services: registers, schemas, views and objects
+ * OpenRegister ObjectService mapper services: registers, schemas and objects
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -25,10 +25,9 @@ namespace OCA\OpenRegister\Service\Object\Collaborators;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 
 /**
- * ObjectService mapper services: registers, schemas, views and objects.
+ * ObjectService mapper services: registers, schemas and objects.
  *
  * @spec openspec/specs/objects-crud/spec.md
  */
@@ -38,7 +37,6 @@ final class ObjectMapperServices {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Mapper for register operations.
 	 * @param SchemaMapperInterface   $schemaMapper   Mapper for schema operations.
-	 * @param ViewMapperInterface     $viewMapper     Mapper for view operations.
 	 * @param MagicMapperInterface    $objectMapper   Unified mapper for object operations (routes to magic tables).
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
@@ -46,7 +44,6 @@ final class ObjectMapperServices {
 	public function __construct(
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly ViewMapperInterface $viewMapper,
 		public readonly MagicMapperInterface $objectMapper,
 	) {
 	}//end __construct()

@@ -46,14 +46,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the timeline entry record, kind, reference and text block tables.
  *
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
-class Version1Date20260915120000 extends SimpleMigrationStep {
+class Version1Date20260915120000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -65,7 +64,7 @@ class Version1Date20260915120000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -78,7 +77,7 @@ class Version1Date20260915120000 extends SimpleMigrationStep {
 		$this->textBlocks(schema: $schema, output: $output);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * The entry record table.

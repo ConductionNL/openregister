@@ -23,10 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
-use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\IUserSession;
 use Throwable;
 
@@ -51,15 +51,15 @@ class VectorResultFilter {
 	/**
 	 * Wire the read checks.
 	 *
-	 * @param FileReadScope             $files       Whether the caller can open a file.
-	 * @param ObjectOperationsInterface $objects     Finds an object as the caller.
-	 * @param ViewService               $views       Resolves a view the caller may use.
-	 * @param IUserSession              $userSession The signed-in caller.
+	 * @param ReadableFileHitsInterface  $files       Whether the caller can open a file.
+	 * @param ObjectOperationsInterface  $objects     Finds an object as the caller.
+	 * @param StoredViewQueriesInterface $views       Resolves a view the caller may use.
+	 * @param IUserSession               $userSession The signed-in caller.
 	 */
 	public function __construct(
-		private readonly FileReadScope $files,
+		private readonly ReadableFileHitsInterface $files,
 		private readonly ObjectOperationsInterface $objects,
-		private readonly ViewService $views,
+		private readonly StoredViewQueriesInterface $views,
 		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()
@@ -188,7 +188,7 @@ class VectorResultFilter {
 		$scopes = [];
 		foreach ($viewIds as $viewId) {
 			try {
-				$query = ($this->views->find(id: $viewId, owner: $uid)->getQuery() ?? []);
+				$query = ($this->views->usableQueryOf(viewId: $viewId, owner: $uid) ?? []);
 			} catch (Throwable $e) {
 				continue;
 			}

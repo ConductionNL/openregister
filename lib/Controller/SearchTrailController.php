@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
@@ -42,6 +41,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\SearchTrailControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Class SearchTrailController
@@ -128,7 +128,7 @@ class SearchTrailController extends Controller {
 		IRequest $request,
 		SearchTrailControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->searchTrailService = $services->searchTrailService;
 		$this->searchTrailMapper = $services->searchTrailMapper;
 		$this->userSession = $services->userSession;

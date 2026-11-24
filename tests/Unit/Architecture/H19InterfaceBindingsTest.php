@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use JsonSerializable;
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnMappingReport;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -51,7 +51,7 @@ final class H19InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string|null}>
 	 */
 	private const CLASSES = [
-		LockObjectNode::class => [LockObjectNodeInterface::class, FlowBindings::class],
+		LockObjectNode::class => [LockObjectNodeInterface::class, FlowWiring::class],
 		BpmnMappingReport::class => [JsonSerializable::class, null],
 	];
 

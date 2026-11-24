@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SchemaTeardownInterface: what the schema delete endpoint and the prune command ask of SchemaDeletionService.
+ * SchemaTeardownInterface: what the schema delete endpoint, the prune command and the object service ask of SchemaDeletionService.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,12 +22,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
- * Tearing down a schema and counting what a teardown would remove or refuse. Only the methods SchemasController and the prune-retired command call.
+ * Tearing down a schema, emptying its tables, and counting what a teardown would remove or refuse.
+ *
+ * Only the methods SchemasController, the prune-retired command and ObjectService's
+ * whole-table deletes call. Compliance answers, through SchemaDeletionService.
  */
 interface SchemaTeardownInterface {
+
+	/**
+	 * Trigger context for objects removed by a bulk delete of one schema's objects.
+	 *
+	 * @var string
+	 */
+	public const TRIGGER_BULK_DELETE = 'bulk_schema_delete';
 
 	/**
 	 * How many objects `cascadeDeleteSchema()` would destroy.
@@ -89,4 +101,34 @@ interface SchemaTeardownInterface {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function dropEmptyTablesForSchema(Schema $schema): bool;
+
+	/**
+	 * Delete every object of one register and schema, in one transaction; an archival schema is refused.
+	 *
+	 * @param RegisterSchemaRef    $table   The register id and the schema id.
+	 * @param TableDeletionOptions $options Hard or soft, and the audit trigger (the bulk delete trigger when unset).
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ArchivalImmutableException If the schema declares `x-openregister-archival`.
+	 * @throws \Throwable If the register or schema cannot be resolved, or deletion fails.
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int} The deletion result.
+	 *
+	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+	 */
+	public function deleteObjectsBySchema(RegisterSchemaRef $table, TableDeletionOptions $options = new TableDeletionOptions()): array;
+
+	/**
+	 * Delete every object of every schema a register lists, in one transaction; any archival schema refuses the whole request.
+	 *
+	 * @param Register             $register The register whose objects are deleted.
+	 * @param TableDeletionOptions $options  Hard or soft, and the audit trigger (the bulk register delete trigger when unset).
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ArchivalImmutableException If any schema of the register is archival (nothing is deleted).
+	 * @throws \Throwable If a delete fails (everything is rolled back).
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int} The deletion result.
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
+	 */
+	public function deleteObjectsByRegister(Register $register, TableDeletionOptions $options = new TableDeletionOptions()): array;
 }//end interface

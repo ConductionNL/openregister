@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\Bindings\FlowBindings;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
@@ -33,6 +32,7 @@ use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\FlowUnattributedInterface;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -63,7 +63,7 @@ final class K11InterfaceBindingsTest extends TestCase {
 		FlowAdoptionRefused::class => [FlowAdoptionRefusedInterface::class, null],
 		FlowDeadEnd::class => [FlowDeadEndInterface::class, null],
 		FlowUnattributed::class => [FlowUnattributedInterface::class, null],
-		TaskCalendarDocument::class => [TaskCalendarDocumentInterface::class, FlowBindings::class],
+		TaskCalendarDocument::class => [TaskCalendarDocumentInterface::class, FlowWiring::class],
 	];
 
 	/**

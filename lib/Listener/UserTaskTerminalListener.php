@@ -76,8 +76,9 @@ class UserTaskTerminalListener implements IEventListener {
 			return;
 		}
 
+		// The event carries the Kernel task contract; only a task row belongs to a flow run.
 		$task = $event->getTask();
-		if (trim((string)$task->getRunUuid()) === '') {
+		if ($task instanceof Task === false || trim((string)$task->getRunUuid()) === '') {
 			return;
 		}
 

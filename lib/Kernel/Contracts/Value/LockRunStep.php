@@ -25,21 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * Which flow run took a lock, and from which node, as LockHandler::lock() was told.
+ * The published LockRunStep, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\LockRunStep, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
-final class LockRunStep {
-
-	/**
-	 * Constructor
-	 *
-	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock.
-	 * @param string|null $nodeId  Flow node that took it, recorded for the sweep.
-	 */
-	public function __construct(
-		public readonly ?string $runUuid,
-		public readonly ?string $nodeId,
-	) {
-	}//end __construct()
+final class LockRunStep extends \OCA\OpenRegister\Contract\LockRunStep {
 }//end class

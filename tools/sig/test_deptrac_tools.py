@@ -26,14 +26,37 @@ class AreasConfigTest(unittest.TestCase):
     def test_config_is_fresh(self):
         self.assertEqual(deptrac_areas.main(["--check"]), 0, "run python3 tools/sig/deptrac_areas.py")
 
-    def test_every_area_may_use_only_the_shared_area(self):
+    def test_every_area_may_use_the_areas_below_it(self):
         text = deptrac_areas.render()
         ruleset = text.split("  ruleset:\n", 1)[1]
         self.assertIn("    Kernel: ~\n", ruleset)
         self.assertEqual(ruleset.count("      - Kernel\n"), ruleset.count(":") - 1)
+        self.assertIn("    Core:\n      - Kernel\n    ", ruleset)
+        order = deptrac_areas.read_order()
+        top = order[-1]
+        self.assertIn(f"    {top}:\n" + "".join(f"      - {a}\n" for a in order[:-1]), ruleset)
 
     def test_patterns_drop_the_leading_wildcard_and_anchor_the_end(self):
         self.assertIn("value: 'lib/Kernel/.*$'", deptrac_areas.render())
+
+
+class BaselineTest(unittest.TestCase):
+    REPORT = {"files": {"/tmp/x/lib/Db/A.php": {"messages": [
+        {"message": "OCA\\X\\Db\\A must not depend on OCA\\X\\Service\\S (Core on Processes)", "line": 3},
+        {"message": "OCA\\X\\Db\\A must not depend on OCA\\X\\Service\\S (Core on Processes)", "line": 9},
+    ]}}}
+
+    def test_one_entry_per_class_pair(self):
+        self.assertEqual(deptrac_summary.violating_pairs(self.REPORT),
+                         ["Core -> Processes: OCA\\X\\Db\\A -> OCA\\X\\Service\\S"])
+
+    def test_a_new_pair_fails_and_a_gone_pair_is_a_notice(self):
+        pairs = deptrac_summary.violating_pairs(self.REPORT)
+        self.assertEqual(deptrac_summary.compare(pairs, pairs), ([], []))
+        self.assertTrue(deptrac_summary.compare([], pairs)[0][0].startswith("new deptrac violation"))
+        fail, note = deptrac_summary.compare(pairs, [])
+        self.assertEqual(fail, [])
+        self.assertIn("lower the baseline", note[0])
 
 
 class SummaryTest(unittest.TestCase):

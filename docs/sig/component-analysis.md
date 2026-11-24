@@ -1,222 +1,368 @@
 ---
-title: "Component analysis of the backend"
-description: "How the code in lib/ depends on itself, seen as directories and as functional areas, with the script and the deptrac rules that produce every number."
+title: "Componentanalyse van de backend"
+description: "Waarom de mappen in lib/ geen componenten zijn, welk Nextcloud-patroon daarachter zit, en hoe we de verstrengeling meten als componenten uit bestanden in verschillende mappen bestaan."
 sidebar_position: 4
 ---
 
-# Component analysis of the backend
+# Componentanalyse van de backend
 
-This page shows how the backend in `lib/` depends on itself. It reads the code in two ways: as the directories under `lib/`, and as functional areas. Every number comes from a script in this repository. You can run it on any commit and get the same numbers.
+Deze pagina legt uit hoe je de verstrengeling van de OpenRegister-backend meet. Eerst het probleem: twee beoordelingen die ver uit elkaar liggen. Daarna de oorzaak, het patroon dat Nextcloud voorschrijft, en een meetmethode die bij dat patroon past. Elk getal komt uit een script in deze repository. Je kunt het op elke commit draaien en krijgt dezelfde uitkomst.
 
-The measurements below are for commit `70e5570455` (main on 9 November 2026), unless a table says otherwise. A second tool, deptrac, checks the same rules independently.
+## Het probleem: twee beoordelingen van dezelfde code
 
-## Summary
+Bij de beoordeling van onderhoudbaarheid tellen twee maten per component:
 
-- The directories under `lib/` are roles, not components. Nextcloud decides where a class goes by what kind of class it is.
-- Seen as directories, 98.4% of the references between layers go downward or stay on one level. 249 references go upward, 1.6%.
-- Seen as functional areas, 64.5% of the code is hidden from other areas. Most area pairs reference each other in both directions.
-- The coupling is concentrated. The largest cycle of files holds 6.1% of `lib/`, built around `lib/Db/MagicMapper.php`.
+- **Componentonafhankelijkheid**: het deel van de code dat geen andere component aanroept, de verborgen code.
+- **Componentverstrengeling**: hoeveel lijnen er tussen componenten lopen, en welk deel daarvan de structuur breekt. Een lijn breekt de structuur als er ook een lijn terug loopt, als hij een kring sluit, of als hij een pad herhaalt dat er al is. Het gewicht van die lijnen gedeeld door het totaal heet de schendingsgraad.
 
-## Why the directories are roles
+Wat een component is, bepaalt dus de uitkomst. Wij hebben de mappen in de hoofdmap van de repository als componenten opgegeven: `lib/` is de backend, `src/` de frontend. [ADR-014](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-014-sig-components-are-top-level-directories.md) legt die keuze vast. SIG keek in `lib/` en nam elke map daaronder als component.
 
-OpenRegister is a Nextcloud app. Nextcloud's app framework fixes where most classes live:
+Ons eigen schattingsinstrument bootst de beoordelingsregels zo goed mogelijk na. Op main van 9 november geeft het:
 
-- A route in `appinfo/routes.php` names `setup#status`. Nextcloud resolves it to `OCA\OpenRegister\Controller\SetupController`, so every controller sits in `lib/Controller/`.
-- `appinfo/info.xml` registers 56 background jobs, 41 console commands and the repair steps by class name.
-- Database migrations live in `lib/Migration/` and are named `Version…`.
-- Composer maps the namespace `OCA\OpenRegister\` to `lib/`, so the namespace follows the directory.
+| Wat telt als component | Verborgen code | Onafhankelijkheid | Verstrengeling |
+|---|---|---|---|
+| De mappen in de hoofdmap (`lib/`, `src/`, `appinfo/` ...) | 100% | 5,5 sterren | 5,5 sterren |
+| Elke map onder `lib/` (`Controller`, `Service`, `Db` ...) | 89,7% | 2,6 sterren | 3,9 sterren (schendingsgraad 0,060) |
 
-So `lib/Controller/`, `lib/Service/` and `lib/Db/` hold a kind of class, not a capability. The flow capability, for example, has its controller in `lib/Controller/`, its services in `lib/Service/Flow/` and its mappers in `lib/Db/`.
+Met de backend als één component is er niets te meten: alle verwijzingen blijven binnen `lib/`. Met de mappen onder `lib/` zakken beide maten flink. SIG kwam op die tweede indeling tot een negatief oordeel over de verstrengeling.
 
-When every directory under `lib/` counts as a component, each controller calling its own service crosses a component boundary. So does each service calling its own mapper. That is layering, and in a layered design it is intended.
+Beide uitkomsten zeggen weinig over de echte koppeling. De eerste kijkt er niet naar. De tweede meet iets anders dan componenten, zoals de volgende paragraaf laat zien.
 
-## The directory view
+## De oorzaak: een map is in Nextcloud geen component
 
-| Measure | Value |
+Het beoordelingsinstrument gaat ervan uit dat de mappenstructuur de componenten laat zien. De richtlijn van SIG voor producenten (sectie 2.2) zegt dat componenten zichtbaar zijn in de broncode, "typically through the directory structure or through naming conventions". Bij veel systemen klopt dat: één map per functie.
+
+Een Nextcloud-app is anders opgebouwd. Nextcloud bepaalt de map van een klasse aan de hand van wat voor soort klasse het is, niet van wat ze doet:
+
+- Een route in `appinfo/routes.php` noemt `setup#status`. Nextcloud zoekt daarbij `OCA\OpenRegister\Controller\SetupController`. Elke controller staat dus in `lib/Controller/`.
+- Entiteiten en hun mappers staan in `lib/Db/`.
+- `appinfo/info.xml` registreert 56 achtergrondtaken en 41 consolecommando's op klassenaam.
+- Composer koppelt de namespace `OCA\OpenRegister\` aan `lib/`, dus de namespace volgt de map.
+
+Eén functie ligt daardoor verspreid over meerdere mappen. Neem flows: de controller staat in `lib/Controller/FlowController.php`, de logica in `lib/Service/Flow/` en de opslag in `lib/Db/`. Wie elke map als component telt, ziet bij elke aanroep van een controller naar zijn eigen service een lijn tussen twee componenten. Dat is geen verstrengeling. Zo hoort de laag eronder aangeroepen te worden.
+
+## Het patroon: gelaagdheid per rol
+
+De indeling van Nextcloud is een gelaagde architectuur, waarbij de mappen per laag zijn ingedeeld en niet per functie. Elke laag heeft een bekende naam:
+
+| Laag | Map | Patroon | Bron |
+|---|---|---|---|
+| Ingang | `lib/Controller/` | Controller | Nextcloud: "Controllers are defined inside the lib/Controller/ directory." ([Controllers](https://docs.nextcloud.com/server/latest/developer_manual/basics/controllers.html)) |
+| Logica | `lib/Service/` | Service Layer | Fowler: "Defines an application's boundary with a layer of services ..." ([Service Layer](https://martinfowler.com/eaaCatalog/serviceLayer.html)) |
+| Opslag | `lib/Db/` | Data Mapper, entiteit en repository | Nextcloud: "create an Entity and a Repository class for it", met als voorbeeld `lib/Db/AuthorMapper.php` ([Database access](https://docs.nextcloud.com/server/latest/developer_manual/basics/storage/database.html)); Fowler: [Data Mapper](https://martinfowler.com/eaaCatalog/dataMapper.html) |
+
+De functionele component zit in de naam, niet in de map. `FlowController`, `FlowService` en `FlowMapper` horen bij elkaar. Dat is de naamgevingsconventie die de richtlijn als tweede herkenningsteken noemt.
+
+Martin Fowler beschrijft precies deze situatie in [Presentation Domain Data Layering](https://martinfowler.com/bliki/PresentationDomainDataLayering.html). Bij een grotere applicatie is het volgens hem "usually not best to use presentation-domain-data as the higher level of modules". Zijn advies: "split your top level into domain oriented modules which are internally layered."
+
+Dat is de indeling die we hieronder meten. De componenten zijn functionele gebieden, en elk gebied is van binnen gelaagd. De mappen blijven staan zoals Nextcloud ze voorschrijft.
+
+## De meetmethode: componenten die over mappen heen lopen
+
+Een component is in deze methode een verzameling bestanden die bij één functie horen, in welke map ze ook staan. Het bestand `sigrid.components.yaml` legt tien gebieden vast als bestandspatronen:
+
+| Gebied | Wat erin zit |
 |---|---|
-| Components (directories under `lib/`) | 38 |
-| Largest component | `lib/Service`, 54.4% of the code |
-| Hidden code | 88.7% |
-| Communication lines | 194 |
-| Violation degree | 0.0646 |
+| Kernel | Contracten, waardeobjecten, de kernentiteiten `ObjectEntity`, `Schema` en `Register`, gedeelde events en exceptions |
+| Core | Objecten, schema's, registers, relaties, historie, toegangsregels, organisaties, delen, `MagicMapper` |
+| Processes | Flows, BPMN en DMN, regels, berekeningen, taken, zaken, formulieren, levenscyclus |
+| Configuration | Configuratiepakketten, import en export, voorbeeldsets, instellingen, reparatiestappen |
+| Compliance | Archivering, e-Depot, bewaartermijnen, vernietiging, AVG, audittrail, anonimisering |
+| Integrations | MCP, app-hosting, GraphQL- en API-clients, agenda, contacten, DAV, federatie, webhooks |
+| Files | Bestandsopslag, tekstextractie |
+| Search | Zoeken, facetten, aggregaties, vectorisatie, weergaven |
+| Notifications | Meldingen, web push, activiteit |
+| Platform | Opstarten, middleware, capabilities, dashboard, instellingenpagina's |
 
-The hidden share looks high for one reason: `lib/Service` holds more than half of the code in a single component. Most service-to-service calls therefore stay inside it.
+Het gebied Processes pakt zo de bestanden van flows samen uit drie mappen: `FlowController` in een patroon op `lib/Controller/`, alles onder `lib/Service/Flow/` en de opslag onder `lib/Db/FlowRun/`. Het beoordelingsinstrument kent dit formaat: een `components:`-blok met per component een lijst `include`-patronen ([scope-configuratie](https://docs.sigrid-says.com/reference/analysis-scope-configuration.html)).
 
-### Layering
+`scripts/component-patterns.py` maakt het bestand aan uit `scripts/component-map.csv`, waarin elk bestand een gebied heeft. `tests/Unit/Architecture/ComponentDefinitionTest.php` controleert dat elk PHP-bestand onder `lib/` in precies één gebied valt.
 
-The script gives each file a role from the first directory below `lib/` that has a layer name:
+Binnen elk gebied geldt de gelaagdheid. Een ingang mag een service, de opslag en gedeelde typen gebruiken. Een service mag de opslag en gedeelde typen gebruiken. De opslag mag alleen gedeelde typen gebruiken. [ADR-013](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-013-component-dependency-rules.md) legt die regels vast.
 
-| Role | Directories |
-|---|---|
-| Entry point | `Controller`, `Command`, `Listener`, `BackgroundJob`, `Repair`, `Middleware`, `Settings`, `Sections`, `Dashboard`, `Capabilities` |
-| Service | `Service` |
-| Persistence | `Db` |
-| Shared type | `Event`, `Exception`, `Kernel`, `Contract`, `Dto`, `Support`, `Formats` |
+## Het meetinstrument
 
-`lib/Files/Controller/X.php` is therefore an entry point, and `lib/Search/Db/View.php` is persistence. `lib/AppInfo` is the bootstrap and has no layer.
+We meten met twee hulpmiddelen die elkaar controleren.
 
-A reference goes downward when an entry point uses a service, persistence or a shared type, a service uses persistence or a shared type, or persistence uses a shared type. On the snapshot:
+### Het script
 
-| Direction | References | Share |
+Het script is [`tools/sig/analyse_dependencies.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/analyse_dependencies.py). Het heeft alleen Python 3 nodig. Het leest de afhankelijkheden en telt de regels code zoals [`tools/sig/check_sig_maintainability.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/check_sig_maintainability.py) dat doet, het schattingsinstrument dat onze kwaliteitscontrole draait.
+
+Zo werkt het:
+
+1. **Bestanden.** Elk PHP-bestand onder `lib/` is een knoop. `lib/Migration/` blijft buiten beschouwing, net als bij de beoordeling.
+2. **Verwijzingen.** Bestand A hangt af van bestand B als A de klasse van B noemt: in een `use`-regel, met de volledige naam, of met de korte naam in dezelfde namespace. Commentaar telt niet mee. Elk paar bestanden telt één keer.
+3. **Componenten.** Het script deelt de bestanden twee keer in: per map onder `lib/`, en per functioneel gebied uit `sigrid.components.yaml`.
+4. **Maten.** Per indeling berekent het de verborgen code, de lijnen tussen componenten en de schendingsgraad, volgens de gepubliceerde beschrijving van beide maten.
+5. **Lagen.** Elk bestand krijgt een rol uit de eerste map met een laagnaam: ingang, service, opslag of gedeeld type. Elke verwijzing gaat dan omlaag, blijft op hetzelfde niveau, of gaat omhoog.
+6. **Kringen.** Het script zoekt de groepen bestanden die elkaar in een kring aanroepen, met het algoritme van Tarjan. Van de grootste groep geeft het de bestanden en de verwijzingen omhoog.
+
+Met `--rev` meet het een oudere commit. Het pakt dan `lib/` van die commit uit met `git archive`. Een bestand dat de huidige indeling niet meer kent, krijgt het gebied van de meeste bestanden in zijn map.
+
+Het script leest tekst met reguliere expressies en is geen PHP-parser. De beoordeling kan een enkele verwijzing anders plaatsen. De getallen zijn een herhaalbare lezing van de code, geen officiële uitslag. [`tools/sig/test_analyse_dependencies.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/test_analyse_dependencies.py) test het script op een kleine `lib/` waarin je elke telling met de hand kunt narekenen.
+
+### deptrac als tweede lezing
+
+[deptrac](https://github.com/deptrac/deptrac) is een open source tool die afhankelijkheidsregels in PHP-code controleert, met een echte PHP-parser. Wij gebruiken versie 4.7 met twee regelsets:
+
+- [`tools/sig/deptrac/layers.yaml`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/deptrac/layers.yaml): de vier lagen, met dezelfde rolregel als het script.
+- [`tools/sig/deptrac/areas.yaml`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/deptrac/areas.yaml): de tien gebieden, gemaakt uit `sigrid.components.yaml` door `tools/sig/deptrac_areas.py`. Elk gebied mag Kernel gebruiken. Elke andere verwijzing tussen gebieden wordt gemeld.
+
+deptrac telt op twee punten anders. Het meldt elke regel die een verboden klasse noemt, niet één melding per paar bestanden. En het geeft een klasse ook de afhankelijkheden van haar ouderklassen en traits. [`tools/sig/deptrac_summary.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/deptrac_summary.py) telt daarom ook de verschillende klassenparen, zodat je beide tools kunt vergelijken.
+
+## De uitkomsten
+
+De metingen zijn van commit `70e5570455`, main op 9 november 2026: 5.387 bestanden en 394.863 regels code.
+
+### De lagen houden
+
+| Richting van de verwijzing | Aantal | Aandeel |
 |---|---|---|
-| Downward | 6,401 | 39.9% |
-| Same level | 9,389 | 58.5% |
-| Upward | 249 | 1.6% |
+| Omlaag | 6.401 | 39,9% |
+| Op hetzelfde niveau | 9.389 | 58,5% |
+| Omhoog | 249 | 1,6% |
 
-The 249 upward references, by kind:
+98,4% van de verwijzingen volgt de gelaagdheid. De 249 verwijzingen omhoog:
 
-| Upward reference | Count | What it is |
+| Verwijzing omhoog | Script: bestandsparen | deptrac: klassenparen | Wat het is |
+|---|---|---|---|
+| Opslag naar service | 153 | 209 | Vooral `MagicMapper` die toegangsregels, objectbeleid en querycontroles in `lib/Service/` aanroept |
+| Gedeeld type naar opslag | 54 | 93 | Events en contracten die een entiteit dragen, zoals `ObjectEntity` of `Schema` |
+| Service naar ingang | 23 | 23 | Services die een achtergrondtaak op klassenaam inplannen |
+| Gedeeld type naar service | 17 | 17 | Hulpbundels in `Support/` die een service-interface noemen |
+| Opslag naar ingang | 1 | 1 | `MagicMapper` die `JobHandles` noemt |
+| Gedeeld type naar ingang | 1 | 1 | `ObjectEventSubscription` die een listener-interface noemt |
+
+deptrac vindt meer klassenparen door overerving en traits. `DraftUpdatedEvent` breidt `ObjectUpdatedEvent` uit en noemt zelf niets. deptrac meldt er toch `ObjectEntity` voor. De soorten verwijzing en hun volgorde zijn in beide tools gelijk.
+
+### De functionele gebieden laten de echte koppeling zien
+
+| Maat | Per map onder `lib/` | Per functioneel gebied |
 |---|---|---|
-| Persistence to service | 153 | Mostly `MagicMapper` and its handlers calling access rules, object policy and query guards in `lib/Service/` |
-| Shared type to persistence | 54 | Events and contracts that carry an entity, such as `ObjectEntity` or `Schema` |
-| Service to entry point | 23 | Services that queue a background job by class |
-| Shared type to service | 17 | Helper bundles in `Support/` that name a service interface |
-| Persistence to entry point | 1 | `MagicMapper` naming `JobHandles` |
-| Shared type to entry point | 1 | `ObjectEventSubscription` naming a listener interface |
+| Componenten | 38 | 10 |
+| Grootste component | `lib/Service`, 54,4% van de code | Core, 33,3% van de code |
+| Verborgen code | 88,7% | 64,5% |
+| Lijnen tussen componenten | 194 | 81 |
+| Schendingsgraad | 0,065 | 0,194 |
 
-Shared types referencing the three core entities is allowed by design. ADR-013 records that rule.
+De indeling per map oogt gunstiger, om één reden: `lib/Service` bevat meer dan de helft van de code. Bijna alle aanroepen tussen services blijven daardoor binnen één component, ook als ze tussen twee functies lopen.
 
-## The functional view
+De indeling per gebied telt die aanroepen wel. Dan blijkt dat de gebieden elkaars concrete klassen en entiteiten direct gebruiken. De meeste paren verwijzen in beide richtingen naar elkaar:
 
-The functional view groups files by what they do. A controller, its services, its mapper, its entity, its events and its jobs belong to one area. `sigrid.components.yaml` defines the ten areas as file patterns over the unchanged layout. `scripts/component-patterns.py` generates that file from `scripts/component-map.csv`, and `tests/Unit/Architecture/ComponentDefinitionTest.php` checks that every PHP file under `lib/` matches exactly one area.
-
-| Area | What it holds |
-|---|---|
-| Kernel | Contracts, value objects, the core entities `ObjectEntity`, `Schema` and `Register`, shared events and exceptions |
-| Core | Objects, schemas, registers, relations, history, access rules, organisations, sharing, `MagicMapper` |
-| Processes | Flows, BPMN and DMN, rules, calculations, tasks, cases, forms, lifecycle transitions |
-| Configuration | Configuration packages, import and export, example sets, settings, repair steps |
-| Compliance | Archiving, e-Depot, retention, deletion, GDPR, audit trail, anonymisation |
-| Integrations | MCP, app hosting, GraphQL and API clients, calendar, contacts, DAV, federation, webhooks |
-| Files | File storage, text extraction |
-| Search | Search, facets, aggregations, vectorisation, views |
-| Notifications | Notifications, web push, activity |
-| Platform | Bootstrap, middleware, capabilities, dashboard, settings pages |
-
-| Measure | Value |
-|---|---|
-| Components (areas) | 10 |
-| Largest component | Core, 33.3% of the code |
-| Hidden code | 64.5% |
-| Communication lines | 81 |
-| Violation degree | 0.194 |
-
-This view shows the real coupling more plainly than the directory view. Areas use each other's concrete classes and entities directly. Most pairs of areas reference each other in both directions:
-
-| Pair | References each way | Most used in the lighter direction |
+| Paar | Verwijzingen heen / terug | Meest gebruikt in de lichtere richting |
 |---|---|---|
 | Core / Processes | 250 / 234 | `Db/TypedFieldsJsonTrait`, `Db/AuditTrailMapperInterface`, `Db/MagicMapperInterface` |
 | Core / Integrations | 189 / 313 | `Db/AccessLink`, `Db/Source`, `Service/LinkTarget` |
 | Compliance / Core | 193 / 156 | `Db/AuditTrail`, `Service/AuthorizationAuditService`, `Service/Audit/PurposeGuardInterface` |
 | Configuration / Core | 534 / 108 | `Service/ConfigurationServiceInterface`, `Service/LanguageService`, `Service/Export/ExportGateInterface` |
-| Core / Kernel | 1,575 / 80 | `Event/AbstractObjectEntityEvent`, `Event/AbstractSchemaEvent`, `Event/AbstractPersonLinkEvent` |
+| Core / Kernel | 1.575 / 80 | `Event/AbstractObjectEntityEvent`, `Event/AbstractSchemaEvent`, `Event/AbstractPersonLinkEvent` |
 
-The full list per commit is in its `report.md`, linked under [Results](#results).
+deptrac telt op de gebieden 8.310 meldingen, verdeeld over 3.925 klassenparen.
 
-## Where the coupling is
+### De koppeling zit op één plek
 
-91 sets of files reference each other in a cycle, 434 files in all. Most sets have two to five files. One set is much larger: 190 files and 23,989 lines, 6.1% of `lib/`.
+91 groepen bestanden roepen elkaar in een kring aan, samen 434 bestanden. De meeste groepen hebben twee tot vijf bestanden. Eén groep is veel groter: 190 bestanden en 23.989 regels code, 6,1% van `lib/`.
 
-That set holds `lib/Db/MagicMapper/` (54 files), `lib/Service/Rbac/` (27), the object events (16), `lib/Service/Object/` (14), the background jobs that run object work (12) and `lib/Service/Lifecycle/` (11). `MagicMapper.php` alone has 50 references inside the set. 49 references inside the set go upward a layer. Those are the references that close the cycle: the persistence layer calling access rules, object policy, events and jobs.
+Die groep bevat `lib/Db/MagicMapper/` (54 bestanden), `lib/Service/Rbac/` (27), de object-events (16), `lib/Service/Object/` (14), de achtergrondtaken voor objecten (12) en `lib/Service/Lifecycle/` (11). `MagicMapper.php` heeft alleen al 50 verwijzingen binnen de groep. 49 verwijzingen in de groep gaan een laag omhoog, en die sluiten de kring: de opslag die toegangsregels, objectbeleid, events en taken aanroept.
 
-So most of the upward references and most of the cyclic coupling have one source. That source is the object store and its access checks.
+De meeste verwijzingen omhoog en de grootste kring hebben dus één bron: de objectopslag en de toegangscontroles daarop.
 
-## The same analysis on later commits
+### Latere commits
 
-| Commit | Files | Lines | Directory view: hidden / violation degree | Functional view: hidden / violation degree | Upward references | Largest cycle |
+| Commit | Bestanden | Regels code | Per map: verborgen / schendingsgraad | Per gebied: verborgen / schendingsgraad | Omhoog | Grootste kring |
 |---|---|---|---|---|---|---|
-| `70e5570455` (9 Nov) | 5,387 | 394,863 | 88.7% / 0.0646 | 64.5% / 0.194 | 249 (1.6%) | 190 files, 6.1% |
-| `d20a7aee8c` (10 Nov) | 6,846 | 414,315 | 89.4% / 0.0505 | 64.9% / 0.188 | 255 (1.3%) | 230 files, 5.9% |
-| `29890847e7` (17 Nov) | 7,482 | 458,606 | 85.2% / 0.0554 | 62.5% / 0.194 | 302 (1.4%) | 280 files, 6.7% |
+| `70e5570455` (9 nov) | 5.387 | 394.863 | 88,7% / 0,065 | 64,5% / 0,194 | 249 (1,6%) | 190 bestanden, 6,1% |
+| `d20a7aee8c` (10 nov) | 6.846 | 414.315 | 89,4% / 0,051 | 64,9% / 0,188 | 255 (1,3%) | 230 bestanden, 5,9% |
+| `29890847e7` (17 nov) | 7.482 | 458.606 | 85,2% / 0,055 | 62,5% / 0,194 | 302 (1,4%) | 280 bestanden, 6,7% |
 
-## How the script works
+De huidige indeling kent een paar bestanden van de oudere commits niet meer. Het script deelde die in op hun map: 4 op 9 november, 7 op 10 november.
 
-The script is `tools/sig/analyse_dependencies.py`. It uses the dependency reader and the line counter of `tools/sig/check_sig_maintainability.py`, the estimate tool our quality gate runs. Both live in `tools/`, which `sigrid.yaml` excludes from the analysed code.
+## Wat dit betekent voor de beoordeling
 
-### The graph
+Eerst iets over onszelf. De audit van SIG is de eerste keer dat we de koppeling binnen de backend op deze manier hebben doorgemeten. Onze eigen controles keken naar de lagen (ADR-013), niet naar de functionele gebieden. Deze pagina is dus ook voor ons een les: de lagen houden, en de gebieden zitten nog aan elkaar vast.
 
-- **Nodes.** One node per PHP file under `lib/`. `lib/Migration/` is left out, because Sigrid excludes migrations by default.
-- **Edges.** File A depends on file B when A names B's class in a `use` import, a fully qualified name, or a bare name in A's own namespace. Comments are stripped first, so a class named in a docblock does not count. One edge per pair of files, however often the name appears.
-- **Lines of code.** Lines that hold code, without blank lines and comments, counted as the estimate tool counts them.
+### De schatting per indeling
 
-### The measures
+SIG publiceert alleen de grenzen voor 4 sterren. Ons scoreprogramma schat de rest, op een schaal van 0,5 tot 5,5. De getallen zijn dus een schatting, geen uitslag van SIG. Gemeten op main van 18 november (`d356db5b71`):
 
-- **Hidden code.** The lines of files that no file in another component references, as a share of all lines.
-- **Communication lines.** The pairs of components with at least one reference between them, per direction. The weight of a line is the number of file-to-file references.
-- **Violation degree.** The weight of the lines that break the expected structure, divided by the total weight. A line is a violation when the reverse line exists, when it is the weakest line of a longer cycle, or when a lighter direct line repeats a path that exists anyway. This follows the published description of component entanglement. The page reports the inputs, not star ratings, because the benchmark normalisation is not public.
-- **Layering.** Each file gets the role of the first layer-named directory on its path, as in the table above. Every edge between two files with a role is downward, same level or upward.
-- **Cycles.** The strongly connected sets of files (Tarjan's algorithm). For the largest set the script lists the files, their directories and areas, and the upward references inside it.
-- **Areas.** Per area: lines, exposed lines, references inside the area, references out and in, and the pairs of areas that reference each other both ways.
+| Wat telt als component | Onafhankelijkheid | Verstrengeling | Modulariteit | Totaal |
+|---|---|---|---|---|
+| A. `lib/` als geheel (onze opgave, ADR-014) | 5,5 | 5,5 | 5,35 | 5,12 |
+| B. Elke map onder `lib/` | 2,15 | 4,02 | 3,74 | 4,37 tot 4,47 |
+| C. De tien functionele gebieden | 1,30 | 2,21 | 2,85 | 3,96 tot 4,20 |
+| D. Gebieden, met objectopslag en toegang als gedeeld fundament | 1,31 | 2,01 | 2,79 | 3,93 tot 4,19 |
+| E. Als D, maar het fundament wijst niet terug naar de gebieden | 1,37 | 3,45 | 3,29 | 4,12 tot 4,30 |
 
-### Older commits
+Variant A zegt niets over de koppeling: met één component is er niets om tussen te meten. Variant C is de eerlijke meting volgens het patroon van Fowler. Variant E is een simulatie, geen bestaande code.
 
-`--rev` exports `lib/` of a commit with `git archive` into a temporary directory and measures that. The functional definition always comes from today's `sigrid.components.yaml`. A file it does not match (it moved or was deleted since) gets the area of most files in its directory. The report counts those files: 4 on `70e5570455`, 7 on `d20a7aee8c`, none on `29890847e7`.
+### Een gewenste afhankelijkheid kost niets
 
-### Limits
+Alle gebieden gebruiken de objectopslag en de toegangscontroles. Dat is zo bedoeld: het is kritische code die we niet dubbel willen hebben. De verstrengeling telt zo'n afhankelijkheid ook niet als fout. Een verbinding is alleen een fout als er ook een terug loopt, als hij een kring sluit, of als hij een pad herhaalt dat er al is.
 
-- The reader works on text with regular expressions. It is not a PHP parser.
-- A class that extends another class or uses a trait does not inherit that class's references. The parent or the trait carries them once.
-- Sigrid's own reader may place a few references differently. These numbers are a reproducible reading of the code, not Sigrid's result.
+Daarom hebben we in variant D de objectopslag en de toegangscontroles (het gebied Core) samengevoegd met Kernel tot één fundament. De verstrengeling wordt daar slechter van, niet beter. Het fundament verwijst zelf terug naar alle acht andere gebieden, in 1.210 verwijzingen tussen bestanden:
 
-`tools/sig/test_analyse_dependencies.py` tests the script on a small `lib/` written by the test, where every count can be checked by hand.
+| Fundament verwijst naar | Verwijzingen | Voorbeelden |
+|---|---|---|
+| Processes | 334 | `Db/Task`, `BulkAction/BulkActionInterface` |
+| Integrations | 245 | `Db/Source`, `Db/FederatedShare`, `Db/AccessLink` |
+| Compliance | 244 | `Db/AuditTrail` en de audit-events |
+| Configuration | 150 | `Db/Configuration`, `Service/LanguageService` |
+| Search | 92 | `Db/RegisterSchema`, `Search/Db/ViewMapperInterface` |
+| Files | 60 | `Files/Db/FileMapperInterface` |
+| Platform | 58 | `AppInfo/Application` |
+| Notifications | 27 | `Notifications/Db/WatcherMapperInterface` |
 
-## The deptrac check
+Elk van die terugverwijzingen maakt van een gewenste afhankelijkheid een verbinding die heen en terug loopt. Zonder die terugverwijzingen (variant E) stijgt de verstrengeling van 2,01 naar 3,45. Wat dan nog fout telt, zijn kringen tussen de andere gebieden onderling, zoals Compliance en Processes.
 
-[deptrac](https://github.com/deptrac/deptrac) is an open source tool that checks dependency rules between layers of PHP code. It parses the code with a real PHP parser. That makes it a second, independent reading of the same rules.
+### Onafhankelijkheid telt elk gedeeld bestand
 
-- `tools/sig/deptrac/layers.yaml` holds the layering rules: entry point, service, persistence, shared type. It uses the same role rule as the script.
-- `tools/sig/deptrac/areas.yaml` holds the ten areas, generated from `sigrid.components.yaml` by `tools/sig/deptrac_areas.py`. Every area may use Kernel. Every other reference between areas is reported.
+De onafhankelijkheid blijft in elke functionele indeling rond 1,3. Deze maat telt elk bestand waar een ander gebied naar verwijst als zichtbaar, ook als dat zo bedoeld is. In variant C is 37,5% van de code zichtbaar:
 
-deptrac counts differently in two ways. It reports every line that names a forbidden class, not one per file pair. It also gives a class the dependencies of its parent classes and traits. To compare, `tools/sig/deptrac_summary.py` counts distinct class pairs as well.
-
-| Upward reference (layers, `70e5570455`) | Script: file pairs | deptrac: class pairs | deptrac: lines |
+| Soort bestand | Bestanden | Regels code | Aandeel van de backend |
 |---|---|---|---|
-| Persistence to service | 153 | 209 | 499 |
-| Shared type to persistence | 54 | 93 | 532 |
-| Service to entry point | 23 | 23 | 39 |
-| Shared type to service | 17 | 17 | 58 |
-| Persistence to entry point | 1 | 1 | 1 |
-| Shared type to entry point | 1 | 1 | 2 |
+| Concrete klasse | 1.479 | 141.213 | 30,8% |
+| Mapper | 90 | 8.960 | 2,0% |
+| Interface | 821 | 8.723 | 1,9% |
+| Entiteit | 68 | 5.797 | 1,3% |
+| Exception | 141 | 4.627 | 1,0% |
+| Event | 106 | 1.772 | 0,4% |
+| Trait | 30 | 703 | 0,2% |
 
-The extra class pairs in deptrac come from inheritance and traits. For example, `DraftUpdatedEvent` extends `ObjectUpdatedEvent` and names nothing itself. deptrac still reports `ObjectEntity` for it. `RegisterMapper` uses `TenancyIdentityTrait`, and deptrac reports the trait's service interface for the mapper. The kinds of upward reference and their order are the same in both tools.
+Het script deelt de bestanden in op hun declaratie en naam. Een entiteit die niet direct `Entity` uitbreidt, telt daardoor als concrete klasse. Het grootste deel zijn concrete klassen die andere gebieden direct gebruiken, zonder een smalle interface ertussen.
 
-## Reproduce
+### Conclusie
 
-From the repository root:
+De koppeling naar de objectopslag en de toegangscontroles is gewenst, en die kost in deze meting niets. Wat wel kost, zijn twee dingen:
+
+- de objectopslag verwijst terug naar entiteiten en interfaces van andere gebieden;
+- gebieden gebruiken elkaars concrete klassen in plaats van een smalle interface.
+
+Beide zijn echte bevindingen over de code. Ze komen niet voort uit de manier van meten.
+
+### Wat een hogere score vraagt
+
+In ons scoreprogramma hoort bij elk niveau een grens voor de zichtbare code en voor de schendingsgraad. Voor de tien functionele gebieden, op een backend van 458.590 regels:
+
+| Niveau | Zichtbare code | Schendingsgraad |
+|---|---|---|
+| Vandaag | 37,5% (171.795 regels) | 0,194 |
+| 4,0 | hoogstens 4,1% (ongeveer 18.900 regels) | hoogstens 0,056 |
+| 4,5 | hoogstens 2,75% (ongeveer 12.600 regels) | hoogstens 0,0375 |
+| 5,0 | hoogstens 1,4% (ongeveer 6.300 regels) | hoogstens 0,019 |
+| 5,5 | niets | 0 |
+
+5,5 is de bovenkant van de schaal. Daar is geen enkel bestand zichtbaar voor een ander component en telt geen enkele verbinding als fout. Dat kan alleen als de backend één component is, en die indeling meet niets. 5,5 is dus geen zinvol doel.
+
+Per gebied is vandaag zichtbaar:
+
+| Gebied | Regels code | Zichtbaar voor andere gebieden |
+|---|---|---|
+| Core | 154.967 | 67.182 |
+| Processes | 84.862 | 38.513 |
+| Integrations | 55.846 | 20.258 |
+| Compliance | 34.940 | 17.832 |
+| Configuration | 56.686 | 10.651 |
+| Kernel | 9.059 | 8.079 |
+| Files | 18.732 | 3.741 |
+| Search | 15.131 | 2.286 |
+| Notifications | 19.855 | 1.734 |
+| Platform | 8.512 | 1.519 |
+
+Kernel is bedoeld als gedeelde basis en is dus bijna helemaal zichtbaar: 8.079 regels. Voor 4,5 blijft er dan ongeveer 4.500 regels over voor de publieke toegang van alle andere gebieden samen. Een interface per klasse past daar niet in: alleen de interfaces van vandaag zijn al 8.723 regels.
+
+### Wat dat vraagt van de code
+
+Binnen het patroon van Fowler komt het neer op vier veranderingen:
+
+1. **Eén smalle toegang per gebied.** Andere gebieden gebruiken een paar interfaces van een gebied, niet zijn concrete klassen. Bij Fowler is de Service Layer precies die grens van een module.
+2. **Entiteiten gaan niet over de grens.** Een gebied geeft een id of een eenvoudig dataobject door. Een entiteit die echt gedeeld is, hoort in het fundament.
+3. **Het fundament wijst nooit terug.** Het fundament definieert events en interfaces. De gebieden haken daarop in via de event dispatcher en de registratie in de container van Nextcloud.
+4. **Gebieden verwijzen in één richting.** Twee gebieden verwijzen niet allebei naar elkaar. De andere richting loopt via een event.
+
+Punt 3 en 4 bepalen de verstrengeling. Punt 1 en 2 bepalen de onafhankelijkheid, en daar zit het meeste werk.
+
+### Is deze manier van meten gerechtvaardigd?
+
+Grotendeels wel, als de componenten functioneel zijn:
+
+- **De principes zijn degelijk.** Onafhankelijkheid meet information hiding (Parnas, 1972). Verstrengeling meet of afhankelijkheden een kring vormen, wat het acyclic dependencies principle van Robert C. Martin verbiedt. Ook het advies van Fowler vraagt om smalle grenzen tussen modules.
+- **De bevindingen zijn echt.** Het fundament wijst terug, en gebieden gebruiken elkaars concrete klassen. Dat zien we ook zonder sterren.
+- **Elke map als component is voor Nextcloud niet gerechtvaardigd.** Die indeling meet de lagen, niet de componenten.
+
+Er zijn drie kanttekeningen:
+
+- **Een bedoeld gedeeld bestand telt even zwaar als een ongewenst gedeeld bestand.** Ook een interface telt als zichtbaar. Volgens het stable dependencies principle van Martin is afhankelijk zijn van een stabiel fundament juist goed.
+- **Het is alles of niets per bestand.** Eén verwijzing van buiten maakt het hele bestand zichtbaar.
+- **Het blijft een schatting.** SIG publiceert alleen de grenzen voor 4 sterren, niet de omrekening daaromheen.
+
+Ons doel is daarom 4 in de functionele indeling, en daarna 4,5. Niet 5,5.
+
+## Wat het onderhoud kost
+
+Een sterrenbeoordeling zegt hoe moeilijk de code te veranderen is. Wie OpenRegister gebruikt, betaalt voor iets anders: het onderhoud. Daarom kijken we ook naar wat het onderhoud werkelijk kost.
+
+| | Per jaar |
+|---|---|
+| Ontwikkeling en techniek | 2,5 fte |
+| Inzet vanuit de overheid | 0,5 fte |
+| Totaal | 3 fte |
+
+De herbouwwaarde van OpenRegister schatten we zelf op 60 persoonsjaren. Dat is onze eigen schatting; SIG berekent een eigen herbouwwaarde uit het volume van de code.
+
+3 fte per jaar is 5% van die herbouwwaarde. Eén fte houdt dus 20 persoonsjaren aan herbouwwaarde draaiende.
+
+Bij dezelfde code bepaalt de beheerpartij hoeveel mensen dat kost. Bij ons hangt die efficiëntie van twee dingen af:
+
+- **De kwaliteit van de code.** Wat deze pagina meet: hoe los de gebieden van elkaar staan, en hoeveel een wijziging raakt.
+- **De code factory.** Agents bouwen de code, met een spec, een ADR en een scherm vooraf, en gates en tests achteraf. De ontwikkelaar beslist en merget. [De code factory](https://docs.conduction.nl/WayOfWork/spec-driven-development) beschrijft hoe dat werkt.
+
+Daarbovenop telt hoeveel codebases er zijn en hoeveel partijen de kosten delen. OpenRegister is één kern voor veel registers, die meerdere organisaties samen gebruiken. [Three ways to look at maintainability](https://docs.conduction.nl/WayOfWork/development-pipeline#three-ways-to-look-at-maintainability) werkt die afweging uit.
+
+Het plan op deze pagina verbetert de eerste factor. Elke stap maakt een wijziging kleiner, en dus het onderhoud goedkoper.
+
+## Zelf nameten
+
+Vanuit de hoofdmap van de repository:
 
 ```bash
-# The script: needs Python 3, nothing else.
-python3 tools/sig/analyse_dependencies.py --rev 70e5570455 --out /tmp/analysis-70e5570455
+# Het script: alleen Python 3 nodig.
+python3 tools/sig/analyse_dependencies.py --rev 70e5570455 --out /tmp/analyse-70e5570455
 
-# deptrac: install it once, then run both rule sets.
+# deptrac: eenmalig installeren, dan beide regelsets draaien.
 composer --working-dir=vendor-bin/deptrac install
-tools/sig/deptrac.sh layers --rev 70e5570455 --out /tmp/analysis-70e5570455
-tools/sig/deptrac.sh areas --rev 70e5570455 --out /tmp/analysis-70e5570455
+tools/sig/deptrac.sh layers --rev 70e5570455 --out /tmp/analyse-70e5570455
+tools/sig/deptrac.sh areas --rev 70e5570455 --out /tmp/analyse-70e5570455
 
-# The tests of the script.
+# De schatting per indeling: eerst het volledige rapport, dan de vijf varianten.
+python3 tools/sig/check_sig_maintainability.py report . --json /tmp/rapport.json
+python3 tools/sig/rate_component_views.py --report /tmp/rapport.json --json /tmp/varianten.json
+
+# De tests van de scripts.
 python3 -m unittest discover -s tools/sig -p 'test_*.py'
 ```
 
-Without `--rev` both tools measure the working tree. The script takes about 15 seconds. Each deptrac run takes under a minute.
+Zonder `--rev` meten beide tools de werkmap. Het script doet er ongeveer 15 seconden over, elke deptrac-run minder dan een minuut. Het volledige rapport duurt ongeveer drie minuten, [`tools/sig/rate_component_views.py`](https://github.com/ConductionNL/openregister/blob/main/tools/sig/rate_component_views.py) daarna een paar seconden.
 
-## Results
+## Resultaten
 
-Each directory holds the output of both tools for one commit:
+Per commit staat de uitvoer van beide tools in een eigen map:
 
-- `report.md`: the tables of this page
-- `results.json`: every number, including the full lists of upward references and cycle members
-- `areas.dot`: the area graph for Graphviz, with two-way pairs in red
-- `deptrac-layers.json`, `deptrac-areas.json`: the deptrac counts per pair of layers or areas
+- `report.md`: de tabellen van deze pagina
+- `results.json`: alle getallen, met de volledige lijsten van verwijzingen omhoog en van de bestanden in de kring
+- `areas.dot`: de graaf van de gebieden voor Graphviz, met de paren die in beide richtingen verwijzen in rood
+- `deptrac-layers.json`, `deptrac-areas.json`: de tellingen van deptrac per paar lagen of gebieden
 
-| Commit | Results |
+| Commit | Resultaten |
 |---|---|
-| `70e5570455`, main on 9 November 2026 | [report](./dependency-analysis/70e5570455/report.md) |
-| `d20a7aee8c`, main on 10 November 2026 | [report](./dependency-analysis/d20a7aee8c/report.md) |
-| `29890847e7`, main on 17 November 2026 | [report](./dependency-analysis/29890847e7/report.md) |
+| `70e5570455`, main op 9 november 2026 | [rapport](./dependency-analysis/70e5570455/report.md) |
+| `d20a7aee8c`, main op 10 november 2026 | [rapport](./dependency-analysis/d20a7aee8c/report.md) |
+| `29890847e7`, main op 17 november 2026 | [rapport](./dependency-analysis/29890847e7/report.md) |
+| `d356db5b71`, main op 18 november 2026 | [schatting per indeling](https://github.com/ConductionNL/openregister/blob/main/docs/sig/dependency-analysis/d356db5b71/rating-views.json) |
 
-## Related
+## Zie ook
 
-- [Maintainability questionnaire](./maintainability.md), question 16: the components and how they connect
-- `ARCHITECTURE.md`: the component description of the repository
-- `openspec/architecture/adr-012-functional-components-over-the-nextcloud-layout.md`: the functional areas
-- `openspec/architecture/adr-013-component-dependency-rules.md`: the layering rules
+- [Vragenlijst onderhoudbaarheid](./maintainability.md), vraag 16: de componenten en hoe ze samenhangen
+- [ARCHITECTURE.md](https://github.com/ConductionNL/openregister/blob/main/ARCHITECTURE.md): de beschrijving van de componenten in de repository
+- [ADR-012](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-012-functional-components-over-the-nextcloud-layout.md): de functionele gebieden
+- [ADR-013](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-013-component-dependency-rules.md): de regels voor de lagen
+- [ADR-014](https://github.com/ConductionNL/openregister/blob/main/openspec/architecture/adr-014-sig-components-are-top-level-directories.md): de mappen in de hoofdmap als componenten

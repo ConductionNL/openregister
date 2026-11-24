@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurposeMapper;
@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\PurposeRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
@@ -70,16 +71,16 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		PartyIndicatorGuard::class => [PartyIndicatorGuardInterface::class, ContractBindings::class],
-		ProcessingLogMapper::class => [ProcessingLogMapperInterface::class, DbRegistrar::class],
-		ProcessingPurposeMapper::class => [ProcessingPurposeMapperInterface::class, DbRegistrar::class],
+		ProcessingLogMapper::class => [ProcessingLogMapperInterface::class, ComplianceMapperRegistrar::class],
+		ProcessingPurposeMapper::class => [ProcessingPurposeMapperInterface::class, ComplianceMapperRegistrar::class],
 		PurposeGuard::class => [PurposeGuardInterface::class, ContractBindings::class],
 		PurposeRegistry::class => [PurposeRegistryInterface::class, ContractBindings::class],
-		SearchTrailMapper::class => [SearchTrailMapperInterface::class, DbRegistrar::class],
-		StateHistoryProjector::class => [StateHistoryProjectorInterface::class, ContractBindings::class],
+		SearchTrailMapper::class => [SearchTrailMapperInterface::class, ComplianceMapperRegistrar::class],
+		StateHistoryProjector::class => [StateHistoryProjectorInterface::class, CoreServiceBindings::class],
 		SubjectExportService::class => [SubjectExportServiceInterface::class, ContractBindings::class],
-		UniqueHintWarnings::class => [UniqueHintWarningsInterface::class, ContractBindings::class],
-		VerwerkingsactiviteitMapper::class => [VerwerkingsactiviteitMapperInterface::class, DbRegistrar::class],
-		ViewerReachResolver::class => [ViewerReachResolverInterface::class, ContractBindings::class],
+		UniqueHintWarnings::class => [UniqueHintWarningsInterface::class, CoreServiceBindings::class],
+		VerwerkingsactiviteitMapper::class => [VerwerkingsactiviteitMapperInterface::class, ComplianceMapperRegistrar::class],
+		ViewerReachResolver::class => [ViewerReachResolverInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

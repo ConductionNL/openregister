@@ -22,15 +22,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\TransferredRecordStatesInterface;
+
 /**
  * The Archiefwet lifecycle values read outside the component.
  *
  * RecordState implements this, so `RecordState::DESTROYED` and
  * `RecordState::ACTIVE_ALIASES` stay the one home of these values.
  *
+ * TRANSFERRED_ALIASES comes from the Core contract the delete path reads.
+ *
  * @spec openspec/specs/retention-management/spec.md
  */
-interface RecordStateInterface {
+interface RecordStateInterface extends TransferredRecordStatesInterface {
 
 	/**
 	 * Destroyed under a disposal decision. Immutable from here.

@@ -23,7 +23,7 @@ use OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
-use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -57,7 +57,7 @@ class LogCleanUpTaskBehaviourTest extends TestCase {
 				}
 			);
 		}
-		$retention = $this->createMock(RetentionSettingsReaderInterface::class);
+		$retention = $this->createMock(RetentionSettingsInterface::class);
 		$retention->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => 0]);
 
 		$task = new LogCleanUpTask(

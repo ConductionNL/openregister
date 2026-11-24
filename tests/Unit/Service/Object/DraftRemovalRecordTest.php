@@ -100,7 +100,7 @@ class DraftRemovalRecordTest extends TestCase {
 	 */
 	private function auditTrail(bool $fails = false): AuditTrailMapper {
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+		$mapper->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null) use ($fails): AuditTrail {
 				if ($fails === true) {
 					throw new RuntimeException('audit table locked');

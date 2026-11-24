@@ -32,7 +32,7 @@ class McpRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(5, $expected);
+        $this->assertCount(6, $expected);
 
         // The factory-registered McpToolsService is aliased after the autowired bindings.
         foreach (McpWiring::FACTORY_BINDINGS as $contract => $service) {
@@ -40,7 +40,7 @@ class McpRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(6, $expected);
+        $this->assertCount(7, $expected);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
 }//end class

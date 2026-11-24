@@ -21,14 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Registers;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
 use OCA\OpenRegister\Event\ApplicationDeletedEvent;
 use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
@@ -49,11 +45,13 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceDeletedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
-use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\IEventDispatcher;
 
@@ -89,7 +87,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationCreated(Entity $application): void {
-		$this->dispatcher->dispatchTyped(new ApplicationCreatedEvent(application: self::narrow(entity: $application, class: Application::class)));
+		$this->dispatcher->dispatchTyped(new ApplicationCreatedEvent(application: self::narrow(entity: $application, class: ApplicationInterface::class)));
 	}//end applicationCreated()
 
 	/**
@@ -105,8 +103,8 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	public function applicationUpdated(Entity $newApplication, Entity $oldApplication): void {
 		$this->dispatcher->dispatchTyped(
 			new ApplicationUpdatedEvent(
-				newApplication: self::narrow(entity: $newApplication, class: Application::class),
-				oldApplication: self::narrow(entity: $oldApplication, class: Application::class)
+				newApplication: self::narrow(entity: $newApplication, class: ApplicationInterface::class),
+				oldApplication: self::narrow(entity: $oldApplication, class: ApplicationInterface::class)
 			)
 		);
 	}//end applicationUpdated()
@@ -121,7 +119,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function applicationDeleted(Entity $application): void {
-		$this->dispatcher->dispatchTyped(new ApplicationDeletedEvent(application: self::narrow(entity: $application, class: Application::class)));
+		$this->dispatcher->dispatchTyped(new ApplicationDeletedEvent(application: self::narrow(entity: $application, class: ApplicationInterface::class)));
 	}//end applicationDeleted()
 
 	/**
@@ -135,7 +133,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 */
 	public function configurationCreated(Entity $configuration): void {
 		$this->dispatcher->dispatchTyped(
-			new ConfigurationCreatedEvent(configuration: self::narrow(entity: $configuration, class: Configuration::class))
+			new ConfigurationCreatedEvent(configuration: self::narrow(entity: $configuration, class: ConfigurationInterface::class))
 		);
 	}//end configurationCreated()
 
@@ -152,8 +150,8 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	public function configurationUpdated(Entity $newConfiguration, Entity $oldConfiguration): void {
 		$this->dispatcher->dispatchTyped(
 			new ConfigurationUpdatedEvent(
-				newConfiguration: self::narrow(entity: $newConfiguration, class: Configuration::class),
-				oldConfiguration: self::narrow(entity: $oldConfiguration, class: Configuration::class)
+				newConfiguration: self::narrow(entity: $newConfiguration, class: ConfigurationInterface::class),
+				oldConfiguration: self::narrow(entity: $oldConfiguration, class: ConfigurationInterface::class)
 			)
 		);
 	}//end configurationUpdated()
@@ -169,7 +167,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 */
 	public function configurationDeleted(Entity $configuration): void {
 		$this->dispatcher->dispatchTyped(
-			new ConfigurationDeletedEvent(configuration: self::narrow(entity: $configuration, class: Configuration::class))
+			new ConfigurationDeletedEvent(configuration: self::narrow(entity: $configuration, class: ConfigurationInterface::class))
 		);
 	}//end configurationDeleted()
 
@@ -322,7 +320,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceCreated(Entity $source): void {
-		$this->dispatcher->dispatchTyped(new SourceCreatedEvent(source: self::narrow(entity: $source, class: Source::class)));
+		$this->dispatcher->dispatchTyped(new SourceCreatedEvent(source: self::narrow(entity: $source, class: SourceInterface::class)));
 	}//end sourceCreated()
 
 	/**
@@ -338,8 +336,8 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	public function sourceUpdated(Entity $newSource, Entity $oldSource): void {
 		$this->dispatcher->dispatchTyped(
 			new SourceUpdatedEvent(
-				newSource: self::narrow(entity: $newSource, class: Source::class),
-				oldSource: self::narrow(entity: $oldSource, class: Source::class)
+				newSource: self::narrow(entity: $newSource, class: SourceInterface::class),
+				oldSource: self::narrow(entity: $oldSource, class: SourceInterface::class)
 			)
 		);
 	}//end sourceUpdated()
@@ -354,7 +352,7 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function sourceDeleted(Entity $source): void {
-		$this->dispatcher->dispatchTyped(new SourceDeletedEvent(source: self::narrow(entity: $source, class: Source::class)));
+		$this->dispatcher->dispatchTyped(new SourceDeletedEvent(source: self::narrow(entity: $source, class: SourceInterface::class)));
 	}//end sourceDeleted()
 
 	/**
@@ -392,29 +390,16 @@ final class EntityEventPublisher implements EntityEventsInterface {
 	}//end flowRunTerminal()
 
 	/**
-	 * A task reached a terminal state.
-	 *
-	 * @param Entity $task The task as persisted.
-	 * @param bool $committed Whether the write that made it terminal is already committed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
-	 */
-	public function taskTerminal(Entity $task, bool $committed): void {
-		$this->dispatcher->dispatchTyped(new TaskTerminalEvent(task: self::narrow(entity: $task, class: Task::class), committed: $committed));
-	}//end taskTerminal()
-
-	/**
 	 * The entity as the class its event carries, refused when a caller passed another class.
 	 *
-	 * @param object $entity The entity a mapper announced.
-	 * @param class-string<T> $class The class the event carries.
+	 * @param E $entity The entity a mapper announced.
+	 * @param class-string<T> $class The class or Kernel contract the event carries.
 	 *
-	 * @return T
+	 * @return T&E
 	 *
 	 * @throws InvalidArgumentException When the entity is not of that class.
 	 *
+	 * @template E of object
 	 * @template T of object
 	 */
 	private static function narrow(object $entity, string $class): object {
