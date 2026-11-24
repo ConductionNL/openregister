@@ -830,3 +830,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: csv conflict hunk where HEAD holds existing rows with a changed area (e.g. Service/Resolver/Exception/* Core -> Kernel) beside main's new rows; a blind union of both sides duplicates those paths with two areas.
 - Cause: the PR re-areas shared rows on purpose (#10553 44725b55: exceptions reachable from every area); main appended rows next to them.
 - Fix: row-level merge from index stages: main's file in its order (keep its duplicate rows), apply only the PR's own row changes (stage 1 -> 2) by path, append PR-added rows; git diff origin/main -- scripts/component-map.csv must equal the PR's own row changes. Then take main's components yaml and rerun scripts/component-patterns.py (#10553 1d4baa7e). Script: ~/w/bin/csv3.py as written in this run (not committed).
+## Precheck red: main's src/services/initial-data.golden.spec.js after a PR adds a component data() field (or-fix-1)
+- Symptom: precheck front.log FAIL src/services/initial-data.golden.spec.js, '+ "<newField>": ...' in one component's recorded state; the PR's own specs are green.
+- Cause: main records every settings/view component's initial data() in one golden; a PR adding a field there predates it.
+- Fix: npx jest src/services/initial-data.golden.spec.js -u; the snapshot diff must be only the PR's own field(s) (#10451 914835d2). Run the whole jest suite (not just the PR's dirs) before calling a frontend PR green.
