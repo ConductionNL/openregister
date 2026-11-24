@@ -180,7 +180,7 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 		}
 
 		$row = $this->auditTrails->createAuditTrail(old: null, new: $object, action: self::READ_ACTION);
-		if ($key !== null && $row instanceof AuditTrail) {
+		if ($key !== null) {
 			$this->auditedReads[$key] = $row;
 		}
 

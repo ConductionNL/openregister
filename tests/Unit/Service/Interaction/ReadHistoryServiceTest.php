@@ -120,8 +120,8 @@ class ReadHistoryServiceTest extends TestCase {
 		$this->auditTrails->expects($this->once())->method('createAuditTrail')->willReturn($row);
 
 		$service = $this->service();
-		$this->assertSame($row, $service->registerAuditRead(object: $object));
-		$this->assertSame($row, $service->registerAuditRead(object: clone $object));
+		$this->assertSame(expected: $row, actual: $service->registerAuditRead(object: $object));
+		$this->assertSame(expected: $row, actual: $service->registerAuditRead(object: clone $object));
 	}//end testASecondReadOfTheSameObjectWritesNoSecondRow()
 
 	/**
@@ -137,7 +137,7 @@ class ReadHistoryServiceTest extends TestCase {
 		$changed->setVersion('1.0.1');
 		$other = new ObjectEntity();
 		$other->setUuid('22222222-2222-4222-8222-222222222222');
-		$this->auditTrails->expects($this->exactly(5))->method('createAuditTrail')->willReturnCallback(fn () => new AuditTrail());
+		$this->auditTrails->expects($this->exactly(count: 5))->method('createAuditTrail')->willReturnCallback(fn () => new AuditTrail());
 
 		$service = $this->service();
 		$service->registerAuditRead(object: $first);
