@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\DraftVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -92,7 +93,16 @@ final class DraftKeysOnListTest extends TestCase {
 		$live->setOwner('olga');
 		$loaded = [];
 		$this->permissions->expects(self::once())->method('hasPermission')
-			->with($this->schema, 'update', 'kees', 'olga', true, $live)
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema === $this->schema
+						&& $ask->action === 'update'
+						&& $ask->userId === 'kees'
+						&& $ask->objectOwner === 'olga'
+						&& $ask->object === $live
+				),
+				true
+			)
 			->willReturn(false);
 
 		$out = DraftKeysOnList::annotate(

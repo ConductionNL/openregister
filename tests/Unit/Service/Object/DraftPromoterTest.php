@@ -40,6 +40,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -86,7 +87,7 @@ final class DraftPromoterTest extends TestCase {
 		$this->groups        = $this->createMock(IGroupManager::class);
 		$this->groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId = null): bool => $action === 'update' && in_array($userId, ['wendy', 'admin'], true)
+			static fn (PermissionAsk $ask, bool $_rbac = true): bool => $ask->action === 'update' && in_array($ask->userId, ['wendy', 'admin'], true)
 		);
 		foreach (['beginTransaction', 'commit', 'rollBack'] as $step) {
 			$this->db->method($step)->willReturnCallback(function () use ($step): void {
