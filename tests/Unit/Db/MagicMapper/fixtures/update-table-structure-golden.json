@@ -38,9 +38,9 @@
             "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"lastName\",\"columnName\":\"last_name\",\"columnType\":\"string\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `last_name` VARCHAR(255) []",
             "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"rules\",\"columnName\":\"rules\",\"columnType\":\"json_ordered\"}",
-            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `rules` JSON []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `rules` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`rules`)) []",
             "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"plain\",\"columnName\":\"plain\",\"columnType\":\"json_ordered\"}",
-            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `plain` JSON []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `plain` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`plain`)) []",
             "debug [MagicMapper] Adding new column to schema table {\"tableName\":\"openregister_table_1_2\",\"propertyName\":\"amount\",\"columnName\":\"amount\",\"columnType\":\"decimal\"}",
             "debug [MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"amount\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `amount` DECIMAL(20,4) []",
@@ -183,6 +183,7 @@
                 "lastName"
             ],
             "columnsRetyped": [
+                "plain",
                 "amount"
             ]
         },
@@ -214,8 +215,10 @@
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `lastName` varchar NULL []",
             "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `legacy` text NULL []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `plain` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL CHECK (json_valid(`plain`)) []",
+            "debug [MagicMapper] Migrated object-typed column from JSON to checked text for key-order preservation {\"columnName\":\"plain\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,4) NOT NULL DEFAULT 0.00 []",
-            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"amount\"]}"
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"plain\",\"amount\"]}"
         ]
     },
     "mixed, statements succeed / postgres": {
@@ -304,6 +307,7 @@
                 "lastName"
             ],
             "columnsRetyped": [
+                "plain",
                 "amount"
             ]
         },
@@ -338,8 +342,10 @@
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `lastName` varchar NULL []",
             "debug [MagicMapper] Making obsolete column nullable {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"legacy\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `legacy` text NULL []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `plain` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL CHECK (json_valid(`plain`)) []",
+            "debug [MagicMapper] Migrated object-typed column from JSON to checked text for key-order preservation {\"columnName\":\"plain\"}",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,4) NOT NULL DEFAULT 0.00 []",
-            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"amount\"]}"
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[\"last_name\",\"new_col\",\"new_req\",\"new_req2\",\"new_bool\",\"new_text\"],\"columnsDeRequired\":[\"title\",\"lastName (obsolete)\",\"legacy (obsolete)\"],\"columnsReRequired\":[\"count\",\"flag\"],\"columnsDropped\":[\"firstName\",\"lastName\"],\"columnsRetyped\":[\"plain\",\"amount\"]}"
         ]
     },
     "failing existing column / postgres": {

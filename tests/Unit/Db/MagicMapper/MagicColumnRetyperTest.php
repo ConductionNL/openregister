@@ -135,6 +135,51 @@ class MagicColumnRetyperTest extends TestCase {
 		$this->assertSame(['warning [MagicMapper] Failed to migrate column from JSONB to JSON {"columnName":"meta","error":"cannot cast"}'], $this->log);
 	}//end testAFailedJsonRetypeIsLoggedAndNotReported()
 
+	/**
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	public function testOrderedJsonMovesMysqlJsonColumnsToCheckedText(): void {
+		$current = [
+			'meta' => ['type' => 'json', 'nullable' => true],
+			'rows' => ['type' => 'json', 'nullable' => false],
+			'done' => ['type' => 'mediumtext', 'nullable' => true],
+			'link' => ['type' => 'json', 'nullable' => true],
+		];
+		$required = [
+			'meta' => ['type' => 'json_ordered'],
+			'rows' => ['type' => 'json_ordered'],
+			'done' => ['type' => 'json_ordered'],
+			'link' => ['type' => 'json'],
+		];
+		$sync = new TableStructureSync('t', 'oc_t', new MagicColumnDrift($current, $required), false, false, true);
+
+		$retyped = $this->retyper()->orderedJson($sync);
+
+		$this->assertSame(['meta', 'rows'], $retyped);
+		$text = 'MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin';
+		$this->assertSame(
+			[
+				'ALTER TABLE `oc_t` MODIFY `meta` ' . $text . ' NULL CHECK (json_valid(`meta`))',
+				'ALTER TABLE `oc_t` MODIFY `rows` ' . $text . ' NOT NULL CHECK (json_valid(`rows`))',
+			],
+			$this->statements
+		);
+		$this->assertSame('debug [MagicMapper] Migrated object-typed column from JSON to checked text for key-order preservation {"columnName":"meta"}', $this->log[0]);
+	}//end testOrderedJsonMovesMysqlJsonColumnsToCheckedText()
+
+	/**
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	public function testAFailedMysqlTextRetypeIsLoggedAndNotReported(): void {
+		$sync = new TableStructureSync('t', 'oc_t', new MagicColumnDrift(['meta' => ['type' => 'json']], ['meta' => ['type' => 'json_ordered']]), false, false, true);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('executeStatement')->willThrowException(new RuntimeException('no'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with('[MagicMapper] Failed to migrate column from JSON to checked text');
+
+		$this->assertSame([], (new MagicColumnRetyper(new MagicDdlRunner($db, $logger), $logger))->orderedJson($sync));
+	}//end testAFailedMysqlTextRetypeIsLoggedAndNotReported()
+
 	public function testRelationsDoesNothingOutsidePostgres(): void {
 		$this->assertSame([], $this->retyper()->relations($this->sync(false)));
 		$this->assertSame([], $this->statements);

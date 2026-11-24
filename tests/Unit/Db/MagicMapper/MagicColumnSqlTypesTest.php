@@ -22,6 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use PHPUnit\Framework\TestCase;
 
@@ -73,6 +77,29 @@ class MagicColumnSqlTypesTest extends TestCase {
 		$this->assertSame('', (new MagicColumnSql(false))->check('json', '_files'));
 		$this->assertSame('', (new MagicColumnSql(true))->check('json', '_files'));
 	}//end testOnlyMariaDbChecksAJsonColumn()
+
+	/**
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	public function testOrderedJsonOnMysqlIsTextThatMustHoldJson(): void {
+		$mysql = new MagicColumnSql(false, false, true);
+
+		$this->assertSame('MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin', $mysql->type('json_ordered', []));
+		$this->assertSame(' CHECK (json_valid(`rows`))', $mysql->check('json_ordered', 'rows'));
+		$this->assertSame('JSON', $mysql->type('json', []));
+		$this->assertSame('', $mysql->check('json', '_files'));
+		$this->assertSame('JSON', (new MagicColumnSql(false))->type('json_ordered', []));
+	}//end testOrderedJsonOnMysqlIsTextThatMustHoldJson()
+
+	/**
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	public function testOnlyMysqlReordersJsonKeys(): void {
+		$this->assertTrue(MagicColumnSql::reordersJsonKeys(new MySQLPlatform()));
+		$this->assertFalse(MagicColumnSql::reordersJsonKeys(new MariaDBPlatform()));
+		$this->assertFalse(MagicColumnSql::reordersJsonKeys(new PostgreSQLPlatform()));
+		$this->assertFalse(MagicColumnSql::reordersJsonKeys(new SqlitePlatform()));
+	}//end testOnlyMysqlReordersJsonKeys()
 
 	public function testQuotingEscapesTheQuoteCharacterOfThePlatform(): void {
 		$this->assertSame('`we``ird`', (new MagicColumnSql(false))->quote('we`ird'));

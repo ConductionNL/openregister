@@ -149,6 +149,25 @@ class MagicTableCreatorTest extends TestCase {
 	}//end testSqliteInlinesThePrimaryKey()
 
 	/**
+	 * An object-typed property is checked text on MySQL, whose JSON sorts object keys, and JSON elsewhere.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 *
+	 * @return void
+	 */
+	public function testOrderedJsonIsCheckedTextOnlyOnMysql(): void {
+		$columns = [['name' => 'rows', 'type' => 'json_ordered', 'nullable' => true], ['name' => 'meta', 'type' => 'json', 'nullable' => true]];
+		$this->creator(new MySQLPlatform())->create('t', $columns);
+		$this->creator(new PostgreSQLPlatform())->create('t', $columns);
+
+		$this->assertSame(
+			'CREATE TABLE IF NOT EXISTS `nc_t` (`rows` MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin CHECK (json_valid(`rows`)), `meta` JSON)',
+			$this->statements[0]
+		);
+		$this->assertSame('CREATE TABLE IF NOT EXISTS "nc_t" ("rows" JSON, "meta" JSONB)', $this->statements[1]);
+	}//end testOrderedJsonIsCheckedTextOnlyOnMysql()
+
+	/**
 	 * A table without primary or unique columns gets no constraints, and nullable is the default.
 	 *
 	 * @return void
