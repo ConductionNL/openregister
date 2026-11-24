@@ -23095,3 +23095,4 @@ build4:openregister:register-document-store:c2	partial: PR #10518 adds 1.2 store
 build:humaniq:time-entry-approval-state	already done: built and merged by another worker on 2026-11-14 (497b5f3c); this worker's run stalled across restarts	session-20261113T204533-6fe960ff	2026-11-23T16:38:29Z
 build:hermiq:observability-export-traces	stale: reclaimed while this session was down; PR hermiq#1767 already on the branch	session-20261113T202612-d04bbf77	2026-11-23T17:46:35Z
 build:decidiq:motion-change-recommendations	already building	session-20261113T202607-6c22f6b2	2026-11-24T02:09:01Z
+review:openregister:10509:949c765a	stale	session-20261114T095639-2f6d727a	2026-11-24T20:05:06Z
