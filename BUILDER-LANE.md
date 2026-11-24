@@ -38,7 +38,7 @@ Ruben van der Linde (owner of the ConductionNL GitHub organisation) set up this 
 
 First run `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Run every command in the foreground with Bash timeout 600000. A routine session never resumes after its turn ends, so never end your turn while work is unfinished; stop only when your task list is done or you have worked about 4 hours.
 
-Overlap guard: this routine runs hourly. At the start, list open PRs in the repo whose head branch starts with `cloud/b-APP-`. If one was updated in the last 50 minutes, another session of this lane is active: end immediately and say so.
+Overlap guard: this routine runs hourly. At the start, list open PRs in the repo whose head branch starts with `cloud/b-APP-`. If one was updated in the last 20 minutes, another session of this lane may be active: end immediately and say so. (20, not 50: lanes push every ~15 minutes under SAVE OFTEN, and a PR left by a session that died at an account switch must not block the lane for most of the hour.)
 
 How to build:
 - Clone `development` of the repo. Run `composer install` and `npm ci` (or `npm install --no-save` if the lock is out of sync). Work in that clone only.
