@@ -37,6 +37,20 @@ import { generateUrl } from '@nextcloud/router'
 import { NcAvatar, NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
+import { fetchSignedInUser } from './signedInUser.js'
+
+/**
+ * Send an image file to the API as the signed-in user's avatar.
+ *
+ * @param {File} file The picked image
+ * @return {Promise<void>}
+ */
+async function sendAvatar(file) {
+	const data = await file.arrayBuffer()
+	await axios.post(generateUrl('/apps/openregister/api/user/me/avatar'), data, {
+		headers: { 'Content-Type': file.type },
+	})
+}
 
 export default {
 	name: 'AvatarSection',
@@ -59,9 +73,7 @@ export default {
 	 */
 	async mounted() {
 		try {
-			const { data } = await axios.get(
-				generateUrl('/apps/openregister/api/user/me'),
-			)
+			const { data } = await fetchSignedInUser()
 			this.userId = data?.uid || ''
 			this.canChangeAvatar = data?.backendCapabilities?.avatar ?? true
 		} catch {
@@ -95,12 +107,7 @@ export default {
 			if (!file) return
 			this.message = ''
 			try {
-				const data = await file.arrayBuffer()
-				await axios.post(
-					generateUrl('/apps/openregister/api/user/me/avatar'),
-					data,
-					{ headers: { 'Content-Type': file.type } },
-				)
+				await sendAvatar(file)
 				this.setStatus(t('openregister', 'Avatar updated successfully'))
 			} catch (e) {
 				this.setStatusError(e, t('openregister', 'Failed to upload avatar'))

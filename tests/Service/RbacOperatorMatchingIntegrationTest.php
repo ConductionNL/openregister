@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
@@ -96,12 +97,10 @@ class RbacOperatorMatchingIntegrationTest extends TestCase {
 
 		$past = $this->makeObject($schema, ['publishDate' => '2020-01-01T00:00:00+00:00']);
 		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,            // anonymous
-			objectOwner: null,
-			_rbac: true,
-			object: $past
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null) // anonymous
+				->about(object: $past, register: null),
+			_rbac: true
 		);
 
 		$this->assertTrue($allowed, 'past-dated publication MUST be readable anonymously when publishDate <= now');
@@ -117,12 +116,10 @@ class RbacOperatorMatchingIntegrationTest extends TestCase {
 
 		$future = $this->makeObject($schema, ['publishDate' => '2099-01-01T00:00:00+00:00']);
 		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,
-			objectOwner: null,
-			_rbac: true,
-			object: $future
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null)
+				->about(object: $future, register: null),
+			_rbac: true
 		);
 
 		$this->assertFalse($allowed, 'future-dated publication MUST NOT be readable anonymously when publishDate > now');
@@ -141,23 +138,19 @@ class RbacOperatorMatchingIntegrationTest extends TestCase {
 
 		$open = $this->makeObject($schema, ['status' => 'open']);
 		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,
-			objectOwner: null,
-			_rbac: true,
-			object: $open
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null)
+				->about(object: $open, register: null),
+			_rbac: true
 		);
 		$this->assertTrue($allowed, 'object with status in [open, review] MUST be readable anonymously');
 
 		$closed = $this->makeObject($schema, ['status' => 'closed']);
 		$denied = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,
-			objectOwner: null,
-			_rbac: true,
-			object: $closed
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null)
+				->about(object: $closed, register: null),
+			_rbac: true
 		);
 		$this->assertFalse($denied, 'object with status not in [open, review] MUST NOT be readable anonymously');
 	}
@@ -172,12 +165,10 @@ class RbacOperatorMatchingIntegrationTest extends TestCase {
 
 		$obj = $this->makeObject($schema, ['title' => 'no rule needed']);
 		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: null,
-			objectOwner: null,
-			_rbac: true,
-			object: $obj
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: null, objectOwner: null)
+				->about(object: $obj, register: null),
+			_rbac: true
 		);
 
 		$this->assertTrue($allowed, 'group-only rule MUST grant access without requiring a match block');

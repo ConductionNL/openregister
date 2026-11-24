@@ -21,7 +21,7 @@ use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\IAppConfig;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -129,7 +129,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	}
 
 	public function testTasksAreCreatedWithFullData(): void {
-		$taskService = $this->createMock(TaskService::class);
+		$taskService = $this->createMock(ObjectCalendarTasksInterface::class);
 		$captured = [];
 		$taskService->expects($this->once())
 			->method('createObjectTask')
@@ -177,7 +177,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		// whole seed-data import.
 		$fileService = $this->createMock(FileService::class);
 		$noteService = $this->createMock(NoteService::class);
-		$taskService = $this->createMock(TaskService::class);
+		$taskService = $this->createMock(ObjectCalendarTasksInterface::class);
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->once())->method('createNote')->willReturn(['id' => 1]);
@@ -214,7 +214,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		// and don't need an actor, so they still run.
 		$fileService = $this->createMock(FileService::class);
 		$noteService = $this->createMock(NoteService::class);
-		$taskService = $this->createMock(TaskService::class);
+		$taskService = $this->createMock(ObjectCalendarTasksInterface::class);
 
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$noteService->expects($this->never())->method('createNote');
@@ -337,7 +337,7 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$logger->expects($this->never())->method('warning');
 		$items = new SeedRelatedItems(logger: $logger);
 		$items->useNoteService($this->createMock(NoteService::class));
-		$items->useTaskService($this->createMock(TaskService::class));
+		$items->useTaskService($this->createMock(ObjectCalendarTasksInterface::class));
 
 		$result = [];
 		$items->create(new SeedRelatedTarget(object: new ObjectEntity()), $result);

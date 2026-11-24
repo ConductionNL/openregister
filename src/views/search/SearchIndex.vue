@@ -19,6 +19,7 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import RecordsTreeView from './RecordsTreeView.vue'
 import {
 	cardSize,
 	galleryCardFields,
@@ -34,6 +35,8 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { inheritedProperties } from './inheritedProperties.js'
+import { lensSearchParams, TABLE_LENSES } from './personalLensQuery.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -47,6 +50,23 @@ function normalizeObjects(raw) {
 		const id = row['@self']?.id ?? row.id
 		return { ...row, id }
 	})
+}
+
+/**
+ * Properties with every `order` turned into a number, in the same key order.
+ *
+ * @param {object} rawProperties The properties by name
+ * @return {object} The properties, each order a number
+ */
+function withNumericOrder(rawProperties) {
+	const properties = {}
+	for (const [key, prop] of Object.entries(rawProperties)) {
+		properties[key] =
+			prop.order !== undefined
+				? { ...prop, order: Number(prop.order) }
+				: prop
+	}
+	return properties
 }
 
 /**
@@ -87,6 +107,7 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		EditableCell,
+		RecordsTreeView,
 	},
 
 	data() {
@@ -94,6 +115,8 @@ export default {
 			objectStore,
 			navigationStore,
 			viewsStore,
+			// Following, Recent and Unread quick filters (record-star-follow-and-unread-on-screen).
+			personalLenses: TABLE_LENSES,
 			isAddingNewObject: false,
 			// Kanban board state (REQ-VIEW-KANBAN-02): the pre-built `columns`
 			// shape from GET /api/views/{id}/kanban, refetched wholesale on
@@ -212,30 +235,9 @@ export default {
 			if (!schema || !schema.properties) return schema
 			// Merge inherited properties from allOf parent schemas so extended schemas
 			// expose the full property set (own + inherited) for columns and form fields.
-			const allOf = schema.allOf || []
-			const inheritedProperties = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inheritedProperties, parentSchema.properties)
-				}
-			}
 			// Own properties take precedence over inherited; normalize order values
-			const rawProperties = { ...inheritedProperties, ...schema.properties }
-			const properties = {}
-			for (const [key, prop] of Object.entries(rawProperties)) {
-				properties[key] =
-					prop.order !== undefined
-						? { ...prop, order: Number(prop.order) }
-						: prop
-			}
-			return { ...schema, properties }
+			const rawProperties = { ...inheritedProperties(schema), ...schema.properties }
+			return { ...schema, properties: withNumericOrder(rawProperties) }
 		},
 
 		/**
@@ -294,6 +296,27 @@ export default {
 		 */
 		calendarConfig() {
 			return this.activeView?.presentation?.calendar || {}
+		},
+
+		/**
+		 * The active view's tree config (`labelField`/`fields`).
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {object}
+		 */
+		treeConfig() {
+			return this.activeView?.presentation?.tree || {}
+		},
+
+		/**
+		 * The register the tree lists from.
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {string|number}
+		 */
+		treeRegister() {
+			const register = objectStore.searchRegister
+			return register?.id ?? register?.slug ?? register ?? ''
 		},
 
 		/**
@@ -506,6 +529,19 @@ export default {
 		 */
 		handleSort({ key, order }) {
 			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
+		 * Apply a personal lens (Following, Recent, Unread) from the quick
+		 * filters and re-run the search from the first page.
+		 *
+		 * @param {number} index The quick-filter tab CnIndexPage reports
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {void}
+		 */
+		handleLensChange(index) {
+			objectStore.updateSearchParams(lensSearchParams(index, this.personalLenses))
 			objectStore.refetchSearchCollection()
 		},
 
@@ -863,7 +899,10 @@ export default {
 			showMassDelete
 			massActionNameField="title"
 			emptyText="No objects found. Select registers and schemas in the sidebar, then search."
+			:personalLenses="personalLenses"
+			showUnreadRows
 			@add="handleAddObject"
+			@quickFilterChange="handleLensChange"
 			@refresh="handleRefresh"
 			@massDelete="handleMassDelete"
 			@massCopy="handleMassCopy"
@@ -968,6 +1007,15 @@ export default {
 			rowKey="id"
 			@rangeChange="handleCalendarRangeChange"
 			@objectClick="handleRowClick" />
+
+		<RecordsTreeView
+			v-else-if="presentationType === 'tree'"
+			:key="`tree-${activeViewId}`"
+			:register="treeRegister"
+			:schema="normalizedSchema"
+			:config="treeConfig"
+			:viewKey="String(activeViewId || '')"
+			@open="handleRowClick" />
 
 		<div
 			v-else-if="presentationType === 'gallery'"

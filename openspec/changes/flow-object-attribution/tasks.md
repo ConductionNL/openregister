@@ -35,8 +35,8 @@
 ## 5. Verify-then-rechain migration
 
 - [x] 5.1 Add the repair step (pre-verify against `AuditCanonicalV1` → persist verdict as a v1-sealed `audit.rechain.preverify` row → `rechainAll()` under v2) AND register it in `appinfo/info.xml` in the same commit; verify `occ maintenance:repair` runs it and the registration is present (verified: lib/Repair/RechainAuditTrailForFlowAttribution.php, appinfo/info.xml, tests/Unit/Repair/RechainAuditTrailForFlowAttributionTest.php)
-- [ ] 5.2 Verify the pre-check discriminates: seed a chain, tamper with one row, run the migration, and assert the persisted verdict names that row — the test must fail if the pre-check is stubbed to return valid
-- [ ] 5.3 Verify the migration's three safety properties: it refuses to start when it cannot persist its verdict, it is resumable and idempotent when interrupted mid-re-seal, and a chain containing retention tombstones re-seals with those rows carried forward as tombstones rather than reported as breaks
+- [x] 5.2 Verify the pre-check discriminates: seed a chain, tamper with one row, run the migration, and assert the persisted verdict names that row — the test must fail if the pre-check is stubbed to return valid (verified: tests/Unit/Repair/RechainAuditTrailPreVerifyTest.php seeds a real v1-sealed chain; a changed field, a foreign hash and a break past the first 500-row window are each named in the stored verdict; stubbing the hash comparison to always pass turns those three red)
+- [x] 5.3 Verify the migration's three safety properties: it refuses to start when it cannot persist its verdict, it is resumable and idempotent when interrupted mid-re-seal, and a chain containing retention tombstones re-seals with those rows carried forward as tombstones rather than reported as breaks (verified: the refusal in RechainAuditTrailForFlowAttributionTest::testItRefusesToReSealWhenTheVerdictCannotBeStored; RechainAuditTrailPreVerifyTest::testAnInterruptedReSealRunsAgainFromTheStart runs an interrupted re-seal, a completing one and a no-op third; testATombstoneIsCarriedForward pins the pre-verify half (red when the tombstone branch is removed), the re-seal half is AuditHashService::rechainAll's golden tests/Unit/Service/fixtures/audit-hash-rechain-golden.json)
 
 ## 6. Read surfaces
 
@@ -45,12 +45,12 @@
 
 ## 7. Frontend
 
-- [ ] 7.1 Show both directions — the objects a run touched on the run detail (grouped by node, joined to the existing step history) and the runs that touched an object in its sidebar; verify a step that touched nothing still renders with its status and timing, and a pruned run renders its recorded identifiers instead of failing
+- [x] 7.1 Show both directions — the objects a run touched on the run detail (grouped by node, joined to the existing step history) and the runs that touched an object in its sidebar; verify a step that touched nothing still renders with its status and timing, and a pruned run renders its recorded identifiers instead of failing (done: the run detail's "Changed by this run" lists the objects per node from `GET /api/flow-runs/{uuid}/objects` beside the step history, which renders every step with its status and timing whether it touched anything; the object's Audit Trails tab lists the runs that changed it, newest first with the nodes in step order, from the attribution on its own audit rows, so a pruned run is listed by its recorded identifiers and links to the run page instead of failing: src/views/object/objectFlowRuns.js, src/views/object/ObjectDetails.vue, src/views/object/objectFlowRuns.spec.js)
 
 ## 8. Quality
 
-- [ ] 8.1 Run `composer check:strict` and `npm run lint`, and fix any pre-existing findings touched by these files
-- [ ] 8.2 Mutation-check the two guards that fail silently — the `finally` pop (2.3) and the pre-verify discrimination (5.2): disable each, confirm the suite goes red, restore, confirm the source is byte-identical
+- [x] 8.1 Run `composer check:strict` and `npm run lint`, and fix any pre-existing findings touched by these files (done: the missing import in lib/Service/AuditHashService.php and the eslint warning in src/views/object/ObjectDetails.vue are fixed; the remaining phpmd TooManyMethods on FlowRunController and AuditHashService and StaticAccess in AuditTrailMapper::windowAggregation()/stampActorAndObject() were already on main and now carry the repo's documented @SuppressWarnings with their reason, as 46 and 364 other classes do; the AuditHashService re-chain split stays the named refactor. phpcs, phpmd (both rule sets, with the baseline), phpstan and eslint are clean on the change's files. The full `check:strict` was not run end to end here: its test:all leg needs a live instance)
+- [x] 8.2 Mutation-check the two guards that fail silently — the `finally` pop (2.3) and the pre-verify discrimination (5.2): disable each, confirm the suite goes red, restore, confirm the source is byte-identical (done 2026-11-14: removing the step pop in FlowEngine::dispatchSingleHop's finally reddens FlowEngineAttributionTest (5 of 8), removing the stream-hop pop (dispatchOnStream) reddens FlowEngineWalkGoldenTest (9 sets); stubbing the pre-verify hash comparison reddens 3 of RechainAuditTrailPreVerifyTest; each source restored and checked byte-identical by md5)
 
 **Acceptance criteria**
 

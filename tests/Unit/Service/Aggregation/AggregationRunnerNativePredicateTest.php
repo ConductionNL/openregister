@@ -31,7 +31,11 @@ use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NativeAggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\NativeFilterColumn;
 use OCA\OpenRegister\Service\LanguageService;
@@ -75,16 +79,24 @@ class AggregationRunnerNativePredicateTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		return new AggregationRunner(
-			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $this->createMock(IDBConnection::class),
+			sources: new AggregationSources(
+				catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
+				db: $this->createMock(IDBConnection::class)
+			),
 			cache: $this->createMock(AggregationCache::class),
-			permissionHandler: $this->createMock(PermissionHandler::class),
-			userSession: $userSession,
-			organisationService: $this->createMock(OrganisationService::class),
-			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			access: new AggregationAccess(
+				permissionHandler: $this->createMock(PermissionHandler::class),
+				organizationHandler: $this->createMock(MagicOrganizationHandler::class)
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $this->createMock(OrganisationService::class),
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 	}
 

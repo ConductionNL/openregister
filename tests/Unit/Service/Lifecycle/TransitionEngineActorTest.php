@@ -50,6 +50,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * The `update` check is the actor's when one is given.
@@ -131,7 +132,7 @@ class TransitionEngineActorTest extends TestCase {
 
 		$permission = $this->createMock(PermissionHandler::class);
 		$permission->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId = null): bool => $action === 'update' && $userId === 'handler'
+			static fn (PermissionAsk $ask): bool => $ask->action === 'update' && $ask->userId === 'handler'
 		);
 
 		return new TransitionEngine(

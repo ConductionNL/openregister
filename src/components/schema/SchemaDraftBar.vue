@@ -50,6 +50,27 @@ import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcNoteCard } from '@nextcloud/vue'
 import { schemaStore } from '../../store/store.js'
 
+/**
+ * What to show for a refused publish: the breaking changes to acknowledge,
+ * when the server names them and they were not acknowledged yet, or the
+ * error.
+ *
+ * @param {Error} error What went wrong
+ * @param {boolean} acknowledgeBreaking Whether breaking changes were acknowledged
+ * @return {{breakingChanges: Array}|{errorMessage: string}} The state to show
+ */
+function publishRefusal(error, acknowledgeBreaking) {
+	const body = error?.response?.data || {}
+	if (
+		error?.response?.status === 409
+		&& Array.isArray(body.changes)
+		&& !acknowledgeBreaking
+	) {
+		return { breakingChanges: body.changes }
+	}
+	return { errorMessage: body.error || error.message }
+}
+
 export default {
 	name: 'SchemaDraftBar',
 	components: { NcButton, NcNoteCard },
@@ -93,16 +114,7 @@ export default {
 				})
 				this.breakingChanges = []
 			} catch (error) {
-				const body = error?.response?.data || {}
-				if (
-					error?.response?.status === 409
-					&& Array.isArray(body.changes)
-					&& !acknowledgeBreaking
-				) {
-					this.breakingChanges = body.changes
-					return
-				}
-				this.errorMessage = body.error || error.message
+				Object.assign(this, publishRefusal(error, acknowledgeBreaking))
 			} finally {
 				this.busy = false
 			}

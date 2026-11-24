@@ -39,6 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -140,8 +141,8 @@ class ObjectsControllerSchemaSlugScopeTest extends TestCase {
 		$mover->method('perform')->willReturn(['moved' => true, 'uuid' => 'u-1', 'from' => [], 'to' => [], 'errors' => []]);
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			function (Schema $schema, string $action) : bool {
-				$this->asked[] = [$action, $schema->getId()];
+			function (PermissionAsk $ask) : bool {
+				$this->asked[] = [$ask->action, $ask->schema->getId()];
 				return true;
 			}
 		);

@@ -26,10 +26,14 @@ use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -104,6 +108,7 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
+use OCA\OpenRegister\Service\Object\ObjectActivityAudit;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
@@ -137,6 +142,7 @@ use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectNameWriterInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Object\ObjectUpdateRights;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
@@ -211,6 +217,7 @@ use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\MandateEvidence;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
@@ -246,6 +253,8 @@ use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStoreInterface;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface;
@@ -334,6 +343,11 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Interface => service map of the Core area, registered by ServiceRegistrar.
@@ -353,6 +367,7 @@ final class CoreServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
 		TranslationCompletenessInterface::class => TranslationStatusService::class,
@@ -360,6 +375,9 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
+		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
+		MandateEvidenceInterface::class => MandateEvidence::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
@@ -369,6 +387,9 @@ final class CoreServiceBindings {
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
 		GroupReconcilerInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class
+			=> \OCA\OpenRegister\Service\Authorization\DeclaredGroupRights::class,
 		ConsentAnnotationValidatorInterface::class => ConsentAnnotationValidator::class,
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
@@ -424,17 +445,20 @@ final class CoreServiceBindings {
 		ObjectNameWriterInterface::class => CacheHandler::class,
 		ObjectReadAccessInterface::class => ObjectReadAccess::class,
 		ObjectReadCheckInterface::class => ObjectReadAccess::class,
+		ObjectUpdateRightsInterface::class => ObjectUpdateRights::class,
 		ObjectReadersInterface::class => PermissionHandler::class,
 		ObjectSlugBackfillServiceInterface::class => ObjectSlugBackfillService::class,
 		ObjectValidatorInterface::class => ValidateObject::class,
 		PermissionCacheInterface::class => PermissionHandler::class,
 		PermissionCheckInterface::class => PermissionHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadCheck::class,
 		PermissionEnforcementInterface::class => PermissionHandler::class,
 		PermissionExplanationInterface::class => PermissionHandler::class,
 		PermissionHandlerInterface::class => PermissionHandler::class,
 		PermissionScopeInterface::class => PermissionHandler::class,
 		QueryHandlerInterface::class => QueryHandler::class,
 		RelationAddressRewriteInterface::class => RelationAddressRewrite::class,
+		RemoteRecipientDenialInterface::class => PermissionHandler::class,
 		RenderObjectInterface::class => RenderObject::class,
 		RetentionDestructionInterface::class => RetentionDestruction::class,
 		RevertHandlerInterface::class => RevertHandler::class,
@@ -549,5 +573,8 @@ final class CoreServiceBindings {
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		VocabularyDeclarationResolverInterface::class => VocabularyDeclarationResolver::class,
+		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
+		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 	];
 }//end class

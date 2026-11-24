@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Contract\ObjectSelection;
 
 /**
  * One object listing: the page and filters, the register and schema it reads, the object

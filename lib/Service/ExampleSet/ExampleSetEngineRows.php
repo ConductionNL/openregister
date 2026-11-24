@@ -30,6 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
@@ -66,6 +70,33 @@ abstract class ExampleSetEngineRows {
 		'accessLinks',
 		'grants',
 	];
+
+	/**
+	 * The object a row names, read as an install reads it: raw, without an audit entry, with rbac and multitenancy off.
+	 *
+	 * An install runs from occ without a user, so a scoped read would miss objects a schema keeps from "Anonymous".
+	 * Null when the uuid is blank or the read fails, as the party service's unscoped read answered before.
+	 *
+	 * @param ContainerInterface $container Hands out the object layer on first use.
+	 * @param string             $uuid      The object's uuid from the row.
+	 *
+	 * @return ObjectEntity|null
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-its-objects-a-history-by-named-people
+	 */
+	protected function objectOfRow(ContainerInterface $container, string $uuid): ?ObjectEntity {
+		$objectLayer = $container->get(ObjectOperationsInterface::class);
+		if (trim($uuid) === '') {
+			return null;
+		}
+
+		$unscoped = new ObjectFindOptions(render: false, audit: false);
+		try {
+			return $objectLayer->find(id: $uuid, options: $unscoped, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end objectOfRow()
 
 	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).

@@ -71,7 +71,6 @@ use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedDivergenceReport;
-use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderResolver;
@@ -105,13 +104,23 @@ final class ConfigurationServiceRegistrar {
 			'RegisterFolderProvisioner',
 		],
 		'setNoteService' => [\OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class, 'NoteService'],
-		'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
+		'setTaskService' => [\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface::class, 'TaskService'],
 		'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
 		'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],
 		'setUserManager' => ['OCP\IUserManager', 'IUserManager'],
 		'setGroupProvisioner' => [
 			\OCA\OpenRegister\Service\Authorization\GroupProvisioner::class,
 			'GroupProvisioner',
+		],
+		// Restores product-owned groups' rights at the end of every import (REQ-RAH-003).
+		'setGroupReconciler' => [
+			\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class,
+			'GroupReconciler',
+		],
+		// Reads the rights an app gives its declared groups, recorded so the reconciler restores them (REQ-RAH-003).
+		'setDeclaredGroupRights' => [
+			\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class,
+			'DeclaredGroupRights',
 		],
 		// Classifies, versions and logs the schema changes an import makes (#4102).
 		'setSchemaVersioning' => [
@@ -547,7 +556,6 @@ final class ConfigurationServiceRegistrar {
 			logger: $container->get('Psr\Log\LoggerInterface'),
 			db: $container->get('OCP\IDBConnection'),
 			container: $container,
-			appName: 'openregister',
 			validOpsHandler: $container->get(ValidationOperationsHandler::class),
 			searchBackendHandler: $container->get(SearchBackendHandler::class),
 			llmSettingsHandler: $container->get(LlmSettingsHandler::class),
@@ -674,8 +682,7 @@ final class ConfigurationServiceRegistrar {
 	private static function buildConfigurationValueStore(ContainerInterface $container): ConfigurationValueStore {
 		return new ConfigurationValueStore(
 			values: $container->get(ConfigurationValueMapper::class),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationValueStore()
 
@@ -695,8 +702,7 @@ final class ConfigurationServiceRegistrar {
 			store: $container->get(ConfigurationValueStore::class),
 			registry: $container->get(ConfigurationKeyRegistry::class),
 			session: $container->get('OCP\IUserSession'),
-			appConfig: $container->get('OCP\IAppConfig'),
-			appName: 'openregister'
+			appConfig: $container->get('OCP\IAppConfig')
 		);
 	}//end buildConfigurationDraftService()
 

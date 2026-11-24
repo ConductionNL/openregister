@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -197,12 +198,10 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: $action))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 	}//end holds()
 
@@ -340,4 +339,29 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 
 		return true;
 	}//end auditNoteMove()
+
+	/**
+	 * Record another timeline event (e.g. an entry's withdrawal) on the object's audit trail.
+	 *
+	 * A failed write is logged and answers false; it never throws, so losing the trail
+	 * entry never loses the change it records.
+	 *
+	 * @param ObjectEntity         $object  The object the entry hangs on.
+	 * @param string               $action  The audit action.
+	 * @param array<string, mixed> $context The audit context.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function auditTimelineEvent(ObjectEntity $object, string $action, array $context): bool {
+		try {
+			$this->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: $action, context: $context));
+		} catch (Throwable $e) {
+			$this->platform->logger->warning('[TimelineVisibilityService] The timeline event ' . $action . ' could not be audited', ['exception' => $e]);
+			return false;
+		}
+
+		return true;
+	}//end auditTimelineEvent()
 }//end class

@@ -79,4 +79,18 @@ interface VocabularyImporterInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md#requirement-idempotent-skos-import-keyed-on-uri-skos-002
 	 */
 	public function importJsonLd(array $jsonLd): array;
+
+	/**
+	 * Make sure a concept scheme exists, creating it empty when its uri is unknown.
+	 *
+	 * Never updates an existing scheme and never touches its concepts: no
+	 * concept is deprecated, which an import of an empty scheme would do.
+	 *
+	 * @param array{uri: string, title: string, description?: string} $schemeMeta The scheme.
+	 *
+	 * @return array{scheme: string, status: string} The scheme uri and `created` or `present`.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/tasks.md#3-the-dictionary
+	 */
+	public function ensureScheme(array $schemeMeta): array;
 }//end interface

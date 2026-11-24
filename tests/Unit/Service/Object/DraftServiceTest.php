@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -88,10 +89,10 @@ final class DraftServiceTest extends TestCase {
 
 	private function writers(string ...$uids): void {
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool => $action === 'update'
-				&& $objectOwner === 'olga'
-				&& $object === $this->object
-				&& in_array($userId, $uids, true)
+			fn (PermissionAsk $ask, bool $_rbac = true): bool => $ask->action === 'update'
+				&& $ask->objectOwner === 'olga'
+				&& $ask->object === $this->object
+				&& in_array($ask->userId, $uids, true)
 		);
 	}
 

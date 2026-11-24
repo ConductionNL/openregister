@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -21,6 +22,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\ObjectService;
@@ -158,7 +160,8 @@ class ObjectsControllerGlobalListGoldenTest extends TestCase {
 			$this->calls[] = ['buildSearchQuery' => $args];
 			return ($setup['query'] ?? ['built' => true]);
 		});
-		$service->method('searchObjectsPaginated')->willReturnCallback(function (...$args) use ($setup): array {
+		$service->method('searchObjectsPaginated')->willReturnCallback(function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use ($setup): array {
+			$args = [$query, $_rbac, $_multitenancy, $options->deleted, $options->selection->ids, $options->selection->uses, $options->views];
 			$this->calls[] = ['searchObjectsPaginated' => $args];
 			if (($setup['refuse'] ?? false) === true) {
 				throw new NotAuthorizedException('no');
@@ -199,7 +202,8 @@ class ObjectsControllerGlobalListGoldenTest extends TestCase {
 		}
 
 		$mapper = $this->createMock(MagicMapperInterface::class);
-		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(function (array $query, Register $register, Schema $schema) use ($rows): array {
+		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(function (RegisterSchema $table, array $query) use ($rows): array {
+			[$register, $schema] = [$table->register, $table->schema];
 			$this->calls[] = ['magicSearch' => $query, 'schema' => $schema->getId()];
 			return $rows;
 		});

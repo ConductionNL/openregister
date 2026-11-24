@@ -2082,6 +2082,7 @@ class ValidateObject implements ValidateObjectInterface {
 
 		if ($local === true && str_contains($path, '/api/schemas') === true) {
 			$exploded = explode('/', $path);
+			// Stays global: the JSON-schema loader is handed only the $ref URI, with no register in scope.
 			$schema   = $this->schemas->schemaMapper->find(end($exploded));
 
 			return json_encode($schema->getSchemaObject($this->schemas->urlGenerator));
@@ -2160,7 +2161,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		return (new ValidationErrorMessages())->forResult(result: $result);
+		return (new ValidationErrorMessages(language: $this->lookups->preferredLanguage()))->forResult(result: $result);
 	}//end generateErrorMessage()
 
 	/**

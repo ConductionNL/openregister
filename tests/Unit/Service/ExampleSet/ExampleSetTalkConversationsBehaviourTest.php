@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -56,20 +56,20 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	private TalkLinkMapperInterface&MockObject $links;
 
-	private PartyService&MockObject $parties;
+	private ObjectOperationsInterface&MockObject $objects;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->talk    = $this->createMock(ExampleSetTalkStore::class);
 		$this->links   = $this->createMock(TalkLinkMapperInterface::class);
-		$this->parties = $this->createMock(PartyService::class);
+		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 	}
 
 	private function subject(): ExampleSetTalkConversations {
 		$services  = [
 			ExampleSetTalkStore::class     => $this->talk,
 			TalkLinkMapperInterface::class => $this->links,
-			PartyService::class            => $this->parties,
+			ObjectOperationsInterface::class            => $this->objects,
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id]);
@@ -129,7 +129,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testWithoutTalkNothingIsLookedUpOrWritten(): void {
 		$this->talk->method('available')->willReturn(false);
-		$this->parties->expects($this->never())->method('findUnscoped');
+		$this->objects->expects($this->never())->method('find');
 		$this->talk->expects($this->never())->method('openRoom');
 
 		$this->assertSame(['error' => 'Talk is not installed', 'entry' => null], $this->subject()->write(new ExampleSetRow('zaak', 'k', self::row())));
@@ -137,7 +137,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testAMissingObjectIsAnErrorAndNoRoomIsOpened(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->expects($this->once())->method('findUnscoped')->with('obj-9')->willReturn(null);
+		$this->objects->expects($this->once())->method('find')->with('obj-9', $this->anything(), false, false)->willReturn(null);
 		$this->talk->expects($this->never())->method('openRoom');
 
 		$this->assertSame(
@@ -148,7 +148,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testACreatedRoomHoldsTheCallAndIsLinkedToTheObject(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->with('obj-1')->willReturn(self::object());
+		$this->objects->method('find')->with('obj-1', $this->anything(), false, false)->willReturn(self::object());
 		$this->talk->expects($this->once())->method('openRoom')
 			->with($this->callback(static fn (ExampleSetTalkRoom $room): bool => $room->owner === 'anna' && $room->name === 'Overleg' && $room->participants === ['anna', 'bob']))
 			->willReturn(['token' => 'tok-1', 'id' => 41, 'created' => true]);
@@ -184,7 +184,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testAKeptRoomHoldsNoCallAgain(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->willReturn(self::object());
+		$this->objects->method('find')->willReturn(self::object());
 		$this->talk->method('openRoom')->willReturn(['token' => 'tok-1', 'id' => 41, 'created' => false]);
 		$this->talk->expects($this->never())->method('heldCall');
 		$this->links->method('findByObjectAndRoom')->willReturn(null);
@@ -200,7 +200,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testACreatedRoomWithoutACallHoldsNoneAndIsActiveNow(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->willReturn(self::object());
+		$this->objects->method('find')->willReturn(self::object());
 		$this->talk->method('openRoom')->willReturn(['token' => 'tok-2', 'id' => 42, 'created' => true]);
 		$this->talk->expects($this->never())->method('heldCall');
 		$this->links->method('findByObjectAndRoom')->willReturn(null);
@@ -221,7 +221,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testAnExistingLinkIsReusedAndNotInsertedAgain(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->willReturn(self::object());
+		$this->objects->method('find')->willReturn(self::object());
 		$this->talk->method('openRoom')->willReturn(['token' => 'tok-1', 'id' => 41, 'created' => false]);
 		$existing = new TalkLink();
 		$existing->setId(7);
@@ -235,7 +235,7 @@ class ExampleSetTalkConversationsBehaviourTest extends TestCase {
 
 	public function testAFailingRoomIsTheWriteError(): void {
 		$this->talk->method('available')->willReturn(true);
-		$this->parties->method('findUnscoped')->willReturn(self::object());
+		$this->objects->method('find')->willReturn(self::object());
 		$this->talk->method('openRoom')->willThrowException(new RuntimeException('Talk refused the room'));
 		$this->links->expects($this->never())->method('insert');
 

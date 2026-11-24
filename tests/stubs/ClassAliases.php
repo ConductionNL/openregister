@@ -86,6 +86,7 @@ namespace {
 	class_alias('OCA\\OpenRegister\\Search\\Command\\SearchIndexCommand', 'OCA\\OpenRegister\\Command\\SearchIndexCommand');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\AggregationController', 'OCA\\OpenRegister\\Controller\\AggregationController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\ContactSearchController', 'OCA\\OpenRegister\\Controller\\ContactSearchController');
+	class_alias('OCA\\OpenRegister\\Search\\Controller\\CrossRegisterReportController', 'OCA\\OpenRegister\\Controller\\CrossRegisterReportController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\DashboardController', 'OCA\\OpenRegister\\Controller\\DashboardController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\DuplicateController', 'OCA\\OpenRegister\\Controller\\DuplicateController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\EmailsController', 'OCA\\OpenRegister\\Controller\\EmailsController');
@@ -219,7 +220,7 @@ namespace {
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\ThresholdEvaluationService', 'OCA\\OpenRegister\\Service\\Aggregation\\ThresholdEvaluationService');
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesDateBucketValidator', 'OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesDateBucketValidator');
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesRequestValidator', 'OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesRequestValidator');
-	class_alias('OCA\\OpenRegister\\Mcp\\Service\\ChatMessageRequest', 'OCA\\OpenRegister\\Service\\ChatMessageRequest');
+	class_alias('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ChatMessageRequest', 'OCA\\OpenRegister\\Service\\ChatMessageRequest');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\ChatService', 'OCA\\OpenRegister\\Service\\ChatService');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\Chat\\ContextRetrievalHandler', 'OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\Chat\\ConversationManagementHandler', 'OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler');

@@ -240,7 +240,7 @@ class MappingServiceTest extends TestCase {
 			['input_name' => 'Bob'],
 		];
 
-		$result = $this->service->executeMapping($entity, $input, true);
+		$result = $this->service->executeListMapping($entity, $input);
 
 		$this->assertCount(2, $result);
 		$this->assertSame('Alice', $result[0]['name']);
@@ -711,7 +711,7 @@ class MappingServiceTest extends TestCase {
 			'context_val' => 'shared-context',
 		];
 
-		$result = $this->service->executeMapping($entity, $input, true);
+		$result = $this->service->executeListMapping($entity, $input);
 
 		$this->assertCount(2, $result);
 		$this->assertSame('shared-context', $result[0]['ctx']);

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
@@ -50,8 +50,8 @@ final class F11AccessInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AutoTransitionPass::class => [AutoTransitionPassInterface::class, ContractBindings::class],
-		FlowRunContext::class => [FlowRunContextInterface::class, ContractBindings::class],
+		AutoTransitionPass::class => [AutoTransitionPassInterface::class, ProcessesServiceBindings::class],
+		FlowRunContext::class => [FlowRunContextInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

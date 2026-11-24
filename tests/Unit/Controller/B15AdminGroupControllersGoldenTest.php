@@ -183,7 +183,6 @@ final class B15AdminGroupControllersGoldenTest extends TestCase {
 			$groupManager = $this->createMock(IGroupManager::class);
 			$groupManager->method('isAdmin')->willReturn($admin);
 			$controller = IntegrationsControllerFactory::create(
-				'openregister',
 				$this->createMock(IRequest::class),
 				$registry,
 				$userSession,
