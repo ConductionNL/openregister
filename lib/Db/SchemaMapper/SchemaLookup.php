@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 /**
- * The identifier and flags of a lookup, and the cache key and message they make.
+ * The identifier and flags of a lookup, and the not-found message they make.
  *
  * @spec exclude schema read plumbing of SchemaMapper, not a capability of its own
  */
@@ -41,28 +41,6 @@ final class SchemaLookup {
 		public readonly bool $multitenancy,
 	) {
 	}//end __construct()
-
-	/**
-	 * The part of a cache key that the flags decide.
-	 *
-	 * @return string
-	 *
-	 * @spec exclude schema read plumbing of SchemaMapper, not a capability of its own
-	 */
-	public function cacheSuffix(): string {
-		return ':' . (int)$this->rbac . ':' . (int)$this->multitenancy;
-	}//end cacheSuffix()
-
-	/**
-	 * The request cache key of this lookup.
-	 *
-	 * @return string
-	 *
-	 * @spec exclude schema read plumbing of SchemaMapper, not a capability of its own
-	 */
-	public function cacheKey(): string {
-		return strtolower((string)$this->id) . $this->cacheSuffix();
-	}//end cacheKey()
 
 	/**
 	 * The message of the exception for a lookup that found nothing.

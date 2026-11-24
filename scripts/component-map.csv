@@ -759,6 +759,7 @@ Db/HydrateBySettersTrait.php,15,Db,Core,Core/Db/HydrateBySettersTrait.php,0,,Cor
 Db/HydrateEmptyJsonAsNullTrait.php,19,Db,Service,Service/Db/HydrateEmptyJsonAsNullTrait.php,0,,Core
 Db/HydrateKnownFieldsTrait.php,15,Db,Work,Work/Db/HydrateKnownFieldsTrait.php,0,,Processes
 Db/IdCursor.php,14,Db,Flows,Flows/Db/IdCursor.php,0,,Processes
+Db/IdentifierArms.php,112,Db,Db,Db/IdentifierArms.php,0,,Core
 Db/ImportPreview.php,94,Db,Configuration,Configuration/Db/ImportPreview.php,0,,Configuration
 Db/ImportPreviewMapper.php,61,Db,Configuration,Configuration/Db/ImportPreviewMapper.php,0,,Configuration
 Db/ImportPreviewRow.php,55,Db,Configuration,Configuration/Db/ImportPreviewRow.php,0,,Configuration
@@ -862,6 +863,7 @@ Db/RegisterMapperHelper.php,27,Db,Service,Service/Db/RegisterMapperHelper.php,0,
 Db/RegisterMapperInterface.php,26,Db,Service,Service/Db/RegisterMapperInterface.php,1,,Kernel
 Db/RegistrySubscription.php,62,Db,Service,Service/Db/RegistrySubscription.php,0,,Core
 Db/RegistrySubscriptionMapper.php,59,Db,Service,Service/Db/RegistrySubscriptionMapper.php,0,,Core
+Db/RequestIdentityMap.php,35,Db,Db,Db/RequestIdentityMap.php,0,,Core
 Db/RuleRun.php,45,Db,Flows,Flows/Db/RuleRun.php,0,399,Processes
 Db/RuleRunMapper.php,138,Db,Flows,Flows/Db/RuleRunMapper.php,0,205,Processes
 Db/RuleRunSummary.php,32,Db,Flows,Flows/Db/RuleRunSummary.php,0,,Processes
@@ -1675,6 +1677,7 @@ Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/Imp
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
 Repair/ImportDestructionListRegister.php,14,Repair,Platform,Platform/Repair/ImportDestructionListRegister.php,0,,Platform
 Repair/ImportDismissedPairRegister.php,14,Repair,Platform,Platform/Repair/ImportDismissedPairRegister.php,0,,Platform
+Repair/ImportExternalRegisterRegister.php,70,Repair,Platform,Platform/Repair/ImportExternalRegisterRegister.php,0,,Platform
 Repair/ImportDsarRegisters.php,58,Repair,Platform,Platform/Repair/ImportDsarRegisters.php,0,,Platform
 Repair/ImportEdepotTransferRegister.php,14,Repair,Platform,Platform/Repair/ImportEdepotTransferRegister.php,0,,Platform
 Repair/ImportFlowRegister.php,12,Repair,Platform,Platform/Repair/ImportFlowRegister.php,0,,Platform
@@ -2639,6 +2642,7 @@ Service/Integration/Providers/ContactsProvider.php,57,Service,Integrations,Integ
 Service/Integration/Providers/CospendProvider.php,209,Service,Integrations,Integrations/Service/Integration/Providers/CospendProvider.php,0,,Integrations
 Service/Integration/Providers/DeckProvider.php,83,Service,Integrations,Integrations/Service/Integration/Providers/DeckProvider.php,0,,Integrations
 Service/Integration/Providers/EmailProvider.php,98,Service,Integrations,Integrations/Service/Integration/Providers/EmailProvider.php,0,,Integrations
+Service/Integration/Providers/ExternalRegisterProvider.php,184,Service,Integrations,Integrations/Service/Integration/Providers/ExternalRegisterProvider.php,0,,Integrations
 Service/Integration/Providers/FirstRowQuery.php,20,Service,Integrations,Integrations/Service/Integration/Providers/FirstRowQuery.php,0,,Integrations
 Service/Integration/Providers/FlowProvider.php,87,Service,Integrations,Integrations/Service/Integration/Providers/FlowProvider.php,0,,Integrations
 Service/Integration/Providers/FormsProvider.php,211,Service,Integrations,Integrations/Service/Integration/Providers/FormsProvider.php,0,,Integrations
@@ -3567,6 +3571,10 @@ Service/Hinge/,,Service,,,,,Core
 Service/History/,,Service,,,,,Core
 Service/Import/,,Service,,,,,Configuration
 Service/Integration/,,Service,,,,,Integrations
+Service/Integration/ExternalRegisterLookup.php,182,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookup.php,0,,Integrations
+Kernel/Contracts/SchemaReadCheckInterface.php,,Kernel,,,,,Kernel
+Service/Object/SchemaReadCheck.php,,Service,,,,,Core
+Service/Integration/ExternalRegisterLookupInterface.php,41,Service,Integrations,Integrations/Service/Integration/ExternalRegisterLookupInterface.php,0,,Integrations
 Service/Interaction/,,Service,,,,,Processes
 Service/Interaction/WatcherServiceInterface.php,,Service,,,,,Notifications
 Service/Interaction/WatcherStore.php,,Service,,,,,Notifications
@@ -4299,6 +4307,7 @@ Service/Lifecycle/LifecycleActionRecorder.php,,Service,,,,,Processes
 Listener/LifecycleActionRecordListener.php,,Listener,,,,,Processes
 Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,Notifications
 Controller/AutomationRecordsController.php,,Controller,,,,,Processes
+Controller/ExternalRegisterController.php,81,Controller,Integrations,Integrations/Controller/ExternalRegisterController.php,0,,Integrations
 Controller/PublicFormPageController.php,,Controller,,,,,Processes
 BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
@@ -4426,6 +4435,7 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Controller/Support/CodedOptionPage.php,,Controller,,,,,Core
 Service/OwnedWebhookView.php,288,Service,Service,Service/OwnedWebhookView.php,0,,Integrations
 Controller/Settings/TranslationSettingsController.php,,Controller,,,,,Configuration
 Db/SchemaMapper/DiscardedAnnotations.php,,Db,,,,,Core
@@ -4749,5 +4759,6 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
