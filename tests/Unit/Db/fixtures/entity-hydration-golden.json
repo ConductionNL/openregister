@@ -165,6 +165,7 @@
                 "flowStep": 7,
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject",
                 "category": "text-category"
             },
             "updated": [
@@ -206,6 +207,7 @@
                 "flowStep",
                 "purpose",
                 "consumer",
+                "triggerObject",
                 "category"
             ]
         },
@@ -256,6 +258,7 @@
                 "flowStep": 7,
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject",
                 "category": "text-category"
             },
             "updated": [
@@ -299,6 +302,7 @@
                 "flowStep",
                 "purpose",
                 "consumer",
+                "triggerObject",
                 "category"
             ]
         }
