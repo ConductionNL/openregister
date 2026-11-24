@@ -45,6 +45,10 @@ final class AccessListenerRegistrar {
 		// sign-in: a Core listener, registered through Core's slot at this position.
 		\OCA\OpenRegister\Listener\CoreListenerRegistrar::identityClaims(context: $context);
 
+		// A service account signs in with its tokens only (REQ-SAT-004): a
+		// Core listener, registered through Core's slot at this position.
+		\OCA\OpenRegister\Listener\CoreListenerRegistrar::serviceAccountLogin(context: $context);
+
 		// A removed user's object shares end with them.
 		$context->registerEventListener(
 			\OCP\User\Events\BeforeUserDeletedEvent::class,

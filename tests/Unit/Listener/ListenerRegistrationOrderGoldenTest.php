@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 259;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -38,10 +38,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * listeners; every other registration is unchanged and in the same order. Then two
 	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
 	 * share provider then appended one PlatformShareRoutingListener registration on
-	 * BeforeShareCreatedEvent in AccessListenerRegistrar, after one PersonalTokenGrantRevokedListener
-	 * registration on TokenInvalidatedEvent (scoped-api-tokens).
+	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
+	 * (PostLoginEvent) was added (count 258 -> 259), and one PersonalTokenGrantRevokedListener
+	 * registration on TokenInvalidatedEvent in AccessListenerRegistrar (scoped-api-tokens, 259 -> 260).
 	 */
-	private const SEQUENCE_SHA256 = '8163c5fbbb53168e05362aa1fb7d84232e3a832c8a1f02f3f3c2f3d558cd6bec';
+	private const SEQUENCE_SHA256 = 'ffecd14769adda73889f351a4fb3c8c3c282b1891f2daa16c7dadf3032d30a8e';
 
 	/**
 	 * The registration calls, in call order, with every argument.
