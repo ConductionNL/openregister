@@ -4411,6 +4411,14 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Migration/Version1Date20261114103700.php,,Migration,,,,,Platform
+Exception/TaskMandateRefusedException.php,,Exception,Exception,Exception/TaskMandateRefusedException.php,0,,Kernel
+Service/Task/TaskMandateGuard.php,,Service,Work,Work/Service/Task/TaskMandateGuard.php,0,,Processes
+Service/Rbac/MandateEvidence.php,,Service,Access,Access/Service/Rbac/MandateEvidence.php,0,,Core
+Kernel/Contracts/MandateEvidenceInterface.php,,Kernel,Kernel,Kernel/Contracts/MandateEvidenceInterface.php,0,,Kernel
+Service/Task/TaskSubstitution.php,,Service,Work,Work/Service/Task/TaskSubstitution.php,0,,Processes
+BackgroundJob/TaskSubstitutionJob.php,,BackgroundJob,Work,Work/BackgroundJob/TaskSubstitutionJob.php,0,,Processes
+Listener/TaskAbsenceListener.php,,Listener,Flows,Flows/Listener/TaskAbsenceListener.php,0,,Processes
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform

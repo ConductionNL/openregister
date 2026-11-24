@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -210,6 +211,7 @@ use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\MandateEvidence;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
@@ -367,6 +369,7 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		MandateEvidenceInterface::class => MandateEvidence::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
