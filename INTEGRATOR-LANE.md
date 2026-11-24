@@ -12,7 +12,7 @@ PRs on `main`. Decide everything yourself; never ask.
 - Run every command in the foreground with Bash timeout 600000. A routine session never resumes after its turn
   ends: never end your turn while a tree is half done. Stop after about 4 hours, at a tree boundary.
 - `export SIG_WORK=$HOME/sigint; mkdir -p $SIG_WORK`. Clone the state branch to `$SIG_WORK/state`
-  (`git clone -q --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister $SIG_WORK/state`)
+  (`git clone -q --depth 1 --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister $SIG_WORK/state`; shallow, the branch carries the whole openregister history)
   and copy its `bin/` to `$SIG_WORK/bin` (the script must run from a copy). Read the header of
   `$SIG_WORK/bin/integrate.sh`: it documents every step and exit code.
 
@@ -25,10 +25,19 @@ PRs on `main`. Decide everything yourself; never ask.
    - #9880, #10464, #10466, #10280 and #10281 (never land these);
    - PRs listed in the state file `integrator/failed-solo.tsv` at the same head (they went red alone);
    - PRs whose head does not merge cleanly on `origin/main` (`git merge-tree --write-tree`).
+   PRECHECKED FIRST (coordinator, 24 Nov 2026 17:50 CET): the fix lanes now pre-test single PRs on main and record
+   `<pr> <head> GREEN|RED <time>` in `queue/prechecked.txt`. When 2 or more candidates have a GREEN line there at
+   their current head, build the tree from ONLY those, up to 8 (oldest first). Otherwise take at most 4 rows,
+   oldest first. On 24 Nov every unprechecked tree of 5 to 8 came out RED and was then retried one PR at a time
+   (about 12 minutes each, 5 merges an hour).
    Keep at most 8 rows (oldest PR first). Exit 1 / empty: wait 10 minutes (`integrate.sh wait 600 idle`) and select again.
 4. `integrate.sh build`, then `integrate.sh test`, then `integrate.sh wait 170` until it prints DONE.
 5. `integrate.sh verdict`. GREEN: `integrate.sh merge` (exit 5 means main or a head moved: go back to step 3).
-   AUTOPARK / RED with more than one PR: retry each PR of that tree alone in later rounds. RED with one PR: append
+   AUTOPARK: rebuild the same tree without the parked PR at once.
+   RED with more than one PR: do NOT retry every PR alone. First blame: a PR whose diff touches a failing test's
+   file, or the class that test covers, is the suspect; rebuild the tree without the suspects (they go back as
+   single-PR trees later). If no PR can be named, split the tree in two halves (oldest half first) and run each
+   half as its own tree; keep halving a RED half until single PRs remain. RED with one PR: append
    `<pr>\t<head>` to `integrator/failed-solo.tsv` on the state branch (st_append, sourcing `$SIG_WORK/bin/state.sh`),
    so it is skipped until its head moves. NORESULT: retry once, then report.
 6. After each tree append one line to `integrator/log.md` on the state branch:
