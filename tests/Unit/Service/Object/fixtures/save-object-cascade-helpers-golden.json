@@ -13,6 +13,10 @@
         },
         "trace": [
             [
+                "register",
+                "10"
+            ],
+            [
                 "save",
                 "10",
                 "2",
@@ -20,10 +24,6 @@
                     "text": "new"
                 },
                 null
-            ],
-            [
-                "register",
-                "10"
             ]
         ],
         "orphans": {
@@ -392,6 +392,10 @@
         },
         "trace": [
             [
+                "register",
+                "10"
+            ],
+            [
                 "save",
                 "10",
                 "2",
@@ -410,6 +414,10 @@
         },
         "trace": [
             [
+                "register",
+                "10"
+            ],
+            [
                 "save",
                 "10",
                 "2",
@@ -426,6 +434,10 @@
             "lead": "33333333-3333-3333-3333-333333333333"
         },
         "trace": [
+            [
+                "register",
+                "10"
+            ],
             [
                 "save",
                 "10",
@@ -458,6 +470,10 @@
     "single inversedBy drops the property": {
         "answer": [],
         "trace": [
+            [
+                "register",
+                "10"
+            ],
             [
                 "save",
                 "10",
@@ -495,6 +511,10 @@
         "answer": [],
         "trace": [
             [
+                "register",
+                "10"
+            ],
+            [
                 "save",
                 "10",
                 "2",
@@ -527,6 +547,10 @@
         },
         "trace": [
             [
+                "register",
+                "11"
+            ],
+            [
                 "find",
                 "42",
                 null,
@@ -552,6 +576,10 @@
         "answer": [],
         "trace": [
             [
+                "register",
+                "12"
+            ],
+            [
                 "find",
                 "42",
                 null,
@@ -576,6 +604,10 @@
     "write-back to an unknown schema": {
         "answer": [],
         "trace": [
+            [
+                "register",
+                "10"
+            ],
             [
                 "find",
                 "42",
@@ -639,6 +671,10 @@
             ]
         },
         "trace": [
+            [
+                "register",
+                "10"
+            ],
             [
                 "find",
                 "22222222-2222-2222-2222-222222222222",
@@ -761,6 +797,10 @@
             "note": "42"
         },
         "trace": [
+            [
+                "register",
+                "10"
+            ],
             [
                 "find",
                 "42",
