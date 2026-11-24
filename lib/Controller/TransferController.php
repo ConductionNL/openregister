@@ -35,11 +35,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
 use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRejection;
-use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -89,18 +87,11 @@ class TransferController extends Controller {
 	private readonly TransferListServiceInterface $transferListService;
 
 	/**
-	 * Finds the records due for transfer; null where it cannot be resolved.
+	 * The services bundle, for the reads only some actions need.
 	 *
-	 * @var RetentionServiceInterface|null
+	 * @var TransferControllerServices
 	 */
-	private readonly ?RetentionServiceInterface $retention;
-
-	/**
-	 * Names the records already on an active transfer list.
-	 *
-	 * @var TransferListRunInterface|null
-	 */
-	private readonly ?TransferListRunInterface $transferRun;
+	private readonly TransferControllerServices $services;
 
 	/**
 	 * Constructor.
@@ -119,8 +110,7 @@ class TransferController extends Controller {
 		$this->jobList = $services->jobList;
 		$this->logger = $services->logger;
 		$this->transferListService = $services->transferListService;
-		$this->retention = $services->retention;
-		$this->transferRun = $services->transferRun;
+		$this->services = $services;
 
 	}//end __construct()
 
@@ -155,16 +145,18 @@ class TransferController extends Controller {
 	 */
 	#[NoCSRFRequired]
 	public function eligible(): JSONResponse {
-		if ($this->retention === null || $this->transferRun === null) {
+		$retention = $this->services->retention;
+		$transferRun = $this->services->transferRun;
+		if ($retention === null || $transferRun === null) {
 			return new JSONResponse(data: ['results' => [], 'total' => 0, 'available' => false]);
 		}
 
-		$onActiveLists = $this->transferRun->getObjectsOnActiveTransferLists(
+		$onActiveLists = $transferRun->getObjectsOnActiveTransferLists(
 			activeTransferLists: $this->transferRecordService->listTransferLists()
 		);
 
 		$results = [];
-		foreach ($this->retention->findEligibleForTransfer(excludeUuids: $onActiveLists) as $object) {
+		foreach ($retention->findEligibleForTransfer(excludeUuids: $onActiveLists) as $object) {
 			$results[] = [
 				'uuid'      => $object->getUuid(),
 				'name'      => $object->getName(),
