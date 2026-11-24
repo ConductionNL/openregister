@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
@@ -86,12 +87,10 @@ class ObjectActionGate {
 	 */
 	public function holds(RightCheck $check): bool {
 		return $this->permissions->hasPermission(
-			schema: $check->schema,
-			action: $check->right,
-			userId: $this->userId(),
-			objectOwner: $check->object?->getOwner(),
-			_rbac: true,
-			object: $check->object
+			ask: (new PermissionAsk(schema: $check->schema, action: $check->right))
+				->askedBy(userId: $this->userId(), objectOwner: $check->object?->getOwner())
+				->about(object: $check->object, register: null),
+			_rbac: true
 		);
 	}//end holds()
 
@@ -120,12 +119,10 @@ class ObjectActionGate {
 
 		return $this->selfAssignNamed(schema: $check->schema, key: $definition->key)
 			&& $this->permissions->hasPermission(
-				schema: $check->schema,
-				action: $definition->key,
-				userId: $this->userId(),
-				objectOwner: null,
-				_rbac: true,
-				object: $this->withoutOwnership(object: $check->object)
+				ask: (new PermissionAsk(schema: $check->schema, action: $definition->key))
+					->askedBy(userId: $this->userId(), objectOwner: null)
+					->about(object: $this->withoutOwnership(object: $check->object), register: null),
+				_rbac: true
 			);
 	}//end mayRun()
 
