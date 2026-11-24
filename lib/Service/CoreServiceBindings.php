@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
@@ -137,6 +138,7 @@ use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectNameWriterInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
+use OCA\OpenRegister\Service\Object\ObjectUpdateRights;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
@@ -437,6 +439,7 @@ final class CoreServiceBindings {
 		ObjectEventGateInterface::class => ObjectEventGate::class,
 		ObjectNameWriterInterface::class => CacheHandler::class,
 		ObjectReadAccessInterface::class => ObjectReadAccess::class,
+		ObjectUpdateRightsInterface::class => ObjectUpdateRights::class,
 		ObjectReadersInterface::class => PermissionHandler::class,
 		ObjectSlugBackfillServiceInterface::class => ObjectSlugBackfillService::class,
 		ObjectValidatorInterface::class => ValidateObject::class,
