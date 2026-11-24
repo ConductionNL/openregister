@@ -152,6 +152,8 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedConflictService;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedConflictServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -207,6 +209,7 @@ final class ContractBindings {
 		CaseTokenServiceInterface::class => CaseTokenService::class,
 		FederationShareServiceInterface::class => FederationShareService::class,
 		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
+		ShippedConflictServiceInterface::class => ShippedConflictService::class,
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		\OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
 		\OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface::class => \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder::class,

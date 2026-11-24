@@ -4117,7 +4117,14 @@ OC.L10N.register(
     "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene..." : "🔍 SOLR is een krachtig enterprise-zoekplatform gebouwd op Apache Lucene...",
     "🔢 Vectorization Settings" : "🔢 Vectorisatie-instellingen",
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 Automatisch schalen kan nodes dynamisch toevoegen of verwijderen op basis van de belasting...",
-    "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ De beveiligingsfuncties omvatten authenticatie, autorisatie en SSL-versleuteling..."
+    "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ De beveiligingsfuncties omvatten authenticatie, autorisatie en SSL-versleuteling...",
+    "Close connections" : "Koppelingen sluiten",
+    "Found in this mail" : "Gevonden in deze e-mail",
+    "Names, addresses and numbers" : "Namen, adressen en nummers",
+    "Connected to" : "Gekoppeld aan",
+    "Drop an attachment here to add it" : "Sleep een bijlage hierheen om die toe te voegen",
+    "Number or words" : "Nummer of woorden",
+    "New {name} from this mail" : "Nieuwe {name} vanuit deze e-mail"
 },
 "nplurals=2; plural=(n != 1);"
 );
