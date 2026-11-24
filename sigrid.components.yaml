@@ -1182,6 +1182,7 @@ components:
       - ".*/lib/Service/Sharing/AccessLinkServiceInterface[.]php"
       - ".*/lib/Service/Sharing/AccessLinkSubject[.]php"
       - ".*/lib/Service/Sharing/AccessLinkSubjectInterface[.]php"
+      - ".*/lib/Service/Sharing/AccessLinkSubjectLinks[.]php"
       - ".*/lib/Service/Sharing/AccessLinkTerms[.]php"
       - ".*/lib/Service/Sharing/AccessLinkUse[.]php"
       - ".*/lib/Service/Sharing/AccessLinkUseLog[.]php"

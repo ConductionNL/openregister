@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
@@ -67,6 +68,7 @@ class AccessLinkControllerTest extends TestCase {
 	private AccessLinkReader&MockObject $reader;
 	private AccessLinkMintGuard&MockObject $mintGuard;
 	private AccessLinkActs&MockObject $acts;
+	private AccessLinkSubjectLinks&MockObject $subjectLinks;
 	private IUserSession&MockObject $userSession;
 	private IThrottler&MockObject $throttler;
 	private LoggerInterface&MockObject $logger;
@@ -83,6 +85,7 @@ class AccessLinkControllerTest extends TestCase {
 		$this->reader = $this->createMock(AccessLinkReader::class);
 		$this->mintGuard = $this->createMock(AccessLinkMintGuard::class);
 		$this->acts = $this->createMock(AccessLinkActs::class);
+		$this->subjectLinks = $this->createMock(AccessLinkSubjectLinks::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->throttler = $this->createMock(IThrottler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -102,7 +105,8 @@ class AccessLinkControllerTest extends TestCase {
 			acts: $this->acts,
 			userSession: $this->userSession,
 			throttler: $this->throttler,
-			logger: $this->logger
+			logger: $this->logger,
+			subjectLinks: $this->subjectLinks
 		);
 	}
 
@@ -498,6 +502,66 @@ class AccessLinkControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->revoke(id: 1)->getStatus());
+	}
+
+	// ---- access-links-managed-per-subject (REQ-ABL-005). -------------------
+
+	public function testAPublisherListsEveryLinkOnTheNamedSubject(): void {
+		$this->signIn(uid: 'manager');
+		$this->params = ['subjectType' => 'view', 'subjectId' => 'view-uuid'];
+		$this->links->expects($this->never())->method('listForUser');
+		$this->subjectLinks->expects($this->once())
+			->method('listOn')
+			->with('view', 'view-uuid', 'manager')
+			->willReturn([['id' => 4, 'createdBy' => 'member']]);
+
+		$response = $this->controller->index();
+
+		$this->assertSame([['id' => 4, 'createdBy' => 'member']], $response->getData()['results']);
+	}
+
+	public function testACallerWhoMayNotPublishTheSubjectGets404ForItsListing(): void {
+		$this->signIn(uid: 'outsider');
+		$this->params = ['subjectType' => 'view', 'subjectId' => 'view-uuid'];
+		$this->subjectLinks->method('listOn')->willReturn(null);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->index()->getStatus());
+	}
+
+	public function testHalfASubjectListsTheCallersOwnLinks(): void {
+		$this->signIn(uid: 'manager');
+		$this->params = ['subjectType' => 'view'];
+		$this->subjectLinks->expects($this->never())->method('listOn');
+		$this->links->expects($this->once())->method('listForUser')->with('manager')->willReturn([]);
+
+		$this->assertSame(['results' => []], $this->controller->index()->getData());
+	}
+
+	public function testAPublisherRevokesALinkSomebodyElseMintedOnTheNamedSubject(): void {
+		$this->signIn(uid: 'manager');
+		$this->params = ['subjectType' => 'view', 'subjectId' => 'view-uuid'];
+		$this->links->method('revoke')->willReturn(false);
+		$this->subjectLinks->expects($this->once())->method('revokeOn')->with(4, 'view', 'view-uuid')->willReturn(true);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->revoke(id: 4)->getStatus());
+	}
+
+	public function testARevokeTheSubjectRefusesAnswers404(): void {
+		$this->signIn(uid: 'outsider');
+		$this->params = ['subjectType' => 'view', 'subjectId' => 'view-uuid'];
+		$this->links->method('revoke')->willReturn(false);
+		$this->subjectLinks->method('revokeOn')->willReturn(false);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->revoke(id: 4)->getStatus());
+	}
+
+	public function testOwnLinkIsRevokedWithoutAskingAboutTheSubject(): void {
+		$this->signIn();
+		$this->params = ['subjectType' => 'view', 'subjectId' => 'view-uuid'];
+		$this->links->method('revoke')->willReturn(true);
+		$this->subjectLinks->expects($this->never())->method('revokeOn');
+
+		$this->assertSame(Http::STATUS_OK, $this->controller->revoke(id: 1)->getStatus());
 	}
 	// ---- characterisation: exact upload/comment refusals and the throttle log. ----
 

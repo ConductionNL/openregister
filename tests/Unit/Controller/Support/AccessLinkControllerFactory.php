@@ -27,6 +27,7 @@ final class AccessLinkControllerFactory {
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IThrottler $throttler Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
+	 * @param AccessLinkSubjectLinks $subjectLinks Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,6 +41,7 @@ final class AccessLinkControllerFactory {
 		\OCP\IUserSession $userSession,
 		\OCP\Security\Bruteforce\IThrottler $throttler,
 		\Psr\Log\LoggerInterface $logger,
+		\OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks $subjectLinks,
 	): array {
 		return [
 			$request,
@@ -49,6 +51,7 @@ final class AccessLinkControllerFactory {
 					reader: $reader,
 					mintGuard: $mintGuard,
 					acts: $acts,
+					subjectLinks: $subjectLinks,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\AccessLinkPlatform(
 					userSession: $userSession,

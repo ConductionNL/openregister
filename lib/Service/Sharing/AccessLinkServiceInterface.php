@@ -77,6 +77,28 @@ interface AccessLinkServiceInterface {
 	public function listForUser(string $userId): array;
 
 	/**
+	 * The absolute URL a holder opens, the JSON API link.
+	 *
+	 * @param string $anchor The link anchor.
+	 *
+	 * @return string The absolute link URL.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	public function linkUrl(string $anchor): string;
+
+	/**
+	 * The page a holder opens for an anchor, rendered for a person.
+	 *
+	 * @param string $anchor The anchor.
+	 *
+	 * @return string The absolute page URL.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	public function pageUrl(string $anchor): string;
+
+	/**
 	 * Mint a link over one subject.
 	 *
 	 * The minting principal travels in the request rather than being something
