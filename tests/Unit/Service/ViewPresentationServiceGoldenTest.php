@@ -51,6 +51,7 @@ use stdClass;
  * @uses \OCA\OpenRegister\Search\Service\CalendarRange
  * @uses \OCA\OpenRegister\Search\Service\KanbanBoardRun
  * @uses \OCA\OpenRegister\Service\Rbac\RbacRuleChecks
+ * @uses \OCA\OpenRegister\Support\FilterParams
  */
 class ViewPresentationServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/view-presentation-golden.json';
