@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Psr\Log\LoggerInterface;
 
 /**
- * Retype PostgreSQL columns whose stored type no longer fits their property.
+ * Retype columns whose stored type no longer fits their property (PostgreSQL, and MySQL JSON).
  *
  * Both retypes leave a column as it is when the statement fails, and neither
  * reorders or truncates stored data.
@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  */
 final class MagicColumnRetyper {
 	private const JSON_RETYPED = '[MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation';
+
+	private const JSON_TEXT_RETYPED = '[MagicMapper] Migrated object-typed column from JSON to checked text for key-order preservation';
 
 	private const RELATION_RETYPED = '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)';
 
@@ -61,19 +63,25 @@ final class MagicColumnRetyper {
 	}//end __construct()
 
 	/**
-	 * Move object-typed columns from JSONB to JSON to keep client key order (#1720).
+	 * Move object-typed columns to a type that keeps client key order (#1720).
 	 *
-	 * JSONB hashes keys; plain JSON stores the document verbatim. Going through
-	 * text keeps the order the column already held, so only new writes keep the
-	 * client's order. MySQL/MariaDB JSON already keeps document order.
+	 * PostgreSQL JSONB hashes keys; plain JSON stores the document verbatim.
+	 * MySQL JSON sorts object keys; checked text stores it verbatim. Either way
+	 * the column keeps the order it already held, so only new writes keep the
+	 * client's order. MariaDB JSON is text already.
 	 *
 	 * @param TableStructureSync $sync The table sync.
 	 *
 	 * @return array<string> The column names retyped.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function orderedJson(TableStructureSync $sync): array {
+		if ($sync->orderedJsonAsText === true && $sync->isPostgres === false) {
+			return $this->orderedJsonToText(sync: $sync);
+		}
+
 		if ($sync->isPostgres === false) {
 			return [];
 		}
@@ -88,6 +96,27 @@ final class MagicColumnRetyper {
 
 		return $retyped;
 	}//end orderedJson()
+
+	/**
+	 * Move MySQL JSON columns of object-typed properties to checked text.
+	 *
+	 * @param TableStructureSync $sync The table sync.
+	 *
+	 * @return array<string> The column names retyped.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	private function orderedJsonToText(TableStructureSync $sync): array {
+		$retyped = [];
+		foreach ($sync->columns->storedAs(declaredType: 'json_ordered', liveTypes: ['json']) as $columnName) {
+			if ($this->retypeToCheckedText(sync: $sync, columnName: $columnName) === true) {
+				$retyped[] = $columnName;
+				$this->logger->debug(message: self::JSON_TEXT_RETYPED, context: ['columnName' => $columnName]);
+			}
+		}
+
+		return $retyped;
+	}//end orderedJsonToText()
 
 	/**
 	 * Convert JSON columns that now hold a UUID reference to VARCHAR.
@@ -172,6 +201,30 @@ final class MagicColumnRetyper {
 			)
 		);
 	}//end retypeToText()
+
+	/**
+	 * Retype one MySQL JSON column to text that must hold JSON, keeping its nullability.
+	 *
+	 * @param TableStructureSync $sync       The table sync.
+	 * @param string             $columnName The physical column.
+	 *
+	 * @return bool Whether the statement succeeded.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	private function retypeToCheckedText(TableStructureSync $sync, string $columnName): bool {
+		$sql = $sync->columnSql();
+		$nullability = ' NULL';
+		if (($sync->columns->current[$columnName]['nullable'] ?? true) === false) {
+			$nullability = ' NOT NULL';
+		}
+
+		return $this->ddl->attempt(
+			sql: 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY ' . $sql->quote(name: $columnName) . ' '
+				. $sql->type(type: 'json_ordered', column: []) . $nullability . $sql->check(type: 'json_ordered', name: $columnName),
+			failure: new MagicDdlFailure(message: '[MagicMapper] Failed to migrate column from JSON to checked text', context: ['columnName' => $columnName])
+		);
+	}//end retypeToCheckedText()
 
 	/**
 	 * Retype one column to JSON.

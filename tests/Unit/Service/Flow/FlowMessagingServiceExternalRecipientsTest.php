@@ -111,6 +111,13 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	private array $mailedTo = [];
 
 	/**
+	 * The writer of outbound email links, when a test wants them.
+	 *
+	 * @var \OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter|null
+	 */
+	private ?\OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter $outboundLinks = null;
+
+	/**
 	 * Every event the dispatcher was handed.
 	 *
 	 * @var array<int, Event>
@@ -315,7 +322,8 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 					userManager: $this->userManager,
 					mailer: $this->mailer,
 					logger: $logger,
-					channelPolicy: $policy
+					channelPolicy: $policy,
+					outboundLinks: $this->outboundLinks
 				),
 				talkSender: new TalkSender(httpClient: $this->createMock(IClientService::class), logger: $logger)
 			),
@@ -388,6 +396,28 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		);
 		$this->assertArrayNotHasKey('unknownRecipients', $report);
 	}//end testTheDefaultModeRefusesAnAddressAndStillMailsTheUser()
+
+	public function testAMailToAnAddressIsLinkedToTheObjectItWasSentFrom(): void {
+		$stored = [];
+		$links = $this->createMock(\OCA\OpenRegister\Db\EmailLinkMapperInterface::class);
+		$links->method('insert')->willReturnCallback(
+			static function (\OCA\OpenRegister\Db\EmailLink $link) use (&$stored): \OCA\OpenRegister\Db\EmailLink {
+				$stored[] = $link;
+				return $link;
+			}
+		);
+		$this->outboundLinks = new \OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter(links: $links);
+
+		$this->sendEmail(
+			config: ['recipients' => ['citizen@example.org'], 'externalRecipients' => 'any'],
+			json: ['name' => 'Case 7', 'uuid' => 'case-7', '@self' => ['register' => '4', 'schema' => '9']]
+		);
+
+		$this->assertSame(['citizen@example.org'], $this->mailedTo);
+		$this->assertCount(1, $stored);
+		$this->assertSame(['case-7', 4, 'outbound'], [$stored[0]->getObjectUuid(), $stored[0]->getRegisterId(), $stored[0]->getDirection()]);
+		$this->assertMatchesRegularExpression('/^<[0-9a-f]{32}@/', (string) $stored[0]->getRfcMessageId());
+	}//end testAMailToAnAddressIsLinkedToTheObjectItWasSentFrom()
 
 	public function testAnUnrecognisedModeFallsBackToClosed(): void {
 		$report = $this->sendEmail(config: ['recipients' => ['citizen@example.org'], 'externalRecipients' => 'everyone']);
