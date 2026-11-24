@@ -40,10 +40,22 @@ logs stable.
 
 ## 3. Grant issuer
 
-- [ ] 3.1 Record the issuer on a per-object grant.
-- [ ] 3.2 Resolve the issuer's own access from their grant in
+- [x] 3.1 Record the issuer on a per-object grant.
+- [x] 3.2 Resolve the issuer's own access from their grant in
       `ObjectGrantResolver`, on both layers.
-- [ ] 3.3 Revoke the derived access when the grant is revoked.
+- [x] 3.3 Revoke the derived access when the grant is revoked.
+
+Build note (3): the issuer is the grant's own `sharedBy`, which
+`ObjectSharingService::shareOnFolder()` already sets to the calling user, so
+nothing new is stored. `ObjectGrantResolver::resolve()` reads a second pass,
+`IManager::getSharesBy()` with reshares off, over the same principal share
+types and through the same stored-folder check and widest-wins composition as
+a received grant. The map it fills is the one both layers read (`isGranted()`
+on the find path, `grantedObjectUuidsFor()` on the list path), so they cannot
+disagree. A revoked share is no longer returned, so the issuer's access goes
+with it; nothing is inferred from any other row. Link and email shares are
+minted by the app's account (`ShareLinkService`), so they carry no human
+issuer and are outside this pass. Test: `tests/Unit/Service/Rbac/ObjectGrantIssuerTest.php`.
 
 ## 4. The orphan validator
 
@@ -55,13 +67,28 @@ logs stable.
 
 ## 5. Tests
 
-- [ ] 5.1 Unit tests: the four contract scenarios, both postures, issuer
+- [x] 5.1 Unit tests: the four contract scenarios, both postures, issuer
       derive and revoke, and the validator refusals on the issue path. Doubles
       use `onlyMethods`.
 - [ ] 5.2 `tests/e2e/api-direct/object-access-contract.spec.ts`, probing with
       an ordinary authenticated user who should be refused.
-- [ ] 5.3 A test asserting `PermissionHandler` and `MagicRbacHandler` answer
+- [x] 5.3 A test asserting `PermissionHandler` and `MagicRbacHandler` answer
       the same set for one declaration, which is the layer-agreement guard.
+
+Build note (5): the contract scenarios and the layer-agreement guard are
+`tests/Unit/Service/Rbac/ObjectAccessContractTest.php`. It runs the real
+`PermissionHandler` (find) and the real `MagicRbacHandler` (list, compiled by
+`MagicSearchHandler` and executed on an SQLite table, row verdict too) over one
+real `ConditionMatcher`, for the D-1 declaration: the assignee, a member of
+`assignees`, a stranger whose refusal names the principals and the rule, the
+`permittedActionsFor()` answer against the enforcement, and per caller the find
+set equal to the list set. Both postures are
+`PermissionHandlerUndecidablePostureTest` and `MagicRbacUndecidablePostureTest`;
+issuer derive and revoke is `ObjectGrantIssuerTest`; the validator's reason on
+the issue path is `ConsumersControllerTest`. On the issue path the issuer's
+verbs are the catalogue's verbs, so the "wider than the issuer" refusal is only
+reachable through the validator's own tests (`TokenGrantValidatorRefusalTest`).
+5.2 is an e2e spec against a live instance and is left for the e2e lane.
 
 ## 6. Consuming apps
 
