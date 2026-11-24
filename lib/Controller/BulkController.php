@@ -66,6 +66,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -332,6 +333,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function delete(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -726,6 +728,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function save(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -857,6 +860,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
+	#[Sheddable]
 	public function deleteSchema(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -994,6 +998,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
 	 */
+	#[Sheddable]
 	public function deleteSchemaObjects(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1062,6 +1067,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
+	#[Sheddable]
 	public function deleteRegister(string $register): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1133,6 +1139,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
+	#[Sheddable]
 	public function runSchemaValidation(string $schema): JSONResponse {
 		try {
 			// Validate input.

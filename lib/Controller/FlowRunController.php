@@ -88,6 +88,10 @@ use Throwable;
  * filed away in a PR description nobody reads at the call site. Trimming that
  * explanation to duck the line counter is the same corrosive trade the other
  * three suppressions on this class already decline to make.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Each public method is one route of
+ * the flow-run REST surface (list, show, retry, resume, signal, objects, ...); the
+ * rest are the small private guard helpers named above. Splitting the routes over
+ * several controllers would move the shared run guard into a second place.
  */
 class FlowRunController extends Controller {
 	/**
