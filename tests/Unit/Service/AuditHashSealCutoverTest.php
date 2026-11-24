@@ -25,6 +25,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
@@ -254,7 +256,7 @@ class AuditHashSealCutoverTest extends TestCase {
 	public function testARangedWalkCountsOnlyItsOwnRows(): void {
 		$service = $this->serviceWithCutover(marker: 3);
 		$rows = $this->chain(service: $service, count: 6, unsealed: [4]);
-		// getHashBefore(4) reads row 3's hash first, then the window of rows 4..5.
+		// The getHashBefore(4) query reads row 3's hash first, then the window of rows 4..5.
 		$this->windows = [[['hash' => $rows[2]['hash']]], array_slice($rows, 3, 2)];
 
 		$report = $service->verifyChain(from: 4, to: 5);

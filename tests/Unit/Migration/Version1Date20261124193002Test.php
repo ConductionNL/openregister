@@ -31,6 +31,11 @@ use PHPUnit\Framework\TestCase;
  */
 class Version1Date20261124193002Test extends TestCase {
 
+	/**
+	 * The marker is one past the highest existing id.
+	 *
+	 * @return void
+	 */
 	public function testTheMarkerIsTheFirstIdAfterTheExistingRows(): void {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->with('openregister', 'audit_seal_cutover_id', 0)->willReturn(0);
@@ -41,14 +46,25 @@ class Version1Date20261124193002Test extends TestCase {
 		(new Version1Date20261124193002($this->connection(maxId: '4711'), $appConfig))->postSchemaChange($output, static fn () => null, []);
 	}
 
+	/**
+	 * On an empty trail every row to come is post-cutover.
+	 *
+	 * @return void
+	 */
 	public function testAnEmptyTrailMakesEveryRowPostCutover(): void {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn(0);
 		$appConfig->expects($this->once())->method('setValueInt')->with('openregister', 'audit_seal_cutover_id', 1)->willReturn(true);
 
-		(new Version1Date20261124193002($this->connection(maxId: null), $appConfig))->postSchemaChange($this->createMock(IOutput::class), static fn () => null, []);
+		$step = new Version1Date20261124193002($this->connection(maxId: null), $appConfig);
+		$step->postSchemaChange($this->createMock(IOutput::class), static fn () => null, []);
 	}
 
+	/**
+	 * A marker already recorded stays, and the trail is not even read.
+	 *
+	 * @return void
+	 */
 	public function testARecordedMarkerIsNeverMoved(): void {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueInt')->willReturn(300);

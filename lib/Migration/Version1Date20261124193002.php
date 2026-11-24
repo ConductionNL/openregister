@@ -30,7 +30,7 @@ use OCP\Migration\IOutput;
 /**
  * Persist the first audit id written after this migration as the cutover marker.
  *
- * verifyChain() used to skip every row without a hash as "pre-migration", so a
+ * The chain verification used to skip every row without a hash as "pre-migration", so a
  * row left unsealed minutes ago passed verification exactly like a row from
  * before the hash chain existed. The marker tells the two apart: the rows that
  * exist when this step runs are the legacy population and keep being skipped;
