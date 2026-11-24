@@ -65,6 +65,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 	private const UUID = 'cred-org-inject-1';

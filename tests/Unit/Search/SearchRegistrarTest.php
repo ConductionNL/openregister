@@ -89,7 +89,8 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(22, $expected);
+		$this->assertCount(23, $expected);
+		$this->assertSame(\OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class, SearchRegistrar::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class]);
 		$this->assertSame(ViewMapper::class, SearchRegistrar::BINDINGS[ViewFinderInterface::class]);
 		$this->assertSame(ViewNamingDocuments::class, SearchRegistrar::BINDINGS[ViewNamingDocumentsInterface::class]);
 		$this->assertSame(expected: $expected, actual: $context->aliases);

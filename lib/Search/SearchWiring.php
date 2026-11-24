@@ -111,6 +111,7 @@ final class SearchWiring {
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		StoredViewQueriesInterface::class => StoredViewQueries::class,
 		ViewNamingDocumentsInterface::class => ViewNamingDocuments::class,
+		\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class => \OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class,
 	];
 
 	/**
