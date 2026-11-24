@@ -61,9 +61,7 @@ final class SchemaWriteRights implements SchemaWriteRightsInterface {
 		}
 
 		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			register: $register
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))->about(object: null, register: $register)
 		);
 	}//end mayUpdate()
 }//end class

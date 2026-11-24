@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetSearch;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Object\SchemaWriteRights;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -54,6 +55,7 @@ use RuntimeException;
 #[CoversClass(AttachTargetSearch::class)]
 #[UsesClass(AttachTargetFilter::class)]
 #[UsesClass(Register::class)]
+#[UsesClass(PermissionAsk::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(SchemaWriteRights::class)]
@@ -134,7 +136,7 @@ class AttachTargetSearchTest extends TestCase {
 		$this->registers->method('findAll')->willReturn([$register]);
 		$this->schemas->method('findMultiple')->willReturn($schemas);
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action, ...$rest): bool => $action === 'update' && ($writable[$schema->getSlug()] ?? false)
+			fn (PermissionAsk $ask): bool => $ask->action === 'update' && $ask->register === '7' && ($writable[$ask->schema->getSlug()] ?? false)
 		);
 	}//end arrange()
 

@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Object\SchemaWriteRights;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -38,6 +39,7 @@ use RuntimeException;
  * The port asks the permission check for `update` on the schema in the register.
  */
 #[CoversClass(SchemaWriteRights::class)]
+#[UsesClass(PermissionAsk::class)]
 #[UsesClass(Schema::class)]
 final class SchemaWriteRightsTest extends TestCase {
 
@@ -46,7 +48,12 @@ final class SchemaWriteRightsTest extends TestCase {
 		$permissions = $this->createMock(PermissionCheckInterface::class);
 		$permissions->expects($this->once())
 			->method('hasPermission')
-			->with($schema, 'update', null, null, true, null, '7')
+			->with($this->callback(static fn (PermissionAsk $ask): bool => $ask->schema === $schema
+				&& $ask->action === 'update'
+				&& $ask->userId === null
+				&& $ask->objectOwner === null
+				&& $ask->object === null
+				&& $ask->register === '7'))
 			->willReturn(true);
 
 		$this->assertTrue((new SchemaWriteRights(permissions: $permissions))->mayUpdate(schema: $schema, register: '7'));
