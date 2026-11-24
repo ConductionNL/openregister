@@ -267,3 +267,4 @@
 2026-11-24T19:08Z humaniq: closed own #1266 as a duplicate of #1267 (a parallel run of this lane built the same 2.1/2.2 at 18:02; #1267 also handles four-weekly/weekly franchise and a pack-input guard); #1267 waits for the coordinator; overlap guard missed the parallel run
 2026-11-24T19:08Z help-filinq-1 built scan-intake-from-a-watched-folder 2.3 (#2313, integration test through the real dispatcher, written, runs in nightly); 3.2 live check left, change not archived
 2026-11-24T19:09:02Z help-learniq-1 skipped notification-quiet-hours-through-openregister 2.3/2.4: live check on the dev instance, then archive (code merged #2733)
+2026-11-24T19:12Z help-filinq-1 built template-engine-renders-through-a-vendor 3.1 (#2314, live Newman collection + runner, not run here); 3.2 live dossiq check left, change not archived
