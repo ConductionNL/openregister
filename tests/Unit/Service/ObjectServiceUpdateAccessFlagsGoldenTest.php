@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
@@ -20,6 +21,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * Pins the allowed and the refused outcome of an update for each value of `_rbac` and `_multitenancy`.
@@ -56,6 +58,12 @@ class ObjectServiceUpdateAccessFlagsGoldenTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['saveObject'])
 			->getMock();
+
+		$stored = new ObjectEntity();
+		$stored->setUuid('object-1');
+		$objectMapper = $this->createMock(MagicMapperInterface::class);
+		$objectMapper->method('find')->willReturn($stored);
+		(new ReflectionProperty(ObjectService::class, 'objectMapper'))->setValue($this->service, $objectMapper);
 
 		// The mock hands its arguments over positionally; resolve the flags by parameter name so the
 		// test does not depend on where saveObject() declares them.

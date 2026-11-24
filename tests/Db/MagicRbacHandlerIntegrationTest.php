@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -451,9 +452,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'OpenAccess', 'status' => 'active', 'age' => 25]);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_rbac' => false, '_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false, '_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 		$this->assertNotEmpty($results);
@@ -475,9 +475,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'PublicItem', 'status' => 'live', 'age' => 30]);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 		$this->assertNotEmpty($results);
@@ -500,9 +499,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 
 		// Should not crash regardless of whether user has access
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 	}
@@ -526,9 +524,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'DraftItem', 'status' => 'draft', 'age' => 22]);
 
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 	}
@@ -596,14 +593,13 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$this->insertTestObject($register, $schema, ['name' => 'FacetAuth2', 'status' => 'inactive', 'age' => 20]);
 
 		$facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+			new RegisterSchema($register, $schema),
 			[
 				'_facets' => [
 					'status' => ['type' => 'terms'],
 				],
 				'_multitenancy' => false,
-			],
-			$register,
-			$schema
+			]
 		);
 		$this->assertIsArray($facets);
 		$this->assertArrayHasKey('status', $facets);
@@ -699,9 +695,8 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 
 		// With _rbac=false, should bypass RBAC filtering
 		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_rbac' => false, '_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_rbac' => false, '_multitenancy' => false]
 		);
 		$this->assertIsArray($results);
 		$this->assertNotEmpty($results);

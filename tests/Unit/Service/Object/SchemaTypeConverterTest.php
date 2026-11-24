@@ -268,8 +268,7 @@ class SchemaTypeConverterTest extends TestCase {
 
 		$restored = $this->converter->restoreStringTypedValues(
 			['title' => 'probe', 'notes' => $decoded],
-			['title' => ['type' => 'string'], 'notes' => ['type' => 'string']],
-			['title']
+			array_diff_key(['title' => ['type' => 'string'], 'notes' => ['type' => 'string']], array_flip(['title']))
 		);
 
 		$this->assertSame($stored, $restored['notes'], 'the untouched value goes back as it was stored');
@@ -279,8 +278,7 @@ class SchemaTypeConverterTest extends TestCase {
 	public function testAnArrayTheCallerSuppliedIsLeftAloneSoValidationStillRefusesIt(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['notes' => [['status' => 'open']]],
-			['notes' => ['type' => 'string']],
-			['notes']
+			array_diff_key(['notes' => ['type' => 'string']], array_flip(['notes']))
 		);
 
 		$this->assertIsArray(
@@ -306,11 +304,10 @@ class SchemaTypeConverterTest extends TestCase {
 
 		$restored = $this->converter->restoreStringTypedValues(
 			['title' => $decoded, 'stage' => 'won'],
-			[
+			array_diff_key([
 				'title' => ['type' => 'string', 'translatable' => true],
 				'stage' => ['type' => 'string'],
-			],
-			['stage']
+			], array_flip(['stage']))
 		);
 
 		$this->assertSame(['nl' => '[Demo] Webshop'], $restored['title']);
@@ -319,8 +316,7 @@ class SchemaTypeConverterTest extends TestCase {
 	public function testAnArrayTypedPropertyIsNeverEncoded(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['tags' => ['a', 'b']],
-			['tags' => ['type' => 'array']],
-			[]
+			['tags' => ['type' => 'array']]
 		);
 
 		$this->assertSame(['a', 'b'], $restored['tags']);
@@ -329,8 +325,7 @@ class SchemaTypeConverterTest extends TestCase {
 	public function testAUnionOfStringAndNullIsStillStringTyped(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['notes' => ['a' => 1]],
-			['notes' => ['type' => ['string', 'null']]],
-			[]
+			['notes' => ['type' => ['string', 'null']]]
 		);
 
 		$this->assertSame('{"a":1}', $restored['notes']);
@@ -339,8 +334,7 @@ class SchemaTypeConverterTest extends TestCase {
 	public function testAUnionThatAdmitsArrayIsLeftAlone(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['notes' => ['a' => 1]],
-			['notes' => ['type' => ['string', 'array']]],
-			[]
+			['notes' => ['type' => ['string', 'array']]]
 		);
 
 		$this->assertSame(['a' => 1], $restored['notes'], 'the array form is valid there, so there is nothing to restore');
@@ -354,8 +348,7 @@ class SchemaTypeConverterTest extends TestCase {
 				'count' => ['type' => 'integer'],
 				'flag' => ['type' => 'boolean'],
 				'empty' => ['type' => 'string'],
-			],
-			[]
+			]
 		);
 
 		$this->assertSame(
@@ -367,8 +360,7 @@ class SchemaTypeConverterTest extends TestCase {
 	public function testAPropertyTheSchemaDoesNotDeclareIsLeftAlone(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['stray' => ['a' => 1]],
-			['notes' => ['type' => 'string']],
-			[]
+			['notes' => ['type' => 'string']]
 		);
 
 		$this->assertSame(['a' => 1], $restored['stray'], 'no declaration, no claim about the stored shape');
@@ -380,8 +372,7 @@ class SchemaTypeConverterTest extends TestCase {
 		// property was stored as written and must stay that way.
 		$restored = $this->converter->restoreStringTypedValues(
 			['contact' => ['name' => 'A', 'history' => ['x']]],
-			['contact' => ['type' => 'object']],
-			[]
+			['contact' => ['type' => 'object']]
 		);
 
 		$this->assertSame(['name' => 'A', 'history' => ['x']], $restored['contact']);
@@ -393,8 +384,7 @@ class SchemaTypeConverterTest extends TestCase {
 		// back a different string for the same value.
 		$restored = $this->converter->restoreStringTypedValues(
 			['notes' => ['url' => 'https://example.org/a/b', 'who' => 'Renée']],
-			['notes' => ['type' => 'string']],
-			[]
+			['notes' => ['type' => 'string']]
 		);
 
 		$this->assertSame('{"url":"https://example.org/a/b","who":"Renée"}', $restored['notes']);
@@ -405,8 +395,7 @@ class SchemaTypeConverterTest extends TestCase {
 
 		$restored = $this->converter->restoreStringTypedValues(
 			['notes' => $this->converter->convertValue($stored, 'string')],
-			['notes' => ['type' => 'string']],
-			[]
+			['notes' => ['type' => 'string']]
 		);
 
 		$this->assertSame($stored, $restored['notes'], 'decode then encode is the identity for what a read handed back');

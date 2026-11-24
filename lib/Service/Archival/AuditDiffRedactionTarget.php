@@ -142,7 +142,7 @@ final class AuditDiffRedactionTarget {
 	 * think to look for it.
 	 *
 	 * @param array<string, mixed> $redacted The redacted diff.
-	 * @param array<string, mixed> $removed  The values that were removed.
+	 * @param array<array-key, mixed> $removed The values that were removed (only the values are read).
 	 *
 	 * @return string[] The values still present, empty when the redaction is clean.
 	 *

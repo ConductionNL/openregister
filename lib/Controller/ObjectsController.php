@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
+use OCA\OpenRegister\Controller\Support\SyncWatermark;
 use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectDeleteRoute;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
@@ -82,7 +83,9 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
@@ -137,6 +140,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -765,7 +769,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
 		$pairs            = [];
 		foreach ($registerEntities as $registerEntity) {
-			foreach ($schemaEntities as $schemaEntity) {
+			foreach ($this->crossTableSchemasOf(register: $registerEntity, schemaEntities: $schemaEntities) as $schemaEntity) {
 				if ($registerEntity->isMagicMappingEnabledForSchema(
 					schemaId: $schemaEntity->getId(),
 					schemaSlug: $schemaEntity->getSlug()
@@ -778,6 +782,36 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $pairs;
 	}//end crossTablePairs()
+
+	/**
+	 * The schemas a cross-table search names, as seen from one register.
+	 *
+	 * A slug two registers share resolved globally to one of them; inside this
+	 * register it names this register's own schema, read once per register
+	 * and only for slugs. Ids, uuids and slugs the register does not carry
+	 * keep the schema resolved up front.
+	 *
+	 * @param Register              $register       The register.
+	 * @param array<string, Schema> $schemaEntities The schemas resolved up front, by the reference the search used.
+	 *
+	 * @return array<string, Schema> The schemas, by reference.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function crossTableSchemasOf(Register $register, array $schemaEntities): array {
+		$scoped = [];
+		foreach ($schemaEntities as $ref => $schemaEntity) {
+			$ref = (string)$ref;
+			$own = null;
+			if (is_numeric($ref) === false && ($register->getSchemas() ?? []) !== []) {
+				$own = $this->services->store->schemaMapper->findBySlugInIds(slug: $ref, schemaIds: $register->getSchemas());
+			}
+
+			$scoped[$ref] = ($own ?? $schemaEntity);
+		}
+
+		return $scoped;
+	}//end crossTableSchemasOf()
 
 	/**
 	 * Resolve the registers or schemas of a cross-table search, skipping (and logging) invalid ones.
@@ -1180,6 +1214,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-list-responses-carry-a-server-side-sync-watermark-req-sync-004
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -1189,6 +1224,9 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		// per-request counts at all. Stamp + flush here so the same in-PHP
 		// counters that made the write numbers trustworthy cover reads too.
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.index.in');
+
+		// REQ-SYNC-004: taken before the query, so a write during the read is in the next run.
+		$watermark = new SyncWatermark();
 
 		$params = $this->request->getParams();
 
@@ -1200,7 +1238,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$urlPath = ['register' => $register, 'schema' => $schema];
 		$targets = $this->crossTableTargets(params: $params, urlPath: $urlPath);
 		if ($targets !== null) {
-			return $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService);
+			return $watermark->stamp(response: $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService));
 		}
 
 		try {
@@ -1221,10 +1259,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $this->indexFromMagicTable(listing: $listing, objectService: $objectService);
+			return $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
 		}
 
-		return $this->indexFromObjectService(listing: $listing, objectService: $objectService);
+		return $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 	}//end index()
 
 	/**
@@ -1387,9 +1425,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing['magicMapper'] = $magicMapper;
 
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $registerEntity,
-			schema: $schemaEntity
+			table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity),
+			query: $query
 		);
 		$serializedResults = $this->serializeMagicResults(results: $results, listing: $listing);
 		$page = $this->paginateMagicResults(listing: $listing);
@@ -1817,9 +1854,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function magicFacets(array $listing): array {
 		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-			query: $listing['query'],
-			register: $listing['resolved']['registerEntity'],
-			schema: $listing['resolved']['schemaEntity']
+			table: new RegisterSchema(register: $listing['resolved']['registerEntity'], schema: $listing['resolved']['schemaEntity']),
+			query: $listing['query']
 		);
 	}//end magicFacets()
 
@@ -1856,7 +1892,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				query: $query,
 				_rbac: $listing['rbac'],
 				_multitenancy: $listing['multi'],
-				deleted: $listing['deleted']
+				options: new SearchOptions(deleted: $listing['deleted'])
 			);
 		} catch (NotAuthorizedException $exception) {
 			// RBAC denied the schema-level list read. Mirror show(): 404, not
@@ -2161,8 +2197,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
 				_rbac: $scope->rbac,
-				_multitenancy: $scope->multi,
-				deleted: false
+				_multitenancy: $scope->multi
 			);
 		} catch (NotAuthorizedException $exception) {
 			// Schema-level read denied (object-source parity check):
@@ -2720,9 +2755,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			schema: $table->resolved['schema']
 		);
 		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-			query: $query,
-			register: $table->resolved['registerEntity'],
-			schema: $table->resolved['schemaEntity']
+			table: new RegisterSchema(register: $table->resolved['registerEntity'], schema: $table->resolved['schemaEntity']),
+			query: $query
 		);
 		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 
@@ -3682,7 +3716,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function sampleRefusal(ObjectRef $ref, mixed $schemaEntity, bool $update): ?JSONResponse {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		if ($update === false) {
-			if ($permissions->hasPermission(schema: $schemaEntity, action: 'create') === true) {
+			if ($permissions->hasPermission(ask: new PermissionAsk(schema: $schemaEntity, action: 'create')) === true) {
 				return null;
 			}
 
@@ -3694,7 +3728,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $object;
 		}
 
-		if ($permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $object->getOwner(), object: $object) === true) {
+		if ($permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		) === true) {
 			return null;
 		}
 
@@ -3882,6 +3920,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof PropertyWriteNotAuthorizedException => new JSONResponse(
+				data: ['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				statusCode: PropertyWriteNotAuthorizedException::HTTP_STATUS
+			),
 			$e instanceof HookStoppedException && self::heldChangeAnswer(exception: $e) !== null => self::heldChangeAnswer(exception: $e),
 			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
 			$e instanceof LockedException => $this->lockedResponse(exception: $e),
@@ -5439,7 +5481,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+		if ($permissions->hasPermission(ask: new PermissionAsk(schema: $resolved['schemaEntity'], action: 'create')) === false) {
 			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
 		}
 
@@ -5633,8 +5675,12 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function mayMove(ObjectEntity $object, array $schemas): bool {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 
-		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
-			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+		return $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemas[0], action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		)
+			&& $permissions->hasPermission(ask: new PermissionAsk(schema: $schemas[1], action: 'create'));
 	}//end mayMove()
 
 	/**
@@ -6040,12 +6086,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayUpdateTarget = $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $target->getOwner())
+				->about(object: $target, register: null)
+		);
 		$mayDeleteSource = $permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'delete',
-			objectOwner: $sourceObject->getOwner(),
-			object: $sourceObject
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'delete'))
+				->askedBy(userId: null, objectOwner: $sourceObject->getOwner())
+				->about(object: $sourceObject, register: null)
 		);
 		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
 			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
@@ -6527,8 +6576,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
-			properties: $patch->schema->getProperties(),
-			suppliedKeys: $patch->suppliedKeys
+			properties: array_diff_key($patch->schema->getProperties(), array_flip($patch->suppliedKeys))
 		);
 	}//end restoreStringTypedValues()
 

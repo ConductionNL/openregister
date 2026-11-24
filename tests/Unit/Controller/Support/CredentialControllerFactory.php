@@ -18,7 +18,6 @@ final class CredentialControllerFactory {
 	/**
 	 * The constructor arguments of CredentialController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
@@ -35,7 +34,6 @@ final class CredentialControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
@@ -50,7 +48,6 @@ final class CredentialControllerFactory {
 		?\OCP\IL10N $l10n =null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CredentialControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

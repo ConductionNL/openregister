@@ -264,6 +264,8 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			// form: a person gets fields to fill in, an agent gets a prompt.
 			'title', 'description', 'assignee', 'candidates', 'prompt',
 			'candidateUsers', 'candidateGroups', 'candidateRole', 'routingStrategy', 'routingFallback', 'performerType',
+			// The catalogue verb a delegate or stand-in must hold on the subject.
+			'requiredMandate',
 			'priority', 'dueAt', 'expiresAt', 'onTimeout', 'onReject',
 			'outcomes', 'outcomeKey', 'failOnReject', 'heartbeatMinutes', 'advance',
 			// The business-timer half. Absent from a node, nothing is armed and
@@ -641,7 +643,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function optionalTimerKeys(array $config): array {
 		$set = [];
-		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
+		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation', 'schema', 'person'] as $key) {
 			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
 				$set[$key] = $config[$key];
 			}
@@ -819,6 +821,10 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			$this->principalField(field: new NodeFormField(
 				key: 'routingFallback', label: $this->l10n->t('Fallback performer'), type: 'principal', help: $this->l10n->t(
 				'Who gets the task when the strategy finds nobody.'
+			))),
+			$this->field(field: new NodeFormField(
+				key: 'requiredMandate', label: $this->l10n->t('Required mandate'), type: 'text', help: $this->l10n->t(
+				'A catalogue permission a delegate or stand-in must hold on the subject. Empty: read access.'
 			))),
 		];
 	}//end routingFields()

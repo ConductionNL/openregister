@@ -318,19 +318,44 @@ export default {
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/register-descriptors'),
 				)
-				this.rows = response.data.results ?? []
-				this.total = response.data.total ?? 0
-				this.absent = response.data.absent ?? 0
-				this.behind = response.data.behind ?? 0
+				this.showInventory(response.data)
 			} catch (e) {
-				this.error = this.t(
-					'openregister',
-					'Could not read the descriptor inventory: {reason}',
-					{ reason: e?.response?.data?.error ?? e.message },
-				)
+				this.error = this.inventoryFailure(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Why the inventory could not be read, in the server's words or the
+		 * request's own.
+		 *
+		 * @param {Error} e The failure.
+		 * @return {string} The message.
+		 *
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
+		 */
+		inventoryFailure(e) {
+			return this.t(
+				'openregister',
+				'Could not read the descriptor inventory: {reason}',
+				{ reason: e?.response?.data?.error ?? e.message },
+			)
+		},
+
+		/**
+		 * Take the rows and counts of an inventory answer.
+		 *
+		 * @param {object} data The inventory answer.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
+		 */
+		showInventory(data) {
+			this.rows = data.results ?? []
+			this.total = data.total ?? 0
+			this.absent = data.absent ?? 0
+			this.behind = data.behind ?? 0
 		},
 
 		/**
@@ -387,52 +412,106 @@ export default {
 			this.busy = this.rowKey(row)
 			this.outcome = null
 			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
-					),
-				)
-				const replaced = Array.isArray(response?.data?.replaced)
-					? response.data.replaced
-					: []
-				const count =
-					response?.data?.counts?.authorizationReplaced ?? replaced.length
-				let message = this.t(
-					'openregister',
-					'{register} was imported from {app}.',
-					{
-						register: row.title,
-						app: row.appId,
-					},
-				)
-				if (count > 0 || replaced.length > 0) {
-					message +=
-						' '
-						+ this.t(
-							'openregister',
-							'Authorization taken from the file over a local change: {count}.',
-							{ count: Math.max(count, replaced.length) },
-						)
-				}
-				this.outcome = { ok: true, message, replaced }
+				const response = await axios.post(this.importUrl(row))
+				this.outcome = this.importedOutcome(row, response?.data)
 				// Re-read rather than patch the row locally: the inventory is
 				// the authority on what is now present, and a locally-optimistic
 				// row would report success the import may not have achieved.
 				await this.load()
 			} catch (e) {
-				this.outcome = {
-					ok: false,
-					message: this.t('openregister', 'Import failed: {reason}', {
-						reason:
-							e?.response?.data?.reason
-							?? e?.response?.data?.error
-							?? e.message,
-					}),
-
-					replaced: [],
-				}
+				this.outcome = this.failedImportOutcome(e)
 			} finally {
 				this.busy = ''
+			}
+		},
+
+		/**
+		 * The outcome of an import the server accepted: which register came
+		 * from which app, and the authorization blocks it took from the file
+		 * over a local change.
+		 *
+		 * @param {object} row The re-imported row.
+		 * @param {object|undefined} data The import answer.
+		 * @return {{ok: boolean, message: string, replaced: Array}} The outcome.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importedOutcome(row, data) {
+			const replaced = Array.isArray(data?.replaced) ? data.replaced : []
+			const count = data?.counts?.authorizationReplaced ?? replaced.length
+			let message = this.importedNote(row)
+			if (count > 0 || replaced.length > 0) {
+				message += ' ' + this.takenOverNote(Math.max(count, replaced.length))
+			}
+			return { ok: true, message, replaced }
+		},
+
+		/**
+		 * The URL that re-imports a row's descriptor.
+		 *
+		 * @param {object} row The row to re-import.
+		 * @return {string} The URL.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importUrl(row) {
+			return generateUrl(
+				`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
+			)
+		},
+
+		/**
+		 * The note naming the register imported and the app it came from.
+		 *
+		 * @param {object} row The re-imported row.
+		 * @return {string} The note.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		importedNote(row) {
+			return this.t('openregister', '{register} was imported from {app}.', {
+				register: row.title,
+				app: row.appId,
+			})
+		},
+
+		/**
+		 * The note on how many authorization blocks the import took from the
+		 * file over a local change.
+		 *
+		 * @param {number} count The number of blocks taken over.
+		 * @return {string} The note.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		takenOverNote(count) {
+			return this.t(
+				'openregister',
+				'Authorization taken from the file over a local change: {count}.',
+				{ count },
+			)
+		},
+
+		/**
+		 * The outcome of an import that failed, worded from the server's reason
+		 * or error, else the request's own message.
+		 *
+		 * @param {Error} e The failure.
+		 * @return {{ok: boolean, message: string, replaced: Array}} The outcome.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		failedImportOutcome(e) {
+			return {
+				ok: false,
+				message: this.t('openregister', 'Import failed: {reason}', {
+					reason:
+						e?.response?.data?.reason
+						?? e?.response?.data?.error
+						?? e.message,
+				}),
+
+				replaced: [],
 			}
 		},
 	},

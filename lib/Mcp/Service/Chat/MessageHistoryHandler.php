@@ -30,7 +30,7 @@ use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 
 /**
  * MessageHistoryHandler

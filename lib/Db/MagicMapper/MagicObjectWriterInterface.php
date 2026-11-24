@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\Entity;
 
@@ -149,9 +150,8 @@ interface MagicObjectWriterInterface {
 	/**
 	 * Save objects to register+schema-specific table
 	 *
-	 * @param array $objects Array of object data to save
-	 * @param Register $register The register context for table selection
-	 * @param Schema $schema The schema for table selection
+	 * @param RegisterSchema $table   The register and schema whose table to use
+	 * @param array          $objects Array of object data to save
 	 *
 	 * @throws Exception If save operation fails
 	 *
@@ -159,7 +159,7 @@ interface MagicObjectWriterInterface {
 	 *
 	 * @psalm-return list<non-empty-string>
 	 */
-	public function saveObjectsToRegisterSchemaTable(array $objects, Register $register, Schema $schema): array;
+	public function saveObjectsToRegisterSchemaTable(RegisterSchema $table, array $objects): array;
 
 	/**
 	 * Perform bulk upsert operation on register+schema table
@@ -219,4 +219,17 @@ interface MagicObjectWriterInterface {
 	 * @throws Exception If register/schema context cannot be resolved.
 	 */
 	public function restoreObject(string $uuid): ObjectEntity;
+
+	/**
+	 * Add a UUID to one object's `_relations`, touching only that column and `_updated`.
+	 *
+	 * No version bump; when the row changed, the object's update event is dispatched.
+	 *
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $uuid        The object pointed at.
+	 * @param string         $relatedUuid The object that points at it.
+	 *
+	 * @return int Rows updated: 0 when the object is missing, deleted or already holds the UUID.
+	 */
+	public function appendRelation(RegisterSchema $table, string $uuid, string $relatedUuid): int;
 }//end interface

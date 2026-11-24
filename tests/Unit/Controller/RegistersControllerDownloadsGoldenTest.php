@@ -156,7 +156,6 @@ class RegistersControllerDownloadsGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($this->createConfiguredMock(IUser::class, ['getUID' => 'alice']));
 		[$registers, $mapper] = $this->registers(case: $case);
 		return [
-			'openregister',
 			$this->request(params: $case['params']),
 			$registers,
 			$this->createMock(MagicMapper::class),

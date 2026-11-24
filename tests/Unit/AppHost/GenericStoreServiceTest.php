@@ -31,10 +31,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
-use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
+use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
+use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -108,9 +111,11 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	private function descriptor(string $appId = 'openbuild', string $schema = 'application-template'): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: $appId,
-			schema: $schema,
-			defaultRegister: $appId
+			listing: new StoreListing(
+				appId: $appId,
+				schema: $schema,
+				defaultRegister: $appId
+			)
 		);
 
 	}//end descriptor()
@@ -182,7 +187,7 @@ class GenericStoreServiceTest extends TestCase {
 		$objects = $this->createMock(ObjectServiceInterface::class);
 		$objects->expects($this->once())
 			->method('searchObjectsBySlug')
-			->with('pipelinq', 'application-template', ['kind' => 'pipeline'], true, false)
+			->with($this->equalTo(new RegisterSchemaSlugs(register: 'pipelinq', schema: 'application-template')), ['kind' => 'pipeline'], true, false)
 			->willReturn([
 				new class {
 					/**
@@ -252,11 +257,15 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	private function localPublishingDescriptor(): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: 'pipelinq',
-			schema: 'commercial-template',
-			defaultRegister: 'pipelinq',
-			publishFields: ['title', 'version'],
-			publishGroups: ['pipelinq-publishers']
+			listing: new StoreListing(
+				appId: 'pipelinq',
+				schema: 'commercial-template',
+				defaultRegister: 'pipelinq'
+			),
+			sharing: new StoreSharing(
+				publishFields: ['title', 'version'],
+				publishGroups: ['pipelinq-publishers']
+			)
 		);
 
 	}//end localPublishingDescriptor()
@@ -646,11 +655,15 @@ class GenericStoreServiceTest extends TestCase {
 		array $groups = ['instructors']
 	): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: 'learniq',
-			schema: 'shared-course-package',
-			defaultRegister: 'learniq',
-			publishFields: $fields,
-			publishGroups: $groups
+			listing: new StoreListing(
+				appId: 'learniq',
+				schema: 'shared-course-package',
+				defaultRegister: 'learniq'
+			),
+			sharing: new StoreSharing(
+				publishFields: $fields,
+				publishGroups: $groups
+			)
 		);
 
 	}//end publishingDescriptor()

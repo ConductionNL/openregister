@@ -28,7 +28,6 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
@@ -57,7 +56,6 @@ class ExportServicePropertyFilterTest extends TestCase {
 
 		$service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),

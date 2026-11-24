@@ -214,7 +214,6 @@ class CredentialBrokerActingUserTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 
 		$controller = CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$userSession,
 			$this->createMock(IGroupManager::class),

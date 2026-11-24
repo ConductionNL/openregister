@@ -626,20 +626,13 @@ export default {
 			draft: null,
 			loading: true,
 			loadError: '',
-			view: 'form',
-			jsonText: '',
-			jsonError: '',
+			...formViewState(),
 			editingRow: null,
-			saving: false,
-			saveProblem: null,
-			saved: false,
-			packDeleted: false,
+			...saveState(),
 			leavePrompt: null,
 			announcement: '',
 			isAdmin: canEditPacks(),
-			theme: getTheme(),
-			jsonLang: json(),
-			jsonLinter: jsonParseLinter(),
+			...jsonEditorSetup(),
 		}
 	},
 
@@ -881,15 +874,26 @@ export default {
 				this.pack = await getPack(this.packId)
 				this.reset()
 			} catch (error) {
-				this.pack = null
-				this.draft = null
-				this.loadError =
-					error?.response?.status === 404
-						? t('openregister', 'This migration pack does not exist.')
-						: t('openregister', 'Could not load the migration pack.')
+				this.showLoadFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Show why the pack did not load, without a pack or a draft.
+		 *
+		 * @param {Error} error What went wrong.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		showLoadFailure(error) {
+			this.pack = null
+			this.draft = null
+			this.loadError =
+				error?.response?.status === 404
+					? t('openregister', 'This migration pack does not exist.')
+					: t('openregister', 'Could not load the migration pack.')
 		},
 
 		/**
@@ -1091,12 +1095,7 @@ export default {
 			const atEdge = to === 0 || to === this.draft.rows.length - 1
 			const up = delta < 0
 			this.focusControl(`${row.uid}-${up !== atEdge ? 'up' : 'down'}`)
-			this.announce(
-				t('openregister', 'Row moved to position {position} of {total}.', {
-					position: to + 1,
-					total: this.draft.rows.length,
-				}),
-			)
+			this.announce(rowMovedText(to + 1, this.draft.rows.length))
 		},
 
 		/**
@@ -1125,14 +1124,7 @@ export default {
 			}
 			const definition = this.currentDefinition
 			if (definition === null) {
-				this.saveProblem = {
-					message: t(
-						'openregister',
-						'The form has a value that is not valid JSON. Fix it first.',
-					),
-
-					details: validateDraft(this.draft),
-				}
+				this.saveProblem = invalidFormProblem(this.draft)
 				return
 			}
 			this.jsonText = sameDefinition(definition, this.pack.definition)
@@ -1376,6 +1368,77 @@ export default {
 			)
 		},
 	},
+}
+
+/**
+ * The view the editor starts in: the form, with no JSON text or error.
+ *
+ * @return {object} The state.
+ */
+function formViewState() {
+	return {
+		view: 'form',
+		jsonText: '',
+		jsonError: '',
+	}
+}
+
+/**
+ * The save state the editor starts with: not saving, nothing to report.
+ *
+ * @return {object} The state.
+ */
+function saveState() {
+	return {
+		saving: false,
+		saveProblem: null,
+		saved: false,
+		packDeleted: false,
+	}
+}
+
+/**
+ * The JSON editor's theme, language and linter.
+ *
+ * @return {object} The setup.
+ */
+function jsonEditorSetup() {
+	return {
+		theme: getTheme(),
+		jsonLang: json(),
+		jsonLinter: jsonParseLinter(),
+	}
+}
+
+/**
+ * What the editor announces after moving a row.
+ *
+ * @param {number} position The row's new position, from 1.
+ * @param {number} total The number of rows.
+ * @return {string} The announcement.
+ */
+function rowMovedText(position, total) {
+	return t('openregister', 'Row moved to position {position} of {total}.', {
+		position,
+		total,
+	})
+}
+
+/**
+ * The problem shown when the form holds a value that is not valid JSON.
+ *
+ * @param {object} draft The draft.
+ * @return {{message: string, details: Array<string>}} The problem.
+ */
+function invalidFormProblem(draft) {
+	return {
+		message: t(
+			'openregister',
+			'The form has a value that is not valid JSON. Fix it first.',
+		),
+
+		details: validateDraft(draft),
+	}
 }
 </script>
 

@@ -54,8 +54,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -132,7 +137,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => ['open', 'in-progress']],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -159,7 +166,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => []],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -179,7 +188,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['status' => ['in' => ['open', 'in-progress']]],
-				groupBy: ['field' => 'region']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'region']
+				)
 			)
 		);
 
@@ -230,7 +241,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['region' => 'IS NULL'],
-				groupBy: ['field' => 'status']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status']
+				)
 			)
 		);
 
@@ -248,7 +261,9 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'count',
 				filter: ['region' => ['isnull' => 'false']],
-				groupBy: ['field' => 'status']
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status']
+				)
 			)
 		);
 
@@ -477,7 +492,7 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->makeRegister(),
 			schema: $this->makeStatusSchema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status'])
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'status']))
 		);
 
 		$this->assertSame(['backend', 'cached', 'groups'], $this->sortedKeys($result));
@@ -642,16 +657,24 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
+				db: $db
+			),
 			cache: $cache,
-			permissionHandler: $permissionHandler,
-			userSession: $userSession,
-			organisationService: $organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $translationHandler,
-			languageService: $languageService,
+			access: new AggregationAccess(
+				permissionHandler: $permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $organisationService,
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translationHandler,
+				languageService: $languageService
+			)
 		);
 
 	}//end makeRunner()

@@ -58,6 +58,7 @@ use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -351,9 +352,8 @@ class ContainsOperatorParityIntegrationTest extends TestCase {
 	 */
 	private function listVisibleNames(Register $register, Schema $schema): array {
 		$listed = $this->mapper->searchObjectsInRegisterSchemaTable(
-			['_multitenancy' => false],
-			$register,
-			$schema
+			new RegisterSchema($register, $schema),
+			['_multitenancy' => false]
 		);
 
 		$names = [];

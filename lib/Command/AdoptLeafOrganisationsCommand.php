@@ -48,6 +48,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
@@ -269,11 +270,10 @@ class AdoptLeafOrganisationsCommand extends Command {
 
 		try {
 			$rows = $this->objectService->searchObjectsBySlug(
-				$registerSlug,
-				$schemaSlug,
-				['_limit' => false],
-				false,
-				false
+				target: new RegisterSchemaSlugs(register: $registerSlug, schema: $schemaSlug),
+				filters: ['_limit' => false],
+				_rbac: false,
+				_multitenancy: false
 			);
 		} catch (Throwable $e) {
 			$output->writeln(sprintf('<error>Could not read %s/%s: %s</error>', $registerSlug, $schemaSlug, $e->getMessage()));

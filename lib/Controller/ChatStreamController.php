@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -392,16 +393,15 @@ class ChatStreamController extends Controller {
 			$context = $turn->context;
 		}
 
-		return $this->chatService->processMessage(
+		$request = new ChatMessageRequest(
 			conversationId: $turn->conversation->getId(),
 			userId: $turn->userId,
-			userMessage: $turn->message,
-			selectedViews: [],
-			selectedTools: [],
-			ragSettings: [],
-			context: $context,
-			channel: $this->streamChannel()
+			userMessage: $turn->message
 		);
+		$request->cnAiContext = $context;
+		$request->channel = $this->streamChannel();
+
+		return $this->chatService->processMessage(request: $request);
 	}//end processTurn()
 
 	/**

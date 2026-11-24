@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
@@ -37,6 +38,8 @@ use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
+use OCA\OpenRegister\Kernel\Contracts\DependencyRefusalInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -48,6 +51,7 @@ use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use DateTime;
 use RuntimeException;
 use Throwable;
 
@@ -91,6 +95,7 @@ class WebhookService {
 	 * @param WebhookStores           $stores           Webhook, log and mapping stores
 	 * @param WebhookDispatchServices $dispatch         Job list, CloudEvent formatter and interception cache
 	 * @param LoggerInterface         $logger           Logger
+	 * @param DependencyBreakerInterface|null    $breakers         The receiver breakers; null sends every delivery unguarded
 	 *
 	 * @return void
 	 */
@@ -98,6 +103,7 @@ class WebhookService {
 		private readonly WebhookStores $stores,
 		private readonly WebhookDispatchServices $dispatch,
 		private readonly LoggerInterface $logger,
+		private readonly ?DependencyBreakerInterface $breakers = null,
 	) {
 		$this->initializeHttpClient();
 	}//end __construct()
@@ -711,15 +717,117 @@ class WebhookService {
 		$webhookLog->setAttempt($delivery->attempt);
 		$attempt = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog);
 
+		$breakerKey = $this->receiverBreakerKey(webhook: $webhook);
+		if ($breakerKey !== null) {
+			try {
+				$this->breakers->allow(key: $breakerKey);
+			} catch (DependencyRefusalInterface $open) {
+				return $this->deferDelivery(delivery: $attempt, refusal: $open);
+			}
+		}
+
 		try {
 			$response = $this->sendRequest(delivery: $delivery, payload: $webhookPayload);
+			$this->countReceiverOutcome(key: $breakerKey, statusCode: (int) $response['status_code']);
 			return $recorder->recordResponse(delivery: $attempt, response: $response);
 		} catch (RequestException $e) {
+			$this->countReceiverOutcome(key: $breakerKey, statusCode: (int) $e->getResponse()?->getStatusCode());
 			return $recorder->recordRequestFailure(delivery: $attempt, exception: $e);
+		} catch (ConnectException $e) {
+			// Not a RequestException in Guzzle 7: recorded as before, counted as the receiver's failure.
+			$this->countReceiverOutcome(key: $breakerKey, statusCode: 0);
+			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		} catch (\Exception $e) {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
 	}//end deliverWebhook()
+
+	/**
+	 * The breaker key of a webhook's receiver host, or null when there is no breaker or no host.
+	 *
+	 * @param Webhook $webhook The webhook.
+	 *
+	 * @return string|null The `webhook:{host}` key.
+	 *
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function receiverBreakerKey(Webhook $webhook): ?string {
+		if ($this->breakers === null) {
+			return null;
+		}
+
+		$host = parse_url((string) $webhook->getUrl(), PHP_URL_HOST);
+		if (is_string($host) === false || $host === '') {
+			return null;
+		}
+
+		return $this->breakers->webhookKey(host: $host);
+	}//end receiverBreakerKey()
+
+	/**
+	 * Count one delivery outcome on the receiver's breaker (design D-2).
+	 *
+	 * A connection error or timeout (no status), a 5xx and a 429 are the
+	 * receiver's failure; any other answer, a 4xx included, is a success.
+	 *
+	 * @param string|null $key        The breaker key; null counts nothing.
+	 * @param int         $statusCode The response status, 0 when there was none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function countReceiverOutcome(?string $key, int $statusCode): void {
+		$breaker = $this->breakers;
+		if ($key === null || $breaker === null) {
+			return;
+		}
+
+		if ($statusCode === 0 || $statusCode >= 500 || $statusCode === 429) {
+			$breaker->recordFailure(key: $key);
+			return;
+		}
+
+		$breaker->recordSuccess(key: $key);
+	}//end countReceiverOutcome()
+
+	/**
+	 * Hold a delivery back while its receiver's breaker is open (design D-6).
+	 *
+	 * Nothing is sent and no attempt is counted: the log row carries the
+	 * attempt before this one, so the retry job, which sends attempt + 1,
+	 * sends this same attempt once the cool-down has passed. The webhook's
+	 * statistics are not touched.
+	 *
+	 * @param WebhookDeliveryAttempt         $delivery The delivery and its log row.
+	 * @param DependencyRefusalInterface $refusal  The open breaker's refusal.
+	 *
+	 * @return bool Always false: the delivery has not happened.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	private function deferDelivery(WebhookDeliveryAttempt $delivery, DependencyRefusalInterface $refusal): bool {
+		$log = $delivery->log;
+		$log->setSuccess(false);
+		$log->setAttempt(($log->getAttempt() - 1));
+		$log->setErrorMessage(sprintf('Receiver not answering; delivery deferred for %d seconds', $refusal->retryAfter()));
+		$log->setNextRetryAt((new DateTime())->modify('+' . $refusal->retryAfter() . ' seconds'));
+		$this->stores->webhookLogMapper->insert($log);
+
+		$this->logger->warning(
+			message: '[WebhookService] Webhook receiver breaker open, delivery deferred',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'webhook_id' => $delivery->webhook->getId(),
+				'event' => $log->getEventClass(),
+				'retry_after' => $refusal->retryAfter(),
+			]
+		);
+
+		return false;
+	}//end deferDelivery()
 
 	/**
 	 * The delivery as an owned webhook may send it, or null when it sends nothing.

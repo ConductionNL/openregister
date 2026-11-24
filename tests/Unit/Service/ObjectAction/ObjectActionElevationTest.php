@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -111,11 +112,11 @@ class ObjectActionElevationTest extends TestCase {
 
 	public function testAHandlerPublishesIntoARegisterTheyCannotWrite(): void {
 		$handler = $this->handler();
-		$this->assertFalse($handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'), 'precondition: anna may not create');
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)), 'precondition: anna may not create');
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '4')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '4'))
 		);
 
 		$this->assertTrue($granted);
@@ -135,9 +136,9 @@ class ObjectActionElevationTest extends TestCase {
 				$elsewhere->setRegister('5');
 
 				return [
-					$handler->hasPermission(schema: $this->schema(), action: 'update', userId: 'anna', object: $object),
-					$handler->hasPermission(schema: $this->schema(10), action: 'create', userId: 'anna'),
-					$handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', object: $elsewhere),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))->askedBy(userId: 'anna', objectOwner: null)->about(object: $object, register: null)),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(10), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: $elsewhere, register: null)),
 				];
 			}
 		);
@@ -152,7 +153,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null))
 		);
 
 		$this->assertFalse($granted, 'an elevation for register 4 opened a create that names no register');
@@ -163,7 +164,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '5')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '5'))
 		);
 
 		$this->assertFalse($granted, 'an elevation for register 4 opened a create in register 5');
@@ -176,7 +177,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $schema, action: 'create', userId: 'anna', register: '4')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '4'))
 		);
 
 		$this->assertFalse($granted, 'an elevation overrode an explicit deny');
@@ -247,7 +248,7 @@ class ObjectActionElevationTest extends TestCase {
 		}
 
 		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')));
-		$this->assertFalse($this->handler()->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'));
+		$this->assertFalse($this->handler()->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)));
 	}//end testTheElevationEndsWithTheRunEvenWhenItThrows()
 
 	public function testAnElevatedWriteIsAttributedAndAnOrdinaryOneIsNot(): void {

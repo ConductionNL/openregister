@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Strategies;
 
 use JsonSerializable;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -91,7 +92,7 @@ class ObjectVectorizationStrategyMetadataTest extends TestCase {
 	public function testFetchUsesTheDefaultBatchSizeAndDatabaseSource(): void {
 		$rows = [['id' => 1], ['id' => 2]];
 		$this->objects->expects($this->once())->method('searchObjects')
-			->with(['_limit' => 25, '_source' => 'database'], false, false, null, null, null, true)
+			->with(['_limit' => 25, '_source' => 'database'], false, false, $this->equalTo(new SearchOptions(viewScopeRequired: true)))
 			->willReturn($rows);
 
 		$this->assertSame($rows, $this->strategy->fetchEntities([]));
@@ -99,7 +100,7 @@ class ObjectVectorizationStrategyMetadataTest extends TestCase {
 
 	public function testFetchPassesBatchSizeAndViews(): void {
 		$this->objects->expects($this->once())->method('searchObjects')
-			->with(['_limit' => 3, '_source' => 'database'], false, false, null, null, ['v1'], true)
+			->with(['_limit' => 3, '_source' => 'database'], false, false, $this->equalTo(new SearchOptions(views: ['v1'], viewScopeRequired: true)))
 			->willReturn([]);
 
 		$this->assertSame([], $this->strategy->fetchEntities(['batch_size' => 3, 'views' => ['v1']]));

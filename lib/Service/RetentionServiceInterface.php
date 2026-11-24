@@ -269,6 +269,17 @@ interface RetentionServiceInterface {
 	public function destructionRefusalIn(ObjectEntity $object, DisposalSweep $sweep): ?string;
 
 	/**
+	 * Find objects a destruction list should carry for anonymising: nominated anonymise, due, live, not held, not listed.
+	 *
+	 * @param array $excludeUuids UUIDs to exclude (already on pending lists)
+	 *
+	 * @return ObjectEntity[] Array of eligible objects
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public function findEligibleForAnonymisation(array $excludeUuids = []): array;
+
+	/**
 	 * Find objects eligible for transfer to an e-Depot.
 	 *
 	 * Objects whose appraisal is retain-permanently, whose archiefactiedatum has

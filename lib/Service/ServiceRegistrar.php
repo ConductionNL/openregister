@@ -40,6 +40,9 @@ use OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\User\UserAccountStores;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 
 /**
  * Registers the services that need a hand-written factory: request-scoped state, replaceable seams, and services that break a circular dependency.
@@ -212,20 +215,26 @@ final class ServiceRegistrar {
 	 */
 	private static function buildUserService(ContainerInterface $container): \OCA\OpenRegister\Service\UserService {
 			return new UserService(
-				userManager: $container->get('OCP\IUserManager'),
-				userSession: $container->get('OCP\IUserSession'),
-				config: $container->get('OCP\IConfig'),
-				groupManager: $container->get('OCP\IGroupManager'),
-				accountManager: $container->get('OCP\Accounts\IAccountManager'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				organisationService: $container->get(OrganisationServiceInterface::class),
-				eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-				avatarManager: $container->get('OCP\IAvatarManager'),
-				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
-				secureRandom: $container->get('OCP\Security\ISecureRandom'),
-				db: $container->get('OCP\IDBConnection'),
-				l10nFactory: $container->get('OCP\L10N\IFactory'),
-				auditEntries: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface::class)
+				directory: new UserAccountStores(
+					userManager: $container->get('OCP\IUserManager'),
+					groupManager: $container->get('OCP\IGroupManager'),
+					accountManager: $container->get('OCP\Accounts\IAccountManager'),
+					avatarManager: $container->get('OCP\IAvatarManager')
+				),
+				platform: new UserPlatform(
+					userSession: $container->get('OCP\IUserSession'),
+					eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+					l10nFactory: $container->get('OCP\L10N\IFactory'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				),
+				storage: new UserStorage(
+					config: $container->get('OCP\IConfig'),
+					db: $container->get('OCP\IDBConnection'),
+					auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
+					secureRandom: $container->get('OCP\Security\ISecureRandom'),
+					auditEntries: $container->get(\OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface::class)
+				),
+				organisationService: $container->get(OrganisationServiceInterface::class)
 			);
 	}//end buildUserService()
 

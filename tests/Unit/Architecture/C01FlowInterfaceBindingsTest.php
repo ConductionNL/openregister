@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
@@ -61,13 +61,13 @@ final class C01FlowInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		EventCatalogService::class => [EventCatalogServiceInterface::class, ContractBindings::class],
-		FlowBpmnInterchange::class => [FlowBpmnInterchangeInterface::class, ContractBindings::class],
-		FlowRunAuthorization::class => [FlowRunAuthorizationInterface::class, ContractBindings::class],
-		FlowRunVersionPin::class => [FlowRunVersionPinInterface::class, ContractBindings::class],
-		FlowRunnableGuard::class => [FlowRunnableGuardInterface::class, ContractBindings::class],
+		EventCatalogService::class => [EventCatalogServiceInterface::class, ProcessesServiceBindings::class],
+		FlowBpmnInterchange::class => [FlowBpmnInterchangeInterface::class, ProcessesServiceBindings::class],
+		FlowRunAuthorization::class => [FlowRunAuthorizationInterface::class, ProcessesServiceBindings::class],
+		FlowRunVersionPin::class => [FlowRunVersionPinInterface::class, ProcessesServiceBindings::class],
+		FlowRunnableGuard::class => [FlowRunnableGuardInterface::class, ProcessesServiceBindings::class],
 		FlowStateMapper::class => [FlowStateMapperInterface::class, ProcessesMapperRegistrar::class],
-		PrincipalResolverRegistry::class => [PrincipalResolverRegistryInterface::class, ContractBindings::class],
+		PrincipalResolverRegistry::class => [PrincipalResolverRegistryInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
