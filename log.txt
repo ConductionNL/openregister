@@ -4455,3 +4455,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T21:31:12Z cloud-or-reviewer-0: APPROVE 10456 (fast path, twice: 670c55fd and 62ff015e), 10552 (fast path), 11040 (full re-review, goldens fixed), 11048, 11056; BLOCK 10624 (stylelint 18 config crash persists); skipped 10504 (conflicts with main b3424e04), 10464 (never land), 11064 draft; 11032 BLOCK stands; lane 0 otherwise ledgered at head
 2026-11-24T21:31:43Z or-fix-0 run start: fixed 10260 (main merge, AccessLink conflict); next 10550, 11020
 2026-11-24T21:32:58Z precheck-20261124T211330-6f02c25d GREEN tree 36f9aa1b9e on dev b3424e04f4 prs 1 front=skip: Tests: 65150, Assertions: 230067, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T21:35:36Z or-fix-8: run active; 10508 fixed (merged main)
