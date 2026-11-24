@@ -173,6 +173,15 @@ class StoreManifest {
 	public readonly string $localRegister;
 
 	/**
+	 * Where inside the local register an install can go (`installTarget`).
+	 *
+	 * @var StoreInstallTarget
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public readonly StoreInstallTarget $installTarget;
+
+	/**
 	 * Schema slugs an install may write.
 	 *
 	 * @var array<int, string>
@@ -272,6 +281,7 @@ class StoreManifest {
 		$this->schema        = $content->target->schema;
 		$this->register      = $content->target->register;
 		$this->localRegister = $content->target->localRegister;
+		$this->installTarget = $content->target->installTarget;
 		$this->installable   = $content->catalogue->installable;
 		$this->kinds         = $content->catalogue->kinds;
 		$this->cardFields    = $content->catalogue->cardFields;
@@ -380,7 +390,8 @@ class StoreManifest {
 			// land in another app's register. Defaults to the app id, which is
 			// the fleet's register-slug convention, and an app whose register
 			// slug differs from its app id says so here.
-			localRegister: (string)($block['localRegister'] ?? $appId)
+			localRegister: (string)($block['localRegister'] ?? $appId),
+			installTarget: StoreInstallTarget::fromBlock(block: ($block['installTarget'] ?? null))
 		);
 	}//end targetOf()
 

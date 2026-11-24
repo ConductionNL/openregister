@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
@@ -141,6 +142,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param string $typeId The shareable type id.
 	 * @param array $bundle A bundle produced by a type of this id.
 	 * @param string $source Where the bundle came from (a repo/source id), for the allowlist.
+	 * @param BundleObjectStamp|null $stamp A value written on named objects after the signature check, such as an install target.
 	 *
 	 * @return array The install result.
 	 *
@@ -148,10 +150,17 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @throws RuntimeException When the source is not allowlisted.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(string $typeId, array $bundle, string $source = ''): array {
+	public function install(string $typeId, array $bundle, string $source = '', ?BundleObjectStamp $stamp = null): array {
 		$this->assertSourceAllowed(source: $source);
 		$this->assertBundleVouchedFor(bundle: $bundle);
+
+		// The stamp goes on AFTER the signature check: the publisher signed
+		// what it published, and where it lands is this organisation's choice.
+		if ($stamp !== null) {
+			$bundle = $stamp->applyTo(bundle: $bundle);
+		}
 
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
 	}//end install()
