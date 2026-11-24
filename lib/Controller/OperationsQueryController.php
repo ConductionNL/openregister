@@ -41,6 +41,7 @@ use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 use OCA\OpenRegister\Service\GraphQL\AdminQueryAudit;
 use OCA\OpenRegister\Service\GraphQL\AdminQueryExport;
 use OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -50,9 +51,13 @@ use OCP\IRequest;
 /**
  * OperationsQueryController.
  *
+ * Part of the operations console, so it stays reachable while maintenance
+ * mode holds, like every other /api/operations/* controller. It stays
+ * administrator-only: no #[NoAdminRequired].
+ *
  * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
  */
-class OperationsQueryController extends Controller {
+class OperationsQueryController extends Controller implements MaintenanceReachableInterface {
 
 	/**
 	 * Constructor.

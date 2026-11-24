@@ -162,6 +162,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 				'OCA\\OpenRegister\\Controller\\OperationsConsoleController',
 				'OCA\\OpenRegister\\Controller\\OperationsDependenciesController',
 				'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController',
+				'OCA\\OpenRegister\\Controller\\OperationsQueryController',
 			],
 			$reachable
 		);
