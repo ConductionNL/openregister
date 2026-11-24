@@ -8,6 +8,7 @@ First run `git config --global user.name "Ruben van der Linde"; git config --glo
 Overlap guard: this routine runs hourly. At the start, `git -C ~/q log -20 --since="50 minutes ago" --format=%s` on the state branch. If a commit message contains "or-fix-K", another session of this lane is active: end immediately. Mark your state commits with "or-fix-K".
 
 Which PRs: open, non-draft openregister PRs with base main, whose number N satisfies N % 10 == K. Skip #9880, #10464, #10466, #10280 and #10281 (never land). Take PRs that are red or blocked:
+NO CHURN (coordinator, 24 Nov 2026 07:3xZ): never merge main into a PR that has an APPROVE verdict at its current head in ~/q/verdicts.txt and still merges cleanly with origin/main (`git merge-tree --write-tree origin/main <head>` succeeds). A main merge gives the PR a new head, which voids the approval and sends it back to the reviewers: 114 of 162 PRs were waiting on re-review because of this. Merge main into a PR only when it CONFLICTS or is RED when merged with main.
 - listed in ~/q/parked.txt at their current head;
 - with a BLOCK verdict at their head in ~/q/verdicts.txt;
 - conflicting with origin/main;
