@@ -689,3 +689,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merge conflict in tools/sig/modularity-baseline.json (exposed_loc, kernel_loc, total_loc, violation_degree hunks).
 - Cause: generated numbers; main records a new baseline on nearly every modularity merge.
 - Fix: git checkout --theirs the json, run python3 tools/sig/modularity_check.py --check on the merged tree (must pass), then --write-baseline and commit it with the merge (#11000 d86305b2).
+## Main e353e627 (#11024) reverted the Files-owned ports: PRs merged with 6e870ca5 conflict in the generated components yaml (or-fix-6)
+- Symptom: CONFLICT only in the repo-root components yaml; csv auto-merges.
+- Cause: #11024 dropped lib/Kernel/Contracts/Files/* and their csv rows, regenerating the yaml.
+- Fix: git checkout --theirs the yaml, python3 scripts/component-patterns.py; grep lib/tests for the removed Files interfaces (none in #10156/#10516/#10526). Architecture green after.
