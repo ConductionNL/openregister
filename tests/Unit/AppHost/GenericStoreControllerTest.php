@@ -45,6 +45,7 @@ use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
+use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -982,4 +983,95 @@ class GenericStoreControllerTest extends TestCase {
 		$this->assertSame([['slug' => 'vth']], $this->controller()->search()->getData()['cards']);
 		$this->assertTrue($this->controller()->install(slug: 'vth')->getData()['success']);
 	}//end testAStoreWithoutTypesNeverAsksTheConfigurationCatalogue()
+
+	/**
+	 * A configuration store whose installs can go into a world.
+	 *
+	 * @return StoreManifest
+	 */
+	private function worldStore(): StoreManifest {
+		return StoreManifest::fromManifest(
+			appId: 'larpinq',
+			manifest: ['store' => [
+				'types' => ['openregister.configset'],
+				'installTarget' => ['property' => 'setting', 'schemas' => ['larping_skill']],
+			]]
+		);
+	}//end worldStore()
+
+	/**
+	 * A chosen world reaches the catalogue as the stamp of the declared property.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAFederatedInstallCarriesTheChosenTarget(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
+		$this->request->method('getParam')->willReturnMap([['target', null, 'world-1']]);
+		$this->catalog->method('resolve')->willReturn(
+			['typeId' => 'openregister.configset', 'repo' => 'a/b', 'source' => 's', 'bundle' => []]
+		);
+		$this->catalog->expects($this->once())
+			->method('install')
+			->with(
+				$this->anything(),
+				$this->callback(
+					static fn ($stamp): bool => $stamp instanceof BundleObjectStamp
+						&& $stamp->property === 'setting'
+						&& $stamp->schemas === ['larping_skill']
+						&& $stamp->value === 'world-1'
+				)
+			)
+			->willReturn(['success' => true, 'components' => []]);
+
+		$this->assertSame(Http::STATUS_OK, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+	}//end testAFederatedInstallCarriesTheChosenTarget()
+
+	/**
+	 * A target the app did not declare is refused, not ignored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAnUndeclaredTargetIsRefused(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
+		$this->request->method('getParam')->willReturnMap([['target', null, 'world-1']]);
+		$this->catalog->expects($this->never())->method('resolve');
+		$this->catalog->expects($this->never())->method('install');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller(appId: 'decidiq')->install(slug: 'a-set')->getStatus());
+	}//end testAnUndeclaredTargetIsRefused()
+
+	/**
+	 * A target that is not an id is refused before anything is resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAMalformedTargetIsRefused(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
+		$this->request->method('getParam')->willReturnMap([['target', null, '../other']]);
+		$this->catalog->expects($this->never())->method('install');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+	}//end testAMalformedTargetIsRefused()
+
+	/**
+	 * A non-administrator with a target still gets the 403, not a hint about targets.
+	 *
+	 * @return void
+	 */
+	public function testThePostureIsCheckedBeforeTheTarget(): void {
+		$this->signIn(isAdmin: false);
+		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
+		$this->request->method('getParam')->willReturnMap([['target', null, '../other']]);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+	}//end testThePostureIsCheckedBeforeTheTarget()
 }//end class

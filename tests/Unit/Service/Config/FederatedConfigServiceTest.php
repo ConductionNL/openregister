@@ -284,6 +284,67 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->assertSame(['x'], $result['installed']);
 	}
 
+	/**
+	 * The signer sees the bundle as published; the type gets it with the install target stamped.
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAStampIsAppliedAfterTheSignatureCheck(): void {
+		$this->allowlist = ['ConductionNL'];
+		$verified = [];
+		$received = [];
+		$signer   = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer->method('verify')->willReturnCallback(
+			static function (array $bundle) use (&$verified): array {
+				$verified = $bundle;
+				return ['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'];
+			}
+		);
+		$this->registry->method('get')->willReturn(
+			new class($received) implements IShareableConfigType {
+				public function __construct(private array &$received) {
+				}
+				public function getId(): string {
+					return 'demo.type';
+				}
+				public function getDisplayName(): string {
+					return 'Demo';
+				}
+				public function getTopic(): string {
+					return 'demo-topic';
+				}
+				public function serialise(array $selection): array {
+					return [];
+				}
+				public function deserialise(array $bundle): array {
+					$this->received = $bundle;
+					return ['installed' => ['x']];
+				}
+			}
+		);
+		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(CredentialBrokerService::class),
+				$signer,
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
+			$this->registry,
+			$this->config,
+			$this->createMock(\Psr\Log\LoggerInterface::class)
+		);
+		$bundle = ['components' => ['objects' => [['@self' => ['schema' => 'larping_skill'], 'name' => 'Herbalism']]]];
+
+		$service->install(
+			'demo.type',
+			$bundle,
+			'ConductionNL/pack',
+			new \OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: 'world-1')
+		);
+
+		$this->assertSame($bundle, $verified, 'the signature is checked on the bundle as published');
+		$this->assertSame('world-1', $received['components']['objects'][0]['setting']);
+	}
+
 	public function testFetchBundleDecodesTheRepoContentsFile(): void {
 		$bundle = ['type' => 'demo.type', 'objects' => [['a' => 1]]];
 		$content = base64_encode((string)json_encode($bundle));
