@@ -108,6 +108,11 @@ class PublicTimeline implements PublicTimelineInterface {
 				$noteIdsWithARecord[(string)$commentId] = true;
 			}
 
+			// A withdrawn record still claims its note, so the note does not come back on its own.
+			if (($record['withdrawn'] ?? null) !== null) {
+				continue;
+			}
+
 			$projected[] = $this->fromRecord(row: $record);
 		}
 
@@ -160,7 +165,11 @@ class PublicTimeline implements PublicTimelineInterface {
 		try {
 			$entries = $this->entries->listForObject(
 				object: $object,
-				query: new ListQuery(limit: $limit, offset: 0, filters: ['visibility' => TimelineVisibilityService::PUBLIC_ENTRY])
+				query: new ListQuery(
+					limit: $limit,
+					offset: 0,
+					filters: ['visibility' => TimelineVisibilityService::PUBLIC_ENTRY, 'withdrawn' => true]
+				)
 			);
 		} catch (Throwable $failure) {
 			$this->logger->warning(

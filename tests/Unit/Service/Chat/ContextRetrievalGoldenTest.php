@@ -8,11 +8,12 @@ declare(strict_types=1);
 namespace Unit\Service\Chat;
 
 use Exception;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -153,7 +154,8 @@ class ContextRetrievalGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('searchObjects')->willReturnCallback(
-			function (array $query, ...$rest) use ($case): array {
+			function (array $query, bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use ($case): array {
+				$rest = [$_rbac, $_multitenancy, $options->selection->ids, $options->selection->uses, $options->views, $options->viewScopeRequired];
 				$this->calls[] = ['inView', $query, $rest];
 				if (($case['inViewThrows'] ?? false) === true) {
 					throw new Exception('view gone');

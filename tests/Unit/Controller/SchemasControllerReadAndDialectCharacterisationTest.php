@@ -107,7 +107,6 @@ class SchemasControllerReadAndDialectCharacterisationTest extends TestCase {
 		);
 
 		return SchemasControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,
