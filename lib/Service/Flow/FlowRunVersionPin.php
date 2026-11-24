@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowVersion;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -243,7 +244,7 @@ class FlowRunVersionPin implements FlowRunVersionPinInterface {
 		}
 
 		try {
-			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
+			$mapper = $this->container->get(FlowMapperInterface::class);
 			$preflight = $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodePreflight');
 			$flow = $mapper->findByUuid($flowId);
 		} catch (Throwable $e) {

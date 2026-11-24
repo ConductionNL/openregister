@@ -30,6 +30,11 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -54,7 +59,6 @@ use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -73,7 +77,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class ExportService implements ObjectExporterInterface {
+class ExportService implements ObjectExporterInterface, TablePdfRendererInterface {
 
 	/**
 	 * Maximum number of objects a single PDF export may render.
@@ -155,7 +159,6 @@ class ExportService implements ObjectExporterInterface {
 	 * Constructor for the ExportService.
 	 *
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
@@ -168,7 +171,6 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	public function __construct(
 		RegisterMapperInterface $registerMapper,
-		IUserManager $_userManager,
 		IGroupManager $groupManager,
 		ObjectOperationsInterface $objectService,
 		CacheHandlerInterface $cacheHandler,
@@ -535,6 +537,25 @@ class ExportService implements ObjectExporterInterface {
 		// No Nextcloud user asked for this table: the instance default house style applies.
 		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: null);
 	}//end renderTableToPdf()
+
+	/**
+	 * Render a table a caller in another component built as a PDF, as renderTableToPdf() does.
+	 *
+	 * @param string                           $title      The heading above the table.
+	 * @param array<int|string, string>        $columns    Column keys to labels, or a list of keys that are their own labels.
+	 * @param array<int, array<string, mixed>> $rows       The rows, each keyed by column key.
+	 * @param bool                             $wholeCells True to print every cell whole instead of cut to the object export's length.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	public function renderRowsToPdf(string $title, array $columns, array $rows, bool $wholeCells=false): string {
+		return $this->renderTableToPdf(table: new RowsTable(title: $title, columns: $columns, rows: $rows, wholeCells: $wholeCells));
+	}//end renderRowsToPdf()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no
@@ -1031,8 +1052,7 @@ class ExportService implements ObjectExporterInterface {
 			// Apply RBAC filtering.
 			_multitenancy: $selection['multitenancy'],
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selection['ids'],
-			uses: null
+			options: new SearchOptions(selection: new ObjectSelection(ids: $selection['ids']))
 		);
 
 		if ($this->processAudit === null) {
@@ -1064,8 +1084,7 @@ class ExportService implements ObjectExporterInterface {
 			query: $query,
 			_rbac: true,
 			_multitenancy: $selection['multitenancy'],
-			ids: $selection['ids'],
-			uses: null
+			selection: new ObjectSelection(ids: $selection['ids'])
 		);
 	}//end countExportTotal()
 

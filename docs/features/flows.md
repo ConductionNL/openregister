@@ -147,7 +147,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Three
+A trigger is the node where a run begins. A flow may carry several. Four
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -155,6 +155,7 @@ trigger types ship:
 | `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
+| `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -221,6 +222,17 @@ schedule itself is picked up today.
 `next`, is a hint shown after the run (an `openregister.end` node can override
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
+
+**`openregister.trigger-calendar`** starts the flow at a moment counted from a
+date on each record: a contract's end date minus thirty days, a permit's expiry,
+an appointment plus a week. It names the `register` and `schema` whose records
+carry the date and the `dateProperty`, which must be a property of that schema
+with the format `date` or `date-time`. `offset` is an ISO 8601 duration from that
+date, optionally negative (`-P30D`, `P1W`, `P0D` for the date itself). The
+optional `workingCalendar` names a calendar by its slug to count the offset in
+working time. `runAs` is required and must be an existing account, as for a
+scheduled run. The record is the run's subject. Publishing refuses a trigger
+that could never fire as written.
 
 ### The event catalogue
 
@@ -338,6 +350,18 @@ flow holds.
 { "operation": "set", "key": "lastSyncedAt", "from": "updated" }
 ```
 
+**`openregister.code`** (Run code). Runs authored JavaScript on the items. The
+code never runs inside Nextcloud: the step sends it, the items and its limits
+to the `flow-code-runner` ExApp and takes the items it returns. Keys: `source`
+(required), `language` (only `javascript`), `mode` (`perItem`, the default, or
+`allItems`), `timeoutMs` (default 5000), `memoryMb` (default 64), `egress` (a
+list of public host names the code may call; none by default). A limit above
+the instance's ceiling (`flow_code_max_timeout_ms`, default 30000;
+`flow_code_max_memory_mb`, default 256) is refused. Without the runner the step
+is not offered, and a flow that holds one is refused at save, publish and run.
+A failing run fails the step, so its `onError` decides. In `perItem` mode each
+output keeps its input's place, so provenance survives the step.
+
 ### Branching and ending
 
 **`openregister.switch`** (Switch). No keys. Passes its items through unchanged;
@@ -400,6 +424,17 @@ step instead of asking a wider question.
 { "register": "zaken", "schema": "lock", "filters": { "status": "stale" }, "fanOut": true }
 ```
 
+**`openregister.audit-trail`** (Read audit trail). Puts an object's audit
+trail, or one entry of it, on each item. Keys: `object` (required, the object's
+uuid; placeholders allowed), `entry` (one audit-trail entry id), `output`
+(default `auditTrail`). The object is first read with the run's acting
+identity, so a run that may not read the object cannot read its history. An
+object or entry that does not resolve fails the step.
+
+```json
+{ "object": "{{ uuid }}", "output": "history" }
+```
+
 **`openregister.object-write`** (Write an object). Creates, updates, upserts or
 deletes one object per item. Keys: `register`, `schema`, `operation`, `fields`,
 `payloadFrom`, `match`, `replace`, `bulk`, `skipWhen`, `output`,
@@ -432,6 +467,19 @@ Keys: `uuid` (default: the item's object), `duration` (default one hour),
 `waitSeconds` (how long to keep retrying while another run holds it, default one
 hour), `process`, `subjectRole`. A held lock parks the run and retries; when the
 wait runs out the step fails. It never breaks someone else's lock.
+
+**`openregister.tag-object`** (Tag an object). Adds or removes a Nextcloud
+tag on each item's object. Keys: `operation` (`add` or `remove`), `tag`
+(placeholders allowed), `color` (set on a tag it creates, or on an existing tag
+without one), `uuid` (default: the item's object), `createIfMissing`. The step
+acts as `runAs`, else whoever triggered the run, and the object must be one that
+identity may update; otherwise the step fails. Adding a tag the object already
+has, or removing one it lacks, changes nothing, so a flow triggered on a tag
+event does not start again because of its own step.
+
+```json
+{ "operation": "add", "tag": "urgent", "color": "#d10000" }
+```
 
 **`openregister.unlock-object`** (Unlock an object). Keys: `uuid`. Releases a
 lock this run holds. Optional: a run releases all its locks when it ends,
@@ -806,6 +854,8 @@ model. Flows still on it are the ones to re-author.
   the same task inbox
 - [Workflow Automation](workflow-automation.md): handing work to external tools
   (n8n, Windmill), schema hooks and declarative lifecycles
+- [Object Actions](object-actions.md): verbs a schema declares that run a
+  transition, a stored flow or inline flow steps, listed per object
 - [Webhooks & Notifications](webhooks-and-notifications.md): notification rules,
   the "whenever X, tell Y" side of the boundary
 - [Event-Driven Architecture](event-driven-architecture.md): the events the

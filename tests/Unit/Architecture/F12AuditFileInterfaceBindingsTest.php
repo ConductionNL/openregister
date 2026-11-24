@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\AuditRechainInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\FileServiceInterface;
@@ -50,7 +51,7 @@ final class F12AuditFileInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		AuditRechainInterface::class => [AuditHashService::class, ContractBindings::class],
+		AuditRechainInterface::class => [AuditHashService::class, ComplianceServiceBindings::class],
 		FileReaderInterface::class => [FileService::class, ContractBindings::class],
 		FileServiceInterface::class => [FileService::class, ContractBindings::class],
 	];

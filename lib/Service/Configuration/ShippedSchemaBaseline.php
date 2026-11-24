@@ -121,10 +121,20 @@ final class ShippedSchemaBaseline
 			return;
 		}
 
+		$app     = (string) $options->appId;
+		$version = ($options->version ?? '');
 		$this->guard?->recordShippedSchema(
 			slug: $pending->slug,
-			shipped: new ShippedDefinition(definition: $pending->baseline, app: (string) $options->appId, appVersion: ($options->version ?? ''))
+			shipped: new ShippedDefinition(definition: $pending->baseline, app: $app, appVersion: $version)
 		);
+		if ($pending->conflicts !== null) {
+			// Kept beside the baseline, so the administrator who decides one
+			// later still has the definition the app shipped (REQ-LCA-003).
+			$this->guard?->recordShippedConflicts(
+				slug: $pending->slug,
+				conflicts: new ShippedDefinition(definition: ['conflicts' => $pending->conflicts], app: $app, appVersion: $version)
+			);
+		}
 	}//end recordPending()
 
 	/**
@@ -274,7 +284,7 @@ final class ShippedSchemaBaseline
 			);
 		}
 
-		return new PendingSchemaBaseline(data: $data, baseline: $pending->baseline, slug: $pending->slug);
+		return new PendingSchemaBaseline(data: $data, baseline: $pending->baseline, slug: $pending->slug, conflicts: $result['conflicts']);
 	}//end merged()
 
 	/**

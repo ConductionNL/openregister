@@ -22,6 +22,19 @@ jest.mock('../../components/shared/SaveButton.vue', () => ({ __esModule: true, d
 jest.mock('../../components/shared/SettingsSection.vue', () => ({ __esModule: true, default: {} }))
 jest.mock('./CalendarRowButton.vue', () => ({ __esModule: true, default: {} }))
 
+/*
+ * The zone list and the administrator's own zone come from the runtime;
+ * pinned here so the record does not depend on the machine's ICU or TZ.
+ */
+beforeEach(() => {
+	jest.spyOn(Intl, 'supportedValuesOf').mockReturnValue(['Europe/Amsterdam', 'Europe/London'])
+	jest.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({ timeZone: 'Europe/Amsterdam' })
+})
+
+afterEach(() => {
+	jest.restoreAllMocks()
+})
+
 /**
  * A bare component state carrying the component's methods.
  *
@@ -43,6 +56,7 @@ const STORED = {
 		slug: 'nl',
 		title: 'Netherlands',
 		organisation: 'org-1',
+		timezone: 'Europe/Amsterdam',
 		workingWeekdays: [1, 2, 3, 4, 5, 6],
 		hoursPerWorkingDay: 7.5,
 		serviceHours: { start: '09:00', end: '17:00' },
@@ -71,6 +85,7 @@ const FORMS = {
 		slug: '  nl ',
 		title: ' Netherlands ',
 		organisation: ' org-1 ',
+		timezone: 'Europe/Amsterdam',
 		workingWeekdays: [5, 1, 3],
 		hoursPerWorkingDay: '7.5',
 		serviceHours: { start: '09:00', end: '17:00' },
@@ -85,6 +100,7 @@ const FORMS = {
 		slug: 'x',
 		title: 'X',
 		organisation: '   ',
+		timezone: 'UTC',
 		workingWeekdays: [],
 		hoursPerWorkingDay: '',
 		serviceHours: {},

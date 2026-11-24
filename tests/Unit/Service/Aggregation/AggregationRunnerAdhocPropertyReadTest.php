@@ -34,8 +34,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
@@ -116,18 +121,26 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 		$schemaMapper->method('findInIds')->willReturn($this->schema());
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
-			placeholders: new PlaceholderResolver($session),
-			db: $this->createMock(originalClassName: IDBConnection::class),
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magicMapper),
+				db: $this->createMock(originalClassName: IDBConnection::class)
+			),
 			cache: $this->createMock(originalClassName: AggregationCache::class),
-			permissionHandler: $permissions,
-			userSession: $session,
-			organisationService: $this->createMock(originalClassName: OrganisationService::class),
-			organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),
-			translationHandler: $this->createMock(originalClassName: TranslationHandler::class),
-			languageService: $this->createMock(originalClassName: LanguageService::class),
-			propertyRbac: $propertyRbac,
-			explicitReveal: new ExplicitReveal(),
+			access: new AggregationAccess(
+				permissionHandler: $permissions,
+				organizationHandler: $this->createMock(originalClassName: MagicOrganizationHandler::class),
+				propertyRbac: $propertyRbac,
+				explicitReveal: new ExplicitReveal()
+			),
+			caller: new AggregationCaller(
+				userSession: $session,
+				organisationService: $this->createMock(originalClassName: OrganisationService::class),
+				placeholders: new PlaceholderResolver($session)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(originalClassName: TranslationHandler::class),
+				languageService: $this->createMock(originalClassName: LanguageService::class)
+			)
 		);
 	}//end runner()
 
@@ -143,7 +156,7 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 	 */
 	public static function withheldQueries(): array {
 		return [
-			'group by the withheld property' => [AggregationQuery::create(metric: 'count', groupBy: ['field' => 'salary'])],
+			'group by the withheld property' => [AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'salary']))],
 			'sum of the withheld property' => [AggregationQuery::create(metric: 'sum', field: 'salary')],
 			'max of the withheld property' => [AggregationQuery::create(metric: 'max', field: 'salary')],
 		];
@@ -162,7 +175,7 @@ class AggregationRunnerAdhocPropertyReadTest extends TestCase {
 			$this->runner()->runAdhoc(
 				register: $this->register(),
 				schema: $this->schema(),
-				query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'department'])
+				query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'department']))
 			);
 		} catch (NotAuthorizedException $refused) {
 			$this->fail(message: 'a readable property was refused: ' . $refused->getMessage());

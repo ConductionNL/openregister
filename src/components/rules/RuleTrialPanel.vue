@@ -103,6 +103,16 @@ import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
 import RuleTraceView from './RuleTraceView.vue'
 import { evaluateRule, messageFor } from '../../services/rules.js'
+import { invalidJsonText } from './ruleJson.js'
+
+/**
+ * What the panel says when a trial fails without saying why.
+ *
+ * @return {string} The message.
+ */
+function notTriedText() {
+	return t('openregister', 'The rule could not be tried.')
+}
 
 /**
  * The dry run, with the trace shown rather than summarised.
@@ -268,22 +278,41 @@ export default {
 				return
 			}
 
+			await this.runTrial(payload)
+		},
+
+		/**
+		 * Run the trial with the button busy, and say why it failed when the
+		 * request does.
+		 *
+		 * @param {object} payload What the trial runs on.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async runTrial(payload) {
 			this.running = true
 			try {
-				this.result = await evaluateRule(this.schema, this.ruleId, payload)
-				if (this.result.ok === false) {
-					this.error =
-						this.result.error?.message
-						|| t('openregister', 'The rule could not be tried.')
-					this.result = null
-				}
+				await this.tryRule(payload)
 			} catch (failure) {
-				this.error = messageFor(
-					failure,
-					t('openregister', 'The rule could not be tried.'),
-				)
+				this.error = messageFor(failure, notTriedText())
 			} finally {
 				this.running = false
+			}
+		},
+
+		/**
+		 * Try the rule on the payload and show the result, or the refusal of
+		 * an unsuccessful trial.
+		 *
+		 * @param {object} payload What the trial runs on.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async tryRule(payload) {
+			this.result = await evaluateRule(this.schema, this.ruleId, payload)
+			if (this.result.ok === false) {
+				this.error = this.result.error?.message || notTriedText()
+				this.result = null
 			}
 		},
 
@@ -320,13 +349,7 @@ export default {
 					object: this.sample.trim() === '' ? {} : JSON.parse(this.sample),
 				}
 			} catch (parseFailure) {
-				this.sampleError = t(
-					'openregister',
-					'That is not valid JSON: {reason}',
-					{
-						reason: parseFailure.message,
-					},
-				)
+				this.sampleError = invalidJsonText(parseFailure)
 				return null
 			}
 		},

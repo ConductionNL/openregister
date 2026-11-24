@@ -104,7 +104,6 @@ class CredentialUpdateRotationTargetTest extends TestCase {
 		);
 
 		return CredentialControllerFactory::create(
-			'openregister',
 			$request,
 			$session,
 			$this->createMock(IGroupManager::class),

@@ -18,7 +18,6 @@ final class GdprEntitiesControllerFactory {
 	/**
 	 * The constructor arguments of GdprEntitiesController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param GdprEntityMapper $entityMapper Constructor argument.
 	 * @param EntityRelationMapper $entityRelationMapper Constructor argument.
@@ -32,7 +31,6 @@ final class GdprEntitiesControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\GdprEntityMapper $entityMapper,
 		\OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
@@ -44,7 +42,6 @@ final class GdprEntitiesControllerFactory {
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

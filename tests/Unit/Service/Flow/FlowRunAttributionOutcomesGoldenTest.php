@@ -63,7 +63,7 @@ class FlowRunAttributionOutcomesGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flow, $activeOrg, $member): object {
-				if ($id === 'OCA\OpenRegister\Db\FlowMapper') {
+				if ($id === 'OCA\OpenRegister\Db\FlowMapper' || $id === \OCA\OpenRegister\Db\FlowMapperInterface::class) {
 					return new class($flow) {
 						public function __construct(private readonly ?Flow $flow) {
 						}

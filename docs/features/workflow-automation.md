@@ -168,6 +168,10 @@ DELETE /api/engines/{id}/workflows/{workflowId}   Delete a workflow from an engi
 
 ## Declarative Lifecycle Transitions (`x-openregister-lifecycle`)
 
+> A schema can also declare **object actions** ([object-actions.md](object-actions.md)): verbs such as
+> `publish`, `claim` or `hand-over` that run one of these transitions, a stored [flow](flows.md) or an
+> inline list of flow steps, listed per object with the person's rights and preconditions applied.
+
 Beyond hook-driven automation, a schema can declare a **state machine** on a
 single field via the `x-openregister-lifecycle` annotation (schema
 `configuration`). The shared `TransitionEngine` interprets it centrally, so apps
@@ -570,10 +574,12 @@ The actions run before the save, so their records are held until the save comple
 | CloudEvents v1.0 | Hook payload format |
 | BPMN 2.0 | Workflow definition format (n8n/Windmill native) |
 | `StoppableEventInterface` | Pre-mutation rejection via Nextcloud PSR-14 events |
+| JSON Schema | Object action inputs |
 
 ## Related Features
 
 - [Flows](flows.md): the built-in flow engine, for automation inside OpenRegister
+- [Object Actions](object-actions.md): declared verbs that run transitions, flows or inline steps
 - [Event-Driven Architecture](event-driven-architecture.md): hooks consume PSR-14 lifecycle events
 - [Registers & Schemas](registers-and-schemas.md): hooks are configured on schema definitions
 - [Data Import & Export](data-import-export.md): workflow-in-import triggers

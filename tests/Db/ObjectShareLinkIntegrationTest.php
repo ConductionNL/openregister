@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\LinkProtection;
 use OCA\OpenRegister\Service\Rbac\LinkInvitation;
@@ -280,7 +281,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 			$this->userSession->setUser($otherUser);
 
 			$keys = [];
-			foreach ($this->mapper->searchObjectsInRegisterSchemaTable(['_multitenancy' => false], $register, $schema) as $row) {
+			foreach ($this->mapper->searchObjectsInRegisterSchemaTable(new RegisterSchema($register, $schema), ['_multitenancy' => false]) as $row) {
 				if ($row instanceof ObjectEntity === true) {
 					$keys[] = (($row->getObject() ?? [])['key'] ?? null);
 				}
@@ -468,7 +469,7 @@ class ObjectShareLinkIntegrationTest extends TestCase {
 		$qb->executeStatement();
 
 		$fresh = null;
-		foreach ($this->mapper->searchObjectsInRegisterSchemaTable(['_multitenancy' => false, '_rbac' => false], $register, $schema) as $row) {
+		foreach ($this->mapper->searchObjectsInRegisterSchemaTable(new RegisterSchema($register, $schema), ['_multitenancy' => false, '_rbac' => false]) as $row) {
 			if ($row instanceof ObjectEntity === true) {
 				$fresh = $row;
 			}

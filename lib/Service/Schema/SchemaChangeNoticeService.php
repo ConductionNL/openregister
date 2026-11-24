@@ -39,6 +39,7 @@ use OCP\IUserManager;
 use OCP\Notification\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Who builds on a schema: accounts that called its object routes in the last
@@ -312,7 +313,8 @@ class SchemaChangeNoticeService {
 		}
 
 		try {
-			return $this->permissions->hasPermission(schema: $schema, action: 'read', userId: $uid);
+			return $this->permissions->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $uid, objectOwner: null));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaChangeNoticeService] Read check failed; the user is not told',

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditDiffStore;
+use OCA\OpenRegister\Db\AuditTrail\AuditDiffStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityResolverInterface;
 
 /**
@@ -41,6 +43,7 @@ final class ComplianceMapperBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AuditDiffStoreInterface::class              => AuditDiffStore::class,
 		AuditTrailMapperInterface::class            => AuditTrailMapper::class,
 		AuditTrailPageQueryInterface::class         => AuditTrailPageQuery::class,
 		ContentReportMapperInterface::class         => ContentReportMapper::class,

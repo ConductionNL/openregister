@@ -43,7 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 
 /**
  * SaveObject::setDefaultValues(): which defaults apply, how templated ones

@@ -178,12 +178,11 @@ interface MagicTableMaintenanceInterface {
 	 * Update table indexes
 	 *
 	 * @param string $tableName The table name
-	 * @param Register $register The register context
 	 * @param Schema $schema The schema for index analysis
 	 *
 	 * @return void
 	 */
-	public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void;
+	public function updateTableIndexes(string $tableName, Schema $schema): void;
 
 	/**
 	 * Every index on a register+schema table, with the property flag that asked for each.
@@ -196,6 +195,18 @@ interface MagicTableMaintenanceInterface {
 	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-a-property-can-ask-for-an-index-without-being-a-facet
 	 */
 	public function tableIndexes(Register $register, Schema $schema): array;
+
+	/**
+	 * Whether this instance can build a text-search (trigram) index on a property.
+	 *
+	 * True only on PostgreSQL with the pg_trgm extension installed; a property's
+	 * `searchable` flag creates no index anywhere else.
+	 *
+	 * @return bool True when a trigram index can be built.
+	 *
+	 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-the-property-editor-offers-both-index-kinds
+	 */
+	public function canBuildTextSearchIndex(): bool;
 
 	/**
 	 * Drop table

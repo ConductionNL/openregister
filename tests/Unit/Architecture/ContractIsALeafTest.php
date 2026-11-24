@@ -50,12 +50,17 @@ class ContractIsALeafTest extends TestCase {
 		'ObjectFindTarget.php',
 		'ObjectPatch.php',
 		'ObjectSaveOptions.php',
+		'ObjectSelection.php',
 		'ObjectServiceInterface.php',
 		'ObjectValidationVerdict.php',
+		'RegisterSchemaSlugs.php',
 		'RegisterSlugResolution.php',
 		'RegisterSlugResolverInterface.php',
+		'ReplyThreadResolutionInterface.php',
 		'SaveActor.php',
 		'SavePolicy.php',
+		'SearchOptions.php',
+		'ToolInvocationRecorderInterface.php',
 		'UnlockRequest.php',
 	];
 

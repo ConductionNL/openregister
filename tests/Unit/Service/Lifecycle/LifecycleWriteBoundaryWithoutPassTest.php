@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleWriteBoundary;
+use OCA\OpenRegister\Service\Lifecycle\SystemApproval;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -60,8 +61,7 @@ class LifecycleWriteBoundaryWithoutPassTest extends TestCase {
 
 		try {
 			$boundary->runningAsSystem(
-				'u-1',
-				'procest',
+				new SystemApproval('procest', 'u-1'),
 				static function () use ($context): never {
 					throw new RuntimeException('refused while ' . $context->systemAppFor('u-1'));
 				}

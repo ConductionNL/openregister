@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\FormCompletionRequest;
@@ -94,6 +95,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
  * @covers \OCA\OpenRegister\Exception\TaskFormRefusedException
  * @covers \OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException
+ * @covers \OCA\OpenRegister\Exception\TaskMandateRefusedException
  */
 class TaskControllerTest extends TestCase {
 
@@ -423,6 +425,24 @@ class TaskControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 		$this->assertStringContainsString('reason must be', $response->getData()['error']);
 	}//end testASubjectWriteRefusalIs422()
+
+	/**
+	 * A delegation to someone without the task's mandate is a 422 naming the
+	 * verb and the delegate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-delegate-must-hold-the-tasks-mandate
+	 */
+	public function testAMandateRefusalIs422NamingVerbAndDelegate(): void {
+		$this->tasks->method('delegate')->willThrowException(new TaskMandateRefusedException(verb: 'decide', uid: 'bram'));
+
+		$response = $this->controller->delegate(uuid: 't-1', delegate: 'bram', mandate: 'Volmacht');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString("'decide'", $response->getData()['error']);
+		$this->assertStringContainsString("'bram'", $response->getData()['error']);
+	}//end testAMandateRefusalIs422NamingVerbAndDelegate()
 
 	/**
 	 * GET /api/flow-tasks/{uuid}: an absent uuid reads exactly like an

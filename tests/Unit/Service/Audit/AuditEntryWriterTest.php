@@ -85,6 +85,27 @@ class AuditEntryWriterTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testAnOrganisationIsStampedOnlyWhenGiven(): void {
+		$rows   = [];
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
+		$mapper->method('insertAuditTrails')->willReturnCallback(
+			static function (array $entries) use (&$rows): array {
+				$rows = $entries;
+				return $entries;
+			}
+		);
+
+		(new AuditEntryWriter(mapper: $mapper))->writeAuditEntries(
+			entries: [
+				new AuditEntry(uuid: 'u-1', action: 'query.run', user: 'alice', userName: 'Alice', changed: [], created: new DateTimeImmutable(), organisationId: 'org-7'),
+				new AuditEntry(uuid: 'u-2', action: 'query.run', user: 'alice', userName: 'Alice', changed: [], created: new DateTimeImmutable()),
+			]
+		);
+
+		$this->assertSame('org-7', $rows[0]->getOrganisationId());
+		$this->assertNull($rows[1]->getOrganisationId());
+	}//end testAnOrganisationIsStampedOnlyWhenGiven()
+
 	public function testAFailedWriteIsThrown(): void {
 		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
 		$mapper->method('insertAuditTrails')->willThrowException(new DBException('down'));
@@ -94,6 +115,34 @@ class AuditEntryWriterTest extends TestCase {
 			entries: [new AuditEntry(uuid: 'u-1', action: 'a', user: 'system', userName: 'System', changed: [], created: new DateTimeImmutable())]
 		);
 	}//end testAFailedWriteIsThrown()
+
+	/**
+	 * A system line is one row by user 'system' with a fresh uuid, dated now.
+	 *
+	 * @return void
+	 */
+	public function testASystemLineIsOneSystemRow(): void {
+		$rows   = [];
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
+		$mapper->expects($this->once())->method('insertAuditTrails')->willReturnCallback(
+			function (array $entries) use (&$rows): array {
+				$rows = $entries;
+				return $entries;
+			}
+		);
+		$before = new DateTimeImmutable('-1 second');
+
+		(new AuditEntryWriter(mapper: $mapper))->recordSystemLine(action: 'bag.load', userName: 'BAG load', changed: ['created' => 3]);
+
+		$this->assertCount(expectedCount: 1, haystack: $rows);
+		$this->assertSame(expected: 'bag.load', actual: $rows[0]->getAction());
+		$this->assertSame(expected: 'system', actual: $rows[0]->getUser());
+		$this->assertSame(expected: 'BAG load', actual: $rows[0]->getUserName());
+		$this->assertSame(expected: ['created' => 3], actual: $rows[0]->getChanged());
+		$this->assertMatchesRegularExpression(pattern: '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-/', string: (string) $rows[0]->getUuid());
+		$this->assertGreaterThanOrEqual(expected: $before->getTimestamp(), actual: $rows[0]->getCreated()->getTimestamp());
+		$this->assertNull(actual: $rows[0]->getObjectUuid());
+	}//end testASystemLineIsOneSystemRow()
 	/**
 	 * A placed entry is filed under its register and schema; a missing one stays empty.
 	 *
